@@ -17,6 +17,8 @@ Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. The global sources are TibiaWik
 | M13 | Telas’s lift and activation lever lead to 25,000 XP, Golem in the Gears, Telas trade and laboratory access. One Golem Wrench (16251) is in the lab, with Modified Gnarlhounds for wrench use. No outfit reward. Crystal `data-global/npc/telas.lua:498-521,636-678` matches the XP, achievement and access milestones. | Telas stock is imported, but the completion trade condition is absent. XP, achievement and laboratory/gnarlhound access have no active delivery. Wrench claim matches item/count with missing root at donor cell. |
 | Black Bert | The Thieves Guild is needed only for this optional vendor. | Imported quest item offers already match each explicit unit price. Donor `data-global/npc/black_bert.lua:157-208` does not guard the vendor. Gating Bert's whole shared stock belongs to the Thieves Guild and vendor owner. |
 
+The M12 repair containers each yield one requested item. Crystal `data-global/scripts/lib/shadows_of_yalahar_mission12.lua:1-74` identifies Bag of Screws 9151, Spare Part 9154, Giant Screwdriver 9148, V-Belt 9152, Yalahari Gear Wheel 9153, Energy Net 9150, Glob of Grease 9147, Green Power Core 9156, Wonder Glue 9170, Vial of Elemental Water 9149, Red Power Core 9155, and Chaos Matter 9157. Their source actions are 4956 through 4967 in that order. None has a quest use binding here. The final achievement already exists in the catalogue as `oteryn:achievement/golem_in_the_gears`.
+
 The World NPC placement shard omits surface Telas and all five research NPCs. Crystal `data-global/world/world-npc.xml:117-118,618-619,633-634,3011-3012,3173-3174,3299-3300` and the committed placement candidate catalogue agree on the cells for Milos, Telas, Cerdras, Scutty, Dreadeye and Boveas respectively. The roster also omits Black Bert, Golem Servant, underground Telas and Telas Golem. The dispatch case instantiates the six M01 catalogue identities in its test layout. Admitting the production Telas placement also needs the completion trade guard to avoid making his shop available early.
 
 Crystal `data-global/startup/tables/chest.lua:579-586,3070-3157` supplies the ten imported claim selectors. Checked all ten roots against the committed World regions. Four matching appearances have no unique attribute and six appearances are absent at their selector cells. There are no Shadows rows in either world callback directory. The shared door reader resolves the captured actions to named tracks under `oteryn:quest-progress/quest/u8_5/shadows_of_yalahar/`. This quest's imported state tracks use the `crystalserver/` namespace and have no active writers for those door reads. Claim binding needs to preserve the mission-specific access path before enabling these placements.
@@ -41,5 +43,10 @@ PARTIAL — Mission 1 entry and turn-in are the first slice. Production placemen
 
 ## Local checks
 
-- Quest authoring `--part checks` completed 44 check commands.
-- The World compiler refreshed the pins and verified one World with `pin-check . /tmp/qcx53-world-pin`. This CLI requires an output directory.
+- Quest authoring `--part checks` passed all 44 check commands after registry regeneration.
+- The World compiler refreshed the pins and verified one World with `pin-check . /tmp/qcx53-world-pin-final`. This CLI requires an output directory.
+- The pre-fix PostgreSQL shard case failed on the intended entry assertion in 50.47 s. With the binding absent, the character met all three requirements and Mission 1 remained at 0.
+- PG via shard (pgsplit build files applied on `b705c8d59e21957c5ec8d35f7267613cb4bef660`). The errand case passed in 55.10 s. It verified the three entry conditions, the journal start marker, no credit for early notes, arbitrary researcher order, duplicate note behavior and the five-note turn-in.
+- The same filter returned one successful route-less case with `OTERYN_TEST_POSTGRES_ADMIN_URL` unset. Formatting passed with `cargo fmt --all -- --check`.
+- Regenerated the completion import and native binding preflight. Each registry with quest rows changed one quest, Shadows of Yalahar. The other generated changes are aggregate counts and provenance.
+- Dispatch library Clippy passed with all features and `-D warnings`.
