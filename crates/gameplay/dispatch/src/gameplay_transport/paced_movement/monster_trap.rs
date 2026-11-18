@@ -50,6 +50,23 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
                 silvered_trap_hit(runtime, map, step.actor, *key, step.to);
             }
         }
+        // Crystal 201189f8 moviment_trap.lua: only the merchant consumes a laid net.
+        if let Some((key, _)) = destination
+            .entries
+            .iter()
+            .find(|(key, entry)| key >> 62 == 2 && entry.appearance_id == 12187)
+            && map.overlay.runtime_scope() == runtime.binding().runtime_scope()
+            && runtime
+                .matches_live_creature_identity(step.actor, b"oteryn:creature.travelling_merchant")
+            && map.facts.transform_movement_item_with(
+                *key,
+                map.facts.object_revision(*key),
+                12189,
+                || runtime.remove_encounter_actor(step.actor).is_ok(),
+            )
+        {
+            continue;
+        }
         if destination.protection_zone
             || destination
                 .entries
@@ -260,7 +277,11 @@ mod tests {
             super::trap(trap)
                 .map(|rule| rule.closed)
                 .filter(|closed| *closed != trap)
-                .unwrap_or(if trap == 22059 { 22074 } else { 100 })
+                .unwrap_or(match trap {
+                    12187 => 12189,
+                    22059 => 22074,
+                    _ => 100,
+                })
         );
         let (bytes, mut pins) = boot::tests::bundle_with_item_ids((&key, 0), (&other, 1));
         let mut bundle = oteryn_world_bundle::writer::read(&bytes)?;
@@ -462,8 +483,11 @@ mod tests {
         }
         apply_monster_trap_steps(&mut runtime, &states, map, 1_000_000);
         let after_step_in = appearance()?;
-        let health_after =
-            i64::try_from(runtime.live_creature_health(rat).ok_or("rat after hit")?)?;
+        let health_after = if trap == 12187 && !runtime.contains_live_creature(rat) {
+            0
+        } else {
+            i64::try_from(runtime.live_creature_health(rat).ok_or("rat after hit")?)?
+        };
         if trap == 22059 {
             assert!(map.facts.record_monster_step(MonsterStep {
                 actor: rat,
@@ -513,6 +537,29 @@ mod tests {
             );
         }
         Ok((after_step_in, after_step_out, health_before, health_after))
+    }
+
+    #[test]
+    fn rottin_merchant_step_consumes_the_merchant_and_closes_the_net() -> Result<(), BoxError> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), BoxError> {
+                let (closed, _, _, after) = trap_case_source(
+                    12187,
+                    false,
+                    "oteryn:creature.travelling_merchant",
+                    100,
+                    true,
+                    false,
+                )?;
+                assert_eq!((closed, after), (12189, 0));
+                let (closed, _, _, after) =
+                    trap_case_source(12187, false, "oteryn:creature.rat", 100, true, false)?;
+                assert_eq!((closed, after), (12187, 100));
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "merchant trap thread panicked")?
     }
 
     #[test]

@@ -1022,6 +1022,18 @@ impl BundleFacts {
         expected: u64,
         appearance: u16,
     ) -> bool {
+        self.transform_movement_item_with(key, expected, appearance, || true)
+    }
+
+    /// Commit the owner operation after checking the exact volatile entry and before
+    /// publishing its replacement. The closure must not reenter map facts.
+    pub fn transform_movement_item_with(
+        &self,
+        key: u64,
+        expected: u64,
+        appearance: u16,
+        consume: impl FnOnce() -> bool,
+    ) -> bool {
         if key >> 62 != 2 || expected == u64::MAX {
             return false;
         }
@@ -1054,6 +1066,9 @@ impl BundleFacts {
         }) else {
             return false;
         };
+        if !consume() {
+            return false;
+        }
         after.bound = entry.facts.bound;
         after.count = entry.facts.count;
         entry.facts = after;
