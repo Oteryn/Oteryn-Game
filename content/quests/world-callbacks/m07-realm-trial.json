@@ -145,7 +145,7 @@
       "effects": {
         "transform": 2773,
         "reset_after_ms": 300000,
-        "passages_reset_after_ms": 60000,
+        "passages_reset_after_ms": 300000,
         "clear_area": {
           "minimum": {
             "x": 33074,
@@ -172,7 +172,8 @@
       "sources": [
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/actions_lever.lua:1-29",
-        "OTERYN_CHOSEN_REALM_TRIAL:one atomic fire reveal and switch operation; source wall60s/cooldown300s"
+        "OTERYN_CHOSEN_REALM_TRIAL:one atomic fire reveal and switch operation; control cooldown300s",
+        "https://tibia.fandom.com/?curid=61232&oldid=999253"
       ]
     }
   ]
