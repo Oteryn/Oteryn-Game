@@ -30,6 +30,12 @@ pub(super) struct Invocation {
     pub(super) placed: Option<FinalLastPosition>,
 }
 
+impl Invocation {
+    fn inventory_changed(&self) -> bool {
+        self.frozen.fare > 0 || matches!(&self.route, Departure::Paid(request) if request.ring.is_some())
+    }
+}
+
 #[derive(Default)]
 pub(super) struct NewhavenTravel {
     prompts: std::sync::Mutex<HashMap<GameSessionId, Prompt>>,
@@ -101,7 +107,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .holds
                 .lock()
                 .ok()
-                .and_then(|holds| holds.get(&session).map(|held| held.frozen.fare > 0))
+                .and_then(|holds| holds.get(&session).map(Invocation::inventory_changed))
                 .unwrap_or(false);
             let known = self.reconcile_newhaven_travel(actor, session).await;
             return npc_command::NpcTalkOutcome {

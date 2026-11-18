@@ -620,6 +620,13 @@ impl NpcTalkBook {
                     (!lines.is_empty()).then(|| lines.join(" ")),
                     Vec::new(),
                 )
+            } else if matches!(reference.key.as_str(), "oteryn:npc.buddel" | "oteryn:npc.iskan") {
+                (
+                    format!("Greetings, I am {}.", npc.name),
+                    "Farewell.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else if !travel_routes.is_empty() {
                 (
                     format!("Greetings, I am {}.", npc.name),

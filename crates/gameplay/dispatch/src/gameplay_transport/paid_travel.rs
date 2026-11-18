@@ -7,6 +7,10 @@ use crate::map::view::MapFacts;
 
 #[path = "paid_travel/quest_confirmation.rs"]
 mod quest_confirmation;
+#[path = "paid_travel/svargrond.rs"]
+mod svargrond;
+
+use crate::durability::npc_travel::svargrond::{BUDDEL, ISKAN, Payment, RING, pays_ring, route as source_route};
 
 #[derive(Clone)]
 pub(super) struct Prompt {
@@ -45,7 +49,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        let (fare, npc) = {
+        let (inventory_changed, npc) = {
             let holds = self.states.newhaven_travel.holds.lock().ok()?;
             let held = holds.get(&command.game_session_id)?;
             if held.frozen.command.command_id().get() != command.command_id
@@ -53,7 +57,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
-            (held.frozen.fare, held.npc)
+            (held.inventory_changed(), held.npc)
         };
         let result = self
             .reconcile_newhaven_travel(actor, command.game_session_id)
@@ -66,7 +70,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(true) => {
                 let mut outcome =
                     npc_command::NpcConversations::bank_reply(&intent, "Set the sails!".into());
-                outcome.inventory_changed = fare > 0;
+                outcome.inventory_changed = inventory_changed;
                 if let Some(conversation) = outcome.conversation.as_mut() {
                     conversation.open = None;
                 }
@@ -122,7 +126,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(entry) = book.get(&context.2) else {
                 return ordinary;
             };
-            if entry.travel_routes.is_empty() {
+            if entry.travel_routes.is_empty() && !matches!(context.2.as_str(), BUDDEL | ISKAN) {
                 return ordinary;
             }
             (context, entry.travel_routes.clone())
@@ -135,7 +139,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(mut prompts) => prompts.remove(&session),
             Err(_) => return ordinary,
         };
-        let prompt = if text == "yes" {
+        let mut prompt = if text == "yes" {
             let Some(prompt) = previous else {
                 return ordinary;
             };
@@ -144,12 +148,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             prompt
         } else {
+            let npc = context.2.as_str();
+            let declined_ring = previous.as_ref().filter(|prompt| {
+                text == "no" && pays_ring(&prompt.route)
+                    && prompt.matches_confirmation(intent.npc_actor, &context, fence, now)
+            });
+            if text == "no" && npc == BUDDEL && declined_ring.is_none() && previous.is_some() {
+                return npc_command::NpcConversations::bank_reply(intent, "You will miss the trip.".into());
+            }
+            let native = svargrond::select(npc, &text, declined_ring);
             // Match the complete authored destination, including spaces and apostrophes.
-            let Some(route) = routes
-                .into_iter()
-                .find(|route| text == route.keyword || text == route.route.key.replace('_', " "))
-            else {
-                return ordinary;
+            let (mut route, payment) = if let Some((route, payment)) = native {
+                (route, Some(payment))
+            } else {
+                let Some(route) = routes.into_iter()
+                    .find(|route| text == route.keyword || text == route.route.key.replace('_', " "))
+                else { return ordinary; };
+                (route, None)
             };
             let Ok(Some(current)) = self.current_quest_fence(session).await else {
                 return ordinary;
@@ -157,30 +172,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if current.item_fence() != fence {
                 return ordinary;
             }
-            let fare = match self
-                .root
-                .quote_npc_travel(
-                    self.character,
-                    self.holder,
-                    current,
-                    route.clone(),
-                    &self.premium_coordinator,
-                )
-                .await
-            {
-                Ok(Ok(fare)) => fare,
-                Ok(Err(cause)) => return refusal(intent, cause),
-                Err(_) => {
-                    return npc_command::NpcTalkOutcome {
+            let quote = |route: TravelRoute| self.root.quote_npc_travel(
+                self.character, self.holder, current, route, &self.premium_coordinator,
+            );
+            // Iskan first asks even when the mission is unfinished. The durable
+            // confirmation will check the unlocked passage and outstanding fine.
+            let fare = if npc == ISKAN {
+                0
+            } else {
+                let mut result = quote(route.clone()).await;
+                if payment == Some(Payment::Ring)
+                    && matches!(result, Ok(Err(TravelRefusal::UnavailableRoute)))
+                    && let Some(paid) = source_route(npc, &route.keyword, Payment::Fare)
+                {
+                    route = paid;
+                    result = quote(route.clone()).await;
+                }
+                match result {
+                    Ok(Ok(fare)) => fare,
+                    Ok(Err(TravelRefusal::UnavailableRoute)) if npc == BUDDEL => {
+                        return npc_command::NpcConversations::bank_reply(intent, "Sorry, not possible.".into());
+                    }
+                    Ok(Err(cause)) => return refusal(intent, cause),
+                    Err(_) => return npc_command::NpcTalkOutcome {
                         unknown: true,
                         ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
-                    };
+                    },
                 }
             };
-            let line = format!(
-                "Do you seek a passage to {} for {fare} gold?",
-                route.keyword
-            );
+            let line = if payment.is_some() {
+                svargrond::offer(npc, &route, fare)
+            } else {
+                format!("Do you seek a passage to {} for {fare} gold?", route.keyword)
+            };
             if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
                 prompts.insert(
                     session,
@@ -196,12 +220,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return npc_command::NpcConversations::bank_reply(intent, line);
         };
+        if context.2 == BUDDEL && svargrond::select_buddel_arrival(&mut prompt.route).is_none() {
+            if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
+                prompts.insert(session, prompt);
+            }
+            return npc_command::NpcConversations::bank_reply(intent, "Sorry, not possible.".into());
+        }
         let Some(request) = self
             .paid_travel_request(actor, command, intent, &prompt)
             .await
         else {
             return refusal(intent, TravelRefusal::UnavailableRoute);
         };
+        let inventory_changed = request.ring.is_some() || prompt.fare > 0;
         let frozen = FrozenTravel {
             command: request.command,
             npc: context.2,
@@ -217,7 +248,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actor,
                 session,
                 intent,
-            ) != Some(prompt.context)
+            ).as_ref() != Some(&prompt.context)
             {
                 return refusal(intent, TravelRefusal::StaleQuote);
             }
@@ -274,7 +305,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(true) => {
                 let mut result =
                     npc_command::NpcConversations::bank_reply(intent, "Set the sails!".into());
-                result.inventory_changed = prompt.fare > 0;
+                result.inventory_changed = inventory_changed;
                 if let Some(conversation) = result.conversation.as_mut() {
                     conversation.open = None;
                 }
@@ -290,7 +321,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .and_then(|mut holds| holds.remove(&session))
                     .and_then(|held| held.refusal)
                     .unwrap_or(TravelRefusal::UnavailableRoute);
-                refusal(intent, cause)
+                if cause == TravelRefusal::UnavailableRoute && prompt.context.2 == ISKAN {
+                    npc_command::NpcConversations::bank_reply(
+                        intent, "I need you to finish my mission before I can take you there.".into(),
+                    )
+                } else {
+                    refusal(intent, cause)
+                }
             }
             None => npc_command::NpcTalkOutcome {
                 unknown: true,
@@ -345,6 +382,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let (gold, platinum, crystal) = npc_command::bank_coin_definitions(self, &runtime)?;
+        let ring_key = pays_ring(&prompt.route).then_some(RING);
         let index =
             super::super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
         let backpack = crate::durability::item_mint::TypedDefinitionRef {
@@ -375,12 +413,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         };
         let occurrence = TravelOccurrence::from_bytes(derive(0)).ok()?;
+        let reference = crate::foundation::CommandRef::new(
+            command.game_session_id,
+            crate::foundation::CommandId::new(command.command_id).ok()?,
+        );
+        let ring = if let Some(key) = ring_key {
+            use crate::durability::npc_trade::{NpcTradeCause, NpcTradeCoins, NpcTradeRequest, NpcTradeSide};
+            let item = super::super::item_ref_admission::generation_item_facts(
+                native,
+                &crate::durability::item_mint::TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: key.into(),
+                    revision_ref: native.item_index()?.revision(key)?.into(),
+                },
+            ).ok()?;
+            Some(Box::new(NpcTradeRequest {
+                fluid_subtype: None,
+                full_charges: None,
+                cause: NpcTradeCause {
+                    npc_key: BUDDEL.into(),
+                    catalogue_revision: prompt.context.0,
+                    offer_index: 1,
+                    side: NpcTradeSide::Sell,
+                    occurrence: occurrence.as_bytes(),
+                },
+                command: reference,
+                quantity: 1,
+                unit_price: 0,
+                offer_count: 1,
+                item,
+                transaction_id: derive(1),
+                event_id: derive(2),
+                occurred_at_unix_ms: super::super::npc_trade_command::unix_ms_now(),
+                output_item_instance_ids: [derive(3), derive(4), derive(5)],
+                coins: NpcTradeCoins { gold: gold.clone(), platinum: platinum.clone(), crystal: crystal.clone() },
+                backpack: backpack.clone(),
+            }))
+        } else {
+            None
+        };
         let destination = &prompt.route.route.destination;
         Some(PaidTravelRequest {
-            command: crate::foundation::CommandRef::new(
-                command.game_session_id,
-                crate::foundation::CommandId::new(command.command_id).ok()?,
-            ),
+            command: reference,
+            ring,
             arrival: PendingArrival {
                 occurrence,
                 world_id: self.world_id,

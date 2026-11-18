@@ -29,6 +29,7 @@ use crate::foundation::{RuntimeScopeRefV1, WorldId};
 use sqlx::Row;
 
 mod paid;
+pub mod svargrond;
 mod return_port;
 pub use paid::{NpcTravelGate, PaidTravelRequest, TravelRefusal};
 

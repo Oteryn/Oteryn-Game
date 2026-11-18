@@ -50,6 +50,7 @@ pub struct PaidTravelRequest {
     pub arrival: PendingArrival,
     pub route: TravelRoute,
     pub fee: FeeBurnRequest,
+    pub ring: Option<Box<crate::durability::npc_trade::NpcTradeRequest>>,
 }
 
 async fn quote(
@@ -106,6 +107,9 @@ async fn quote(
     if let Some(requirement) = &route.ticket
         && !ticket::permitted(tx, fence.character_id, requirement).await?
     {
+        return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
+    if !super::svargrond::permitted(tx, fence, route).await? {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
     let level: Option<i64> = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
@@ -203,7 +207,9 @@ impl DurabilityRoot {
             let route = &request.route;
             let key = format!("{}/{}", route.service, route.route.key);
             let destination = &route.route.destination;
-            if request.command.game_session_id()!=fence.game_session_id
+            if request.ring.is_some() != super::svargrond::pays_ring(route)
+                || request.ring.as_ref().is_some_and(|ring| ring.command != request.command)
+                || request.command.game_session_id()!=fence.game_session_id
                 || arrival.world_id!=fence.runtime_scope.world_id()
                 || route.return_origin.as_ref().is_some_and(|requirement| !requirement.is_valid())
                 || (arrival.destination.x,arrival.destination.y,arrival.destination.floor)!=(destination.x,destination.y,destination.floor)
@@ -256,6 +262,15 @@ impl DurabilityRoot {
             if !permitted {return Ok(Ok(Err(TravelRefusal::PremiumRequired)));}
             let fare = match quote(&mut tx, fence, route).await? {Ok(fare)=>fare,Err(refusal)=>return Ok(Ok(Err(refusal)))};
             if fare!=request.fee.fee_gold_units {return Ok(Ok(Err(TravelRefusal::StaleQuote)));}
+            if let Some(ring) = &request.ring {
+                use crate::durability::npc_trade::{NpcTradeError, svargrond::exchange_ring};
+                match exchange_ring(&mut tx, fence.item_fence(), ring, &binding).await {
+                    Ok(true) => (),
+                    Ok(false) => return Ok(Ok(Err(TravelRefusal::UnavailableRoute))),
+                    Err(NpcTradeError::Unavailable(error)) => return Err(error),
+                    Err(_) => return Ok(Err(CharacterProgressionError::InvalidInput)),
+                }
+            }
             if fare>0 {
                 match burn_fee_in_transaction(&mut tx,&fence,&request.fee).await {
                     Ok(_) => (),
