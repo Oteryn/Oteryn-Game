@@ -91,6 +91,7 @@ mod session_tests {
             mailbox.guild.next = Some(oteryn_client_ui::guild::guild::GuildRosterCursor { guild: [1;16], level: 1, character: [1;16] });
             mailbox.guild.roster.push(oteryn_client_ui::guild::guild::GuildMember {
                 character: [1;16], name: "Old member".into(), level: 1, title: String::new(),
+                channel: None,
             });
             mailbox.guild.invitations.push(oteryn_client_ui::guild::guild::GuildInvitation {
                 guild: [1;16], name: "Old guild".into(), expires_at_unix_ms: 10,

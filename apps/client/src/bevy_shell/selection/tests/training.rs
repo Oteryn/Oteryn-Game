@@ -35,7 +35,12 @@ fn picker_training_returns_server_channel_through_existing_callback()
                     availability: CharacterAvailability::Available,
                 },
                 world_name: "Server world".into(),
-                channels: vec![("server-channel".into(), "Server channel".into())],
+                channels: vec![crate::character_selection::ChannelChoice {
+                    id: "server-channel".into(),
+                    name: "Server channel".into(),
+                    pvp_type: oteryn_platform_contracts::DirectoryPvpType::OptionalPvp,
+                    region: "EU".into(),
+                }],
                 available: true,
             }],
             "server-character",
@@ -155,7 +160,14 @@ fn picker_marks_several_characters_and_trains_them_through_existing_callback()
         },
         world_name: "Server world".into(),
         channels: channel
-            .map(|channel| vec![(channel.into(), "Server channel".into())])
+            .map(|channel| {
+                vec![crate::character_selection::ChannelChoice {
+                    id: channel.into(),
+                    name: "Server channel".into(),
+                    pvp_type: oteryn_platform_contracts::DirectoryPvpType::OptionalPvp,
+                    region: "EU".into(),
+                }]
+            })
             .unwrap_or_default(),
         available: true,
     };

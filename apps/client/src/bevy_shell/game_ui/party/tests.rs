@@ -25,6 +25,7 @@ fn host() -> std::result::Result<Fixture, Box<dyn std::error::Error>> {
 }
 fn state() -> party::PartyResult {
     let entry = |handle, name: &str, leader| party::PartyEntry {
+        channel: None,
         handle,
         name: name.into(),
         leader,
@@ -337,8 +338,32 @@ mod context;
 
 #[test]
 fn party_combat_rows_show_wire_vitals_summons_and_reachable_filters() -> Result {
+    use crate::character_selection::ChannelChoice;
+    use oteryn_platform_contracts::DirectoryPvpType;
+
     let (mut app, mut commands, outbox) = app()?;
     let mut result = state();
+    let current = "01900000-0000-7000-8000-000000000001";
+    let other = "01900000-0000-7000-8000-000000000002";
+    let choice = |id: &str, name: &str| ChannelChoice {
+        id: id.into(),
+        name: name.into(),
+        pvp_type: DirectoryPvpType::OptionalPvp,
+        region: "EU".into(),
+    };
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .world_channels(
+            "character",
+            current,
+            &[choice(current, "A"), choice(other, "B")],
+        );
+    result.members[0].channel = oteryn_platform_client::native_login::parse_uuid_v7(current);
+    result.members[1].channel = oteryn_platform_client::native_login::parse_uuid_v7(other);
     let row = |id, name: &str, summon, distance| party::PartyListEntity {
         entity: EntityRef {
             identity: [id; 16],
@@ -371,6 +396,18 @@ fn party_combat_rows_show_wire_vitals_summons_and_reachable_filters() -> Result 
     assert_eq!(count(&mut app, "party.health"), 2);
     assert_eq!(count(&mut app, "party.mana"), 2);
     assert_eq!(count(&mut app, "party.skull"), 2);
+    let mut text = app.world_mut().query::<(&Text, &TextColor)>();
+    for (name, color) in [
+        ("Zed — A", Color::srgb_u8(248, 219, 56)),
+        ("Amy — B", Color::srgb_u8(128, 128, 128)),
+        ("↳ Summon", Color::srgb_u8(248, 219, 56)),
+    ] {
+        assert!(
+            text.iter(app.world())
+                .any(|(text, tint)| text.0 == name && tint.0 == color),
+            "{name}"
+        );
+    }
     let fills: Vec<_> = app
         .world_mut()
         .query::<(&Name, &Node)>()

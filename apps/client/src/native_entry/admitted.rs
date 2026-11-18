@@ -14,6 +14,8 @@ pub struct AdmittedSession {
     pub(super) traffic: Arc<Traffic>,
     pub(super) world_id: String,
     pub(super) channel_id: String,
+    /// The World's Channels as the directory listed them (chsw, capabilities 512 and 513).
+    pub(super) channels: Vec<crate::character_selection::ChannelChoice>,
 }
 
 impl AdmittedSession {
@@ -36,6 +38,11 @@ impl AdmittedSession {
     #[must_use]
     pub fn world_id(&self) -> &str {
         &self.world_id
+    }
+
+    #[must_use]
+    pub fn channels(&self) -> &[crate::character_selection::ChannelChoice] {
+        &self.channels
     }
 
     #[must_use]

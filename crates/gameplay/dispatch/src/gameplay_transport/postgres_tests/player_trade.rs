@@ -1151,6 +1151,12 @@ async fn read_priority_case(
         .await?,
         ResultCode::Offered,
     );
+    // The destination preflight yielded to this offer. Exercise the safe-exit boundary
+    // directly while the real peer's offer is open.
+    assert!(matches!(
+        owner.logout_session_as(admitted[1], true).await,
+        Err(oteryn_protocol_oteryn::channel_switch::SwitchLock::Trade)
+    ));
     assert_eq!(
         trade_command_handoff(
             &h.root,

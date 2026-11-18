@@ -301,6 +301,7 @@ impl crate::play::Outbox {
                 name: name.into(),
                 level: 2,
                 title: String::new(),
+                channel: None,
             });
         }
         panel.invitations.push(guild::GuildInvitation {

@@ -246,6 +246,7 @@ pub fn error_text(error: GameplayEntryError) -> &'static str {
                 "Check Platform and Gateway URLs, OAuth client ID, optional character preselect and the trust certificate path, then sign in again."
             )
         }
+        GameplayEntryError::ChannelFull => tr!("This channel is full."),
         GameplayEntryError::WorldUnavailable => {
             tr!(
                 "World is absent from the Platform directory. Check the World reference and Platform URL, then sign in again."

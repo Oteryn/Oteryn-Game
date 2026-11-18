@@ -1,7 +1,7 @@
 //! Per-frame projection of the active owner dialog into the Bevy overlay.
 use super::*;
+use channel_switch::{SwitchView, TableRow};
 
-// Escape and the outside-click scrim close the menu; there is no Cancel entry.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn project(
     mut commands: Commands,
@@ -9,12 +9,25 @@ pub(super) fn project(
     skin: Res<Skin>,
     windows: Query<&Window>,
     mut overlays: Query<(Entity, &mut Node, &mut BackgroundColor), With<Overlay>>,
-    mut previous: Local<Option<u64>>,
+    mut previous: Local<Option<(u64, Option<SwitchView>)>>,
+    mut rows: Query<(&TableRow, &mut Text, &mut TextColor)>,
     mut panel: Local<Option<Entity>>,
     mut focus: ResMut<InputFocus>,
 ) {
     let pending = owner.dialogs.pending.as_ref();
-    let id = pending.map(|request| request.id);
+    let switch = pending
+        .filter(|request| matches!(request.content, Content::ChannelSwitch))
+        .and_then(|_| owner.play.as_ref())
+        .map(|play| {
+            let now_ms = crate::play::feature_0512_channel_switch::view::now_ms();
+            let panel = play.link.channel_switch_panel();
+            let left = panel
+                .status
+                .map_or(0, |status| i64::from(status.cooldown_left_ms))
+                .saturating_sub(now_ms.saturating_sub(panel.status_at_ms).max(0))
+                .max(0);
+            ((panel, (left + 999) / 1000), now_ms)
+        });
     let Ok((overlay, mut node, mut background)) = overlays.single_mut() else {
         return;
     };
@@ -23,10 +36,21 @@ pub(super) fn project(
     } else {
         Display::None
     };
-    if id == *previous {
+    let id = pending.map(|request| request.id);
+    let switch_view = switch.as_ref().map(|(view, _)| view);
+    if previous.as_ref().map(|(id, view)| (*id, view.as_ref())) == id.map(|id| (id, switch_view)) {
         return;
     }
-    *previous = id;
+    if let (Some((old_id, Some((old_panel, second)))), Some(id), Some(((new_panel, next), now_ms))) =
+        (previous.as_mut(), id, switch.as_ref())
+        && *old_id == id
+        && old_panel == new_panel
+    {
+        channel_switch::refresh_rows(&mut rows, new_panel, *now_ms);
+        *second = *next;
+        return;
+    }
+    *previous = id.map(|id| (id, switch_view.cloned()));
     if let Some(entity) = panel.take() {
         commands.entity(entity).despawn();
     }
@@ -103,7 +127,7 @@ pub(super) fn project(
                 modal: true,
             },
             Node {
-                width: px(300.),
+                width: px(if switch.is_some() { 460. } else { 300. }),
                 max_width: percent(95.),
                 max_height: percent(95.),
                 padding: UiRect::axes(px(16.), px(29.)),
@@ -116,22 +140,39 @@ pub(super) fn project(
         .id();
     commands.entity(overlay).add_child(window);
     *panel = Some(window);
-    source::dialog_caption(&mut commands, window, tr!("Logout"), skin.font.clone());
-    let text = commands
-        .spawn(source::text(
-            "Log out of the game?",
-            source::font(skin.font.clone(), false),
-        ))
-        .id();
-    commands.entity(window).add_child(text);
-    button(
-        &mut commands,
-        &skin,
-        window,
-        request.id,
-        tr!("Ok"),
-        Choice::Logout,
-    );
+    if let Some(((panel, _), now_ms)) = switch {
+        source::dialog_caption(
+            &mut commands,
+            window,
+            tr!("Change Channel"),
+            skin.font.clone(),
+        );
+        channel_switch::channel_switch_body(
+            &mut commands,
+            &skin,
+            window,
+            request.id,
+            &panel,
+            now_ms,
+        );
+    } else {
+        source::dialog_caption(&mut commands, window, tr!("Logout"), skin.font.clone());
+        let text = commands
+            .spawn(source::text(
+                "Log out of the game?",
+                source::font(skin.font.clone(), false),
+            ))
+            .id();
+        commands.entity(window).add_child(text);
+        button(
+            &mut commands,
+            &skin,
+            window,
+            request.id,
+            tr!("Ok"),
+            Choice::Logout,
+        );
+    }
     let cancel = button(
         &mut commands,
         &skin,
@@ -292,7 +333,7 @@ pub(super) fn context_items(
     }
     items
 }
-fn button(
+pub(super) fn button(
     commands: &mut Commands,
     skin: &Skin,
     parent: Entity,

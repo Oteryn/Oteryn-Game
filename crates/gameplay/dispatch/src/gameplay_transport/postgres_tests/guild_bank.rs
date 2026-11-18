@@ -138,7 +138,7 @@ async fn open_claims(
     assert_eq!(result.code, 1);
     Ok(result.claims)
 }
-async fn guild(
+pub(super) async fn guild(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     s: &mut AdmittedSession,
     action: guild_wire::GuildIntent,

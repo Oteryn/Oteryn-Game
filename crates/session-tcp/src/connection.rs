@@ -27,6 +27,7 @@ pub async fn admit(
 pub struct AdmissionRefusalInfo {
     pub code: u32,
     pub queue: Option<AdmissionQueue>,
+    pub channel_full: bool,
 }
 
 /// One real TCP/TLS admission preserving authenticated capacity wait metadata.
@@ -85,12 +86,20 @@ pub async fn admit_detailed_optimized_wrapped<S: oteryn_session::SessionStream>(
     Session::admit(wrap(stream), admission)
         .await
         .map_err(|error| match error {
-            SessionError::AdmissionRefused { code } => {
-                Some(AdmissionRefusalInfo { code, queue: None })
-            }
+            SessionError::ChannelFull { code } => Some(AdmissionRefusalInfo {
+                code,
+                queue: None,
+                channel_full: true,
+            }),
+            SessionError::AdmissionRefused { code } => Some(AdmissionRefusalInfo {
+                code,
+                queue: None,
+                channel_full: false,
+            }),
             SessionError::AdmissionQueued { code, queue } => Some(AdmissionRefusalInfo {
                 code,
                 queue: Some(queue),
+                channel_full: false,
             }),
             _ => None,
         })

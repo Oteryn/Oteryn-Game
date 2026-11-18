@@ -60,6 +60,7 @@ impl Stepper for Peer {
                         guild,
                         revision: 3,
                         members: vec![guild::GuildMember {
+                            channel: None,
                             character: id(),
                             name: "Alice".into(),
                             level: 3,

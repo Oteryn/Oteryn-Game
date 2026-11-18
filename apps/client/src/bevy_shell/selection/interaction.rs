@@ -53,7 +53,7 @@ pub(super) fn activate(
                 let channel_id = state
                     .channel
                     .and_then(|index| row.channels.get(index))
-                    .map(|channel| channel.0.clone());
+                    .map(|channel| channel.id.clone());
                 if matches!(target.choice, Choice::Train) {
                     return SelectionAction::Train {
                         character_id,
@@ -189,7 +189,7 @@ pub(super) fn row_click(
             channel_id: state
                 .channel
                 .and_then(|channel| row.channels.get(channel))
-                .map(|channel| channel.0.clone()),
+                .map(|channel| channel.id.clone()),
         };
         owner.selection.respond(target.request, action);
         state.last_click = None;

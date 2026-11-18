@@ -24,6 +24,8 @@ struct Request {
 }
 enum Content {
     Logout,
+    /// chsw (capability 512): the Change Channel window, its confirmation and its errors.
+    ChannelSwitch,
     Context {
         menu: Option<Box<Menu>>,
         party: Option<Box<party::Target>>,
@@ -44,6 +46,9 @@ enum Content {
 enum Choice {
     Cancel,
     Logout,
+    SwitchRow([u8; 16]),
+    SwitchConfirm,
+    SwitchBack,
     Context(usize),
     Inspect,
     Invite,
@@ -98,6 +103,12 @@ impl HostOwner {
     pub(super) fn request_logout_confirmation(&mut self) {
         if self.phase == Phase::Playing && self.play.is_some() {
             self.dialogs.open(self.generation(), Content::Logout);
+        }
+    }
+    pub(super) fn request_channel_switch(&mut self) {
+        if let Some(play) = &self.play {
+            play.link.channel_switch_open();
+            self.dialogs.open(self.generation(), Content::ChannelSwitch);
         }
     }
     pub(super) fn request_world_context(&mut self, tile: TileCoord) {
@@ -247,6 +258,9 @@ impl HostOwner {
             || self.play.is_none()
         {
             return false;
+        }
+        if matches!(request.content, Content::ChannelSwitch) {
+            return self.choose_channel_switch(request, choice);
         }
         match (request.content, choice) {
             (
@@ -464,8 +478,18 @@ fn escape(
             && key.state == bevy::input::ButtonState::Pressed
             && !key.repeat
     }) {
-        owner.dialogs.clear();
-        owner.pointer_context_closed();
+        if let Some(id) = owner
+            .dialogs
+            .pending
+            .as_ref()
+            .filter(|request| matches!(request.content, Content::ChannelSwitch))
+            .map(|request| request.id)
+        {
+            owner.choose_dialog(id, Choice::Cancel);
+        } else {
+            owner.dialogs.clear();
+            owner.pointer_context_closed();
+        }
     }
 }
 fn activate(
@@ -490,6 +514,7 @@ fn activate(
 }
 
 pub(super) mod art;
+mod channel_switch;
 mod npc;
 pub(super) mod popup;
 mod projection;

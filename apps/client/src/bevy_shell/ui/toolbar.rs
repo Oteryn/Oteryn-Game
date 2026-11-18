@@ -17,6 +17,7 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Bestiary Tracker", Control::Shortcut("bestiary_tracker")),
     ("Bosstiary", Control::Panel("bosstiary")),
     ("Bosstiary Tracker", Control::Shortcut("bosstiary_tracker")),
+    ("Change Channel", Control::ChangeChannel),
     ("Chat", Control::Panel("chat")),
     ("Compendium", Control::Notices),
     ("Cyclopedia", Control::Shortcut("cyclopedia")),
@@ -64,6 +65,7 @@ pub(in crate::bevy_shell) fn open_toolbar(owner: &mut HostOwner, control: Contro
     }
     match control {
         Control::Options => owner.open_graphics(),
+        Control::ChangeChannel => owner.request_channel_switch(),
         Control::Shortcut(id) => return shortcuts::open(owner, id),
         Control::Depot => {
             if let Some(play) = &owner.play {

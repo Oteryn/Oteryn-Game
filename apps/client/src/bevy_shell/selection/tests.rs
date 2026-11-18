@@ -59,7 +59,12 @@ fn picker_buttons_return_server_channel_through_existing_callback()
                 availability: CharacterAvailability::Available,
             },
             world_name: "Server world".into(),
-            channels: vec![("server-channel".into(), "Server channel".into())],
+            channels: vec![crate::character_selection::ChannelChoice {
+                id: "server-channel".into(),
+                name: "Server channel".into(),
+                pvp_type: oteryn_platform_contracts::DirectoryPvpType::OptionalPvp,
+                region: "EU".into(),
+            }],
             available: true,
         };
         let mut rows = vec![row; 20];
@@ -241,6 +246,14 @@ fn picker_buttons_return_server_channel_through_existing_callback()
     let channel = find(&mut app, true)?;
     app.world_mut().trigger(Activate { entity: channel });
     app.update();
+    let channel = find(&mut app, true)?;
+    assert!(
+        app.world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .any(|(text, parent)| parent.parent() == channel
+                && text.0 == "Server channel · Optional PvP · EU")
+    );
     assert_eq!(scroll(&mut app)?, offset);
     let toggle = app
         .world_mut()
@@ -434,7 +447,12 @@ fn scaled_picker_keeps_footer_inside_frame_and_selected_row_on_resize()
                     availability: CharacterAvailability::Available,
                 },
                 world_name: "World".into(),
-                channels: vec![("channel".into(), "Channel".into())],
+                channels: vec![crate::character_selection::ChannelChoice {
+                    id: "channel".into(),
+                    name: "Channel".into(),
+                    pvp_type: oteryn_platform_contracts::DirectoryPvpType::OptionalPvp,
+                    region: "EU".into(),
+                }],
                 available: true,
             })
             .collect::<Vec<_>>();

@@ -52,7 +52,7 @@ pub(super) async fn authorize(
     client: &NativeLoginClient,
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
-) -> Result<(NativeTicket, String, Option<String>, String, bool), GameplayEntryError> {
+) -> Result<Authorized, GameplayEntryError> {
     let mut device = config
         .device_sessions
         .begin(
@@ -78,7 +78,7 @@ pub(super) async fn authorize(
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
     let directory_client = oteryn_platform_client::PlatformClient::new(platform)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
-    let (character_id, channel_id, character_name, training_requested) = loop {
+    let (character_id, channel_id, character_name, training_requested, channels) = loop {
         let characters = if let Some(token) = &token {
             client
                 .owner_characters(token, cancellation.clone())
@@ -110,32 +110,40 @@ pub(super) async fn authorize(
             return Err(rejected(PublicClass::RetryLogin));
         };
         let directory = directory_client
-            .fetch_directory(cancellation.clone())
+            .fetch_directory_as(token.as_ref(), cancellation.clone())
             .await
             .map_err(retry_login)?;
         let rows = crate::character_selection::join(characters, &directory);
         use crate::character_selection::SelectionAction;
-        let action = if let Some(selection) = config.training_queue.next() {
-            SelectionAction::Train {
-                character_id: selection.character_id,
-                channel_id: selection.channel_id,
-            }
-        } else if quick
-            && let Some(selection) = device
-                .as_ref()
-                .and_then(|attempt| attempt.quick_selection(&rows))
-        {
-            selection
-        } else {
-            config.training_queue.clear();
-            let selector = config.select_character.clone();
-            let preselect = config.character_id.clone();
-            let cancel = cancellation.clone();
-            let shown = rows.clone();
-            tokio::task::spawn_blocking(move || selector(&shown, &preselect, cancel))
-                .await
-                .map_err(retry_login)?
-        };
+        let action =
+            if quick && let Some((character_id, channel_id)) = config.channel_switch.clone() {
+                // chsw: the switch's fresh admission; the selection check below still requires the
+                // target to be a listed Channel of the character's World.
+                SelectionAction::Play {
+                    character_id,
+                    channel_id: Some(channel_id),
+                }
+            } else if let Some(selection) = config.training_queue.next() {
+                SelectionAction::Train {
+                    character_id: selection.character_id,
+                    channel_id: selection.channel_id,
+                }
+            } else if quick
+                && let Some(selection) = device
+                    .as_ref()
+                    .and_then(|attempt| attempt.quick_selection(&rows))
+            {
+                selection
+            } else {
+                config.training_queue.clear();
+                let selector = config.select_character.clone();
+                let preselect = config.character_id.clone();
+                let cancel = cancellation.clone();
+                let shown = rows.clone();
+                tokio::task::spawn_blocking(move || selector(&shown, &preselect, cancel))
+                    .await
+                    .map_err(retry_login)?
+            };
         quick = false;
         let action = match action {
             SelectionAction::TrainMany { characters } => {
@@ -165,7 +173,7 @@ pub(super) async fn authorize(
                         && row.character.character_id == character_id
                         && channel_id
                             .as_ref()
-                            .is_none_or(|id| row.channels.iter().any(|channel| &channel.0 == id))
+                            .is_none_or(|id| row.channels.iter().any(|channel| &channel.id == id))
                 });
                 let selected = selected.ok_or_else(|| rejected(PublicClass::RetryLogin))?;
                 break (
@@ -173,6 +181,7 @@ pub(super) async fn authorize(
                     channel_id,
                     selected.character.name.clone(),
                     training_requested,
+                    selected.channels.clone(),
                 );
             }
             SelectionAction::TrainMany { .. } => return Err(rejected(PublicClass::RetryLogin)),
@@ -246,13 +255,25 @@ pub(super) async fn authorize(
     if let Some(attempt) = &device {
         attempt.remember_selection(&character_id, channel_id.as_deref());
     }
-    Ok((
+    Ok(Authorized {
         ticket,
         character_id,
         channel_id,
         character_name,
         training_requested,
-    ))
+        channels,
+    })
+}
+
+/// The consuming ticket and the selection it was issued for.
+pub(super) struct Authorized {
+    pub ticket: NativeTicket,
+    pub character_id: String,
+    pub channel_id: Option<String>,
+    pub character_name: String,
+    pub training_requested: bool,
+    /// The Channels of the selected World, as the directory listed them (chsw, capability 513).
+    pub channels: Vec<crate::character_selection::ChannelChoice>,
 }
 
 async fn enroll_or_fresh_browser(

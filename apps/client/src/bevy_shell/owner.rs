@@ -65,6 +65,8 @@ pub(super) struct HostOwner {
     selector: crate::character_selection::CharacterSelector,
     pub(super) services: super::account_services::Services,
     pub(super) dialogs: super::gameplay_dialogs::Dialogs,
+    /// chsw: the target Channel's row, shown as the arrival line after the fresh admission.
+    arrival: Option<oteryn_client_ui::channel_switch::ChannelRow>,
     /// Counts ShowOptionsHotkeys requests; the options window turns to its hotkey page on a new one.
     pub(super) hotkey_options: u64,
 }
@@ -109,6 +111,7 @@ impl HostOwner {
             selector,
             services: super::account_services::Services::new(),
             dialogs: Default::default(),
+            arrival: None,
             hotkey_options: 0,
         })
     }
@@ -220,12 +223,16 @@ impl HostOwner {
         view.use_shared_frontend();
         view.enable_background_minimap_save();
         link.use_shared_frontend();
+        if let Some(row) = self.arrival.take() {
+            view.announce_channel_arrival(&row);
+        }
         self.play = Some(ActivePlay { view, link });
         self.phase = Phase::Playing;
         self.status = "Connected to Oteryn.".into();
         true
     }
     fn leave(&mut self, message: &str) {
+        self.arrival = None;
         drop(self.play.take());
         self.change_scope(None);
         self.phase = Phase::Offline;
@@ -397,6 +404,7 @@ impl HostOwner {
             self.finish_admission(result, bulletin);
         }
         let mut end = None;
+        let mut switch = None;
         if let Some(play) = &mut self.play {
             // The same owner projects accepted graphics, zoom, bindings and chat context.
             self.settings.sync_skills_layout(&play.link);
@@ -415,6 +423,25 @@ impl HostOwner {
             self.settings.sync_local_preferences(&play.link);
             play.view.poll_background_minimap_save();
             end = play.view.tick(&play.link).err();
+            if end.is_some() {
+                switch = play.link.channel_switch_target();
+            }
+        }
+        if let Some(target) = switch.filter(|_| end.is_some()) {
+            // chsw: the server released the session for a switch; enter the target Channel.
+            self.leave(oteryn_client_ui::channel_switch::wait_text());
+            self.arrival = target.row;
+            if self
+                .entry
+                .as_mut()
+                .is_some_and(|entry| entry.request_switch(target.character_id, target.channel_id))
+            {
+                self.phase = Phase::Entering;
+                self.status = oteryn_client_ui::channel_switch::wait_text().into();
+            } else {
+                self.arrival = None;
+            }
+            return;
         }
         if let Some(end) = end {
             self.finish_play(end);

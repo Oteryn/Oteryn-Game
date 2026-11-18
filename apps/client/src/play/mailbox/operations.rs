@@ -22,6 +22,7 @@ impl Outbox {
 
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, mut events: Vec<SessionEvent>) {
+        let received_at = tokio::time::Instant::now();
         if let Some(index) = events
             .iter()
             .rposition(|event| matches!(event, SessionEvent::ActivityScope(_)))
@@ -135,6 +136,19 @@ impl Outbox {
             oteryn_client_ui::chat_party_room::replace_rooms(&mut mailbox.chat_party_room, rooms);
         }
         if let Some(presence) = mailbox.pushed.vip_presence.take() {
+            if mailbox.social_channel_selected {
+                let notices = oteryn_client_ui::social_channel::presence_notices(
+                    &mailbox.party.channel_names,
+                    &mailbox.vip_presence.presence,
+                    &presence,
+                );
+                for notice in notices {
+                    mailbox.vip_channel_notice_serial += 1;
+                    let serial = mailbox.vip_channel_notice_serial;
+                    mailbox.vip_channel_notices.push((serial, notice));
+                }
+            }
+            mailbox.vip_presence_confirmed_at = Some(received_at);
             oteryn_client_ui::vip_presence::replace(&mut mailbox.vip_presence, presence);
         }
         if let Some(position) = mailbox.pushed.own
@@ -399,6 +413,7 @@ impl Drop for PlayLink {
         if !self.owns_session {
             return;
         }
+        self.channel_switch_close();
         let mut mailbox = lock(&self.mailbox);
         mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {

@@ -41,6 +41,7 @@ pub(super) fn activate(
             && matches!(
                 control,
                 Control::Options
+                    | Control::ChangeChannel
                     | Control::Market
                     | Control::Party
                     | Control::Quests

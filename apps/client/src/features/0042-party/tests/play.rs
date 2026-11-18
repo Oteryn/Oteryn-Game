@@ -93,6 +93,7 @@ fn party_member_effects_server_result_reaches_native_panel_and_removes() -> Resu
     outbox.party_initialize(true, false);
     let mut state = party::PartyResult::refused(party::PartyDisposition::Ok);
     state.members.push(party::PartyEntry {
+        channel: None,
         list: Vec::new(),
         handle: 1,
         name: "Friend".into(),
@@ -139,6 +140,7 @@ fn party_list_real_play_queue_filters_sorts_and_replaces_nearby_vitals() -> Resu
         [(1, "Zed", 1, 30, Some(40)), (2, "Amy", 2, 31, None)]
     {
         state.members.push(party::PartyEntry {
+            channel: None,
             handle,
             name: name.into(),
             leader: handle == 1,

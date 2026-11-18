@@ -134,6 +134,7 @@ pub(super) fn row(
     parent: Entity,
     row: &PartyListEntity,
     image: Option<&Handle<Image>>,
+    name: &str,
 ) -> Entity {
     use super::widgets::label;
     commands.entity(parent).insert((
@@ -182,7 +183,7 @@ pub(super) fn row(
         commands,
         skin,
         details,
-        &format!("{}{}", if row.summon { "↳ " } else { "" }, row.name),
+        &format!("{}{name}", if row.summon { "↳ " } else { "" }),
     );
     if row.distance <= 30 {
         for (value, name, colour) in [

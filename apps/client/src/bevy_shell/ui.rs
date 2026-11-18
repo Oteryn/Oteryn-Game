@@ -112,6 +112,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    ChangeChannel,
     Options,
     ManageButtons,
     Shortcut(&'static str),
@@ -150,6 +151,7 @@ impl Control {
             Self::ManageButtons => "shell.manage_buttons",
             Self::Depot => "shell.depot",
             Self::Analysers => "shell.analysers",
+            Self::ChangeChannel => "shell.change_channel",
             Self::CyclopediaMap => "shell.cyclopedia_map",
             Self::Inspection => "shell.inspection",
             Self::Loot => "shell.loot",

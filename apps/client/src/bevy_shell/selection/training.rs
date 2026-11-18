@@ -77,7 +77,7 @@ pub(super) fn batch(state: &PickerState, rows: &[CharacterRow]) -> Option<Select
                 character_id: row.character.character_id.clone(),
                 channel_id: channel
                     .and_then(|channel| row.channels.get(channel))
-                    .map(|channel| channel.0.clone()),
+                    .map(|channel| channel.id.clone()),
             })
         })
         .collect();

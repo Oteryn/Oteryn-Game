@@ -8,6 +8,7 @@ fn toolbar_opens_window() -> Result<(), Box<dyn std::error::Error>> {
     for label in [
         "Analysers",
         "Battle",
+        "Change Channel",
         "Chat",
         "Depot",
         "Compendium",
@@ -57,6 +58,14 @@ fn toolbar_opens_window() -> Result<(), Box<dyn std::error::Error>> {
                     .is_some_and(|play| play.link.depot_panel().open)
             ),
             Control::Options => assert!(owner.draft().is_some()),
+            // chsw: the window opens; a session without capability 512 shows why it cannot.
+            Control::ChangeChannel => assert!(
+                owner.dialogs.active()
+                    && owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.channel_switch_panel().open)
+            ),
             Control::Analysers => assert!(
                 owner
                     .play

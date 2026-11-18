@@ -4,6 +4,10 @@ use bevy::{
     ui::InteractionDisabled,
     ui_widgets::{Button, ScrollArea},
 };
+use oteryn_client_ui::social_channel::{
+    channel_text, party_member_on_other_channel, party_member_text,
+};
+use std::borrow::Cow;
 pub(super) fn build(
     commands: &mut Commands,
     skin: &Skins,
@@ -89,10 +93,7 @@ pub(super) fn build(
                 (
                     *handle,
                     row.name.as_str(),
-                    state
-                        .members
-                        .iter()
-                        .any(|m| m.handle == *handle && m.leader),
+                    state.members.iter().find(|m| m.handle == *handle),
                     Some(*row),
                 )
             })
@@ -101,9 +102,9 @@ pub(super) fn build(
                     .members
                     .iter()
                     .filter(|m| m.list.is_empty())
-                    .map(|m| (m.handle, m.name.as_str(), m.leader, None)),
+                    .map(|m| (m.handle, m.name.as_str(), Some(m), None)),
             );
-        for (handle, member_name, leader, combat_row) in entries {
+        for (handle, member_name, member, combat_row) in entries {
             let selected = panel.selected_member == Some(handle);
             let button = commands
                 .spawn((
@@ -134,12 +135,32 @@ pub(super) fn build(
             if pending {
                 commands.entity(button).insert(InteractionDisabled);
             }
-            let name = if let Some(row) = combat_row {
-                combat::row(commands, skin, button, row, portraits.get(&row.entity))
-            } else {
-                label(commands, skin, button, member_name)
+            let caption = match (member.filter(|_| panel.own_channel.is_some()), combat_row) {
+                (Some(member), Some(row)) if !row.summon => Cow::Owned(format!(
+                    "{member_name} — {}",
+                    channel_text(&panel.channel_names, member.channel)
+                )),
+                (Some(member), None) => Cow::Owned(party_member_text(&panel.channel_names, member)),
+                _ => Cow::Borrowed(member_name),
             };
-            if leader {
+            let name = if let Some(row) = combat_row {
+                combat::row(
+                    commands,
+                    skin,
+                    button,
+                    row,
+                    portraits.get(&row.entity),
+                    &caption,
+                )
+            } else {
+                label(commands, skin, button, &caption)
+            };
+            if member.is_some_and(|member| party_member_on_other_channel(panel.own_channel, member))
+            {
+                commands
+                    .entity(name)
+                    .insert(TextColor(Color::srgb_u8(128, 128, 128)));
+            } else if member.is_some_and(|member| member.leader) {
                 commands
                     .entity(name)
                     .insert(TextColor(Color::srgb_u8(248, 219, 56)));

@@ -8,6 +8,9 @@ mod admission_scene_test;
 mod admitted;
 mod authorize;
 mod challenge;
+#[cfg(test)]
+#[path = "native_entry/tests/channel_switch.rs"]
+mod channel_switch_tests;
 mod coin_shop_entry;
 mod config;
 pub(crate) use coin_shop_entry::open as open_coin_shop;
@@ -18,7 +21,7 @@ mod live_bulletin_tests;
 #[path = "native_entry/tests/queue_progress.rs"]
 mod queue_progress_tests;
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 #[cfg(test)]
 mod tests;
 
@@ -93,8 +96,15 @@ pub(crate) async fn enter_observed(
         &config.oauth_client_id,
         config.retry_unit,
     )?;
-    let (ticket, selected_character, selected_channel, character_name, training_requested) =
-        authorize::authorize(&client, config, cancellation.clone()).await?;
+    let authorize::Authorized {
+        ticket,
+        character_id: selected_character,
+        channel_id: selected_channel,
+        character_name,
+        training_requested,
+        channels,
+    } = authorize::authorize(&client, config, cancellation.clone()).await?;
+
     let character_id = parse_uuid_v7(&selected_character)
         .and_then(|bytes| CharacterId::decode(&bytes).ok())
         .ok_or(GameplayEntryError::InvalidConfiguration)?;
@@ -115,6 +125,7 @@ pub(crate) async fn enter_observed(
 
     let mut attempt = NativeAttempt {
         queue: None,
+        channel_full: false,
         progress,
         client,
         ticket,
@@ -124,12 +135,14 @@ pub(crate) async fn enter_observed(
         character_id,
         character_name,
         training_requested,
+        channels,
         config,
     };
     oteryn_client_runtime::connection::enter(&mut attempt, config.retry_unit, cancellation).await
 }
 
 struct NativeAttempt<'a> {
+    channel_full: bool,
     queue: Option<oteryn_session::AdmissionQueue>,
     progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
     client: NativeLoginClient,
@@ -140,12 +153,17 @@ struct NativeAttempt<'a> {
     character_id: CharacterId,
     character_name: String,
     training_requested: bool,
+    channels: Vec<crate::character_selection::ChannelChoice>,
     config: &'a NativeLoginConfig,
 }
 
 impl AdmissionAttempt for NativeAttempt<'_> {
     type Output = AdmittedSession;
     type Error = GameplayEntryError;
+
+    fn terminal_refusal(&self) -> Option<Self::Error> {
+        self.channel_full.then_some(GameplayEntryError::ChannelFull)
+    }
 
     fn queue(&self) -> Option<oteryn_session::AdmissionQueue> {
         self.queue
@@ -190,6 +208,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         .map_err(|refusal| {
             refusal.map(|refusal| {
                 self.queue = refusal.queue;
+                self.channel_full = refusal.channel_full;
                 refusal.code
             })
         })?;
@@ -202,6 +221,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
             traffic,
             world_id: self.grant.world_id.clone(),
             channel_id: self.grant.channel_id.clone(),
+            channels: self.channels.clone(),
         })
     }
 

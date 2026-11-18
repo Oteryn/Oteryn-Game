@@ -68,6 +68,8 @@ pub use events::SessionEvent;
 pub use oteryn_protocol_oteryn::guild_emblem;
 mod gated_command;
 pub use gated_command::world_context;
+/// The in-game Channel switch (capability 512).
+pub use oteryn_protocol_oteryn::channel_switch;
 /// Server-owned highscores query and result codecs.
 pub use oteryn_protocol_oteryn::highscores;
 pub use oteryn_protocol_oteryn::highscores_catalogue;
@@ -281,6 +283,7 @@ use std::io;
 use std::num::NonZeroU32;
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+pub use vip_presence::expire_vip_presence;
 
 /// The ALPN protocol id an adapter must negotiate (or otherwise guarantee) before a session is
 /// admitted over its stream. Re-exported so adapters need no direct `protocol-oteryn` edge.

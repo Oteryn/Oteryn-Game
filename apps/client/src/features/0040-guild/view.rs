@@ -36,8 +36,14 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
             let rows = panel
                 .roster
                 .iter()
-                .map(|member| &member.name)
-                .chain(panel.invitations.iter().map(|invitation| &invitation.name));
+                .map(|member| match member.channel {
+                    Some(_) => oteryn_client_ui::social_channel::guild_member_text(
+                        &panel.channel_names,
+                        member,
+                    ),
+                    None => member.name.clone(),
+                })
+                .chain(panel.invitations.iter().map(|invitation| invitation.name.clone()));
             for (index, name) in rows.enumerate() {
                 text.push_str(&format!("{}. {name}\n", index + 1));
             }
