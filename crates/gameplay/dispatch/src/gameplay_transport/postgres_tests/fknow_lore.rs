@@ -468,11 +468,43 @@ async fn exercise_astral_victory(
     let glyph_key = "oteryn:creature.an_astral_glyph";
     let (shield, shield_cell) = creature(shield_key).await?;
     let (glyph, glyph_cell) = creature(glyph_key).await?;
+    let source_key = "oteryn:creature.the_astral_source";
+    let distorted_key = "oteryn:creature.the_distorted_astral_source";
+    let (source, source_cell) = creature(source_key).await?;
+    let (distorted, parked_cell) = creature(distorted_key).await?;
+    assert_ne!(parked_cell, source_cell);
+    {
+        let now = owner.owner_now().get() / 1000;
+        let mut runtime = owner.runtime.lock().await;
+        let atom = runtime.creature_spell_target_atom(source).map_err(debug)?;
+        let health = runtime.companion_snapshot(source).map_err(debug)?.health;
+        runtime
+            .borrow_exact_actor_commit_at(now)
+            .commit_damage_for_bound_attacker(
+                source,
+                actor,
+                CommandRef::new(session, CommandId::new(201).map_err(debug)?),
+                0,
+                crate::foundation::OwnerDamageCommand {
+                    target: atom.as_bytes(),
+                    occurrence: session.as_bytes(),
+                    binding: b"fknow-astral-source-injury",
+                    damage: health - 1,
+                },
+            )
+            .map_err(debug)?;
+        assert_eq!(runtime.live_creature_health(source), Some(1));
+    }
     owner.tick_lore_keeper().await;
+    assert_eq!(
+        owner.runtime.lock().await.live_creature_health(source),
+        None
+    );
+    assert_eq!(creature(distorted_key).await?, (distorted, source_cell));
     assert_eq!(creature(shield_key).await?, (shield, glyph_cell));
     assert_eq!(creature(glyph_key).await?, (glyph, shield_cell));
-    kill(glyph, 201).await?;
+    kill(glyph, 202).await?;
     let (boss, boss_cell) = creature("oteryn:creature.the_last_lore_keeper").await?;
     assert_eq!(boss_cell, shield_cell);
-    kill(boss, 202).await
+    kill(boss, 203).await
 }
