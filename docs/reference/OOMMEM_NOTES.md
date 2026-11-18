@@ -57,6 +57,14 @@ mounts and the identical 48 direct archive inputs by size. The fresh verbose com
 confirmed line tables and an active incremental cache. Neither nightly nor
 `cargo llvm-lines` is installed in the retained environment.
 
+The independent pinned-base run uses
+`CARGO_BUILD_JOBS=2 cargo test --locked -p oteryn-gameplay-dispatch --lib --no-run --timings -v`
+with a detached checkout and the retained target cache. The dispatch test
+rustc started at about 1,622.75 s into the build after dependency
+compilation. The generated mount contained 735 roots. That invocation
+retained line tables and incremental compilation and accepted 48 direct
+rlibs totaling 1,163,943,208 bytes.
+
 The historical change associated with the first CI symptoms, #3056
 (`e2152d050`), grew the generated mount list from 541 to 730 roots.
 Lexical test attributes in the mounted subtree grew from 1,701 to 2,145,
