@@ -218,18 +218,46 @@ pub(super) async fn exercise_full_party(
         (before_admission + 1_000_000..=after_admission + 1_000_000).contains(&first_poll),
         "Rewar polls for entrants one second after the lever opens"
     );
-    let cooldowns: (i64, i64) = sqlx::query_as(
-        "SELECT count(*), count(DISTINCT admission)
+    let unstaged_character = owner
+        .runtime
+        .lock()
+        .await
+        .bound_attacker_lease(
+            unstaged.runtime_actor.ok_or("unstaged actor")?,
+            unstaged.game_session_id,
+        )
+        .map_err(debug)?
+        .character_id();
+    let cooldowns: (i64, i64, i64) = sqlx::query_as(
+        "SELECT count(*), count(DISTINCT admission),
+                count(*) FILTER (WHERE character_id = encode($2,'hex')::uuid)
          FROM game_character_boss_cooldowns WHERE boss_key = $1",
     )
     .bind("oteryn:creature.king_zelos")
+    .bind(unstaged_character.as_bytes().as_slice())
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(cooldowns, (10, 1), "one durable decision for ten entrants");
+    assert_eq!(
+        cooldowns,
+        (10, 1, 0),
+        "one durable decision for ten entrants"
+    );
     tick_at(owner, before_admission + WINDOW_US - 1).await;
     assert_placement((116, 117, 7)).await?;
     tick_at(owner, after_admission + WINDOW_US).await;
-    assert_placement((103, 100, 7)).await
+    assert_placement((103, 100, 7)).await?;
+    assert!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .encounter_phases
+            .next_due_us()
+            .is_none(),
+        "the timeout retires the room and its remaining phase deadlines"
+    );
+    Ok(())
 }
 
 fn live_actor(runtime: &ChannelRuntimeV1, key: &str) -> TestResult<Option<ExactActorRef>> {
