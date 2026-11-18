@@ -359,6 +359,8 @@ fn scenario_case(
     let lucifuga = name == lucifuga_bait_spawn::NAME;
     use super::super::feaster_solo_rooms;
     let feaster_solo = matches!(name, feaster_solo_rooms::IRGIX | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK);
+    use super::super::haunted_cellar_disguise;
+    let haunted_cellar = name == haunted_cellar_disguise::NAME;
     use super::super::haunted_tomb_roll;
     let haunted_tomb = matches!(name, haunted_tomb_roll::PRIZE | haunted_tomb_roll::MUMMY_CASE);
     use super::super::kroazur_solo_room;
@@ -382,6 +384,8 @@ fn scenario_case(
         feaster_solo_rooms::binding(name)?
     } else if haunted_tomb {
         haunted_tomb_roll::binding()?
+    } else if haunted_cellar {
+        haunted_cellar_disguise::binding()?
     } else if knightwatch {
         dreamers_knightwatch_toll::binding()?
     } else if stone_offerings {
@@ -704,6 +708,8 @@ fn scenario_case(
         feaster_solo_rooms::world(&callback, name)?
     } else if haunted_tomb {
         haunted_tomb_roll::world(&callback)?
+    } else if haunted_cellar {
+        haunted_cellar_disguise::world(&callback)?
     } else if knightwatch {
         dreamers_knightwatch_toll::world(&callback)?
     } else if stone_offerings {
@@ -1765,6 +1771,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if haunted_cellar {
+            owner.quest_catalogue = Some(haunted_cellar_disguise::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback,
+            )?);
+        }
         if haunted_tomb {
             owner.quest_catalogue = Some(haunted_tomb_roll::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback,
@@ -3015,6 +3026,8 @@ fn scenario_case(
             Box::pin(feaster_solo_rooms::exercise(&mut owner, &mut admitted, &h, fence, name)).await?;
         } else if haunted_tomb {
             Box::pin(haunted_tomb_roll::exercise(&owner, &mut admitted, &h, fence, &callback, name == haunted_tomb_roll::PRIZE)).await?;
+        } else if haunted_cellar {
+            Box::pin(haunted_cellar_disguise::exercise(&owner, &mut admitted, &h, fence)).await?;
         } else if knightwatch {
             Box::pin(dreamers_knightwatch_toll::exercise(&owner, &mut admitted, &h, fence, &callback)).await?;
         } else if stone_offerings {
