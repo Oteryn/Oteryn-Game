@@ -864,7 +864,7 @@ fn extend_from_source(
         }
         if let Some(bonus) = &program.document.bank_deposit_bonus
             && transitions
-                .insert(bonus.key.clone(), bonus.transition(quest))
+                .insert(bonus.key.clone(), bonus.transition(&program.document.quest))
                 .is_some()
         {
             return Err("duplicate bank deposit bonus".into());
