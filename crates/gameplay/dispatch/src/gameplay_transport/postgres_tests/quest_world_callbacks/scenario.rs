@@ -2942,6 +2942,7 @@ fn scenario_case(
                 &mut owner,
                 &mut admitted,
                 &h,
+                &authority,
             ))
             .await?;
         } else if name == "qfather-corpses" {
