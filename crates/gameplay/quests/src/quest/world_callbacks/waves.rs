@@ -108,6 +108,19 @@ impl WaveCredit {
         }
     }
 
+    /// Admission and the survivor writer must agree before players enter the room.
+    pub fn matches_transition(&self, quest: &str, transition: &QuestTransition) -> bool {
+        if let Some(authored) = self.authored_transition(quest) {
+            return &authored == transition;
+        }
+        self.key() == transition.key
+            && transition.quest == quest
+            && !transition.completes
+            && transition.experience.is_none()
+            && transition.world_change.is_none()
+            && crate::quest::admission_binding::validate(transition, false).is_ok()
+    }
+
     fn valid(&self) -> bool {
         let key = self.key();
         key.starts_with(CREDIT_PREFIX)

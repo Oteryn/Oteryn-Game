@@ -293,15 +293,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(wave) = wave {
             if [false, true]
                 .into_iter()
-                .filter_map(|victory| wave.credit_transition(victory))
+                .filter_map(|victory| wave.credit(victory))
                 .any(|credit| {
                     self.quest_catalogue
                         .as_ref()
-                        .and_then(|catalogue| catalogue.transition(credit))
+                        .and_then(|catalogue| catalogue.transition(credit.key()))
                         .is_none_or(|transition| {
-                            transition.quest != callback.quest
-                                || transition.completes
-                                || transition.experience.is_some()
+                            !credit.matches_transition(&callback.quest, transition)
                         })
                 })
             {

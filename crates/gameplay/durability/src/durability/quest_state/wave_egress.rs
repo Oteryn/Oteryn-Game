@@ -88,19 +88,9 @@ impl WaveEgress {
             };
             callback.key == self.callback
                 && credit.key() == request.transition_key
-                && catalogue.transition(credit.key()).is_some_and(|transition| {
-                    if let Some(authored) = credit.authored_transition(&callback.quest) {
-                        return &authored == transition;
-                    }
-                    transition.quest == callback.quest
-                        && !transition.completes
-                        && transition.experience.is_none()
-                        && transition.world_change.is_none()
-                        && oteryn_gameplay_quests::quest::admission_binding::validate(
-                            transition, false,
-                        )
-                        .is_ok()
-                })
+                && catalogue
+                    .transition(credit.key())
+                    .is_some_and(|transition| credit.matches_transition(&callback.quest, transition))
         })
     }
 

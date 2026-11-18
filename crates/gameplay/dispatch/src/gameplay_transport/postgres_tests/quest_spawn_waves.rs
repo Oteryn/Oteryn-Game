@@ -76,6 +76,16 @@ fn quest_use_admits_two_staged_players_then_ejects_and_credits_both_survivors() 
 }
 
 #[test]
+fn quest_use_refuses_wave_credit_bound_to_a_world_occurrence_before_relocation() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-invalid-wave-credit", move || {
+        scenario(admin, Case::WorldCredit)
+    })
+}
+
+#[test]
 fn quest_step_admits_guarded_survival_trial_and_credits_at_deadline() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -134,6 +144,7 @@ enum Case {
     Stations,
     EarthStep,
     Retaliation,
+    WorldCredit,
 }
 
 fn scenario(admin: String, case: Case) -> TestResult {
@@ -179,7 +190,11 @@ fn scenario(admin: String, case: Case) -> TestResult {
             wave_run: Some(WaveRun {
                 timeout_ms: 10_000,
                 timeout_exit: EXIT,
-                timeout_credit: (!matches!(case, Case::Victory)).then(credit),
+                timeout_credit: match case {
+                    Case::Victory => None,
+                    Case::WorldCredit => Some(WaveCredit::Reference(CREDIT.into())),
+                    _ => Some(credit()),
+                },
                 // Crystal the_new_frontier/creaturescripts_tirecz_kill.lua:19-34.
                 victory: matches!(case, Case::Victory).then(|| WaveVictory {
                     creature: CAVE_RAT.into(),
@@ -336,8 +351,8 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        if matches!(case, Case::Waves | Case::Victory | Case::SurvivalStep | Case::Stations) {
-            owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback)?));
+        if matches!(case, Case::Waves | Case::Victory | Case::SurvivalStep | Case::Stations | Case::WorldCredit) {
+            owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback, matches!(case, Case::WorldCredit))?));
         } else if matches!(case, Case::Retaliation) {
             owner.quest_catalogue = Some(std::sync::Arc::new(retaliation_catalogue(&callback)?));
         } else if matches!(case, Case::EarthStep) {
@@ -396,6 +411,13 @@ fn scenario(admin: String, case: Case) -> TestResult {
             Case::Periodic => periodic_scenario(&owner).await?,
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
             Case::Retaliation => retaliation_scenario(&owner, &mut admitted, deps.actor).await?,
+            Case::WorldCredit => {
+                let peer = stage_peer(&h, &owner, &admitted).await?;
+                let peer_actor = peer.runtime_actor.ok_or("staged peer")?;
+                assert_eq!(use_room(&owner, &mut admitted, 1).await?, UseDisposition::Rejected);
+                assert_eq!(position(&owner, deps.actor).await?, local(START));
+                assert_eq!(position(&owner, peer_actor).await?, local(PEER_START));
+            }
         }
         eprintln!(
             "POSTGRES_CASE_COMPLETED quest_spawn case={case:?} duration={:?}",
@@ -410,14 +432,28 @@ fn scenario(admin: String, case: Case) -> TestResult {
 
 fn credit_catalogue(
     callback: &Callback,
+    world_credit: bool,
 ) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
-    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
-    let base = QuestStateCatalogue::new(
-        "content-1",
-        Vec::new(),
-        Vec::new(),
-    )
-    .map_err(debug)?;
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+        QuestTransition, authored_bindings::Bindings,
+    };
+    // A World-occurrence transition is valid in the quest catalogue, but this
+    // scheduler's survivor receipt cannot settle that type of transition.
+    let (tracks, transitions) = if world_credit {
+        (vec![QuestTrack {
+            key: TRACK.into(), quest: callback.quest.clone(), initial: 0, min: 0, max: 1,
+        }], vec![QuestTransition {
+            key: CREDIT.into(), quest: callback.quest.clone(), completes: false,
+            experience: None, world_change: Some("hive_born".into()),
+            effects: vec![QuestEffect {
+                track: TRACK.into(), from: QuestComparison::Eq(0), effect: QuestEffectKind::Set(1),
+            }],
+        }])
+    } else {
+        (Vec::new(), Vec::new())
+    };
+    let base = QuestStateCatalogue::new("content-1", tracks, transitions).map_err(debug)?;
     let kind = match callback.trigger {
         Trigger::StepIn => "step_in",
         _ => "map_use",
