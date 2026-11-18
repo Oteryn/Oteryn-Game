@@ -35,6 +35,11 @@ const EXIT: Position = Position {
     y: 32004,
     floor: -11,
 };
+const BYSTANDER: Position = Position {
+    x: 33052,
+    y: 32103,
+    floor: -12,
+};
 const AFTER_MS: u32 = 5 * 60 * 1_000;
 
 #[test]
@@ -69,6 +74,7 @@ fn solo_quest_room_ejects_the_admitted_player_after_the_last_monster_dies() -> T
 pub(super) struct BossRoom {
     pub minimum_level: u32,
     pub already_fought: bool,
+    pub with_occupant: bool,
     pub allowed: bool,
     pub source: &'static str,
 }
@@ -133,7 +139,7 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
     }))?;
     let catalogue =
         bindings.attach(&QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(debug)?)?;
-    let world = world_with_cells(&callback, ENTRY, &[EXIT])?;
+    let world = world_with_cells(&callback, ENTRY, &[EXIT, BYSTANDER])?;
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -361,7 +367,75 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
             .bind(id(41).as_slice()).bind(time_before+33_000_000).bind(id(82).as_slice()).execute(&h.pool).await?;
     }
     let previous_cooldown = cooldown().await?;
-    let enter_at = 1_000_000;
+    let mut eventual_bystander = None;
+    if boss.is_some_and(|room| room.with_occupant) {
+        let second_session = crate::foundation::GameSessionId::decode(&id(97)).map_err(debug)?;
+        let other = {
+            let mut runtime = deps.runtime.lock().await;
+            let reserve = runtime
+                .reserve_fresh_session(second_session)
+                .map_err(debug)?;
+            let other = runtime.commit_fresh_session(reserve).map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(other, local(ROOM))
+                .map_err(debug)?;
+            other
+        };
+        owner
+            .states
+            .test_owner_time
+            .store(1_000_001, Ordering::Relaxed);
+        let reply = wire(
+            &owner,
+            &mut admitted,
+            1,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::East),
+        )
+        .await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
+            StepDisposition::Moved
+        );
+        assert_eq!(cooldown().await?, previous_cooldown);
+        assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
+        let mut runtime = deps.runtime.lock().await;
+        assert_eq!(
+            runtime
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position(),
+            start
+        );
+        assert_eq!(
+            runtime
+                .read_actor_position(other)
+                .map_err(debug)?
+                .position(),
+            local(ROOM)
+        );
+        assert!(
+            runtime
+                .current_live_creature_census()
+                .map_err(debug)?
+                .is_empty()
+        );
+        runtime.remove_test_actor(other).map_err(debug)?;
+        let reserve = runtime
+            .reserve_fresh_session(second_session)
+            .map_err(debug)?;
+        let other = runtime.commit_fresh_session(reserve).map_err(debug)?;
+        let bystander = local(BYSTANDER);
+        runtime
+            .initialize_pinned_test_position(other, bystander)
+            .map_err(debug)?;
+        eventual_bystander = Some((other, bystander));
+    }
+    let (command, enter_at) = if eventual_bystander.is_some() {
+        (2, 5_000_000)
+    } else {
+        (1, 1_000_000)
+    };
     owner
         .states
         .test_owner_time
@@ -369,7 +443,7 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
     let reply = wire(
         &owner,
         &mut admitted,
-        1,
+        command,
         COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
         oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::East),
     )
@@ -460,6 +534,16 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
         local(EXIT)
     );
     assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
+    if let Some((other, bystander)) = eventual_bystander {
+        let runtime = deps.runtime.lock().await;
+        assert_eq!(
+            runtime
+                .read_actor_position(other)
+                .map_err(debug)?
+                .position(),
+            bystander
+        );
+    }
     if boss.is_none() {
         assert_eq!(read_progress().await?, 10);
     }

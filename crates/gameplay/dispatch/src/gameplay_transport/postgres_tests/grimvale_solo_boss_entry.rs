@@ -15,6 +15,7 @@ fn curse_spreads_step_records_the_boss_cooldown_and_refuses_early_reentry() -> T
         BossRoom {
             minimum_level: 1,
             already_fought: false,
+            with_occupant: false,
             allowed: true,
             source,
         },
@@ -25,6 +26,7 @@ fn curse_spreads_step_records_the_boss_cooldown_and_refuses_early_reentry() -> T
         BossRoom {
             minimum_level: 1,
             already_fought: true,
+            with_occupant: false,
             allowed: false,
             source,
         },
@@ -44,7 +46,27 @@ fn ancient_feud_step_refuses_the_level_gate_without_writing_a_cooldown() -> Test
         BossRoom {
             minimum_level: 250,
             already_fought: false,
+            with_occupant: false,
             allowed: false,
+            source,
+        },
+    )
+}
+
+#[test]
+fn occupied_boss_room_refuses_entry_and_ejects_only_the_later_admitted_player() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    let source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:102-134";
+    case(
+        admin,
+        "curse_spreads_room_occupied",
+        BossRoom {
+            minimum_level: 1,
+            already_fought: false,
+            with_occupant: true,
+            allowed: true,
             source,
         },
     )
