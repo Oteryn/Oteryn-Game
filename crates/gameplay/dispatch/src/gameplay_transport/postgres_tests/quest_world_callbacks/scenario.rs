@@ -1556,6 +1556,8 @@ fn scenario_case(
                 4
             } else if callback.effects.encounter.is_some() {
                 16
+            } else if monster_tile {
+                3 // The player, the retained plant death, and the dragon.
             } else {
                 2
             },
