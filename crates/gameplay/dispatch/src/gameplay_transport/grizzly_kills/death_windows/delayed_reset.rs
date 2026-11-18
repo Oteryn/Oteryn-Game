@@ -217,13 +217,16 @@ fn live(runtime: &ChannelRuntimeV1, hit: &SourcePlayerDamageShare) -> bool {
 fn project(map: &BundleMap, rule: &DeathMapReset) -> bool {
     // As in the donor, absent or already inactive crystals require no write.
     // The remaining active objects share one version-checked map projection.
-    let mut changes = rule.positions.iter().filter_map(|position| {
+    let mut changes = Vec::with_capacity(rule.positions.len());
+    for position in &rule.positions {
         let pos = TilePos {
             x: position.x,
             y: position.y,
             floor: position.floor,
         };
-        let base = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
+        let Some(base) = map.overlay.base().tile(pos.x, pos.y, pos.floor) else {
+            continue;
+        };
         let mut candidates = base
             .ids()
             .iter()
@@ -233,19 +236,28 @@ fn project(map: &BundleMap, rule: &DeathMapReset) -> bool {
             .filter_map(|(ordinal, (id, _))| {
                 let ordinal = u8::try_from(ordinal).ok()?;
                 let key = placement_key(pos, ordinal)?;
+                let revision = map.facts.object_revision(key);
                 let current = map.facts.base_entry(pos, ordinal, *id)?;
                 (!map.facts.base_hidden(key)
                     && !current.pickupable
                     && current.appearance_id == rule.from)
-                    .then_some(key)
+                    .then_some((key, revision))
             });
-        let key = candidates.next()?;
+        let Some((key, revision)) = candidates.next() else {
+            continue;
+        };
         if candidates.next().is_some() {
-            return None;
+            return false;
         }
-        let after = map.facts.quest_callback_replacement(key, rule.to)?;
-        (!after.pickupable).then(|| (key, map.facts.object_revision(key), after))
-    });
+        let Some(after) = map.facts.quest_callback_replacement(key, rule.to) else {
+            return false;
+        };
+        if after.pickupable {
+            return false;
+        }
+        changes.push((key, revision, after));
+    }
+    let mut changes = changes.into_iter();
     let Some((key, revision, after)) = changes.next() else {
         return true;
     };
