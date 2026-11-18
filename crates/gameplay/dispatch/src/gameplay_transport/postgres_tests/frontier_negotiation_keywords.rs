@@ -12,7 +12,9 @@ const QUEST: &str = "oteryn:quest.the_new_frontier_quest";
 const ONGULF: &str = "oteryn:npc.ongulf";
 const SOURCE: &str =
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:181-195";
-const STAGE: &str = "oteryn:quest-progress/frontier-fixture/questline";
+const STAGE: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline";
+const MISSION: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05_1";
+const NEGOTIATORS: [&str; 6] = ["king_tibianus", "leeland", "angus", "wyrdin", "telas", "humgolf"];
 const KEYWORDS: [(&str, i16); 5] = [
     ("leeland", 2),
     ("angus", 2),
@@ -46,10 +48,15 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let keywords = KEYWORDS.map(|(name, max)| {
         (
-            format!("oteryn:quest-progress/frontier-fixture/{name}"),
+            format!("oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/{name}_keyword"),
             max,
         )
     });
+    let mission_tracks = std::iter::once(MISSION.to_owned())
+        .chain(NEGOTIATORS.map(|name| {
+            format!("oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/{name}")
+        }))
+        .collect::<Vec<_>>();
     let mut tracks = vec![QuestTrack {
         key: STAGE.into(),
         quest: QUEST.into(),
@@ -64,15 +71,28 @@ pub(super) async fn exercise(
         min: 0,
         max: i64::from(*max),
     }));
+    tracks.extend(mission_tracks.iter().map(|key| QuestTrack {
+        key: key.clone(),
+        quest: QUEST.into(),
+        initial: 0,
+        min: 0,
+        max: 3,
+    }));
     let definitions: Vec<_> = tracks.iter().map(|t| json!({
         "key":t.key,"quest":t.quest,"initial":t.initial,"min":t.min,"max":t.max,"sources":[SOURCE],
     })).collect();
     let mut effects = vec![json!({"kind":"set","track":STAGE,"value":14})];
+    effects.extend(
+        mission_tracks
+            .iter()
+            .map(|track| json!({"kind":"set","track":track,"value":1})),
+    );
     effects.extend(keywords.iter().map(|(track, maximum)| {
         json!({
             "kind":"set_random","track":track,"minimum":1,"maximum":maximum,
         })
     }));
+    effects.push(json!({"kind":"set_topic","value":0}));
     let program = json!({"schema":1,"quest":QUEST,"tracks":definitions,"rules":[{
         "key":"oteryn:quest-npc/frontier-fixture/negotiate","quest":QUEST,"npc":ONGULF,
         "trigger":"say","keywords":["mission"],"guards":[{"kind":"storage","track":STAGE,"op":"eq","value":13}],
@@ -127,6 +147,9 @@ pub(super) async fn exercise(
         .await
         .map_err(debug)?;
     assert_eq!(state.tracks().get(STAGE).copied(), Some(14));
+    for track in mission_tracks {
+        assert_eq!(state.tracks().get(&track).copied(), Some(1), "{track}");
+    }
     for (key, maximum) in keywords {
         let track = state.tracks().get(&key).ok_or("unassigned keyword")?;
         assert!((1..=i64::from(maximum)).contains(track));
