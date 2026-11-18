@@ -1020,9 +1020,9 @@ async fn exercise_rabbit(
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     actor: crate::foundation::ExactActorRef,
 ) -> TestResult {
-    use oteryn_protocol_oteryn::chat::ChatLine;
     use crate::content::{ProjectV2DefinitionRef, ProjectV2Family};
     use oteryn_gameplay_items::item_craft::output_definition;
+    use oteryn_protocol_oteryn::chat::ChatLine;
 
     for id in [12171, 12172, 12173] {
         let key = format!("oteryn:item.tibia.i{id}");
