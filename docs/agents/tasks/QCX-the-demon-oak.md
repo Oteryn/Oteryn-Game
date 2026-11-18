@@ -37,3 +37,28 @@ additional cross-check indicated below.
 - BLOCKER Demon Oak damage self-damage on each hit and periodic movement-driven area damage data-global/scripts/quests/demon_oak/actions_demon_oak.lua:125 and data-global/scripts/quests/demon_oak/movements_area_damage.lua:3-16
 - OPEN-FACTS: Global grove occupancy rule, exact Global Avar Tar eligibility before claiming a chest, historical pre-9.5 reward exchange eligibility, and random Bonebeast probability. The World coordinates and four chest-to-item assignments are established by the donor startup tables and corroborated by the projected placements.
 - PARTIAL: entry and re-entry, Oldrak's visit gating and dialogue sequence, weak-point combat, area damage, Herbicide on successful exit, Avar Tar timing and inactive recipe parity.
+
+## Verification
+
+PG via shard (pgsplit build files applied on `32dfe58e60dd35ac42cbaf22f9d67ffbe209b9bc`).
+The baseline run used the prior embedded callbacks and the same corrected PostgreSQL
+fixture. Each case seeded defeat and Oldrak's report through the existing durable
+quest writer, then called the production world-object USE dispatcher. All five
+baseline cases returned `NothingToUse` at the expected acceptance assertion.
+All five candidate cases passed. Each chest case checked the exact item and
+quantity and verified that a different reachable chest refused after the claim.
+
+| Case | Baseline | Candidate |
+| --- | ---: | ---: |
+| Gravestone | 22.35 s | 15.57 s |
+| Demon Legs | 17.78 s | 17.64 s |
+| Rainbow Shield | 16.58 s | 13.99 s |
+| Thorn Spitter | 20.29 s | 15.19 s |
+| Spellbook of Ancient Arcana | 25.92 s | 25.17 s |
+
+The same filter without `OTERYN_TEST_POSTGRES_ADMIN_URL` returned five successful
+route-less cases in 0.00 s. The PostgreSQL evidence is the timed run above.
+The World pin generator reproduced the pinned bundle digest, and `pin-check`
+verified one World. The installed CLI required an explicit output directory.
+Quest authoring checks passed all 44 commands, including 27 Python tests.
+`cargo fmt --all -- --check` passed.
