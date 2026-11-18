@@ -47,3 +47,5 @@ BLOCKER Artful Sabotage fenced ready-appearance check on the live native callbac
 - PG via shard (pgsplit build files applied on `fa7880b2e965f62812e994f6d11bbf3bade341b9`). The baseline run used the base quest-specific planner and the new case. Artful Sabotage failed in 56.74 s at the second use after reset, with `Rejected` in place of `Committed`.
 - Quest authoring passed all 44 checks, including 269/269 schema cases.
 - The attempted rule failed in 49.89 s by accepting a use while the seal was still painted. The final candidate restores the credit and callback rules from the base. The retained PostgreSQL case exercises the current reset, custody, and duplicate-credit protections. It is a baseline safety case, and compatibility remains open.
+- PG via shard (pgsplit build files applied on `4dc8f67c1770304aa6ddc07baa79a80cfcc6d8d0`). The retained Artful Sabotage safety case passed (1/1, 38.54 s). With `OTERYN_TEST_POSTGRES_ADMIN_URL` unset the same case returned `Ok(())` (1/1, 0.00 s).
+- World pin-check passed with its required output-directory argument. Formatting and dispatch library Clippy with `-D warnings` passed.
