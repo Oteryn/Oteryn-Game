@@ -126,40 +126,52 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
 
 #[test]
 fn btest2_arena_step_requires_barbarian_completion() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
+    let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario_route(true, Some(NativeScenario::CompletionGate)).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "arena completion gate worker panicked")??;
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    eprintln!("BTEST2 REAL POSTGRES arena completion gate duration={:?}", started.elapsed());
     Ok(())
 }
 
 #[test]
 fn btest2_buddel_exchanges_ring_for_confirmed_destination() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
+    let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario_route(true, Some(NativeScenario::Buddel)).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Buddel worker panicked")??;
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    eprintln!("BTEST2 REAL POSTGRES Buddel duration={:?}", started.elapsed());
     Ok(())
 }
 
 #[test]
 fn btest2_iskan_reports_sniffler_and_unlocks_passage() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
+    let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario_route(true, Some(NativeScenario::Iskan)).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Iskan worker panicked")??;
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    eprintln!("BTEST2 REAL POSTGRES Iskan duration={:?}", started.elapsed());
     Ok(())
 }
 
