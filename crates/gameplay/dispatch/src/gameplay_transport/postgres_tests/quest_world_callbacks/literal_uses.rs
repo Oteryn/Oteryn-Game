@@ -367,6 +367,9 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             ));
             drop(slot);
             owner.quest_catalogue = Some(catalogue);
+            if writes_progress {
+                owner.admit_quest_session(&admitted).await;
+            }
         }
         let mut peer = if chest {
             let (_, peer) = super::super::grizzly_boss::vacancy::second_player(&owner, &deps, &h, origin).await?;
@@ -503,6 +506,16 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                 .fetch_one(&h.pool)
                 .await?;
                 assert_eq!(platinum, 50);
+                let peer_fence = peer.as_ref().and_then(|peer| peer.item_fence)
+                    .ok_or("second player's item fence")?;
+                let peer_claims: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND transition_key=$2",
+                )
+                .bind(peer_fence.character_id.as_bytes().as_slice())
+                .bind(&callback.key)
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(peer_claims, 0, "the unentitled peer cannot claim the chest");
                 let second_claim = wire(
                     &owner, &mut admitted, 2, 2,
                     oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
@@ -540,7 +553,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             assert_eq!(receipts, receipts_before);
         }
         eprintln!(
-            "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
+            "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} writes_progress={writes_progress} duration={:?}",
             callback.key,
             started.elapsed()
         );
