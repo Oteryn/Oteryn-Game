@@ -3,7 +3,7 @@
 Quest `oteryn:quest.the_thieves_guild_quest`. Base `871c1dec7d9963420d455210e4cddc0c9df80d26`.
 
 - Global facts from the 2026-11-17 capture in `qcx-facts/the-thieves-guild.md`. [Quest, curid 25436 and oldid 1090720](https://tibia.fandom.com/?curid=25436&oldid=1090720) · [Spoiler, curid 25437 and oldid 1086330](https://tibia.fandom.com/?curid=25437&oldid=1086330)
-- Donor evidence uses Crystal `201189f871d23597b82caf88fd611454a2ddefb8`. Paths below are relative to that tree. [Crystal source tree](https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global)
+- The local reference evidence identifies the donor paths. The exact Lua files were read at Crystal `201189f871d23597b82caf88fd611454a2ddefb8`. Paths below are relative to that tree. [Crystal source tree](https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global)
 
 ## Comparison
 
@@ -49,11 +49,20 @@ Reward placement correction only. Remaining work includes native enrollment, mis
 
 PG via shard (pgsplit build files applied on `afbdedc91` with the finalized regression in the working tree). All six cases reached dispatch on the original placements. Each returned `Accepted / NothingToUse` where the regression expected `Accepted / Committed`.
 
-| PostgreSQL case | Original placements |
-| --- | ---: |
-| Assassin Dagger | 21.15 s |
-| Compromising Letter | 10.23 s |
-| Modified Crossbow | 9.81 s |
-| Spellbook of Warding | 9.52 s |
-| Stolen Golden Goblet | 9.15 s |
-| Theatre Script | 9.64 s |
+PG via shard (pgsplit build files applied on `02a50820119fab249631e4266122d007c449455f`). The requested filtered Cargo run passed all six cases in 70.02 s. The tests exercise the existing claim owner over wire USE, with the coordinates, appearance IDs and UIDs from the original map entries projected into reduced approach geometry.
+
+| PostgreSQL case | Original placements | Restored placements |
+| --- | ---: | ---: |
+| Assassin Dagger | 21.15 s | 14.39 s |
+| Compromising Letter | 10.23 s | 11.13 s |
+| Modified Crossbow | 9.81 s | 11.18 s |
+| Spellbook of Warding | 9.52 s | 12.69 s |
+| Stolen Golden Goblet | 9.15 s | 9.62 s |
+| Theatre Script | 9.64 s | 11.00 s |
+
+- Quest authoring `run_checks.py --part checks` passed all 44 subcommands.
+- The chest generator's `--apply --check` passed with 65 retained startup attributes. A decoded map comparison isolated the six UID changes.
+- World `pin-check . /tmp/qcx78-pin-check` passed for `18b7c11fab1338ec1d500fce56a8da7b804ab82f08fd7231f86414e14c7f5a0a`. This version of the CLI requires an output directory.
+- `cargo fmt --all -- --check` passed.
+- The same filter with `OTERYN_TEST_POSTGRES_ADMIN_URL` unset returned Ok for all six cases in 0.00 s. These early exits are separate from the routed PostgreSQL evidence above.
+- Dispatch `cargo clippy --locked -p oteryn-gameplay-dispatch --all-features --lib -- -D warnings` passed.
