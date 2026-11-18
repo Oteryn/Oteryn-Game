@@ -1,3 +1,2 @@
-// Keep the module at item scope so its ordinary unit tests are discoverable.
 #[path = "full_row_w15c.rs"]
-mod full_row_w15c;
+pub(crate) mod full_row_w15c;
