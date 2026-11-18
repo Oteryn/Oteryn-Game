@@ -54,12 +54,15 @@ mod arena_pillars;
 pub use arena_pillars::ArenaPillarProjection;
 
 #[derive(Clone, Debug)]
-struct MovementDecay {
-    revision: u64,
-    restore: EntryFacts,
-    /// Remote resets restore visibility and the previous collision override too.
-    overlay: Option<(bool, Option<bool>)>,
-    retained_piece: Option<(TilePos, view::ComposedEntry)>,
+enum MovementDecay {
+    HoldSource,
+    Restore {
+        revision: u64,
+        restore: EntryFacts,
+        /// Remote resets restore visibility and the previous collision override too.
+        overlay: Option<(bool, Option<bool>)>,
+        retained_piece: Option<(TilePos, view::ComposedEntry)>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -104,6 +107,7 @@ pub enum QuestCallbackProjection {
         entries: Vec<QuestTimedPassage>,
         source_reset: Option<(u64, EntryFacts)>,
         retain_replacements: bool,
+        hold_source_until_due: bool,
     },
     /// Each read revision, including cells which do not change, fences the batch.
     ReadsetTransforms {
@@ -244,7 +248,7 @@ impl CallbackStates {
                 self.remove_portals(owner);
                 self.movement_decays.insert(
                     (*due, owner),
-                    MovementDecay {
+                    MovementDecay::Restore {
                         revision,
                         restore: *restore,
                         overlay: None,
@@ -280,7 +284,7 @@ impl CallbackStates {
                 self.changed.insert(*key, (revision, *after));
                 self.movement_decays.insert(
                     (*due, *key),
-                    MovementDecay {
+                    MovementDecay::Restore {
                         revision,
                         restore: *restore,
                         overlay: None,
@@ -307,7 +311,7 @@ impl CallbackStates {
                 self.changed.insert(*key, (revision, *after));
                 self.movement_decays.insert(
                     (*due, *key),
-                    MovementDecay {
+                    MovementDecay::Restore {
                         revision,
                         restore: *restore,
                         overlay: None,
@@ -320,6 +324,7 @@ impl CallbackStates {
                 entries,
                 source_reset,
                 retain_replacements,
+                hold_source_until_due,
             } => {
                 if close
                     || !self.project_timed_passages(
@@ -328,6 +333,7 @@ impl CallbackStates {
                         entries,
                         *source_reset,
                         *retain_replacements,
+                        *hold_source_until_due,
                     )
                 {
                     return false;
@@ -351,7 +357,7 @@ impl CallbackStates {
                     };
                     self.movement_decays.insert(
                         (*due, owner),
-                        MovementDecay {
+                        MovementDecay::Restore {
                             revision,
                             restore: *restore,
                             overlay: None,
@@ -376,7 +382,7 @@ impl CallbackStates {
                 };
                 self.movement_decays.insert(
                     (*due, owner),
-                    MovementDecay {
+                    MovementDecay::Restore {
                         revision,
                         restore: *restore,
                         overlay: None,
@@ -834,7 +840,7 @@ impl BundleFacts {
         states.changed.insert(key, (revision, after));
         states.movement_decays.insert(
             (due, key),
-            MovementDecay {
+            MovementDecay::Restore {
                 revision,
                 restore,
                 overlay: None,
@@ -854,6 +860,14 @@ impl BundleFacts {
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
             .min()
+    }
+
+    pub fn quest_passage_window_active(&self, owner: u64) -> bool {
+        self.callbacks.lock().is_ok_and(|states| {
+            states.movement_decays.iter().any(|((_, key), decay)| {
+                *key == owner && matches!(decay, MovementDecay::HoldSource)
+            })
+        })
     }
 
     /// The current Channel owner drains this even while no player is walking.
@@ -885,21 +899,30 @@ impl BundleFacts {
                 continue;
             };
             let key = at.1;
+            let MovementDecay::Restore {
+                revision: expected,
+                restore,
+                overlay,
+                retained_piece,
+            } = decay
+            else {
+                continue;
+            };
             if states
                 .changed
                 .get(&key)
-                .is_some_and(|(revision, _)| *revision == decay.revision)
-                && let Some(revision) = decay.revision.checked_add(1)
+                .is_some_and(|(revision, _)| *revision == expected)
+                && let Some(revision) = expected.checked_add(1)
             {
-                states.changed.insert(key, (revision, decay.restore));
-                if let Some((position, piece)) = decay.retained_piece {
+                states.changed.insert(key, (revision, restore));
+                if let Some((position, piece)) = retained_piece {
                     states
                         .movement_items
                         .entry(position)
                         .or_default()
                         .push(piece);
                 }
-                if let Some((hidden, passable)) = decay.overlay {
+                if let Some((hidden, passable)) = overlay {
                     if hidden {
                         states.hidden.insert(key);
                     } else {
@@ -1700,16 +1723,16 @@ impl BundleFacts {
             Some(QuestCallbackProjection::TimedPassages {
                 entries,
                 source_reset,
+                hold_source_until_due,
                 ..
             }) => {
                 // Changed entry, hidden entry and timer, plus the source revision/reset.
                 if !passages.is_empty() || !replacements.is_empty() {
                     return false;
                 }
-                entries
-                    .len()
-                    .saturating_mul(3)
-                    .saturating_add(1 + usize::from(source_reset.is_some()))
+                entries.len().saturating_mul(3).saturating_add(
+                    1 + usize::from(source_reset.is_some() || *hold_source_until_due),
+                )
             }
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)

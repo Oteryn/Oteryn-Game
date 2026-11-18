@@ -13,7 +13,7 @@ const LEVER: Position = Position { x: 33349, y: 31075, floor: -8 };
 const WALL: Position = Position { x: 33355, y: 31068, floor: -9 };
 
 #[test]
-fn shrine_wall_reappears_at_the_passage_deadline_with_the_transformed_piece() -> TestResult {
+fn shrine_lever_flips_while_the_wall_passage_keeps_its_original_deadline() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -27,9 +27,9 @@ pub(super) fn fixture() -> TestResult<Callback> {
         "key":"oteryn:quest-callback/wrath/shrine-wall-recreation",
         "quest":"oteryn:quest.wrath_of_the_emperor_quest","trigger":"use",
         "selector":{"position":LEVER,"appearance":9125},
-        "reversible":false,"offerings":[],"return_on_failure":false,"storage":[],
+        "lever":[9125,9126],"reversible":true,"offerings":[],"return_on_failure":false,"storage":[],
         "passages":[{"position":WALL,"appearance":8348,"replacement":8290,"if_present":true}],
-        "effects":{"passages_reset_after_ms":20000,"retain_replaced_passages":true},
+        "effects":{"passages_reset_after_ms":20000,"retain_replaced_passages":true,"passages_independent_toggle":true},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission01_lights.lua:47-68"]
     });
     Ok(serde_json::from_value(row)?)
@@ -49,16 +49,28 @@ pub(super) async fn exercise(
     };
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&lever.to_be_bytes());
-    let command = admitted.continuity.next_command_id;
-    let use_payload = encode_use_intent(&WorldObjectTarget {
-        placement,
-        expected_revision: 0,
-    }).map_err(debug)?;
-    let reply = super::quest_world_callbacks::wire(owner, admitted, command, 2, use_payload).await?;
-    assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
-    assert_eq!(appearance()?, 8290);
+    let lever_appearance = || -> TestResult<u16> {
+        let raw = *world.base().tile(LEVER.x, LEVER.y, LEVER.floor)
+            .and_then(|tile| tile.ids().get(1)).ok_or("lever tile")?;
+        Ok(world.facts().base_entry(TilePos { x: LEVER.x, y: LEVER.y, floor: LEVER.floor }, 1, raw)
+            .ok_or("lever item")?.appearance_id)
+    };
+    let mut due = None;
+    for (revision, expected) in [(0, 9126), (1, 9125)] {
+        let command = admitted.continuity.next_command_id;
+        let payload = encode_use_intent(&WorldObjectTarget {
+            placement: placement.clone(),
+            expected_revision: revision,
+        }).map_err(debug)?;
+        let reply = super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
+        assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+        assert_eq!(lever_appearance()?, expected);
+        assert_eq!(appearance()?, 8290);
+        let current = world.facts().next_movement_decay_time().ok_or("wall deadline")?;
+        assert_eq!(*due.get_or_insert(current), current);
+    }
     assert!(world.facts().movement_items(wall).is_empty());
-    let due = world.facts().next_movement_decay_time().ok_or("wall deadline")?;
+    let due = due.ok_or("passage window")?;
     assert_eq!(world.facts().expire_movement_items(due - 1), 0);
     owner.clock_origin -= Duration::from_secs(21);
     let shutdown = oteryn_foundation::CancellationToken::new();
@@ -76,6 +88,7 @@ pub(super) async fn exercise(
     );
     expired?;
     assert_eq!(appearance()?, 8348);
+    assert_eq!(lever_appearance()?, 9125);
     let retained = world.facts().movement_items(wall);
     assert_eq!(retained.len(), 1);
     assert_eq!(retained[0].facts.appearance_id, 8290);

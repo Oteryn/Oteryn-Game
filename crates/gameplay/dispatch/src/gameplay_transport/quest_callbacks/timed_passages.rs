@@ -167,7 +167,7 @@ pub(super) fn prepare(
             passable,
         });
     }
-    if entries.is_empty() {
+    if entries.is_empty() && !callback.effects.passages_independent_toggle {
         // Source loops do not create objects whose conditional lookup found nothing.
         return Ok(source_reset
             .map(|(due, restore)| QuestCallbackProjection::TimedTransform { due, restore }));
@@ -177,6 +177,7 @@ pub(super) fn prepare(
         entries,
         source_reset,
         retain_replacements: callback.effects.retain_replaced_passages,
+        hold_source_until_due: callback.effects.passages_independent_toggle,
     };
     if !map
         .facts

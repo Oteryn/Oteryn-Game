@@ -220,6 +220,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
         }
+        // Crystal 201189f8 actions_mission01_lights.lua:20–84: both lever
+        // appearances open the same window. Every USE flips the actual lever.
+        let close = if callback.effects.passages_independent_toggle {
+            if map.facts.quest_passage_window_active(key) {
+                return if map.facts.apply_quest_callback(
+                    key,
+                    expected_revision,
+                    after,
+                    &[],
+                    &[],
+                    false,
+                    None,
+                ) {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::StaleState
+                };
+            }
+            false
+        } else {
+            close
+        };
         if let Some(appearance) = callback.effects.transform {
             let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
                 return UseDisposition::Rejected;

@@ -93,6 +93,9 @@ pub struct CallbackEffects {
     /// Restore remote passage objects independently of the source object.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub passages_reset_after_ms: Option<u32>,
+    /// The lever always flips while its existing passage deadline runs independently.
+    #[serde(default, skip_serializing_if = "super::is_false")]
+    pub passages_independent_toggle: bool,
     /// Restore passage appearances while keeping the transformed pieces in the tile.
     #[serde(default, skip_serializing_if = "super::is_false")]
     pub retain_replaced_passages: bool,
@@ -720,6 +723,27 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.encounter.is_some()
                 || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
         })
+        || (effects.passages_independent_toggle
+            && (!callback.reversible
+                || callback.lever.is_none()
+                || callback.requires_world_admission
+                || callback.has_state()
+                || callback.teleport.is_some()
+                || callback.remote_teleport.is_some()
+                || callback.item_on_target.is_some()
+                || !callback.offerings.is_empty()
+                || !callback.world_requirements.is_empty()
+                || callback.passages.iter().any(|passage| {
+                    !passage.if_present || passage.require_state || passage.replacement.is_none()
+                })
+                || *effects
+                    != CallbackEffectSet::from_shared(CallbackEffects {
+                        passages_reset_after_ms: effects.passages_reset_after_ms,
+                        passages_independent_toggle: true,
+                        retain_replaced_passages: effects.retain_replaced_passages,
+                        ..Default::default()
+                    })
+                || effects.passages_reset_after_ms.is_none()))
         || (effects.retain_replaced_passages
             && (effects.passages_reset_after_ms.is_none()
                 || callback
@@ -730,7 +754,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
                 || callback.trigger != Trigger::Use
-                || callback.reversible
+                || (callback.reversible && !effects.passages_independent_toggle)
                 || callback.passages.is_empty()
                 || callback
                     .passages

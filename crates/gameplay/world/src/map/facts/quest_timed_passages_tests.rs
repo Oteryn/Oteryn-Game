@@ -34,6 +34,7 @@ fn m07_remote_wall_and_lever_restore_on_distinct_source_deadlines() -> Result<()
         }],
         source_reset: Some((8_000_000, lever)),
         retain_replacements: false,
+        hold_source_until_due: false,
     };
     assert!(facts.quest_timed_passages_ready(1, 1, &walls));
     assert_eq!(facts.object_revision(2), 1, "preflight must not publish");
@@ -50,6 +51,7 @@ fn m07_remote_wall_and_lever_restore_on_distinct_source_deadlines() -> Result<()
         }],
         source_reset: None,
         retain_replacements: false,
+        hold_source_until_due: false,
     };
     assert!(facts.apply_quest_callback(4, 1, lever, &[], &[], false, Some(&pagodas)));
     assert!(facts.base_hidden(2));
@@ -94,6 +96,7 @@ fn m07_remote_reset_cannot_overwrite_newer_revision_or_partially_publish() -> Re
         entries: vec![change(2, 1), change(3, 0)],
         source_reset: None,
         retain_replacements: false,
+        hold_source_until_due: false,
     };
     assert!(!facts.quest_timed_passages_ready(1, 1, &stale));
     assert!(!facts.apply_quest_callback(1, 1, lever, &[], &[], false, Some(&stale)));
@@ -105,6 +108,7 @@ fn m07_remote_reset_cannot_overwrite_newer_revision_or_partially_publish() -> Re
         entries: vec![change(2, 1)],
         source_reset: None,
         retain_replacements: false,
+        hold_source_until_due: false,
     };
     assert!(facts.apply_quest_callback(1, 1, lever, &[], &[], false, Some(&valid)));
     assert!(facts.apply_quest_callback(2, 2, entry(1025), &[], &[], false, None));

@@ -19,9 +19,10 @@ impl CallbackStates {
         entries: &[QuestTimedPassage],
         source_reset: Option<(u64, EntryFacts)>,
         retain_replacements: bool,
+        hold_source_until_due: bool,
     ) -> bool {
         let keys: BTreeSet<_> = entries.iter().map(|entry| entry.key).collect();
-        if entries.is_empty()
+        if (entries.is_empty() && !hold_source_until_due)
             || entries.len() > 8
             || keys.len() != entries.len()
             || keys.contains(&owner)
@@ -43,6 +44,19 @@ impl CallbackStates {
         {
             return false;
         }
+        if hold_source_until_due {
+            if source_reset.is_some()
+                || self.movement_decays.iter().any(|((_, key), decay)| {
+                    *key == owner && matches!(decay, MovementDecay::HoldSource)
+                })
+            {
+                return false;
+            }
+            // The existing passage scheduler expires the source's window too.
+            // There is no source transform to undo when the window ends.
+            self.movement_decays
+                .insert((due, owner), MovementDecay::HoldSource);
+        }
         if let Some((source_due, restore)) = source_reset {
             let Some(revision) = self
                 .changed
@@ -54,7 +68,7 @@ impl CallbackStates {
             };
             self.movement_decays.insert(
                 (source_due, owner),
-                MovementDecay {
+                MovementDecay::Restore {
                     revision,
                     restore,
                     overlay: None,
@@ -92,7 +106,7 @@ impl CallbackStates {
             };
             self.movement_decays.insert(
                 (due, entry.key),
-                MovementDecay {
+                MovementDecay::Restore {
                     revision,
                     restore: entry.before,
                     overlay: Some((false, self.passable.get(&entry.key).copied())),
@@ -122,6 +136,7 @@ impl BundleFacts {
         let QuestCallbackProjection::TimedPassages {
             entries,
             source_reset,
+            hold_source_until_due,
             ..
         } = projection
         else {
@@ -137,10 +152,9 @@ impl BundleFacts {
                 .map_or(0, |(revision, _)| *revision)
                 != expected
             || !states.has_capacity(
-                entries
-                    .len()
-                    .saturating_mul(3)
-                    .saturating_add(1 + usize::from(source_reset.is_some())),
+                entries.len().saturating_mul(3).saturating_add(
+                    1 + usize::from(source_reset.is_some() || *hold_source_until_due),
+                ),
             )
         {
             return false;
