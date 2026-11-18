@@ -22,6 +22,16 @@ pub(super) async fn exercise(
         .active_generation
         .and_then(|g| g.native_gameplay())
         .ok_or("gameplay")?;
+    for (bag, (_, fence)) in [70, 75].into_iter().zip(players) {
+        item_look::seed_character_main_backpack(
+            h,
+            *fence.character_id.as_bytes(),
+            bag,
+            &[("oteryn:item.tibia.i5908", 1)],
+        )
+        .await?;
+    }
+
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
     let (attacker, fence) = players[0];
@@ -125,6 +135,34 @@ pub(super) async fn exercise(
             .is_some(),
         "the original ashes expose loot before the deadline"
     );
+    let target_handle = NonZeroU64::new(2).ok_or("target handle")?;
+    let use_knife =
+        |(actor, item_fence): (ExactActorRef, CurrentCharacterItemFence), bag, command_id| {
+            owner.use_craft(
+                actor,
+                UseCommand {
+                    game_session_id: item_fence.game_session_id,
+                    command_id,
+                    item_fence: Some(item_fence),
+                },
+                UseIntent {
+                    target: UseTarget::Item(NonZeroU64::MIN),
+                    use_with: None,
+                    use_with_map_item: Some(MapUseTarget::Item(target_handle)),
+                    use_with_position: None,
+                },
+                Some(ItemKey::Instance(super::id(bag + 1))),
+                Some(ItemKey::Entity(visible.identity)),
+            )
+        };
+    assert_eq!(
+        use_knife(players[0], 70, 200)
+            .await
+            .ok_or("original ashes USE dispatch")?
+            .disposition,
+        UseDisposition::Committed
+    );
+
     let mut tx = h.pool.begin().await?;
     // Drive the existing timer with an aged test receipt, without sleeping ten seconds.
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -163,52 +201,40 @@ pub(super) async fn exercise(
         .bind(corpse.as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(body, "oteryn:item.tibia.i8182");
 
-    let target_handle = NonZeroU64::new(2).ok_or("target handle")?;
-    for (bag, (actor, item_fence)) in [70, 75].into_iter().zip(players) {
-        let knife = "oteryn:item.tibia.i5908";
-        item_look::seed_character_main_backpack(
-            h,
-            *item_fence.character_id.as_bytes(),
-            bag,
-            &[(knife, 1)],
-        )
-        .await?;
-        let use_knife = |command_id| {
-            owner.use_craft(
-                actor,
-                UseCommand {
-                    game_session_id: item_fence.game_session_id,
-                    command_id,
-                    item_fence: Some(item_fence),
-                },
-                UseIntent {
-                    target: UseTarget::Item(NonZeroU64::MIN),
-                    use_with: None,
-                    use_with_map_item: Some(MapUseTarget::Item(target_handle)),
-                    use_with_position: None,
-                },
-                Some(ItemKey::Instance(super::id(bag + 1))),
-                Some(ItemKey::Entity(visible.identity)),
-            )
-        };
+    for (index, (bag, player)) in [70, 75].into_iter().zip(players).enumerate() {
+        let (_, item_fence) = player;
         assert_eq!(
-            use_knife(201)
+            use_knife(player, bag, 201)
                 .await
                 .ok_or("ashes USE dispatch")?
                 .disposition,
             UseDisposition::Committed
         );
         assert_eq!(
-            use_knife(201).await.ok_or("ashes USE replay")?.disposition,
+            use_knife(player, bag, 201)
+                .await
+                .ok_or("ashes USE replay")?
+                .disposition,
             UseDisposition::Committed
         );
         assert_eq!(
-            use_knife(202).await.ok_or("ashes second USE")?.disposition,
+            use_knife(player, bag, 202)
+                .await
+                .ok_or("ashes second USE")?
+                .disposition,
             UseDisposition::NotPossible
         );
         let quantity: i64 = sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i954'")
             .bind(item_fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(quantity, 1);
+        assert_eq!(quantity, if index == 0 { 2 } else { 1 });
+        let phases: Vec<i16> = sqlx::query_scalar(
+            "SELECT phase FROM game_lord_ashes_claims
+             WHERE character_id=encode($1,'hex')::uuid ORDER BY phase",
+        )
+        .bind(item_fence.character_id.as_bytes().as_slice())
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(phases, if index == 0 { &[1, 2][..] } else { &[2][..] });
     }
     Ok(())
 }
