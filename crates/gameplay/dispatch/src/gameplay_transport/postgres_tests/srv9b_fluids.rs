@@ -25,7 +25,7 @@ fn srv9b_fluids_postgres_buy_sell_subtype_fence_and_replay() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "SRV9B fluid PG thread panicked")??;
     assert!(started.elapsed() > std::time::Duration::from_secs(1));
@@ -44,7 +44,7 @@ fn srv9b_charges_postgres_source_purchase_and_replay() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "SRV9B charge PG thread panicked")??;
     assert!(started.elapsed() > std::time::Duration::from_secs(1));
@@ -55,7 +55,16 @@ fn srv9b_charges_postgres_source_purchase_and_replay() -> TestResult {
     Ok(())
 }
 
-fn scenario(charged: bool) -> TestResult {
+#[test]
+fn btest1_alcohol_use_empties_mug_and_applies_live_drunk() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run("btest1-drink", || scenario(false, true))
+}
+
+fn scenario(charged: bool, drink: bool) -> TestResult {
     run(async move |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "srv9b_fluids", true, false).await?;
@@ -303,18 +312,54 @@ fn scenario(charged: bool) -> TestResult {
         ));
         let fluid:(i16,i64)=sqlx::query_as("SELECT f.fluid_subtype,i.quantity::bigint FROM game_item_fluid_states f JOIN game_item_instances i USING(item_instance_id) WHERE i.lifecycle=1").fetch_one(&h.pool).await?;
         assert_eq!(fluid, (3, 1));
+        if drink {
+            use crate::foundation::StatusKind;
+            use crate::gameplay_transport::item_view::ItemKey;
+            use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+            let item: Vec<u8> = sqlx::query_scalar(
+                "SELECT uuid_send(item_instance_id) FROM game_item_fluid_states",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            let item = ItemKey::Instance(item.try_into().map_err(|_| "fluid item identity")?);
+            let outcome = owner.use_item(deps.actor, command(18), item).await;
+            assert_eq!(outcome.disposition, UseDisposition::Committed);
+            let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_fluid_states")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(remaining, 0, "committed drink empties the mug");
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let state = states
+                .get(&runtime, deps.actor, session)
+                .ok_or("player spell state")?;
+            let now = owner.owner_now().get();
+            assert!(state.owned_conditions().has_status(StatusKind::Drunk, now));
+            assert!(
+                !state
+                    .owned_conditions()
+                    .has_status(StatusKind::Drunk, now + 60_000_000)
+            );
+            return Ok(());
+        }
         // Exercise the actual composed observer used by join/resume and later
         // inventory refresh. Durable NPC fluid facts must reach the client view.
         for _ in 0..2 {
-            let observed = owner.observe_character_inventory(deps.actor, deps.admitted.game_session_id)
-                .await.ok_or("filled-fluid native inventory observation")?;
+            let observed = owner
+                .observe_character_inventory(deps.actor, deps.admitted.game_session_id)
+                .await
+                .ok_or("filled-fluid native inventory observation")?;
             let item: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(i.item_instance_id) FROM game_item_instances i JOIN game_item_fluid_states f USING(item_instance_id) WHERE i.lifecycle=1")
                 .fetch_one(&h.pool).await?;
             let view = observed.entries.iter().find(|entry| matches!(entry.key,
                 crate::gameplay_transport::item_view::ItemKey::Instance(id) if id.as_slice()==item.as_slice()))
                 .ok_or("filled-fluid direct inventory entry")?;
-            assert_eq!(view.count.get(),1);
-            assert_eq!(view.sub_type,3,"NPC beer must retain its native subtype in inventory snapshots");
+            assert_eq!(view.count.get(), 1);
+            assert_eq!(
+                view.sub_type, 3,
+                "NPC beer must retain its native subtype in inventory snapshots"
+            );
         }
         let gold:i64=sqlx::query_scalar("SELECT quantity::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i3031'").fetch_one(&h.pool).await?;
         assert_eq!(gold, 98);
