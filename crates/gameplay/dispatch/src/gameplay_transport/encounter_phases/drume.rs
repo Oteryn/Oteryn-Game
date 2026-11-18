@@ -1,8 +1,8 @@
 //! Crystal 201189f8, the_order_of_lion_quest/creaturescripts_commander_kills.lua:1-50.
 use super::*;
-use crate::gameplay_transport::chat_intent::ChatRuntime;
 use oteryn_gameplay_encounters::bosses::phase_controller::{NativePhaseOwner, Plan, Role};
 use oteryn_gameplay_quests::quest::world_callbacks::{Battlefield, Encounter};
+use std::sync::Weak;
 
 const LION: &str = "oteryn:creature.lion_commander";
 const USURPER: &str = "oteryn:creature.usurper_commander";
@@ -13,9 +13,9 @@ const DRUME: usize = 6;
 const TELEPORT_EFFECT: u16 = 11;
 
 #[derive(Clone, Copy)]
-enum Ejection<'a> {
+enum Ejection {
     Defeat,
-    Timeout(&'a ChatRuntime),
+    Timeout,
 }
 
 const ROLES: &[Role] = &[
@@ -53,6 +53,7 @@ const ROLES: &[Role] = &[
 pub(super) struct Skirmish {
     pub(super) phase: NativePhaseOwner,
     battlefield: Battlefield,
+    chat: Weak<ChatRuntime>,
     pub(super) ejected: bool,
     deadline: u64,
 }
@@ -63,6 +64,7 @@ impl Skirmish {
         participants: &[(ExactActorRef, GameSessionId)],
         actors: &[ExactActorRef],
         battlefield: Battlefield,
+        chat: Weak<ChatRuntime>,
         now_us: u64,
     ) -> Result<Self, CarrierError> {
         let mut phase = NativePhaseOwner::bind(
@@ -92,6 +94,7 @@ impl Skirmish {
         Ok(Self {
             phase,
             battlefield,
+            chat,
             ejected: false,
             deadline: now_us
                 .checked_add(u64::from(battlefield.timeout_ms) * 1000)
@@ -143,13 +146,12 @@ impl Skirmish {
         runtime: &mut ChannelRuntimeV1,
         room: &Encounter,
         cells: &crate::content::NativeEntryMovementCells,
-        chat: &ChatRuntime,
         now_us: u64,
     ) -> Result<(), CarrierError> {
         // Crystal action_drume.lua:16-17,21-32,115-120 schedules physical teardown
         // even when the boss has fallen and normal terminal credit already settled.
         if now_us >= self.deadline {
-            self.eject(runtime, room, cells, Ejection::Timeout(chat))?;
+            self.eject(runtime, room, cells, Ejection::Timeout)?;
             self.ejected = true;
             return Ok(());
         }
@@ -161,7 +163,7 @@ impl Skirmish {
         runtime: &mut ChannelRuntimeV1,
         room: &Encounter,
         cells: &crate::content::NativeEntryMovementCells,
-        reason: Ejection<'_>,
+        reason: Ejection,
     ) -> Result<(), CarrierError> {
         use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
         let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
@@ -183,9 +185,7 @@ impl Skirmish {
                     )
                     .map_err(|_| CarrierError::PlanConflict)?,
                 );
-                if matches!(reason, Ejection::Timeout(_)) {
-                    recipients.push(session);
-                }
+                recipients.push(session);
             }
         }
         if !proofs.is_empty() {
@@ -193,9 +193,14 @@ impl Skirmish {
         }
         // The successful move consumes this player's room presence. If cleanup
         // retries after a creature-removal error, these sessions are already outside.
-        if let Ejection::Timeout(chat) = reason {
+        if let Some(chat) = self.chat.upgrade() {
+            // Crystal commander_kills.lua:19 and action_drume.lua:31.
+            let notice = match reason {
+                Ejection::Defeat => "You lost the skirmish.",
+                Ejection::Timeout => "Your time is over.",
+            };
             for session in recipients {
-                chat.push_quest_feedback(session, "Your time is over.");
+                chat.push_quest_feedback(session, notice);
             }
         }
         // Crystal commander_kills.lua:14-19 preserves monsters with a master.
@@ -217,7 +222,7 @@ impl Skirmish {
             }
             runtime.remove_encounter_actor(actor)?;
         }
-        // Crystal commander_kills.lua:21 emits a single effect at the exit.
+        // Crystal commander_kills.lua:23 emits a single effect at the exit.
         if matches!(reason, Ejection::Defeat) {
             map.facts.emit_movement_effect(
                 crate::map::overlay::TilePos {

@@ -1,12 +1,15 @@
 //! One phase registry on the existing encounter, native death queue and quest writer.
-use super::{actor_spell::ChannelSpellStates, grizzly_kills, kill_reward::PendingKillSettlement};
+use super::{
+    actor_spell::ChannelSpellStates, chat_intent::ChatRuntime, grizzly_kills,
+    kill_reward::PendingKillSettlement,
+};
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 mod drume;
 
@@ -240,6 +243,7 @@ pub(super) fn bind(
     players: &[(ExactActorRef, GameSessionId)],
     credits: Vec<grizzly_kills::EncounterCredit>,
     cells: crate::content::NativeEntryMovementCells,
+    chat: &Arc<ChatRuntime>,
     now_us: u64,
 ) -> Result<ActivePhase, CarrierError> {
     let encounter = callback
@@ -261,6 +265,7 @@ pub(super) fn bind(
                 players,
                 actors,
                 battlefield,
+                Arc::downgrade(chat),
                 now_us,
             )?),
             room: encounter.clone(),
@@ -368,12 +373,7 @@ fn placement(
         )
 }
 
-pub(super) fn tick(
-    runtime: &mut ChannelRuntimeV1,
-    states: &ChannelSpellStates,
-    chat: &super::chat_intent::ChatRuntime,
-    now_us: u64,
-) {
+pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
@@ -388,7 +388,7 @@ pub(super) fn tick(
         } = phase;
         let result = match fight {
             Fight::Cults(_) => fight.advance(runtime, room, cells),
-            Fight::Drume(fight) => fight.maintain(runtime, room, cells, chat, now_us),
+            Fight::Drume(fight) => fight.maintain(runtime, room, cells, now_us),
         };
         if let Err(error) = result {
             super::operator_event(&format!(

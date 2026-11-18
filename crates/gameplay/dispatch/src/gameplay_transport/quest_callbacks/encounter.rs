@@ -430,6 +430,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &party,
                             credits,
                             self.movement_cells().clone(),
+                            &self.states.chat,
                             self.owner_now().get(),
                         )
                     })

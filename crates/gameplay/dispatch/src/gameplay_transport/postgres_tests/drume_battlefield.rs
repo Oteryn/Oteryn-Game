@@ -173,13 +173,11 @@ pub(super) async fn exercise(
             crate::gameplay_transport::encounter_phases::tick(
                 &mut runtime,
                 &states,
-                &owner.states.chat,
                 owner.owner_now().get() + 1_200_000_000,
             );
             crate::gameplay_transport::encounter_phases::tick(
                 &mut runtime,
                 &states,
-                &owner.states.chat,
                 owner.owner_now().get() + 1_201_000_000,
             );
         }
@@ -191,6 +189,9 @@ pub(super) async fn exercise(
         assert_positions(owner, actors, super::quest_world_callbacks::local(EXIT)).await?;
         assert!(!owner.runtime.lock().await.contains_live_creature(summoned));
     } else {
+        for session in [leader.game_session_id, second_session] {
+            assert_feedback(owner, session, "You lost the skirmish.");
+        }
         assert!(list(owner, USURPER).await?.is_empty());
         assert!(list(owner, DRUME).await?.is_empty());
         assert_positions(owner, actors, super::quest_world_callbacks::local(EXIT)).await?;
@@ -250,7 +251,6 @@ pub(super) async fn vacate(
         crate::gameplay_transport::encounter_phases::tick(
             &mut runtime,
             &states,
-            &owner.states.chat,
             owner.owner_now().get(),
         );
         assert!(
