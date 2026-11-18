@@ -60,6 +60,7 @@ pub mod ice_seal_paint;
 pub mod isle_of_evil;
 pub mod item_disguises;
 pub mod kill_objectives;
+pub mod koshei_amulet;
 pub mod last_creep_native;
 pub mod lions_rock;
 pub mod liquid_black;
