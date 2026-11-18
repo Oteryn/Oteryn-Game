@@ -54,6 +54,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected_revision: u64,
         after: EntryFacts,
         cause: QuestCause,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         self.quest_encounter(
             runtime,
@@ -68,7 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             true,
             cause,
             None,
-            None,
+            projection,
         )
     }
 

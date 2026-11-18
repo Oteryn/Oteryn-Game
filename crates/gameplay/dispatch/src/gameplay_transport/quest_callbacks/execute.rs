@@ -1044,6 +1044,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected_revision,
                 after,
                 cause,
+                projection.as_ref(),
             );
             if ready != UseDisposition::Committed {
                 return ready;
