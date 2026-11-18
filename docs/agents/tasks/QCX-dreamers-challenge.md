@@ -5,7 +5,7 @@ Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. Global evidence is the cached [
 | Global | Import and native dispatch |
 | --- | --- |
 | Premium, no minimum level, recommended 40 | Definition matches Premium and minimum 0. The carrot callback consumes one i3595 after Premium and custody checks. Its production placement UID remains unverified. The held registry directory contains no Dreamer's Challenge file. |
-| Rope, shovel, pick, carrot, Fire Bug, two Death Rings, Life Ring, water and Fire Field | Fire Bug i5467 opens the entrance and the Death Ring callback consumes inactive i6299 and removes the tree barrier. The retained entry references do not establish the production UID2241/2244 bindings or the complete shovel and pick approach. |
+| Rope, shovel, pick, carrot, Fire Bug, two Death Rings, one Life Ring, 1–3 water containers and 1–2 Fire Field runes | Fire Bug i5467 opens the entrance and the Death Ring callback consumes inactive i6299 and removes the tree barrier. The retained entry references do not establish the production UID2241/2244 bindings or the complete shovel and pick approach. |
 | Four-color matching and right exit | The shared grid rotations, completion check and scramble are absent in native quest bindings. |
 | SE, SW, NE, NW levers, 12 damaging pillars and success/fallback exit | Baseline controls removed their wall segments in any order. The authored controls now require each earlier lever to be active, in the Global SE, SW, NE, NW order. The donor wall/lever timers are 7s/8s. The pillar encounter and gated exit remain unbound. |
 | Shared 6×6 tic-tac-toe, optional Boots hint and Lost Heroes book | The book i2821 ×1 at UID6196 has the six exact names. Board validation, shared gate and NPC hint are absent from the native quest path. Chest USE persists the book text. The coverage registry records carried-book READ as unavailable. |
@@ -35,10 +35,14 @@ Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. Global evidence is the cached [
 
 `BLOCKER Mission 4 Lost Heroes book carried-book READ/TextWindow data-global/startup/tables/chest.lua:2124`
 
-**OPEN-FACTS** — Global numeric item IDs, exact damage/timers, tile and UID/action mappings including portal squares, whether the extra Crystal chests are present, document handout timing, pearl debit vs. possession and exact destination tiles. The spoiler describes order, eligibility and destination names. It leaves those numeric or implementation details unstated.
+**OPEN-FACTS** — Global numeric item IDs, exact damage/timers, tile and UID/action mappings including portal squares, whether the extra Crystal chests are present, guardian chest repeat and grouping semantics, document handout timing, pearl debit vs. possession and exact destination tiles. The spoiler describes order, eligibility and destination names. It leaves those numeric or implementation details unstated.
 
 **PARTIAL** — Production entry selector coverage, native color/wall/tic-tac-toe/dream-room progression, Lucid Dreamer, parent flag and faction connection, faction reward differences under separately owned quest keys, final rank, altar crafting and tower access. No source-only claim or callback status was promoted.
 
 ## Regression evidence
 
 - Baseline production data at `871c1dec7d9963420d455210e4cddc0c9df80d26` with the new tests and local pgsplit files. PostgreSQL 18.6 returned `Committed` on the first northwest USE where the regression expects `Rejected`. The chest case passed in 149.508 s and the baseline run had one pass and one failure.
+- On the first corrected run, the refusal assertion passed and the next USE hit dispatch exhaustion. The session logs recorded one exhaustion and the session encoded it as `Rejected`. The fixture now advances the owner clock between fresh requests, as it already did for the reset assertions.
+- Pin refresh reproduced the existing World digest. Pin verification passed using a temporary output directory, which this checkout's CLI requires. All 44 quest-authoring check commands, workspace formatting and dispatch library Clippy with `-D warnings` passed.
+- PG via shard (pgsplit build files applied on `1ffb3bc880fdbe231c66071446d8b22fd89ece30`). PostgreSQL 18.6 passed both cases in 173.78 s. The guardian bag and book case took 152.105 s (UID6196 24.318 s, UID6197 31.597 s, UID6198 19.420 s, UID6199 31.824 s, UID6200 26.293 s). The northwest lever case took 21.667 s. It uses real dispatch for the initial refusal and the successful pull with the three prerequisite appearances seeded, then checks both reset deadlines.
+- With `OTERYN_TEST_POSTGRES_ADMIN_URL` unset, both cases returned `Ok(())` in 0.00 s.
