@@ -90,66 +90,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
-    /// Crystal Wanted portals:93-106 and Defiances:75-90,108-121.
-    /// A departed cohort cannot hold its solo room while its boss is still alive.
-    fn retire_empty_solo_room(
-        &self,
-        runtime: &mut ChannelRuntimeV1,
-        map: &BundleMap,
-        room: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
-        entrant: ExactActorRef,
-    ) -> bool {
-        let Ok(census) = runtime.positioned_melee_census() else {
-            return false;
-        };
-        if census.iter().any(|(who, position, session)| {
-            session.is_some() && *who != entrant && reset_contains(room, position.position())
-        }) {
-            return true;
-        }
-        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
-            return false;
-        };
-        let scope = runtime.encounter_owner_scope();
-        let map = map.overlay.base().digest();
-        let narrow_reset = room
-            .solo_timeout
-            .is_some_and(|timeout| timeout.reset_radius.is_some());
-        if narrow_reset && let Some(boss) = room.monsters.first() {
-            for (actor, position, session) in &census {
-                if session.is_none()
-                    && reset_contains(room, position.position())
-                    && runtime.matches_live_creature_identity(*actor, boss.creature.as_bytes())
-                    && runtime.remove_encounter_actor(*actor).is_err()
-                {
-                    return false;
-                }
-            }
-        }
-        visits.retain_mut(|visit| {
-            let Some(deadline) = &visit.timeout else {
-                return true;
-            };
-            if deadline.scope != scope || deadline.map != map {
-                return false;
-            }
-            if visit.room.room_min != room.room_min || visit.room.room_max != room.room_max {
-                return true;
-            }
-            // Crystal Defiances spawns a replacement in the reset area while
-            // each earlier challenger's full-room teleport timer stays active.
-            if narrow_reset {
-                visit
-                    .creatures
-                    .retain(|actor| runtime.contains_live_creature(*actor));
-                return true;
-            }
-            super::personal_trial::cleanup(runtime, &mut visit.creatures);
-            false
-        });
-        true
-    }
-
     pub(super) fn expire_quest_room_visits(
         &self,
         runtime: &mut ChannelRuntimeV1,
@@ -228,7 +168,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 map.facts.emit_movement_effect(tile(timeout.exit), 11);
             }
-            super::personal_trial::cleanup(runtime, &mut visit.creatures);
+            // The donor deadline ejects players. Living monsters remain
+            // until the next admitted challenger resets the room.
             false
         });
     }
@@ -338,7 +279,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             }
         }
-        if callback.has_personal_state() && !preflight && reservation.is_none() {
+        if callback.has_personal_state()
+            && !preflight
+            && reservation.is_none()
+            && encounter.solo_timeout.is_none()
+        {
             return UseDisposition::Rejected;
         }
         if encounter.timing.is_some() {
@@ -354,11 +299,98 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
-        if encounter.solo_timeout.is_some()
-            && !self.retire_empty_solo_room(runtime, map, encounter, actor)
-        {
-            return UseDisposition::Rejected;
+        if let Some(timeout) = encounter.solo_timeout {
+            let Ok(census) = runtime.positioned_melee_census() else {
+                return UseDisposition::Rejected;
+            };
+            let mut retiring = Vec::new();
+            for (who, position, occupant_session) in census {
+                if !reset_contains(encounter, position.position()) {
+                    continue;
+                }
+                if occupant_session.is_some() {
+                    if (who, occupant_session, Some(position.position()))
+                        != (
+                            actor,
+                            Some(session),
+                            callback.personal_room_entry().map(local),
+                        )
+                    {
+                        return UseDisposition::Occupied;
+                    }
+                } else if timeout.reset_radius.is_none()
+                    || runtime.matches_live_creature_identity(
+                        who,
+                        encounter.monsters[0].creature.as_bytes(),
+                    )
+                {
+                    retiring.push(who);
+                }
+            }
+            // Crystal Wanted portals:87-106 and Defiances:75-90,108-121.
+            // Preflight tests the reset and replacement without removing live
+            // actors on an entry that the fenced quest writer might refuse.
+            return runtime
+                .project_quest_room_reset(
+                    &retiring,
+                    |runtime| {
+                        self.admit_quest_encounter(
+                            runtime,
+                            states,
+                            actor,
+                            session,
+                            map,
+                            callback,
+                            key,
+                            expected_revision,
+                            after,
+                            preflight,
+                            cause,
+                            None,
+                            encounter,
+                        )
+                    },
+                    |result| !preflight && *result == UseDisposition::Committed,
+                )
+                .unwrap_or(UseDisposition::Rejected);
         }
+        self.admit_quest_encounter(
+            runtime,
+            states,
+            actor,
+            session,
+            map,
+            callback,
+            key,
+            expected_revision,
+            after,
+            preflight,
+            cause,
+            reservation,
+            encounter,
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the Channel holds the exact encounter turn"
+    )]
+    fn admit_quest_encounter(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        expected_revision: u64,
+        after: EntryFacts,
+        preflight: bool,
+        cause: QuestCause,
+        reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        encounter: &world_callbacks::Encounter,
+    ) -> UseDisposition {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };

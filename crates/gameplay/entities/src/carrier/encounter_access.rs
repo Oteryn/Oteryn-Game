@@ -166,6 +166,36 @@ impl ChannelRuntimeV1 {
         self.quest_encounter_entry(players, monsters, project, true)
     }
 
+    /// Stage the exact room occupants while previewing or publishing their replacement.
+    /// The caller holds the exclusive Channel turn through placement and map projection.
+    pub fn project_quest_room_reset<T>(
+        &mut self,
+        retiring: &[ExactActorRef],
+        apply: impl FnOnce(&mut Self) -> T,
+        publish: impl FnOnce(&T) -> bool,
+    ) -> Result<T, CarrierError> {
+        if retiring.is_empty() {
+            return Ok(apply(self));
+        }
+        self.owner_fence()?;
+        let before = self.carrier.clone();
+        for &actor in retiring {
+            if !self.contains_live_creature(actor) {
+                self.carrier = before;
+                return Err(CarrierError::CreatureTargetMismatch);
+            }
+            if let Err(error) = self.remove_encounter_actor(actor) {
+                self.carrier = before;
+                return Err(error);
+            }
+        }
+        let result = apply(self);
+        if !publish(&result) {
+            self.carrier = before;
+        }
+        Ok(result)
+    }
+
     /// The same bounded carrier transaction for a source party rite that has
     /// no summoned monsters. Encounter admission keeps its nonempty-monster gate.
     pub fn commit_source_steps_and_project<P: SourceStepCommitProof>(

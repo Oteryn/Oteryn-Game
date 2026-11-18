@@ -970,34 +970,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if callback.effects.encounter.is_some() && callback.has_personal_state() && !durable {
             return UseDisposition::Rejected;
         }
-        let mut personal_reservation =
-            if callback.effects.encounter.is_some() && callback.has_personal_state() {
-                let (Some(fence), Some(definition)) = (
-                    fence,
-                    self.quest_catalogue
-                        .as_ref()
-                        .and_then(|catalogue| catalogue.definition_hash(&callback.quest)),
-                ) else {
-                    return UseDisposition::Rejected;
-                };
-                match self.states.quest_callbacks.personal.reserve(
-                    runtime,
-                    &callback.key,
-                    personal_encounter::Origin::new(
-                        *fence.character_id.as_bytes(),
-                        cause,
-                        definition,
-                        &callback.quest,
-                        fence.expected_character_revision.get(),
-                    ),
-                ) {
-                    Ok(reservation) => Some(reservation),
-                    Err(disposition) => return disposition,
-                }
-            } else {
-                None
+        // Solo rooms already serialize admission on the native room census.
+        // Their former boss can still be live when its replacement is admitted.
+        let reserves_personal_cohort = callback.has_personal_state()
+            && callback
+                .effects
+                .encounter
+                .as_ref()
+                .is_some_and(|room| room.solo_timeout.is_none());
+        let mut personal_reservation = if reserves_personal_cohort {
+            let (Some(fence), Some(definition)) = (
+                fence,
+                self.quest_catalogue
+                    .as_ref()
+                    .and_then(|catalogue| catalogue.definition_hash(&callback.quest)),
+            ) else {
+                return UseDisposition::Rejected;
             };
-        if callback.effects.encounter.is_some() && callback.has_personal_state() {
+            match self.states.quest_callbacks.personal.reserve(
+                runtime,
+                &callback.key,
+                personal_encounter::Origin::new(
+                    *fence.character_id.as_bytes(),
+                    cause,
+                    definition,
+                    &callback.quest,
+                    fence.expected_character_revision.get(),
+                ),
+            ) {
+                Ok(reservation) => Some(reservation),
+                Err(disposition) => return disposition,
+            }
+        } else {
+            None
+        };
+        if reserves_personal_cohort {
             let ready = self.preflight_personal_quest_encounter(
                 runtime,
                 states,
