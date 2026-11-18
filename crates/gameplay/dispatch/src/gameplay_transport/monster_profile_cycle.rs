@@ -248,6 +248,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // The coalesced monster scheduler must not retake the returned holder
         // ahead of a waiting foreground owner (notably logout during world boot).
+        // A completed slice wakes another scheduler turn after returning this pass.
         let pass = self
             .root
             .try_issue_background_semantic_pass()
@@ -683,6 +684,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         drop(reader);
                         tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        states.owner_wake.notify_one();
                         return Ok((Some(now), Vec::new(), Vec::new(), false));
                     }
                 }
@@ -737,6 +739,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if range.end < actors.len() {
                         drop(map);
                         tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        states.owner_wake.notify_one();
                         return Ok((Some(now), Vec::new(), Vec::new(), false));
                     }
                 }
@@ -785,6 +788,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 drop(map);
                 if !pending.items_ready() {
                     tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    states.owner_wake.notify_one();
                     return Ok((Some(now), Vec::new(), Vec::new(), false));
                 }
                 let next_due = next_due.into_iter()
