@@ -1093,7 +1093,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                                 .starts_with("oteryn:creature.")
                     })
             })
-            || (encounter.minimum_level == 0 && !source_party && encounter.solo_timeout.is_none())
+            || (encounter.minimum_level == 0
+                && !encounter.collects_staged_party()
+                && encounter.solo_timeout.is_none())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()

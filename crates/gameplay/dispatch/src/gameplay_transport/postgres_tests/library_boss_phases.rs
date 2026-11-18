@@ -129,7 +129,7 @@ fn catalogue(boss: &str) -> TestResult<QuestStateCatalogue> {
                 "effects": {"encounter": {
                     "players": [{"from": STAGING, "to": LANDING}, {"from": SECOND_STAGE, "to": LANDING}],
                     "monsters": monsters, "room_min": MIN, "room_max": MAX,
-                    "minimum_level": 1, "boss_phases": phases
+                    "minimum_level": if boss == OBERON { 0 } else { 1 }, "boss_phases": phases
                 }},
                 "passages": [], "offerings": [], "sources": [source]
             }}

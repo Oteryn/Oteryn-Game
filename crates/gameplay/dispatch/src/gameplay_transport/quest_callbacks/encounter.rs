@@ -385,7 +385,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
-                encounter.collects_staged_party(),
+                encounter.boss_phases.is_some(),
             ) else {
                 return UseDisposition::NotPossible;
             };
