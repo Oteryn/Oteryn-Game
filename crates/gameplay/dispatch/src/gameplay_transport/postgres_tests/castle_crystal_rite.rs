@@ -5,7 +5,10 @@ use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::starter_grant::StarterTemplate;
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
-use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Offering, Position};
+use oteryn_gameplay_quests::quest::{
+    QuestStateCatalogue, QuestTrack,
+    world_callbacks::{self, Callback, Offering, Position},
+};
 use oteryn_protocol_oteryn::world_spatial::{self, StepDirection};
 use serde_json::{Value, json};
 
@@ -76,14 +79,32 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
-    assert_eq!(base.track(ENTRY).ok_or("Castle entry track")?.initial, -1);
+    // Crystal starts at -1. The existing native projection can retain its historical 0.
+    let source_defaults = QuestStateCatalogue::new(
+        base.content_revision(),
+        vec![
+            QuestTrack {
+                initial: -1,
+                min: -1,
+                ..base.track(ENTRY).ok_or("Castle entry track")?.clone()
+            },
+            base.track(MISSION).ok_or("Castle mission track")?.clone(),
+        ],
+        Vec::new(),
+    )
+    .map_err(debug)?;
     let mut excludes_first_entry = binding();
     excludes_first_entry["storage"][1]["minimum"] = json!(0);
     let invalid = json!({"schema":1,"callbacks":[excludes_first_entry]}).to_string();
-    let refusal = world_callbacks::with_fixture_callbacks(base.clone(), &invalid)
-        .err().ok_or("accepted a rite that excludes the initial entry flag")?;
-    assert!(refusal.contains("excludes the initial entry flag"), "{refusal}");
+    let refusal = world_callbacks::with_fixture_callbacks(source_defaults.clone(), &invalid)
+        .err()
+        .ok_or("accepted a rite that excludes the initial entry flag")?;
+    assert!(
+        refusal.contains("excludes the initial entry flag"),
+        "{refusal}"
+    );
     let fixture = json!({"schema":1,"callbacks":[binding()]}).to_string();
+    world_callbacks::with_fixture_callbacks(source_defaults, &fixture)?;
     owner.quest_catalogue = Some(std::sync::Arc::new(
         world_callbacks::with_fixture_callbacks(base.clone(), &fixture)?,
     ));
