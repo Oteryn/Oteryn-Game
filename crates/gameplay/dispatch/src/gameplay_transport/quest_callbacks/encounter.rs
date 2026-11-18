@@ -86,12 +86,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !census
                     .iter()
                     .any(|(_, current, _)| current.position() == at)
-                && runtime
-                    .commit_quest_creature_spawn(&[(creature, health, at)])
-                    .is_ok()
             {
-                map.facts.emit_movement_effect(tile(position), 11);
+                let _ = runtime.commit_quest_creature_spawn(&[(creature, health, at)]);
             }
+            // Crystal emits the arrival effect after each attempt, including occupied cells.
+            map.facts.emit_movement_effect(tile(position), 11);
         }
     }
 
