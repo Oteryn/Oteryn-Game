@@ -253,6 +253,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return result;
             }
         };
+        let nexus_claim = oteryn_gameplay_quests::quest::inquisition_actions::nexus_claim(callback);
+        if nexus_claim {
+            let Ok(charges) = self.states.quest_callbacks.shadow_nexus.lock() else {
+                return UseDisposition::Rejected;
+            };
+            let Some(restore) = map.facts.quest_callback_replacement(key, 7925) else {
+                return UseDisposition::Rejected;
+            };
+            if before.appearance_id != 7931
+                || charges.remaining == 0
+                || self.owner_now().get() >= charges.expires
+            {
+                return UseDisposition::Rejected;
+            }
+            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                due: charges.expires,
+                restore,
+            });
+        }
         // Both lifecycle deadlines belong to this operation, even when preparing
         // its remote object read set takes time.
         let lifecycle_now = self.owner_now().get();
@@ -1524,6 +1543,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Rejected;
             }
+        }
+        if nexus_claim {
+            let Ok(mut charges) = self.states.quest_callbacks.shadow_nexus.lock() else {
+                return UseDisposition::Rejected;
+            };
+            charges.remaining = charges.remaining.saturating_sub(1);
         }
         if matches!(
             projection,

@@ -856,6 +856,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         if peers.len() >= MAX_EFFECTS
             || peers.iter().any(|peer| {
                 !phase::exclusive(peer, callback)
+                    && !super::inquisition_actions::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
                     && !(selector_gates::disjoint(peer, callback)

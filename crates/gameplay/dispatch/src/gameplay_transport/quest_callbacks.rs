@@ -102,6 +102,7 @@ pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
     flower_puzzle: std::sync::Mutex<shulgrax::FlowerPuzzle>,
+    shadow_nexus: std::sync::Mutex<inquisition::NexusCharges>,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
@@ -1057,6 +1058,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut selection_permit = None;
         let mut selection_deadline = None;
+        if selected.len() == 2
+            && selected.iter().all(|callback| {
+                oteryn_gameplay_quests::quest::inquisition_actions::vampire_branch(callback)
+                    .is_some()
+            })
+        {
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+            let permit = tokio::time::timeout_at(deadline, async {
+                let permit = self.spell_lane_permit().await?;
+                let weakened = self.vampire_altars_ready(map).await?;
+                selected.retain(|callback| {
+                    oteryn_gameplay_quests::quest::inquisition_actions::vampire_branch(callback)
+                        == Some(weakened)
+                });
+                Some(permit)
+            })
+            .await;
+            let Ok(Some(permit)) = permit else {
+                return Some(UseOutcome::rejected());
+            };
+            selection_permit = Some(permit);
+            selection_deadline = Some(deadline);
+        }
         if selected.len() > 1
             && selected.iter().all(|callback| {
                 !callback.requires_live_premium()

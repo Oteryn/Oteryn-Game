@@ -169,11 +169,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(selected) = selected else {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));
         };
-        if nexus {
-            return Ok(self
+        if nexus
+            && let Some(disposition) = self
                 .damage_shadow_nexus(actor, command, map, target.expected_revision, &resolved)
                 .await
-                .map(outcome));
+        {
+            return Ok(Some(outcome(disposition)));
         }
         let intent =
             oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
