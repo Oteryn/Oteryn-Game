@@ -44,7 +44,9 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         if map.overlay.runtime_scope() == runtime.binding().runtime_scope()
             && states
                 .encounter_phases
-                .first_dragon_plant_at(runtime, step.to)
+                .first_dragon_props(runtime, now / 1000)
+                .iter().any(|prop| prop.at == step.to
+                    && prop.kind == crate::gameplay_transport::first_dragon_encounter::PropKind::FlowerBowl)
             && runtime
                 .replace_quest_creature_at(
                     step.actor,

@@ -661,7 +661,7 @@ async fn exercise_finale_phases(
         challenger
     };
     kill_phase_creature(owner, admitted, challenger, fallen, 510).await?;
-    super::quest_world_callbacks::wire(owner, admitted, 2, 1, encode_step_intent(StepDirection::North)).await?;
+    super::quest_world_callbacks::wire(owner, admitted, 1, 1, encode_step_intent(StepDirection::North)).await?;
     assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), FINALE);
     let somewhat = "oteryn:creature.somewhat_beatable";
     for index in 0..5 {

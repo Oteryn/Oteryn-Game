@@ -202,6 +202,7 @@ pub struct LoopGroundOverlay {
     native_pickup_cells: HashMap<[u8; 16], Vec<u8>>,
     source_plain_corpses: HashSet<[u8; 16]>,
     field_pin: ([u8; 32], [u8; 32], u64),
+    first_dragon_props: Vec<super::first_dragon_encounter::DeathProp>,
     taken_sources: std::collections::BTreeSet<u64>,
     ground_push_definition: Option<NonZeroU32>,
 }
@@ -386,6 +387,7 @@ impl LoopGroundOverlay {
             native_pickup_cells,
             source_plain_corpses,
             field_pin,
+            first_dragon_props: Vec::new(),
             taken_sources: Default::default(),
             ground_push_definition,
         }
@@ -483,9 +485,9 @@ impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
     fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts> {
         match item {
             AddedItem::Ground(ground) => self.ground.get(&ground.item_instance_id).copied(),
-            AddedItem::Volatile { .. } => {
-                super::echo_warden::portal_entry(item).or_else(|| self.inner.added_entry(item))
-            }
+            AddedItem::Volatile { .. } => super::echo_warden::portal_entry(item)
+                .or_else(|| super::first_dragon_encounter::prop_entry(item))
+                .or_else(|| self.inner.added_entry(item)),
         }
     }
 
@@ -626,8 +628,10 @@ pub async fn loop_ground(
     base: &Arc<WorldBase>,
     index: Option<&ItemDefinitionIndex>,
 ) -> Option<Arc<LoopGroundOverlay>> {
-    let (scope, field_pin) = {
+    let now_ms = admission.owner_now().get() / 1000;
+    let (scope, field_pin, first_dragon_props) = {
         let runtime = admission.runtime.lock().await;
+        let states = admission.states.spell_states.lock().await;
         (
             runtime.binding().runtime_scope(),
             (
@@ -635,11 +639,13 @@ pub async fn loop_ground(
                 runtime.content_pin().frame_binding_digest(),
                 runtime.binding().scope_generation().get(),
             ),
+            states.encounter_phases.first_dragon_props(&runtime, now_ms),
         )
     };
     let (epoch, cached) = admission.states.loop_ground.cached();
     if let Some(cached) = cached.filter(|cached| {
         cached.field_pin == field_pin
+            && cached.first_dragon_props == first_dragon_props
             && cached.overlay.runtime_scope() == scope
             && cached.overlay.base().digest() == base.digest()
     }) {
@@ -732,6 +738,8 @@ pub async fn loop_ground(
             admission.owner_now().get() / 1000,
         );
     }
+    super::first_dragon_encounter::append_props(&mut built.overlay, index, &first_dragon_props);
+    built.first_dragon_props = first_dragon_props;
     let built = Arc::new(built);
     admission.states.loop_ground.store(epoch, &built);
     Some(built)

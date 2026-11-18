@@ -147,7 +147,12 @@ pub(super) async fn exercise_monster_tile(
         drop(runtime);
         assert_eq!(owner.drain_kill_rewards(session).await, crate::gameplay_transport::kill_reward::DrainOutcome::Drained);
         let mut runtime = owner.runtime.lock().await;
-        assert_eq!(runtime.bound_corpse(plant.corpse_identity()).ok_or("bound plant corpse")?.item.production_key, "oteryn:item.tibia.i2983");
+        let states = owner.states.spell_states.lock().await;
+        assert!(states.encounter_phases.first_dragon_props(&runtime, now.get() / 1000).iter().any(|prop| {
+            prop.source == plant && prop.at == tile
+                && prop.kind == crate::gameplay_transport::first_dragon_encounter::PropKind::FlowerBowl
+        }));
+        drop(states);
         let dragon = "oteryn:creature.unbeatable_dragon";
         let health = runtime.companion_policy(dragon).map_err(debug)?.maximum_health;
         let dragon = runtime.commit_quest_creature_spawn(&[(dragon, health, from)]).map_err(debug)?[0];

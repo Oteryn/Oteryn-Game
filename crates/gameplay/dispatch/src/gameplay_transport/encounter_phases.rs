@@ -23,94 +23,78 @@ pub(super) struct ActivePhase {
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
     pub(super) first_dragon: Mutex<Option<super::first_dragon_encounter::Phase>>,
-    first_dragon_plants: Mutex<Vec<ExactActorRef>>,
-    first_dragon_portals: Mutex<Vec<(ExactActorRef, MovementLocalPosition, u64)>>,
+    first_dragon_props: Mutex<Vec<super::first_dragon_encounter::DeathProp>>,
 }
 
 impl Registry {
-    // Crystal creaturescripts_death_angry_plant.lua:3–7 marks the exact corpse
-    // created by this death. The runtime binding follows the real corpse lifetime.
-    pub(super) fn mark_first_dragon_plant(&self, runtime: &ChannelRuntimeV1, actor: ExactActorRef) {
-        if !runtime.retains_corpse_projection(actor) {
-            return;
-        }
-        if let Ok(mut plants) = self.first_dragon_plants.lock() {
-            plants.retain(|plant| runtime.retains_corpse_projection(*plant));
-            if !plants.contains(&actor) && plants.try_reserve(1).is_ok() {
-                plants.push(actor);
-            }
-        }
-    }
-
-    pub(super) fn first_dragon_plant_at(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        at: MovementLocalPosition,
-    ) -> bool {
-        self.first_dragon_plants.lock().is_ok_and(|plants| {
-            plants.iter().any(|actor| {
-                runtime
-                    .bound_corpse(actor.corpse_identity())
-                    .is_some_and(|corpse| {
-                        corpse.position == at
-                            && corpse.item.production_key == "oteryn:item.tibia.i2983"
-                    })
-            })
-        })
-    }
-
-    // Crystal creaturescripts_death_fallen.lua:3–13. Expiry uses the
-    // original owner death clock even when a reward receipt is retried.
-    pub(super) fn mark_first_dragon_portal(
+    pub(super) fn mark_first_dragon_death_prop(
         &self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        kind: super::first_dragon_encounter::PropKind,
         now_ms: u64,
     ) {
-        if !matches!(
-            actor.runtime_scope(),
-            crate::foundation::RuntimeScopeRefV1::Instance { .. }
-        ) {
-            return;
-        }
+        use super::first_dragon_encounter::{DeathProp, PropKind};
         let death = runtime.borrow_combat_death();
         let Ok((_, at)) = death.projected_death(actor) else {
             return;
         };
-        let Ok(Some(died)) = death.projected_death_at_ms(actor) else {
-            return;
+        let expires = match kind {
+            PropKind::MysticFlame => {
+                if !matches!(
+                    actor.runtime_scope(),
+                    crate::foundation::RuntimeScopeRefV1::Instance { .. }
+                ) {
+                    return;
+                }
+                let Ok(Some(died)) = death.projected_death_at_ms(actor) else {
+                    return;
+                };
+                let Some(expires) = died.checked_add(30_000).filter(|until| *until > now_ms) else {
+                    return;
+                };
+                Some(expires)
+            }
+            PropKind::FlowerBowl => None,
         };
-        let Some(expires) = died.checked_add(30_000).filter(|until| *until > now_ms) else {
-            return;
-        };
-        if let Ok(mut portals) = self.first_dragon_portals.lock() {
-            portals.retain(|(_, _, until)| *until > now_ms);
-            if !portals.iter().any(|(source, _, _)| *source == actor)
-                && portals.try_reserve(1).is_ok()
+        if let Ok(mut props) = self.first_dragon_props.lock() {
+            props.retain(|prop| prop.expires.is_none_or(|until| until > now_ms));
+            if !props
+                .iter()
+                .any(|prop| prop.source == actor || (prop.at == at && prop.kind == kind))
+                && props.len() < MAX_ENCOUNTERS
+                && props.try_reserve(1).is_ok()
             {
-                portals.push((actor, at, expires));
+                props.push(DeathProp {
+                    source: actor,
+                    at,
+                    kind,
+                    expires,
+                });
             }
         }
     }
 
-    pub(super) fn first_dragon_portal_at(
+    pub(super) fn first_dragon_props(
         &self,
         runtime: &ChannelRuntimeV1,
-        at: MovementLocalPosition,
         now_ms: u64,
-    ) -> bool {
-        self.first_dragon_portals.lock().is_ok_and(|portals| {
-            portals.iter().any(|(actor, position, expires)| {
-                *position == at
-                    && *expires > now_ms
-                    && runtime
-                        .bound_corpse(actor.corpse_identity())
-                        .is_some_and(|corpse| {
-                            corpse.position == at
-                                && corpse.item.production_key == "oteryn:item.tibia.i775"
-                        })
-            })
-        })
+    ) -> Vec<super::first_dragon_encounter::DeathProp> {
+        self.first_dragon_props.lock().map_or_else(
+            |_| Vec::new(),
+            |props| {
+                props
+                    .iter()
+                    .copied()
+                    .filter(|prop| {
+                        prop.expires.is_none_or(|until| until > now_ms)
+                            && prop.source.runtime_scope() == runtime.binding().runtime_scope()
+                            && prop.source.scope_generation()
+                                == runtime.binding().scope_generation()
+                    })
+                    .collect()
+            },
+        )
     }
 
     pub(super) fn first_dragon_death(

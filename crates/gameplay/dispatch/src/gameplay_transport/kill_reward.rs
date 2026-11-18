@@ -1965,31 +1965,23 @@ pub fn record_creature_kill(
         states
             .encounter_phases
             .note_projected_death(runtime, target);
-        if wild
-            && creature
-                .as_ref()
-                .is_ok_and(|key| key == "oteryn:creature.angry_plant")
-        {
-            states
-                .encounter_phases
-                .mark_first_dragon_plant(runtime, target);
-        }
-    }
-    if let Some(states) = sink.prey
-        && wild
-        && creature
-            .as_ref()
-            .is_ok_and(|key| key == "oteryn:creature.fallen_challenger")
-    {
-        states
-            .encounter_phases
-            .mark_first_dragon_portal(runtime, target, now_ms);
     }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");
         return;
     };
     if wild && let Some(states) = sink.prey {
+        use super::first_dragon_encounter::PropKind;
+        let kind = match creature.as_str() {
+            "oteryn:creature.angry_plant" => Some(PropKind::FlowerBowl),
+            "oteryn:creature.fallen_challenger" => Some(PropKind::MysticFlame),
+            _ => None,
+        };
+        if let Some(kind) = kind {
+            states
+                .encounter_phases
+                .mark_first_dragon_death_prop(runtime, target, kind, now_ms);
+        }
         states
             .encounter_phases
             .first_dragon_death(runtime, target, &creature);

@@ -23,7 +23,9 @@ pub(super) async fn step_in(
     let states = owner.states.spell_states.lock().await;
     if !states
         .encounter_phases
-        .first_dragon_portal_at(&runtime, committed.position(), now_ms)
+        .first_dragon_props(&runtime, now_ms)
+        .iter()
+        .any(|prop| prop.at == committed.position() && prop.kind == PropKind::MysticFlame)
     {
         return committed;
     }
@@ -275,4 +277,93 @@ impl Phase {
             }
         }
     }
+}
+
+// Crystal creaturescripts_death_angry_plant.lua:3–7 and death_fallen.lua:3–13.
+// These corpses are stationary encounter objects with native Item definitions.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum PropKind {
+    FlowerBowl,
+    MysticFlame,
+}
+
+impl PropKind {
+    fn definition(self) -> (u16, &'static str) {
+        match self {
+            Self::FlowerBowl => (2983, "oteryn:item.tibia.i2983"),
+            Self::MysticFlame => (775, "oteryn:item.tibia.i775"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) struct DeathProp {
+    pub(super) source: ExactActorRef,
+    pub(super) at: MovementLocalPosition,
+    pub(super) kind: PropKind,
+    pub(super) expires: Option<u64>,
+}
+
+const PROP_MARKER: &[u8] = b"oteryn:first-dragon-death-prop:";
+
+pub(super) fn append_props(
+    overlay: &mut crate::map::overlay::ChannelOverlay,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    props: &[DeathProp],
+) {
+    use crate::map::overlay::{TilePos, VolatileItem};
+    for prop in props {
+        let (id, key) = prop.kind.definition();
+        let Some(reference) = index
+            .revision(key)
+            .and_then(|revision| index.definition_ref("Item", key, revision))
+        else {
+            continue;
+        };
+        let (Ok(x), Ok(y), Ok(floor)) = (
+            u16::try_from(prop.at.x),
+            u16::try_from(prop.at.y),
+            i8::try_from(-prop.at.floor.saturating_abs()),
+        ) else {
+            continue;
+        };
+        let mut attributes = PROP_MARKER.to_vec();
+        attributes.extend_from_slice(&reference.get().to_be_bytes());
+        if let Err(error) = overlay.add_volatile(
+            TilePos { x, y, floor },
+            VolatileItem {
+                id: u32::from(id),
+                count: 1,
+                attributes,
+            },
+            None,
+        ) {
+            super::operator_event(&format!("first_dragon_prop_view_failed reason={error:?}"));
+        }
+    }
+}
+
+pub(super) fn prop_entry(
+    item: &crate::map::overlay::AddedItem,
+) -> Option<crate::map::view::EntryFacts> {
+    use crate::map::overlay::AddedItem;
+    use crate::map::view::EntryFacts;
+    let AddedItem::Volatile { item, .. } = item else {
+        return None;
+    };
+    if !matches!(item.id, 775 | 2983) || item.count != 1 {
+        return None;
+    }
+    let bytes = item.attributes.strip_prefix(PROP_MARKER)?;
+    let reference = std::num::NonZeroU32::new(u32::from_be_bytes(bytes.try_into().ok()?))?;
+    Some(EntryFacts {
+        definition: oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference),
+        terrain_kind: None,
+        appearance_id: u16::try_from(item.id).ok()?,
+        blocks_projectile: false,
+        pickupable: false,
+        bound: true,
+        count: 1,
+        sub_type: 0,
+    })
 }
