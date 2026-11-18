@@ -23,6 +23,7 @@ use std::sync::Arc;
 mod combat;
 #[path = "grizzly_boss/vacancy.rs"]
 mod vacancy;
+pub(super) use vacancy::second_player;
 #[path = "grizzly_boss/world.rs"]
 pub(super) mod world;
 

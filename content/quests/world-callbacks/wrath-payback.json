@@ -9,7 +9,16 @@
         "position": null,
         "unique": 3198,
         "action": null,
-        "appearance": null
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33361,
+            "y": 31410,
+            "floor": -9
+          },
+          "ordinal": 2,
+          "appearance": 2772
+        }
       },
       "lever": [
         2772,
@@ -25,7 +34,8 @@
       "failure_message": "The arena is already in use.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission11_payback_time_lever.lua:1-54",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua:1-47"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua:1-47",
+        "content/world/placements/region-z09-x130-y122.b3:33361,31410,9/2"
       ],
       "effects": {
         "encounter": {

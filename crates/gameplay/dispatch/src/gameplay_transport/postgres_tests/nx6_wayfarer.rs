@@ -318,7 +318,10 @@ pub(super) async fn exercise(
     assert_eq!(charm_count().await?, 0, "offer alone cannot mint");
     talk(owner, admitted, dragon, 6313, "yes").await?;
     assert_eq!(charm_count().await?, 1);
-    assert_eq!(progress(owner, admitted, authority, quest::QUESTLINE).await?, 29);
+    assert_eq!(
+        progress(owner, admitted, authority, quest::QUESTLINE).await?,
+        29
+    );
     talk(owner, admitted, dragon, 6313, "yes").await?;
     assert_eq!(charm_count().await?, 1);
     eprintln!(

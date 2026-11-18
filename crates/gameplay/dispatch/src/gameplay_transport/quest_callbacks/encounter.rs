@@ -114,30 +114,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         let payback = encounter.phase == Some(world_callbacks::EncounterPhase::WrathPayback);
-        let mut payback_room = if payback {
-            let Some(native) = self
-                .active_generation
-                .and_then(|active| active.native_gameplay())
-            else {
-                return UseDisposition::Rejected;
-            };
-            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-            if native.install_companion_policies(runtime).is_err() {
-                return UseDisposition::Rejected;
-            }
-            states
-                .encounter_phases
-                .tick_payback(runtime, self.owner_now().get());
-            let Ok(room) = states.encounter_phases.payback.lock() else {
-                return UseDisposition::Rejected;
-            };
-            if room.is_some() {
-                return UseDisposition::Occupied;
-            }
-            Some(room)
-        } else {
-            None
-        };
         if preflight && callback.has_personal_state() {
             if !callback.requires_world_admission {
                 return UseDisposition::Rejected;
@@ -175,6 +151,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
+        let mut payback_room = if payback {
+            let Some(native) = self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+            else {
+                return UseDisposition::Rejected;
+            };
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            if native.install_companion_policies(runtime).is_err() {
+                return UseDisposition::Rejected;
+            }
+            states
+                .encounter_phases
+                .tick_payback(runtime, self.owner_now().get());
+            let Ok(room) = states.encounter_phases.payback.lock() else {
+                return UseDisposition::Rejected;
+            };
+            if room.is_some() {
+                return UseDisposition::Occupied;
+            }
+            Some(room)
+        } else {
+            None
+        };
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
@@ -268,9 +268,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             players.push((who, member_session, expected));
             proofs.push(proof);
         }
-        if !players
-            .iter()
-            .any(|(who, s, _)| *who == actor && *s == session)
+        if players.is_empty()
+            || (!payback && !players.iter().any(|(who, s, _)| *who == actor && *s == session))
         {
             return UseDisposition::Rejected;
         }

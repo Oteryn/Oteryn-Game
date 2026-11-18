@@ -5,8 +5,8 @@
       "key": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/replica_cooldown",
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "writable": true,
-      "initial": -1,
-      "min": -1,
+      "initial": 0,
+      "min": 0,
       "max": 9223372036854775807,
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua"
@@ -278,13 +278,13 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/boss_status",
-          "minimum": -1,
+          "minimum": 0,
           "maximum": 0,
           "set": 1
         },
         {
           "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/inner_sanctum",
-          "minimum": -1,
+          "minimum": 0,
           "maximum": 0,
           "set": 1
         }

@@ -292,6 +292,24 @@ pub(super) fn cults_scenario(reenter: bool, payback: bool) -> TestResult {
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
+            let partner = if payback {
+                Some(
+                    super::grizzly_boss::second_player(
+                        &owner,
+                        &deps,
+                        &h,
+                        MovementLocalPosition {
+                            x: 100,
+                            y: 101,
+                            floor: 7,
+                        },
+                    )
+                    .await?
+                    .0,
+                )
+            } else {
+                None
+            };
             let outcome = owner
                 .use_object(
                     deps.actor,
@@ -311,8 +329,9 @@ pub(super) fn cults_scenario(reenter: bool, payback: bool) -> TestResult {
                 UseDisposition::Committed,
                 "phase admission"
             );
-            if payback {
-                return super::wrath_payback::exercise(&owner, &admitted, &placement, key).await;
+            if let Some(partner) = partner {
+                return super::wrath_payback::exercise(&owner, &admitted, &placement, key, partner)
+                    .await;
             }
             assert_eq!(
                 owner

@@ -36,7 +36,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if any(r['production_definition']['production_key'] == key for r in document['records']):
             raise ValueError('Wrath remains duplicate native profile')
         observation = primal.corpse_definition(definition, None, 60_000, None, False)
-        semantics = copy.deepcopy(definition['semantics'])
+        semantics = {**copy.deepcopy(observation['semantics']),
+                     **copy.deepcopy(definition.get('semantics', {}))}
         for group in corpse.GROUPS:
             if not corpse.compatible(semantics[group], observation['semantics'][group]):
                 raise ValueError(f'Wrath remains canonical {group} conflict: {key}')
