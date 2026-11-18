@@ -60,8 +60,8 @@ async fn exercise(h: &Harness) -> TestResult {
         super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?;
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native content")?;
-    use super::l6_world_pickups::{NativeCrop, native_scene_with_appearances};
-    let world = native_scene_with_appearances(
+    use super::l6_world_pickups::{NativeCrop, native_scene};
+    let world = native_scene(
         native,
         vec![
             NativeCrop {
@@ -86,7 +86,6 @@ async fn exercise(h: &Harness) -> TestResult {
             },
         ],
         &[],
-        &[846, 847],
     )?;
     let cells = world
         .movement_cells(activated.qualified_room().movement_cells())
