@@ -282,7 +282,10 @@ fn chamber(case: ChamberCase) -> TestResult {
                     .map_err(|()| "peer fence")?
                     .ok_or("peer fence")?;
                 for member in [session, peer] {
-                    owner.states.chat.admit(member, "Chamber witness", owner.owner_now());
+                    owner
+                        .states
+                        .chat
+                        .admit(member, "Chamber witness", owner.owner_now());
                 }
                 for (actor, session, fence, station, command_id) in [
                     (
@@ -461,10 +464,10 @@ fn assert_chamber_warning(
     participants: [crate::foundation::GameSessionId; 2],
     remaining: &str,
 ) {
+    let expected = format!("You have {remaining} from now on until you get teleported out.");
     for session in participants {
         assert!(owner.states.chat.drain(session).into_iter().any(|line| {
-            matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. }
-                if text == format!("You have {remaining} from now on until you get teleported out."))
+            matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == expected)
         }), "participant should receive the {remaining} chamber warning");
     }
 }
