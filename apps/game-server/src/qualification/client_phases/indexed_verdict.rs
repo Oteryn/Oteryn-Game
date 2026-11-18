@@ -261,6 +261,110 @@ mod tests {
     }
 
     #[test]
+    fn rashid_look_backoff_survives_route_progress_under_one_second_watchdog() -> TestResult {
+        use super::super::super::full_row_s10::{
+            RashidWait, audit_rashid_anchors, look_for_rashid,
+        };
+        use oteryn_protocol_oteryn::item_look::{ItemLookRefusal, ItemLookResult};
+
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(1)))));
+            let mut watch = Watch::new("S10.full", harness);
+            watch.scenario = Some("S10.full");
+            let today = (30, 40, -7);
+            let wait = RashidWait::new(harness, Duration::from_secs(12));
+            let mut probes = 0;
+            let result = watch
+                .run(
+                    None,
+                    "indexed row",
+                    wait.run(audit_rashid_anchors(
+                        &mut probes,
+                        today,
+                        [today],
+                        true,
+                        &wait,
+                        async |probes, _| {
+                            *probes += 1;
+                            if *probes == 1 {
+                                return Ok(None);
+                            }
+                            if *probes == 2 {
+                                harness.progress("route-search");
+                                harness.progress("walk");
+                                let mut replies = [
+                                    ItemLookResult::Refused(ItemLookRefusal::RateLimited),
+                                    ItemLookResult::Text("You see Rashid.".into()),
+                                ]
+                                .into_iter();
+                                let found = look_for_rashid(
+                                    &mut replies,
+                                    today,
+                                    &wait,
+                                    async |replies, _| {
+                                        replies.next().ok_or_else(|| "unexpected LOOK".into())
+                                    },
+                                    async |_, duration| {
+                                        tokio::time::sleep(duration).await;
+                                        Ok(())
+                                    },
+                                )
+                                .await?;
+                                return Ok(found.then_some(today));
+                            }
+                            Ok(Some(today))
+                        },
+                        async |_, actor| Ok(actor),
+                    )),
+                )
+                .await?;
+            assert_eq!(result, today);
+            assert_eq!(probes, 3);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn rashid_pending_look_is_subject_to_the_watchdog_after_an_empty_probe() -> TestResult {
+        use super::super::super::full_row_s10::{RashidWait, look_for_rashid};
+
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(1)))));
+            let mut watch = Watch::new("S10.full", harness);
+            watch.scenario = Some("S10.full");
+            let wait = RashidWait::new(harness, Duration::from_secs(12));
+            let started = tokio::time::Instant::now();
+            let result = watch
+                .run(
+                    None,
+                    "indexed row",
+                    wait.run(async {
+                        harness.bounded_wait(started + Duration::from_secs(12), "rashid-rotation");
+                        look_for_rashid(
+                            &mut (),
+                            (),
+                            &wait,
+                            async |_, _| std::future::pending().await,
+                            async |_, _| Err("unexpected LOOK backoff".into()),
+                        )
+                        .await
+                    }),
+                )
+                .await;
+            let error = result.err().ok_or("stalled LOOK should fail")?;
+            assert_eq!(started.elapsed(), Duration::from_secs(1));
+            assert!(matches!(
+                classify(error.as_ref()),
+                Cause::NoProgress {
+                    phase: "rashid-look",
+                    ..
+                }
+            ));
+            Ok(())
+        })
+    }
+
+    #[test]
     fn bounded_observation_wait_preserves_its_real_budget_and_idle_watchdog() -> TestResult {
         runtime()?.block_on(async {
             let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(90)))));

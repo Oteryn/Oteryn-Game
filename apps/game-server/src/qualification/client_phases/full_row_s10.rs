@@ -20,6 +20,7 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_gameplay_entities::rashid_schedule::RashidDestination;
+use oteryn_protocol_oteryn::item_look::{ItemLookRefusal, ItemLookResult};
 use oteryn_protocol_oteryn::npc_service as wire;
 
 const TRAVEL_NPCS: &[(&str, &str, &str, u64)] = &[
@@ -467,7 +468,7 @@ async fn verify_rashid_trade(
         audited != Some(day),
         wait,
         async |client, coordinates| {
-            let found = inspect_rashid_anchor(client, world, coordinates).await?;
+            let found = inspect_rashid_anchor(client, world, coordinates, wait).await?;
             if utc_rashid_destination()? != day {
                 return Err("step rashid-gate: UTC weekday changed during anchor tour".into());
             }
@@ -525,6 +526,7 @@ async fn inspect_rashid_anchor(
     client: &mut DevClientSession,
     world: &BundleWorld,
     (x, y, floor): PlacementCoordinates,
+    wait: &RashidWait,
 ) -> TestResult<Option<oteryn_dev_client::EntityRef>> {
     let anchor = ActorPosition {
         x: x.into(),
@@ -542,37 +544,29 @@ async fn inspect_rashid_anchor(
     walk(client, world, &path).await?;
     client.service_liveness(Duration::from_millis(100)).await?;
     client.take_events();
-    let candidates: Vec<_> = client
-        .world_entities()
-        .ok_or("missing Rashid entity view")?
-        .iter()
-        .filter(|entry| entry.kind == EntityKind::Npc && rashid_at_anchor(entry.position, anchor))
-        .map(|entry| entry.entity)
-        .collect();
-    let mut rashid = None;
-    for (index, candidate) in candidates.into_iter().enumerate() {
-        if index > 0 {
-            client.service_liveness(Duration::from_millis(110)).await?;
-            client.take_events();
-        }
-        use oteryn_protocol_oteryn::item_look::{ItemLookRefusal, ItemLookResult};
-        let mut identity = full_row_w02::actor_look(client, candidate).await?;
-        for _ in 0..2 {
-            if identity != ItemLookResult::Refused(ItemLookRefusal::RateLimited) {
-                break;
+    let rashid = scan_rashid_candidates(
+        client,
+        |client| {
+            Ok(client
+                .world_entities()
+                .ok_or("missing Rashid entity view")?
+                .iter()
+                .filter(|entry| entry.kind == EntityKind::Npc && rashid_at_anchor(entry.position, anchor))
+                .map(|entry| entry.entity)
+                .collect())
+        },
+        async |client, candidate, subsequent| {
+            if subsequent {
+                client.service_liveness(Duration::from_millis(110)).await?;
+                client.take_events();
             }
-            client.service_liveness(Duration::from_millis(1100)).await?;
-            client.take_events();
-            identity = full_row_w02::actor_look(client, candidate).await?;
-        }
-        if full_row_w02::classify_actor_name(identity, "Rashid")?
-            && rashid.replace(candidate).is_some()
-        {
-            return Err(
-                format!("step rashid-gate: multiple live Rashid actors at {anchor:?}").into(),
-            );
-        }
-    }
+            look_for_rashid(client, candidate, wait, full_row_w02::actor_look, async |client, duration| {
+                client.service_liveness(duration).await?;
+                client.take_events();
+                Ok(())
+            }).await
+        },
+    ).await?;
     let Some(actor) = rashid else {
         return Ok(None);
     };
@@ -606,6 +600,55 @@ async fn inspect_rashid_anchor(
         walk(client, world, std::slice::from_ref(step)).await?;
     }
     Err("step rashid-gate: live Rashid moved outside speech range during approach".into())
+}
+
+async fn scan_rashid_candidates<C, A: Copy + Ord>(
+    client: &mut C,
+    mut candidates: impl FnMut(&C) -> TestResult<Vec<A>>,
+    mut identify: impl AsyncFnMut(&mut C, A, bool) -> TestResult<bool>,
+) -> TestResult<Option<A>> {
+    let mut identified = std::collections::BTreeMap::new();
+    loop {
+        // While LOOK is in flight the session applies entity deltas. Classify any
+        // newly visible candidates and decide using the latest anchor membership.
+        let current = candidates(client)?;
+        if let Some(candidate) = current.iter().copied().find(|actor| !identified.contains_key(actor)) {
+            let is_rashid = identify(client, candidate, !identified.is_empty()).await?;
+            identified.insert(candidate, is_rashid);
+            continue;
+        }
+        let mut matches = current.into_iter().filter(|actor| identified.get(actor) == Some(&true));
+        let rashid = matches.next();
+        if matches.next().is_some() {
+            return Err("step rashid-gate: multiple live Rashid actors at anchor".into());
+        }
+        return Ok(rashid);
+    }
+}
+
+pub(super) async fn look_for_rashid<C, A: Copy>(
+    client: &mut C,
+    candidate: A,
+    wait: &RashidWait,
+    mut look: impl AsyncFnMut(&mut C, A) -> TestResult<ItemLookResult>,
+    mut service: impl AsyncFnMut(&mut C, Duration) -> TestResult,
+) -> TestResult<bool> {
+    wait.progress("rashid-look");
+    let mut identity = look(client, candidate).await?;
+    for _ in 0..2 {
+        if identity != ItemLookResult::Refused(ItemLookRefusal::RateLimited) {
+            break;
+        }
+        let backoff = Duration::from_millis(1100);
+        wait.harness.bounded_wait(
+            wait.deadline.min(tokio::time::Instant::now() + backoff),
+            "rashid-look-backoff",
+        );
+        service(client, backoff).await?;
+        wait.progress("rashid-look");
+        identity = look(client, candidate).await?;
+    }
+    full_row_w02::classify_actor_name(identity, "Rashid")
 }
 
 fn weekday_rashid(
@@ -841,4 +884,24 @@ async fn rashid_rechecks_for_duplicates_at_todays_anchor_after_trade() {
         },
     ).await;
     assert!(result.is_err_and(|error| error.to_string().contains("multiple live Rashid")));
+}
+
+#[tokio::test]
+async fn rashid_scan_identifies_a_duplicate_published_during_look() {
+    let mut visible = vec![1];
+    let mut looked = Vec::new();
+    let result = scan_rashid_candidates(
+        &mut visible,
+        |visible| Ok(visible.clone()),
+        async |visible, candidate, _| {
+            looked.push(candidate);
+            if candidate == 1 {
+                tokio::task::yield_now().await;
+                visible.push(2);
+            }
+            Ok(true)
+        },
+    ).await;
+    assert!(result.is_err_and(|error| error.to_string().contains("multiple live Rashid")));
+    assert_eq!(looked, [1, 2]);
 }
