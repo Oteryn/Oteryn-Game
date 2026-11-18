@@ -145,6 +145,10 @@ pub struct Passage {
     pub if_present: bool,
     #[serde(default)]
     pub replacement: Option<u16>,
+    /// A deferred close may leave this object unchanged if its restore state
+    /// cannot be resolved, while still restoring the other passage objects.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub restore_if_served: bool,
     /// Explicit solid projection, admitted only for exact native consuming repairs.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub replacement_passable: Option<bool>,
@@ -1180,6 +1184,12 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 .passages
                 .iter()
                 .any(|p| p.if_present && callback.effects.passages_reset_after_ms.is_none())
+            || callback.passages.iter().any(|p| {
+                p.restore_if_served
+                    && (callback.effects.close_passages_after_ms.is_none()
+                        || p.appearance == 0
+                        || p.replacement.is_none_or(|open| open == 0 || open == p.appearance))
+            })
             || unique_storage.len() != callback.storage.len()
             || callback.storage.iter().filter(|s| s.add.is_some()).count() > 1
             || callback.storage.iter().any(|s| {

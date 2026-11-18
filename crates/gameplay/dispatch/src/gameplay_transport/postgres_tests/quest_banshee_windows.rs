@@ -4,7 +4,7 @@ use super::{
     annihilator_route::{step, use_target},
     fixture::debug,
     l6_shared_gate_native::relocate,
-    quest_demonrage::target,
+    quest_demonrage::{appearance, target},
     quest_world_callbacks::local,
 };
 use crate::map::{boot::BundleMap, overlay::TilePos, view::{MapFacts,placement_key}};
@@ -54,7 +54,7 @@ fn source_bindings() -> TestResult<Vec<Callback>> {
         (at(32210,31898,-12),410,"east",json!([{"position":FIRST_WALL,"appearance":2129}]),120_000),
         (at(32266,31860,-12),431,"trapdoor",json!([
             {"position":TRAPDOOR,"appearance":2129,"replacement":369},
-            {"position":TRAPDOOR_LEVER,"appearance":27260,"replacement":2773},
+            {"position":TRAPDOOR_LEVER,"appearance":27260,"replacement":2773,"restore_if_served":true},
         ]),3_000),
     ] {
         callbacks.push(serde_json::from_value(json!({
@@ -93,13 +93,28 @@ pub(super) async fn exercise(
     let upper = map.overlay.base().tile(TRAPDOOR.x, TRAPDOOR.y, TRAPDOOR.floor)
         .ok_or("native Banshee trapdoor tile")?;
     assert!(upper.ground().is_none(), "the closed tile holds only its wall");
+    let upper_tile = TilePos { x: TRAPDOOR.x, y: TRAPDOOR.y, floor: TRAPDOOR.floor };
+    let upper_id = *upper.ids().first().ok_or("trapdoor placement")?;
+    let wall_appearance = || map.facts.base_entry(upper_tile,0,upper_id).map(|entry|entry.appearance_id);
     owner.states.test_owner_time.store(10_000_001,Ordering::Relaxed);
     assert_eq!(use_target(owner,operator,&target(map,TRAPDOOR_LEVER)?).await?,UseDisposition::Committed);
+    assert_eq!(wall_appearance(),Some(369));
     step(owner,operator,StepDirection::North).await?;
     let position = owner.runtime.lock().await
         .read_actor_position(operator_actor).map_err(debug)?.position();
     assert_eq!(position, local(at(32266,31860,-12)));
+    assert_eq!(map.facts.next_movement_decay_time(),Some(13_000_000));
+    map.facts.expire_movement_items(12_999_999);
+    assert_eq!(wall_appearance(),Some(369));
     map.facts.expire_movement_items(13_000_000);
+    assert_eq!(wall_appearance(),Some(2129));
+    assert!(map.facts.quest_callback_blocked(map.overlay.base(),upper_tile,false));
+    let lever = placement_key(TilePos {
+        x:TRAPDOOR_LEVER.x,y:TRAPDOOR_LEVER.y,floor:TRAPDOOR_LEVER.floor,
+    },1).ok_or("trapdoor lever placement")?;
+    let expected = map.facts.quest_callback_replacement(lever,27260)
+        .map_or(2773,|entry|entry.appearance_id);
+    assert_eq!(appearance(map,TRAPDOOR_LEVER)?,expected);
     relocate(owner,operator_actor,operator.game_session_id,(START.x,START.y,12)).await?;
 
     let walls = [FIRST_WALL,SECOND_WALL].map(|p| TilePos{x:p.x,y:p.y,floor:p.floor});

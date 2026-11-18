@@ -495,6 +495,7 @@ fn scenario_case(
             },
             appearance: 435,
             replacement: None,
+            restore_if_served: false,
             create_on_close: None,
             require_state: false,
         }];
@@ -922,6 +923,7 @@ fn scenario_case(
                 },
                 appearance: 464,
                 replacement: None,
+                restore_if_served: false,
                 require_state: false,
             });
         world(&physical, trigger)?

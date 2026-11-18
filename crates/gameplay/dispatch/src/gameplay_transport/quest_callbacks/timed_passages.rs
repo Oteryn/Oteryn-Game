@@ -386,10 +386,18 @@ pub(super) fn prepare_deferred_close(
         if open.next().is_some() {
             return Err(UseDisposition::Rejected);
         }
-        let after = map
+        let Some(after) = map
             .facts
             .quest_callback_replacement(key, passage.appearance)
-            .ok_or(UseDisposition::Rejected)?;
+        else {
+            // Crystal 201189f8 data/libs/functions/position.lua:280-295 restores
+            // the wall independently of the lever transform. An unknown target
+            // leaves the original item in place (src/game/game.cpp:3054-3057).
+            if passage.restore_if_served {
+                continue;
+            }
+            return Err(UseDisposition::Rejected);
+        };
         entries.push(QuestTimedPassage {
             key,
             expected_revision: map.facts.object_revision(key),

@@ -49,6 +49,7 @@ pub(crate) fn reset_callback() -> super::world_callbacks::Callback {
             position,
             appearance: 3636,
             replacement: None,
+            restore_if_served: false,
             create_on_close: None,
             if_present: false,
             replacement_passable: None,
