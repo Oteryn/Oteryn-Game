@@ -219,6 +219,8 @@ impl ZelosEncounter {
         let identity = blood.placement_identity();
         let draw = Sha256::digest(identity);
         let damage = 20_000 + i64::from(u16::from_be_bytes([draw[0], draw[1]]) % 5001);
+        let occurrence = format!("grave-danger-blood:{:032x}", u128::from_be_bytes(identity));
+        let binding = format!("{occurrence}\0grave-danger-drowning");
         let before = runtime.encounter_parts().0.clone();
         let outcome = (|| {
             let (carrier, continuity) = runtime.encounter_parts_mut();
@@ -227,8 +229,8 @@ impl ZelosEncounter {
                 red.0,
                 OwnerDamageCommand {
                     target: ROLES[RED].creature.as_bytes(),
-                    occurrence: &identity,
-                    binding: b"grave-danger-vampiric-blood",
+                    occurrence: occurrence.as_bytes(),
+                    binding: binding.as_bytes(),
                     damage,
                 },
                 None,

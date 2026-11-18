@@ -19,14 +19,15 @@ pub(super) fn apply(
 ) {
     match effect {
         DukeEffect::Transform { player, finish_us } => {
-            let look_type = match player.form {
-                ElementalForm::Fire => 49,
-                ElementalForm::Water => 286,
+            let (look_type, creature) = match player.form {
+                ElementalForm::Fire => (49, "oteryn:creature.fire_elemental"),
+                ElementalForm::Water => (286, "oteryn:creature.water_elemental"),
             };
-            let Some(appearance) = native
-                .spell_appearances()
-                .and_then(|index| index.for_look_type(look_type))
-            else {
+            let Some(appearance) = native.spell_appearances().and_then(|index| {
+                index
+                    .for_creature(creature, "definition-r1")
+                    .filter(|binding| binding.look_type() == look_type)
+            }) else {
                 return;
             };
             let Ok(duration_ms) = u32::try_from(finish_us.saturating_sub(now) / 1_000) else {

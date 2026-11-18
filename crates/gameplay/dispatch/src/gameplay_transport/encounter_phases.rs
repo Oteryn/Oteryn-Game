@@ -158,13 +158,13 @@ impl Fight {
     ) -> Result<bool, CarrierError> {
         let at = |runtime: &ChannelRuntimeV1, at| placement(cells, runtime, at);
         let relocate = |runtime: &mut ChannelRuntimeV1, actor, at| {
-            let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
-                cells.index()
-            else {
-                return Err(CarrierError::PlanConflict);
-            };
-            let doors = crate::map::floor::BundleDoors(&index.map().facts);
-            crate::movement::relocate::relocate_creature(runtime, actor, cells, &doors, at)
+            if !placement(cells, runtime, at) || runtime.position_occupied_by_other(actor, at)? {
+                return Err(CarrierError::WrongScope);
+            }
+            let before = runtime.read_actor_position(actor)?;
+            runtime
+                .borrow_movement_position()
+                .commit_creature_relocation(actor, before, at)
                 .map(|_| ())
         };
         match self {
