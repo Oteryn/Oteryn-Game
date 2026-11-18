@@ -52,9 +52,9 @@ pub(super) fn binding() -> TestResult<Callback> {
             "reusable":true,"selected_instance":true
         },
         "storage":[{"track":STARTED,"minimum":1,"maximum":6,"set":1,"preserve":true}],
-        "effects":{"transform":233,"roll_tool":{"outcomes":11,"minimum_success":5,
+        "effects":{"transform":233,"roll_tool":{"outcomes":11,"minimum_success":5,"rearm_step_ms":60000,
             "success_effect":21,"failure_effect":3,"stages":[stage]}},
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/actions_strange_bucket.lua:16-58"]
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/actions_strange_bucket.lua:16-59"]
     }))?)
 }
 
@@ -197,18 +197,22 @@ pub(super) async fn exercise(
         .revision();
     let first = admitted.continuity.next_command_id;
     let roll = callback.effects.roll_tool.as_ref().ok_or("roll tool")?;
-    let command = (first..first + 64)
-        .find(|ordinal| {
-            roll.succeeds(
+    let (command, draw) = (first..first + 64)
+        .map(|ordinal| {
+            let draw = roll.draw(
                 USE,
                 admitted.game_session_id.as_bytes(),
-                *ordinal,
+                ordinal,
                 &actor.placement_identity(),
                 revision,
-            ) == won
+            );
+            (ordinal, draw)
         })
+        .find(|&(_, draw)| draw > 0 && (draw >= u64::from(roll.minimum_success)) == won)
         .ok_or("fixture roll occurrence")?;
+    let mut submitted = owner.owner_now().get();
     for ordinal in first..=command {
+        submitted = owner.owner_now().get();
         let expected_revision = u64::from(ordinal != command);
         let (next, result, _) = super::rust_lottery::exchange_latest_source(
             owner,
@@ -253,5 +257,17 @@ pub(super) async fn exercise(
     .fetch_one(&harness.pool)
     .await?;
     assert_eq!(proofs, (i64::from(won), i64::from(!won)));
+    let due = map.facts.next_movement_decay_time().ok_or("egg rearm")?;
+    let rearm = draw * 60_000_000;
+    assert!((submitted + rearm..=owner.owner_now().get() + rearm).contains(&due));
+    assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(due), 1);
+    assert_eq!(
+        map.facts
+            .base_entry(tile, 1, base_id)
+            .ok_or("rearmed egg")?
+            .appearance_id,
+        29305
+    );
     Ok(())
 }

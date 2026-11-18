@@ -1209,6 +1209,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let (context, selected_tool) = context;
+            // Crystal actions_strange_bucket.lua:18,58-59 uses one draw to
+            // decide filling and the duration of the spent egg.
+            let tool_rearm_ms = if let Some(tool) = &callback.effects.roll_tool {
+                let QuestCause::Use(command) = cause else {
+                    return UseDisposition::Rejected;
+                };
+                Some(
+                    u64::from(tool.rearm_step_ms)
+                        * tool.draw(
+                            &callback.key,
+                            command.game_session_id().as_bytes(),
+                            command.command_id().get(),
+                            &context.actor_placement,
+                            context.movement_revision,
+                        ),
+                )
+            } else {
+                None
+            };
             let roll = if let Some(roll) = &callback.effects.roll_reward {
                 let QuestCause::Use(command) = cause else {
                     return UseDisposition::Rejected;
@@ -1414,6 +1433,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         };
                         projection = Some(crate::map::facts::QuestCallbackProjection::TimedAction {
                             due, restore: before, action: roll.source_action,
+                        });
+                    }
+                    if let Some(delay) = tool_rearm_ms {
+                        let Some(due) = self.owner_now().get().checked_add(delay * 1_000) else {
+                            return UseDisposition::Exhausted;
+                        };
+                        projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                            due, restore: before,
                         });
                     }
                     if callback.effects.offering_portal.is_some() {

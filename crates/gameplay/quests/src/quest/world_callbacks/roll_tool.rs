@@ -1,4 +1,4 @@
-//! Crystal 201189f the_dream_courts/actions_strange_bucket.lua:16-58.
+//! Crystal 201189f the_dream_courts/actions_strange_bucket.lua:16-59.
 use super::{ActorKind, Callback, CallbackEffects, Trigger, roll_reward};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -16,6 +16,7 @@ pub struct RollToolStage {
 pub struct RollTool {
     pub outcomes: u8,
     pub minimum_success: u8,
+    pub rearm_step_ms: u32,
     pub success_effect: u16,
     pub failure_effect: u16,
     pub stages: Vec<RollToolStage>,
@@ -41,6 +42,8 @@ impl RollTool {
         };
         (2..=100).contains(&self.outcomes)
             && (1..self.outcomes).contains(&self.minimum_success)
+            && self.rearm_step_ms > 0
+            && u64::from(self.outcomes - 1) * u64::from(self.rearm_step_ms) <= 3_600_000
             && (1..=255).contains(&self.success_effect)
             && (1..=255).contains(&self.failure_effect)
             && !self.stages.is_empty()
@@ -90,6 +93,23 @@ impl RollTool {
         actor_placement: &[u8; 16],
         movement_revision: u64,
     ) -> bool {
+        self.draw(
+            callback,
+            session,
+            ordinal,
+            actor_placement,
+            movement_revision,
+        ) >= u64::from(self.minimum_success)
+    }
+
+    pub fn draw(
+        &self,
+        callback: &str,
+        session: &[u8; 16],
+        ordinal: u64,
+        actor_placement: &[u8; 16],
+        movement_revision: u64,
+    ) -> u64 {
         roll_reward::draw(
             callback,
             session,
@@ -97,7 +117,6 @@ impl RollTool {
             actor_placement,
             movement_revision,
         ) % u64::from(self.outcomes.max(1))
-            >= u64::from(self.minimum_success)
     }
 
     pub fn stage(&self, source: &str) -> Option<&RollToolStage> {
