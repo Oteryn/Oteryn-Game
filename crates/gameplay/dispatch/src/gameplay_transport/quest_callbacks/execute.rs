@@ -628,6 +628,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection_target: None,
                     selected_tool: None,
                     claim_vitals: None,
+                    timed_presence_paid_at: None,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -778,6 +779,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection_target: None,
                     selected_tool: None,
                     claim_vitals: None,
+                    timed_presence_paid_at: None,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -970,6 +972,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !(close && callback.opening_only);
         let mut fresh_effects = !durable;
         let mut claim_presentation = false;
+        let mut timed_presence_paid_at = None;
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
@@ -1078,6 +1081,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection_target: None,
                     selected_tool: None,
                     claim_vitals: None,
+                    timed_presence_paid_at: None,
                 });
                 record.projection_target = projection_target;
                 // The tool is bound with the first durable context. A replay keeps
@@ -1302,6 +1306,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
+                    if callback.effects.timed_presence.is_some() {
+                        let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                            return UseDisposition::Rejected;
+                        };
+                        let Some(record) = records.get_mut(&session) else {
+                            return UseDisposition::Rejected;
+                        };
+                        timed_presence_paid_at = Some(*record.timed_presence_paid_at
+                            .get_or_insert_with(|| self.owner_now().get()));
+                    }
                     // Crystal gems.lua:81-85 resets the signed field counter to zero;
                     // its initial unset value is -1. The same comparison opens at three.
                     if let Some(crate::map::facts::QuestCallbackProjection::TimedPresence { window: Some(window), .. }) = &mut projection
@@ -1515,10 +1529,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ..
                 }) = projection.as_mut()
             {
-                let published = self.owner_now().get();
+                let Some(paid_at) = timed_presence_paid_at else {
+                    return UseDisposition::Rejected;
+                };
                 let (Some(spawn), Some(expiry)) = (
-                    published.checked_add(u64::from(source.spawn_after_ms) * 1_000),
-                    published.checked_add(u64::from(source.expires_after_ms) * 1_000),
+                    paid_at.checked_add(u64::from(source.spawn_after_ms) * 1_000),
+                    paid_at.checked_add(u64::from(source.expires_after_ms) * 1_000),
                 ) else {
                     return UseDisposition::Exhausted;
                 };

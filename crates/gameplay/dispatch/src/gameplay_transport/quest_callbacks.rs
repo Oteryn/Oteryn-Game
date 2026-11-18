@@ -75,6 +75,8 @@ struct Pending {
     flame_effect_sent: bool,
     /// The exact carried tool bound into the durable World context, if any.
     selected_tool: Option<([u8; 16], Vec<u8>)>,
+    /// Retain the paid USE's owner clock across interrupted projection.
+    timed_presence_paid_at: Option<u64>,
     claim_vitals: Option<(
         u64,
         crate::durability::character_last_position::FinalLastPosition,
@@ -541,10 +543,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::gameplay_transport::item_ref_admission::NativeItemWeights(n)
                     .with_wheel(self.premium_coordinator)
             });
-            let admission = self
+            let callback = self
                 .callback_content()
                 .iter()
-                .find(|c| c.key == pending.callback)
+                .find(|c| c.key == pending.callback);
+            let timed_presence = callback.is_some_and(|c| c.effects.timed_presence.is_some());
+            let admission = callback
                 .filter(|c| c.needs_item_reward_admission())
                 .and_then(|_| native.zip(weights.as_ref()))
                 .map(|(native, weights)| {
@@ -613,6 +617,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if disposition == UseDisposition::Committed {
                 if let Some(record) = records.get_mut(&pending.session) {
                     record.ingress_settled = true;
+                    if timed_presence {
+                        record
+                            .timed_presence_paid_at
+                            .get_or_insert_with(|| self.owner_now().get());
+                    }
                 }
             } else {
                 records.remove(&pending.session);
@@ -1615,6 +1624,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         flame_effect_sent: false,
                         selected_tool: None,
                         claim_vitals: None,
+                        timed_presence_paid_at: None,
                     });
                     pending.origin = Some(origin);
                 }

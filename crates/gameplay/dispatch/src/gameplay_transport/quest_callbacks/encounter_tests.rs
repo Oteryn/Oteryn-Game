@@ -30,6 +30,7 @@ fn engenc_personal_encounter_pending_requires_original_command_and_physical_fenc
         projection_target: None,
         selected_tool: None,
         claim_vitals: None,
+        timed_presence_paid_at: None,
     };
     let allowed = |pending: &Pending| {
         pending_encounter_matches(

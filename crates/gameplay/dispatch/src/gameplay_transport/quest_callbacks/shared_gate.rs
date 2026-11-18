@@ -57,6 +57,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 flame_effect_sent: false,
                 selected_tool: None,
                 claim_vitals: None,
+                timed_presence_paid_at: None,
             });
             pending.context.get_or_insert(context).clone()
         } else {
