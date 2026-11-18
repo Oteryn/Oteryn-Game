@@ -643,7 +643,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                 let expected = runtime.read_actor_position(actor).map_err(debug)?;
                 let doors = crate::map::floor::BundleDoors(&map.facts);
                 let exit = Position {
-                    x: start.x - 1,
+                    x: start.x + 2,
                     ..start
                 };
                 let proof = crate::map::floor::prepare_quest_encounter_ejection(
@@ -668,7 +668,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                     .position();
                 let expected = if index == 3 {
                     Position {
-                        x: start.x - 1,
+                        x: start.x + 2,
                         ..start
                     }
                 } else {

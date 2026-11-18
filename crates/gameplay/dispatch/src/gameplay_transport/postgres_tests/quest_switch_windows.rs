@@ -124,7 +124,7 @@ pub(super) async fn reversible_passage(
     // Crystal 201189f8 action-1-first_seal_lever.lua:24-36. Use the fixture's
     // real lever and remote door to prove the shared world reset in dispatch.
     authored["passages"] = serde_json::json!([{
-        "position": {"x": 33225, "y": 31659, "floor": -13}, "appearance": 5113
+        "position": {"x": 33225, "y": 31659, "floor": -13}, "appearance": 5107
     }]);
     let mut close = authored.clone();
     close["key"] = "oteryn:quest-callback/fixture-trapdoor-step".into();
