@@ -14,6 +14,24 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[3]
+WARZONE_CREATURES = frozenset({
+    'oteryn:creature.the_baron_from_below',
+    'oteryn:creature.the_count_of_the_core',
+    'oteryn:creature.the_duke_of_the_depths',
+})
+# The Warzone loot entries that previously lacked native portable custody.
+# Keep existing, separately qualified Item profile owners in place.
+WARZONE_CUSTODY_IDS = frozenset({
+    8902, 8907, 8908, 10438, 14086, 16117, 27524, 27525, 27526, 27605,
+    27618, 27619, 27620, 27621, 27622, 27623, 27624, 27625, 27626, 27627,
+    27647, 27648, 27649, 27650, 27651, 27655, 27656, 27657, 27713, 50276, 50290,
+})
+
+
+def warzone_custody_ids(root):
+    if not WARZONE_CUSTODY_IDS <= selected(root, WARZONE_CREATURES):
+        raise ValueError('WARZONE_LOOT_CUSTODY_SOURCE')
+    return WARZONE_CUSTODY_IDS
 
 
 def importer(root):
@@ -76,9 +94,9 @@ def profiles(root, ids):
     return result
 
 
-def apply_admissions(definitions, root=ROOT):
+def apply_admissions(definitions, root=ROOT, *, item_ids=None):
     definitions = list(definitions)
-    selected_keys = {f'oteryn:item.tibia.i{i}' for i in selected(root)}
+    selected_keys = {f'oteryn:item.tibia.i{i}' for i in (selected(root) if item_ids is None else item_ids)}
     # Existing qualified Items retain every field. Only the missing closure is authored.
     pending = [d for d in definitions if d['identity']['key'] in selected_keys and not d.get('materializable', False)]
     if pending:

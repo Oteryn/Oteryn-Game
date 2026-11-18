@@ -132663,7 +132663,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15500-15999.json",
-        "canonical_definition_sha256": "4346494ef0c94e85c57d68f9aa421fcced1a6b155f1df45dce636dfa068d97e6",
+        "canonical_definition_sha256": "7f7fdc42acf174a0047bc575989451218fa969869bf1e2dfb86c0d5f6e6e1074",
         "canonical_name": "gnome helmet",
         "wiki_observations": [
           {
@@ -132794,7 +132794,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15500-15999.json",
-        "canonical_definition_sha256": "42f0b40ebb580898726b3d350ac61545439b0b8c803e9cebe4f81def5c09f6de",
+        "canonical_definition_sha256": "cdd9175a280780f266467b945df4a41501d912dc939034a0a2051f97bc7987f8",
         "canonical_name": "gnome armor",
         "wiki_observations": [
           {
@@ -132889,7 +132889,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15500-15999.json",
-        "canonical_definition_sha256": "c89a403eace9d334e012d2e83c3201dfae147d3cb730dc304a588f100f0ab176",
+        "canonical_definition_sha256": "a6d7e711224f433a479d69a9f7f84648ca9d385b448dab49081cbe9271de95e7",
         "canonical_name": "gnome shield",
         "wiki_observations": [
           {
@@ -133007,7 +133007,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-15500-15999.json",
-        "canonical_definition_sha256": "8dcdb1726060c6efd34e233fb08597edffdef2c09ee0a29879c475c6b1779527",
+        "canonical_definition_sha256": "323953bf6f78a8413883e3f62d43cd3af293b63f9002e135a0bdc9b4e7e3d588",
         "canonical_name": "gnome sword",
         "wiki_observations": [
           {
@@ -163087,7 +163087,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "c74e70feae8951e7a3b09834a4d7c2c39896f48a7ce2a6901080cd9c54cb5ff7",
+        "canonical_definition_sha256": "311c5ee4d321a1a3d673b8fdbc43e4d63d9e8871e6dda64fb93c78031d8508a6",
         "canonical_name": "gnomish cuirass",
         "wiki_observations": [
           {
@@ -163278,7 +163278,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-27500-27999.json",
-        "canonical_definition_sha256": "a0b26cbfece5d838c674d671845660a1bfdf8452beeacf08cdc4cf2f760ba282",
+        "canonical_definition_sha256": "23087876ea61aedb981c3cd1969b5c6cf27169889426826f58ce770c3bb8c9ed",
         "canonical_name": "gnomish footwraps",
         "wiki_observations": [
           {

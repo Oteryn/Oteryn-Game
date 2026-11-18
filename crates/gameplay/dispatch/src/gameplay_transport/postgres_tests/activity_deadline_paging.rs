@@ -83,15 +83,37 @@ fn check_production_corpse_assets() -> TestResult {
     let (controller, _) =
         crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
     let active = controller.active().ok_or("active generation")?;
-    let rewards = active.native_gameplay().ok_or("active native gameplay")?.reward_table();
-    for (creature, corpse) in [
-        ("oteryn:creature.the_baron_from_below", "oteryn:item.tibia.i27633"),
-        ("oteryn:creature.the_count_of_the_core", "oteryn:item.tibia.i27637"),
-        ("oteryn:creature.the_duke_of_the_depths", "oteryn:item.tibia.i27641"),
+    let rewards = active
+        .native_gameplay()
+        .ok_or("active native gameplay")?
+        .reward_table();
+    for (creature, corpse, entry_count, max_fragments) in [
+        ("oteryn:creature.the_baron_from_below", "oteryn:item.tibia.i27633", 46, 1),
+        ("oteryn:creature.the_count_of_the_core", "oteryn:item.tibia.i27637", 47, 7),
+        ("oteryn:creature.the_duke_of_the_depths", "oteryn:item.tibia.i27641", 47, 1),
     ] {
-        let row = rewards.reward_boss_corpse(creature)
+        let row = rewards
+            .reward_boss_corpse(creature)
             .ok_or_else(|| format!("production corpse unavailable for {creature}"))?;
-        assert_eq!(row.corpse_item.as_ref().map(|item| item.production_key.as_str()), Some(corpse));
+        assert_eq!(
+            row.corpse_item.as_ref().map(|item| item.production_key.as_str()),
+            Some(corpse)
+        );
+        let private_reward = rewards
+            .row(creature)
+            .map_err(|reason| format!("complete reward row unavailable for {creature}: {reason:?}"))?;
+        assert_eq!(private_reward.loot_table.entries.len(), entry_count, "{creature}");
+        let fragment = private_reward
+            .loot_table
+            .entries
+            .iter()
+            .find(|entry| entry.item.production_key == "oteryn:item.tibia.i27713")
+            .ok_or_else(|| format!("heavy crystal fragment absent for {creature}"))?;
+        assert_eq!(
+            (fragment.min_count, fragment.max_count, fragment.probability_ppm),
+            (1, max_fragments, Some(1_000_000)),
+            "{creature}"
+        );
     }
     Ok(())
 }

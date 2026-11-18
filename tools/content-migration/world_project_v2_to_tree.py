@@ -258,6 +258,7 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
+    module.apply_admissions(definitions, root, item_ids=module.warzone_custody_ids(root))
     sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
     import questpc2_soul_loot_items
     questpc2_soul_loot_items.apply_admissions(definitions, root)

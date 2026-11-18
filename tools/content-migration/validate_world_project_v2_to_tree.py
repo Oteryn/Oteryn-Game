@@ -321,7 +321,11 @@ def source_loot_stack_promotions(root: Path) -> dict[str, int]:
     sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
     import native_goal_loot_items
     import questpc2_soul_loot_items
-    selected_ids = native_goal_loot_items.selected(root) | questpc2_soul_loot_items.selected(root)
+    selected_ids = (
+        native_goal_loot_items.selected(root)
+        | native_goal_loot_items.warzone_custody_ids(root)
+        | questpc2_soul_loot_items.selected(root)
+    )
     for key, profile in native_goal_loot_items.profiles(root, selected_ids).items():
         require(key not in profiles or profiles[key] == profile, "SOURCE_LOOT_STACK_OWNER_CONFLICT")
         profiles[key] = profile

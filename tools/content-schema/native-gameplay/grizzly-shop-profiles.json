@@ -19,7 +19,7 @@
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-00000-00499.json",
-      "sha256": "01e376a83b78137a1f687fe402570bd71ddfeb73f99154481199e897cac2a1da"
+      "sha256": "6b42f6907106db68bc0a1b6e2c0d9ab092d0c00d6307c8fe61e730c468817247"
     },
     {
       "path": "content/items/definitions/items-00500-00999.json",
@@ -51,7 +51,7 @@
     },
     {
       "path": "content/items/definitions/items-15500-15999.json",
-      "sha256": "a5d248252495a7f1fb2dd89ff7a1e19c6ce1e60a13c176fcf8917fa5884eec19"
+      "sha256": "1e4633034147965f648836f7923deb48e16efc29b29117a11fec701217e1df64"
     },
     {
       "path": "content/items/definitions/items-20500-20999.json",
