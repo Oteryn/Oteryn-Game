@@ -437,6 +437,12 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
                 if source.titles().len() == 1
         ));
     }
+    if matches!(
+        case,
+        Case::ResidentTimedEquip(super::super::house_resident_reads::ClockCase::Logout)
+    ) {
+        super::super::house_resident_reads::prepare_logout_vocation(&owner, admitted).await?;
+    }
     let mut transfer = vec![8, 1, 18, HOUSE.len() as u8];
     transfer.extend(HOUSE.as_bytes());
     let (inside, _) = owner

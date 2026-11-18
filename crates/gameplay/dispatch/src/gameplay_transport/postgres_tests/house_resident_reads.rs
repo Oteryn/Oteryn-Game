@@ -364,7 +364,7 @@ pub(super) async fn exchange(
     .bind(id(41).as_slice())
     .execute(&mut *tx)
     .await?;
-    if matches!(case, Case::ResidentTimedEquip(_)) {
+    if matches!(case, Case::ResidentTimedEquip(clock) if clock != ClockCase::Logout) {
         // The native ring requires an eligible vocation before its clock can start.
         sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'monk',10,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET vocation='monk'")
             .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
@@ -783,6 +783,50 @@ pub(super) async fn exchange(
 async fn decoration_phase(h: &Harness) -> TestResult<String> {
     Ok(sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(80).as_slice()).fetch_one(&h.pool).await?)
+}
+
+pub(super) async fn prepare_logout_vocation(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildOccurrence, convert_vocation,
+    };
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("Channel gameplay fence before House entry")?;
+    let formula = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.training_formula())
+        .ok_or("logout training formula")?;
+    let before = owner
+        .root
+        .read_character_build_state(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?;
+    let after = convert_vocation(formula, &before, "monk").map_err(debug)?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    slot.commit_build(
+        owner.root,
+        owner.character,
+        owner.holder,
+        fence,
+        BuildChangeRequest {
+            occurrence: BuildOccurrence::from_bytes(id(74)).map_err(debug)?,
+            cause: BuildCause::VocationChoice,
+            before,
+            after,
+            pruned_stance: None,
+        },
+        formula,
+        None,
+    )
+    .await
+    .map_err(debug)?;
+    Ok(())
 }
 
 async fn check_ring_clock(
