@@ -439,6 +439,8 @@ pub(super) fn is_dangerous_depth_pump_repeat(callback: &Callback) -> bool {
     is_dangerous_depth_pump(callback)
         && callback.key.ends_with("-repeat")
         && callback.is_read_only()
+        && callback.teleport.is_none()
+        && callback.achievements.is_empty()
 }
 
 /// Crystal 201189f actions_crude_lava_pump_achievements.lua:5–65.
