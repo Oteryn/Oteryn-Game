@@ -950,7 +950,14 @@ fn validate_document_with_capacity(
                 c.carried_item.is_some()
                     || c.world_claim.is_some()
                     || (effects.fire_damage.is_none()
-                        && effects.end_conversation_delay_ms.is_none())
+                        && effects.end_conversation_delay_ms.is_none()
+                        && effects.nearby_creatures.is_empty())
+                    // The NPC placement owner tries the NPC tile and its eight neighbors.
+                    || effects.nearby_creatures.len() > 9
+                    || effects
+                        .nearby_creatures
+                        .iter()
+                        .any(|key| !slug(key, "oteryn:creature.", b"._/-", 128))
                     || effects
                         .end_conversation_delay_ms
                         .is_some_and(|delay| delay > 60_000)

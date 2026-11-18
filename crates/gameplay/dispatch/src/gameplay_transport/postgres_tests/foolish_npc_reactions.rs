@@ -23,6 +23,7 @@ const WYDA_NPC: &str = "oteryn:npc.wyda";
 const ORC_NPC: &str = "oteryn:npc.the_orc_king";
 const COOKIE: &str = "oteryn:item.tibia.i130";
 const SCREAM: &str = "WAAAAAHHH!!!";
+const COOKIE_PROMPT: &str = "Offer the cookie to Wyda?";
 
 #[test]
 fn kazzan_greeting_requires_the_current_mummy_look() -> TestResult {
@@ -96,7 +97,7 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
         ORC_NPC => (
             "orc_king_guards",
             "hi",
-            0,
+            31,
             ORC_GREET,
             "Kill them my guards!",
             "data-global/npc/the_orc_king.lua:48-59,118-124",
@@ -113,16 +114,48 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
         ),
         _ => return Err("unexpected reaction fixture".into()),
     };
+    let mut storage = vec![serde_json::json!({"track": track, "minimum": 0, "maximum": 0, "set": 1})];
+    if npc != ORC_NPC {
+        storage.push(serde_json::json!({
+            "track": QUESTLINE, "minimum": stage, "maximum": stage, "set": stage, "preserve": true
+        }));
+    }
     let callback: RewardCallback = serde_json::from_value(serde_json::json!({
         "key": format!("oteryn:quest-reward/fixture/{case}"),
-        "quest": QUEST, "npc": npc, "keywords": [keyword], "topic": 0, "next_topic": 0,
-        "storage": [
-            {"track": QUESTLINE, "minimum": stage, "maximum": stage, "set": stage, "preserve": true},
-            {"track": track, "minimum": 0, "maximum": 0, "set": 1}
-        ],
+        "quest": QUEST, "npc": npc, "keywords": [keyword], "topic": u32::from(npc == WYDA_NPC), "next_topic": 0,
+        "storage": storage,
         "requires_temporary_look": look, "take": take, "npc_after_commit": effects,
         "reply": [reply], "sources": [format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:{source}")]
     }))?;
+    let mut stages = vec![Stage {
+        key: case.into(),
+        completes: false,
+        trigger: Trigger::NpcDialogue {
+            callback: Box::new(callback),
+            alternatives: Vec::new(),
+        },
+    }];
+    if npc == WYDA_NPC {
+        // Crystal 201189f8 data-global/npc/wyda.lua:64-68 opens topic 1.
+        let offer: RewardCallback = serde_json::from_value(serde_json::json!({
+            "key": "oteryn:quest-reward/fixture/wyda-offer",
+            "quest": QUEST, "npc": npc, "keywords": ["cookie"], "topic": 0, "next_topic": 1,
+            "storage": [
+                {"track": QUESTLINE, "minimum": 31, "maximum": 31, "set": 31, "preserve": true},
+                {"track": WYDA, "minimum": 0, "maximum": 0, "set": 0, "preserve": true}
+            ],
+            "take": [], "reply": [COOKIE_PROMPT],
+            "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:64-68"]
+        }))?;
+        stages.push(Stage {
+            key: "wyda_cookie_offer".into(),
+            completes: false,
+            trigger: Trigger::NpcDialogue {
+                callback: Box::new(offer),
+                alternatives: Vec::new(),
+            },
+        });
+    }
     let bindings = Bindings {
         schema: 1,
         quests: vec![BoundQuest {
@@ -144,14 +177,7 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
                     maximum: 1,
                 },
             ],
-            stages: vec![Stage {
-                key: case.into(),
-                completes: false,
-                trigger: Trigger::NpcDialogue {
-                    callback: Box::new(callback),
-                    alternatives: Vec::new(),
-                },
-            }],
+            stages,
             sources: vec![source.into()],
         }],
     };
@@ -212,6 +238,8 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
                 let scared = talk(owner, admitted, fence, entity, 3, "hi").await?;
                 assert_eq!(scared.lines, [SCREAM]);
             } else if npc == WYDA_NPC {
+                let offer = talk(owner, admitted, fence, entity, 2, "cookie").await?;
+                assert_eq!(offer.lines, [COOKIE_PROMPT]);
                 let delivered = talk(owner, admitted, fence, entity, 3, "yes").await?;
                 assert_eq!(delivered.lines, [reply]);
                 assert!(delivered.inventory_changed);
