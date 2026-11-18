@@ -171,6 +171,9 @@ impl Case {
             row["quest"] = json!(CHYLLFROEST);
             row["selector"]["appearance"] = json!(4285);
             row["selector"]["unique"] = json!(3263);
+            row["selector"]["native"] = json!({
+                "position":source,"ordinal":1,"appearance":4285
+            });
             row["teleport"] = serde_json::Value::Null;
             row["requires_world_admission"] = json!(true);
             row["failure_message"] = json!("The pile of bones is empty.");
@@ -182,6 +185,7 @@ impl Case {
                 "effect":{"kind":"set_now"}
             }]);
             row["effects"]["item_reward"] = json!({"item":"oteryn:item.tibia.i20357","count":1,"contents":[]});
+            row["effects"]["item_reward_per_use"] = json!(true);
             row["sources"] = json!([CHYLLFROEST_REWARD_SOURCE]);
         }
         if matches!(self, Self::Inquisition { .. }) {

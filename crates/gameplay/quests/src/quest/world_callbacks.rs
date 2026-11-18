@@ -972,7 +972,6 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 .iter()
                 .any(|r| r.ground.is_some())
                 && !callback.has_personal_state())
-            || !conditional_entrance::valid(callback)
             || !effects::valid(callback)
             || !state_operations::valid(callback)
             || !solid_repairs::valid(callback)
