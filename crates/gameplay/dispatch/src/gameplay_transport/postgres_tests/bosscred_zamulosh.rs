@@ -143,7 +143,7 @@ pub(super) fn habitat_world(
                 "/../../../content/world/placements/region-z12-x131-y127.b3"
             )),
             region: (12, 131, 127),
-            bounds: (33611, 32658, 33648, 32673),
+            bounds: (33611, 32658, 33649, 32674),
             start: (HABITAT_START.x, HABITAT_START.y),
             expected: Vec::new(),
         }],
