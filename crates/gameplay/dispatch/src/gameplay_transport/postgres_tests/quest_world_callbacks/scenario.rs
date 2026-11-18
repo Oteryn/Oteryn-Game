@@ -368,8 +368,8 @@ fn scenario_case(
         super::super::encounter_death_replacements::callback(name, trigger)?
     } else if name == super::super::ferumbras_crystal_reset::CASE {
         super::super::ferumbras_crystal_reset::callback()?
-    } else if name == super::super::first_dragon_descendant::CASE {
-        super::super::first_dragon_descendant::callback()?
+    } else if matches!(name, super::super::first_dragon_descendant::CASE | super::super::first_dragon_descendant::SWEEP_CASE) {
+        super::super::first_dragon_descendant::callback(name == super::super::first_dragon_descendant::SWEEP_CASE)?
     } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
@@ -1735,7 +1735,7 @@ fn scenario_case(
         if name == super::super::warzone_portal_cooldown::CASE {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::super::warzone_portal_cooldown::catalogue(&callback)?));
         }
-        if name == super::super::first_dragon_descendant::CASE {
+        if matches!(name, super::super::first_dragon_descendant::CASE | super::super::first_dragon_descendant::SWEEP_CASE) {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::first_dragon_descendant::catalogue(&callback)?,
             ));
@@ -1922,8 +1922,8 @@ fn scenario_case(
             Box::pin(super::super::encounter_death_replacements::exercise(&mut owner, &mut admitted, &h, callback.clone(), trigger, name)).await?;
         } else if name == super::super::ferumbras_crystal_reset::CASE {
             Box::pin(super::super::ferumbras_crystal_reset::exercise(&mut owner, &mut admitted, &h, callback.clone())).await?;
-        } else if name == super::super::first_dragon_descendant::CASE {
-            Box::pin(super::super::first_dragon_descendant::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if matches!(name, super::super::first_dragon_descendant::CASE | super::super::first_dragon_descendant::SWEEP_CASE) {
+            Box::pin(super::super::first_dragon_descendant::exercise(&mut owner, &mut admitted, &h, name == super::super::first_dragon_descendant::SWEEP_CASE)).await?;
         } else if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
                 &mut owner,

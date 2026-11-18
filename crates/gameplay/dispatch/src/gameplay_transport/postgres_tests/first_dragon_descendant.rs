@@ -8,6 +8,7 @@ use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bind
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, encode_step_intent};
 
 pub(super) const CASE: &str = "first-dragon-tazhadur-step";
+pub(super) const SWEEP_CASE: &str = "first-dragon-tazhadur-room-sweep";
 // The portal is placed beside the source arena in this fixture. Its UID,
 // admission thresholds, arena, monster and timers come from Crystal.
 const PORTAL: Position = Position {
@@ -21,6 +22,21 @@ const ARRIVAL: Position = Position {
     floor: -8,
 };
 const BOSS: &str = "oteryn:creature.tazhadur";
+const PEER: Position = Position {
+    x: 32016,
+    y: 32466,
+    floor: -8,
+};
+const LATE_MONSTER: Position = Position {
+    x: 32008,
+    y: 32465,
+    floor: -8,
+};
+const OUTSIDE_MONSTER: Position = Position {
+    x: 32007,
+    y: 32465,
+    floor: -8,
+};
 const QUEST: &str = "oteryn:quest.the_first_dragon_quest";
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u11_02/the_first_dragon/questline";
 const DRAGONS: &str = "oteryn:quest-progress/quest/u11_02/the_first_dragon/dragon_counter";
@@ -38,7 +54,18 @@ fn tazhadur_step_summons_once_stamps_boss_cooldown_and_ejects_at_deadline() -> T
     })
 }
 
-pub(super) fn callback() -> TestResult<Callback> {
+#[test]
+fn tazhadur_deadline_sweeps_late_monsters_but_only_ejects_the_admitted_player() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(SWEEP_CASE, || {
+        super::quest_world_callbacks::scenario(SWEEP_CASE, PORTAL, false)
+    })
+}
+
+pub(super) fn callback(sweep: bool) -> TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-callback/first-dragon/tazhadur-entry",
         "quest": QUEST,
@@ -61,9 +88,10 @@ pub(super) fn callback() -> TestResult<Callback> {
             "room_min": {"x":32008,"y":32455,"floor":-8},
             "room_max": {"x":32028,"y":32475,"floor":-8},
             "personal_cooldown_seconds": 7200,
-            "personal_timeout_ms": 1800000
+            "personal_timeout_ms": 1800000,
+            "personal_timeout_room_sweep": sweep
         }},
-        "sources": [SOURCE]
+        "sources": [SOURCE, "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:226-239"]
     }))?)
 }
 
@@ -96,6 +124,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    sweep: bool,
 ) -> TestResult {
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
     let actor = admitted.runtime_actor.ok_or("player")?;
@@ -139,6 +168,25 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert!((7_190_000..=7_200_000).contains(&cooldown));
+    let sweep_witnesses = if sweep {
+        let peer = super::ferumbras_crystal_reset::admit_peer(owner, h, PEER).await?;
+        let mut runtime = owner.runtime.lock().await;
+        let health = runtime
+            .companion_policy(BOSS)
+            .map_err(debug)?
+            .maximum_health;
+        let [late, outside] = runtime
+            .commit_quest_creature_spawn(
+                &[LATE_MONSTER, OUTSIDE_MONSTER]
+                    .map(|at| (BOSS, health, super::quest_world_callbacks::local(at))),
+            )
+            .map_err(debug)?
+            .try_into()
+            .map_err(|_| "two late monsters across the source room boundary")?;
+        Some((peer, late, outside))
+    } else {
+        None
+    };
     let due = owner
         .states
         .quest_callbacks
@@ -159,6 +207,14 @@ pub(super) async fn exercise(
             origin
         );
         assert!(!runtime.contains_live_creature(boss));
+        if let Some((peer, late, outside)) = sweep_witnesses {
+            assert_eq!(
+                runtime.read_actor_position(peer).map_err(debug)?.position(),
+                super::quest_world_callbacks::local(PEER)
+            );
+            assert!(!runtime.contains_live_creature(late));
+            assert!(runtime.contains_live_creature(outside));
+        }
     }
     assert!(
         owner
@@ -167,6 +223,9 @@ pub(super) async fn exercise(
             .next_encounter_due_us()
             .is_none()
     );
+    if sweep {
+        return Ok(());
+    }
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
