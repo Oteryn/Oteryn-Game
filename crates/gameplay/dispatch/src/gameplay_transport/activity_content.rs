@@ -450,13 +450,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     assignment.ownership_generation,
                     assignment.source_revision,
                     &assignment.decision_identity,
-                    capacity::for_template(template)?.max(
-                        if template.creature_key() == super::lore_keeper::LORE_KEEPER {
-                            template.maximum_players() + 8
-                        } else {
-                            0
-                        },
-                    ),
+                    capacity::for_template(template)?,
                     pin,
                 )
                 .map_err(|_| ActivityRefusal::ContentUnavailable)?;
