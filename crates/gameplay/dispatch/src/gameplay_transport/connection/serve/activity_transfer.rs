@@ -21,14 +21,18 @@ where
     let current = authority
         .settle_activity_connection(session.admitted)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|()| {
+            session.staff_disconnect_source = Some("activity_settle_unavailable");
+            ServeEnd::Disconnected
+        })?;
     if current.game_session_id == session.admitted.game_session_id {
+        session.staff_disconnect_source = Some("activity_refresh_no_successor");
         return Err(ServeEnd::Disconnected);
     }
     pending(stream, authority, session)
         .await?
         .map(Some)
-        .ok_or(ServeEnd::Disconnected)
+        .ok_or_else(|| ServeEnd::disconnected("activity_refresh_missing_barrier"))
 }
 
 pub(super) async fn pending<S, A>(
@@ -43,13 +47,13 @@ where
     let Some(switch) = authority
         .pending_activity_switch(session.admitted)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?
+        .map_err(|()| ServeEnd::disconnected("activity_switch_unavailable"))?
     else {
         return Ok(None);
     };
     let source = session.admitted;
     let receipt = oteryn_protocol_oteryn::activity_scope::decode_activity_scope(&switch.payload)
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|error| ServeEnd::disconnected_error("activity_scope_decode", error))?;
     session.activity_ack =
         receipt
             .requires_ack
@@ -61,7 +65,7 @@ where
     let sequence = session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::disconnected("activity_scope_sequence_exhausted"))?;
     let frames = encode_single_chunk_snapshot(
         session.generation,
         sequence,
@@ -73,7 +77,7 @@ where
             payload: &switch.payload,
         }],
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|error| ServeEnd::disconnected_error("activity_scope_encode", error))?;
     // SQL and native installation already changed the current session. A socket
     // failure while sending the barrier must lose the exact destination control,
     // rather than try to release the terminal source or reset a stale generation.
@@ -81,10 +85,10 @@ where
     for frame in frames {
         write_frame(stream, &frame)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|error| ServeEnd::disconnected_error("activity_scope_write", error.kind()))?;
     }
     if !authority.finish_activity_switch(source, switch.destination) {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::disconnected("activity_switch_finish_refused"));
     }
     Ok(Some((switch.destination, switch.movement_effect_start)))
 }
@@ -113,10 +117,11 @@ where
     )
     .await
     .map_err(|_| ServeEnd::ControlLost("activity_transfer"))??;
-    let envelope = decode_wire_envelope(&frame).map_err(|_| ServeEnd::Disconnected)?;
+    let envelope = decode_wire_envelope(&frame)
+        .map_err(|error| ServeEnd::disconnected_error("activity_ack_envelope", error))?;
     let command = envelope
         .client_command(session.generation)
-        .map_err(|_| ServeEnd::Disconnected)?;
+        .map_err(|error| ServeEnd::disconnected_error("activity_ack_command", error))?;
     use crate::gameplay_transport::session_ingress::CommandAction;
     match session.commands.begin(
         command.command_id,
@@ -125,12 +130,13 @@ where
         false,
     ) {
         Ok(CommandAction::Execute) => {}
-        _ => return Err(ServeEnd::Disconnected),
+        Ok(_) => return Err(ServeEnd::disconnected("activity_ack_not_executable")),
+        Err((error, _)) => return Err(ServeEnd::disconnected_error("activity_ack_begin", error)),
     }
     let sequence = session
         .sequence
         .checked_add(1)
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::disconnected("activity_ack_sequence_exhausted"))?;
     let result = encode_command_result(
         session.generation,
         sequence,
@@ -138,20 +144,20 @@ where
         CommandStatus::Accepted,
         &[],
     )
-    .map_err(|_| ServeEnd::Disconnected)?;
+    .map_err(|error| ServeEnd::disconnected_error("activity_ack_result", error))?;
     session
         .commands
         .terminalize_with(command.command_id, &result, || {})
-        .ok_or(ServeEnd::Disconnected)?;
+        .ok_or_else(|| ServeEnd::disconnected("activity_ack_terminalization_failed"))?;
     session.sequence = sequence;
     session.admitted.continuity.server_sequence = sequence;
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
     if !authority.remember_activity_connection(session.admitted) {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::disconnected("activity_ack_remember_refused"));
     }
     write_frame(stream, &result)
         .await
-        .map_err(|_| ServeEnd::Disconnected)
+        .map_err(|error| ServeEnd::disconnected_error("activity_ack_write", error.kind()))
 }
 
 async fn read_acknowledgement<S: AsyncRead + Unpin>(
@@ -167,15 +173,16 @@ async fn read_acknowledgement<S: AsyncRead + Unpin>(
         let frame = frames
             .next(stream)
             .await
-            .map_err(|_| ServeEnd::Disconnected)?;
-        let envelope = decode_wire_envelope(&frame).map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|error| ServeEnd::disconnected_error("activity_ack_read", error.kind()))?;
+        let envelope = decode_wire_envelope(&frame)
+            .map_err(|error| ServeEnd::disconnected_error("activity_ack_envelope", error))?;
         envelope
             .validate(crate::foundation::Direction::ClientToServer, true)
-            .map_err(|_| ServeEnd::Disconnected)?;
+            .map_err(|error| ServeEnd::disconnected_error("activity_ack_validate", error))?;
         if envelope.message_type() == MessageType::ClientCommand {
             let command = envelope
                 .client_command(envelope.connection_generation())
-                .map_err(|_| ServeEnd::Disconnected)?;
+                .map_err(|error| ServeEnd::disconnected_error("activity_ack_command", error))?;
             if envelope.connection_generation() == generation
                 && command.command_id == 1
                 && command.command_type == COMMAND_TYPE_ACTIVITY_SCOPE_ACK
@@ -185,7 +192,7 @@ async fn read_acknowledgement<S: AsyncRead + Unpin>(
             }
         }
     }
-    Err(ServeEnd::Disconnected)
+    Err(ServeEnd::disconnected("activity_ack_missing"))
 }
 
 #[cfg(test)]

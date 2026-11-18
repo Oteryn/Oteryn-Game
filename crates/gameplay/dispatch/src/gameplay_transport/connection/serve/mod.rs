@@ -73,6 +73,7 @@ async fn observed<T>(phase: &'static str, work: impl std::future::Future<Output 
 struct ServeState {
     _qualification_item_observation:
         crate::gameplay_transport::qualification_observation::SessionView,
+    staff_disconnect_source: Option<&'static str>,
     cast_chat_revision: u64,
     spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,
@@ -175,12 +176,49 @@ impl Drop for ServeState {
 enum ServeEnd {
     Transferred(Box<AdmittedSession>),
     Disconnected,
+    DisconnectedWithCause(String),
     ControlLost(&'static str),
     LoggedOut,
     Closed(FoundationProtocolError),
 }
 
 impl ServeEnd {
+    fn disconnected(cause: &'static str) -> Self {
+        Self::DisconnectedWithCause(cause.to_owned())
+    }
+
+    // Callers pass closed protocol variants or an I/O error kind, never a raw
+    // error message that could include payloads, identifiers or database details.
+    fn disconnected_error(cause: &'static str, error: impl std::fmt::Debug) -> Self {
+        Self::DisconnectedWithCause(format!("{cause}/{error:?}"))
+    }
+
+    fn reason(&self) -> &'static str {
+        match self {
+            Self::Transferred(_) => "transferred",
+            Self::Disconnected | Self::DisconnectedWithCause(_) => "disconnected",
+            Self::ControlLost(_) => "control_lost",
+            Self::LoggedOut => "logged_out",
+            Self::Closed(_) => "protocol_error",
+        }
+    }
+
+    fn cause_field(&self, cause: Option<&str>) -> String {
+        let cause = match self {
+            Self::DisconnectedWithCause(cause) => Some(cause.as_str()),
+            _ => cause,
+        };
+        cause.map_or_else(String::new, |cause| format!(" cause={cause}"))
+    }
+
+    fn log_command_end(&self, next_command_id: u64) {
+        let reason = self.reason();
+        let cause = self.cause_field(None);
+        operator_event(&format!(
+            "event=serve_command_end next_command_id={next_command_id} reason={reason}{cause}"
+        ));
+    }
+
     #[track_caller]
     fn finish(self, admitted: AdmittedSession) -> ConnectionEnd {
         self.finish_with_phase(admitted, None)
@@ -192,27 +230,34 @@ impl ServeEnd {
         admitted: AdmittedSession,
         phase: Option<&'static str>,
     ) -> ConnectionEnd {
-        let reason = match &self {
-            Self::Transferred(_) => "transferred",
-            Self::Disconnected => "disconnected",
-            Self::ControlLost(_) => "control_lost",
-            Self::LoggedOut => "logged_out",
-            Self::Closed(_) => "protocol_error",
-        };
+        self.finish_with_diagnostic(admitted, phase, None)
+    }
+
+    #[track_caller]
+    fn finish_with_diagnostic(
+        self,
+        admitted: AdmittedSession,
+        phase: Option<&'static str>,
+        cause: Option<&'static str>,
+    ) -> ConnectionEnd {
+        let reason = self.reason();
+        let cause = self.cause_field(cause);
         let path = match &self {
             Self::ControlLost(path) => format!(" path={path}"),
             _ => String::new(),
         };
         let phase = phase.map_or_else(String::new, |phase| format!(" phase={phase}"));
         operator_event(&format!(
-            "event=serve_end reason={reason}{path}{phase} source={} next_command_id={} server_sequence={}",
+            "event=serve_end reason={reason}{path}{phase}{cause} source={} next_command_id={} server_sequence={}",
             std::panic::Location::caller(),
             admitted.continuity.next_command_id,
             admitted.continuity.server_sequence,
         ));
         match self {
             Self::Transferred(next) => ConnectionEnd::AdmittedThenDisconnected(*next),
-            Self::Disconnected => ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Self::Disconnected | Self::DisconnectedWithCause(_) => {
+                ConnectionEnd::AdmittedThenDisconnected(admitted)
+            }
             Self::ControlLost(_) => ConnectionEnd::AdmittedThenControlLost(admitted),
             Self::LoggedOut => ConnectionEnd::AdmittedThenLoggedOut(admitted),
             Self::Closed(error) => ConnectionEnd::AdmittedThenClosed(admitted, error),
@@ -407,7 +452,13 @@ where
                         break;
                     }
                     Ok(None) => {}
-                    Err(end) => return end.finish(session.admitted),
+                    Err(end) => {
+                        return end.finish_with_diagnostic(
+                            session.admitted,
+                            None,
+                            session.staff_disconnect_source,
+                        );
+                    }
                 }
                 next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
@@ -503,10 +554,7 @@ where
                     integrity = std::mem::take(&mut session.integrity);
                     break;
                 }
-                operator_event(&format!(
-                    "event=serve_command_end next_command_id={}",
-                    session.admitted.continuity.next_command_id,
-                ));
+                end.log_command_end(session.admitted.continuity.next_command_id);
                 authority.player_trade_disconnected(session.admitted.game_session_id);
                 return end.finish(authority.current_activity_connection(session.admitted));
             }

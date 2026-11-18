@@ -8,6 +8,10 @@ mod creature_sweep;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::Path;
 
+#[path = "fixture_position.rs"]
+mod fixture_position;
+use fixture_position::reset_fixture_to_town;
+
 #[path = "mp/mount.rs"]
 mod mp;
 
@@ -5847,12 +5851,32 @@ pub(super) async fn journeys(
         return sweep_result.and(multiplayer_result);
     }
     let before = journey_verdicts();
-    let mut client = report_world_profile(
+    let core_result = report_world_profile(
         profile_journey(clients, world, &bytes, &metadata.spawns),
         evidence,
-        connect_world(clients, 0x71),
+        run_core_group(
+            async {
+                let mut client = connect_core_at_town(clients, 0x71).await?;
+                let at = core_profile_start(&mut client, world).await?;
+                evidence(&format!("profile_return goal=fixture_town at={at:?}"));
+                Ok(client)
+            },
+            connect_core_at_town(clients, 0x74),
+            async |client| run_core(client, clients, world, &metadata).await,
+            evidence,
+            || journey_group_completed("core", before),
+        ),
     )
-    .await?;
+    .await;
+    sweep_result.and(multiplayer_result).and(core_result)
+}
+
+async fn run_core(
+    mut client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    metadata: &oteryn_world_bundle::bundle::Visited,
+) -> TestResult {
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {
             return Err(
@@ -5869,12 +5893,6 @@ pub(super) async fn journeys(
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
-    let Some(at) = core_profile_start(&mut client, world, true).await? else {
-        drop(client);
-        wait_character_released(clients, 1).await?;
-        return sweep_result.and(multiplayer_result);
-    };
-    evidence(&format!("profile_return goal=fixture_town at={at:?}"));
     client = character_core(client, clients, world).await?;
     client = include!("full_e2ef3_registration.rs");
     client = floor_journey(client, clients, world).await?;
@@ -6037,9 +6055,7 @@ pub(super) async fn journeys(
         snapshot_result.and(logout_result),
         wait_character_released(clients, 1),
     )
-    .await?;
-    journey_group_completed("core", before);
-    sweep_result.and(multiplayer_result)
+    .await
 }
 
 fn session_unexpected_eof(error: &(dyn std::error::Error + 'static)) -> bool {
@@ -6103,31 +6119,80 @@ fn idle_removal_requires_on_time_owner_release_without_a_loss_epoch() {
 async fn core_profile_start(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
-    core: bool,
-) -> TestResult<Option<TilePos>> {
-    let result: TestResult<TilePos> = async {
-        let at = return_to_protection_zone(client, world).await?;
-        let back = reach_route(client, world, at, |at| at == TOWN)
-            .await?
-            .map_err(|failure| home_temple_return(at, failure))?;
-        walk(client, world, &back).await?;
-        Ok(at)
-    }
-    .await;
-    match result {
-        Ok(at) => Ok(Some(at)),
-        Err(error) => {
-            evidence(&format!("world_profile state=failed error={error}"));
-            if core {
-                evidence(&format!(
-                    "e2e_all scenario=M01.step-relogin status=FAIL seconds=0 evidence={error} cause=precondition root=profile_return/fixture-town"
-                ));
-            }
-            provisioning::e2ef1_logout_for_return(client).await?;
-            Ok(None)
-        }
-    }
+) -> TestResult<TilePos> {
+    let at = return_to_protection_zone(client, world).await?;
+    let back = reach_route(client, world, at, |at| at == TOWN)
+        .await?
+        .map_err(|failure| home_temple_return(at, failure))?;
+    walk(client, world, &back).await?;
+    Ok(at)
 }
+
+async fn connect_core_at_town(
+    clients: &SeamClients<'_>,
+    tag: u8,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    reset_fixture_to_town(clients, 1).await?;
+    let client = connect_world(clients, tag).await?;
+    let at = tile(client.world_spatial().actor_position)?;
+    if at != TOWN {
+        return Err(format!("fixture town reset expected {TOWN:?}, admitted at {at:?}").into());
+    }
+    Ok(client)
+}
+
+async fn run_core_group<T>(
+    start: impl Future<Output = TestResult<T>>,
+    recover: impl Future<Output = TestResult<T>>,
+    run: impl AsyncFnOnce(T) -> TestResult,
+    report: impl Fn(&str),
+    complete: impl FnOnce(),
+) -> TestResult {
+    let result = match start.await {
+        Ok(client) => run(client).await,
+        Err(error) => match recover.await {
+            Ok(client) => {
+                report(&format!(
+                    "profile_return state=recovered goal=fixture_town error={error}"
+                ));
+                run(client).await
+            }
+            Err(recovery) => {
+                let detail = format!("profile_return={error}; fixture_reset={recovery}");
+                for scenario in CORE_SCENARIOS {
+                    report(&format!(
+                        "e2e_all scenario={scenario} status=FAIL seconds=0 evidence={detail} cause=blocked-by root=profile_return/fixture-town"
+                    ));
+                }
+                Err(detail.into())
+            }
+        },
+    };
+    complete();
+    result
+}
+
+// Keep this coverage list in sync with node_boot/matrix.py.
+const CORE_SCENARIOS: &[&str] = &[
+    "M01.turn-result",
+    "S18.say-echo",
+    "S18.whisper-echo",
+    "W15a.list-relogin",
+    "M01.step-relogin",
+    "M03.floor-step-relogin",
+    "I01.root-view-relogin",
+    "I16.starter-weight-relogin",
+    "I01.full",
+    "I04.full",
+    "I06.full",
+    "I07.full",
+    "I08.full",
+    "I09.full",
+    "I12.full",
+    "I13.full",
+    "I15.full",
+    "I16.full",
+];
 
 fn record_core_mechanic(name: &str, result: TestResult) {
     if let Err(error) = result {
@@ -6170,6 +6235,71 @@ async fn qualification_profile_return_failure_records_evidence_and_allows_core()
     Ok(())
 }
 
+#[tokio::test]
+async fn qualification_core_start_recovers_or_reports_blocked_rows() -> TestResult {
+    let lines = std::cell::RefCell::new(Vec::new());
+    let record = |line: &str| lines.borrow_mut().push(line.to_owned());
+    run_core_group(
+        async { Err("no profile return route".into()) },
+        async { Ok(71) },
+        async |client| {
+            assert_eq!(client, 71);
+            record("core started");
+            Ok(())
+        },
+        record,
+        || record("e2e_group name=core"),
+    )
+    .await?;
+    assert_eq!(
+        lines
+            .borrow()
+            .iter()
+            .rev()
+            .take(2)
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        ["e2e_group name=core", "core started"]
+    );
+    assert!(
+        lines
+            .borrow()
+            .iter()
+            .all(|line| !line.contains("status=FAIL"))
+    );
+    lines.borrow_mut().clear();
+
+    let blocked = run_core_group::<u8>(
+        async { Err("no profile return route".into()) },
+        async { Err("fixture reset refused".into()) },
+        async |_| {
+            record("core started");
+            Ok(())
+        },
+        record,
+        || record("e2e_group name=core"),
+    )
+    .await;
+    assert!(blocked.is_err());
+    let lines = lines.into_inner();
+    assert!(!lines.iter().any(|line| line == "core started"));
+    let rows: Vec<_> = lines
+        .iter()
+        .filter(|line| line.contains("status=FAIL"))
+        .collect();
+    assert_eq!(rows.len(), 18);
+    assert!(rows.iter().all(|line| {
+        line.contains("cause=blocked-by root=profile_return/fixture-town")
+            && line.contains("no profile return route")
+            && line.contains("fixture reset refused")
+    }));
+    assert_eq!(
+        lines.last().map(String::as_str),
+        Some("e2e_group name=core")
+    );
+    Ok(())
+}
+
 async fn profile_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -6180,12 +6310,12 @@ async fn profile_journey(
     // before admission so the peer can keep acknowledging probes during the journey.
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let model = map_journey::MapModel::load(world, bytes, &root)?;
+    reset_fixture_to_town(clients, 0).await?;
     let client = connect_character(clients, 0x6e, 0).await?;
     let mut client = provisioning::provision(client, clients, 0).await?;
-    if core_profile_start(&mut client, world, false)
-        .await?
-        .is_none()
-    {
+    if let Err(error) = core_profile_start(&mut client, world).await {
+        evidence(&format!("world_profile state=failed error={error}"));
+        provisioning::e2ef1_logout_for_return(&mut client).await?;
         drop(client);
         return wait_character_released(clients, 0).await;
     }
@@ -8789,7 +8919,8 @@ fn qualification_m07_checks_rope_before_walking_and_profile_start_isolated() -> 
     }));
     let source = include_str!("world.rs");
     assert!(m07.contains(".world_context_use(&payload)"));
-    assert!(source.contains("let Some(at) = core_profile_start("));
-    assert!(source.contains("return sweep_result.and(multiplayer_result);"));
+    assert!(source.contains("let at = core_profile_start(&mut client, world).await?;"));
+    assert!(source.contains("connect_core_at_town(clients, 0x74)"));
+    assert!(source.contains("|| journey_group_completed(\"core\", before)"));
     Ok(())
 }

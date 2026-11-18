@@ -173,7 +173,7 @@ def world_selection(groups: str, batch: str | None) -> tuple[str, str]:
 
 
 def expected_world(groups: str, batch: str) -> tuple[set[str], set[str]]:
-    names = set(journey_groups()) - {"creature_sweep"} if groups == "default" else set(groups.split(","))
+    names = set(journey_groups()) - ON_DEMAND_GROUPS if groups == "default" else set(groups.split(","))
     rows: set[str] = set()
     if "rows" in names:
         dispatch = indexed_rows()

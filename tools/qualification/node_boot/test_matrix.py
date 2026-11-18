@@ -267,6 +267,28 @@ class EvidenceTests(unittest.TestCase):
                     result = matrix.extract(log, name=name, entry="node_boot", exit_code=0, seconds=1)
                     self.assertFalse(matrix.shard_passed(result, env, False))
 
+    def test_reference_world_groups_match_rust_default(self):
+        source = matrix.read(ROOT, matrix.VERDICT)
+        runs = source.split("pub(super) fn runs(", 1)[1].split("\n    }", 1)[0]
+        default = re.search(r'\.map_or\((true|group != "[a-z0-9_]+"),', runs)
+        self.assertIsNotNone(default, "unrecognized Rust default group predicate")
+        groups = set(matrix.journey_groups())
+        if default[1] != "true":
+            groups.remove(default[1].split('"')[1])
+        # The default sweep is calibration and only emits a group marker when selected.
+        groups.discard("creature_sweep")
+        groups.remove("rows")
+        groups.update(("rows_early", "rows_late"))
+        if "f6" in groups:
+            groups.add("f6_starter")
+        expected, _ = matrix.expected_world("default", "all")
+        self.assertEqual(groups, expected)
+
+    def test_blocked_core_rows_match_matrix_coverage(self):
+        source = matrix.read(ROOT, matrix.CLIENT_PHASES / "world.rs")
+        rows = source.split("const CORE_SCENARIOS: &[&str] = &[", 1)[1].split("];", 1)[0]
+        self.assertCountEqual(re.findall(r'"([^"]+)"', rows), matrix.GROUP_SCENARIOS["core"])
+
     def test_world_coverage_refuses_invalid_and_empty_row_ranges(self):
         for batch in ("", "0:0", "invalid", "10000:1"):
             with self.subTest(batch=batch), self.assertRaises(matrix.PlanError):

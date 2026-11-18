@@ -13,6 +13,53 @@ fn id(seed: u8) -> [u8; 16] {
 }
 
 #[test]
+fn activity_ack_eof_logs_disconnected_source() -> RefreshTestResult {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let end = runtime
+        .block_on(read_acknowledgement(
+            &mut tokio::io::empty(),
+            &mut FrameReader::default(),
+            1,
+            ActivityScopeAck {
+                handoff: id(3),
+                session: id(4),
+            },
+        ))
+        .err()
+        .ok_or("activity acknowledgement unexpectedly succeeded")?;
+    let admitted = AdmittedSession {
+        game_session_id: GameSessionId::decode(&id(10))?,
+        world_id: WorldId::decode(&id(11))?,
+        channel_id: ChannelId::decode(&id(12))?,
+        runtime_actor: None,
+        first_entry: FirstEntryOutcome::Positioned,
+        controller: None,
+        continuity: SessionContinuity::FRESH,
+        item_fence: None,
+    };
+    let lines = oteryn_error_codes::capture(|| {
+        end.log_command_end(admitted.continuity.next_command_id);
+        assert!(matches!(
+            end.finish(admitted),
+            ConnectionEnd::AdmittedThenDisconnected(_)
+        ));
+    });
+    for event in ["serve_command_end", "serve_end"] {
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.contains(&format!("event={event} "))
+                    && line.contains("reason=disconnected")
+                    && line.contains("cause=activity_ack_read/UnexpectedEof")),
+            "{lines:?}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn soulpit_scope_ack_discards_same_generation_source_commands_and_keeps_partial_frame()
 -> Result<(), Box<dyn std::error::Error>> {
     tokio::runtime::Builder::new_current_thread()

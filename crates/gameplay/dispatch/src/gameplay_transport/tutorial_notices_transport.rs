@@ -42,17 +42,28 @@ pub(super) async fn emit_notice<S: AsyncWrite + Unpin>(
     sequence: &mut u64,
     notice: &TutorialNotice,
 ) -> Option<()> {
+    emit_notice_result(stream, admitted, sequence, notice)
+        .await
+        .ok()
+}
+
+pub(super) async fn emit_notice_result<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    admitted: &mut AdmittedSession,
+    sequence: &mut u64,
+    notice: &TutorialNotice,
+) -> Result<(), String> {
     if !admitted
         .continuity
         .selected_capabilities
         .contains(CAPABILITY_TUTORIAL_NOTICES_V1)
     {
-        return Some(());
+        return Ok(());
     }
-    let payload = encode_tutorial_notice(notice).ok()?;
-    let next_sequence = sequence.checked_add(1)?;
+    let payload = encode_tutorial_notice(notice).map_err(|error| format!("encode/{error:?}"))?;
+    let next_sequence = sequence.checked_add(1).ok_or("sequence_exhausted")?;
     let revision = admitted.continuity.tutorial_revision;
-    let next_revision = revision.checked_add(1)?;
+    let next_revision = revision.checked_add(1).ok_or("revision_exhausted")?;
     let frame = encode_state_delta(
         admitted.continuity.connection_generation,
         next_sequence,
@@ -62,11 +73,13 @@ pub(super) async fn emit_notice<S: AsyncWrite + Unpin>(
         1,
         &payload,
     )
-    .ok()?;
+    .map_err(|error| format!("delta/{error:?}"))?;
     *sequence = next_sequence;
     admitted.continuity.server_sequence = next_sequence;
     admitted.continuity.tutorial_revision = next_revision;
-    write_frame(stream, &frame).await.ok()
+    write_frame(stream, &frame)
+        .await
+        .map_err(|error| format!("write/{:?}", error.kind()))
 }
 
 #[cfg(test)]

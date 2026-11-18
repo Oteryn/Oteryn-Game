@@ -362,17 +362,29 @@
       "event": "serve_command_end",
       "level": "info",
       "span": false,
-      "fields": [],
+      "fields": [
+        "cause",
+        "next_command_id",
+        "reason"
+      ],
       "codes": [],
-      "note": "Seeded from current server code."
+      "note": "Records the terminal serve disposition and, when available, its bounded source and error kind without raw error text."
     },
     {
       "event": "serve_end",
       "level": "info",
       "span": false,
-      "fields": [],
+      "fields": [
+        "cause",
+        "next_command_id",
+        "path",
+        "phase",
+        "reason",
+        "server_sequence",
+        "source"
+      ],
       "codes": [],
-      "note": "Seeded from current server code."
+      "note": "Records the terminal serve disposition and, when available, its bounded source and error kind without raw error text."
     },
     {
       "event": "session_durability_failed",

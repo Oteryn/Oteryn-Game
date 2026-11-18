@@ -93,6 +93,11 @@ values: `NODE_BOOT_SERVICE_USER` (`oteryn-node-boot[-suffix]`), `NODE_BOOT_BASE`
 (skip the basic fixture pass). `NODE_BOOT_E2E_ONLY`, `NODE_BOOT_NO_FAILFAST` and
 `NODE_BOOT_NO_PROGRESS_S` are passed to the seam harness when set.
 
+The default reference run leaves multiplayer opt-in. To run both core and
+multiplayer in GitHub Actions, use the `pr` or `full` plan, or the `custom`
+plan with `groups=core;mp` for two dedicated shards. On the PC, a fresh World run
+with `NODE_BOOT_E2E_ONLY=core,mp` selects both groups together.
+
 Single-row loop (refused when `CI=true` or `GITHUB_ACTIONS` is set):
 
 ```sh
