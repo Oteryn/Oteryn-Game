@@ -8399,6 +8399,80 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/lost-brother-return",
+      "quest": "oteryn:quest.adventurers_guild",
+      "npc": "oteryn:npc.tarun",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "requires_premium": true,
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3039",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "So, he is dead as I feared. I warned him to go with this woman, but he gave in to temptation. My heart darkens and moans. But you have my sincere thanks. ...",
+        "Without your help I would have stayed in the dark about his fate. Please, take this as a little recompense."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=75165&oldid=933445",
+        "https://tibia.fandom.com/?curid=75304&oldid=749371",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tarun.lua:76-84:sha256:8e032f7015dd3ee2135ba9552a588a3f26083327e23fb7a1619423486c482fde"
+      ],
+      "experience": 3000
+    },
+    {
+      "key": "oteryn:quest-reward/lost-brother-start",
+      "quest": "oteryn:quest.adventurers_guild",
+      "npc": "oteryn:npc.tarun",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_80/adventurers_guild/quest_line",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "requires_premium": true,
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I thank you! This is more than I could hope!"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=75165&oldid=933445",
+        "https://tibia.fandom.com/?curid=75304&oldid=749371",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tarun.lua:86-96:sha256:8e032f7015dd3ee2135ba9552a588a3f26083327e23fb7a1619423486c482fde"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/m36-rock-steady-confirm",
       "quest": "oteryn:quest.rock_steady_collection",
       "npc": "oteryn:npc.rock_steady",

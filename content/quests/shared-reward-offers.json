@@ -4970,6 +4970,84 @@
       ]
     },
     {
+      "npc": "oteryn:npc.tarun",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "My brother is missing. I fear, he went to this evil palace north of here. A place of great beauty, certainly filled with riches and luxury. But in truth it is a threshold to hell and demonesses are after his blood. ...",
+        "He is my brother, and I am deeply ashamed to admit but I don't dare to go there. Perhaps your heart is more courageous than mine. Would you go to see this place and search for my brother?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tarun",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "I hope you will find my brother."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tarun",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "My brother is missing. I fear, he went to this evil palace north of here. A place of great beauty, certainly filled with riches and luxury. But in truth it is a threshold to hell and demonesses are after his blood. ...",
+        "He is my brother, and I am deeply ashamed to admit but I don't dare to go there. Perhaps your heart is more courageous than mine. Would you go to see this place and search for my brother?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tarun",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "As you wish."
+      ]
+    },
+    {
       "npc": "oteryn:npc.the_bone_master",
       "keywords": [
         "advancement",

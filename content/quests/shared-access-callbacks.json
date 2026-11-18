@@ -500,6 +500,57 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/great-dragon-hunt-dead-explorer",
+      "quest": "oteryn:quest.adventurers_guild",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33007,
+          "y": 32607,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21412
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_great_dragon_hunt/warrior_skeleton",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The dead explorer is empty.",
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_great_dragon_hunt_quest/actions_warrior_skeleton.lua:3-16,21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3390-3394",
+        "https://tibia.fandom.com/?curid=75167&oldid=847146",
+        "https://tibia.fandom.com/?curid=75348&oldid=1211828"
+      ],
+      "requires_premium": true,
+      "item_reward": {
+        "item": "oteryn:item.tibia.i5882",
+        "count": 1,
+        "contents": []
+      },
+      "success_message": "You have discovered a deceased warrior's skeleton. It seems he tried to hunt the dragons around here - and failed."
+    },
+    {
       "key": "oteryn:quest-callback/m01b/alawar-s-vault/s1/entry",
       "quest": "oteryn:quest.alawar_s_vault_quest",
       "trigger": "step_in",
