@@ -317,6 +317,8 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "mortal_combat")]
+    MortalCombat,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -777,10 +779,19 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
+    let mortal_combat = callback.key == crate::quest::the_new_frontier::MORTAL_COMBAT
+        && callback.trigger == Trigger::Use
+        && effects.encounter.as_ref().is_some_and(|encounter| {
+            encounter.phase == Some(EncounterPhase::MortalCombat)
+                && encounter.players.len() == 2
+                && encounter.monsters.is_empty()
+                && encounter.timing.is_none()
+        });
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && !mortal_combat
                 && (!lever
                     || (effects.scene.is_none()
                         && effects.party_transfer.is_none()
@@ -841,7 +852,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        if (encounter.phase == Some(EncounterPhase::MortalCombat) && !mortal_combat)
+            || (encounter.minimum_level == 0 && !source_party && !mortal_combat)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -862,8 +874,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
             }
-            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                .contains(&encounter.monsters.len())
+            || (!mortal_combat
+                && !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+                    .contains(&encounter.monsters.len()))
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()

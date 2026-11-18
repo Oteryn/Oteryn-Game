@@ -1061,6 +1061,8 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let chazorai = super::mortal_combat::prepare(&request)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let journal_achievement = super::world_change_journal_rewards::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
@@ -1801,6 +1803,9 @@ impl DurabilityRoot {
                             .fetch_one(&mut *tx).await?;
                         Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
                     } else { None };
+                    if refusal.is_none() && let Some(achievement) = &chazorai {
+                        super::mortal_combat::earn(&mut tx, fence, achievement).await?;
+                    }
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || counter_reset_plan.as_ref().map_or_else(
@@ -1815,7 +1820,13 @@ impl DurabilityRoot {
                             }
                         }) {
                         Ok(changes) => changes,
-                        Err(refusal) => {
+                        Err(evaluation) => {
+                            if chazorai.is_some() && refusal.is_none() && evaluation == QuestRefusal::StageMismatch {
+                                // Room victors outside stage 25 earn the account fact alone.
+                                commit_semantic_transaction(tx, deadline).await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(evaluation)));
+                            }
+                            let refusal = evaluation;
                             if let Some(recipe) = timer_recipe
                                 && refusal == QuestRefusal::StageMismatch
                                 && stored.get(recipe.track).copied().unwrap_or(-1) > recipe.maximum_before {

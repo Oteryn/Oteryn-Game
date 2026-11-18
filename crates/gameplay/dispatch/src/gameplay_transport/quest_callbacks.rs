@@ -1191,6 +1191,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
+            if callback.key == oteryn_gameplay_quests::quest::the_new_frontier::MORTAL_COMBAT
+                && let Some(encounter) = &callback.effects.encounter
+            {
+                let sessions = self.runtime.lock().await.positioned_melee_census().ok()
+                    .into_iter().flatten().filter_map(|(_, at, session)| {
+                        encounter.players.iter().any(|player| local(player.from) == at.position())
+                            .then_some(session).flatten()
+                    }).collect::<Vec<_>>();
+                for session in sessions {
+                    self.refresh_quest_session(session, false).await;
+                }
+            }
             if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
                 return UseDisposition::Rejected;
             }

@@ -47,6 +47,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let arena = local(CUROS_ARENA);
         let now = self.owner_now();
         if eligible
+            && runtime.owner_fence().is_ok()
             && !states.is_dead(actor)
             && states.spell_idle(&runtime, actor, session)
             && self.states.player_trades.physical(session, None)
@@ -63,9 +64,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 step_command(actor, session, entered.revision(), self.reset_epoch)
             && let Some(due) = now.get().checked_add(CUROS_SURVIVAL_US)
             && let Ok(mut trials) = self.states.quest_callbacks.curos.lock()
-            && !trials.iter().any(|trial| trial.session == session)
-            && trials.len() < super::timed_encounter::MAX_TIMED_ENCOUNTERS
-            && trials.try_reserve(1).is_ok()
+            && (trials
+                .iter()
+                .any(|trial| trial.actor == actor && trial.session == session)
+                || (trials.len() < super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                    && trials.try_reserve(1).is_ok()))
             && let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
                 &runtime,
                 self.movement_cells(),
@@ -78,14 +81,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             && let Ok(snapshot) = runtime.commit_source_step(proof)
         {
-            trials.push(SurvivalTrial {
-                actor,
-                session,
-                key,
-                cause: QuestCause::Step(command),
-                due,
-            });
-            states.owner_wake.notify_one();
+            if !trials
+                .iter()
+                .any(|trial| trial.actor == actor && trial.session == session)
+            {
+                trials.push(SurvivalTrial {
+                    actor,
+                    session,
+                    key,
+                    cause: QuestCause::Step(command),
+                    due,
+                });
+                states.owner_wake.notify_one();
+            }
             states.stage_special_movement_step(
                 &runtime,
                 map,
@@ -188,39 +196,77 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         for trial in trials {
-            let SurvivalTrial {
-                actor,
-                session,
-                key,
-                cause,
-                ..
-            } = trial;
-            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-                continue;
-            };
-            let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            let optional_pvp = self.special_movement_policy(permit, actor, session).await;
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
-            Box::pin(self.execute_quest_callback(
-                permit,
-                &mut runtime,
-                &mut states,
-                actor,
-                session,
-                map,
-                callback,
-                key,
-                map.facts.object_revision(key),
-                cause,
-                Some(fence),
-                Some(&mut slot),
-                None,
-                optional_pvp,
-                None,
-                None,
-            ))
-            .await;
+            self.root
+                .with_background_operation(self.settle_curos_trial(permit, map, callback, trial))
+                .await;
+        }
+    }
+
+    async fn settle_curos_trial(
+        &self,
+        permit: &SpellLanePermit,
+        map: &BundleMap,
+        callback: &Callback,
+        trial: SurvivalTrial,
+    ) {
+        let SurvivalTrial {
+            actor,
+            session,
+            key,
+            cause,
+            ..
+        } = trial;
+        let fence = match self.current_quest_fence(session).await {
+            Ok(Some(fence)) => fence,
+            Ok(None) => return,
+            Err(()) => {
+                self.retry_curos_trial(trial);
+                return;
+            }
+        };
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+        let mut runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if states.is_dead(actor) || runtime.bound_attacker_lease(actor, session).is_err() {
+            return;
+        }
+        if !states.spell_idle(&runtime, actor, session) || self.has_pending_quest_callback(session)
+        {
+            self.retry_curos_trial(trial);
+            return;
+        }
+        let result = Box::pin(self.execute_quest_callback(
+            permit,
+            &mut runtime,
+            &mut states,
+            actor,
+            session,
+            map,
+            callback,
+            key,
+            map.facts.object_revision(key),
+            cause,
+            Some(fence),
+            Some(&mut slot),
+            None,
+            optional_pvp,
+            None,
+            None,
+        ))
+        .await;
+        if matches!(
+            result,
+            UseDisposition::NotPossible | UseDisposition::Occupied
+        ) {
+            self.retry_curos_trial(trial);
+        }
+    }
+
+    fn retry_curos_trial(&self, mut trial: SurvivalTrial) {
+        if let Ok(mut trials) = self.states.quest_callbacks.curos.lock() {
+            trial.due = self.owner_now().get().saturating_add(1_000_000);
+            trials.push(trial);
         }
     }
 }

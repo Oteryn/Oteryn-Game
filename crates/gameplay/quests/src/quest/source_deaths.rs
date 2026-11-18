@@ -66,10 +66,11 @@ pub struct Rule {
 }
 impl Rule {
     pub fn active(&self, tracks: &BTreeMap<String, i64>) -> bool {
-        self.effects.iter().all(|e| {
-            e.from
-                .accepts(tracks.get(&e.track).copied().unwrap_or(e.default))
-        })
+        self.transition == super::the_new_frontier::TIRECZ_VICTORY
+            || self.effects.iter().all(|e| {
+                e.from
+                    .accepts(tracks.get(&e.track).copied().unwrap_or(e.default))
+            })
     }
     /// Source room bounds concern recipients, not damage ownership or social party.
     pub fn recipient(&self, position: [i32; 3], dealt_damage: bool) -> bool {
@@ -186,6 +187,40 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
                     rules.push(rule);
                 }
             }
+            use super::the_new_frontier::{
+                MISSION09, MORTAL_ROOM, QUEST, QUESTLINE, TIRECZ, TIRECZ_VICTORY,
+            };
+            rules.push(Rule {
+                creature: TIRECZ.into(),
+                transition: TIRECZ_VICTORY.into(),
+                effects: vec![
+                    Effect {
+                        track: QUESTLINE.into(),
+                        default: 0,
+                        from: Comparison {
+                            kind: "eq".into(),
+                            value: 25,
+                        },
+                        set: Some(26),
+                        add: None,
+                    },
+                    Effect {
+                        track: MISSION09.into(),
+                        default: 0,
+                        from: Comparison {
+                            kind: "any".into(),
+                            value: 0,
+                        },
+                        set: Some(2),
+                        add: None,
+                    },
+                ],
+                room: Some(MORTAL_ROOM),
+                top_damage_only: false,
+                define_transition: true,
+                epoch_tracks: Some(vec![QUESTLINE.into()]),
+                quest: QUEST.into(),
+            });
             Ok(rules)
         })
         .as_deref()

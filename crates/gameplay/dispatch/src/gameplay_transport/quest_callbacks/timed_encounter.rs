@@ -131,9 +131,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
-        self.root
-            .with_background_operation(self.drain_curos_trial(&permit))
-            .await;
+        self.drain_mortal_combat().await;
+        self.drain_curos_trial(&permit).await;
         let mut runtime = self.runtime.lock().await;
         let Some(map) = self.bundle_map() else { return };
         if runtime.owner_fence().is_err()

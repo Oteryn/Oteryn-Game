@@ -1965,6 +1965,9 @@ pub fn record_creature_kill(
         states
             .encounter_phases
             .note_projected_death(runtime, target);
+        if states.encounter_phases.mortal_won(target) {
+            states.owner_wake.notify_one();
+        }
     }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");
@@ -2737,6 +2740,15 @@ fn accept_encounter_kill(
             .capture_terminal(runtime, states, &mut entry);
     }
 
+    if entry.creature == oteryn_gameplay_quests::quest::the_new_frontier::TIRECZ
+        && !states.is_some_and(|states| states.encounter_phases.mortal_won(entry.target))
+        && let Some(frozen) = entry.grizzly.as_mut()
+    {
+        Arc::make_mut(frozen).native.retain(|recipient| {
+            recipient.death.transition
+                != oteryn_gameplay_quests::quest::the_new_frontier::TIRECZ_VICTORY
+        });
+    }
     let target = entry.target;
     let creature = entry.creature.clone();
     let outcome = queue.append(entry);

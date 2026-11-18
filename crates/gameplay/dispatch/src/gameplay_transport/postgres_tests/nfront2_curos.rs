@@ -1,13 +1,69 @@
-//! Drive Curos through the normal movement owner with a routed PostgreSQL character.
+//! The New Frontier arenas on the normal STEP, USE and native death owners.
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, prepare_current_session, reset};
-use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+use super::{
+    AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
+    reset,
+};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 use std::time::Duration;
 
-const NAME: &str = "nfront2-curos";
+use oteryn_gameplay_quests::quest::the_new_frontier::{
+    MISSION09, MORTAL_REWARD_EXIT, MORTAL_TIMEOUT_EXIT, MORTAL_WAVES,
+};
+
+const CUROS_ORIGIN: Position = Position {
+    x: 33145,
+    y: 31413,
+    floor: -6,
+};
+const MORTAL_ORIGIN: Position = Position {
+    x: 33080,
+    y: 31014,
+    floor: -2,
+};
+const MORTAL_PARTNER: Position = Position {
+    x: 33081,
+    ..MORTAL_ORIGIN
+};
+const LEVER: Position = Position {
+    x: 33079,
+    ..MORTAL_ORIGIN
+};
+const FIRST_LANDING: Position = Position {
+    x: 33059,
+    y: 31032,
+    floor: -3,
+};
+const SECOND_LANDING: Position = Position {
+    x: 33057,
+    y: 31034,
+    floor: -3,
+};
+const WAVE_SITES: [Position; 4] = [
+    Position {
+        x: 33065,
+        y: 31033,
+        floor: -3,
+    },
+    Position {
+        x: 33066,
+        y: 31037,
+        floor: -3,
+    },
+    Position {
+        x: 33065,
+        y: 31035,
+        floor: -3,
+    },
+    Position {
+        x: 33068,
+        y: 31034,
+        floor: -3,
+    },
+];
 const START: Position = Position {
     x: 33146,
     y: 31413,
@@ -23,6 +79,7 @@ const EXIT: Position = Position {
     y: 31419,
     floor: -7,
 };
+const CUROS_SPECTATOR: Position = Position { x: 33160, ..ARENA };
 const QUEST: &str = "oteryn:quest.the_new_frontier_quest";
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline";
 const MISSION: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06";
@@ -32,13 +89,32 @@ fn nfront2_curos_step_starts_survival_and_awards_progress_only_at_deadline() -> 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run(NAME, move || {
+    scenario(admin, false)
+}
+
+#[test]
+fn nfront2_mortal_combat_pairs_players_spawns_waves_and_rewards_both_on_tirecz_death() -> TestResult
+{
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, true)
+}
+
+fn scenario(admin: String, mortal: bool) -> TestResult {
+    let name = if mortal {
+        "nfront2_mortal"
+    } else {
+        "nfront2_curos"
+    };
+    let origin = if mortal { MORTAL_ORIGIN } else { CUROS_ORIGIN };
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         run(async move |_| {
             reset();
-            let h =
-                Harness::create_with_admission_seed(admin, "nfront2_curos", true, false).await?;
+            let h = Harness::create_with_admission_seed(admin, name, true, false).await?;
             prepare_current_session(&h).await?;
-            let world = world()?;
+            let world = world(origin, mortal)?;
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -58,9 +134,9 @@ fn nfront2_curos_step_starts_survival_and_awards_progress_only_at_deadline() -> 
                     frame,
                     world.map_revision_digest(),
                     crate::content::NativeEntryStart {
-                        x: START.x - 1,
-                        y: START.y,
-                        floor: 6,
+                        x: i32::from(origin.x),
+                        y: i32::from(origin.y),
+                        floor: -i16::from(origin.floor),
                     },
                 )
                 .ok_or("bundle room")?;
@@ -71,7 +147,11 @@ fn nfront2_curos_step_starts_survival_and_awards_progress_only_at_deadline() -> 
                 generation.identity().client_artifact_digest(),
                 frame,
                 world.map_revision_digest(),
-                (START.x - 1, START.y, 6),
+                (
+                    i32::from(origin.x),
+                    i32::from(origin.y),
+                    -i16::from(origin.floor),
+                ),
             );
             let mut runtime = ChannelRuntimeV1::from_committed_assignment(
                 deps.admitted.world_id,
@@ -90,14 +170,7 @@ fn nfront2_curos_step_starts_survival_and_awards_progress_only_at_deadline() -> 
                 .map_err(debug)?;
             deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
             runtime
-                .initialize_pinned_test_position(
-                    deps.actor,
-                    MovementLocalPosition {
-                        x: i32::from(START.x - 1),
-                        y: i32::from(START.y),
-                        floor: 6,
-                    },
-                )
+                .initialize_pinned_test_position(deps.actor, local(origin))
                 .map_err(debug)?;
             deps.runtime = tokio::sync::Mutex::new(runtime);
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -178,64 +251,114 @@ fn nfront2_curos_step_starts_survival_and_awards_progress_only_at_deadline() -> 
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
 
-            let actor = deps.actor;
-            let session = admitted.game_session_id;
-            let origin = local(Position {
-                x: START.x - 1,
-                ..START
-            });
-            owner.clock_origin -= Duration::from_secs(2);
-            owner
-                .ordinary_paced_step(actor, session, StepDirection::East, None, None)
-                .await;
-            assert_eq!(
-                owner
-                    .runtime
-                    .lock()
-                    .await
-                    .read_actor_position(actor)
-                    .map_err(debug)?
-                    .position(),
-                origin,
-                "a player outside questline 17 returns to the origin"
-            );
-            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,17,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-                .bind(id(41).as_slice()).bind(QUESTLINE).bind(QUEST).execute(&h.pool).await?;
-            owner.clock_origin -= Duration::from_secs(2);
-            owner
-                .ordinary_paced_step(actor, session, StepDirection::East, None, None)
-                .await;
-            assert_eq!(
-                owner
-                    .runtime
-                    .lock()
-                    .await
-                    .read_actor_position(actor)
-                    .map_err(debug)?
-                    .position(),
-                local(ARENA)
-            );
-            owner.drain_quest_encounter_deadlines().await;
-            assert_eq!(progress(&h).await?, vec![(QUESTLINE.to_owned(), 17)]);
-            owner.clock_origin -= Duration::from_secs(120);
-            owner.drain_quest_encounter_deadlines().await;
-            assert_eq!(
-                owner
-                    .runtime
-                    .lock()
-                    .await
-                    .read_actor_position(actor)
-                    .map_err(debug)?
-                    .position(),
-                local(EXIT)
-            );
-            let completed = vec![(MISSION.to_owned(), 3), (QUESTLINE.to_owned(), 18)];
-            assert_eq!(progress(&h).await?, completed);
-            owner.drain_quest_encounter_deadlines().await;
-            assert_eq!(progress(&h).await?, completed);
-            Ok(())
+            let result = if mortal {
+                Box::pin(mortal_combat(&mut owner, &deps, &admitted, &h, &world)).await
+            } else {
+                Box::pin(curos(&mut owner, &admitted, &h)).await
+            };
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            result?;
+            h.cleanup().await
         })
-    })
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED {name} duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+async fn curos(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("Curos actor")?;
+    let session = admitted.game_session_id;
+    let origin = local(CUROS_ORIGIN);
+    owner.clock_origin -= Duration::from_secs(2);
+    owner
+        .ordinary_paced_step(actor, session, StepDirection::East, None, None)
+        .await;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        origin,
+        "a player outside questline 17 returns to the origin"
+    );
+    seed_questline(h, 41, 17).await?;
+    let occupant = {
+        let mut runtime = owner.runtime.lock().await;
+        let session = GameSessionId::decode(&id(110)).map_err(debug)?;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let occupant = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(occupant, local(CUROS_SPECTATOR))
+            .map_err(debug)?;
+        occupant
+    };
+    owner.clock_origin -= Duration::from_secs(2);
+    owner
+        .ordinary_paced_step(actor, session, StepDirection::East, None, None)
+        .await;
+    assert_eq!(
+        position(owner, actor).await?,
+        origin,
+        "a spectator at radius six occupies the room"
+    );
+    owner
+        .runtime
+        .lock()
+        .await
+        .remove_encounter_actor(occupant)
+        .map_err(debug)?;
+    owner.clock_origin -= Duration::from_secs(2);
+    owner
+        .ordinary_paced_step(actor, session, StepDirection::East, None, None)
+        .await;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        local(ARENA)
+    );
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(progress(h, 41).await?, vec![(QUESTLINE.to_owned(), 17)]);
+    owner.clock_origin -= Duration::from_secs(120);
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        local(EXIT)
+    );
+    let completed = vec![(MISSION.to_owned(), 3), (QUESTLINE.to_owned(), 18)];
+    assert_eq!(progress(h, 41).await?, completed);
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(progress(h, 41).await?, completed);
+    Ok(())
+}
+
+async fn seed_questline(h: &Harness, character: u8, value: i64) -> TestResult {
+    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(character).as_slice()).bind(QUESTLINE).bind(QUEST).bind(value).execute(&h.pool).await?;
+    Ok(())
 }
 
 fn local(p: Position) -> MovementLocalPosition {
@@ -246,28 +369,78 @@ fn local(p: Position) -> MovementLocalPosition {
     }
 }
 
-fn world() -> TestResult<crate::map::boot::BundleWorld> {
+fn world(origin: Position, mortal: bool) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
+    let mut positions = if mortal {
+        data.manifest.palette.push(bundle::PaletteEntry {
+            id: 1,
+            key: "oteryn:terrain.tibia.i2773".into(),
+            family: bundle::Family::Terrain,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+        data.manifest.palette.push(bundle::PaletteEntry {
+            id: 2,
+            key: "oteryn:terrain.tibia.i2317".into(),
+            family: bundle::Family::Terrain,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+        vec![
+            LEVER,
+            MORTAL_ORIGIN,
+            MORTAL_PARTNER,
+            FIRST_LANDING,
+            SECOND_LANDING,
+            MORTAL_REWARD_EXIT,
+            MORTAL_TIMEOUT_EXIT,
+        ]
+    } else {
+        vec![CUROS_ORIGIN, START, ARENA, EXIT, CUROS_SPECTATOR]
+    };
+    if mortal {
+        positions.extend(WAVE_SITES);
+    }
+    positions.sort_by_key(|p| (p.floor, p.y, p.x));
+    let mut floors: Vec<_> = positions.iter().map(|p| p.floor).collect();
+    floors.dedup();
     data.manifest.world = bundle::Extent {
-        min_x: START.x - 1,
-        max_x: ARENA.x + 1,
-        min_y: START.y,
-        max_y: EXIT.y + 1,
-        floors: vec![-7, -6],
+        min_x: positions.iter().map(|p| p.x).min().ok_or("minimum x")?,
+        max_x: positions.iter().map(|p| p.x).max().ok_or("maximum x")? + 1,
+        min_y: positions.iter().map(|p| p.y).min().ok_or("minimum y")?,
+        max_y: positions.iter().map(|p| p.y).max().ok_or("maximum y")? + 1,
+        floors,
     };
     let mut grouped = std::collections::BTreeMap::<_, Vec<_>>::new();
-    for p in [
-        Position {
-            x: START.x - 1,
-            ..START
-        },
-        START,
-        ARENA,
-        EXIT,
-    ] {
+    for p in positions {
+        let mut items = vec![sector::Item {
+            palette: 0,
+            depth: 0,
+            attrs: Default::default(),
+        }];
+        if p == LEVER {
+            items.push(sector::Item {
+                palette: 2,
+                depth: 0,
+                attrs: Default::default(),
+            });
+            items.push(sector::Item {
+                palette: 1,
+                depth: 0,
+                attrs: Default::default(),
+            });
+        }
         grouped
             .entry((p.floor, p.x / 32, p.y / 32))
             .or_default()
@@ -277,11 +450,7 @@ fn world() -> TestResult<crate::map::boot::BundleWorld> {
                 flags: 0,
                 house: 0,
                 zones: vec![],
-                items: vec![sector::Item {
-                    palette: 0,
-                    depth: 0,
-                    attrs: Default::default(),
-                }],
+                items,
             });
     }
     let mut sectors: Vec<_> = grouped
@@ -303,9 +472,9 @@ fn world() -> TestResult<crate::map::boot::BundleWorld> {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
             start: crate::map::overlay::TilePos {
-                x: START.x - 1,
-                y: START.y,
-                floor: START.floor,
+                x: origin.x,
+                y: origin.y,
+                floor: origin.floor,
             },
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
@@ -315,7 +484,223 @@ fn world() -> TestResult<crate::map::boot::BundleWorld> {
     .map_err(|error| debug(error).into())
 }
 
-async fn progress(harness: &Harness) -> TestResult<Vec<(String, i64)>> {
+async fn progress(harness: &Harness, character: u8) -> TestResult<Vec<(String, i64)>> {
     Ok(sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 ORDER BY track_key")
-        .bind(id(41).as_slice()).bind(QUEST).fetch_all(&harness.pool).await?)
+        .bind(id(character).as_slice()).bind(QUEST).fetch_all(&harness.pool).await?)
+}
+
+async fn mortal_combat(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    world: &crate::map::boot::BundleWorld,
+) -> TestResult {
+    use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+    let actor = admitted.runtime_actor.ok_or("staging actor")?;
+    let key = oteryn_world_bundle::bundle::placement_key(LEVER.floor, LEVER.x, LEVER.y, 2)
+        .ok_or("lever placement key")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let pull = |command_id| UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id,
+        item_fence: admitted.item_fence,
+    };
+    let target = WorldObjectTarget {
+        placement,
+        expected_revision: 0,
+    };
+    owner.clock_origin -= Duration::from_secs(2);
+    let single = owner.use_object(actor, pull(1), target.clone()).await;
+    assert_ne!(single.disposition, UseDisposition::Committed);
+    assert_eq!(position(owner, actor).await?, local(MORTAL_ORIGIN));
+    seed_questline(h, 41, 25).await?;
+    let (peer, peer_session) = second_player(owner, deps, h).await?;
+    owner.clock_origin -= Duration::from_secs(2);
+    let paired = owner.use_object(actor, pull(2), target).await;
+    assert_eq!(
+        paired.disposition,
+        UseDisposition::Committed,
+        "both staging actors enter together"
+    );
+    assert_eq!(position(owner, actor).await?, local(FIRST_LANDING));
+    assert_eq!(position(owner, peer).await?, local(SECOND_LANDING));
+    for (index, wave) in MORTAL_WAVES.into_iter().enumerate() {
+        if index != 0 {
+            owner.clock_origin -= Duration::from_secs(90);
+        }
+        owner.drain_quest_encounter_deadlines().await;
+        for creature in wave {
+            assert!(
+                live_creature(owner, creature).await?.is_some(),
+                "wave {index} spawns {creature}"
+            );
+        }
+    }
+    assert!(
+        live_creature(owner, MORTAL_WAVES[0][0]).await?.is_some(),
+        "later waves run with earlier waves alive"
+    );
+    let boss = live_creature(owner, MORTAL_WAVES[6][0])
+        .await?
+        .ok_or("Tirecz")?;
+    assert!(
+        owner
+            .refresh_source_party_presence(actor, admitted.game_session_id)
+            .await
+    );
+    assert!(
+        owner
+            .refresh_source_party_presence(peer, peer_session)
+            .await
+    );
+    kill_tirecz(owner, admitted, boss).await?;
+    owner.drain_kill_rewards(admitted.game_session_id).await;
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(position(owner, actor).await?, local(MORTAL_REWARD_EXIT));
+    assert_eq!(position(owner, peer).await?, local(MORTAL_REWARD_EXIT));
+    for character in [41, 101] {
+        assert_eq!(
+            progress(h, character).await?,
+            vec![(MISSION09.into(), 2), (QUESTLINE.into(), 26)]
+        );
+    }
+    let achievements: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/champion_of_chazorai'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(achievements, 2);
+    assert!(live_creature(owner, MORTAL_WAVES[0][0]).await?.is_none());
+    Ok(())
+}
+
+async fn position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+) -> TestResult<MovementLocalPosition> {
+    Ok(owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position())
+}
+
+async fn live_creature(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    creature: &str,
+) -> TestResult<Option<ExactActorRef>> {
+    let runtime = owner.runtime.lock().await;
+    Ok(runtime
+        .current_live_creature_census()
+        .map_err(debug)?
+        .into_iter()
+        .find(|actor| runtime.matches_live_creature_identity(*actor, creature.as_bytes())))
+}
+
+async fn second_player(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    h: &Harness,
+) -> TestResult<(ExactActorRef, GameSessionId)> {
+    h.seed_pvp_target().await?;
+    super::appearance_change_postgres::observer_visibility_tests::admit(h).await?;
+    seed_questline(h, 101, 25).await?;
+    let session = GameSessionId::decode(&id(110)).map_err(debug)?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "second fence")?
+        .ok_or("second session")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(actor, local(MORTAL_PARTNER))
+            .map_err(debug)?;
+        runtime
+            .bind_attacker_lease(
+                actor,
+                session,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                        .map_err(debug)?,
+                    fence.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        actor
+    };
+    let mut admitted = AdmittedSession {
+        game_session_id: session,
+        world_id: deps.admitted.world_id,
+        channel_id: deps.admitted.channel_id,
+        runtime_actor: Some(actor),
+        first_entry: FirstEntryOutcome::Positioned,
+        controller: None,
+        continuity: crate::gameplay_transport::connection::SessionContinuity::FRESH,
+        item_fence: Some(fence.item_fence()),
+    };
+    owner.admit_progression_session(&mut admitted).await;
+    deps.initialize_player(owner, actor, session).await;
+    owner.admit_quest_session(&admitted).await;
+    Ok((actor, session))
+}
+
+async fn kill_tirecz(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    target: ExactActorRef,
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
+    let queue = owner.states.attack.lock().await.kills().clone();
+    let mut runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let actor = admitted.runtime_actor.ok_or("lethal actor")?;
+    let session = admitted.game_session_id;
+    let lease = runtime
+        .bound_attacker_lease(actor, session)
+        .map_err(debug)?;
+    let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+    let observed = owner.owner_now();
+    let now = observed.get() / 1000;
+    runtime
+        .borrow_exact_actor_commit_at(now)
+        .commit_damage_for_bound_attacker(
+            target,
+            actor,
+            CommandRef::new(session, CommandId::new(9).map_err(debug)?),
+            0,
+            OwnerDamageCommand {
+                target: MORTAL_WAVES[6][0].as_bytes(),
+                occurrence: b"nfront2",
+                binding: b"tirecz-death",
+                damage: health,
+            },
+        )
+        .map_err(debug)?;
+    crate::gameplay_transport::kill_reward::record_creature_kill(
+        &mut runtime,
+        crate::gameplay_transport::kill_reward::KillSink {
+            prey: Some(&states),
+            activity: &[],
+            queue: &queue,
+            rewards: owner.reward_table(),
+            charms: None,
+        },
+        target,
+        crate::combat::CapturedRewardPrincipal {
+            character: lease.character_id(),
+            lease_generation: lease.generation(),
+            session,
+            actor,
+        },
+        now,
+        Some(observed),
+    );
+    Ok(())
 }

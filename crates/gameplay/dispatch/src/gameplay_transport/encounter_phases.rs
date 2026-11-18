@@ -8,6 +8,8 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
+pub(super) mod mortal_combat;
+
 const MAX_ENCOUNTERS: usize = 64;
 
 #[derive(Debug)]
@@ -22,9 +24,36 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    pub(super) mortal: Mutex<Option<mortal_combat::Run>>,
 }
 
 impl Registry {
+    pub(super) fn reserve_mortal(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<std::sync::MutexGuard<'_, Option<mortal_combat::Run>>, CarrierError> {
+        let mut slot = self.mortal.lock().map_err(|_| CarrierError::PlanConflict)?;
+        if slot.as_ref().is_some_and(|run| run.is_current(runtime)) {
+            return Err(CarrierError::PlanConflict);
+        }
+        *slot = None;
+        Ok(slot)
+    }
+
+    pub(super) fn mortal_due(&self) -> Option<u64> {
+        self.mortal
+            .lock()
+            .ok()?
+            .as_ref()
+            .map(mortal_combat::Run::due)
+    }
+
+    pub(super) fn mortal_won(&self, actor: ExactActorRef) -> bool {
+        self.mortal
+            .lock()
+            .is_ok_and(|slot| slot.as_ref().is_some_and(|run| run.won(actor)))
+    }
+
     pub(super) fn reserve<'a>(
         &'a self,
         runtime: &mut ChannelRuntimeV1,
@@ -65,6 +94,11 @@ impl Registry {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
     ) {
+        if let Ok(mut slot) = self.mortal.lock()
+            && let Some(run) = slot.as_mut()
+        {
+            run.death(runtime, actor);
+        }
         let Ok(mut active) = self.active.lock() else {
             return;
         };

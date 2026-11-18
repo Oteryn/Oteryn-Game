@@ -65,6 +65,7 @@ use crate::foundation::{CommandId, CommandRef, GameSessionId, RuntimeScopeRefV1}
 
 mod counter_alias;
 mod map_marks;
+mod mortal_combat;
 pub use map_marks::{PersonalQuestMapMark, QuestMapMarksSnapshot};
 pub mod npc_program;
 

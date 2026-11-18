@@ -2,6 +2,8 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_gameplay_quests::quest::{the_new_frontier, world_callbacks::EncounterPhase};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(
@@ -125,6 +127,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
+        let mortal = encounter.phase == Some(EncounterPhase::MortalCombat);
+        if mortal
+            && self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .is_none_or(|native| native.install_companion_policies(runtime).is_err())
+        {
+            return UseDisposition::Rejected;
+        }
+        let mut mortal_run = if mortal {
+            let Ok(slot) = states.encounter_phases.reserve_mortal(runtime) else {
+                self.states
+                    .chat
+                    .push_quest_feedback(session, "The arena is already in use.");
+                return UseDisposition::Occupied;
+            };
+            Some(slot)
+        } else {
+            None
+        };
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
@@ -136,13 +158,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .contains(&at.y)
         };
         let personal_entry = callback.personal_room_entry().map(local);
-        if census.iter().any(|(who, pos, occupant_session)| {
-            occupant_session.is_some()
-                && in_room(pos.position())
-                && !(Some(pos.position()) == personal_entry
-                    && *who == actor
-                    && *occupant_session == Some(session))
-        }) {
+        if !mortal
+            && census.iter().any(|(who, pos, occupant_session)| {
+                occupant_session.is_some()
+                    && in_room(pos.position())
+                    && !(Some(pos.position()) == personal_entry
+                        && *who == actor
+                        && *occupant_session == Some(session))
+            })
+        {
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -154,9 +178,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
-                {
+                if encounter.phase == Some(EncounterPhase::Cults) {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -201,6 +223,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Rejected;
             }
+            if mortal {
+                let Ok(sessions) = self.states.quest_sessions.lock() else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(copy) = sessions
+                    .get(&member_session)
+                    .and_then(|state| state.copy.as_ref())
+                else {
+                    return UseDisposition::Rejected;
+                };
+                if copy
+                    .tracks()
+                    .get(the_new_frontier::QUESTLINE)
+                    .is_some_and(|stage| *stage >= 26)
+                {
+                    self.states
+                        .chat
+                        .push_quest_feedback(session, "You already finished this battle.");
+                    return UseDisposition::Rejected;
+                }
+            }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
             let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
@@ -218,9 +261,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             players.push((who, member_session, expected));
             proofs.push(proof);
         }
-        if !players
-            .iter()
-            .any(|(who, s, _)| *who == actor && *s == session)
+        if !mortal
+            && !players
+                .iter()
+                .any(|(who, s, _)| *who == actor && *s == session)
         {
             return UseDisposition::Rejected;
         }
@@ -297,7 +341,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let credits = if encounter.phase.is_some() {
+        let credits = if encounter.phase == Some(EncounterPhase::Cults) {
             let Ok(credits) =
                 super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
             else {
@@ -307,7 +351,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let mut phases = if encounter.phase.is_some() {
+        let mut phases = if encounter.phase == Some(EncounterPhase::Cults) {
             let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
                 return UseDisposition::Occupied;
             };
@@ -315,9 +359,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
-            proofs,
-            &monsters,
+        let project = || {
+            map.facts
+                .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+        };
+        let committed = if mortal {
+            runtime
+                .commit_source_steps_and_project(proofs, project)
+                .map(|snapshots| (snapshots, (None, Vec::new(), None)))
+        } else {
+            runtime.commit_quest_encounter_with_phase(
+                proofs,
+                &monsters,
             |runtime, actors| {
                 let roster = if prepared.is_some() {
                     Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
@@ -338,13 +391,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                     .transpose().map(|phase| (phase, actors.to_vec(), roster))
             },
-            || {
-                map.facts
-                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
-            },
-        ) else {
+                project,
+            )
+        };
+        let Ok((snapshots, (phase, actors, roster))) = committed else {
             return UseDisposition::Rejected;
         };
+        if let Some(slot) = mortal_run.as_mut() {
+            **slot = Some(super::super::encounter_phases::mortal_combat::Run::start(
+                runtime,
+                self.owner_now().get(),
+            ));
+            states.owner_wake.notify_one();
+        }
+        drop(mortal_run);
         if let (Some(capture), Some(prepared), Some(roster)) = (capture.as_mut(), prepared, roster)
         {
             capture.publish_encounter(prepared, roster);
