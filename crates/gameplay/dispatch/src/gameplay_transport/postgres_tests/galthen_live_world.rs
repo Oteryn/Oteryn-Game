@@ -11,6 +11,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 };
 
 pub(super) const SATCHEL: &str = "galthen-satchel";
+pub(super) const COOLDOWN: &str = "galthen-yselda-shortcut-1-cooldown";
 pub(super) const LOW_LEVEL: &str = "-low-level";
 const SATCHEL_RECLAIM_SECONDS: i64 = 30 * 24 * 60 * 60;
 
@@ -18,8 +19,8 @@ const fn at(x: u16, y: u16, floor: i8) -> Position {
     Position { x, y, floor }
 }
 
-// Literal coordinates from the five travel registrations in the pinned donor.
-const ROUTES: [(&str, Position, Position); 5] = [
+// Literal coordinates from the travel registrations in the pinned donor.
+const ROUTES: [(&str, Position, Position); 7] = [
     (
         "galthen-forest-1",
         at(32424, 32500, -10),
@@ -45,6 +46,16 @@ const ROUTES: [(&str, Position, Position); 5] = [
         at(34000, 31732, -9),
         at(34038, 31727, -10),
     ),
+    (
+        "galthen-yselda-shortcut-1",
+        at(32419, 32458, -7),
+        at(32528, 32489, -11),
+    ),
+    (
+        "galthen-yselda-shortcut-2",
+        at(32528, 32488, -11),
+        at(32418, 32458, -7),
+    ),
 ];
 
 #[test]
@@ -57,6 +68,7 @@ fn galthen_live_travel_postgres() -> TestResult {
         super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, source, false))?;
     }
     for (name, source) in [
+        (COOLDOWN, ROUTES[5].1),
         ("galthen-forest-1-low-level", ROUTES[0].1),
         ("galthen-iksupan-entrance-low-level", ROUTES[2].1),
     ] {
@@ -85,7 +97,20 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let source = callback.selector.position.ok_or("source tile")?;
-    let refused = name.ends_with(LOW_LEVEL);
+    let refused = name.ends_with(LOW_LEVEL) || name == COOLDOWN;
+    if name == COOLDOWN {
+        sqlx::query(
+            "INSERT INTO game_character_boss_cooldowns
+               (character_id,boss_key,available_at,admission,reset_epoch)
+             VALUES(encode($1,'hex')::uuid,'oteryn:boss.megasylvan_yselda',
+               floor(extract(epoch FROM clock_timestamp())*1000)::bigint+600000,
+               encode($2,'hex')::uuid,0)",
+        )
+        .bind(super::fixture::id(41).as_slice())
+        .bind(super::fixture::id(81).as_slice())
+        .execute(&h.pool)
+        .await?;
+    }
     let start = at(source.x - 1, source.y, source.floor);
     let expected = if refused {
         start
@@ -130,13 +155,16 @@ pub(super) async fn exercise(
         if name == SATCHEL {
             return exercise_satchel(owner, admitted, h, actor, start, expected, target, key).await;
         }
-        let outcomes = super::quest_callbacks::wire_use_targets_retained(
-            owner, admitted, &[(1, &target)],
-        )
-        .await?;
+        let outcomes =
+            super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(1, &target)])
+                .await?;
         assert_eq!(
             outcomes.first().map(|(_, result)| *result),
-            Some(if refused { UseDisposition::Rejected } else { UseDisposition::Committed })
+            Some(if refused {
+                UseDisposition::Rejected
+            } else {
+                UseDisposition::Committed
+            })
         );
     }
     assert_eq!(
@@ -151,7 +179,10 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments, reason = "the fixture supplies the exact actor, map placement and two tiles")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the fixture supplies the exact actor, map placement and two tiles"
+)]
 async fn exercise_satchel(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -167,17 +198,24 @@ async fn exercise_satchel(
     for (id, elapsed, rewards, last_claim) in [
         (1, 0, 1, EPOCH),
         (2, SATCHEL_RECLAIM_SECONDS, 1, EPOCH),
-        (3, SATCHEL_RECLAIM_SECONDS + 1, 2, EPOCH + SATCHEL_RECLAIM_SECONDS + 1),
+        (
+            3,
+            SATCHEL_RECLAIM_SECONDS + 1,
+            2,
+            EPOCH + SATCHEL_RECLAIM_SECONDS + 1,
+        ),
     ] {
         h.root.set_test_quest_clock(EPOCH + elapsed)?;
         target.expected_revision = map.facts.object_revision(key);
-        let outcomes = super::quest_callbacks::wire_use_targets_retained(
-            owner, admitted, &[(id, &target)],
-        )
-        .await?;
+        let outcomes =
+            super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(id, &target)])
+                .await?;
         assert_eq!(
             outcomes.as_slice(),
-            &[(oteryn_protocol_oteryn::CommandStatus::Accepted, UseDisposition::Committed)],
+            &[(
+                oteryn_protocol_oteryn::CommandStatus::Accepted,
+                UseDisposition::Committed
+            )],
         );
         {
             let mut runtime = owner.runtime.lock().await;
@@ -186,8 +224,15 @@ async fn exercise_satchel(
             if id < 3 {
                 let doors = crate::map::floor::BundleDoors(map.facts.doors());
                 let return_to_tree = crate::map::floor::prepare_quest_callback_teleport_facing(
-                    &runtime, owner.movement_cells(), actor, admitted.game_session_id, at,
-                    local(start), false, &doors, None,
+                    &runtime,
+                    owner.movement_cells(),
+                    actor,
+                    admitted.game_session_id,
+                    at,
+                    local(start),
+                    false,
+                    &doors,
+                    None,
                 )
                 .map_err(debug)?;
                 runtime.commit_source_step(return_to_tree).map_err(debug)?;
@@ -207,12 +252,11 @@ async fn exercise_satchel(
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(nested, rewards);
-        let claim: i64 = sqlx::query_scalar(
-            "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
-        )
-        .bind("oteryn:quest-progress/galthen/satchel-at")
-        .fetch_one(&h.pool)
-        .await?;
+        let claim: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind("oteryn:quest-progress/galthen/satchel-at")
+                .fetch_one(&h.pool)
+                .await?;
         assert_eq!(claim, last_claim);
     }
     Ok(())
