@@ -1700,9 +1700,23 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
         }) else {
             return false;
         };
+        let Some(raw_destination) = map.floors.teleport(at) else {
+            return false;
+        };
+        let source = Position {
+            x: at.x,
+            y: at.y,
+            floor: at.floor,
+        };
+        let timed_room_portal = |callback: &Callback| {
+            callback.selector.appearance.is_some()
+                && callback.selector.matches_position(source)
+                && callback.timed_room_exit().map(tile) == Some(raw_destination)
+        };
         if !self.callbacks.iter().any(|c| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
-                .is_some_and(|b| tile(b.position) == at)
+            timed_room_portal(c)
+                || oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
+                    .is_some_and(|b| tile(b.position) == at)
         }) {
             return false;
         }
@@ -1731,10 +1745,21 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
             }
         }
         selected.is_some_and(|(c, key)| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(|b| {
-                map.facts
-                    .quest_callback_native_teleport(key, b.appearance, tile(b.raw_destination))
-            })
+            // The authored room owns the STEP before the base exit can relocate it.
+            (timed_room_portal(c)
+                && c.selector.appearance.is_some_and(|appearance| {
+                    map.facts
+                        .quest_callback_native_teleport(key, appearance, raw_destination)
+                }))
+                || oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(
+                    |b| {
+                        map.facts.quest_callback_native_teleport(
+                            key,
+                            b.appearance,
+                            tile(b.raw_destination),
+                        )
+                    },
+                )
         })
     }
 }

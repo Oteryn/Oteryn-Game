@@ -27,6 +27,7 @@ const EXIT: Position = Position {
     y: 101,
     floor: -7,
 };
+const PORTAL: &str = "oteryn:item.tibia.i1949";
 const KEY: &str = "oteryn:quest-world/m01c-stampede-entry";
 
 #[test]
@@ -53,7 +54,7 @@ fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResu
                 .clone();
             callback.selector.position = Some(ENTRY);
             callback.selector.position_aliases = vec![ALIAS];
-            callback.selector.appearance = Some(100);
+            callback.selector.appearance = Some(1949);
             callback.return_on_failure = true;
             callback.failure_teleport = Some(EXIT);
             let encounter = callback
@@ -89,7 +90,6 @@ fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResu
                 spawn_after_ms: 0,
                 reset_after_ms: 300_000,
             });
-            let world = world()?;
             let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -97,6 +97,10 @@ fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResu
                     "content-1",
                 )?;
             let generation = controller.active().ok_or("active generation")?;
+            let native = generation
+                .native_gameplay()
+                .ok_or("native item catalogue")?;
+            let world = world(native)?;
             let cells = world
                 .movement_cells(activated.qualified_room().movement_cells())
                 .map_err(debug)?;
@@ -304,22 +308,23 @@ fn local(p: Position) -> MovementLocalPosition {
     }
 }
 
-fn world() -> TestResult<crate::map::boot::BundleWorld> {
+fn world(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::overlay::TilePos;
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
+    let reference = native
+        .item_index()
+        .and_then(|index| index.definition_ref("Item", PORTAL, "definition-r1"))
+        .ok_or("native portal definition")?;
     data.manifest.palette.push(bundle::PaletteEntry {
-        id: 1,
-        key: "oteryn:terrain.tibia.i100".into(),
-        family: bundle::Family::Terrain,
-        terrain: Some(bundle::Terrain {
-            kind: bundle::TerrainKind::Common,
-            walkable: None,
-            ground_speed: None,
-            blocks_projectile: None,
-        }),
+        id: reference.get() - 1,
+        key: PORTAL.into(),
+        family: bundle::Family::Item,
+        terrain: None,
     });
     data.manifest.world = bundle::Extent {
         min_x: 98,
@@ -338,7 +343,11 @@ fn world() -> TestResult<crate::map::boot::BundleWorld> {
         for x in 98..=120 {
             let mut items = vec![item(0)];
             if [(ENTRY.x, ENTRY.y), (ALIAS.x, ALIAS.y)].contains(&(x, y)) {
-                items.push(item(1));
+                let mut portal = item(1);
+                if (x, y) == (ENTRY.x, ENTRY.y) {
+                    portal.attrs.teleport = Some((EXIT.x, EXIT.y, EXIT.floor.to_le_bytes()[0]));
+                }
+                items.push(portal);
             }
             tiles.push(sector::Tile {
                 x,
@@ -375,7 +384,15 @@ fn world() -> TestResult<crate::map::boot::BundleWorld> {
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
-        |_| None,
+        |key| {
+            (key == PORTAL).then_some(crate::map::facts::ItemDefinition {
+                reference,
+                solid: Some(false),
+                blocks_projectile: false,
+                pickupable: false,
+                door: false,
+            })
+        },
     )
     .map_err(debug)
     .map_err(Into::into)
