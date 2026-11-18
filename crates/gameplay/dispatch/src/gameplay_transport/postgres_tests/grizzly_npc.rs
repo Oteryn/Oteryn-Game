@@ -41,7 +41,8 @@ fn grizzly_npc_wire_join_choose_cancel_complete_replay_and_journal() -> TestResu
 
 #[test]
 fn grizzly_npc_wire_rank_gate_and_pending_holy_icon_retry_once() -> TestResult {
-    postgres_case(1)
+    postgres_case(1)?;
+    postgres_case(18)
 }
 
 #[test]
@@ -117,6 +118,7 @@ fn postgres_case(case: u8) -> TestResult {
         2 => || scenario(2),
         3 => || scenario(3),
         4 => || scenario(4),
+        18 => || scenario(18),
         _ => || scenario(0),
     };
     super::kill_reward_e2e::scenario_thread::run("grizzly-npc", runner)
@@ -183,6 +185,8 @@ pub(super) fn scenario(case: u8) -> TestResult {
             80
         } else if case == 15 {
             90
+        } else if case == 18 {
+            85
         } else {
             8
         };
@@ -510,6 +514,10 @@ pub(super) fn scenario(case: u8) -> TestResult {
                 .await?;
         } else if case == 2 {
             rank_shop(&mut owner, &mut admitted, npc, &h).await?;
+        } else if case == 18 {
+            boss_dialogue::special_report_clears_task_confirmation(
+                &mut owner, &mut admitted, npc, &h, &authority,
+            ).await?;
         } else if reward {
             holy_icon(&mut owner, &mut admitted, npc, &h, &authority).await?;
             boss_dialogue::exercise(&mut owner, &mut admitted, npc, &h, &authority).await?;

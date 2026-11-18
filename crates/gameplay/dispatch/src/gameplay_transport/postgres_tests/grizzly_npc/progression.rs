@@ -49,6 +49,12 @@ pub(super) async fn live_level(
     let durable: (i64, i64) = sqlx::query_as("SELECT level,total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(durable, (50, initial_xp + 800));
+    let crocodiles_xp: Vec<i64> = sqlx::query_scalar(
+        "SELECT experience_awarded FROM game_character_xp_receipts",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(crocodiles_xp, [800]);
     seed(h, &[(quest::KILL_COUNTER_BASE + 2, 300)]).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -145,6 +151,18 @@ pub(super) async fn live_level(
     drop(runtime);
     let receipts: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_character_xp_receipts),(SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-transition/grizzly/complete-1')")
         .fetch_one(&h.pool).await?;
-    assert_eq!(receipts, (1, 1));
+    assert_eq!(receipts, (2, 1));
+    let promotion_receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE cause_kind='command' AND cause_ordinal=14 AND transition_key='oteryn:quest-transition/grizzly/promote'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(promotion_receipts, 1);
+    let xp: Vec<i64> = sqlx::query_scalar(
+        "SELECT experience_awarded FROM game_character_xp_receipts ORDER BY experience_before",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(xp, [800, 10_000], "Crocodiles completion and Big Game Hunter promotion");
     Ok(())
 }

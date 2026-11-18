@@ -180,7 +180,7 @@ pub(super) async fn exercise(
     assert_eq!(after, before);
     assert_eq!(experience(h).await?, before_xp);
     let achievements: Vec<String> = sqlx::query_scalar(
-        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 4",
+        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 5",
     )
     .fetch_all(&h.pool)
     .await?;
@@ -188,6 +188,7 @@ pub(super) async fn exercise(
         achievements,
         [
             "oteryn:achievement/blood_red_snapper",
+            "oteryn:achievement/huntsman",
             "oteryn:achievement/one_less",
             "oteryn:achievement/rootless_behaviour"
         ]
@@ -395,9 +396,17 @@ async fn hunt_with_decay(
             sqlx::query("UPDATE game_item_mint_receipts SET materialized_at=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-61000 WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(corpse.as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
-            owner.drain_corpse_deadlines().await;
-            let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1")
-                .bind(corpse.as_slice()).fetch_one(&h.pool).await?;
+            // The owner defers a drain when its durability pass is temporarily busy.
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+            let live = loop {
+                owner.drain_corpse_deadlines().await;
+                let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1")
+                    .bind(corpse.as_slice()).fetch_one(&h.pool).await?;
+                if live == 0 || tokio::time::Instant::now() >= deadline {
+                    break live;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+            };
             assert_eq!(
                 live, 0,
                 "the real decay owner must retire the hunted corpse"

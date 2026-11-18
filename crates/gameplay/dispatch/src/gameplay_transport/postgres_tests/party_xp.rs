@@ -96,6 +96,8 @@ impl Case {
                 | Self::Rollback
                 | Self::Exhausted
                 | Self::PzContention
+                | Self::ForgeReplay
+                | Self::ForgeRollback
         )
     }
 }
@@ -884,7 +886,7 @@ async fn scenario(
         {
             let runtime = owner.runtime.lock().await;
             let staged_mode = match case {
-                Case::ForgeForeign => Some(oteryn_protocol_oteryn::attack::FightMode::Offensive),
+                _ if case.forge() => Some(oteryn_protocol_oteryn::attack::FightMode::Offensive),
                 Case::Foreign if index == 0 => {
                     Some(oteryn_protocol_oteryn::attack::FightMode::Defensive)
                 }

@@ -157,3 +157,26 @@ async fn receipts(
         .bind(admitted.game_session_id.as_bytes().as_slice()).bind(command.to_string())
         .bind(action.transition_key()).fetch_one(&h.pool).await?)
 }
+
+pub(super) async fn special_report_clears_task_confirmation(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    let tiquanda = quest::boss(29).ok_or("Tiquanda source boss")?;
+    seed(h, &[
+        (quest::POINTS_STORAGE, 70),
+        (tiquanda.storage, 2),
+        (tiquanda.kill_storage, 1),
+    ]).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    wire::talk(
+        owner, admitted, npc,
+        &[(3, "hi"), (4, "giant spiders"), (5, "special"), (6, "yes")],
+    ).await?;
+    assert_eq!(value(owner, authority, tiquanda.storage).await?, 3);
+    assert_eq!(value(owner, authority, quest::QUEST_STORAGE_BASE + 24).await?, -1);
+    Ok(())
+}

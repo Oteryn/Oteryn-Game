@@ -739,6 +739,10 @@ async fn third(
         );
         Ok(actors)
     };
+    // The owner clock normally includes wall time, so a slow wire exchange can
+    // consume the entire two-second window before the early-spawn assertion.
+    let _clock = owner.freeze_owner_clock_for_test();
+    set_clock(owner, owner.owner_now().get() + 2_000_000)?;
     assert_eq!(
         use_source(owner, admitted, lever, 0).await?,
         UseDisposition::Committed
@@ -758,8 +762,9 @@ async fn third(
         before,
         "queuing a source monster cannot grant value or progress"
     );
-    walk(owner, admitted, position(32479, 31904, 5)).await?;
+    // Advance to the pre-spawn instant before the single step toward the stairs.
     set_clock(owner, spawn_at - 100_000)?;
+    walk(owner, admitted, position(32479, 31904, 5)).await?;
     owner.drain_quest_encounter_deadlines().await;
     assert!(
         puzzle_creatures(&*owner.runtime.lock().await)?.is_empty(),
@@ -898,13 +903,15 @@ async fn third(
     );
     Ok(())
 }
-fn set_clock(owner: &mut ComposedFreshAdmission<'_, '_, '_>, micros: u64) -> TestResult {
+fn set_clock(owner: &ComposedFreshAdmission<'_, '_, '_>, micros: u64) -> TestResult {
     assert!(
         micros >= owner.owner_now().get(),
         "fixture semantic clock never rewinds"
     );
-    owner.clock_origin = std::time::Instant::now()
-        .checked_sub(std::time::Duration::from_micros(micros))
-        .ok_or("semantic clock")?;
+    let encoded = micros.checked_add(1).ok_or("semantic clock")?;
+    owner
+        .states
+        .test_owner_time
+        .store(encoded, std::sync::atomic::Ordering::Relaxed);
     Ok(())
 }

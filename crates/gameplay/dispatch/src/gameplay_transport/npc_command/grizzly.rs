@@ -441,6 +441,24 @@ fn clear(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId)
     }
 }
 
+// Crystal grizzly_adams.lua:915-943 clears the topic after reporting or rearming
+// an assignment. The durable quest rules decide whether the action succeeded.
+fn clear_committed_special_topic(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    cause: QuestCause,
+) {
+    if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&session)
+        && let Some(pending) = &state.grizzly.pending
+        && pending.cause == cause
+        && state.grizzly.context.as_ref() == Some(&pending.context)
+        && pending.actions.contains(&GrizzlyAction::StartSpecialTask)
+    {
+        state.grizzly.topic = Topic::None;
+    }
+}
+
 fn forget_terminal(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId) {
     let pending = admission
         .states
@@ -668,6 +686,7 @@ pub(super) async fn talk(
     admission
         .refresh_quest_session(command.game_session_id, false)
         .await;
+    clear_committed_special_topic(admission, command.game_session_id, cause);
     reward_reply(admission, actor, command, &intent, reply.line).await
 }
 
@@ -848,6 +867,7 @@ pub(in crate::gameplay_transport) async fn resume(
     admission
         .refresh_quest_session(command.game_session_id, false)
         .await;
+    clear_committed_special_topic(admission, command.game_session_id, pending.cause);
     Some(reward_reply(admission, actor, command, &pending.intent, pending.reply).await)
 }
 

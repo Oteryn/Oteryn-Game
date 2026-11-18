@@ -32,7 +32,10 @@ pub(super) async fn actual_source_suffix(
     let mut selected = None;
     // Exercise the actual source chance/interval owner. No fabricated proposal,
     // selected seed, replacement AI clock or manually accepted cast is admitted.
-    'turns: for turn in 0..64_u64 {
+    // Purple's 35-Think attack clock gives the 2 s ordinary spells and the
+    // 7 s source callback only two shared phases per cycle. Sample several
+    // cycles because repinning the native artifact changes both chance draws.
+    'turns: for turn in 0..210_u64 {
         let now = start
             .checked_add(turn.checked_mul(7_000_000).ok_or("native turn interval")?)
             .ok_or("native turn time")?;
