@@ -38,6 +38,10 @@ pub struct OneItemNpcPurchaseCurrencyInputV1 {
     pub parent: Vec<u8>,
     #[prost(bool, tag = "3")]
     pub nested: bool,
+    /// A coin BURN shared by the bag's gold fee and this currency payment.
+    /// None is an ordinary currency item BURN; Some proves its exact gold-fee portion.
+    #[prost(uint32, optional, tag = "4")]
+    pub gold_fee_units: Option<u32>,
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -120,18 +124,29 @@ pub(super) fn check(
     if let Some(currency) = &purchase.currency {
         check_definition(currency.definition.as_ref())?;
         let definition = currency.definition.as_ref().ok_or_else(bad)?;
-        if definition.family != "Item"
-            || Coin::from_production_key(&definition.production_key).is_some()
-            || burns.len() != currency.inputs.len()
-        {
+        if definition.family != "Item" || definition.production_key == Coin::Gold.production_key() {
             return Err(bad());
         }
         let mut spent = 0_u64;
-        for (line, input) in burns.iter().zip(&currency.inputs) {
+        for input in &currency.inputs {
             check_uuid_v7(&input.parent)?;
+            let line = value
+                .lines
+                .iter()
+                .find(|line| {
+                    line.before
+                        .as_ref()
+                        .is_some_and(|before| before.item_instance_id == input.item_instance_id)
+                })
+                .ok_or_else(bad)?;
             let before = line.before.as_ref().ok_or_else(bad)?;
-            if before.item_instance_id != input.item_instance_id
-                || before.definition.as_ref() != Some(definition)
+            if before.definition.as_ref() != Some(definition)
+                || currency
+                    .inputs
+                    .iter()
+                    .filter(|other| other.item_instance_id == input.item_instance_id)
+                    .count()
+                    != 1
                 || value
                     .lines
                     .iter()
@@ -141,9 +156,30 @@ pub(super) fn check(
             {
                 return Err(bad());
             }
-            spent = spent
-                .checked_add(u64::from(check_burn(line, &value.world_id)?))
-                .ok_or_else(bad)?;
+            let delta = check_burn(line, &value.world_id)?;
+            let units = match input.gold_fee_units {
+                Some(fee)
+                    if line.kind == LINE_COIN_BURN
+                        && Coin::from_production_key(&definition.production_key).is_some()
+                        && !input.nested
+                        && input.parent == value.backpack_item_instance_id
+                        && fee > 0
+                        && fee < delta =>
+                {
+                    delta - fee
+                }
+                None if line.kind == LINE_ITEM_BURN => delta,
+                _ => return Err(bad()),
+            };
+            spent = spent.checked_add(u64::from(units)).ok_or_else(bad)?;
+        }
+        if burns.iter().any(|line| {
+            !currency
+                .inputs
+                .iter()
+                .any(|input| line_item(line) == Some(input.item_instance_id.as_slice()))
+        }) {
+            return Err(bad());
         }
         if Some(spent)
             != value
@@ -263,6 +299,29 @@ pub(super) fn check(
     normalized.purchase = None;
     normalized.quantity = 1;
     normalized.unit_price = value.total_gold_units;
+    if let Some(currency) = &purchase.currency {
+        for input in &currency.inputs {
+            if let Some(fee) = input.gold_fee_units {
+                let line = normalized
+                    .lines
+                    .iter_mut()
+                    .find(|line| {
+                        line.before
+                            .as_ref()
+                            .is_some_and(|before| before.item_instance_id == input.item_instance_id)
+                    })
+                    .ok_or_else(bad)?;
+                let before = line.before.as_ref().ok_or_else(bad)?;
+                let after = line.after.as_mut().ok_or_else(bad)?;
+                after.quantity = before.quantity - fee;
+                after.lifecycle = if after.quantity == 0 {
+                    ITEM_LIFECYCLE_RETIRED
+                } else {
+                    ITEM_LIFECYCLE_LIVE
+                };
+            }
+        }
+    }
     normalized
         .lines
         .retain(|line| !matches!(line.kind, LINE_ITEM_MINT | LINE_ITEM_BURN));

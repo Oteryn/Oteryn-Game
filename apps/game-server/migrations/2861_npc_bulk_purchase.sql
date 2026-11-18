@@ -23,7 +23,7 @@ CREATE TABLE game_npc_purchase_details (
  offer_count BIGINT NOT NULL CHECK(offer_count BETWEEN 1 AND 100),
  currency_key TEXT, currency_revision TEXT,
  CHECK((currency_key IS NULL)=(currency_revision IS NULL)),
- CHECK(currency_key IS NULL OR game_item_coin_worth(currency_key) IS NULL),
+ CHECK(currency_key IS NULL OR currency_key<>'oteryn:item.tibia.i3031'),
  stack_size INTEGER NOT NULL CHECK(stack_size BETWEEN 1 AND 100),
  bag_count INTEGER NOT NULL CHECK(bag_count BETWEEN 0 AND 128),
  response_text TEXT NOT NULL CHECK(octet_length(response_text) BETWEEN 1 AND 1024),
@@ -51,6 +51,7 @@ CREATE TABLE game_npc_purchase_currency_inputs (
  item_instance_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
  parent_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
  nested BOOLEAN NOT NULL,
+ gold_fee_units BIGINT CHECK(gold_fee_units IS NULL OR (gold_fee_units BETWEEN 1 AND 100 AND NOT nested)),
  created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
  PRIMARY KEY(transaction_id,item_instance_id)
 );
@@ -78,8 +79,8 @@ BEGIN
   OR EXISTS(SELECT 1 FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND (created_xact_id<>pg_current_xact_id()))
   OR (SELECT count(*) FROM game_item_instances WHERE minted_transaction_id=p_transaction)<>(SELECT count(*) FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND line_kind IN(2,4))
  THEN RETURN FALSE; END IF;
- SELECT coalesce(sum((quantity_before-quantity_after)*coin_worth) FILTER(WHERE line_kind=1),0),coalesce(sum(quantity_after*coin_worth) FILTER(WHERE line_kind=2),0)
- INTO burned,minted FROM game_npc_trade_lines WHERE transaction_id=p_transaction;
+ SELECT coalesce(sum(coalesce(c.gold_fee_units,l.quantity_before-l.quantity_after)*l.coin_worth) FILTER(WHERE l.line_kind=1),0),coalesce(sum(l.quantity_after*l.coin_worth) FILTER(WHERE l.line_kind=2),0)
+ INTO burned,minted FROM game_npc_trade_lines l LEFT JOIN game_npc_purchase_currency_inputs c USING(transaction_id,item_instance_id) WHERE l.transaction_id=p_transaction;
  SELECT coin_worth INTO last_worth FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND line_kind=1 ORDER BY line_ordinal DESC LIMIT 1;
  IF burned<>t.burned_gold_units OR minted<>t.minted_gold_units OR burned-minted+t.bank_debit_gold_units<>t.total_gold_units
   OR (last_worth IS NULL AND t.total_gold_units-t.bank_debit_gold_units<>0) OR minted>=coalesce(last_worth,1)
@@ -94,16 +95,18 @@ BEGIN
  IF EXISTS(SELECT 1 FROM game_npc_trade_lines l WHERE l.transaction_id=p_transaction AND l.line_kind=2
   AND NOT EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=l.item_instance_id AND e.parent_item_instance_id=t.backpack_item_instance_id AND e.character_id=t.character_id AND e.world_id=t.world_id AND e.placement_ordinal=l.placement_ordinal AND e.placed_transaction_id=p_transaction)) THEN RETURN FALSE; END IF;
  IF (SELECT count(*) FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND line_kind=3)<>
-    (SELECT count(*) FROM game_npc_purchase_currency_inputs WHERE transaction_id=p_transaction) THEN RETURN FALSE; END IF;
+    (SELECT count(*) FROM game_npc_purchase_currency_inputs WHERE transaction_id=p_transaction AND gold_fee_units IS NULL) THEN RETURN FALSE; END IF;
  IF p.currency_key IS NULL THEN
   IF EXISTS(SELECT 1 FROM game_npc_purchase_currency_inputs WHERE transaction_id=p_transaction) THEN RETURN FALSE; END IF;
  ELSE
-  IF (SELECT coalesce(sum(quantity_before-quantity_after),0) FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND line_kind=3)<>t.unit_price*(t.quantity/p.offer_count)
+  IF (SELECT coalesce(sum(l.quantity_before-l.quantity_after-coalesce(c.gold_fee_units,0)),0) FROM game_npc_purchase_currency_inputs c JOIN game_npc_trade_lines l USING(transaction_id,item_instance_id) WHERE c.transaction_id=p_transaction)<>t.unit_price*(t.quantity/p.offer_count)
    OR EXISTS(SELECT 1 FROM game_npc_purchase_currency_inputs c
-    LEFT JOIN game_npc_trade_lines l ON l.transaction_id=c.transaction_id AND l.item_instance_id=c.item_instance_id AND l.line_kind=3
+    LEFT JOIN game_npc_trade_lines l ON l.transaction_id=c.transaction_id AND l.item_instance_id=c.item_instance_id
     JOIN game_item_instances i ON i.item_instance_id=c.item_instance_id
     CROSS JOIN LATERAL game_item_loop_owner(c.parent_id) owner
     WHERE c.transaction_id=p_transaction AND (l.item_instance_id IS NULL OR c.created_xact_id<>pg_current_xact_id()
+     OR (c.gold_fee_units IS NULL AND l.line_kind<>3)
+     OR (c.gold_fee_units IS NOT NULL AND (l.line_kind<>1 OR c.nested OR c.parent_id<>t.backpack_item_instance_id OR c.gold_fee_units>=l.quantity_before-l.quantity_after OR game_item_coin_worth(p.currency_key) IS DISTINCT FROM l.coin_worth))
      OR i.definition_family<>'Item' OR i.definition_production_key<>p.currency_key OR i.definition_revision_ref<>p.currency_revision
      OR owner.owner_character IS DISTINCT FROM t.character_id OR owner.depth NOT BETWEEN 0 AND 7
      OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id)

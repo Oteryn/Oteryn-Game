@@ -877,4 +877,5 @@ message OneItemNpcPurchaseCurrencyInputV1 {
   bytes item_instance_id = 1;
   bytes parent = 2;
   bool nested = 3;
+  optional uint32 gold_fee_units = 4; // Exact fee portion when this is a shared coin BURN.
 }

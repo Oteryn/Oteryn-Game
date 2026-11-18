@@ -1350,19 +1350,100 @@ fn purchase_audit_proves_token_payment_separately_from_gold_bags() {
     value.minted_gold_units = 40;
     value.lines[0] = burn(LINE_COIN_BURN, 10, coin(Coin::Platinum, "r"), 1, 1, 0);
     value.lines[1] = mint_line(LINE_COIN_MINT, 20, coin(Coin::Gold, "r"), 2, 40);
-    value.lines.insert(2, burn(LINE_ITEM_BURN, 30, token.clone(), 7, 100, 10));
+    value
+        .lines
+        .insert(2, burn(LINE_ITEM_BURN, 30, token.clone(), 7, 100, 10));
     value.purchase.as_mut().unwrap().currency = Some(OneItemNpcPurchaseCurrencyV1 {
         definition: Some(token),
-        inputs: vec![OneItemNpcPurchaseCurrencyInputV1 { item_instance_id: uuid(30), parent: uuid(50), nested: false }],
+        inputs: vec![OneItemNpcPurchaseCurrencyInputV1 {
+            item_instance_id: uuid(30),
+            parent: uuid(50),
+            nested: false,
+            gold_fee_units: None,
+        }],
     });
     assert_eq!(check_npc_trade(&value), Ok(()));
     let mut changed = value.clone();
     changed.lines[2].after.as_mut().unwrap().quantity = 11;
-    assert!(check_npc_trade(&changed).is_err(), "underpaying tokens is refused");
+    assert!(
+        check_npc_trade(&changed).is_err(),
+        "underpaying tokens is refused"
+    );
     let mut changed = value.clone();
-    changed.purchase.as_mut().unwrap().currency.as_mut().unwrap().inputs.clear();
-    assert!(check_npc_trade(&changed).is_err(), "every token debit needs typed custody evidence");
+    changed
+        .purchase
+        .as_mut()
+        .unwrap()
+        .currency
+        .as_mut()
+        .unwrap()
+        .inputs
+        .clear();
+    assert!(
+        check_npc_trade(&changed).is_err(),
+        "every token debit needs typed custody evidence"
+    );
     let mut changed = value;
     changed.total_gold_units = 59;
-    assert!(check_npc_trade(&changed).is_err(), "token payment never subsidizes shopping bags");
+    assert!(
+        check_npc_trade(&changed).is_err(),
+        "token payment never subsidizes shopping bags"
+    );
+}
+
+#[test]
+fn purchase_coin_currency_proves_shared_stack_fee_and_currency_portions() {
+    use super::purchase::{OneItemNpcPurchaseCurrencyInputV1, OneItemNpcPurchaseCurrencyV1};
+    let mut value = shopping_bag_purchase();
+    value.unit_price = 1;
+    value.total_gold_units = 60;
+    value.burned_gold_units = 100;
+    value.minted_gold_units = 40;
+    value.lines[0] = burn(LINE_COIN_BURN, 10, coin(Coin::Platinum, "r"), 1, 46, 0);
+    value.lines[1] = mint_line(LINE_COIN_MINT, 20, coin(Coin::Gold, "r"), 2, 40);
+    value.purchase.as_mut().unwrap().currency = Some(OneItemNpcPurchaseCurrencyV1 {
+        definition: Some(coin(Coin::Platinum, "r")),
+        inputs: vec![OneItemNpcPurchaseCurrencyInputV1 {
+            item_instance_id: uuid(10),
+            parent: uuid(50),
+            nested: false,
+            gold_fee_units: Some(1),
+        }],
+    });
+    assert_eq!(check_npc_trade(&value), Ok(()));
+    let mut changed = value.clone();
+    changed
+        .purchase
+        .as_mut()
+        .unwrap()
+        .currency
+        .as_mut()
+        .unwrap()
+        .inputs[0]
+        .gold_fee_units = Some(2);
+    assert!(
+        check_npc_trade(&changed).is_err(),
+        "the same units cannot pay both charges"
+    );
+    let mut changed = value.clone();
+    changed.lines[0].after.as_mut().unwrap().quantity = 1;
+    changed.lines[0].after.as_mut().unwrap().lifecycle = ITEM_LIFECYCLE_LIVE;
+    assert!(
+        check_npc_trade(&changed).is_err(),
+        "the item price needs all forty-five platinum units"
+    );
+    let mut changed = value;
+    changed
+        .purchase
+        .as_mut()
+        .unwrap()
+        .currency
+        .as_mut()
+        .unwrap()
+        .inputs[0]
+        .gold_fee_units = None;
+    assert!(
+        check_npc_trade(&changed).is_err(),
+        "a shared coin debit needs its explicit fee portion"
+    );
 }

@@ -41,6 +41,8 @@ enum Case {
     Bank,
     Bundle,
     Currency,
+    CoinCurrency,
+    CoinCurrencyUnfunded,
     CurrencyGoldMissing,
     CurrencyTokensMissing,
     Stackable,
@@ -104,6 +106,34 @@ fn npc_buy_non_gold_currency_and_gold_bag_fee_atomically() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || scenario(admin, Case::Currency).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "bank purchase scenario thread panicked")??;
+    Ok(())
+}
+
+#[test]
+fn npc_buy_platinum_currency_unfunded_after_gold_fee_refuses_atomically() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || {
+            scenario(admin, Case::CoinCurrencyUnfunded).map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "bank purchase scenario thread panicked")??;
+    Ok(())
+}
+
+#[test]
+fn npc_buy_platinum_currency_splits_shared_coin_stack_from_gold_bag_fee() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario(admin, Case::CoinCurrency).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "bank purchase scenario thread panicked")??;
     Ok(())
@@ -428,7 +458,8 @@ fn scenario(admin: String, case: Case) -> TestResult {
         } else {
             "oteryn:item.tibia.i3264"
         };
-        let unit_price: u32 = 2;
+        let coin_currency = matches!(case, Case::CoinCurrency | Case::CoinCurrencyUnfunded);
+        let unit_price: u32 = if coin_currency { 1 } else { 2 };
         let catalogue = NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
             std::ffi::OsStr::new("world"),
@@ -444,15 +475,23 @@ fn scenario(admin: String, case: Case) -> TestResult {
             },
             direction: ProjectV2ServiceOfferDirection::SellToPlayer,
             unit_price: u64::from(unit_price),
-            currency: matches!(
-                case,
-                Case::Currency | Case::CurrencyGoldMissing | Case::CurrencyTokensMissing
-            )
-            .then(|| ProjectV2DefinitionRef {
-                family: ProjectV2Family::Item,
-                key: "oteryn:item.tibia.i3446".into(),
-                revision: "definition-r1".into(),
-            }),
+            currency: if coin_currency {
+                Some(ProjectV2DefinitionRef {
+                    family: ProjectV2Family::Item,
+                    key: "oteryn:item.tibia.i3035".into(),
+                    revision: "definition-r1".into(),
+                })
+            } else {
+                matches!(
+                    case,
+                    Case::Currency | Case::CurrencyGoldMissing | Case::CurrencyTokensMissing
+                )
+                .then(|| ProjectV2DefinitionRef {
+                    family: ProjectV2Family::Item,
+                    key: "oteryn:item.tibia.i3446".into(),
+                    revision: "definition-r1".into(),
+                })
+            },
             count: (case == Case::Bundle).then_some(100),
             sub_type: None,
             parity_pending: false,
@@ -536,7 +575,12 @@ fn scenario(admin: String, case: Case) -> TestResult {
             case,
             Case::Currency | Case::CurrencyGoldMissing | Case::CurrencyTokensMissing
         );
-        let coins = if currency_case {
+        let coins = if coin_currency {
+            (
+                "oteryn:item.tibia.i3035",
+                if case == Case::CoinCurrency { 4 } else { 3 },
+            )
+        } else if currency_case {
             (
                 "oteryn:item.tibia.i3031",
                 if case == Case::CurrencyGoldMissing {
@@ -822,7 +866,9 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 Case::Bundle
                 | Case::Currency
                 | Case::CurrencyGoldMissing
-                | Case::CurrencyTokensMissing => 3,
+                | Case::CurrencyTokensMissing
+                | Case::CoinCurrency
+                | Case::CoinCurrencyUnfunded => 3,
                 Case::Drop => 3,
                 _ => 1,
             };
@@ -837,6 +883,8 @@ fn scenario(admin: String, case: Case) -> TestResult {
                         | Case::Currency
                         | Case::CurrencyGoldMissing
                         | Case::CurrencyTokensMissing
+                        | Case::CoinCurrency
+                        | Case::CoinCurrencyUnfunded
                 ),
                 case != Case::Capacity,
             );
@@ -858,6 +906,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
                     | Case::Capacity
                     | Case::CurrencyGoldMissing
                     | Case::CurrencyTokensMissing
+                    | Case::CoinCurrencyUnfunded
             ) {
                 assert_eq!(
                     status,
@@ -895,7 +944,9 @@ fn scenario(admin: String, case: Case) -> TestResult {
                     Case::Stackable => 1,
                     _ => 0,
                 };
-                let cost = if currency_case {
+                let cost = if coin_currency {
+                    i64::from(amount) * i64::from(unit_price) * 100 + 20
+                } else if currency_case {
                     20
                 } else {
                     i64::from(amount) * 2 + bags * 20
@@ -961,6 +1012,14 @@ fn scenario(admin: String, case: Case) -> TestResult {
                         "Bought 250x bolt and 1 shopping bag for 520 gold coins."
                     };
                     assert_eq!(std::str::from_utf8(&text)?, expected);
+                }
+                if case == Case::CoinCurrency {
+                    let row:(Option<i64>,i64,i64) = sqlx::query_as("SELECT c.gold_fee_units,l.quantity_before,l.quantity_after FROM game_npc_purchase_currency_inputs c JOIN game_npc_trade_lines l USING(transaction_id,item_instance_id)").fetch_one(&h.pool).await?;
+                    assert_eq!(row, (Some(1), 4, 0));
+                    assert_eq!(
+                        std::str::from_utf8(&text)?,
+                        "Bought 3x sword for 3 platinum coins and 1x shopping bag for 20 gold coins."
+                    );
                 }
                 if case == Case::Currency {
                     let tokens: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3446' AND lifecycle=1").fetch_one(&h.pool).await?;

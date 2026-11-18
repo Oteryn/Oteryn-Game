@@ -39,7 +39,7 @@ pub(super) async fn plan(
     let Some(currency) = currency else {
         return Ok(None);
     };
-    if is_coin(&currency.facts.definition) {
+    if currency.facts.definition.production_key == Coin::Gold.production_key() {
         return Err(NpcTradeError::InvalidInput);
     }
     let unit = u64::from(currency.facts.weight.ok_or(NpcTradeError::InvalidInput)?);
@@ -65,23 +65,45 @@ pub(super) async fn plan(
         }
         let before = u32::try_from(row.try_get::<i64, _>("quantity")?)
             .map_err(|_| NpcTradeError::InvalidInput)?;
-        let spent = u32::try_from(remaining.min(u64::from(before)))
+        let shared = plan.lines.iter().position(|line| {
+            line.kind == NpcTradeLineKind::CoinBurn && line.item_instance_id == id
+        });
+        let available = shared.map_or(before, |index| plan.lines[index].quantity_after);
+        if available == 0 {
+            continue;
+        }
+        let spent = u32::try_from(remaining.min(u64::from(available)))
             .map_err(|_| NpcTradeError::InvalidInput)?;
         let nested = location.try_get::<bool, _>("nested")?;
-        plan.lines.push(NpcTradeLine {
-            kind: NpcTradeLineKind::ItemBurn,
-            item_instance_id: id,
-            placement_ordinal: numeric_u64(&location, "placement_ordinal")?,
-            coin: None,
-            quantity_before: before,
-            quantity_after: before - spent,
-        });
+        let gold_fee_units = if let Some(index) = shared {
+            let line = &mut plan.lines[index];
+            if nested
+                || line.quantity_before != before
+                || line.coin != Coin::from_production_key(&currency.facts.definition.production_key)
+            {
+                return Err(NpcTradeError::InvalidInput);
+            }
+            let fee = before - available;
+            line.quantity_after -= spent;
+            Some(fee)
+        } else {
+            plan.lines.push(NpcTradeLine {
+                kind: NpcTradeLineKind::ItemBurn,
+                item_instance_id: id,
+                placement_ordinal: numeric_u64(&location, "placement_ordinal")?,
+                coin: None,
+                quantity_before: before,
+                quantity_after: before - spent,
+            });
+            None
+        };
         inputs.push(OneItemNpcPurchaseCurrencyInputV1 {
             item_instance_id: id.to_vec(),
             parent: uuid_text(&location.try_get::<String, _>("parent_item_instance_id")?)?.to_vec(),
             nested,
+            gold_fee_units,
         });
-        if !nested && before == spent {
+        if !nested && available == spent {
             *main_free += 1;
         }
         *carried = carried
@@ -106,8 +128,8 @@ pub(super) async fn store(
 ) -> std::result::Result<(), DurabilityError> {
     if let Some(currency) = &prepared.audit.currency {
         for input in &currency.inputs {
-            sqlx::query("INSERT INTO game_npc_purchase_currency_inputs(transaction_id,item_instance_id,parent_id,nested) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4)")
-                .bind(request.transaction_id.as_slice()).bind(&input.item_instance_id).bind(&input.parent).bind(input.nested).execute(&mut **tx).await?;
+            sqlx::query("INSERT INTO game_npc_purchase_currency_inputs(transaction_id,item_instance_id,parent_id,nested,gold_fee_units) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5)")
+                .bind(request.transaction_id.as_slice()).bind(&input.item_instance_id).bind(&input.parent).bind(input.nested).bind(input.gold_fee_units.map(i64::from)).execute(&mut **tx).await?;
         }
     }
     Ok(())

@@ -548,7 +548,7 @@ pub(super) async fn trade_mode(
             bags,
             request.unit_price * u64::from(purchase.amount) + u64::from(bags) * 20,
         ));
-        let currency = if let Some(currency) = &offer.currency {
+        let currency = if let Some(currency) = offer.currency.as_ref().filter(|currency| currency.key != Coin::Gold.production_key()) {
             let definition = TypedDefinitionRef {
                 family: "Item".into(),
                 production_key: currency.key.clone(),
