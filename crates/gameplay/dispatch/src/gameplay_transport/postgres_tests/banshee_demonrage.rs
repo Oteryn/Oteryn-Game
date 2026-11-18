@@ -186,7 +186,7 @@ fn bindings() -> TestResult<Bindings> {
     });
     let plate = serde_json::json!({
         "key":"oteryn:quest-callback/banshee/demonrage-warlocks","quest":QUEST,
-        "trigger":"step_in","selector":{"position":position(PLATE),"ordinal":0},
+        "trigger":"step_in","selector":{"position":position(PLATE),"action":25023,"appearance":431},
         "requires_world_admission":true,"reversible":false,"return_on_failure":false,"offerings":[],"passages":[],
         "storage":[{"track":WARLOCKS,"minimum":-1,"maximum":0,"set":1}],
         "effects":{"magic":{"position":position(PLATE),"effect":14},"encounter":{
@@ -243,7 +243,7 @@ fn scenario() -> TestResult {
             (approach(PLATE), None),
             (FLAME, Some((4, Some(35015)))),
             (DESTINATION, None),
-            (PLATE, None),
+            (PLATE, Some((6, None))),
         ];
         tiles.extend(
             SWITCHES
@@ -267,9 +267,10 @@ fn scenario() -> TestResult {
                 (2114, false),
                 (1959, true),
                 (2113, false),
+                (431, true),
             ],
             &tiles,
-            &[],
+            &[(PLATE, 25023, None)],
         )?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =

@@ -130,8 +130,8 @@ fn scenario() -> TestResult {
                 (PEARL_POSITIONS[1], None),
             ],
             &[
-                (TRIGGER, DESTINATION, 35002),
-                (EAST_TRIGGER, EAST_DESTINATION, 35002),
+                (TRIGGER, 35002, Some(DESTINATION)),
+                (EAST_TRIGGER, 35002, Some(EAST_DESTINATION)),
             ],
         )?;
         let mut deps = Dependencies::new()?;
