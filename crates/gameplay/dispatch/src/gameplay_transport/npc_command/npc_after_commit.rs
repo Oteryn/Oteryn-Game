@@ -75,13 +75,7 @@ pub(super) fn publish(
         && let Some(npc) =
             super::service_context::live_npc(runtime, actor, session, intent.npc_actor)
     {
-        spawn_near_npc(
-            admission,
-            runtime,
-            command,
-            npc.position,
-            &effects.nearby_creatures,
-        );
+        spawn_near_npc(admission, runtime, npc.position, &effects.nearby_creatures);
     }
     // Crystal 201189f8 data-global/npc/kazzan.lua:53-67.
     if let Some(delay) = effects.end_conversation_delay_ms
@@ -161,7 +155,6 @@ fn apply_fire(
 fn spawn_near_npc(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
-    command: UseCommand,
     origin: super::service_context::Position,
     creatures: &[String],
 ) {
@@ -172,49 +165,26 @@ fn spawn_near_npc(
     ) else {
         return;
     };
-    let Some(floor) = origin
-        .floor
-        .checked_neg()
-        .and_then(|floor| i8::try_from(floor).ok())
-    else {
+    let (Ok(x), Ok(y), Some(floor)) = (
+        u16::try_from(origin.x),
+        u16::try_from(origin.y),
+        origin
+            .floor
+            .checked_neg()
+            .and_then(|floor| i8::try_from(floor).ok()),
+    ) else {
         return;
     };
-    // Crystal src/map/map.cpp:234-304 tries the center then one ring of neighbors.
-    // Offset the ring's starting point per occurrence so a fixed compass direction
-    // does not monopolize the first placement.
-    let ring = [
-        (-1, -1),
-        (0, -1),
-        (1, -1),
-        (-1, 0),
-        (1, 0),
-        (-1, 1),
-        (0, 1),
-        (1, 1),
-    ];
-    let offset = (command.command_id % 8) as usize;
     for creature in creatures {
-        let positions =
-            std::iter::once((0, 0)).chain(ring[offset..].iter().chain(&ring[..offset]).copied());
-        for (dx, dy) in positions {
-            let (Some(x), Some(y)) = (
-                origin.x.checked_add(dx).and_then(|x| u16::try_from(x).ok()),
-                origin.y.checked_add(dy).and_then(|y| u16::try_from(y).ok()),
-            ) else {
-                continue;
-            };
-            if admission.spawn_quest_creature(
-                runtime,
-                &states,
-                map,
-                &CreatureSpawn {
-                    creature: creature.clone(),
-                    position: Position { x, y, floor },
-                    lifetime_ms: None,
-                },
-            ) {
-                break;
-            }
-        }
+        admission.spawn_quest_creature(
+            runtime,
+            &states,
+            map,
+            &CreatureSpawn {
+                creature: creature.clone(),
+                position: Position { x, y, floor },
+                lifetime_ms: None,
+            },
+        );
     }
 }
