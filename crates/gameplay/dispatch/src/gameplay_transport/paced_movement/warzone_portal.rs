@@ -160,14 +160,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(Err(ActivityRefusal::ContentChanged));
         }
-        if let Err(reason) = self.ensure_activity_template_runtime(&definition).await {
-            return Some(Err(reason));
-        }
         let existing = owner
             .open_portal_room(self.character, self.holder, fence, portal.key)
             .await
             .ok()?;
         let joining = existing.is_some();
+        if !joining && let Err(reason) = self.ensure_activity_template_runtime(&definition).await {
+            return Some(Err(reason));
+        }
         let mut after = None;
         let (handoff, allocation, destination) = loop {
             let candidates = if let Some((handoff, allocation)) = &existing {
