@@ -95,7 +95,7 @@ fn run_case(circuit: Circuit) -> TestResult {
         .map_err(Into::into)
 }
 
-fn local(at: TilePos) -> MovementLocalPosition {
+pub(super) fn local(at: TilePos) -> MovementLocalPosition {
     MovementLocalPosition {
         x: at.x.into(),
         y: at.y.into(),
@@ -103,7 +103,7 @@ fn local(at: TilePos) -> MovementLocalPosition {
     }
 }
 
-fn position(at: TilePos) -> serde_json::Value {
+pub(super) fn position(at: TilePos) -> serde_json::Value {
     serde_json::json!({"x":at.x,"y":at.y,"floor":at.floor})
 }
 
@@ -323,16 +323,38 @@ fn scenario(circuit: Circuit) -> TestResult {
 }
 
 fn world(circuit: Circuit) -> TestResult<boot::BundleWorld> {
+    let mut records = vec![
+        (circuit.start(), None),
+        (circuit.switch, Some((1, Some(circuit.unique)))),
+        (circuit.passage, Some((3, None))),
+    ];
+    if let Some(plate) = circuit.plate {
+        records.push((plate, None));
+    }
+    scene_world(
+        circuit.start(),
+        &[
+            (2772, true),
+            (2773, true),
+            (2129, false),
+            (369, true),
+            (27260, true),
+        ],
+        &records,
+    )
+}
+
+type SceneTile = (TilePos, Option<(u32, Option<u16>)>);
+
+pub(super) fn scene_world(
+    start: TilePos,
+    appearances: &[(u16, bool)],
+    records: &[SceneTile],
+) -> TestResult<boot::BundleWorld> {
     let (bytes, mut pins) = boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
-    for (appearance, walkable) in [
-        (2772, true),
-        (2773, true),
-        (2129, false),
-        (369, true),
-        (27260, true),
-    ] {
+    for &(appearance, walkable) in appearances {
         data.manifest.palette.push(bundle::PaletteEntry {
             key: format!("oteryn:terrain.tibia.i{appearance}"),
             family: bundle::Family::Terrain,
@@ -370,17 +392,9 @@ fn world(circuit: Circuit) -> TestResult<boot::BundleWorld> {
             items,
         }
     };
-    let mut records = vec![
-        (circuit.start(), None),
-        (circuit.switch, Some((1, Some(circuit.unique)))),
-        (circuit.passage, Some((3, None))),
-    ];
-    if let Some(plate) = circuit.plate {
-        records.push((plate, None));
-    }
     let mut floors = std::collections::BTreeSet::new();
     let mut by_sector = std::collections::BTreeMap::<_, Vec<_>>::new();
-    for &(at, extra) in &records {
+    for &(at, extra) in records {
         floors.insert(at.floor);
         by_sector
             .entry((at.floor, at.x / 32, at.y / 32))
@@ -433,7 +447,7 @@ fn world(circuit: Circuit) -> TestResult<boot::BundleWorld> {
         &boot::BootPins {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
-            start: circuit.start(),
+            start,
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
