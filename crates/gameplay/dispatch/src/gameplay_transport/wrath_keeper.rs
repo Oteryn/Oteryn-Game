@@ -136,6 +136,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             return Ok(outcome(UseDisposition::Committed));
         }
+        if matches!(
+            result,
+            QuestTransitionOutcome::Refused(
+                oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch
+            )
+        ) {
+            return Ok(outcome(UseDisposition::Committed));
+        }
         Ok(outcome(UseDisposition::NotPossible))
     }
 }
@@ -162,7 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Runs while holding the Channel runtime and spell-state locks.
     pub(super) fn prepare_wrath_keeper_poison(
         &self,
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         map: &BundleMap,
         actor: ExactActorRef,
         tool: [u8; 16],
@@ -242,11 +250,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(UseDisposition::Occupied);
         }
-        let policy = runtime
+        let health = runtime
             .companion_policy(wrath_keeper::CREATURE)
-            .map_err(|_| UseDisposition::Rejected)?;
+            .map_err(|_| UseDisposition::Rejected)?
+            .maximum_health;
+        runtime
+            .preflight_quest_creature_spawn(&[(wrath_keeper::CREATURE, health, position)])
+            .map_err(|_| UseDisposition::Occupied)?;
         Ok(KeeperSpawn {
-            health: policy.maximum_health,
+            health,
             position,
             tile,
         })

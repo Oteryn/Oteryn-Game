@@ -370,6 +370,17 @@ impl ChannelRuntimeV1 {
         self.commit_quest_creature_spawn_with_projection(monsters, || true)
     }
 
+    /// Validate the exact native spawn before the caller commits durable inputs.
+    pub fn preflight_quest_creature_spawn(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<(), CarrierError> {
+        let before = self.carrier.clone();
+        let result = self.commit_quest_creature_spawn(monsters).map(drop);
+        self.carrier = before;
+        result
+    }
+
     /// Publish a bounded spawn and its already observed world readset together.
     /// A stale or refused map projection restores every staged actor and policy.
     pub fn commit_quest_creature_spawn_with_projection(
