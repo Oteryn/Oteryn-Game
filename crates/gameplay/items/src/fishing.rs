@@ -33,6 +33,7 @@ pub fn mechanical_sewer_attempt(
     has_nail: bool,
     caught: bool,
     shock_roll: u32,
+    shock_chance_percent: u8,
 ) -> MechanicalSewerAttempt {
     if !in_sewers || !has_nail {
         return MechanicalSewerAttempt::NotHandled;
@@ -44,7 +45,7 @@ pub fn mechanical_sewer_attempt(
         return MechanicalSewerAttempt::NotHandled;
     }
     if !caught {
-        return if (1..=10).contains(&shock_roll) {
+        return if (1..=u32::from(shock_chance_percent)).contains(&shock_roll) {
             MechanicalSewerAttempt::Shocked
         } else {
             MechanicalSewerAttempt::Miss
@@ -248,7 +249,7 @@ pub fn gathering_attempt(
             return None;
         }
         let MechanicalSewerAttempt::Caught { after } =
-            mechanical_sewer_attempt(target, true, true, true, 100)
+            mechanical_sewer_attempt(target, true, true, true, 0, 0)
         else {
             return None;
         };
@@ -411,28 +412,28 @@ mod tests {
     fn m09_mechanical_fishing_covers_every_sewer_branch() {
         // Crystal data-global/scripts/actions/other/mechanical_fishing.lua:203-248.
         assert_eq!(
-            mechanical_sewer_attempt(4597, false, true, true, 1),
+            mechanical_sewer_attempt(4597, false, true, true, 1, 10),
             MechanicalSewerAttempt::NotHandled
         );
         assert_eq!(
-            mechanical_sewer_attempt(4597, true, false, true, 1),
+            mechanical_sewer_attempt(4597, true, false, true, 1, 10),
             MechanicalSewerAttempt::NotHandled
         );
         assert_eq!(
-            mechanical_sewer_attempt(4609, true, true, true, 1),
+            mechanical_sewer_attempt(4609, true, true, true, 1, 10),
             MechanicalSewerAttempt::SpentWater
         );
         assert_eq!(
-            mechanical_sewer_attempt(4597, true, true, false, 11),
+            mechanical_sewer_attempt(4597, true, true, false, 11, 10),
             MechanicalSewerAttempt::Miss
         );
         assert_eq!(
-            mechanical_sewer_attempt(4597, true, true, false, 10),
+            mechanical_sewer_attempt(4597, true, true, false, 10, 10),
             MechanicalSewerAttempt::Shocked
         );
         for (target, after) in [(4597, 4609), (629, 4809), (21312, 21314)] {
             assert_eq!(
-                mechanical_sewer_attempt(target, true, true, true, 100),
+                mechanical_sewer_attempt(target, true, true, true, 0, 0),
                 MechanicalSewerAttempt::Caught { after }
             );
         }

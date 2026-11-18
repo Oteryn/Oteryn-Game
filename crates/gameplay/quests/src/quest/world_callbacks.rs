@@ -51,7 +51,6 @@ mod counter_initials;
 mod counter_initials_tests;
 mod counterparts;
 mod craft_epoch;
-pub mod death_cleanup;
 mod dense_ground;
 mod dense_step_teleport;
 mod effects;
@@ -79,6 +78,7 @@ mod selected_tool_tests;
 #[cfg(test)]
 mod solid_repair_tests;
 mod solid_repairs;
+pub mod source_bindings;
 mod state_operations;
 mod treasure_source;
 #[cfg(test)]
@@ -604,7 +604,9 @@ struct Document {
     schema: u32,
     callbacks: Vec<Callback>,
     #[serde(default)]
-    death_cleanups: Vec<death_cleanup::DeathCleanup>,
+    death_cleanups: Vec<source_bindings::DeathCleanup>,
+    #[serde(default)]
+    fishing_failure: Option<source_bindings::FishingFailure>,
 }
 
 /// Shared World prerequisites for exact native source callbacks. Ordinary quest
@@ -671,7 +673,7 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 }
 
 pub fn load() -> Result<Vec<Callback>, String> {
-    death_cleanup::load()?;
+    source_bindings::load()?;
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
@@ -887,7 +889,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
     if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {
         return Err("callback bounds".into());
     }
-    death_cleanup::validate(&document.death_cleanups)?;
+    source_bindings::validate(&document)?;
     let mut keys = BTreeSet::new();
     for callback in &document.callbacks {
         let selector = &callback.selector;

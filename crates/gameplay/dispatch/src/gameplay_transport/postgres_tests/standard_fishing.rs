@@ -519,6 +519,9 @@ pub(super) fn gathering_scenario(
         deps.initialize(&owner).await;
         let skill = shock_skill.unwrap_or(10);
         if shock_skill.is_some() || spent_water {
+            owner.states.quest_callbacks.fixture_fishing_failure
+                .set(super::mechanical_fishing_shock::fixture()?)
+                .map_err(|_| "fishing binding already set")?;
             use crate::durability::character_build::DurableBuildState;
             use oteryn_gameplay_progression::hit_training::SkillFamily;
             let mut skills = [(10, 0); 7];

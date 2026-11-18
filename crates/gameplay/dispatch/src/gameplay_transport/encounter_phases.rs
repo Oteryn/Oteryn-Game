@@ -7,7 +7,7 @@ use oteryn_gameplay_encounters::bosses::boreth::native_death::{
     BorethCarrierExt, BorethDeathLedger,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
-use oteryn_gameplay_quests::quest::world_callbacks::death_cleanup::{self, DeathCleanup};
+use oteryn_gameplay_quests::quest::world_callbacks::source_bindings::{self, DeathCleanup};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
@@ -39,12 +39,14 @@ impl Registry {
         if let Some(fixture) = self.fixture_death_cleanups.get() {
             return fixture;
         }
-        death_cleanup::load().unwrap_or_default()
+        source_bindings::load()
+            .map(|bindings| bindings.death_cleanups.as_slice())
+            .unwrap_or_default()
     }
 
     #[cfg(test)]
     pub(super) fn bind_fixture_death_cleanups(&self, text: &str) -> Result<(), String> {
-        let rows = death_cleanup::fixture(text)?;
+        let rows = source_bindings::fixture(text)?.death_cleanups;
         self.fixture_death_cleanups
             .set(rows)
             .map_err(|_| "death cleanup fixture already bound".into())

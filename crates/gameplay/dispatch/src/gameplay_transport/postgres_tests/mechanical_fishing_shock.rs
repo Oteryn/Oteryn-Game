@@ -3,6 +3,7 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ConditionValues;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::overlay::TilePos;
+use oteryn_gameplay_quests::quest::world_callbacks::source_bindings;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -63,6 +64,21 @@ pub(super) fn is_shock_draw(digest: [u8; 32], occurrence: [u8; 16]) -> bool {
         0,
     )
     .is_ok_and(|draw| (1..=10).contains(&crate::spell::uniform_draw(draw, 1, 100)))
+}
+
+pub(super) fn fixture() -> TestResult<source_bindings::FishingFailure> {
+    let document = serde_json::json!({
+        "schema":1, "callbacks":[],
+        "fishing_failure":{
+            "water_effect":2, "shock_effect":12, "shock_chance_percent":10,
+            "damage":35, "look_type":33, "duration_ms":4000,
+            "speech":"Yikes! That DID hurt!",
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/mechanical_fishing.lua:106-109,212-237,252-273"]
+        }
+    });
+    Ok(source_bindings::fixture(&document.to_string())?
+        .fishing_failure
+        .ok_or("mechanical fishing binding")?)
 }
 
 pub(super) async fn health(

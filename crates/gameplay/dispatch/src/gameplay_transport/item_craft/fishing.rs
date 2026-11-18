@@ -8,16 +8,29 @@ use crate::map::overlay::TilePos;
 use oteryn_gameplay_items::fishing::{
     MECHANICAL_FISHING_SPENT_WATER, MechanicalSewerAttempt, mechanical_sewer_attempt,
 };
+use oteryn_gameplay_quests::quest::world_callbacks::source_bindings::{self, FishingFailure};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    fn fishing_failure_binding(&self) -> Option<&FishingFailure> {
+        #[cfg(test)]
+        if let Some(fixture) = self.states.quest_callbacks.fixture_fishing_failure.get() {
+            return Some(fixture);
+        }
+        source_bindings::load().ok()?.fishing_failure.as_ref()
+    }
+
     pub(super) async fn project_mechanical_fishing_failure(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
         native: &NativeGameplayState,
+        rod: [u8; 16],
         (key, revision, _, position): (MapEntryKey, u64, bool, TilePos),
         occurrence: Option<[u8; 16]>,
     ) {
+        let Some(binding) = self.fishing_failure_binding() else {
+            return;
+        };
         let MapEntryKey::Base(key) = key else {
             return;
         };
@@ -41,7 +54,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .is_ok_and(|f| f.control_loss.is_none())
             || states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, session)
-            || !self.states.player_trades.physical(session, None)
+            || !self.states.player_trades.physical(session, Some(rod))
         {
             return;
         }
@@ -58,7 +71,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let Some(occurrence) = occurrence else {
             if MECHANICAL_FISHING_SPENT_WATER.contains(&water.facts.appearance_id) {
-                map.facts.emit_movement_effect(position, 2);
+                map.facts
+                    .emit_movement_effect(position, binding.water_effect);
             }
             return;
         };
@@ -71,32 +85,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(roll) = u32::try_from(crate::spell::uniform_draw(draw, 1, 100)) else {
             return;
         };
-        let attempt = mechanical_sewer_attempt(water.facts.appearance_id, true, true, false, roll);
+        let attempt = mechanical_sewer_attempt(
+            water.facts.appearance_id,
+            true,
+            true,
+            false,
+            roll,
+            binding.shock_chance_percent,
+        );
         if !matches!(
             attempt,
             MechanicalSewerAttempt::Miss | MechanicalSewerAttempt::Shocked
         ) {
             return;
         }
-        map.facts.emit_movement_effect(position, 2);
+        map.facts
+            .emit_movement_effect(position, binding.water_effect);
         if attempt != MechanicalSewerAttempt::Shocked {
             return;
         }
         let now =
             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(self.owner_now().get());
         if states
-            .apply_source_health_loss(&runtime, actor, session, 35, now)
+            .apply_source_health_loss(&runtime, actor, session, binding.damage, now)
             .is_none()
         {
             return;
         }
-        map.facts.emit_movement_effect(position, 12);
+        map.facts
+            .emit_movement_effect(position, binding.shock_effect);
         self.states
             .chat
-            .publish_quest_speech(&runtime, actor, session, "Yikes! That DID hurt!");
+            .publish_quest_speech(&runtime, actor, session, &binding.speech);
+        let look_type = u32::from(binding.look_type);
         let Some(appearance) = native
             .spell_appearances()
-            .and_then(|index| index.for_look_type(33))
+            .and_then(|index| index.for_look_type(look_type))
         else {
             return;
         };
@@ -104,8 +128,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             "source:mechanical-fishing:shock",
             1,
             ConditionValues::Outfit {
-                look_type: 33,
-                duration_ms: 4_000,
+                look_type,
+                duration_ms: binding.duration_ms,
             },
         )
         .and_then(|definition| definition.with_appearance(appearance.selection())) else {

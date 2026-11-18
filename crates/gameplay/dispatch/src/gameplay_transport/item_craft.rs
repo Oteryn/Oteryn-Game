@@ -340,7 +340,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if mechanical && spent_water {
                 if !map_target.2 {
                     self.project_mechanical_fishing_failure(
-                        actor, command, native, map_target, None,
+                        actor, command, native, source, map_target, None,
                     )
                     .await;
                 }
@@ -414,6 +414,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     actor,
                     command,
                     native,
+                    source,
                     map_target,
                     Some(occurrence),
                 )
