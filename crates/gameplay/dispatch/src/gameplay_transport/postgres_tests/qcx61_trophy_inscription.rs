@@ -2,10 +2,17 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ExactActorRef;
-use crate::gameplay_transport::{item_look, item_view};
+use crate::gameplay_transport::{
+    connection::{FreshAdmissionAuthority, UseCommand},
+    item_look,
+    item_move::{LoopMove, LoopMoveResult, LoopTarget},
+    item_view,
+    world_map::SessionMapView,
+};
 use oteryn_protocol_oteryn::{
     arena::{ArenaAction, ArenaDisposition},
     item_look::ItemLookResult,
+    item_view::WorldTilePosition,
 };
 
 #[test]
@@ -85,5 +92,60 @@ pub(super) async fn after_first_rank(
         "It is given to the courageous victor of the barbarian arena in greenhorn difficulty. Awarded to {recipient}"
     );
     assert!(text.ends_with(&inscription));
+
+    let position = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    let moved = owner
+        .move_loop_item(
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: admitted.continuity.next_command_id,
+                item_fence: Some(fence),
+            },
+            LoopMove {
+                item: trophy,
+                count: None,
+                target: LoopTarget::Ground(WorldTilePosition {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor.checked_neg().ok_or("trophy floor")?,
+                }),
+            },
+        )
+        .await;
+    assert_eq!(moved, LoopMoveResult::Committed);
+    let mut map = SessionMapView::default();
+    let mut map_items =
+        item_view::SessionItemView::resume(item_view::ItemViewContinuity::default())
+            .with_map_view();
+    owner
+        .observe_world_map(actor, &mut map, &mut map_items)
+        .await
+        .ok_or("Arena map")?
+        .map_err(debug)?
+        .ok_or("Arena map snapshot")?;
+    let ground_handle = map_items
+        .table()
+        .handle(&trophy)
+        .ok_or("trophy ground handle")?;
+    let ItemLookResult::Text(ground_text) = item_look::look_item(
+        owner,
+        actor,
+        admitted.game_session_id,
+        None,
+        &map_items,
+        ground_handle,
+    )
+    .await
+    else {
+        return Err("the Ground trophy must support LOOK".into());
+    };
+    assert!(ground_text.ends_with(&inscription));
     Ok(())
 }
