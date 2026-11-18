@@ -1634,7 +1634,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !callback.return_on_failure {
             return;
         }
-        let mut feedback = callback.failure_message.as_deref();
+        let outcome_feedback = callback.effects.encounter_outcome_feedback.as_ref();
+        let mut feedback = callback
+            .failure_message
+            .as_deref()
+            .filter(|_| outcome_feedback.is_none());
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
@@ -1677,14 +1681,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             if let (Some(required), Some(messages)) = (
                 &callback.effects.require_encounter_outcome,
-                &callback.effects.encounter_outcome_feedback,
+                outcome_feedback,
             ) {
                 use super::grizzly_kills::encounter_outcomes::ExitState;
-                match self.encounter_exit_state(runtime, required) {
-                    ExitState::Running => feedback = Some(&messages.running),
-                    ExitState::WrongOutcome => feedback = Some(&messages.wrong_outcome),
-                    ExitState::Unavailable | ExitState::Open => {}
-                }
+                feedback = match self.encounter_exit_state(runtime, required) {
+                    ExitState::Running => Some(messages.running.as_str()),
+                    ExitState::WrongOutcome => Some(messages.wrong_outcome.as_str()),
+                    ExitState::Unavailable => callback.failure_message.as_deref(),
+                    ExitState::Open => None,
+                };
             }
         }
         if let Some(message) = feedback {
