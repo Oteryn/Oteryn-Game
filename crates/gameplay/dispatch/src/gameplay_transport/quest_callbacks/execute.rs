@@ -202,6 +202,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && runtime.read_actor_position(actor) == Ok(gate.expected)
             });
         if !close {
+            // Crystal dark_cathedral_teleports.lua:23-24,41-47. Resolve due
+            // lever resets before checking the gate, even if this StepIn
+            // acquired the Channel turn before the background expiry pass.
+            if callback.effects.native_portal_destination.is_some()
+                && !callback.world_requirements.is_empty()
+            {
+                let now = self.owner_now().get();
+                if map
+                    .facts
+                    .next_movement_decay_time()
+                    .is_some_and(|due| due <= now)
+                {
+                    map.facts.expire_movement_items(now);
+                }
+            }
             let world_ready = world_requirements_match(map, callback);
             let others_ready = self.ground_requirements_match(runtime, map, callback)
                 && super::clear_area::area_is_clear(runtime, callback);

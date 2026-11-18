@@ -119,20 +119,24 @@ pub(super) async fn exercise(
             assert_eq!(target(map, lever)?.expected_revision, opened.expected_revision);
         }
     }
+    // Run admission just before the first lever's deadline.
+    owner.states.test_owner_time.store(700_000_000, Ordering::Relaxed);
     relocate(owner, actor, session, (START.x, START.y, 9)).await?;
     step(owner, member, StepDirection::South).await?;
     assert_eq!(position(owner, actor).await?, local(LANDING));
     step(owner, member, StepDirection::North).await?;
     assert_eq!(position(owner, actor).await?, local(RETURN_LANDING));
 
+    // The scheduler has not projected the reset. Native StepIn must enforce
+    // the deadline even though the first lever still looks open.
+    relocate(owner, actor, session, (START.x, START.y, 9)).await?;
     owner.states.test_owner_time.store(700_000_001, Ordering::Relaxed);
-    map.facts.expire_movement_items(700_000_000);
+    assert_eq!(appearance(map, LEVERS[0])?, 2773);
+    step(owner, member, StepDirection::South).await?;
+    assert_eq!(position(owner, actor).await?, local(START));
     assert_eq!(appearance(map, LEVERS[0])?, 2772);
     for lever in &LEVERS[1..] {
         assert_eq!(appearance(map, *lever)?, 2773);
     }
-    relocate(owner, actor, session, (START.x, START.y, 9)).await?;
-    step(owner, member, StepDirection::South).await?;
-    assert_eq!(position(owner, actor).await?, local(START));
     Ok(())
 }
