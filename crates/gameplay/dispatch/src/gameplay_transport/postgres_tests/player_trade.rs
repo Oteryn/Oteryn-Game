@@ -24,24 +24,29 @@ fn player_trade_postgres_two_real_sessions_atomic_replay_and_cancellation() -> T
     run_scenario(false)
 }
 #[test]
+fn player_trade_postgres_recipient_capacity_refreshes_after_partner_accepts() -> TestResult {
+    run_scenario_with_read_priority(false, false, false, false, true)
+}
+#[test]
 fn player_trade_postgres_offer_waits_for_busy_holder() -> TestResult {
     run_scenario_with_offer_contention(false, true)
 }
 #[test]
 fn player_trade_postgres_counter_look_and_accept_retain_foreground_priority() -> TestResult {
-    run_scenario_with_read_priority(false, false, true, false)
+    run_scenario_with_read_priority(false, false, true, false, false)
 }
 pub(super) fn run_scenario(inspection: bool) -> TestResult {
     run_scenario_with_offer_contention(inspection, false)
 }
 fn run_scenario_with_offer_contention(inspection: bool, offer_contention: bool) -> TestResult {
-    run_scenario_with_read_priority(inspection, offer_contention, false, false)
+    run_scenario_with_read_priority(inspection, offer_contention, false, false, false)
 }
 fn run_scenario_with_read_priority(
     inspection: bool,
     offer_contention: bool,
     read_priority: bool,
     contents: bool,
+    check_capacity: bool,
 ) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
@@ -53,9 +58,16 @@ fn run_scenario_with_read_priority(
                 let h = Harness::create(admin, "player_trade_wire", true)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h, inspection, offer_contention, read_priority, contents)
-                    .await
-                    .map_err(|e| e.to_string());
+                let result = scenario(
+                    &h,
+                    inspection,
+                    offer_contention,
+                    read_priority,
+                    contents,
+                    check_capacity,
+                )
+                .await
+                .map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
                 result
             })
@@ -98,6 +110,7 @@ async fn scenario(
     offer_contention: bool,
     read_priority: bool,
     contents: bool,
+    check_capacity: bool,
 ) -> TestResult {
     eprintln!("TRADE-WIRE-1: PostgreSQL harness started; two native Fresh admissions");
     let now: i64 =
@@ -340,9 +353,15 @@ async fn scenario(
         owner.admit_loop_training(a).await;
         assert_eq!(a.first_entry, FirstEntryOutcome::Positioned);
         a.continuity.selected_capabilities = SelectedCapabilities::select(
-            owner.offered_capabilities(),
+            if contents || check_capacity {
+                crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
+            } else {
+                owner.offered_capabilities()
+            },
             if contents {
-                &[3, 4, 6, 21, 60, 132, 501]
+                &[3, 4, 6, 12, 14, 21, 60, 61, 132, 501]
+            } else if check_capacity {
+                &[4, 6, 21, 60, 508]
             } else if inspection {
                 &[4, 6, 21, 60, 132]
             } else {
@@ -351,6 +370,9 @@ async fn scenario(
         )
         .ok_or("selected")?;
         assert!(a.continuity.selected_capabilities.contains(60));
+        if contents {
+            assert!([12, 14, 61, 501].iter().all(|&id| a.continuity.selected_capabilities.contains(id)));
+        }
     }
 
     if read_priority {
@@ -373,9 +395,30 @@ async fn scenario(
     let driving = async {
         let mut a = Peer::open(client_a).await?;
         a.details = contents;
+        let a_cap = if check_capacity {
+            Some(
+                tokio::time::timeout(std::time::Duration::from_secs(7), a.capacity())
+                    .await
+                    .map_err(|_| "initial capacity for peer A")??,
+            )
+        } else {
+            None
+        };
         start_b.send(()).map_err(|_| "start second session")?;
         let mut b = Peer::open(client_b).await?;
         b.details = contents;
+        let capacity = if let Some(a_cap) = a_cap {
+            let b_cap = tokio::time::timeout(std::time::Duration::from_secs(7), b.capacity())
+                .await
+                .map_err(|_| "initial capacity for peer B")??;
+            Some((
+                a_cap,
+                b_cap,
+                tokio::time::Instant::now() + std::time::Duration::from_secs(4),
+            ))
+        } else {
+            None
+        };
 
         let offer_a = Intent::Offer {
             partner: targets[1],
@@ -418,6 +461,25 @@ async fn scenario(
         assert!(state.message.is_empty());
         assert!(state.own.is_some() && state.counter.is_some());
         let trade_id = state.trade_id.ok_or("trade id")?;
+        if let Some((a_cap, b_cap, deadline)) = capacity {
+            assert!(b_cap.free > a_cap.free, "B starts with the lighter offer");
+            let accepted_b = b.trade(Intent::Accept { trade_id }).await?;
+            assert_eq!(accepted_b, ResultCode::Accepted.payload());
+            let accepted_a = a.trade(Intent::Accept { trade_id }).await?;
+            assert_eq!(accepted_a, ResultCode::Completed.payload());
+            let after = tokio::time::timeout_at(deadline, b.capacity())
+                .await
+                .map_err(|_| "peer B capacity after completed trade")??;
+            assert_eq!(after.capacity, b_cap.capacity);
+            assert_eq!(
+                after.capacity - after.free,
+                a_cap.capacity - a_cap.free,
+                "the receiving peer's Cap must reflect the heavier offer",
+            );
+            a.close().await?;
+            b.close().await?;
+            return Ok::<_, Box<dyn std::error::Error>>(());
+        }
         if contents {
             assert!(
                 first.contents[1].is_empty(),
@@ -844,6 +906,23 @@ async fn scenario(
             item_view::ItemMoveOutcome::Moved
         );
         assert_eq!(a.trade(offer_a).await?, ResultCode::Offered.payload());
+        if contents {
+            let bag = std::num::NonZeroU64::new(handle_a).ok_or("offered bag")?;
+            let nested = a.open_container(bag).await?;
+            let leaf = a.open_container(nested).await?;
+            let mut payload = item_view::encode_item_move_intent(&item_view::ItemMoveIntent {
+                source: leaf,
+                destination: item_view::ItemMoveDestination::MainBackpack,
+            }).map_err(debug)?;
+            // Command 9 field 6: split one unit from the offered bag's nested stack.
+            payload.extend([0x30, 1]);
+            let result = a.command(9, &payload).await?;
+            assert_eq!(item_view::decode_item_move_result(&result).map_err(debug)?, item_view::ItemMoveOutcome::Rejected);
+            let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(153).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(quantity, 3, "offered descendant stack cannot be split");
+            assert_eq!(a.trade(offer_a).await?, ResultCode::Offered.payload());
+        }
         let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(
             &oteryn_protocol_oteryn::world_object::UseIntent {
                 target: oteryn_protocol_oteryn::world_object::UseTarget::Item(
@@ -973,6 +1052,9 @@ async fn scenario(
     )
     .await?;
     result?;
+    if check_capacity {
+        return Ok(());
+    }
     let markers: (i64, i64) = sqlx::query_as(
         "SELECT count(*) FILTER (WHERE cause='offline_settlement'), count(*) FILTER (WHERE cause='logout') FROM game_character_training_markers",
     )
@@ -1311,6 +1393,17 @@ impl Peer {
         }
         Ok(frame)
     }
+    async fn capacity(
+        &mut self,
+    ) -> TestResult<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity> {
+        loop {
+            let frame = self.read().await?;
+            if let Some(value) = capacity_frame(&frame, &[4, 6, 21, 60, 508])? {
+                return Ok(value);
+            }
+            self.capture(&frame)?;
+        }
+    }
     async fn close(&mut self) -> TestResult {
         self.writer.lock().await.shutdown().await?;
         Ok(())
@@ -1354,7 +1447,7 @@ impl Peer {
             }
             if d.domain_id == 9 {
                 self.last_inventory =
-                    Some(item_view::decode_character_inventory(d.payload).map_err(debug)?);
+                    Some(item_view::decode_character_inventory_with_equip_drop(d.payload, self.details).map_err(debug)?);
             }
         }
         Ok(())
@@ -1371,6 +1464,28 @@ impl Peer {
             r.1
         );
         Ok(r.1)
+    }
+    async fn open_container(&mut self, handle: item_view::ItemHandle) -> TestResult<item_view::ItemHandle> {
+        use oteryn_protocol_oteryn::container_tree as tree;
+        let payload = tree::encode_container_view_intent(&tree::ContainerViewIntent::Open {
+            handle, replace_view: None,
+        }).map_err(debug)?;
+        let reply = self.command(tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT, &payload).await?;
+        assert_eq!(tree::decode_container_view_result(&reply).map_err(debug)?, tree::ContainerViewOutcome::Opened);
+        loop {
+            let frame = self.read().await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::StateDelta {
+                let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+                if delta.domain_id == tree::STATE_DOMAIN_CONTAINER_VIEWS {
+                    let views = tree::decode_container_views(delta.payload).map_err(debug)?;
+                    if let Some(view) = views.views.iter().find(|view| view.container_handle == handle) {
+                        return Ok(view.entries.first().ok_or("container child")?.handle);
+                    }
+                }
+            }
+            self.capture(&frame)?;
+        }
     }
     async fn trade(&mut self, intent: Intent) -> TestResult<Vec<u8>> {
         let r = self
@@ -1415,5 +1530,31 @@ impl Peer {
 
 #[test]
 fn player_trade_postgres_frozen_nested_contents_wire_inspection_and_swap() -> TestResult {
-    run_scenario_with_read_priority(false, false, false, true)
+    run_scenario_with_read_priority(false, false, false, true, false)
+}
+
+pub(super) fn capacity_frame(
+    frame: &[u8],
+    selected: &[u32],
+) -> TestResult<Option<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity>> {
+    use oteryn_protocol_oteryn::world_spatial_entities::{
+        DeltaSidecar, EntityFields, decode_world_spatial_entities_delta_with_sidecar,
+    };
+    let envelope = decode_wire_envelope(frame).map_err(debug)?;
+    if envelope.message_type() != MessageType::StateDelta {
+        return Ok(None);
+    }
+    let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+    if delta.domain_id != 1 || delta.delta_type != 2 {
+        return Ok(None);
+    }
+    let (_, _, sidecar) = decode_world_spatial_entities_delta_with_sidecar(
+        delta.payload,
+        EntityFields::selected(selected),
+    )
+    .map_err(debug)?;
+    Ok(match sidecar {
+        Some(DeltaSidecar::InventoryCapacity(value)) => Some(value),
+        _ => None,
+    })
 }

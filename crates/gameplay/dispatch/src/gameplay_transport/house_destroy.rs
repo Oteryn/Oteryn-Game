@@ -238,10 +238,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let state = runtime.house_actor_state(actor, session).ok()?;
             HouseId::new(state.scope.world_id(), &state.house)?
         };
-        let fence = self.current_quest_fence(session).await.ok()??.item_fence();
-        let _permit = self.spell_lane_permit().await?;
+        if !self.root.observe_due_house_furniture(&house).await.ok()? {
+            return Some(());
+        }
+        let fence = self
+            .root
+            .observe_current_gameplay_fence(self.character, session, false)
+            .await
+            .ok()??
+            .item_fence();
+        // The expiry transaction locks and rechecks the House property and item
+        // custody itself. A periodic pass must not queue behind a gameplay writer.
         self.root
-            .expire_house_furniture(self.holder, fence, house)
+            .try_expire_house_furniture(self.holder, fence, house)
             .await
             .ok()?;
         Some(())

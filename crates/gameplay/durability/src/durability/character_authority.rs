@@ -176,14 +176,43 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         session: crate::foundation::GameSessionId,
     ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
+        self.read_gameplay_fence(authority, session, false, true).await
+    }
+
+    /// Current session and Character revision for advisory projections.
+    pub async fn observe_current_gameplay_fence(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        session: crate::foundation::GameSessionId,
+        reconnectable: bool,
+    ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
+        self.read_gameplay_fence(authority, session, true, reconnectable).await
+    }
+
+    async fn read_gameplay_fence(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        session: crate::foundation::GameSessionId,
+        observation: bool,
+        reconnectable: bool,
+    ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
         let recovery = authority.record_for(self)?;
         let store = super::fresh_admission::FreshAdmissionStore::from_root(self.clone());
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            super::db::lock_admission_relations(&mut tx).await?;
+            let mut tx = if observation {
+                let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
+                observe_recovery_fence(&mut tx, &recovery).await?;
+                tx
+            } else {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                super::db::lock_admission_relations(&mut tx).await?;
+                tx
+            };
             let current = store.current_session_in_transaction(&mut tx, session).await?;
-            if current.session_state() == crate::foundation::GameSessionState::Terminal {
+            if current.session_state() == crate::foundation::GameSessionState::Terminal
+                || (!reconnectable && current.session_state() != crate::foundation::GameSessionState::Active)
+            {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(None));
             }

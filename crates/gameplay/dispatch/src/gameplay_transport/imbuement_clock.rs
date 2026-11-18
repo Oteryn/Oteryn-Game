@@ -37,11 +37,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(combat) = self.observe_actor_combat_state(actor, session).await else {
             return false;
         };
-        let Ok(observed) = self
-            .root
-            .read_worn_imbuements(self.character, self.holder, fence)
-            .await
-        else {
+        let house_origin = matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        )
+        .then(|| *self.channel_id.as_bytes());
+        let observed = match house_origin {
+            Some(origin) => {
+                self.root
+                    .read_house_worn_imbuements(self.character, self.holder, fence, origin)
+                    .await
+            }
+            None => {
+                self.root
+                    .read_worn_imbuements(self.character, self.holder, fence)
+                    .await
+            }
+        };
+        let Ok(observed) = observed else {
             return false;
         };
         let mut clocks = self.states.timed_items.imbuements.lock().await;
@@ -111,7 +124,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(request) = clock.pending.clone() {
             if self
                 .root
-                .checkpoint_imbuements(self.character, self.holder, fence, request.clone())
+                .checkpoint_imbuements_in_scope(
+                    self.character,
+                    self.holder,
+                    fence,
+                    request.clone(),
+                    house_origin,
+                )
                 .await
                 .is_err()
             {
@@ -138,12 +157,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !has_combat_effects {
             return true;
         }
-        let Ok(effects) = self.read_admission_effects(session).await else {
-            return false;
-        };
-        let runtime = self.runtime.lock().await;
-        self.install_admission_suppressions(&runtime, actor, session, effects)
-            .await
-            .is_some()
+        self.refresh_clock_equipment_effects(
+            actor,
+            session,
+            fence.item_fence(),
+            house_origin.is_some(),
+        )
+        .await
+        .is_ok_and(|installed| installed || house_origin.is_some())
     }
 }

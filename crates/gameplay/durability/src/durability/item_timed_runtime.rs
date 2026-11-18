@@ -106,7 +106,7 @@ pub async fn consume_field_protection_in_transaction(
     sqlx::query("SET CONSTRAINTS game_item_timed_state_write_consistent DEFERRED")
         .execute(&mut ***tx)
         .await?;
-    let result = apply(tx, &fence, request).await?;
+    let result = apply(tx, &fence, request, None).await?;
     sqlx::query("SET CONSTRAINTS game_item_timed_state_write_consistent IMMEDIATE")
         .execute(&mut ***tx)
         .await?;
@@ -122,6 +122,18 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         item: [u8; 16],
     ) -> Result<Option<timed::StoredTimedState>> {
+        self.read_timed_row_in_scope(authority, node, fence, item, None)
+            .await
+    }
+
+    pub async fn read_timed_row_in_scope(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        item: [u8; 16],
+        house_origin: Option<[u8; 16]>,
+    ) -> Result<Option<timed::StoredTimedState>> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| TimedWriteError::AuthorityRejected)?;
@@ -132,10 +144,7 @@ impl DurabilityRoot {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if assert_gameplay_fence(&mut tx, &fence, &node)
-                        .await?
-                        .is_err()
-                    {
+                    if !assert_timed_fence(&mut tx, &fence, &node, house_origin).await? {
                         return Ok(Err(TimedWriteError::AuthorityRejected));
                     }
                     let state = timed::load_timed_state(&mut tx, &item)
@@ -185,6 +194,22 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: TimedRequest,
     ) -> Result<TimedItemResult> {
+        self.commit_timed_action_in_scope(authority, node, fence, request, None)
+            .await
+    }
+
+    /// Named House custody admits only server-owned elapsed equipment time.
+    pub async fn commit_timed_action_in_scope(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: TimedRequest,
+        house_origin: Option<[u8; 16]>,
+    ) -> Result<TimedItemResult> {
+        if house_origin.is_some() && !matches!(request.operation, TimedOperation::Advance(_)) {
+            return Err(TimedWriteError::InvalidInput);
+        }
         if check_uuid_v7(&request.transaction_id).is_err()
             || check_uuid_v7(&request.event_id).is_err()
             || check_uuid_v7(&request.item).is_err()
@@ -208,12 +233,22 @@ impl DurabilityRoot {
                 Err(TimedWriteError::Unavailable(error)) => return Err(error),
                 Err(error) => return Ok(Err(error)),
             }
-            if assert_gameplay_fence(&mut tx, &fence, &node).await?.is_err() { return Ok(Err(TimedWriteError::AuthorityRejected)); }
-            let item_fence = fence.item_fence();
-            if super::character_equipment::assert_current_equipment_in_transaction(&mut tx,&recovery,&node,&item_fence,None,request.content_digest).await.is_err() {
+            if !assert_timed_fence(&mut tx, &fence, &node, house_origin).await? {
                 return Ok(Err(TimedWriteError::AuthorityRejected));
             }
-            let result = match apply(&mut tx, &fence, &request).await {
+            let item_fence = fence.item_fence();
+            let equipment_authorized = match house_origin {
+                Some(origin) => super::character_equipment::assert_house_equipment_content(
+                    &mut tx, &node, &item_fence, origin, request.content_digest, super::character_equipment::HouseEquipmentAccess::Clock,
+                ).await.is_ok(),
+                None => super::character_equipment::assert_current_equipment_in_transaction(
+                    &mut tx, &recovery, &node, &item_fence, None, request.content_digest,
+                ).await.is_ok(),
+            };
+            if !equipment_authorized {
+                return Ok(Err(TimedWriteError::AuthorityRejected));
+            }
+            let result = match apply(&mut tx, &fence, &request, house_origin).await {
                 Ok(result) => result,
                 Err(TimedWriteError::Unavailable(error)) => return Err(error),
                 Err(error) => return Ok(Err(error)),
@@ -225,6 +260,35 @@ impl DurabilityRoot {
             Ok(Ok(result))
         })).await?
     }
+}
+
+async fn assert_timed_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterGameplayFence,
+    node: &NodeIncarnationProof,
+    house_origin: Option<[u8; 16]>,
+) -> std::result::Result<bool, DurabilityError> {
+    if let Some(origin) = house_origin {
+        if super::house_hireling::fence::assert_house_custody_fence(
+            tx,
+            node,
+            &fence.item_fence(),
+            origin,
+        )
+        .await?
+        .is_none()
+        {
+            return Ok(false);
+        }
+        let revision: String = sqlx::query_scalar(
+            "SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        return Ok(revision
+            .parse::<u64>()
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+            == fence.expected_character_revision.get());
+    }
+    Ok(assert_gameplay_fence(tx, fence, node).await?.is_ok())
 }
 
 fn as_storage(error: TimedWriteError) -> DurabilityError {

@@ -321,6 +321,11 @@ where
                     && payload.as_slice()
                         == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8]) =>
         {
+            if command.command_type
+                == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
+            {
+                session.inventory_capacity_refresh_at = None;
+            }
             let Some(view) = session.item_view.as_mut() else {
                 return Err(ServeEnd::Disconnected);
             };

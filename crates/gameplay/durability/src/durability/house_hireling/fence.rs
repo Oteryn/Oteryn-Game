@@ -78,12 +78,12 @@ async fn check_house_custody_fence(
     {
         return Ok(None);
     }
-    let incarnation_current = if lock {
+    let current_incarnation = if lock {
         prove_current_incarnation(tx, node).await?
     } else {
         super::super::runtime_scope_assignment::observe_current_incarnation(tx, node).await?
     };
-    if !incarnation_current {
+    if !current_incarnation {
         return Ok(None);
     }
     let fact = node.fact();

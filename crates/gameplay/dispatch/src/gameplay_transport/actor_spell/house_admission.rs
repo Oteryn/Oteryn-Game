@@ -3,7 +3,7 @@
 use super::*;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 
-fn matches_house(
+fn matches_house_custody(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -15,15 +15,25 @@ fn matches_house(
         || house.generation != fence.scope_ownership_generation
         || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
         || house.lease.generation() != fence.character_lease_generation
-        || runtime
-            .house_player_control_facts(actor, session)
-            .ok()?
-            .control_loss
-            .is_some()
     {
         return None;
     }
     Some(())
+}
+
+fn matches_house(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    fence: CurrentCharacterItemFence,
+) -> Option<()> {
+    matches_house_custody(runtime, actor, session, fence)?;
+    runtime
+        .house_player_control_facts(actor, session)
+        .ok()?
+        .control_loss
+        .is_none()
+        .then_some(())
 }
 
 impl ChannelSpellStates {
@@ -78,6 +88,19 @@ impl ChannelSpellStates {
         fence: CurrentCharacterItemFence,
     ) -> Option<&mut PlayerSpellState> {
         matches_house(runtime, actor, session, fence)?;
+        let index = self.index(actor, session)?;
+        self.actors.get_mut(index).map(|(_, _, state)| state)
+    }
+
+    /// Owner equipment effects can change while the resident is detached during reconnect grace.
+    pub(in crate::gameplay_transport) fn house_equipment_state_mut(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        fence: CurrentCharacterItemFence,
+    ) -> Option<&mut PlayerSpellState> {
+        matches_house_custody(runtime, actor, session, fence)?;
         let index = self.index(actor, session)?;
         self.actors.get_mut(index).map(|(_, _, state)| state)
     }

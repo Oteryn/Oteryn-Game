@@ -1004,6 +1004,12 @@ async fn drive(
 // transfer. The runtime readiness still comes from the native assignment API.
 // Negative cases above never derive their current facts from the transfer record.
 pub(super) async fn prepare_owned_session(h: &Harness) -> TestResult {
+    prepare_owned_session_request(h).await.map(|_| ())
+}
+
+pub(super) async fn prepare_owned_session_request(
+    h: &Harness,
+) -> TestResult<crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::foundation::admission_authority_publication::*;
     let now: i64 =
@@ -1046,15 +1052,16 @@ pub(super) async fn prepare_owned_session(h: &Harness) -> TestResult {
         .publish(&AdmissionAuthorityPublicationV1::prepare(&claims, now).map_err(debug)?)
         .await
         .map_err(debug)?;
+    let request = source.request()?;
     let outcome = FreshAdmissionStore::from_root(h.root.clone())
-        .commit(&source.request()?)
+        .commit(&request)
         .await
         .map_err(debug)?;
     assert!(matches!(
         outcome,
         crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1::Committed(_)
     ));
-    Ok(())
+    Ok(request)
 }
 
 pub(super) struct RecoverySource {

@@ -44,8 +44,28 @@ where
 
 /// INVCAP-1: a command of this connection that committed an item change (a move, a pickup or
 /// drop, a use, an NPC trade) makes the next visibility tick reread the capacity.
-pub(super) fn reread_after_command(session: &mut ServeState, dispatch: &Dispatch) {
-    let committed = match dispatch {
+pub(super) fn reread_after_command(
+    session: &mut ServeState,
+    command_type: u32,
+    dispatch: &Dispatch,
+) {
+    use oteryn_protocol_oteryn::{mail, player_trade};
+    let committed_transfer = match dispatch {
+        Dispatch::Reply(CommandStatus::Accepted, payload) => {
+            (command_type == u32::from(mail::COMMAND_TYPE_MAIL)
+                && payload.as_slice() == [mail::MailOutcome::Posted as u8])
+                || (command_type == player_trade::COMMAND_TYPE_PLAYER_TRADE_INTENT
+                    && payload.as_slice() == [8, player_trade::ResultCode::Completed as u8])
+        }
+        _ => false,
+    };
+    if committed_transfer || changes_carried_weight(dispatch) {
+        session.inventory_capacity_refresh_at = None;
+    }
+}
+
+pub(super) fn changes_carried_weight(dispatch: &Dispatch) -> bool {
+    match dispatch {
         Dispatch::ItemMove(outcome, _, _) => {
             *outcome == oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
         }
@@ -53,10 +73,14 @@ pub(super) fn reread_after_command(session: &mut ServeState, dispatch: &Dispatch
             outcome.disposition == oteryn_protocol_oteryn::world_object::UseDisposition::Committed
         }
         Dispatch::NpcTrade(_, _, deltas) | Dispatch::NpcShop(_, _, _, deltas) => !deltas.is_empty(),
+        Dispatch::Npc(_, _, changed) => *changed,
+        Dispatch::Stash(reply) => {
+            reply.outcome == oteryn_protocol_oteryn::stash::StashOutcome::Committed
+        }
+        Dispatch::Depot(reply) => {
+            reply.outcome == oteryn_protocol_oteryn::depot::DepotOutcome::Moved
+        }
         _ => false,
-    };
-    if committed {
-        session.inventory_capacity_refresh_at = None;
     }
 }
 

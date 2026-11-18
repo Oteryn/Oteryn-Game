@@ -35,6 +35,11 @@ pub(in crate::gameplay_transport::appearance_change) async fn read_state(
         }
     };
     match result {
+        Err(AppearanceWriteError::Unavailable(crate::durability::DurabilityError::Database(
+            crate::durability::SqlxFailureClass::RetryableStatement,
+        ))) if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }) => {
+            Err(super::ReadFailure::HouseAccessBusy)
+        }
         Ok(state) => Ok(Some(state)),
         Err(
             AppearanceWriteError::Unavailable(error)

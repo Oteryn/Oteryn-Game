@@ -91,6 +91,26 @@ impl FreshAdmissionAuthority for RereadAuthority {
         Some(LoopMoveReplay::Absent)
     }
 
+    async fn stash(
+        &self,
+        _: ExactActorRef,
+        _: UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        _: Option<crate::gameplay_transport::item_view::ItemKey>,
+        _: bool,
+    ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
+        use oteryn_protocol_oteryn::stash::{StashAction, StashOutcome, StashReply};
+        assert!(matches!(intent.action, StashAction::Stow(_)));
+        Some(StashReply {
+            outcome: StashOutcome::Committed,
+            stowed_quantity: 1,
+            transaction: Some([1; 16]),
+            page: 0,
+            has_more: false,
+            rows: Vec::new(),
+        })
+    }
+
     async fn observe_inventory_capacity(&self, _: AdmittedSession) -> Option<InventoryCapacity> {
         self.reads.set(self.reads.get() + 1);
         Some(InventoryCapacity {
@@ -125,7 +145,7 @@ fn reread_case(
                     reads: Cell::new(0),
                     levelled: Cell::new(false),
                 };
-                let ids = [4, 6, 12, 14, 179, 508];
+                let ids = [4, 6, 12, 14, 62, 179, 508];
                 let offered = ids.map(|id| OfferedCapability { id, requires: &[] });
                 let mut admitted = positioned()?;
                 admitted.continuity.selected_capabilities =
@@ -205,5 +225,29 @@ fn inventory_capacity_keeps_bound_without_own_change() -> Result<(), Box<dyn Err
         Duration::from_millis(1600),
         1,
         "no own change keeps the 5 s bound",
+    )
+}
+
+#[test]
+fn inventory_capacity_rereads_after_stash_commit() -> Result<(), Box<dyn Error>> {
+    reread_case(
+        |_| {
+            use oteryn_protocol_oteryn::stash::{
+                COMMAND_TYPE_STASH_INTENT, StashAction, StashIntent, encode_stash_intent,
+            };
+            let intent = encode_stash_intent(StashIntent {
+                action: StashAction::Stow(std::num::NonZeroU64::new(1)?),
+                page: 0,
+            })
+            .ok()?;
+            let mut payload = Vec::new();
+            scalar(&mut payload, 1, 1);
+            scalar(&mut payload, 2, u64::from(COMMAND_TYPE_STASH_INTENT));
+            bytes(&mut payload, 4, &intent);
+            Some(envelope(7, 1, &payload))
+        },
+        Duration::from_millis(600),
+        2,
+        "a committed stow rereads capacity on the next tick",
     )
 }

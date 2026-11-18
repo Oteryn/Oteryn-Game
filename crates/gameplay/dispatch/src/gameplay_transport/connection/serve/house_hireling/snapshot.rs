@@ -16,7 +16,9 @@ impl State {
             .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1)
             && (selected.contains(
                 oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
-            ) || enabled
+            ) || selected.contains(u32::from(oteryn_protocol_oteryn::mail::CAPABILITY_MAIL_V1))
+                || selected.contains(CAPABILITY_ITEM_EQUIP_DROP_V1)
+                || enabled
                 || selected.contains(
                     oteryn_protocol_oteryn::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
                 )
@@ -174,9 +176,7 @@ impl State {
         }
         if enabled
             && selected.domain_selected(STATE_DOMAIN_ACTOR_VITALS)
-            && let Some((revision, vitals)) = authority
-                .observe_vitals(actor, admitted.game_session_id)
-                .await
+            && let Some((revision, vitals)) = authority.observe_house_vitals(actor, *admitted).await
         {
             payloads.push(OwnedDomain {
                 domain_id: STATE_DOMAIN_ACTOR_VITALS,
@@ -207,6 +207,7 @@ impl State {
                 appearances,
                 spatial_revision,
                 capacity: None,
+                capacity_vitals_max: None,
                 capacity_refresh_at: None,
                 emblems: Vec::new(),
                 movement_effect_revision: authority

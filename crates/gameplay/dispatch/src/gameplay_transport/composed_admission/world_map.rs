@@ -99,7 +99,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let equipment = if let Some(session) = own_session {
-            self.read_movement_equipment(actor, session).await
+            self.observe_movement_equipment(actor, session).await
         } else {
             None
         };
@@ -125,26 +125,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                 )
             });
-            let visible = runtime.visible_entities();
-            for entry in &mut view.entities {
-                entry.motion = visible
-                    .players
-                    .iter()
-                    .chain(&visible.creatures)
-                    .chain(&visible.npcs)
-                    .find(|current| current.actor.placement_identity() == entry.identity)
-                    .and_then(|current| runtime.actor_motion(current.actor))
-                    .map(
-                        |(translation_revision, step_duration_ms, mount_look_type, _)| {
-                            oteryn_protocol_oteryn::actor_motion::ActorMotion {
-                                translation_revision,
-                                step_duration_ms,
-                                mount_look_type,
-                                prewalk_ms: [0; 8],
-                            }
-                        },
-                    );
-            }
             self.states.staff_world.filter(actor, &mut view);
             return Some(view);
         }
