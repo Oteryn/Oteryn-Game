@@ -4,12 +4,12 @@ Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. Global evidence is the cached [
 
 | Global | Import and native dispatch |
 | --- | --- |
-| Premium, no minimum level, recommended 40 | Definition matches Premium and minimum 0. The carrot callback consumes one i3595 after Premium and custody checks. Its production placement UID remains unverified. |
-| Rope, shovel, pick, carrot, Fire Bug, two Death Rings, Life Ring, water and Fire Field | Fire Bug i5467 opens the entrance and the Death Ring callback consumes worn i6299 and removes the tree barrier. The retained entry references do not establish the production UID2241/2244 bindings or the complete shovel and pick approach. |
+| Premium, no minimum level, recommended 40 | Definition matches Premium and minimum 0. The carrot callback consumes one i3595 after Premium and custody checks. Its production placement UID remains unverified. The held registry directory contains no Dreamer's Challenge file. |
+| Rope, shovel, pick, carrot, Fire Bug, two Death Rings, Life Ring, water and Fire Field | Fire Bug i5467 opens the entrance and the Death Ring callback consumes inactive i6299 and removes the tree barrier. The retained entry references do not establish the production UID2241/2244 bindings or the complete shovel and pick approach. |
 | Four-color matching and right exit | The shared grid rotations, completion check and scramble are absent in native quest bindings. |
-| SE, SW, NE, NW levers, 12 damaging pillars and success/fallback exit | The four native controls remove and restore their own wall segments independently. The ordered solution, pillar encounter and gated exit are absent from this quest's native bindings. Donor wall timers are 7s/8s. |
-| Shared 6×6 tic-tac-toe, optional Boots hint and Lost Heroes book | The book i2821 ×1 at UID6196 has the six exact names. Board validation, shared gate and NPC hint are absent from the native quest path. |
-| Life Ring north, Death Ring south, water west, fire east, switch activates well, center exit | The repository has the six stateless Hugo exit and maze selectors, but lacks the linked offering/well/portal cycle and full environmental path. |
+| SE, SW, NE, NW levers, 12 damaging pillars and success/fallback exit | Baseline controls removed their wall segments in any order. The authored controls now require each earlier lever to be active, in the Global SE, SW, NE, NW order. The donor wall/lever timers are 7s/8s. The pillar encounter and gated exit remain unbound. |
+| Shared 6×6 tic-tac-toe, optional Boots hint and Lost Heroes book | The book i2821 ×1 at UID6196 has the six exact names. Board validation, shared gate and NPC hint are absent from the native quest path. Chest USE persists the book text. The coverage registry records carried-book READ as unavailable. |
+| Life Ring north, Death Ring south, water west, fire east, switch activates well, center exit | The repository has one Hugo exit and six stateless maze selectors, but lacks the linked offering/well/portal cycle. Portal protection-zone handling, harmless dream monsters and underwater drowning remain unqualified on this path. |
 | Lucid Dreamer on arriving at A Ghostly Guardian | The arrival callbacks teleport without an achievement or progress write. |
 | Four boxes with one bag, vial of wine, brown bread and certificate each | UID6197–6200 are alternate placements for one claim. Bag i2853 contains i2874 ×1 (wine subtype 2), i3602 ×1 and i6498 ×1. Crystal chest.lua:2131–2161 agrees. Tests qualify the grant against independent wiki expectations. |
 | Quest rewards and XP | The cache lists no XP reward. Crystal additionally provides backpack UID6195 (i2854 containing one each of i2816, i3285, i3352 and i3558) and UID6201 (i3028 ×3). Their status in Global is open. |
@@ -17,7 +17,7 @@ Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. Global evidence is the cached [
 | Rank advancement costs 500/1000/1500 i6499, with early 1500 accepted | The disabled Dreamer's recipe uses 100. Live faction callbacks charge 500/1000 for the first two ranks and lack the third and prepaid branch. |
 | Nightmare Shield i6390 or Necromancer Shield i6432 at the second advancement | The faction rewards grant the leader document instead of also granting the shield. |
 | Follower, Officer, Leader documents and full-outfit achievements | Faction callbacks support document use but grant Nightmare Walker/Skull and Bones at the leader promotion, before all three scrolls are used. Nightmare Officer/Leader use masks 1/2 whereas the spoiler images identify 2/1. The cache describes use eligibility and leaves automatic document handouts unstated. |
-| Lord Protector or Dread Lord, diamond document crafting and nine pearl teleports | The final rank and achievement, rank-gated altar crafting, and three tiered groups of pearl destinations lack quest bindings. |
+| Lord Protector or Dread Lord, diamond document crafting and nine pearl teleports | The final rank achievement and crafting lack quest bindings. Global calls for one small diamond at the north, west or south altar for Follower, Officer or Leader. The unbound pearl destinations are Carlin/Thais/Dream Realm at rank 1, Ab'Dendriel/Fibula/Kazordoon at rank 2 and Darashia/Ankrahmun/Mintwallin at rank 4. |
  
 ## Blockers and open facts
 
@@ -33,6 +33,12 @@ Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. Global evidence is the cached [
 
 `BLOCKER Knightwatch Tower atomic pearl debit with either-faction rank guard data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:2`
 
+`BLOCKER Mission 4 Lost Heroes book carried-book READ/TextWindow data-global/startup/tables/chest.lua:2124`
+
 **OPEN-FACTS** — Global numeric item IDs, exact damage/timers, tile and UID/action mappings including portal squares, whether the extra Crystal chests are present, document handout timing, pearl debit vs. possession and exact destination tiles. The spoiler describes order, eligibility and destination names. It leaves those numeric or implementation details unstated.
 
 **PARTIAL** — Production entry selector coverage, native color/wall/tic-tac-toe/dream-room progression, Lucid Dreamer, parent flag and faction connection, faction reward differences under separately owned quest keys, final rank, altar crafting and tower access. No source-only claim or callback status was promoted.
+
+## Regression evidence
+
+- Baseline production data at `871c1dec7d9963420d455210e4cddc0c9df80d26` with the new tests and local pgsplit files. PostgreSQL 18.6 returned `Committed` on the first northwest USE where the regression expects `Rejected`. The chest case passed in 149.508 s and the baseline run had one pass and one failure.

@@ -86,6 +86,32 @@
           "if_present": true
         }
       ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32763,
+            "y": 32291,
+            "floor": -14
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32761,
+            "y": 32291,
+            "floor": -14
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32763,
+            "y": 32289,
+            "floor": -14
+          },
+          "appearance": 2773
+        }
+      ],
       "teleport": null,
       "storage": [],
       "offerings": [],
@@ -98,7 +124,8 @@
       },
       "sources": [
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71",
+        "https://tibia.fandom.com/?curid=12355&oldid=891457#Mission_3_-_Levers_and_Walls"
       ]
     },
     {
@@ -168,6 +195,24 @@
           "if_present": true
         }
       ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32763,
+            "y": 32291,
+            "floor": -14
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32761,
+            "y": 32291,
+            "floor": -14
+          },
+          "appearance": 2773
+        }
+      ],
       "teleport": null,
       "storage": [],
       "offerings": [],
@@ -180,7 +225,8 @@
       },
       "sources": [
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71",
+        "https://tibia.fandom.com/?curid=12355&oldid=891457#Mission_3_-_Levers_and_Walls"
       ]
     },
     {
@@ -250,6 +296,16 @@
           "if_present": true
         }
       ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32763,
+            "y": 32291,
+            "floor": -14
+          },
+          "appearance": 2773
+        }
+      ],
       "teleport": null,
       "storage": [],
       "offerings": [],
@@ -262,7 +318,8 @@
       },
       "sources": [
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:1-71",
+        "https://tibia.fandom.com/?curid=12355&oldid=891457#Mission_3_-_Levers_and_Walls"
       ]
     },
     {
