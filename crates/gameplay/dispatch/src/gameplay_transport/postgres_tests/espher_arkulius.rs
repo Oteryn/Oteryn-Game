@@ -131,25 +131,27 @@ async fn exercise(h: &Harness, wide_exchange: bool) -> TestResult {
             .await
             .premium_current()
     );
-    if wide_exchange {
-        return accept_with_eleven_item_identities(&owner, &admitted).await;
-    }
     talk(&mut owner, &admitted, arkulius, 700, "hi").await?;
-    for (id, keyword, expected) in [
-        (701, "mission", "20 enchanted emeralds"),
-        (
-            702,
-            "yes",
-            "Come back here when you have the elemental object",
-        ),
-    ] {
-        let result = talk(&mut owner, &admitted, arkulius, id, keyword).await?;
+    let mission = talk(&mut owner, &admitted, arkulius, 701, "mission").await?;
+    assert!(
+        mission
+            .conversation
+            .iter()
+            .flat_map(|reply| &reply.lines)
+            .any(|line| line.contains("20 enchanted emeralds")),
+        "{:?}",
+        mission.conversation
+    );
+    if wide_exchange {
+        accept_with_eleven_item_identities(&owner, &admitted).await?;
+    } else {
+        let result = talk(&mut owner, &admitted, arkulius, 702, "yes").await?;
         assert!(
             result
                 .conversation
                 .iter()
                 .flat_map(|reply| &reply.lines)
-                .any(|line| line.contains(expected)),
+                .any(|line| line.contains("Come back here when you have the elemental object")),
             "{:?}",
             result.conversation
         );
@@ -232,6 +234,11 @@ async fn accept_with_eleven_item_identities(
         .map_err(debug)?,
     );
     let session = admitted.game_session_id;
+    let topic = owner
+        .states
+        .npc_conversations
+        .catalogue_topic_for_test(session)
+        .ok_or("Arkulius mission topic")?;
     let fence = super::death_ml_loss_composed::current_fence(owner, session).await?;
     let native = owner
         .active_generation
@@ -252,7 +259,7 @@ async fn accept_with_eleven_item_identities(
                 npc: ARKULIUS.into(),
                 trigger: NpcRuleTrigger::Say,
                 message: "yes".into(),
-                topic: 1,
+                topic,
                 transition_key: ACCEPT.into(),
             },
             catalogue,
@@ -264,6 +271,13 @@ async fn accept_with_eleven_item_identities(
     assert!(
         matches!(receipt.transition, QuestTransitionOutcome::Committed(_)),
         "{receipt:?}"
+    );
+    assert_eq!(
+        source
+            .item_exchange_keys(ARKULIUS)
+            .ok_or("exchange keys")?
+            .len(),
+        11
     );
     Ok(())
 }

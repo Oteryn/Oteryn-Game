@@ -242,15 +242,6 @@ async fn exercise(h: &Harness) -> TestResult {
         UseDisposition::Committed
     );
     assert_eq!(gems(h).await?, -1);
-    assert_eq!(
-        deps.runtime
-            .lock()
-            .await
-            .read_actor_position(actor)
-            .map_err(debug)?
-            .position(),
-        before_entry
-    );
     assert_eq!(carried(h, RUBY).await?, 1);
     assert_eq!(
         click(&mut owner, &admitted, 714, left).await?,
@@ -264,6 +255,15 @@ async fn exercise(h: &Harness) -> TestResult {
         (846, 847)
     );
     assert_eq!(gems(h).await?, -1);
+    assert_eq!(
+        deps.runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        before_entry
+    );
     assert_ne!(
         charge(&mut owner, &admitted, 715, right, EMERALD).await?,
         UseDisposition::Committed
