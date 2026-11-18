@@ -945,7 +945,7 @@ async fn pvp_journey(
     victim_client.take_events();
     attack_target(&mut bots[0], Some(&victim)).await?;
     let mut temple_event = false;
-    bots::wait_observation(
+    let respawn = bots::wait_observation(
         bots,
         tokio::time::Instant::now() + Duration::from_secs(360),
         "MP01 lethal hit and temple respawn",
@@ -960,7 +960,24 @@ async fn pvp_journey(
                     .is_some_and(|v| v.health > 0 && v.health == v.max_health))
         },
     )
-    .await?;
+    .await;
+    if let Err(error) = respawn {
+        let observed_target = bots[0]
+            .session
+            .as_mut()
+            .and_then(|client| client.session_mut().combat_state()?.target);
+        let observed_victim = bots[1].session.as_ref().map(|client| {
+            (
+                client.world_spatial().actor_position,
+                client.actor_vitals().map(|v| (v.health, v.max_health)),
+                client.last_server_sequence(),
+            )
+        });
+        return Err(format!(
+            "{error};expected_target={victim:?};observed_target={observed_target:?};temple={temple_position:?};temple_arrival={temple_event};victim_position_hp_sequence={observed_victim:?}"
+        )
+        .into());
+    }
     attack_target(&mut bots[0], None).await?;
     let death = latest_death(&bots[1])
         .await?
