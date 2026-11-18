@@ -5,6 +5,7 @@ fn guarded_step(callback: &Callback) -> bool {
     callback.trigger == Trigger::StepIn
         && callback.teleport.is_some()
         && callback.effects.target_transform.is_none()
+        && callback.operation_count() == 0
         && callback.storage.iter().any(|gate| {
             gate.minimum == gate.maximum
                 && gate.set != gate.minimum
@@ -14,9 +15,6 @@ fn guarded_step(callback: &Callback) -> bool {
                 && !gate.read_only
                 && !gate.at_least
                 && !gate.increment
-                && callback
-                    .operations()
-                    .all(|operation| operation.track != gate.track)
         })
 }
 
