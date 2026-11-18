@@ -9,6 +9,7 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::kill_reward::{self, KillSink};
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use serde_json::json;
@@ -26,6 +27,7 @@ const TEAM_PAD: Position = Position {
 };
 const OUTSIDE_TIMEOUT: &str = "qewrath-payback-outside-timeout";
 const OUTSIDE_PAD: Position = Position { y: 31403, ..LEVER };
+const BUSY: &str = "The arena is already in use.";
 const LANDING: Position = Position {
     x: 33359,
     y: 31406,
@@ -74,7 +76,7 @@ fn fixture() -> TestResult<Callback> {
         "key":"oteryn:quest-callback/wrath/payback-forms", "quest":"oteryn:quest.wrath_of_the_emperor_quest",
         "trigger":"use", "selector":{"position":LEVER,"appearance":2772},
         "lever":[2772,2773], "reversible":true, "passages":[], "offerings":[],
-        "storage":[], "return_on_failure":false,
+        "storage":[], "return_on_failure":false, "failure_message":BUSY,
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua:1-42"],
         "effects":{"encounter":{
             "minimum_level":0,
@@ -345,6 +347,9 @@ pub(super) async fn exercise(
     drop(states);
     drop(runtime);
     let effect_cursor = map.facts.movement_effects_since(0).last().map_or(0, |cue| cue.0);
+    // Advance the owner clock past the ordinary world-action cooldown between USEs.
+    owner.clock_origin -= std::time::Duration::from_millis(250);
+    let map = owner.bundle_map().ok_or("map")?;
     let restarted = owner
         .use_object(
             actor,
@@ -354,7 +359,7 @@ pub(super) async fn exercise(
                 item_fence: Some(fence.item_fence()),
             },
             WorldObjectTarget {
-                placement,
+                placement: placement.clone(),
                 expected_revision: 1,
             },
         )
@@ -387,6 +392,38 @@ pub(super) async fn exercise(
                 .count(),
             admitted_count
         );
+    }
+    if name == OUTSIDE_TIMEOUT {
+        let active_boss = find(&runtime, FORMS[0]).ok_or("active boss")?.0;
+        drop(runtime);
+        owner.clock_origin -= std::time::Duration::from_millis(250);
+        let map = owner.bundle_map().ok_or("map")?;
+        owner.states.chat.drain(session);
+        let busy = owner
+            .use_object(
+                actor,
+                UseCommand {
+                    game_session_id: session,
+                    command_id: 100,
+                    item_fence: Some(fence.item_fence()),
+                },
+                WorldObjectTarget {
+                    placement,
+                    expected_revision: 2,
+                },
+            )
+            .await;
+        assert_eq!(busy.disposition, UseDisposition::Occupied);
+        assert_eq!(
+            owner.states.chat.drain(session),
+            [oteryn_protocol_oteryn::chat::ChatLine::Private {
+                speaker_name: "Game".into(),
+                text: BUSY.into(),
+            }]
+        );
+        assert_eq!(map.facts.object_revision(key), 2);
+        assert_eq!(map.facts.movement_effects_since(effect_cursor), cues);
+        assert!(owner.runtime.lock().await.contains_live_creature(active_boss));
     }
     Ok(())
 }

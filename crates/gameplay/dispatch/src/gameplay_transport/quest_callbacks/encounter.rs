@@ -178,10 +178,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
+        let gather_players = encounter.linear_phases.is_some();
+        // Crystal 201189f8 actions_mission11_payback_time_lever.lua:17–24
+        // reports the active room before inspecting the staging area.
+        if gather_players
+            && states
+                .encounter_phases
+                .linear_room_busy(runtime, key, self.owner_now().get())
+        {
+            if !preflight && let Some(message) = &callback.failure_message {
+                self.states.chat.push_quest_feedback(session, message);
+            }
+            return UseDisposition::Occupied;
+        }
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
-        let gather_players = encounter.linear_phases.is_some();
         // Crystal 201189f8 actions_mission11_payback_time_lever.lua:26–40.
         // Once the source room is released, the next admission removes its
         // previous monsters and gathers the new players onto one landing cell.

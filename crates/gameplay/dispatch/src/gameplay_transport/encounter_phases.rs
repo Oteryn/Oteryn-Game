@@ -123,6 +123,21 @@ pub(super) struct Registry {
 }
 
 impl Registry {
+    pub(super) fn linear_room_busy(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        key: u64,
+        now_us: u64,
+    ) -> bool {
+        self.active.lock().is_ok_and(|phases| {
+            phases.iter().any(|phase| {
+                phase.key == key
+                    && matches!(&phase.fight, Fight::Linear(fight) if !fight.expired(now_us)
+                        && fight.victors(runtime).is_ok_and(|victors| victors.is_none()))
+            })
+        })
+    }
+
     pub(super) fn blocks_channel_switch(
         &self,
         runtime: &ChannelRuntimeV1,
