@@ -152,7 +152,13 @@ impl PendingCallbacks {
             .ok()?
             .iter()
             .map(|pending| pending.next_due_us())
-            .chain(self.survival.lock().ok()?.as_ref().map(|run| run.next_due()))
+            .chain(
+                self.survival
+                    .lock()
+                    .ok()?
+                    .as_ref()
+                    .map(|run| run.next_due()),
+            )
             .min()
     }
 }
@@ -1284,7 +1290,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
         if origin.position() != entered.position() {
-            self.step_phantom_army(actor, session, entered).await;
+            self.step_phantom_army(permit, actor, session, entered)
+                .await;
         }
         self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
             .await

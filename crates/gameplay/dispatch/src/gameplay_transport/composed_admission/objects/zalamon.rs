@@ -102,8 +102,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return outcome(UseDisposition::Locked);
         }
         let doors = map.facts.doors();
+        if !doors.contains(key) {
+            return outcome(UseDisposition::NotPossible);
+        }
         if !doors.blocks(at) {
-            return outcome(UseDisposition::NothingToUse);
+            // Crystal's successful USE of the already-open form has no effect.
+            return outcome(UseDisposition::Committed);
         }
         let blocked = crate::gameplay_transport::pvp_live::pz_blocked(
             &states,

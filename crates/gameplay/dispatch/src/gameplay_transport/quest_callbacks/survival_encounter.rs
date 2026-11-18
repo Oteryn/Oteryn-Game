@@ -53,6 +53,7 @@ impl SurvivalRun {
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn step_phantom_army(
         &self,
+        permit: &SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         entered: MovementPositionSnapshot,
@@ -66,7 +67,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(map) = self.bundle_map() else { return };
         let mut runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
-        if runtime.read_actor_position(actor) != Ok(entered)
+        if permit.runtime_scope() != runtime.binding().runtime_scope()
+            || runtime.read_actor_position(actor) != Ok(entered)
             || states.is_dead(actor)
             || !self.states.quest_sessions.lock().is_ok_and(|sessions| {
                 sessions
@@ -169,7 +171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states.owner_wake.notify_one();
     }
 
-    pub(super) async fn drain_survival_encounter(&self, _permit: &SpellLanePermit) {
+    pub(super) async fn drain_survival_encounter(&self, permit: &SpellLanePermit) {
         let Some(map) = self.bundle_map() else { return };
         let now = self.owner_now().get();
         let credits = {
@@ -179,7 +181,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return;
             };
             let Some(run) = active.as_mut() else { return };
-            if runtime.owner_fence().is_err()
+            if permit.runtime_scope() != runtime.binding().runtime_scope()
+                || runtime.owner_fence().is_err()
                 || runtime.encounter_owner_scope() != run.scope
                 || map.overlay.base().digest() != run.map
                 || runtime.content_pin().server_artifact_digest() != run.content
@@ -412,6 +415,11 @@ fn summon_wave(
         };
         if occupied.contains(&(cell.x, cell.y, 7))
             || cells.index().lookup(cells.scope(), cell) != Ok(CollisionClass::Walkable)
+            || !cells
+                .spell_tiles()
+                .lookup(cells.scope(), cell)
+                .is_ok_and(|tile| !tile.flags().protection_zone && !tile.flags().floor_change)
+            || map.facts.house_tile(at)
             || map
                 .facts
                 .quest_callback_blocked(map.overlay.base(), at, false)
