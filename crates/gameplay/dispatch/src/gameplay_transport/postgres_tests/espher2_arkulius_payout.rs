@@ -223,7 +223,7 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
         ));
     }
     owner
-        .refresh_quest_session(admitted.game_session_id, false)
+        .refresh_quest_session(admitted.game_session_id, true)
         .await;
     super::item_look::seed_main_backpack(h, &[(NEUTRAL_MATTER, 2)]).await?;
 
