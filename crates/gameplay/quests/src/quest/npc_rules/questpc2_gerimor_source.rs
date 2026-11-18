@@ -8,6 +8,7 @@ pub(super) const PROGRAM: &str = "oteryn:quest-npc-program.questpc2-gerimor-assi
 pub(super) const QUEST: &str = "oteryn:quest.cults_of_tibia_quest";
 const REVISION: &str = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d";
 const FINALE: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
+const MINOTAURS: &str = "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission";
 const ESSENCE_ENTRY: &str = "oteryn:quest-callback/engenc2/cults-essence-entry";
 const ESSENCE_CLOCK: &str = "oteryn:quest-progress/cults-of-tibia/essence-entered-at";
 const PATH: &str = "data-global/npc/gerimor.lua";
@@ -71,6 +72,13 @@ pub(crate) fn retain_predecessor(catalogue: &mut QuestStateCatalogue) -> Result<
         .document
         .tracks
         .retain(|track| track.sources.iter().all(old_reference));
+    previous
+        .document
+        .tracks
+        .iter_mut()
+        .find(|track| track.key == MINOTAURS)
+        .ok_or("missing Gerimor Minotaur declaration")?
+        .max = 5;
     previous.digest =
         Sha256::digest(serde_json::to_vec(&previous.document).map_err(|error| error.to_string())?)
             .into();
@@ -80,9 +88,8 @@ pub(crate) fn retain_predecessor(catalogue: &mut QuestStateCatalogue) -> Result<
         .filter(|(key, track)| track.quest == QUEST && key.as_str() != ESSENCE_CLOCK)
         .map(|(key, track)| (key.clone(), track.clone()))
         .collect();
-    let minotaurs = "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission";
     tracks
-        .get_mut(minotaurs)
+        .get_mut(MINOTAURS)
         .ok_or("missing Gerimor Minotaur track")?
         .max = 5;
     let mut transitions: BTreeMap<_, _> = catalogue

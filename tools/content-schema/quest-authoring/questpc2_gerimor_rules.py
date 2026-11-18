@@ -125,6 +125,9 @@ def outputs(root):
                            if t['key'] == PREFIX + door else [cite('255-452')]}
               for q in state['quests'] if q['quest'] == QUEST
               for t in q['tracks'] if t['key'] in wanted]
+    report_bounds = {PREFIX + track: goal + 1 for _, track, goal, _, _ in reports}
+    for track in tracks:
+        track['max'] = max(track['max'], report_bounds.get(track['key'], track['max']))
     if len(tracks) != len(wanted):
         raise ValueError('GERIMOR_TRACK_SET')
     document = dict(schema=1, program_key=PROGRAM, quest=QUEST, tracks=tracks, rules=rules,

@@ -58,7 +58,7 @@
       "quest": "oteryn:quest.cults_of_tibia_quest",
       "initial": 0,
       "min": 0,
-      "max": 5,
+      "max": 6,
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gerimor.lua:255-452"
       ]
