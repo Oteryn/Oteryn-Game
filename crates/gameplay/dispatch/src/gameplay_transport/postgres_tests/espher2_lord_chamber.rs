@@ -58,7 +58,8 @@ fn chamber(case: ChamberCase) -> TestResult {
                 .find(|row| row.key == "oteryn:quest-callback/elemental-spheres/lord-switch-1")
                 .ok_or("Lord chamber switch must be registered")?;
             let encounter = callback.effects.encounter.as_ref().ok_or("encounter")?;
-            let station = &encounter.switches.as_ref().ok_or("four switches")?.stations[0];
+            let group = encounter.switches.as_ref().ok_or("four switches")?;
+            let station = &group.stations[0];
             let world_tile = |p: world_callbacks::Position| TilePos {
                 x: p.x,
                 y: p.y,
@@ -155,6 +156,19 @@ fn chamber(case: ChamberCase) -> TestResult {
             let key = source_lever(map, at)?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
+            let walls_before: Vec<_> = group
+                .stations
+                .iter()
+                .flat_map(|station| {
+                    station.walls.map(world_tile).map(|wall| {
+                        (
+                            wall,
+                            map.facts
+                                .quest_callback_blocked(map.overlay.base(), wall, false),
+                        )
+                    })
+                })
+                .collect();
             let walls: Vec<_> = station
                 .walls
                 .map(world_tile)
@@ -212,7 +226,6 @@ fn chamber(case: ChamberCase) -> TestResult {
                     character,
                 )
                 .await?;
-                let group = encounter.switches.as_ref().ok_or("switch group")?;
                 let peer_actor = {
                     let mut runtime = owner.runtime.lock().await;
                     let reservation = runtime.reserve_fresh_session(peer).map_err(debug)?;
@@ -333,7 +346,30 @@ fn chamber(case: ChamberCase) -> TestResult {
                     .await;
                 }
                 owner.states.test_owner_time.store(
-                    owner.owner_now().get() + 601_000_001,
+                    owner.owner_now().get() + 300_000_000,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
+                owner.drain_quest_encounter_deadlines().await;
+                assert!(
+                    owner
+                        .states
+                        .quest_callbacks
+                        .next_encounter_due_us()
+                        .is_some()
+                );
+                assert_eq!(
+                    owner
+                        .runtime
+                        .lock()
+                        .await
+                        .current_live_creature_census()
+                        .map_err(debug)?
+                        .len(),
+                    1,
+                    "the halfway warning must leave the fight active"
+                );
+                owner.states.test_owner_time.store(
+                    owner.owner_now().get() + 301_000_001,
                     std::sync::atomic::Ordering::Relaxed,
                 );
                 owner.drain_quest_encounter_deadlines().await;
@@ -361,6 +397,18 @@ fn chamber(case: ChamberCase) -> TestResult {
                         .next_encounter_due_us()
                         .is_none()
                 );
+                for (wall, original) in walls_before {
+                    assert_eq!(
+                        map.facts
+                            .quest_callback_blocked(map.overlay.base(), wall, false),
+                        original,
+                        "the timeout restores wall tile {wall:?}",
+                    );
+                }
+                for station in &group.stations {
+                    let key = source_lever(map, world_tile(station.lever))?;
+                    assert_eq!(map.facts.object_revision(key), 2, "switch reset");
+                }
             }
             Ok(())
         })
