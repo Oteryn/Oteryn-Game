@@ -180,15 +180,22 @@ async fn contend_for_daily_claim(
     admitted: AdmittedSession,
     h: &Harness,
 ) -> TestResult<[UseDisposition; 2]> {
+    let first_command = 21_u64;
+    let mut cause = admitted.game_session_id.as_bytes().to_vec();
+    cause.extend_from_slice(&first_command.to_be_bytes());
     let mut blocker = h.pool.begin().await?;
-    sqlx::query("LOCK TABLE game_character_quest_receipts IN ACCESS EXCLUSIVE MODE")
-        .execute(&mut *blocker)
-        .await?;
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(\
+         'oteryn:reward-claim-mint:' || encode($1, 'hex'), 0))",
+    )
+    .bind(cause)
+    .execute(&mut *blocker)
+    .await?;
     let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
         .fetch_one(&mut *blocker)
         .await?;
 
-    let first = use_claim(owner, admitted, 21);
+    let first = use_claim(owner, admitted, first_command);
     tokio::pin!(first);
     // Observe the first USE inside the durable writer before dispatching the second.
     let writer_waiting = tokio::time::timeout(std::time::Duration::from_secs(5), async {
@@ -207,16 +214,18 @@ async fn contend_for_daily_claim(
         }
     });
     tokio::select! {
-        result = &mut first => return Err(format!("first claim finished before receipt wait: {result:?}").into()),
+        result = &mut first => return Err(format!("first claim finished before acquiring the reward cause: {result:?}").into()),
         waiting = writer_waiting => waiting??,
     }
 
-    // Poll the second USE while the first is still waiting on the receipt table.
+    // Poll the second USE while the first is still waiting on the reward cause.
     let (first, second, released) = tokio::join!(biased;
         first, use_claim(owner, admitted, 22), blocker.rollback(),
     );
     released?;
-    Ok([first?, second?])
+    let first = first?;
+    assert_eq!(first, UseDisposition::Committed);
+    Ok([first, second?])
 }
 
 async fn tame_noble_lion(
