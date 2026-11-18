@@ -1020,9 +1020,9 @@ async fn exercise_rabbit(
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     actor: crate::foundation::ExactActorRef,
 ) -> TestResult {
-    use oteryn_protocol_oteryn::chat::ChatLine;
     use crate::content::{ProjectV2DefinitionRef, ProjectV2Family};
     use oteryn_gameplay_items::item_craft::output_definition;
+    use oteryn_protocol_oteryn::chat::ChatLine;
 
     for id in [12171, 12172, 12173] {
         let key = format!("oteryn:item.tibia.i{id}");
@@ -1205,13 +1205,28 @@ async fn exercise_rabbit(
         )?,
         ..command
     };
+    let knife_reference = native
+        .item_index()
+        .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i5908", "definition-r1"))
+        .ok_or("obsidian knife definition")?;
+    let hotkey = UseIntent {
+        target: UseTarget::ItemByDefinition(knife_reference),
+        ..intent
+    };
     assert_eq!(
-        attempt(corpse, failure, obsidian_knife)
+        owner
+            .use_cooking_conversion(
+                actor,
+                failure,
+                hotkey,
+                None,
+                Some(ItemKey::Instance(corpse))
+            )
             .await
-            .ok_or("Lucky Loop rabbit USE")?
+            .ok_or("Lucky Loop rabbit hotkey USE")?
             .disposition,
         UseDisposition::Committed,
-        "a failed roll spends the corpse without minting feet"
+        "a failed hotkey roll spends the corpse without minting feet"
     );
     assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
     assert!(matches!(
