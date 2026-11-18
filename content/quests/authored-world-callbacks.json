@@ -4352,6 +4352,219 @@
         "reusable": true
       },
       "success_message": "You have dispelled imperial influence 4 of 4."
+    },
+    {
+      "key": "oteryn:quest-callback/authored-demon-oak-reward-demon-legs",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32710,
+          "y": 32393,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472,
+        "ordinal": 2
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:world-projection:demon-oak:quest-r1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:201-221",
+        "https://tibia.fandom.com/index.php?curid=34086&oldid=855950"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3389",
+          "count": 1
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-demon-oak-reward-rainbow-shield",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32712,
+          "y": 32393,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472,
+        "ordinal": 2
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:world-projection:demon-oak:quest-r1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:201-221",
+        "https://tibia.fandom.com/index.php?curid=34086&oldid=855950"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i8077",
+          "count": 1
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-demon-oak-reward-thorn-spitter",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32714,
+          "y": 32393,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472,
+        "ordinal": 2
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:world-projection:demon-oak:quest-r1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:201-221",
+        "https://tibia.fandom.com/index.php?curid=34086&oldid=855950"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i14768",
+          "count": 1
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-demon-oak-reward-spellbook-of-ancient-arcana",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32716,
+          "y": 32393,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472,
+        "ordinal": 2
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:world-projection:demon-oak:quest-r1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:201-221",
+        "https://tibia.fandom.com/index.php?curid=34086&oldid=855950"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i14769",
+          "count": 1
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-demon-oak-reward-grave-projected",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32710,
+          "y": 32398,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32714,
+        "y": 32398,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:world-projection:demon-oak:quest-r1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_gravestone.lua:2-11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/demon_oak.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3784-3788",
+        "https://tibia.fandom.com/index.php?curid=34086&oldid=855950"
+      ]
     }
   ]
 }
