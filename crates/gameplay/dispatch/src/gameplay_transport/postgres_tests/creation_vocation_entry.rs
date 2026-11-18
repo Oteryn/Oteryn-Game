@@ -34,9 +34,9 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
                 assert!(h.root.read_character_progression(&authority, character).await?.is_none());
                 let mut source = fresh_fixture::fresh::Source::new(now)?;
-                source.current.character_id = character;
+                source.current.character_id = crate::foundation::CharacterId::decode(character.as_bytes()).map_err(debug)?;
                 for row in &mut source.rows {
-                    if matches!(row.key, AdmissionAuthorityGuardKeyV1::Character(_)) { row.key = AdmissionAuthorityGuardKeyV1::Character(character); }
+                    if matches!(row.key, AdmissionAuthorityGuardKeyV1::Character(_)) { row.key = AdmissionAuthorityGuardKeyV1::Character(source.current.character_id); }
                 }
                 let mut runtime = fresh_fixture::fresh::Source::new(now)?;
                 runtime.rows.retain(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
