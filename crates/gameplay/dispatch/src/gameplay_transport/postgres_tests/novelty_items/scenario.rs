@@ -3,8 +3,8 @@ use super::*;
 // Crystal 201189f8 actions_dwarf_disguise_kit.lua:1-13.
 const BRIDGE_ROBBERY_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_dwarf_disguise_kit.lua:1-13";
 const NURIK: &str = "oteryn:npc.nurik";
-const NURIK_WELCOME: &str = "It's .. It's YOU! At last!! So what's this special proposal you would like to make, my friend?";
-const NURIK_REFUSAL: &str = "Excuse me, but I'm waiting for someone important!";
+const NURIK_WELCOME: &str = "You must be the seller I'm expecting. What's your proposal?";
+const NURIK_REFUSAL: &str = "I'm waiting for a different visitor.";
 const READY_TO_SELL: &str = "oteryn:quest-callback/fixture/bridge-ready-to-sell";
 
 fn nurik_catalogue() -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
