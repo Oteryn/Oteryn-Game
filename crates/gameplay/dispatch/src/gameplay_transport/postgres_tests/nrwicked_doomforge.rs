@@ -181,6 +181,14 @@ fn scenario(
                     floor: 14
                 },
             );
+            assert!(crate::map::floor::is_teleport(
+                &cells,
+                crate::content::LogicalCell {
+                    x: i32::from(PORTAL.x),
+                    y: i32::from(PORTAL.y),
+                    z: -i32::from(PORTAL.floor),
+                },
+            ));
             drop(owner);
             drop(authority);
             drop(seal);
