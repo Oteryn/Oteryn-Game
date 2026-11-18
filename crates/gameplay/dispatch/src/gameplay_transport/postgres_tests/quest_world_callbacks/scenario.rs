@@ -26,6 +26,7 @@ fn scenario_case(
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
+    let areadmg_pits = name.starts_with("areadmg-pits-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
         name == "m07-ring-offering" || name == super::super::m07_dreamer_ring_lost_ack::NAME;
@@ -356,6 +357,11 @@ fn scenario_case(
         super::super::qd_world::callback(name)?
     } else if engenc_asura {
         super::super::engenc_asura_dispatch::callback(name)?
+    } else if areadmg_pits {
+        let mut fixture = callback("qm03/pits")?;
+        fixture.selector.unique = None;
+        fixture.selector.action = Some(if name.ends_with("matching") { 2069 } else { 2045 });
+        fixture
     } else if m03_pits {
         callback("qm03/pits")?
     } else if nomads_window {
@@ -1832,7 +1838,23 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
-        deps.initialize(&owner).await;
+        if areadmg_pits {
+            let runtime = owner.runtime.lock().await;
+            owner.states.spell_states.lock().await.initialize(
+                &runtime,
+                deps.actor,
+                admitted.game_session_id,
+                crate::spell::cast::CharacterCastFacts {
+                    vocation: crate::spell::Vocation::Monk,
+                    max_health: 10_000,
+                    ..crate::gameplay_transport::actor_spell::tests::FACTS
+                },
+                (0, 0),
+                owner.owner_now(),
+            ).ok_or("Five Ways vitals")?;
+        } else {
+            deps.initialize(&owner).await;
+        }
         if let Some(initial_level) = initial_level {
             // Initialization uses common cast fixtures; project the actually seeded
             // durable level before evaluating source NPC eligibility.
@@ -1889,6 +1911,13 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 name,
+            ))
+            .await?;
+        } else if areadmg_pits {
+            Box::pin(super::super::areadmg_pits::exercise(
+                &mut owner,
+                &mut admitted,
+                name.ends_with("matching"),
             ))
             .await?;
         } else if m03_pits {
