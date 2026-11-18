@@ -804,6 +804,27 @@ async fn prism_recovery(
     runtime
         .commit_creature_field_entry(prism, now, Some(&field))
         .map_err(debug)?;
+    let relocate_lloyd = |runtime: &mut crate::foundation::ChannelRuntimeV1, destination| {
+        let before = runtime.read_actor_position(lloyd).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(
+                lloyd,
+                before,
+                super::quest_world_callbacks::local(destination),
+            )
+            .map_err(debug)
+    };
+    let stale = runtime
+        .stage_creature_periodic_turn(prism, now, TickFacts::default())
+        .map_err(debug)?;
+    relocate_lloyd(&mut runtime, LLOYD_REBIRTH)?;
+    assert!(matches!(
+        runtime.commit_creature_periodic_turn(stale),
+        Err(crate::foundation::CarrierError::PlanConflict)
+    ));
+    assert_eq!(runtime.live_creature_health(prism), Some(900));
+    relocate_lloyd(&mut runtime, LLOYD_SPAWN)?;
     let prepared = runtime
         .stage_creature_periodic_turn(prism, now, TickFacts::default())
         .map_err(debug)?;
@@ -812,15 +833,7 @@ async fn prism_recovery(
         .map_err(debug)?;
     assert!(!periodic.ticks.is_empty());
     assert_eq!(periodic.health_after, 900);
-    let spawn = runtime.read_actor_position(lloyd).map_err(debug)?;
-    runtime
-        .borrow_movement_position()
-        .commit_creature_relocation(
-            lloyd,
-            spawn,
-            super::quest_world_callbacks::local(LLOYD_REBIRTH),
-        )
-        .map_err(debug)?;
+    relocate_lloyd(&mut runtime, LLOYD_REBIRTH)?;
     let guarded = hit(&mut runtime, 112)?;
     assert_eq!((guarded.health_before, guarded.health_after), (900, 800));
     let mut states = owner.states.spell_states.lock().await;

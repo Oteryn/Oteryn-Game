@@ -5,6 +5,7 @@ use crate::SourceStepCommitProof;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct QuestDamageRecovery {
     vacant_cell: LocalPosition,
+    context: PreProductionPositionContext,
     amount: i64,
     pub(super) pending_cues: u64,
 }
@@ -15,7 +16,26 @@ impl QuestDamageRecovery {
         carrier: &ChannelActorCarrier,
         position: VersionedPosition,
     ) -> bool {
-        !carrier.cell_occupied(position.context, self.vacant_cell)
+        position.context == self.context
+            && !carrier.occupied.iter().any(|&index| {
+                let version = match carrier.slots.get(index as usize) {
+                    Some(Slot::Occupied {
+                        committed: true,
+                        position: Some(version),
+                        ..
+                    })
+                    | Some(Slot::CreatureOccupied {
+                        health: 1..,
+                        position: Some(version),
+                        ..
+                    })
+                    | Some(Slot::NpcOccupied {
+                        position: version, ..
+                    }) => version,
+                    _ => return false,
+                };
+                version.context == self.context && version.position == self.vacant_cell
+            })
     }
 
     pub(super) fn heal(&self, before: i64, maximum: i64) -> i64 {
@@ -194,7 +214,7 @@ impl ChannelRuntimeV1 {
         let Slot::CreatureOccupied {
             health,
             spell_combat,
-            position: Some(_),
+            position: Some(position),
             ..
         } = &mut self.carrier.slots[index]
         else {
@@ -214,6 +234,7 @@ impl ChannelRuntimeV1 {
                 y: vacant_cell.y,
                 floor: vacant_cell.floor,
             },
+            context: position.context,
             amount: i64::from(amount),
             pending_cues: 0,
         });
