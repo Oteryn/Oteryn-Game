@@ -914,7 +914,9 @@ async fn consume_inputs(
             location: row.try_get("before_ground")?,
             kind: "ground".into(),
             quantity: row.try_get("quantity")?,
-            count: if callback.effects.party_transfer.is_some() || callback.effects.cleanup_offerings {
+            count: if callback.effects.party_transfer.is_some()
+                || callback.effects.cleanup_offerings
+            {
                 let quantity: i64 = row.try_get("quantity")?;
                 let Ok(count) = u16::try_from(quantity) else {
                     return Ok(false);

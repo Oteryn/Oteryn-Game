@@ -73,12 +73,15 @@ pub(super) fn prepare(
     let solved = board.tokens.iter().all(|token| {
         let position = tile(token.position);
         !map.facts.house_tile(position)
-            && compose_tile(ground.overlay(), &facts, position).is_ok_and(|stack| {
-                stack
-                    .entries
-                    .iter()
-                    .any(|entry| entry.facts.appearance_id == token.appearance)
-            })
+            && compose_tile(ground.overlay(), &facts, position)
+                .ok()
+                .flatten()
+                .is_some_and(|stack| {
+                    stack
+                        .entries
+                        .iter()
+                        .any(|entry| entry.facts.appearance_id == token.appearance)
+                })
     });
     if solved {
         let (key, current) = base_slot(map, tile(board.portal), &[board.sealed, board.opened])
