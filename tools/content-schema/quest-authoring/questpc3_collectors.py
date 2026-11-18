@@ -51,6 +51,10 @@ def build_pilgrimage(root=ROOT):
                     'outfit': None, 'achievement': None,
                     'reply': ['Your pilgrimage is complete. Here are twenty platinum coins.' if final else 'Your visit has been recorded. Continue your pilgrimage.'],
                     'sources': sources}
+        if final:
+            callback['maximum_level'] = 24
+            callback['failure_reply'] = ['This reward is only available below level 25.']
+            sources.append('lane qc TibiaWiki report: https://tibia.fandom.com/wiki/Pilgrimage_of_Ashes (current global Tibia; API HTTP 402, revision unavailable); Guide Jonathan, Edron; 2000 gold below level 25')
         stages.append({'key': stage_key, 'completes': final,
                        'trigger': {'kind': 'npc_dialogue', 'callback': callback}})
     raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
