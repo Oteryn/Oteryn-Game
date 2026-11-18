@@ -116,6 +116,8 @@ pub enum QuestCause {
     Use(CommandRef),
     /// Server-owned committed movement revision, in its own cause namespace.
     Step(CommandRef),
+    /// A durable item arrival, which can affect another character.
+    SourceItemArrival([u8; 16]),
     /// A reward-claim obligation (§5.4): the claim's CommandRef.
     ClaimObligation(CommandRef),
     /// An exact committed native damage occurrence, independent of player USE.
@@ -135,6 +137,7 @@ impl QuestCause {
             Self::Command(_) => "command",
             Self::Use(_) => "use",
             Self::Step(_) => "step",
+            Self::SourceItemArrival(_) => "source_item_arrival",
             Self::ClaimObligation(_) => "claim_obligation",
             Self::CreatureDeath(_) => "creature_death",
             Self::SourceThink(_) => "source_think",
@@ -154,6 +157,7 @@ impl QuestCause {
                 command.command_id().get(),
             ),
             Self::ServerTimer(occurrence) => (*occurrence.as_bytes(), 0),
+            Self::SourceItemArrival(occurrence) => (occurrence, 0),
             Self::NativeHit(occurrence) => (*occurrence.as_bytes(), 0),
             Self::CreatureDeath(occurrence) => (*occurrence.as_bytes(), 0),
             Self::SourceThink(occurrence) => (*occurrence.as_bytes(), 0),
@@ -177,6 +181,11 @@ impl QuestCause {
             "command" => Self::Command(command()?),
             "use" => Self::Use(command()?),
             "step" => Self::Step(command()?),
+            "source_item_arrival"
+                if ordinal == 0 && super::spell_item_transaction::uuid_v7(&id) =>
+            {
+                Self::SourceItemArrival(id)
+            }
             "claim_obligation" => Self::ClaimObligation(command()?),
             "creature_death" if ordinal == 0 => {
                 Self::CreatureDeath(ExperienceRewardOccurrence::from_bytes(id).map_err(invalid)?)
@@ -720,6 +729,7 @@ mod authored_admission;
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
 pub(super) mod capacity;
+pub(super) mod coal_basin;
 mod collection;
 pub mod encounter_deaths;
 pub mod grizzly;

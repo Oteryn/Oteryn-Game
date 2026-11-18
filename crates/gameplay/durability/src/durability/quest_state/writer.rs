@@ -936,6 +936,7 @@ impl DurabilityRoot {
             ) && !soul_step
             || matches!(request.cause, QuestCause::SourceStep(_)) != soul_step
             || matches!(request.cause, QuestCause::SourceThink(_)) && !area_input
+            || matches!(request.cause, QuestCause::SourceItemArrival(_))
             || source_action.is_some()
                 && ((context.is_some() && !soul_step)
                     || payment.is_some()
