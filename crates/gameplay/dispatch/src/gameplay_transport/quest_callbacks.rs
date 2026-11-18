@@ -1003,13 +1003,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if source_trial && selected.is_empty() {
             return Some(UseOutcome::rejected());
         }
+        let achievement_routes = selected_tool.is_none()
+            && selected.iter().enumerate().all(|(index, left)| {
+                selected[index + 1..]
+                    .iter()
+                    .all(|right| world_callbacks::disjoint_achievement_routes(left, right))
+            });
         if selected.len() > 1
-            && selected.iter().all(|callback| {
-                callback
-                    .item_on_target
-                    .as_ref()
-                    .is_some_and(|item| item.selected_instance)
-            })
+            && (achievement_routes
+                || selected.iter().all(|callback| {
+                    callback
+                        .item_on_target
+                        .as_ref()
+                        .is_some_and(|item| item.selected_instance)
+                }))
         {
             let (Some(fence), Some(catalogue)) =
                 (command.item_fence, self.quest_catalogue.as_deref())

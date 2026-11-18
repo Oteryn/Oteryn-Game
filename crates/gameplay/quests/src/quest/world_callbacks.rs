@@ -200,6 +200,7 @@ mod mammoth_tests;
 mod native;
 mod nomads_land;
 mod nomads_window;
+pub use guarded_routes::disjoint_achievement_routes;
 use native::valid_native_callback;
 pub use phase::select_storage_phase;
 
@@ -856,6 +857,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
                 !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
+                    && !disjoint_achievement_routes(callback, peer)
                     && !(selector_gates::disjoint(peer, callback)
                         && selector_partitions::disjoint(peer, callback))
             })
