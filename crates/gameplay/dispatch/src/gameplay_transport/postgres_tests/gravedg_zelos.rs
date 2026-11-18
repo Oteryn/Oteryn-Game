@@ -134,6 +134,22 @@ pub(super) async fn exercise(
             assert!(find(&runtime, add)?.is_some(), "ritual replenishes {add}");
         }
     }
+    let blood = {
+        let runtime = owner.runtime.lock().await;
+        find(&runtime, "oteryn:creature.vampiric_blood")?.ok_or("vampiric blood")?
+    };
+    let red_before = {
+        let runtime = owner.runtime.lock().await;
+        let red = find(&runtime, KNIGHTS[3])?.ok_or("red knight")?;
+        runtime.companion_snapshot(red).map_err(debug)?.health
+    };
+    super::engenc2_cults::kill(owner, admitted, blood, "oteryn:creature.vampiric_blood", 102).await?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let red = find(&runtime, KNIGHTS[3])?.ok_or("red survives the first drowning hit")?;
+        let red_after = runtime.companion_snapshot(red).map_err(debug)?.health;
+        assert!((20_000..=25_000).contains(&(red_before - red_after)));
+    }
     tick_at(owner, now + 30_000_000).await;
     {
         let runtime = owner.runtime.lock().await;
@@ -144,7 +160,7 @@ pub(super) async fn exercise(
     }
     tick_at(owner, now + 24 * 60 * 1_000_000).await;
     let runtime = owner.runtime.lock().await;
-    for knight in KNIGHTS.into_iter().chain(["oteryn:creature.king_zelos"]) {
+    for knight in KNIGHTS.into_iter().chain(["oteryn:creature.king_zelos", "oteryn:creature.rewar_the_bloody_inv"]) {
         assert!(find(&runtime, knight)?.is_none(), "timeout cleans up {knight}");
     }
     for member in [player, partner] {

@@ -3,6 +3,7 @@
 use super::{NativePhaseOwner, Plan, Role};
 use oteryn_gameplay_entities::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
+    OwnerDamageCommand, project_fixed_one_creature_death,
 };
 
 const MAGNOR: usize = 0;
@@ -17,6 +18,7 @@ const BLOOD: &str = "oteryn:creature.vampiric_blood";
 const SOLDIER: &str = "oteryn:creature.risen_soldier";
 const REFILL_US: u64 = 10_000_000;
 const FETTER: &str = "oteryn:creature.fetter";
+const REWAR_IMMUNE: &str = "oteryn:creature.rewar_the_bloody_inv";
 const FETTER_WAVE_US: u64 = 20_000_000;
 const FETTER_LIMIT: usize = 6;
 const HALF_AFTER_US: u64 = 6 * 60 * 1_000_000;
@@ -76,6 +78,7 @@ pub struct ZelosEncounter {
     rewar_at: MovementLocalPosition,
     fetters: Vec<ExactActorRef>,
     fetter_due_us: Option<u64>,
+    rewar_immune: bool,
     king_gate_released: bool,
     king_at: MovementLocalPosition,
     red_at: MovementLocalPosition,
@@ -113,7 +116,7 @@ impl ZelosEncounter {
         for role in &ROLES[4..] {
             runtime.companion_policy(role.creature)?;
         }
-        for key in [BLOOD, FETTER, SOLDIER] {
+        for key in [BLOOD, FETTER, REWAR_IMMUNE, SOLDIER] {
             runtime.companion_policy(key)?;
         }
         let mut soldiers = Vec::new();
@@ -136,6 +139,7 @@ impl ZelosEncounter {
             rewar_at: position(REWAR)?,
             fetters: Vec::with_capacity(FETTER_LIMIT),
             fetter_due_us: None,
+            rewar_immune: false,
             king_gate_released: false,
             king_at: position(KING)?,
             red_at: position(RED)?,
@@ -156,7 +160,7 @@ impl ZelosEncounter {
     }
 
     pub fn contains(&self, actor: ExactActorRef) -> bool {
-        self.phase.actors.contains(&Some(actor))
+        self.phase.actors.contains(&Some(actor)) || self.blood.contains(&actor)
     }
 
     pub fn contains_terminal(&self, actor: ExactActorRef) -> bool {
@@ -168,10 +172,63 @@ impl ZelosEncounter {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
     ) -> Result<bool, CarrierError> {
+        if let Some(index) = self.blood.iter().position(|&blood| blood == actor) {
+            self.vampiric_blood_death(runtime, actor)?;
+            self.blood.swap_remove(index);
+            return Ok(true);
+        }
         if self.contains_terminal(actor) && !self.king_gate_released {
             return Err(CarrierError::PlanConflict);
         }
         self.phase.projected_death(runtime, actor)
+    }
+
+    // Crystal 201189f grave_danger_king_zelos.lua:279–293.
+    fn vampiric_blood_death(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        blood: ExactActorRef,
+    ) -> Result<(), CarrierError> {
+        use sha2::{Digest, Sha256};
+        let (_, death) = runtime.borrow_combat_death().projected_death(blood)?;
+        let red = self.phase.actors[RED].ok_or(CarrierError::PlanConflict)?;
+        if !runtime.contains_live_creature(red) {
+            return Ok(());
+        }
+        let at = runtime.read_actor_position(red)?.position();
+        if death.floor != at.floor || death.x.abs_diff(at.x) > 1 || death.y.abs_diff(at.y) > 1 {
+            return Ok(());
+        }
+        let identity = blood.placement_identity();
+        let draw = Sha256::digest(identity);
+        let damage = 20_000 + i64::from(u16::from_be_bytes([draw[0], draw[1]]) % 5001);
+        let before = runtime.encounter_parts().0.clone();
+        let outcome = (|| {
+            let (carrier, continuity) = runtime.encounter_parts_mut();
+            let hit = carrier.commit_encounter_single_damage(
+                continuity,
+                red.0,
+                OwnerDamageCommand {
+                    target: ROLES[RED].creature.as_bytes(),
+                    occurrence: &identity,
+                    binding: b"grave-danger-vampiric-blood",
+                    damage,
+                },
+                None,
+                false,
+                None,
+                None,
+            )?;
+            if hit.health_after == 0 {
+                project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), red)?;
+                self.phase.projected_death(runtime, red)?;
+            }
+            Ok(())
+        })();
+        if outcome.is_err() {
+            *runtime.encounter_parts_mut().0 = before;
+        }
+        outcome
     }
 
     pub fn victors(
@@ -353,11 +410,11 @@ impl ZelosEncounter {
         else {
             return Ok(());
         };
-        let was_protected = !self.fetters.is_empty();
         self.fetters
             .retain(|actor| runtime.contains_live_creature(*actor));
-        if self.fetters.is_empty() && was_protected {
-            super::gates::unprotect(runtime, rewar)?;
+        if self.fetters.is_empty() && self.rewar_immune {
+            self.change_rewar_form(runtime, rewar, false, place)?;
+            self.rewar_immune = false;
         }
 
         let due = match self.fetter_due_us {
@@ -391,14 +448,57 @@ impl ZelosEncounter {
         if !spawns.is_empty() {
             let before = runtime.encounter_parts().0.clone();
             let spawned = runtime.commit_quest_creature_spawn(&spawns)?;
-            if let Err(error) = super::gates::protect(runtime, &[rewar]) {
-                *runtime.encounter_parts_mut().0 = before;
-                return Err(error);
+            if !self.rewar_immune {
+                if let Err(error) = self.change_rewar_form(runtime, rewar, true, place) {
+                    *runtime.encounter_parts_mut().0 = before;
+                    return Err(error);
+                }
+                self.rewar_immune = true;
             }
             self.fetters.extend(spawned);
         }
         self.fetter_due_us = Some(now.saturating_add(FETTER_WAVE_US));
         Ok(())
+    }
+
+    fn change_rewar_form(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        rewar: ExactActorRef,
+        immune: bool,
+        place: &impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+    ) -> Result<(), CarrierError> {
+        let before = runtime.encounter_parts().0.clone();
+        let result = (|| {
+            let from = runtime.read_actor_position(rewar)?;
+            if from.position() != self.rewar_at {
+                if !place(runtime, self.rewar_at)
+                    || runtime.position_occupied_by_other(rewar, self.rewar_at)?
+                {
+                    return Err(CarrierError::PlanConflict);
+                }
+                runtime
+                    .borrow_movement_position()
+                    .commit_creature_relocation(rewar, from, self.rewar_at)?;
+            }
+            let snapshot = runtime.companion_snapshot(rewar)?;
+            let key = if immune {
+                REWAR_IMMUNE
+            } else {
+                ROLES[REWAR].creature
+            };
+            let transform = runtime.prepare_creature_profile_transformation(&snapshot, key)?;
+            runtime.commit_creature_profile_transformation(transform)?;
+            if immune {
+                super::gates::protect(runtime, &[rewar])
+            } else {
+                super::gates::unprotect(runtime, rewar)
+            }
+        })();
+        if result.is_err() {
+            *runtime.encounter_parts_mut().0 = before;
+        }
+        result
     }
 }
 
