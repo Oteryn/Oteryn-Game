@@ -572,7 +572,7 @@ async fn current(
         .map_err(|_| "fence")?
         .ok_or_else(|| "current session".into())
 }
-fn select_movement(
+pub(super) fn select_movement(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     diagonals: bool,
@@ -777,7 +777,7 @@ async fn durable_refusals(
     Ok(())
 }
 
-async fn create_peer(
+pub(super) async fn create_peer(
     h: &Harness,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
     evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
