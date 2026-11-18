@@ -52,6 +52,7 @@ fn scenario_case(
     let qm48 = name == "qm48/mammoth";
     let m03_use = name == super::super::qengine_m03_use::NAME;
     let qd_world = name.starts_with(super::super::qd_world::PREFIX);
+    let machine_deposit = name.starts_with(super::super::qespike_machine_deposit::PREFIX);
     let mound = name == super::super::qespike_mound::NAME;
     let sphere_machine = name == super::super::qespike_sphere_machine::NAME;
     let elemental_pin = name.starts_with("qn1-elemental-");
@@ -89,6 +90,7 @@ fn scenario_case(
         || m44
         || m07_too_hot
         || last_creep
+        || machine_deposit
         || mound
         || sphere_machine
         || elemental_pin
@@ -362,6 +364,8 @@ fn scenario_case(
         super::super::qengine_m03_use::callback()?
     } else if name == super::super::qespike_geomantic_step::NAME {
         super::super::qespike_geomantic_step::callback()?
+    } else if machine_deposit {
+        super::super::qespike_machine_deposit::callback()?
     } else if sphere_machine {
         super::super::qespike_sphere_machine::callback()?
     } else if qd_world {
@@ -1046,7 +1050,7 @@ fn scenario_case(
             )?
         } else if mound {
             super::super::qespike_mound::world()?
-        } else if sphere_machine {
+        } else if sphere_machine || machine_deposit {
             super::super::qespike_sphere_machine::world()?
         } else if qd_world {
             super::super::qd_world::world(
@@ -2489,6 +2493,8 @@ fn scenario_case(
             Box::pin(super::super::qespike_hotspot::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qespike_geomantic_step::NAME {
             Box::pin(super::super::qespike_geomantic_step::exercise(&mut owner, &mut admitted, &h, &callback)).await?;
+        } else if machine_deposit {
+            Box::pin(super::super::qespike_machine_deposit::exercise(&mut owner, &admitted, &h, &callback, name)).await?;
         } else if sphere_machine {
             Box::pin(super::super::qespike_sphere_machine::exercise(&mut owner, &mut admitted, &h, &callback)).await?;
         } else if name == super::super::qespike_arkulius::NAME {
