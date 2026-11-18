@@ -245,17 +245,29 @@ async fn exercise_refill(
          at(&runtime, second).ok_or("second reinforcement")?)
     };
     settle_actor_death(owner, players, DEMON, fallen, Case::ShieldReinforcements, 505).await?;
-    let mut runtime = owner.runtime.lock().await;
-    for now in [2_999, 3_000, 7_999] {
-        owner.tick_encounter_shields(&mut runtime, now);
-        assert_eq!(at(&runtime, first), None, "refill before the complete delay");
+    let landing = {
+        let mut runtime = owner.runtime.lock().await;
+        for now in [2_999, 3_000, 7_999] {
+            owner.tick_encounter_shields(&mut runtime, now);
+            assert_eq!(at(&runtime, first), None, "refill before the complete delay");
+            assert_eq!(at(&runtime, second), Some(survivor));
+        }
+        runtime.read_actor_position(players[0].actor).map_err(debug)?.position()
+    };
+    move_to(owner, players[0], first).await?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        owner.tick_encounter_shields(&mut runtime, 8_000);
+        assert_eq!(at(&runtime, first), None, "occupied refill tile");
         assert_eq!(at(&runtime, second), Some(survivor));
     }
-    owner.tick_encounter_shields(&mut runtime, 8_000);
+    move_to(owner, players[0], landing).await?;
+    let mut runtime = owner.runtime.lock().await;
+    owner.tick_encounter_shields(&mut runtime, 8_001);
     let replacement = at(&runtime, first).ok_or("delayed reinforcement")?;
     assert_ne!(replacement, fallen);
     assert!(runtime.retains_corpse_projection(fallen));
-    for now in [8_000, 9_999] {
+    for now in [8_001, 9_999] {
         owner.tick_encounter_shields(&mut runtime, now);
         assert_eq!(at(&runtime, first), Some(replacement));
         assert_eq!(at(&runtime, second), Some(survivor));
