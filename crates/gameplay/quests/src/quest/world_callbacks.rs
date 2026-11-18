@@ -1928,6 +1928,23 @@ mod tests {
     }
 
     #[test]
+    fn exhausted_reward_exit_requires_a_timed_pickup() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key.ends_with("qready1-threatened-raven-herb"))
+            .ok_or("timed pickup")?;
+        let mut row = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+        row["return_on_failure"] = true.into();
+        row["failure_teleport"] = serde_json::json!({"x":32396,"y":32520,"floor":-7});
+        let encode =
+            |row: &serde_json::Value| serde_json::json!({"schema":1,"callbacks":[row]}).to_string();
+        assert!(parse(&encode(&row))?[0].has_exhausted_reward_exit());
+        row["state_ops"] = serde_json::json!([]);
+        assert!(parse(&encode(&row)).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn native_counterparts_and_teleport_cues_fail_closed() -> Result<(), String> {
         let callback = load()?
             .into_iter()
