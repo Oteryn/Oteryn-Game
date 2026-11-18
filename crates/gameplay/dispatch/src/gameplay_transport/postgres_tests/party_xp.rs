@@ -709,6 +709,9 @@ async fn scenario(
     }
     assert_eq!(owner.states.chat.drain(players[0].1).len(), 2);
     assert_eq!(owner.states.chat.drain(players[1].1).len(), 1);
+    if matches!(task_board_case, Case::DhuntDeathAreas) {
+        return super::dhunt_death_areas::exercise(&owner, h, &players).await;
+    }
     let party_spell = (1..=u32::try_from(spells.source_len())?)
         .filter_map(std::num::NonZeroU32::new)
         .find(|index| {
@@ -739,9 +742,6 @@ async fn scenario(
         matches!(owner.states.chat.next(players[0].1),Some(oteryn_protocol_oteryn::chat::ChatLine::Private{speaker_name,text})
         if speaker_name=="Game" && text.starts_with("Party spell"))
     );
-    if matches!(task_board_case, Case::DhuntDeathAreas) {
-        return super::dhunt_death_areas::exercise(&owner, h, &players).await;
-    }
     if matches!(task_board_case, Case::TaskBoardOrdered) {
         return task_board::qualify_ordered_deaths(&mut owner, h, &players).await;
     }

@@ -53,7 +53,7 @@ pub(super) async fn exercise(
     for (number, floor, credit) in [(800, 8, 0), (801, 7, 1), (802, 6, 2)] {
         let observed = owner.owner_now();
         let now = observed.get() / 1000;
-        {
+        let target = {
             let mut runtime = owner.runtime.lock().await;
             let health = runtime.companion_policy(RAT).map_err(debug)?.maximum_health;
             let target = runtime
@@ -101,11 +101,18 @@ pub(super) async fn exercise(
                     Some(observed),
                 );
             }
-        }
+            target
+        };
         assert_eq!(
             owner.drain_kill_rewards(session).await,
             DrainOutcome::Drained
         );
+        owner
+            .runtime
+            .lock()
+            .await
+            .remove_encounter_actor(target)
+            .map_err(debug)?;
         let counts = counts(h).await?;
         if credit == 0 {
             assert!(counts.is_empty(), "out-of-area deaths earn no credit");
