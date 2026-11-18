@@ -32,7 +32,7 @@ use std::collections::BTreeSet;
 
 pub const MAX_BINDING_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_BOUND_QUESTS: usize = 128;
-pub const MAX_BOUND_STAGES: usize = 1024;
+pub const MAX_BOUND_STAGES: usize = 2048;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]

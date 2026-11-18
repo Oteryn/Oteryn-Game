@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/qc-rapier-chest",
+      "quest": "oteryn:quest.rapier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32099,
+          "y": 32198,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/rapier/chest",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have found a rapier.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/rookgaard/rapier_quest.lua:4-15",
+        "https://tibia.fandom.com/index.php?curid=3334&oldid=1043841",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/rookgaard/rapier_quest.lua#L4-L15",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L3454-L3457"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3272",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "completes": true
+    }
+  ]
+}

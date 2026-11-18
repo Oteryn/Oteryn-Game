@@ -25,7 +25,7 @@ ITEMHOLD_ADMISSIONS = frozenset({
 })
 # Canonical merged coverage retains 336 source claims: 189 have named PG
 # witnesses, two remain not playable and these 145 retain qualification holds.
-EXPECTED_DENOMINATOR = 145
+EXPECTED_DENOMINATOR = 142
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

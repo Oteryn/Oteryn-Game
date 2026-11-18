@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/qc-lizard-sanctuary-altar-1",
+      "quest": "oteryn:quest.sanctuary_of_the_lizard_god",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32111,
+          "y": 31933,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21473
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/lizard_sanctuary/discovered",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21469",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need the eggs of a sacred snake.",
+      "success_message": "The lizard god accepts your offer! You may enter the santuary!",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/97/definition:sha256:52ca15b34f5be1ba6895fb0379d6f97d64b5074ba70825e2df62d2271f1f8579",
+        "https://tibia.fandom.com/index.php?curid=68840&oldid=856177",
+        "https://tibia.fandom.com/index.php?curid=68839&oldid=1198612",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_legion_helmet.lua:1-4",
+        "canary:666a60f6fef803b043cbaf1c7b5fab219da9bfa9:data-otservbr-global/scripts/quests/dawnport/actions_legion_helmet.lua:15-26"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/qc-lizard-sanctuary-altar-2",
+      "quest": "oteryn:quest.sanctuary_of_the_lizard_god",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32112,
+          "y": 31933,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/lizard_sanctuary/discovered",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i21469",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need the eggs of a sacred snake.",
+      "success_message": "The lizard god accepts your offer! You may enter the santuary!",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/97/definition:sha256:52ca15b34f5be1ba6895fb0379d6f97d64b5074ba70825e2df62d2271f1f8579",
+        "https://tibia.fandom.com/index.php?curid=68840&oldid=856177",
+        "https://tibia.fandom.com/index.php?curid=68839&oldid=1198612",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_legion_helmet.lua:1-4",
+        "canary:666a60f6fef803b043cbaf1c7b5fab219da9bfa9:data-otservbr-global/scripts/quests/dawnport/actions_legion_helmet.lua:15-26"
+      ]
+    }
+  ]
+}

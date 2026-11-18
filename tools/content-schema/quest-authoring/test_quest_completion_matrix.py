@@ -132,12 +132,20 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         # data pending to implementation pending; SOURCE and runtime stay distinct.
         self.assertEqual(132, self.result["summary"]["reward_claim_ready_refs"])
         self.assertEqual(136, self.result["summary"]["reward_claim_placements"])
+        # The pinned Legion Helmet chest enables its claim without qualifying
+        # the quest's implementation state or playability.
+        legion_helmet = by_title["Newhaven Legion Helmet Quest"]
+        self.assertEqual(
+            "REWARD_CLAIM_USE_ENABLED", legion_helmet["reward_claim_owner"]["state"]
+        )
+        self.assertEqual("NATIVE_BINDINGS_PENDING", legion_helmet["implementation_state"])
+        self.assertEqual("NOT_ASSESSED", legion_helmet["playable_verification"])
         self.assertEqual(
             {
                 "REWARD_CLAIM_DATA_PENDING": 3,
                 "REWARD_CLAIM_IMPLEMENTATION_PENDING": 46,
-                "REWARD_CLAIM_USE_PENDING": 56 - enabled - verified,
-                "REWARD_CLAIM_USE_ENABLED": enabled,
+                "REWARD_CLAIM_USE_PENDING": 55 - enabled - verified,
+                "REWARD_CLAIM_USE_ENABLED": enabled + 1,
                 "REWARD_CLAIM_USE_VERIFIED": verified,
             },
             self.result["summary"]["reward_claim_owner_state"],

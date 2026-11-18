@@ -556,7 +556,7 @@ mod main_native_contract {
         for stage in arena.stages {
             track(&stage.track, &arena.quest, stage.goal)?;
         }
-        assert_eq!(additions.len(), 66);
+        assert_eq!(additions.len(), 70);
 
         let baseline = crate::quest::loader::lower_embedded_quest_state("native-admission-fixture")
             .map_err(|error| format!("{error:?}"))?;
@@ -569,7 +569,7 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        assert_eq!(before.tracks.len(), 2123);
+        assert_eq!(before.tracks.len(), 2138);
         for (key, value) in &before.tracks {
             assert_eq!(after.tracks.get(key), Some(value), "legacy track {key}");
         }

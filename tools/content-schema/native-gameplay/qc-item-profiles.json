@@ -1,0 +1,2154 @@
+{
+  "schema": "OTERYN_QC_ITEM_PROFILES/v1",
+  "producer": "tools/content-migration/qc_item_profiles.py",
+  "runtime_enabled": true,
+  "purpose": "Physical custody for source-authored quest hand-ins; no custom use effects.",
+  "decision": "Lane qc: Twenty Miles and Lizard Sanctuary hand-in items",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/items/items.xml",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    },
+    {
+      "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+      "bytes": 5017996
+    },
+    {
+      "path": "imports/canary/items-xml/items.xml",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+    }
+  ],
+  "authoring_inputs": [
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/native/hot_cuisine.json",
+      "sha256": "191410317d0968dcc87e67234a0f4fcbcc3b7b933e7fc4ca8653314a3bfde732"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/bigfoot_burden.json",
+      "sha256": "62476b40c12ef72f6d6e6b68741fca5c3e986307dc9aef768fb2473a864a29e5"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json",
+      "sha256": "3e61e951d10057e71e8090fcd12865dbbee2718a6c7771d536a5ba258df9214b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/hot_cuisine.json",
+      "sha256": "85c0aacf53b84026771216441bf596b1e592ba4bad18299ea8a28b1d09aed0b6"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/in_service_of_yalahar.json",
+      "sha256": "422b08d1a301a94ef46099a106ad5070e5a9261acc70742ff88f95ea286e77ec"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_cursed_crystal.json",
+      "sha256": "2cb50dcd08d0175c964c5f3c3ea225d5c0f4c2bedec87c8e00a560ff6188391e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_hidden_city_of_beregar.json",
+      "sha256": "18cba8039698b0b35c4411c6b4217d662e47f44cf3c1d587e25fceacabe36248"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_way_of_the_monk.json",
+      "sha256": "96fcca86fb9e6c018ec4db0e8c65895d16649b8f024001bebc34c5831c8a0916"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json",
+      "sha256": "a2e49d270711a75557734271985c0a96cf112f9edad6101922054785db1e9e23"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json",
+      "sha256": "80b9ab4b2dccd86cfe34105ef0c9c63cb11ef638d05d1269853a0e7b3a8d49d6"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/world/the_cursed_crystal.json",
+      "sha256": "5411868e9537f0d8861b524c364918a2e31b1d221980374e9df74cac0ca8eb10"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/world/the_hidden_city_of_beregar.json",
+      "sha256": "1bc4f197150fc8eb4fb3f00e3469a8bd66a7b5d5faa61540194fee8073066c09"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json",
+      "sha256": "dd843254d571c1af6bbc5bbb3d6347381998ced731bd4b6869338df446083457"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/a_pirates_tail_quest-world.json",
+      "sha256": "43f188b87cd2a3d2e964feaa94a7100831e0e16e4828dcf7a9637b2b8c0109c5"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/hero_of_rathleton-presentation.json",
+      "sha256": "a8365c947d0646533b0f54cad5bfddeb5fd7f25fcb6e80a13370968a4dcc9161"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/hero_of_rathleton-world.json",
+      "sha256": "9b55bea562c8735df7b0df2360b7086e2dcd64eacfa5f45b488ae26a6162d174"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/marapur-world.json",
+      "sha256": "dec674f5c8926cf0353561c8f7e198e995f85cc725420f9cdaae2dd916630257"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-presentation.json",
+      "sha256": "6e8def57a7e848f4857c17f2ac16316ae8c66cc4968fc5b25c071b35e20f3eda"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json",
+      "sha256": "bd9a2a807850cf6aa1a054a6ddeb60aaa77119e639865f9112927020e55a9fc3"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/npc/a_pirates_tail_quest.json",
+      "sha256": "992217a1aef354e3584ad473338245229761211d8a936b3f4bfba7028f5b2b79"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/npc/hero_of_rathleton.json",
+      "sha256": "efa62bc5b06604f80e1782c223ea56cbf270333afa618144e9a523ab58ac8304"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/npc/oramond.json",
+      "sha256": "493d06e23694cab38141ceec7172123d7463dcd3e215e7184a26e1e004b6ad65"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/npc/the_shattered_isles_quest.json",
+      "sha256": "e429b37732effbe3cecff3bd64fe38d6fdab82d8943a0626bba9d7ad7c2684b7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/world/a_pirates_tail_quest.json",
+      "sha256": "f41e8017a0ce0114cd11eb3b0c3c3b43090ec6febd5c1951f838f5943376e750"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/world/hero_of_rathleton.json",
+      "sha256": "25866fef2a71ba2be3e62f00d38383e5fa9055028d068276f330e4a8125c7634"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/world/marapur.json",
+      "sha256": "b3dbf18d7b5648d6a693cb8cbf1e4379fb1de535c70f5581b589c4d79525717f"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/world/the_shattered_isles_quest.json",
+      "sha256": "aa289b238c34a0e3c61b7ea0436320d465c8e63d496dd525e406b3c5bd073b24"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/heart_of_destruction.json",
+      "sha256": "6170d46611212fabab89a1835ecb6651055448e593a3d4d776b9c88b755d08f2"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/the_order_of_the_stag.json",
+      "sha256": "de84b8174627b5aadb26161effd7ef5c731a7172e7b374cda70d575ebc9e273d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/the_primal_ordeal.json",
+      "sha256": "30a4f0c73d507e3854edc855c537f561a94b8cf87f5cb80eea329fa3e5abdf16"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/tower_defence_quest.json",
+      "sha256": "ed1d62470e853a753da06266227ffc0aca1a6ecafecd7bf27d4e8ff665f34740"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/gnomadness_native.json",
+      "sha256": "adc5971134282a515df36a8d7bd864197e8f961f55e221d091f9e5deb399bca0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/heart_of_destruction_deaths.json",
+      "sha256": "4b5272a503fca16bf344ff3993509a5db6df8239756430440245d9dccd3f590c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/cradle_of_monsters.json",
+      "sha256": "2c02973cbce192c21293ea888019715ce01d6c04b69edce19021b21a159ca1e0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/heart_of_destruction.json",
+      "sha256": "bde09bb77c04190451427949eb4d93fc867a7b6908d360add60d20b5eeb7a0a0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json",
+      "sha256": "5f53a5a7cf55177743f1c78a680f1b0bdc76fd40d70dd2145efdcd47059a059e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/the_primal_ordeal.json",
+      "sha256": "58800c5f98c1d1feb00a5b606c4228453a7307df92910d74de04d0d4edcae238"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/npc/the_order_of_the_stag.json",
+      "sha256": "5edadd7894b40774bf46235b3e0b199ce139e708fdeb5966feac726858e3dec7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/npc/tower_defence_quest.json",
+      "sha256": "eeb44417991894656a1b617b9e48e4a2cc01c4e67eac1644644d0936f58e1c87"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/stag_death.json",
+      "sha256": "f6d9bfe03e6b52918dbc5a2c2fb84ffd4b254decb9449f276b1d1a7d185d90ec"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/world/the_primal_ordeal.json",
+      "sha256": "e530a62ea2ef8759a34bd49dac210caa6581162e42530145c983a0624e75f3bb"
+    },
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-qn3-dangerous_depths.json",
+      "sha256": "4c07dd0864182b0d99152e1c9d25f9c2aa4774af2e7014e64a17fe3003ff9deb"
+    },
+    {
+      "path": "content/dialogues/quest-source/quest-batch3-a-bigfoot-burden.json",
+      "sha256": "ac18e35eb65368db8bf7d06affc1cda615abc17ca45ab3beca0f2c0e8dc09d37"
+    },
+    {
+      "path": "content/dialogues/quest-source/quest-batch3-a-the_cursed_crystal.json",
+      "sha256": "563c338d7ce2a36c10491acd9ec657a59e20bb9d64c6e7d286f827aabc8d472f"
+    },
+    {
+      "path": "content/dialogues/quest-source/quest-batch3-a-the_way_of_the_monk.json",
+      "sha256": "c444da8c9c1b9274814b48c954bc9035f462a8d4c6d200e5056b59eb77f0cbb8"
+    },
+    {
+      "path": "tools/content-migration/quest_batch3_item_profiles.py",
+      "sha256": "c655b8caee2d244581866ee5b2317dbeeca20a8cc61943252684999f4ca693ca"
+    },
+    {
+      "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+      "sha256": "ad0ff68ee261d80dc29914f83196c152544a5198abda175b04f5ab46f9b797ec"
+    },
+    {
+      "path": "content/quests/world-callbacks/qc-lizard-sanctuary.json",
+      "sha256": "ed13b7fcb26a918c6a3013261ec75f3eb9bd63cc480d82b06555adecba6d1b57"
+    },
+    {
+      "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+      "sha256": "dd02c87a42ab26cf8f94eeac79b03193f6d6b6815f796f5275912d3cacc6c0d6"
+    }
+  ],
+  "canonical_inputs": [
+    {
+      "path": "content/items/definitions/items-00000-00499.json",
+      "sha256": "01e376a83b78137a1f687fe402570bd71ddfeb73f99154481199e897cac2a1da"
+    },
+    {
+      "path": "content/items/definitions/items-00500-00999.json",
+      "sha256": "5996b9ed3908269e45acf33feb90e73255317cc75ebcb44b611d883eb91ae059"
+    },
+    {
+      "path": "content/items/definitions/items-01000-01499.json",
+      "sha256": "6b0ff0ce370507360d6b72e9c1f032e20dc24bd0242ac5dc2aea9c3c592f827a"
+    },
+    {
+      "path": "content/items/definitions/items-01500-01999.json",
+      "sha256": "e98b6f9bc784109cd878a417b89d8c232efd3d027b16f69ce8406e1e37a785d2"
+    },
+    {
+      "path": "content/items/definitions/items-03500-03999.json",
+      "sha256": "4c028d4835be6101f89fbab1d98faefe99ec880df0c74c66443a981afe875cf0"
+    },
+    {
+      "path": "content/items/definitions/items-05000-05499.json",
+      "sha256": "2f22166ec5ca096c440da8c87db4389af0b262053650b35483853e6856cef355"
+    },
+    {
+      "path": "content/items/definitions/items-05500-05999.json",
+      "sha256": "cb0bdf720d2c7d27942675fec513ecca18c65b09613fbbca3c67ef0967aa31bf"
+    },
+    {
+      "path": "content/items/definitions/items-10000-10499.json",
+      "sha256": "77f97db0342842e17b3dd1f8ebcf16230c6aec7473ec228ed20326aa1ffda9c2"
+    },
+    {
+      "path": "content/items/definitions/items-10500-10999.json",
+      "sha256": "6b608a2af22526ec4ae80f7764092082a701142ad9d79156814a348679e75f85"
+    },
+    {
+      "path": "content/items/definitions/items-11000-11499.json",
+      "sha256": "218551b69e66a09670342a0f621f9b69f80e197fce85c0554bfdb4c1b6e7bd44"
+    },
+    {
+      "path": "content/items/definitions/items-15500-15999.json",
+      "sha256": "1e982f7fa709710cd04c73ef9fe7f96d4127ce78f9dfbcd43775b0bb8d0ce73d"
+    },
+    {
+      "path": "content/items/definitions/items-16000-16499.json",
+      "sha256": "d81070855ab5688246d69a8252303e2273267bf64e96cc3554551f8b52dddc01"
+    },
+    {
+      "path": "content/items/definitions/items-16500-16999.json",
+      "sha256": "d97bc557963e2a5082f1468d634f09a0c99a3ef8100d7b7ffae231ef0ba41f20"
+    },
+    {
+      "path": "content/items/definitions/items-17000-17499.json",
+      "sha256": "1fa42bdee87e294b060c168e4aefe3d35ee013d941457b9092aeb7284efd7ce0"
+    },
+    {
+      "path": "content/items/definitions/items-17500-17999.json",
+      "sha256": "fc1cb80bfe7964e1760f711c1774d02c9923454877c0f028c0ee72929945e797"
+    },
+    {
+      "path": "content/items/definitions/items-18000-18499.json",
+      "sha256": "5937d3d32cae642e4e05a5366bfdda7464e8cd35507d6713357b520e49114df1"
+    },
+    {
+      "path": "content/items/definitions/items-18500-18999.json",
+      "sha256": "5a64227887be32b4a1ea4a94d3cb8a1a4ad138a1891d65d0072bc3ce361bfb1d"
+    },
+    {
+      "path": "content/items/definitions/items-20500-20999.json",
+      "sha256": "2935293e6c5564875549fd6747a0621337923e6d128eeaf6d79a65b92ce87a64"
+    },
+    {
+      "path": "content/items/definitions/items-21000-21499.json",
+      "sha256": "f873f6d55b382602c8f2d63e13c79f795b5aa7926c3eb5a8c1afc9fffd7af96c"
+    },
+    {
+      "path": "content/items/definitions/items-21500-21999.json",
+      "sha256": "dbce705478e88e5d6a9dac5a5b1d33339bad01ed90698d440f00468c6379d86e"
+    },
+    {
+      "path": "content/items/definitions/items-22000-22499.json",
+      "sha256": "3923f4a7c827469917c85c179fe196f96c561c6b4c5cbb8bb661a6fc04e03014"
+    },
+    {
+      "path": "content/items/definitions/items-22500-22999.json",
+      "sha256": "34be5013a4ef47e10fa53675ea4be8a59b9c7605bb147fe4f988c894d9ad3c84"
+    },
+    {
+      "path": "content/items/definitions/items-24500-24999.json",
+      "sha256": "310beb2c72fdd531c30d0bbf390de4e1fedb80baa7fe6f73af6eb0e9cd2f4244"
+    },
+    {
+      "path": "content/items/definitions/items-25000-25499.json",
+      "sha256": "cca29e537a3dacc84d32987989ad50845e924ef450df07525f7bac01731318a9"
+    },
+    {
+      "path": "content/items/definitions/items-26500-26999.json",
+      "sha256": "5d5758e1fe32393c43807caa847100fc01f56a34ac876851b7be415302d4b60f"
+    },
+    {
+      "path": "content/items/definitions/items-27500-27999.json",
+      "sha256": "01c4ed0ac140c798dd4c4c725f1cdb197b2b8205545df8eefb0fada407aea2bd"
+    },
+    {
+      "path": "content/items/definitions/items-28000-28499.json",
+      "sha256": "a8de62003e20c03f9cb974718f358d500816b5b5e3db05c9ea55098be0fa1fc0"
+    },
+    {
+      "path": "content/items/definitions/items-28500-28999.json",
+      "sha256": "45fa97116ca21ab08f2de622276620b5be3197785dde624efc39af5b78b681be"
+    },
+    {
+      "path": "content/items/definitions/items-29000-29499.json",
+      "sha256": "82d1fc927378c1f03f9540c1a0601c921e02e9d6767521935cd60159e41b0c04"
+    },
+    {
+      "path": "content/items/definitions/items-29500-29999.json",
+      "sha256": "451cd0b317380b978b2c93fe7edfb233b362e20520a9302dc96e50029571dc88"
+    },
+    {
+      "path": "content/items/definitions/items-30000-30499.json",
+      "sha256": "63141dcddb65a751c79786ad85f78e8280505337e7db67a8678fc582ed2ff1bb"
+    },
+    {
+      "path": "content/items/definitions/items-31000-31499.json",
+      "sha256": "63910417edbaa8a1e8a5b93834ed7dbc298ab4f55662084527aa286ee949e630"
+    },
+    {
+      "path": "content/items/definitions/items-31500-31999.json",
+      "sha256": "0f0765e2a9df76dac610c99e5eb15fea4821298fb79aca4cd8c6b7ad6f822fa0"
+    },
+    {
+      "path": "content/items/definitions/items-32000-32499.json",
+      "sha256": "35977c51cafc8ef2817fadc6e70cd7490121f2d7468eedc7a4e4fbce38c65bef"
+    },
+    {
+      "path": "content/items/definitions/items-32500-32999.json",
+      "sha256": "24775ab2ee8f3b16022387ca182cf4a00932000c011c62dabffec483fe3da1a8"
+    },
+    {
+      "path": "content/items/definitions/items-33000-33499.json",
+      "sha256": "88ac1699a81fa419afbbd234e5c348da1ee07550c82f9141b1e452b1479f938c"
+    }
+  ],
+  "binding_input": {
+    "path": "imports/crystalserver/bindings/items.json",
+    "sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+  },
+  "accepted_inputs": [
+    {
+      "path": "content/items/definitions/spell-native-profiles.json",
+      "sha256": "c13ac8ef9e1d2de20baa2eccc6f6265fe12df3144ce9f39ddf7ff784edb1b399"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
+      "sha256": "ea3b460a81255b88e088a985cbca006183dce913747acb4793aebd2fcd3cab44"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-quest-interaction-item-admission.json",
+      "sha256": "700360003db9a916bf5ef8d5b51ce659e4ee7e98c15d5ac5f944001e2c95568a"
+    }
+  ],
+  "records": [
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/21469",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "eggs of a sacred snake"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Through the brown glistening shell you see movement."
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "21469",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21469",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21469",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/21745",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "Brandon's wedding ring"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "It is worn and scratched, with a faint engraving 'To Roswitha, Forever'."
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 100
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "RING"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "compatibility_rule": {
+                    "state": "NOT_APPLICABLE"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "21745",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21745",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21745",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/21746",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "cursed gold"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "A heavy coin of ancient gold, tarnished and with an ominous feel to it."
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 5
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "21746",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21746",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21746",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/21753",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "nacre slab"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 100
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "21753",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21753",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21753",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/21754",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "sea ear"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "A sea shell formed like a listening ear, shimmering enticingly."
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 260
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "21754",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21754",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21754",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/21770",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "drowned seaman's skull"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 2180
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "21770",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21770",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21770",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/21795",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "the time compass"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "It shows the cardinal directions and also many other symbols that you cannot decipher."
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 80
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "21795",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21795",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21795",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/21861",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "nacre slab"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 100
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "21861",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21861",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21861",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/21862",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "nacre slab"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 100
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "21862",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21862",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21862",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    }
+  ],
+  "classification": [
+    {
+      "key": "oteryn:item.tibia.i21469",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:42846",
+      "uses": [
+        {
+          "path": "content/quests/world-callbacks/qc-lizard-sanctuary.json",
+          "pointer": "/callbacks/0/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/97/definition:sha256:52ca15b34f5be1ba6895fb0379d6f97d64b5074ba70825e2df62d2271f1f8579",
+            "https://tibia.fandom.com/index.php?curid=68840&oldid=856177",
+            "https://tibia.fandom.com/index.php?curid=68839&oldid=1198612",
+            "canary:666a60f6fef803b043cbaf1c7b5fab219da9bfa9:data-otservbr-global/scripts/quests/dawnport/actions_legion_helmet.lua:15-26"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-lizard-sanctuary.json",
+          "pointer": "/callbacks/1/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/97/definition:sha256:52ca15b34f5be1ba6895fb0379d6f97d64b5074ba70825e2df62d2271f1f8579",
+            "https://tibia.fandom.com/index.php?curid=68840&oldid=856177",
+            "https://tibia.fandom.com/index.php?curid=68839&oldid=1198612",
+            "canary:666a60f6fef803b043cbaf1c7b5fab219da9bfa9:data-otservbr-global/scripts/quests/dawnport/actions_legion_helmet.lua:15-26"
+          ]
+        }
+      ],
+      "canonical_materializable": true,
+      "existing_native_profile": false,
+      "holds": [],
+      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "reason": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21745",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:43003",
+      "uses": [
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/3/take/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/18/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
+      "existing_native_profile": false,
+      "holds": [],
+      "classification": "QUALIFIED_NATIVE_EQUIPMENT",
+      "reason": null,
+      "profile_source": [
+        {
+          "path": "imports/canary/items-xml/items.xml",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+        },
+        {
+          "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i21746",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:43010",
+      "uses": [
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/2/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/14/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/15/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/16/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/17/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
+      "existing_native_profile": false,
+      "holds": [],
+      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "reason": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21753",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:43036",
+      "uses": [
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/6/take/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/10/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/19/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/21/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
+      "existing_native_profile": false,
+      "holds": [],
+      "classification": "QUALIFIED_GLOBAL_WEIGHT",
+      "reason": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21754",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:43037",
+      "uses": [
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/15/present/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/24/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
+      "existing_native_profile": false,
+      "holds": [],
+      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "reason": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21770",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:43080",
+      "uses": [
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/0/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/1/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/2/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/3/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/4/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/5/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/6/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/7/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/8/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/9/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/10/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/11/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/12/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/13/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
+      "existing_native_profile": false,
+      "holds": [],
+      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "reason": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21795",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:43109",
+      "uses": [
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/17/take/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/24/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
+      "existing_native_profile": false,
+      "holds": [],
+      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "reason": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21861",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:43288",
+      "uses": [
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/7/take/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/11/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/20/effects/item_reward/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/22/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
+      "existing_native_profile": false,
+      "holds": [],
+      "classification": "QUALIFIED_GLOBAL_WEIGHT",
+      "reason": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21862",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:43288",
+      "uses": [
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/9/give/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/npc-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/10/take/0/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        },
+        {
+          "path": "content/quests/world-callbacks/qc-twenty-miles.json",
+          "pointer": "/callbacks/23/item_on_target/item",
+          "sources": [
+            "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+            "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
+      "existing_native_profile": false,
+      "holds": [],
+      "classification": "QUALIFIED_GLOBAL_WEIGHT",
+      "reason": null
+    }
+  ]
+}

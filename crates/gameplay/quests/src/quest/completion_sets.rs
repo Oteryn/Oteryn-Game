@@ -287,13 +287,21 @@ mod tests {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
         let catalogue = lowered.catalogue();
-        assert_eq!(catalogue.completion_sets.len(), 23);
+        assert_eq!(catalogue.completion_sets.len(), 25);
         for (quest, rule) in &catalogue.completion_sets {
             if quest == "oteryn:quest.fanfare_quest" {
                 // Crystal chest.lua:1680-1687: the access key is not final loot.
                 assert_eq!(
                     rule.groups,
                     vec![vec!["oteryn:quest-progress/kv/fanfare/claimed".to_owned()]]
+                );
+            } else if quest == "oteryn:quest.sanctuary_of_the_lizard_god" {
+                // TibiaWiki: the Legion Helmet chest is the quest's only reward.
+                assert_eq!(
+                    rule.groups,
+                    vec![vec![
+                        "oteryn:quest-progress/kv/legiondawnport/claimed".to_owned()
+                    ]]
                 );
             } else {
                 assert!(

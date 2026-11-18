@@ -68,7 +68,7 @@ def append_friends(root, callbacks, offers, inputs, pin):
     canonical = f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}'
 
     def add(name, npc, before, after, words, reply, *, take=(), give=None, present=(), fee=None,
-            completes=False, counter=None, maximum=None):
+            completes=False, counter=None, maximum=None, achievement=None, wiki=None):
         source = f'data-global/npc/{npc}.lua'
         source_bytes = inputs[source]
         state = {'track': track, 'minimum': before, 'maximum': before if maximum is None else maximum,
@@ -79,8 +79,8 @@ def append_friends(root, callbacks, offers, inputs, pin):
                'take': [{'item': f'oteryn:item.tibia.i{i}', 'count': n} for i, n in take],
                'present': [{'item': f'oteryn:item.tibia.i{i}', 'count': n} for i, n in present],
                'give': None if give is None else {'item': f'oteryn:item.tibia.i{give[0]}', 'count': give[1], 'contents': []},
-               'outfit': None, 'achievement': None, 'reply': [reply],
-               'sources': [canonical, f'crystal:{pin}:{source}:1-{len(source_bytes.splitlines())}:sha256:{hashlib.sha256(source_bytes).hexdigest()}']}
+               'outfit': None, 'achievement': achievement, 'reply': [reply],
+               'sources': ([wiki] if wiki else []) + [canonical, f'crystal:{pin}:{source}:1-{len(source_bytes.splitlines())}:sha256:{hashlib.sha256(source_bytes).hexdigest()}']}
         if fee: row['fee'] = fee
         if completes: row['completes'] = True
         if counter: row['counter'] = {'track': 'oteryn:quest-progress/questpc7/friends/' + counter, 'maximum': 1000000000000}
@@ -101,7 +101,9 @@ def append_friends(root, callbacks, offers, inputs, pin):
                        'storage':[{'track':track,'minimum':-1,'maximum':15,'set':-1,'preserve':True}],
                        'reply':['Follow the selected prayer order and keep your wooden stake.']})
     add('blessing', 'quentin', 13, 14, ['finish prayer'], 'The ten-part prayer has blessed your wooden stake.',
-        take=[(5941, 1)], give=(5942, 1))
+        take=[(5941, 1)], give=(5942, 1), achievement='oteryn:achievement/blessed',
+        # TibiaWiki Blessed!: finishing The Blessed Stake unlocks the achievement.
+        wiki='https://tibia.fandom.com/index.php?title=Blessed!&oldid=844049')
     offers.append({'npc':'oteryn:npc.quentin','keywords':['finish prayer'],
                    'topic':0,'next_topic':0,
                    'storage':[{'track':track,'minimum':-1,'maximum':15,'set':-1,'preserve':True}],

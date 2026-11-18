@@ -195,6 +195,11 @@ for cohort, claims in (
 
 QUALIFIED["oteryn:reward-claim.quest.key.id3620"] = (
     "quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal")
+# Lane qc: Skull of Ratha, both tomb bags and the underground chest.
+QUALIFIED.update({claim: "qc_chests::qc_skull_of_ratha_three_source_chests_use_replay_and_refusal"
+    for claim in ("oteryn:reward-claim.kv.witch_house_quest",
+                  "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
+                  "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2")})
 
 # Story and outfit reward sources: 44 additional claims qualified. Three shared
 # USE/replay/refusal cohorts exercised 46 claims at all 55 source placements.
