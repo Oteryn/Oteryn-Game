@@ -9,7 +9,7 @@ use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 use tokio::io::DuplexStream;
 
 #[test]
-fn rottin_bushwhacking_merchant_step_in_postgres() -> TestResult {
+fn rottin_merchant_step_in_postgres() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
