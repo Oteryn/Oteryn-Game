@@ -486,14 +486,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map_err(|_| ())?;
             let state = projection.state();
             let session_id = crate::gameplay_transport::canonical_uuid(session.as_bytes());
-            let has_lifecycle_to_reconcile = state.lifecycle.as_ref().map_or(
-                state.saved_expiry_unix != 0,
-                |lifecycle| {
-                    lifecycle.open
-                        || lifecycle.familiar_remaining_ms != 0
-                        || lifecycle.clean_end_game_session_id.as_deref() == Some(session_id.as_str())
-                },
-            );
+            let has_lifecycle_to_reconcile =
+                state
+                    .lifecycle
+                    .as_ref()
+                    .map_or(state.saved_expiry_unix != 0, |lifecycle| {
+                        lifecycle.open
+                            || lifecycle.familiar_remaining_ms != 0
+                            || lifecycle.clean_end_game_session_id.as_ref() == Some(&session_id)
+                    });
             // Below the login level gate, an empty projection has no familiar, cooldown or
             // vocation look to reconcile. A newly created Character can reach this point before
             // progression is initialized or Premium has been observed.

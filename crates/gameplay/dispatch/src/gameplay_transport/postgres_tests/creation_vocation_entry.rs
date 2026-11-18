@@ -27,14 +27,17 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 let active = controller.active().ok_or("active generation")?;
                 super::tutorial_vitals_fixture::native_asset_revisions(&h, active).await?;
                 let room = pin.qualified_room().clone();
-                let spells = active.native_gameplay().ok_or("native gameplay")?.spell_book().clone();
+                let native = active.native_gameplay().ok_or("native gameplay")?;
+                assert!(native.familiar_config().is_some());
+                let spells = native.spell_book().clone();
                 let deps = Dependencies::with_content(pin.into_channel_parts().0, room, spells)?;
                 let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&h.pool).await?;
                 let character = bootstrap(&h, vocation, now).await?;
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
                 assert!(h.root.read_character_progression(&authority, character).await?.is_none());
-                assert!(h.root.read_character_familiar_state(&authority, character).await?.committed_character_revision().is_none());
+                let familiar = h.root.read_character_familiar_state(&authority, character).await?;
+                assert!(familiar.committed_character_revision().is_none());
                 let mut source = fresh_fixture::fresh::Source::new(now)?;
                 source.current.character_id = crate::foundation::CharacterId::decode(character.as_bytes()).map_err(debug)?;
                 for row in &mut source.rows {
@@ -55,11 +58,21 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 assert!(matches!(committed, crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1::Committed(_)), "{committed:?}");
                 let mut owner = deps.owner(&h, &authority);
                 owner.active_generation = Some(active);
-                assert!(owner.active_familiar_index(&vocation.to_lowercase()).is_some(), "{vocation}");
-                let budget = crate::gameplay_transport::AdmissionRetryBudget::for_root(&session, &h.root);
-                let (outcome, _, _) = Box::pin(owner.enter_committed_actor(&budget, &request, session, transport, deps.actor)).await;
+                assert!(
+                    owner.active_familiar_index(&vocation.to_lowercase()).is_some(),
+                    "native familiar spell for {vocation}"
+                );
+                let budget = crate::gameplay_transport::AdmissionRetryBudget::for_root(
+                    &session,
+                    &h.root,
+                );
+                let (outcome, _, _) = Box::pin(
+                    owner.enter_committed_actor(&budget, &request, session, transport, deps.actor),
+                )
+                .await;
                 assert_eq!(outcome, FirstEntryOutcome::Positioned, "{vocation}");
-                assert!(h.root.read_character_familiar_state(&authority, character).await?.committed_character_revision().is_none());
+                let familiar = h.root.read_character_familiar_state(&authority, character).await?;
+                assert!(familiar.committed_character_revision().is_none());
                 let loaded = crate::gameplay_transport::load_character_cast_facts(&h.root, &authority, character).await;
                 let crate::gameplay_transport::CastFactsLoad::Ready { facts, .. } = loaded else { return Err(format!("{vocation}: {loaded:?}").into()); };
                 assert_eq!(facts.level, 1);
