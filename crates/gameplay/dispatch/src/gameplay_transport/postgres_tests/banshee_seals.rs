@@ -19,7 +19,11 @@ fn banshee_logic_use_flips_lever_without_overwriting_a_discordant_campfire() -> 
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("banshee-logic", move || {
-        run(async |_| exercise(admin, Seal::Logic).await)
+        run_seal_case(
+            admin,
+            Seal::Logic,
+            "banshee_logic_use_flips_lever_without_overwriting_a_discordant_campfire",
+        )
     })
 }
 
@@ -29,7 +33,11 @@ fn banshee_sacrifice_step_consumes_only_blood_and_commits_both_flags() -> TestRe
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("banshee-sacrifice", move || {
-        run(async |_| exercise(admin, Seal::Sacrifice).await)
+        run_seal_case(
+            admin,
+            Seal::Sacrifice,
+            "banshee_sacrifice_step_consumes_only_blood_and_commits_both_flags",
+        )
     })
 }
 
@@ -39,8 +47,19 @@ fn banshee_queen_dialogue_gates_the_kiss_and_commits_arrival_with_all_three_flag
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("banshee-queen", move || {
-        run(async |_| exercise(admin, Seal::Queen).await)
+        run_seal_case(
+            admin,
+            Seal::Queen,
+            "banshee_queen_dialogue_gates_the_kiss_and_commits_arrival_with_all_three_flags",
+        )
     })
+}
+
+fn run_seal_case(admin: String, seal: Seal, name: &str) -> TestResult {
+    let started = std::time::Instant::now();
+    run(async |_| exercise(admin, seal).await)?;
+    eprintln!("POSTGRES_CASE_COMPLETED {name} {:?}", started.elapsed());
+    Ok(())
 }
 
 enum Seal {
