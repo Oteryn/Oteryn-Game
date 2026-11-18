@@ -41,6 +41,7 @@ pub fn earth_tree_scene(callback: &Callback) -> bool {
         && callback.selector.position == Some(EARTH_TREE)
         && callback.selector.appearance == Some(6180)
         && callback.lever.is_none()
+        && callback.requires_world_admission
         && !callback.reversible
         && callback.item_on_target.as_ref().is_some_and(|tool| {
             tool.item == "oteryn:item.tibia.i23810"

@@ -164,6 +164,7 @@ pub(super) fn tree_callback() -> TestResult<Callback> {
         "trigger": "use",
         "selector": {"position": TREE, "appearance": 6180},
         "reversible": false,
+        "requires_world_admission": true,
         "passages": [],
         "storage": storage,
         "offerings": [],
