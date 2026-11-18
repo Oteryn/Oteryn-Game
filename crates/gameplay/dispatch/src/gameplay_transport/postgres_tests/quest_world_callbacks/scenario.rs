@@ -77,7 +77,9 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m03_use
+    let wrath_prison = name == super::super::wrathm1_prison_release::NAME;
+    let native_crop = wrath_prison
+        || m03_use
         || qd_world
         || engenc_asura
         || m49
@@ -113,7 +115,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if wrath_prison {
+        super::super::wrathm1_prison_release::START
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -1266,7 +1270,11 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if name == "qengine-rewards-smith-story" {
+        let world = if wrath_prison {
+            super::super::wrathm1_prison_release::world(
+                generation.native_gameplay().ok_or("native prison geometry")?,
+            )?
+        } else if name == "qengine-rewards-smith-story" {
             world_with_native_items(
                 &callback,
                 trigger,

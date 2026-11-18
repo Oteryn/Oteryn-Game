@@ -993,6 +993,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-srvgap-disguise" {
         return Box::pin(super::srvgap_quest_disguise::exercise(owner, admitted, h)).await;
     }
+    if name == super::wrathm1_prison_release::NAME {
+        return Box::pin(super::wrathm1_prison_release::exercise(owner, admitted, h)).await;
+    }
     if name.starts_with("qengine-rewards-qworld-phase-") {
         return Box::pin(super::qworld_phase_steps::exercise(
             owner, admitted, h, authority, name,

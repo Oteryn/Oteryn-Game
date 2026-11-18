@@ -245,6 +245,40 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn gated_step_can_return_an_item_on_each_release() -> Result<(), String> {
+        use super::super::world_callbacks::{Storage, validate_callbacks};
+
+        let mut callback = super::super::world_callbacks::load()?
+            .into_iter()
+            .find(|c| c.key.contains("m44-lions-amphora-"))
+            .ok_or("native StepIn reward template")?;
+        callback.key = "oteryn:quest-callback/test-repeatable-release".into();
+        callback.world_requirements.clear();
+        callback.effects.target_transform = None;
+        callback.effects.item_reward_per_use = true;
+        callback.effects.restore_disguise = true;
+        callback.teleport = callback.selector.position;
+        callback.storage = vec![Storage {
+            track: callback.storage[0].track.clone(),
+            minimum: 1,
+            maximum: 1,
+            set: 0,
+            set_if: None,
+            add: None,
+            preserve: false,
+            increment: false,
+            at_least: false,
+            read_only: false,
+        }];
+        assert!(callback.has_fenced_step_reward());
+        validate_callbacks(std::slice::from_ref(&callback))?;
+
+        callback.storage[0].minimum = 0;
+        assert!(validate_callbacks(&[callback]).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn lions_amphora_step_ring_has_eight_bound_sources_and_one_scroll_reward() -> Result<(), String>
     {
         let callbacks = super::super::world_callbacks::load()?;
