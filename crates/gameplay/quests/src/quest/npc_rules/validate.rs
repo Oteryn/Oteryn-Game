@@ -246,6 +246,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                         || !rule.keywords.is_empty()
                         || rule.any_message))
                 || rule.reply.len() > 32
+                || !super::reply_numbers::valid(rule, |track| tracks.contains_key(track))
                 || rule
                     .reply
                     .iter()

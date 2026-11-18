@@ -21,6 +21,8 @@ mod questpc2_gerimor_source;
 mod questpc2_gnomus_source;
 mod questpc2_henricus_source;
 mod questpc2_oldrak_source;
+mod reply_numbers;
+pub use reply_numbers::NpcReplyNumber;
 pub mod teleport;
 mod validate;
 
@@ -312,6 +314,9 @@ pub struct NpcRule {
     pub guards: Vec<NpcRuleGuard>,
     #[serde(default)]
     pub reply: Vec<String>,
+    /// Named values in {{name}} reply tokens, evaluated after the branch effects.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub reply_numbers: BTreeMap<String, NpcReplyNumber>,
     #[serde(default)]
     pub effects: Vec<NpcRuleEffect>,
     #[serde(default)]
