@@ -110,11 +110,9 @@ pub(super) async fn pair(
     else {
         return Err("core trade has no carried offer item".into());
     };
-    let partner =
-        with_trade_peer(client, client_world::connect_character(clients, 0x74, 0)).await??;
     with_trade_partner(
         client,
-        partner,
+        client_world::connect_character(clients, 0x74, 0),
         async |client, partner| exchange_pair(client, partner, clients, item).await,
         client_world::logout_trade_character,
         service_trade_peer,
@@ -610,12 +608,14 @@ mod tests {
 
 async fn with_trade_partner<P, C>(
     primary: &mut P,
-    mut partner: C,
+    admit: impl Future<Output = TestResult<C>>,
     body: impl AsyncFnOnce(&mut P, &mut C) -> TestResult,
     logout: impl AsyncFnOnce(&mut C) -> TestResult,
     mut service: impl AsyncFnMut(&mut P) -> TestResult,
     release: impl Future<Output = TestResult>,
 ) -> TestResult {
+    let mut partner =
+        client_world::with_peer_service(admit, async || service(primary).await).await??;
     let trade = body(primary, &mut partner).await;
     let mut service_error = None;
     let mut tick = async || {
@@ -638,11 +638,19 @@ async fn with_trade_partner<P, C>(
 }
 
 #[tokio::test(start_paused = true)]
-async fn failed_trade_services_primary_until_partner_release() -> TestResult {
+async fn failed_trade_services_primary_from_partner_admission_through_release() -> TestResult {
     let serviced = std::cell::Cell::new(false);
     let result = with_trade_partner(
         &mut (),
-        (),
+        async {
+            tokio::time::sleep(Duration::from_secs(30)).await;
+            assert!(
+                serviced.get(),
+                "primary probe went unanswered during partner admission"
+            );
+            serviced.set(false);
+            Ok(())
+        },
         async |_, _| Err("trade refused".into()),
         async |_| {
             tokio::time::sleep(Duration::from_secs(30)).await;
@@ -688,7 +696,7 @@ async fn failed_trade_observation_still_releases_partner() {
     let released = std::cell::Cell::new(false);
     let result = with_trade_partner(
         &mut (),
-        Partner(&dropped),
+        async { Ok(Partner(&dropped)) },
         async |_, _| Err("item observation error".into()),
         async |_| {
             logged_out.set(true);
