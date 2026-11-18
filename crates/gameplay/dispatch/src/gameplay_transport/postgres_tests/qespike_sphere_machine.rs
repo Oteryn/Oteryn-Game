@@ -17,6 +17,7 @@ use std::sync::{Arc, atomic::Ordering};
 pub(super) const NAME: &str = "qespike-sphere-machine";
 pub(super) const BELOW_THRESHOLD: &str = "qespike-sphere-machine-below-threshold";
 pub(super) const LOST_ACK: &str = "qespike-sphere-machine-lost-ack";
+pub(super) const LOST_ACK_SINGLE_TARGET: &str = "qespike-sphere-machine-lost-ack-single-target";
 const QUEST: &str = "oteryn:quest.elemental_spheres_quest";
 const COUNTER: &str = "oteryn:quest-progress/elemental_spheres/machine_gem_count";
 const LEFT: Position = Position {
@@ -62,6 +63,17 @@ fn sphere_machine_replays_committed_debit_and_finishes_travel_after_lost_ack() -
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(LOST_ACK, || {
         super::quest_world_callbacks::scenario(LOST_ACK, LEFT, false)
+    })
+}
+
+#[test]
+fn sphere_machine_reserved_half_blocks_single_target_use_until_reconciled() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(LOST_ACK_SINGLE_TARGET, || {
+        super::quest_world_callbacks::scenario(LOST_ACK_SINGLE_TARGET, LEFT, false)
     })
 }
 
@@ -147,6 +159,7 @@ fn catalogue(revision: &str, funded: &Callback, initial: i64) -> TestResult<Ques
 async fn other_operator(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     funded: &Callback,
+    single_target: bool,
 ) -> TestResult<(ExactActorRef, GameSessionId)> {
     let mut callbacks = owner
         .quest_catalogue
@@ -169,7 +182,11 @@ async fn other_operator(
         right.effects.transform = Some(after);
         right.passages[0].appearance = left_before;
         right.passages[0].replacement = Some(left_after);
-        callbacks.push(right.clone());
+        let mut row = right.clone();
+        if single_target {
+            row.passages.clear();
+        }
+        callbacks.push(row);
     }
     owner
         .states
@@ -226,11 +243,11 @@ pub(super) async fn exercise(
         .ok_or("quest catalogue")?
         .content_revision();
     let funded = scenario != BELOW_THRESHOLD;
-    let lost_ack = scenario == LOST_ACK;
+    let lost_ack = matches!(scenario, LOST_ACK | LOST_ACK_SINGLE_TARGET);
     let initial = if funded { 24 } else { 19 };
     owner.quest_catalogue = Some(Arc::new(catalogue(revision, callback, initial)?));
     let other = if lost_ack {
-        Some(other_operator(owner, callback).await?)
+        Some(other_operator(owner, callback, scenario == LOST_ACK_SINGLE_TARGET).await?)
     } else {
         None
     };

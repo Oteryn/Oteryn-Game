@@ -58,6 +58,7 @@ fn scenario_case(
         name,
         super::super::qespike_sphere_machine::BELOW_THRESHOLD
             | super::super::qespike_sphere_machine::LOST_ACK
+            | super::super::qespike_sphere_machine::LOST_ACK_SINGLE_TARGET
             | super::super::qespike_sphere_machine::NAME
     );
     let elemental_pin = name.starts_with("qn1-elemental-");
