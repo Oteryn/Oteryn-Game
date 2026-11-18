@@ -4,6 +4,8 @@ use super::{CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, Moveme
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_gameplay_quests::quest::world_callbacks::{DeathPhases, Encounter};
 
+use super::terminal_transfer::{Movement, Transfer};
+
 #[derive(Debug)]
 struct Member {
     actor: ExactActorRef,
@@ -19,6 +21,7 @@ pub(super) struct Replacements {
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     activation: u64,
     finished: bool,
+    transfer: Option<Transfer>,
 }
 
 impl Replacements {
@@ -58,6 +61,7 @@ impl Replacements {
             scope: runtime.encounter_owner_scope(),
             activation: runtime.content_pin().activation_sequence(),
             finished: false,
+            transfer: None,
         })
     }
 
@@ -88,9 +92,30 @@ impl Replacements {
             return Ok(false);
         }
         let (_, at) = runtime.borrow_combat_death().projected_death(actor)?;
+        let finished = member.creature == self.plan.terminal;
+        if finished && let Some(plan) = self.plan.terminal_transfer {
+            self.transfer = Some(Transfer::capture(runtime, plan)?);
+        }
         member.death_at = Some(at);
-        self.finished = member.creature == self.plan.terminal;
+        self.finished = finished;
         Ok(true)
+    }
+
+    pub(super) fn transfer_pending(&self) -> bool {
+        self.transfer.as_ref().is_some_and(Transfer::is_pending)
+    }
+
+    pub(super) fn project_transfer(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &super::ChannelSpellStates,
+        cells: &crate::content::NativeEntryMovementCells,
+        map: &crate::map::boot::BundleMap,
+        published: &mut Vec<Movement>,
+    ) {
+        if let Some(transfer) = &mut self.transfer {
+            transfer.project(runtime, states, cells, map, published);
+        }
     }
 
     pub(super) fn advance(

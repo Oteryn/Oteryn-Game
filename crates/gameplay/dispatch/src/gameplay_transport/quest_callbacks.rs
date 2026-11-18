@@ -199,7 +199,7 @@ pub(super) fn local(p: Position) -> MovementLocalPosition {
         floor: -i16::from(p.floor),
     }
 }
-fn native(p: MovementLocalPosition) -> Option<TilePos> {
+pub(super) fn native(p: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: p.x.try_into().ok()?,
         y: p.y.try_into().ok()?,

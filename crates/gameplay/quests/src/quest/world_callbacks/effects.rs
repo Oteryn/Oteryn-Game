@@ -346,6 +346,43 @@ pub enum EncounterPhase {
 pub struct DeathPhases {
     pub terminal: String,
     pub replacements: Vec<DeathReplacement>,
+    /// Room movement on the sealed terminal death. Quest credit uses its own writer.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub terminal_transfer: Option<TerminalTransfer>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TerminalTransfer {
+    pub area_min: Position,
+    pub area_max: Position,
+    pub destination: Position,
+}
+
+impl TerminalTransfer {
+    pub fn contains(self, position: Position) -> bool {
+        position.floor == self.area_min.floor
+            && (self.area_min.x..=self.area_max.x).contains(&position.x)
+            && (self.area_min.y..=self.area_max.y).contains(&position.y)
+    }
+
+    fn valid(self) -> bool {
+        pos(self.area_min)
+            && pos(self.area_max)
+            && pos(self.destination)
+            && self.area_min.floor == self.area_max.floor
+            && self
+                .area_max
+                .x
+                .checked_sub(self.area_min.x)
+                .is_some_and(|span| span <= 64)
+            && self
+                .area_max
+                .y
+                .checked_sub(self.area_min.y)
+                .is_some_and(|span| span <= 64)
+            && !self.contains(self.destination)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -388,6 +425,9 @@ fn valid_death_phases(
         || encounter.personal_cooldown_seconds.is_some()
         || !valid_quest_key(&plan.terminal)
         || !(1..=8).contains(&plan.replacements.len())
+        || plan
+            .terminal_transfer
+            .is_some_and(|transfer| !transfer.valid())
     {
         return false;
     }

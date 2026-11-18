@@ -9,6 +9,7 @@ use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
 mod replacements;
+mod terminal_transfer;
 
 #[derive(Debug)]
 enum Fight {
@@ -122,9 +123,10 @@ impl Registry {
                     // Credit was captured in the lethal turn. Release the lever
                     // only after exact terminal decorations retire; tick retries failures.
                     let ActivePhase { fight, cells, .. } = phase;
-                    fight
-                        .advance(runtime, |runtime, at| placement(cells, runtime, at))
-                        .is_err()
+                    matches!(fight, Fight::Replacements(fight) if fight.transfer_pending())
+                        || fight
+                            .advance(runtime, |runtime, at| placement(cells, runtime, at))
+                            .is_err()
                 }
                 Ok(None) => phase
                     .frozen
@@ -222,6 +224,15 @@ pub(super) fn bind(
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
     if let Some(plan) = &encounter.death_phases {
+        if plan.terminal_transfer.is_some_and(|transfer| {
+            !placement(
+                &cells,
+                runtime,
+                super::quest_callbacks::local(transfer.destination),
+            )
+        }) {
+            return Err(CarrierError::PlanConflict);
+        }
         return Ok(ActivePhase {
             key,
             fight: Fight::Replacements(replacements::Replacements::bind(
@@ -332,10 +343,16 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) {
+pub(super) fn tick(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    map: Option<&crate::map::boot::BundleMap>,
+    now_us: u64,
+) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
+    let mut transfers = Vec::new();
     active.retain(|phase| phase.fight.is_current(runtime));
     active.retain_mut(|phase| {
         let ActivePhase {
@@ -347,8 +364,22 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) 
             ));
             return true;
         }
+        if let Fight::Replacements(fight) = fight
+            && fight.transfer_pending()
+        {
+            if let Some(map) = map {
+                fight.project_transfer(runtime, states, cells, map, &mut transfers);
+            }
+            return fight.transfer_pending();
+        }
         fight
             .victors(runtime)
             .is_ok_and(|victors| victors.is_none())
     });
+    drop(active);
+    if let Some(map) = map {
+        for movement in transfers {
+            movement.publish(runtime, states, map, now_us);
+        }
+    }
 }
