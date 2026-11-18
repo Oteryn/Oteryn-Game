@@ -1,7 +1,7 @@
 //! Crystal 201189f8, a_piece_of_cake_config.lua:116-118,456-467 and
 //! a_piece_of_cake/world_bonus.lua:3-42. The persisted active occurrence
 //! is a fixture. The timed-item owner and attack settlement are production.
-use super::fixture::{Harness, debug};
+use super::fixture::debug;
 use super::{ComposedFreshAdmission, TestResult, party_xp};
 use crate::domain::condition::ConflictKey;
 use crate::foundation::{ExactActorRef, GameSessionId};
@@ -19,11 +19,11 @@ fn cake_bonus_regenerates_both_players_and_scales_only_premium_shared_xp() -> Te
 
 pub(super) async fn activate(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
-    harness: &Harness,
+    pool: &sqlx::PgPool,
     players: &[(ExactActorRef, GameSessionId)],
 ) -> TestResult {
     let world = owner.world_id.as_bytes();
-    let mut tx = harness.pool.begin().await?;
+    let mut tx = pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;

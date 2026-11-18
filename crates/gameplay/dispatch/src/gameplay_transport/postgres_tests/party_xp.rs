@@ -581,7 +581,7 @@ async fn scenario(
         assert!(states.load_owned_build(&runtime, actor, session, &build));
     }
     if matches!(case, Case::CakeBonus) {
-        Box::pin(super::cake_world_bonus::activate(&owner, h, &players)).await?;
+        Box::pin(super::cake_world_bonus::activate(&owner, &h.pool, &players)).await?;
     }
     for (actor, session) in &players {
         assert!(owner.refresh_source_party_presence(*actor, *session).await);

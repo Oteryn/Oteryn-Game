@@ -99,9 +99,18 @@ pub(super) async fn admit_second(
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&harness.pool)
             .await?;
-    let member =
-        crate::world_party_runtime_postgres_cases::committed_fresh_player(harness, 61, 63, 71, now)
-            .await?;
+    let member = crate::world_party_runtime_postgres_cases::committed_fresh_player_owned(
+        &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
+            root: harness.root.clone(),
+            node: harness.node.clone(),
+            recovery: &harness.recovery,
+        },
+        60,
+        63,
+        71,
+        now,
+    )
+    .await?;
     let session = member.current_game_session_id();
     assert_ne!(session, leader.game_session_id);
     let mut runtime = owner.runtime.lock().await;
