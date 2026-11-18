@@ -220,6 +220,13 @@ fn scenario(vote_case: Option<VoteScenario>, check_self_harvest: bool) -> TestRe
         if let Some(VoteScenario {
             npc, prerequisite, votes, target, words, expected_votes, expected_credit,
         }) = vote_case {
+            owner.admit_quest_session(&admitted).await;
+            let [npc, ezebeth] = install(&owner, &admitted, [npc, "oteryn:npc.ezebeth"]).await?;
+            // Start Dark Trails through dialogue so the imported prerequisites can
+            // belong to an existing Character revision before the vote transaction.
+            for (ordinal, word) in (2900..).zip(["hi", "mission", "assistance", "strange"]) {
+                talk(&mut owner, &admitted, ezebeth, ordinal, word).await?;
+            }
             let mut seed = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *seed)
@@ -232,12 +239,11 @@ fn scenario(vote_case: Option<VoteScenario>, check_self_harvest: bool) -> TestRe
                 ),
                 (VOTES.into(), "oteryn:quest.oramond_quest", votes),
             ] {
-                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,GREATEST(2, character_revision) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).bind(track).bind(quest).bind(value).execute(&mut *seed).await?;
             }
             seed.commit().await?;
-            owner.admit_quest_session(&admitted).await;
-            let [npc] = install(&owner, &admitted, [npc]).await?;
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
             talk(&mut owner, &admitted, npc, 3000, "hi").await?;
             for (ordinal, word) in (3001..).zip(words) {
                 talk(&mut owner, &admitted, npc, ordinal, word).await?;
