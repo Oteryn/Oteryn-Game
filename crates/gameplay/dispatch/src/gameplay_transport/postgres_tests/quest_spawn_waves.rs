@@ -12,7 +12,7 @@ use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_quests::quest::world_callbacks::{
     Callback, Encounter, EncounterMonster, EncounterPlayer, ItemOnTarget, Offering, Position,
     Storage, TargetTransform, Trigger,
-    periodic_bosses::{PeriodicBoss, WeightedBoss},
+    periodic_bosses::{PeriodicBoss, PeriodicBossPlacement, WeightedBoss},
     reactive_waves::{Chance, EarthHit, FinishArea, Retaliation, SpecialWave},
     waves::{Wave, WaveCredit, WaveCreditEffect, WaveRun, WaveSpawn, WaveVictory},
 };
@@ -63,6 +63,26 @@ fn periodic_boss_waits_for_interval_and_cooldown_and_keeps_one_live_actor() -> T
     };
     super::kill_reward_e2e::scenario_thread::run("quest-periodic-boss", move || {
         scenario(admin, Case::Periodic)
+    })
+}
+
+#[test]
+fn periodic_boss_forced_placement_keeps_an_occupied_center() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-periodic-forced-center", move || {
+        scenario(admin, Case::PeriodicOccupiedCenter)
+    })
+}
+
+#[test]
+fn periodic_boss_with_a_missing_center_uses_the_extended_neighborhood() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-periodic-extended-neighbor", move || {
+        scenario(admin, Case::PeriodicMissingCenter)
     })
 }
 
@@ -169,6 +189,8 @@ fn quest_axe_use_spawns_last_retaliation_and_requires_clearance_for_final_cut() 
 #[derive(Clone, Copy, Debug)]
 enum Case {
     Periodic,
+    PeriodicMissingCenter,
+    PeriodicOccupiedCenter,
     Waves,
     Victory,
     VictoryWithoutProgress,
@@ -412,13 +434,17 @@ fn scenario(admin: String, case: Case) -> TestResult {
         } else {
             // Crystal globalevents_pits_of_inferno_bosses.lua:12-14,23. This
             // fixture uses a nonzero cooldown to prove the shared owner gate.
+            let (placement, choices): (_, &[_]) = match case {
+                Case::PeriodicMissingCenter => (PeriodicBossPlacement::ExtendedForced, &[(row(10), RAT, 1)]),
+                Case::PeriodicOccupiedCenter => (PeriodicBossPlacement::ExtendedForced, &[(START, RAT, 1)]),
+                _ => (PeriodicBossPlacement::Exact, &[(FIRST, RAT, 1), (SECOND, CAVE_RAT, 3)]),
+            };
             let plan = PeriodicBoss {
                 key: "oteryn:periodic-boss/fixture".into(),
                 interval_ms: 1_000,
                 cooldown_ms: 4_000,
-                choices: [(FIRST, RAT, 1), (SECOND, CAVE_RAT, 3)]
-                    .into_iter()
-                    .map(|(position, creature, weight)| WeightedBoss {
+                placement,
+                choices: choices.iter().map(|&(position, creature, weight)| WeightedBoss {
                         weight,
                         spawn: EncounterMonster {
                             creature: creature.into(),
@@ -454,6 +480,19 @@ fn scenario(admin: String, case: Case) -> TestResult {
             Case::SurvivalStep => survival_step_scenario(&owner, &mut admitted, deps.actor).await?,
             Case::Stations => stations_scenario(&h, &owner, &mut admitted, deps.actor).await?,
             Case::Periodic => periodic_scenario(&owner).await?,
+            Case::PeriodicMissingCenter | Case::PeriodicOccupiedCenter => {
+                // Crystal map.cpp:243-307. A player occupies START. The other
+                // layout ends at row(8), two tiles from the missing row(10).
+                let expected = if matches!(case, Case::PeriodicMissingCenter) { row(8) } else { START };
+                tokio::time::pause();
+                owner.drain_quest_encounter_deadlines().await;
+                advance(&owner, 1_000).await;
+                let actors = creatures(&owner).await?;
+                assert_eq!(actors.len(), 1);
+                assert_eq!(actors[0].1, local(expected));
+                assert_eq!(position(&owner, deps.actor).await?, local(START));
+                tokio::time::resume();
+            }
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
             Case::Retaliation => retaliation_scenario(&owner, &mut admitted, deps.actor).await?,
             Case::UnreachableExit | Case::UnknownAchievement | Case::WorldCredit => {

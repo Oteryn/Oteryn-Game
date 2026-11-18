@@ -1,9 +1,13 @@
 //! The node's Channel source cycle owns the interval and exact live actor.
 use super::*;
-use crate::content::{CollisionClass, LogicalCell};
-use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
+use crate::content::{CollisionClass, LogicalCell, SpellTileLookupError};
+use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1, ScopeOwnershipGeneration};
+use crate::map::floor::{BundleDoors, CellBlocker};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-use oteryn_gameplay_quests::quest::world_callbacks::periodic_bosses::PeriodicBoss;
+use oteryn_gameplay_quests::quest::world_callbacks::periodic_bosses::{
+    PeriodicBoss, PeriodicBossPlacement,
+};
+use oteryn_gameplay_world::movement::source_placement::{SourcePlacementCell, SourcePlacementPlan};
 use std::time::Duration;
 use tokio::time::Instant;
 
@@ -74,12 +78,134 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             if let Some(native) = self.active_generation.and_then(|a| a.native_gameplay())
                 && native.install_companion_policies(runtime).is_ok()
-                && let Some(actor) = spawn_one(self, runtime, map, &spawn.creature, spawn.position)
+                && let Some(actor) = match plan.placement {
+                    PeriodicBossPlacement::Exact => {
+                        spawn_one(self, runtime, map, &spawn.creature, spawn.position)
+                    }
+                    PeriodicBossPlacement::ExtendedForced => {
+                        let health = runtime
+                            .companion_policy(&spawn.creature)
+                            .ok()
+                            .map(|policy| policy.maximum_health);
+                        health.and_then(|health| {
+                            let at = extended_forced_position(self, runtime, map, native, spawn)?;
+                            runtime
+                                .commit_quest_creature_spawn(&[(&spawn.creature, health, at)])
+                                .ok()?
+                                .pop()
+                        })
+                    }
+                }
             {
                 occurrence.live = Some(actor);
                 occurrence.cooldown_until = now + Duration::from_millis(plan.cooldown_ms.into());
             }
         }
+    }
+}
+
+fn extended_forced_position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+    map: &BundleMap,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    spawn: &world_callbacks::EncounterMonster,
+) -> Option<MovementLocalPosition> {
+    let cells = owner.movement_cells();
+    let lookup = |at| cells.spell_tiles().lookup(cells.scope(), logical_cell(at));
+    let center = local(spawn.position);
+    match lookup(center) {
+        // Crystal globalevents_pits_of_inferno_bosses.lua:14 passes extended=true
+        // and force=true. Map::placeCreature (map.cpp:243-254) keeps an existing
+        // center even if ordinary queryAdd would refuse its current occupants.
+        Ok(_) => return Some(center),
+        Err(SpellTileLookupError::Absent) => {}
+        Err(_) => return None,
+    }
+    let plan = SourcePlacementPlan::prepare(center, true, true, |bound| {
+        random_below(bound).unwrap_or(bound)
+    })
+    .ok()?;
+    let doors = BundleDoors(&map.facts);
+    let sight = |from: MovementLocalPosition, to: MovementLocalPosition| {
+        // Crystal map.cpp:492-581 means a missing intermediate tile is clear.
+        let ray = |from, to| {
+            for (at, exempt) in
+                crate::durability::native_world_read::source_sight_steps(from, to).ok()?
+            {
+                if !exempt
+                    && match lookup(at) {
+                        Ok(tile) => tile.flags().block_projectile || doors.blocks(logical_cell(at)),
+                        Err(SpellTileLookupError::Absent) => false,
+                        Err(_) => return None,
+                    }
+                {
+                    return Some(false);
+                }
+            }
+            Some(true)
+        };
+        if from.floor == 0 || ray(from, to)? || ray(to, from)? {
+            return Some(true);
+        }
+        let from = MovementLocalPosition {
+            floor: from.floor - 1,
+            ..from
+        };
+        let to = MovementLocalPosition {
+            floor: to.floor - 1,
+            ..to
+        };
+        let open = |at| match lookup(at) {
+            Ok(tile) => Some(
+                !tile.ground_present()
+                    && !tile.flags().block_projectile
+                    && !doors.blocks(logical_cell(at)),
+            ),
+            Err(SpellTileLookupError::Absent) => Some(true),
+            Err(_) => None,
+        };
+        Some(open(from)? && open(to)? && ray(from, to)?)
+    };
+    plan.select(
+        |at| match lookup(at) {
+            Ok(tile) => {
+                let occupancy = runtime
+                    .current_native_source_occupancy(native, &spawn.creature, at, None)
+                    .ok()?;
+                let teleport = crate::map::floor::is_teleport(cells, logical_cell(at));
+                let protection_zone = tile.flags().protection_zone;
+                let position = super::native(at)?;
+                Some(SourcePlacementCell {
+                    exists: true,
+                    query_add: spawn_cell(owner, map, position)
+                        && !doors.blocks(logical_cell(at))
+                        && occupancy.admits_occupants
+                        && (occupancy.familiar
+                            || !(protection_zone || tile.flags().floor_change || teleport)),
+                    protection_zone,
+                    teleport,
+                })
+            }
+            Err(SpellTileLookupError::Absent) => Some(SourcePlacementCell {
+                exists: false,
+                query_add: false,
+                protection_zone: false,
+                teleport: false,
+            }),
+            Err(_) => None,
+        },
+        sight,
+    )
+    .ok()
+    .flatten()
+}
+
+fn logical_cell(at: MovementLocalPosition) -> LogicalCell {
+    LogicalCell {
+        x: at.x,
+        y: at.y,
+        z: i32::from(at.floor),
     }
 }
 
@@ -147,14 +273,7 @@ pub(super) fn spawn_cell(
 ) -> bool {
     let at = local(position);
     let cells = owner.movement_cells();
-    cells.index().lookup(
-        cells.scope(),
-        LogicalCell {
-            x: at.x,
-            y: at.y,
-            z: i32::from(at.floor),
-        },
-    ) == Ok(CollisionClass::Walkable)
+    cells.index().lookup(cells.scope(), logical_cell(at)) == Ok(CollisionClass::Walkable)
         && !map
             .facts
             .quest_callback_blocked(map.overlay.base(), tile(position), false)

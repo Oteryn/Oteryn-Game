@@ -11,7 +11,17 @@ pub struct PeriodicBoss {
     pub key: String,
     pub interval_ms: u32,
     pub cooldown_ms: u32,
+    #[serde(default)]
+    pub placement: PeriodicBossPlacement,
     pub choices: Vec<WeightedBoss>,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PeriodicBossPlacement {
+    #[default]
+    Exact,
+    ExtendedForced,
 }
 
 #[derive(Clone, Debug, Deserialize)]
