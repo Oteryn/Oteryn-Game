@@ -485,6 +485,31 @@ pub(super) async fn prepare_in_transaction<
     {
         return Ok(Err(ActivityRefusal::ContentChanged));
     }
+    if oteryn_gameplay_content::content::bosses::activity_template::wanted::is_wanted_boss(&r.activity_key) {
+        let RuntimeScopeRefV1::Channel { world_id, channel_id } = initiator.source.runtime_scope else {
+            return Ok(Err(ActivityRefusal::Position));
+        };
+        // This source has one physical room per Channel, even if multiple
+        // reusable Instance allocations are ready for the same template.
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('wanted-room:'||encode($1,'hex')||':'||encode($2,'hex')||':'||$3,0))")
+            .bind(world_id.as_bytes().as_slice())
+            .bind(channel_id.as_bytes().as_slice())
+            .bind(&r.activity_key)
+            .execute(&mut **tx).await?;
+        let occupied: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_boss_room_activities
+             WHERE world_id=encode($1,'hex')::uuid AND origin_channel_id=encode($2,'hex')::uuid
+               AND boss_key=$3 AND state IN (1,2,3))",
+        )
+        .bind(world_id.as_bytes().as_slice())
+        .bind(channel_id.as_bytes().as_slice())
+        .bind(&r.activity_key)
+        .fetch_one(&mut **tx)
+        .await?;
+        if occupied {
+            return Ok(Err(ActivityRefusal::NoCapacity));
+        }
+    }
     let mut facts = Vec::with_capacity(r.participants.len());
     for p in &r.participants {
         if !super::quest_encounter::permits_entry(

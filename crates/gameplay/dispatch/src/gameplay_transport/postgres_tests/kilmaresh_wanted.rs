@@ -61,6 +61,7 @@ fn exercise() -> TestResult {
             .await.ok_or("Wanted capability negotiation")?;
         assert!(admitted.continuity.selected_capabilities.contains(boss::CAPABILITY_BOSS_ENCOUNTER_V1));
         super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 250).await?;
+        let peer = super::m25_ahau_push::prepare_peer_and_party(&h, &owner, &mut admitted).await?;
         let instance = super::activity_runtime::allocate_ready_instance(&h, 237).await?;
         let actor = admitted.runtime_actor.ok_or("Wanted player")?;
         let (step, _) = owner.paced_step(actor, admitted.game_session_id, movement::StepDirection::North).await;
@@ -78,6 +79,8 @@ fn exercise() -> TestResult {
         ).fetch_one(&h.pool).await?;
         assert_eq!((lifetime, cooldown, participants), (600_000, 36_000_000, 1));
 
+        assert_eq!(owner.activity_runtimes.current_connection(peer).game_session_id, peer.game_session_id);
+        assert_eq!(owner.activity_runtimes.current_connection(peer).item_fence.ok_or("peer fence")?.runtime_scope, scope);
         let registered = owner.activity_runtimes.get(instance, fence.scope_ownership_generation.get()).ok_or("Wanted instance")?;
         let view = owner.runtime_view(&registered);
         let actor = entered.runtime_actor.ok_or("Wanted instance player")?;
@@ -89,6 +92,7 @@ fn exercise() -> TestResult {
         assert_eq!(fence.runtime_scope, scope);
         let actor = returned.runtime_actor.ok_or("Wanted returned player")?;
         assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), start);
+        assert_eq!(owner.activity_runtimes.current_connection(peer).game_session_id, peer.game_session_id);
         drop(view);
         drop(registered);
         drop(owner);
