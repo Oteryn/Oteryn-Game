@@ -258,13 +258,13 @@ mod tests {
             .definitions()
             .iter()
             .find(|rule| rule.key == "awash")
-            .expect("Awash must be selected by the server-save catalogue");
+            .map(|rule| &rule.schedule);
         assert_eq!(
-            awash.schedule,
-            Schedule::PreviousContribution {
+            awash,
+            Some(&Schedule::PreviousContribution {
                 resource: crate::owner::ContributionKind::Coal,
                 minimum: 202,
-            },
+            }),
         );
         Ok(())
     }
