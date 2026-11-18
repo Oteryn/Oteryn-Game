@@ -129,5 +129,36 @@ pub(super) async fn exercise(
     owner.tick_timed_items().await;
     assert_eq!(appearance(owner, TARGET)?,2772);
     assert_eq!(appearance(owner, DOOR)?,1663);
+
+    let chance = row.effects.use_chance.as_ref().ok_or("chance")?;
+    let next_win = {
+        let runtime = owner.runtime.lock().await;
+        (win + 2..win + 256).find(|id| {
+            CommandId::new(*id).ok().and_then(|id| {
+                crate::gameplay_transport::quest_callbacks::use_chance::wins(
+                    &runtime,actor,CommandRef::new(session,id),&row.key,key,chance,
+                )
+            }) == Some(true)
+        }).ok_or("second winning occurrence")?
+    };
+    let map = owner.bundle_map().ok_or("map")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let result = owner.use_object(actor, UseCommand {
+        game_session_id:session, command_id:next_win,item_fence:Some(fence.item_fence()),
+    }, WorldObjectTarget {
+        placement,expected_revision:map.facts.object_revision(key),
+    }).await;
+    assert_eq!(result.disposition,UseDisposition::Committed);
+    let spawned = |owner: &ComposedFreshAdmission<'_, '_, '_>| {
+        owner.bundle_map().is_some_and(|map| map.facts.movement_item_entries().iter()
+            .any(|(_,entry)|entry.facts.appearance_id==3595))
+    };
+    assert!(spawned(owner));
+    owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(5)).ok_or("clock")?;
+    owner.tick_timed_items().await;
+    assert!(!spawned(owner));
+    assert_eq!(appearance(owner, TARGET)?,2772);
+    assert_eq!(appearance(owner, DOOR)?,1663);
     Ok(())
 }
