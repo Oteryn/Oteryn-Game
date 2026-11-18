@@ -253,6 +253,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .root
             .try_issue_background_semantic_pass()
             .inspect_err(|_| {
+                if native_pending.is_some() {
+                    // The foreground may still own the holder when the wake is
+                    // consumed. Keep the original batch due for the regular poll.
+                    states.next_monster_ai_pass_us = states.next_monster_ai_pass_us.min(now);
+                }
                 #[cfg(test)]
                 native_owner_turn(room, "profile_checkout", "refused");
             })
