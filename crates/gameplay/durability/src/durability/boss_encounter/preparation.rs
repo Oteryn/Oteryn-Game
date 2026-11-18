@@ -165,7 +165,7 @@ async fn claim_reference_eligibility_data(
 // An admission's actual ABANDONED/no-arrival predicate must be locked by its owner first.
 // Matching only that admission never refunds a participant's later spent cooldown. This
 // helper is private and cannot interpret raw IDs as permission to compensate an admission.
-async fn compensate_boss_cooldowns_data(
+pub(super) async fn compensate_boss_cooldowns_data(
     tx: &mut Transaction<'_, Postgres>,
     keys: &[BossRewardKey],
     admission: [u8; 16],

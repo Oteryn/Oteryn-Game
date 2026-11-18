@@ -214,7 +214,6 @@
       },
       "lever": null,
       "reversible": false,
-      "requires_world_admission": true,
       "passages": [],
       "teleport": {
         "x": 33095,
@@ -222,18 +221,6 @@
         "floor": -15
       },
       "storage": [],
-      "state_operations": [
-        {
-          "track": "oteryn:quest-progress/cults-of-tibia/essence-entered-at",
-          "from": {
-            "kind": "elapsed_at_least",
-            "seconds": 72000
-          },
-          "effect": {
-            "kind": "set_now"
-          }
-        }
-      ],
       "offerings": [],
       "return_on_failure": true,
       "failure_message": "The Essence of Malice portal is still on cooldown.",

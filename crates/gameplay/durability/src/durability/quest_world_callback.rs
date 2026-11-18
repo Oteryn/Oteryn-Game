@@ -119,6 +119,17 @@ impl super::DurabilityRoot {
                 if !context_is_current(&mut tx, permit, fence, context).await? {
                     return Ok(Ok(false));
                 }
+                if callback.key == Callback::ESSENCE_PORTAL {
+                    let available: bool = sqlx::query_scalar(
+                        "SELECT NOT EXISTS(SELECT 1 FROM game_character_boss_cooldowns
+                          WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2
+                            AND available_at > floor(extract(epoch FROM statement_timestamp()) * 1000))",
+                    ).bind(fence.character_id.as_bytes().as_slice())
+                        .bind(super::boss_encounter::cooldown_storage::ESSENCE_BOSS)
+                        .fetch_one(&mut *tx).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    return Ok(Ok(available));
+                }
                 let current: Option<String> = sqlx::query_scalar(
                     "SELECT content_revision FROM game_character_progression_state \
                      WHERE character_id=encode($1,'hex')::uuid",

@@ -68,15 +68,23 @@ fn callback() -> TestResult<Callback> {
 
 #[test]
 fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult {
-    cults_scenario(false)
+    cults_scenario(false, false)
 }
 
 #[test]
 fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
-    cults_scenario(true)
+    cults_scenario(true, false)
 }
 
-fn cults_scenario(reenter: bool) -> TestResult {
+#[test]
+fn cooldmech_essence_two_player_lever_entry_and_exit_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    cults_scenario(false, true)
+}
+
+fn cults_scenario(reenter: bool, duo: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -87,13 +95,19 @@ fn cults_scenario(reenter: bool) -> TestResult {
             let h =
                 Harness::create_with_admission_seed(admin, "engenc2_cults", true, false).await?;
             prepare_current_session(&h).await?;
-            let callback = callback()?;
+            let mut callback = callback()?;
+            if duo {
+                callback.effects.encounter.as_mut().ok_or("encounter")?.players[1].to.y = 118;
+            }
             let trigger = Position {
                 x: 100,
                 y: 100,
                 floor: -7,
             };
-            let world = super::quest_world_callbacks::world(&callback, trigger)?;
+            let corridor: Vec<_> = (117..=127)
+                .flat_map(|x| [117, 118].map(|y| Position { x, y, floor: -7 }))
+                .collect();
+            let world = super::quest_world_callbacks::world_with_cells(&callback, trigger, &corridor)?;
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -288,6 +302,18 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
+            let peer = if duo {
+                let (actor, peer) = super::grizzly_boss::vacancy::second_player(
+                    &owner, &deps, &h, MovementLocalPosition { x: 100, y: 101, floor: 7 },
+                ).await?;
+                assert!(owner.refresh_source_party_presence(actor, peer.game_session_id).await);
+                Some((actor, peer.game_session_id))
+            } else {
+                None
+            };
+            let before_ms: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint",
+            ).fetch_one(&h.pool).await?;
             let outcome = owner
                 .use_object(
                     deps.actor,
@@ -307,6 +333,36 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 UseDisposition::Committed,
                 "phase admission"
             );
+            let deadlines: Vec<i64> = sqlx::query_scalar(
+                "SELECT available_at FROM game_character_boss_cooldowns
+                 WHERE boss_key='oteryn:creature.essence_of_malice'",
+            ).fetch_all(&h.pool).await?;
+            let after_ms: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(deadlines.len(), 1 + usize::from(duo));
+            assert!(deadlines.iter().all(|until|
+                (before_ms + 72_000_000..=after_ms + 72_000_000).contains(until)));
+            if let Some(peer) = peer {
+                use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+                let players = [(deps.actor, admitted.game_session_id), peer];
+                for (actor, _) in players {
+                    let at = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+                    assert_eq!(at.position().x, 116);
+                }
+                for x in 117..=127 {
+                    for (actor, session) in players {
+                        owner.clock_origin -= std::time::Duration::from_secs(2);
+                        let (step, _) = owner.paced_step(actor, session, StepDirection::East).await;
+                        assert_eq!(step.disposition, StepDisposition::Moved, "exit corridor at {x}");
+                    }
+                }
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                h.cleanup().await?;
+                return Ok(());
+            }
             assert_eq!(
                 owner
                     .states
@@ -479,12 +535,31 @@ fn cults_scenario(reenter: bool) -> TestResult {
                     .checked_sub(std::time::Duration::from_secs(1))
                     .ok_or("lever retry clock")?;
                 let revision = crate::map::view::MapFacts::object_revision(world.facts(), key);
-                let second = owner
+                let denied = owner
                     .use_object(
                         deps.actor,
                         UseCommand {
                             game_session_id: admitted.game_session_id,
                             command_id: 3,
+                            item_fence: admitted.item_fence,
+                        },
+                        WorldObjectTarget {
+                            placement: placement.clone(),
+                            expected_revision: revision,
+                        },
+                    )
+                    .await;
+                assert_eq!(denied.disposition, UseDisposition::Rejected);
+                sqlx::query("UPDATE game_character_boss_cooldowns SET available_at=0
+                    WHERE boss_key='oteryn:creature.essence_of_malice'")
+                    .execute(&h.pool).await?;
+                owner.clock_origin -= std::time::Duration::from_secs(2);
+                let second = owner
+                    .use_object(
+                        deps.actor,
+                        UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: 4,
                             item_fence: admitted.item_fence,
                         },
                         WorldObjectTarget {

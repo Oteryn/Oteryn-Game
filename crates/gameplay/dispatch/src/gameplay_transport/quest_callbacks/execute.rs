@@ -1334,6 +1334,72 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         if callback.effects.encounter.is_some() && !close {
+            let essence_admission = if callback.key == Callback::ESSENCE_LEVER {
+                let ready = self.execute_quest_encounter(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    true,
+                    cause,
+                    None,
+                );
+                if ready != UseDisposition::Committed {
+                    return ready;
+                }
+                let Ok(census) = runtime.positioned_melee_census() else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(encounter) = &callback.effects.encounter else {
+                    return UseDisposition::Rejected;
+                };
+                let mut roster = Vec::new();
+                for (member, position, member_session) in census {
+                    let Some(member_session) = member_session else {
+                        continue;
+                    };
+                    if !encounter
+                        .players
+                        .iter()
+                        .any(|pad| local(pad.from) == position.position())
+                    {
+                        continue;
+                    }
+                    let Ok(lease) = runtime.bound_attacker_lease(member, member_session) else {
+                        return UseDisposition::Rejected;
+                    };
+                    let Ok(Some(fence)) = self.current_quest_fence(member_session).await else {
+                        return UseDisposition::Rejected;
+                    };
+                    if fence.character_id.as_bytes() != lease.character_id().as_bytes()
+                        || fence.character_lease_generation != lease.generation()
+                    {
+                        return UseDisposition::Rejected;
+                    }
+                    roster.push(fence);
+                }
+                let Ok(Some(admission)) = self
+                    .root
+                    .essence_lever_cooldown(
+                        self.character,
+                        self.holder,
+                        roster.clone(),
+                        self.reset_epoch,
+                        None,
+                    )
+                    .await
+                else {
+                    return UseDisposition::Rejected;
+                };
+                Some((roster, admission))
+            } else {
+                None
+            };
             let disposition = self.execute_quest_encounter(
                 runtime,
                 states,
@@ -1348,6 +1414,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cause,
                 personal_reservation.as_mut(),
             );
+            if disposition != UseDisposition::Committed
+                && let Some((roster, admission)) = essence_admission
+            {
+                let _ = self
+                    .root
+                    .essence_lever_cooldown(
+                        self.character,
+                        self.holder,
+                        roster,
+                        self.reset_epoch,
+                        Some(admission),
+                    )
+                    .await;
+            }
             if disposition == UseDisposition::Committed {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                     pending.remove(&session);

@@ -7,7 +7,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 };
 
 pub(super) const NAME: &str = "cooldmech-essence";
-const TRACK: &str = "oteryn:quest-progress/cults-of-tibia/essence-entered-at";
+const BOSS: &str = "oteryn:creature.essence_of_malice";
 const ENTRY: Position = Position {
     x: 33096,
     y: 31963,
@@ -41,16 +41,37 @@ pub(super) async fn exercise(
     harness: &Harness,
     origin: Position,
 ) -> TestResult {
-    let epoch = 1_700_000_000;
-    harness.root.set_test_quest_clock(epoch)?;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let session = admitted.game_session_id;
-    for (command, advance, expected, stamp) in [
-        (1, 0, LANDING, epoch),
-        (2, 71_999, origin, epoch),
-        (3, 1, LANDING, epoch + 72_000),
-    ] {
-        harness.root.advance_test_quest_clock(advance)?;
+    let character = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(debug)?
+        .ok_or("fence")?
+        .character_id;
+    for (command, expected) in [(1, LANDING), (2, origin), (3, LANDING)] {
+        if command == 2 {
+            sqlx::query(
+                "INSERT INTO game_character_boss_cooldowns
+                (character_id,boss_key,available_at,admission,reset_epoch)
+                VALUES(encode($1,'hex')::uuid,$2,
+                  floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint + 72000000,
+                  game_character_uuid_v7(),0)",
+            )
+            .bind(character.as_bytes().as_slice())
+            .bind(BOSS)
+            .execute(&harness.pool)
+            .await?;
+        } else if command == 3 {
+            sqlx::query(
+                "UPDATE game_character_boss_cooldowns SET available_at=0
+                WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2",
+            )
+            .bind(character.as_bytes().as_slice())
+            .bind(BOSS)
+            .execute(&harness.pool)
+            .await?;
+        }
         owner.clock_origin -= std::time::Duration::from_secs(2);
         world::wire(
             owner,
@@ -80,12 +101,19 @@ pub(super) async fn exercise(
             runtime.commit_source_step(proof).map_err(debug)?;
         }
         drop(runtime);
-        let stored: i64 =
-            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
-                .bind(TRACK)
-                .fetch_one(&harness.pool)
-                .await?;
-        assert_eq!(stored, stamp);
+        let rows: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_boss_cooldowns
+             WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2",
+        )
+        .bind(character.as_bytes().as_slice())
+        .bind(BOSS)
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(
+            rows,
+            i64::from(command != 1),
+            "the portal never starts a cooldown"
+        );
     }
     Ok(())
 }

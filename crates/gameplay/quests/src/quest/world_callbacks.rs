@@ -588,12 +588,16 @@ impl Callback {
             && actor.y.abs_diff(target.y) <= u16::from(self.use_range)
     }
 
+    pub const ESSENCE_LEVER: &str = "oteryn:quest-callback/engenc2/cults-essence";
+    pub const ESSENCE_PORTAL: &str = "oteryn:quest-callback/engenc2/cults-essence-entry";
+
     /// A pure quest-state predicate, with no Quest mutation or receipt.
     #[must_use]
     pub fn is_read_only(&self) -> bool {
-        !self.storage.is_empty()
-            && self.operation_count() == 0
-            && self.storage.iter().all(|storage| storage.read_only)
+        self.key == Self::ESSENCE_PORTAL
+            || (!self.storage.is_empty()
+                && self.operation_count() == 0
+                && self.storage.iter().all(|storage| storage.read_only))
     }
 }
 

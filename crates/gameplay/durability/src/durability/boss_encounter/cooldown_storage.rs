@@ -214,3 +214,67 @@ pub(crate) async fn set_boss_cooldowns_data(
     }
     Ok(BossCooldownChange::Applied)
 }
+
+pub(crate) const ESSENCE_BOSS: &str = "oteryn:creature.essence_of_malice";
+
+impl crate::durability::DurabilityRoot {
+    /// Start the Essence lockout for the exact staged roster, or compensate a failed map commit.
+    pub async fn essence_lever_cooldown(
+        &self,
+        authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+        mut roster: Vec<crate::durability::character_progression::CurrentCharacterGameplayFence>,
+        reset_epoch: u64,
+        compensate: Option<[u8; 16]>,
+    ) -> Result<Option<[u8; 16]>, DurabilityError> {
+        use crate::durability::{
+            character_authority::assert_recovery_fence,
+            character_progression::assert_item_only_fence,
+            db::{
+                begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+            },
+        };
+        if !(1..=5).contains(&roster.len()) {
+            return Ok(None);
+        }
+        roster.sort_by_key(|fence| fence.character_id);
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run_with_context(&mut (), move |holder, deadline, _| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_admission_relations(&mut tx).await?;
+                let mut keys = Vec::with_capacity(roster.len());
+                for member in &roster {
+                    if assert_item_only_fence(&mut tx, &member.item_fence(), &node).await?.is_err() {
+                        return Ok(None);
+                    }
+                    keys.push(BossRewardKey::new(member.character_id, ESSENCE_BOSS)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?);
+                }
+                let admission = if let Some(admission) = compensate {
+                    super::preparation::compensate_boss_cooldowns_data(&mut tx, &keys, admission)
+                        .await.map_err(|_| DurabilityError::InvalidStoredState)?;
+                    admission
+                } else {
+                    let (id, now): (sqlx::types::Uuid, i64) = sqlx::query_as(
+                        "SELECT game_character_uuid_v7(), floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint",
+                    ).fetch_one(&mut *tx).await?;
+                    let admission = *id.as_bytes();
+                    let change = set_boss_cooldowns_data(&mut tx, &keys, &BossCooldownAdmissionData {
+                        admission, now, reset_epoch, cooldown_s: 20 * 60 * 60, boosted: false,
+                    }).await.map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if change != BossCooldownChange::Applied {
+                        return Ok(None);
+                    }
+                    admission
+                };
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(Some(admission))
+            })
+        }).await
+    }
+}
