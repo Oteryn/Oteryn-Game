@@ -689,14 +689,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if !batch.current_for(runtime) {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
-                if run_thinks {
+                if run_thinks && think_end < batch.occurrences().len() {
+                    drop(reader);
+                    tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                     pending.advance_thinks(think_end);
-                    if think_end < batch.occurrences().len() {
-                        drop(reader);
-                        tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                        **continue_batch = true;
-                        return Ok((Some(now), Vec::new(), Vec::new(), false));
-                    }
+                    **continue_batch = true;
+                    return Ok((Some(now), Vec::new(), Vec::new(), false));
                 }
                 pending.finish_ai().map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                 let (proposals,native_actors)=if let Some(primal)=primal_pending.as_ref() {
