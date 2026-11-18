@@ -317,6 +317,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Nothing is fenced yet when no transition id can be minted.
         let token = {
             let mut runtime = self.runtime.lock().await;
+            // The room owner queues credit under this same Channel lock. Keep
+            // the current session alive until its forced egress is credited.
+            if self.has_pending_wave_credit(session) {
+                operator_event("event=logout_busy stage=quest_wave_credit");
+                return Ok(LogoutReply::Result(LogoutResult::Busy));
+            }
             if channel_switch
                 && let Some(lock) = self.switch_encounter_lock(&runtime, actor, session)
             {

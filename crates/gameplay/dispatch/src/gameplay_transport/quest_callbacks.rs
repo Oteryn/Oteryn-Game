@@ -638,6 +638,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
     }
 
+    pub(super) fn has_pending_wave_credit(&self, session: GameSessionId) -> bool {
+        self.states
+            .quest_callbacks
+            .wave_credits
+            .lock()
+            .map_or(true, |credits| {
+                credits
+                    .iter()
+                    .any(|credit| credit.command().game_session_id() == session)
+            })
+    }
+
     pub(super) fn callback_content(&self) -> &[Callback] {
         #[cfg(test)]
         if let Some(content) = self.states.quest_callbacks.fixture.get() {

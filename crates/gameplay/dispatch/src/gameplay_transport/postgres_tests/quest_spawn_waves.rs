@@ -959,6 +959,15 @@ async fn stations_scenario(
     assert!(!creatures(owner).await?.is_empty());
 
     tokio::time::resume();
+    // The exit has committed, but the scheduler has not settled its credit.
+    // A normal logout must preserve the session fence needed by the writer.
+    assert!(owner.logout_preflight(*admitted).await.is_ok());
+    assert!(matches!(
+        owner.logout_session(*admitted).await,
+        crate::gameplay_transport::logout::LogoutReply::Result(
+            oteryn_protocol_oteryn::logout::LogoutResult::Busy
+        )
+    ));
     owner.drain_quest_encounter_deadlines().await;
     for (staged, credit) in [(admitted.item_fence, 1), (peer.item_fence, 0)] {
         let character = staged.ok_or("staging item fence")?.character_id;
@@ -969,6 +978,7 @@ async fn stations_scenario(
             .map_err(debug)?;
         assert_eq!(state.tracks().get(TRACK).copied().unwrap_or(0), credit);
     }
+    assert!(!owner.has_pending_wave_credit(admitted.game_session_id));
 
     owner.runtime.lock().await.remove_test_actor(arriving).map_err(debug)?;
     owner.drain_quest_encounter_deadlines().await;
