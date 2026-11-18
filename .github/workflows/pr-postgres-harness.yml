@@ -314,12 +314,17 @@ jobs:
               --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
           fi
 
-      # The library test link peaks above the hosted runner's memory; add swap so it slows instead of dying.
+      # The library test build peaks above the hosted runner's memory: one rustc for the dispatch
+      # library tests reaches about 19 GB. Add swap so it slows instead of dying, and build only that
+      # crate without debug info to lower the peak (owner decision 2026-11-18). Other crates keep the
+      # line tables, so the cache restored from main stays valid for them.
       - name: Add swap for the library test build
         if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib'
         run: |
           set -euo pipefail
-          sudo fallocate -l 8G /mnt/oteryn-extra.swap
+          mkdir -p "$HOME/.cargo"
+          printf '[profile.dev.package.oteryn-gameplay-dispatch]\ndebug = 0\n' >> "$HOME/.cargo/config.toml"
+          sudo fallocate -l 16G /mnt/oteryn-extra.swap
           sudo chmod 600 /mnt/oteryn-extra.swap
           sudo mkswap /mnt/oteryn-extra.swap
           sudo swapon /mnt/oteryn-extra.swap
