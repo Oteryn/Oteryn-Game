@@ -51,13 +51,17 @@ def configure(work, node, base, uid):
         install(report["clients"][role]["cert"], base / "ops" / f"{role}.crt", "root", "0644")
     install(report["clients"]["scope-assignment"]["key"], base / "ops/scope-assignment.key", "root", "0600")
     install(report["caFile"], base / "ops/platform-ca.pem", "root", "0644")
-    # Fresh deployment only: never reset an existing external epoch fence.
+    # Fresh deployment only: never reset an existing external epoch fence. A later
+    # launch of the same run renders its configuration around the fence it created.
     fence = base / "run/lcfa-epoch-fence"
-    subprocess.run(["sudo", "test", "!", "-e", str(fence)], check=True, capture_output=True)
-    subprocess.run(["sudo", "test", "!", "-L", str(fence)], check=True, capture_output=True)
     initial_fence = work / "lcfa-epoch-fence"
-    initial_fence.write_text("0\n")
-    install(initial_fence, fence, uid, "0600")
+    subprocess.run(["sudo", "test", "!", "-L", str(fence)], check=True, capture_output=True)
+    if initial_fence.exists():
+        subprocess.run(["sudo", "test", "-f", str(fence)], check=True, capture_output=True)
+    else:
+        subprocess.run(["sudo", "test", "!", "-e", str(fence)], check=True, capture_output=True)
+        initial_fence.write_text("0\n")
+        install(initial_fence, fence, uid, "0600")
     text, config = node_documents(report, node.read_text(), base)
     node.write_text(text)
     temporary = work / "assignment-report.toml"

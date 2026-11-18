@@ -1012,10 +1012,18 @@ configuration_negatives() { # exit before binding, no secret in output
 }
 
 # Deployment administration: only the database owner writes these grant tables.
+assignment_report_args() { # fills the caller's report_args on the Platform lifecycles
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
+    report_args=(--report-config "$BASE/ops/assignment-report.toml" --node-config "$BASE/node/node.toml"
+      --node-identity "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["clients"]["runtime-status"]["san"])' "$WORK/portal-report.json")")
+  fi
+}
 node_deployment_grants() {
   [[ "$(echo "SELECT current_user = pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()" | psql_admin oteryn_node_boot)" == t ]] || fail "deployment issuer is not the database owner"
   local operations=1,2,3,4
-  [[ "${NODE_BOOT_LIFECYCLE:-}" != game_platform && "${NODE_BOOT_LIFECYCLE:-}" != native_reference ]] || operations=1,4
+  [[ "${NODE_BOOT_LIFECYCLE:-}" != game_platform ]] || operations=1,4
+  # The reference run also proves the superseding replacement (operation 2).
+  [[ "${NODE_BOOT_LIFECYCLE:-}" != native_reference ]] || operations=1,2,4
   psql_admin oteryn_node_boot <<SQL
 INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM unnest(ARRAY[$operations]::smallint[]) op;
 INSERT INTO game_control_field_policy_grants VALUES ('nb_control', '$WORLD_ID', 'policy-s3b-1');
@@ -1058,10 +1066,7 @@ node_complete_assignment() {
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
   local -a report_args=()
-  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
-    report_args=(--report-config "$BASE/ops/assignment-report.toml" --node-config "$BASE/node/node.toml"
-      --node-identity "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["clients"]["runtime-status"]["san"])' "$WORK/portal-report.json")")
-  fi
+  assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
@@ -1202,7 +1207,9 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   local node revision
   node="$(node_field "$node_log" node_id)"; revision="$(node_field "$node_log" registration_revision)"
   remember node_c "$node"
-  ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
+  local -a report_args=()
+  assignment_report_args
+  ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
