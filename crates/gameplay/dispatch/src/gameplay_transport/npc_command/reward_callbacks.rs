@@ -2,8 +2,8 @@
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::quest_dialogue::{self, Choice, Step, Topic};
 use super::*;
-use oteryn_gameplay_quests::quest::reward_callbacks;
-use oteryn_gameplay_quests::quest::world_callbacks::Storage;
+use oteryn_gameplay_quests::quest::reward_callbacks::{self, DialoguePlacement};
+use oteryn_gameplay_quests::quest::world_callbacks::{Position, Storage};
 use serde::Deserialize;
 
 #[cfg(test)]
@@ -26,6 +26,8 @@ struct Offers {
 #[serde(deny_unknown_fields)]
 pub(super) struct Offer {
     npc: String,
+    #[serde(default)]
+    placement: Option<DialoguePlacement>,
     keywords: Vec<String>,
     topic: u16,
     #[serde(default)]
@@ -51,6 +53,33 @@ impl NpcConversations {
             .set(rows)
             .map_err(|_| "reward callback fixture already installed".to_owned())
     }
+}
+
+// Crystal 201189f8 data-global/npc/emiliana.lua:72-84,209-212 uses both
+// the engaged NPC's floor and the player's live position for dialogue selection.
+fn dialogue_location(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    intent: &NpcTalkIntent,
+) -> Option<(i8, Position)> {
+    let speaker = service_context::speaker_position(runtime, actor, session)?;
+    let npc = service_context::live_npc(runtime, actor, session, intent.npc_actor)?;
+    Some((
+        i8::try_from(-npc.position.floor).ok()?,
+        Position {
+            x: u16::try_from(speaker.x).ok()?,
+            y: u16::try_from(speaker.y).ok()?,
+            floor: i8::try_from(-speaker.floor).ok()?,
+        },
+    ))
+}
+
+fn admits_placement(
+    placement: Option<&DialoguePlacement>,
+    location: Option<(i8, Position)>,
+) -> bool {
+    placement.is_none_or(|rule| location.is_some_and(|(floor, player)| rule.admits(floor, player)))
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -86,13 +115,16 @@ pub(super) fn prepare(
         intent,
     )?;
     let text = intent.text.trim().to_ascii_lowercase();
+    let location = dialogue_location(runtime, actor, command.game_session_id, intent);
+    let in_placement = |placement| admits_placement(placement, location);
     if text == "no"
         || (phase == Phase::Offers
             && !matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
-            && offers
-                .offers
-                .iter()
-                .any(|offer| offer.npc == context.2 && offer.keywords.contains(&text)))
+            && offers.offers.iter().any(|offer| {
+                offer.npc == context.2
+                    && in_placement(offer.placement.as_ref())
+                    && offer.keywords.contains(&text)
+            }))
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         sessions
@@ -135,6 +167,7 @@ pub(super) fn prepare(
                 let matching_stage = callbacks.iter().filter(|c| {
                     c.carried_item.is_none()
                         && c.npc == context.2
+                        && in_placement(c.placement.as_ref())
                         && c.topic == topic.number
                         && c.keywords.contains(&text)
                         && eligible(&c.storage)
@@ -184,11 +217,10 @@ pub(super) fn prepare(
                 }
                 return None;
             }
-            if let Some(offer) = offers
-                .offers
-                .iter()
-                .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
-            {
+            if let Some(offer) = offers.offers.iter().find(|c| {
+                in_placement(c.placement.as_ref())
+                    && c.admits(&context.2, topic.number, &text, catalogue, tracks)
+            }) {
                 if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
                 }
@@ -218,6 +250,7 @@ pub(super) fn prepare(
             // missing. Select an unambiguous stage before falling back to lore.
             let mut blocked = offers.offers.iter().filter(|offer| {
                 offer.npc == context.2
+                    && in_placement(offer.placement.as_ref())
                     && offer.matches_topic(topic.number)
                     && offer.keywords.contains(&text)
                     && eligible(&offer.storage)
@@ -235,6 +268,7 @@ pub(super) fn prepare(
             let mut matching = callbacks.iter().filter(|c| {
                 c.carried_item.is_none()
                     && c.npc == context.2
+                    && in_placement(c.placement.as_ref())
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
             });
@@ -344,9 +378,11 @@ pub(super) fn unhandled_confirmation(
     let Some(catalogue) = admission.quest_catalogue.as_deref() else {
         return false;
     };
+    let location = dialogue_location(runtime, actor, command.game_session_id, intent);
     reward_callbacks::offered_for(catalogue).is_ok_and(|callbacks| {
         callbacks.iter().any(|callback| {
             callback.npc == context.2
+                && admits_placement(callback.placement.as_ref(), location)
                 && (callback.topic == topic || requested)
                 && callback.keywords.contains(&text)
         })

@@ -2462,6 +2462,8 @@ fn scenario_case(
                 name.ends_with("-fault"),
             ))
             .await?;
+        } else if name.starts_with("qewrath-emiliana-") {
+            Box::pin(super::super::qewrath_emiliana::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if name == "m16-marker" {
             Box::pin(super::super::m16_personal_map_marker::exercise(
                 &mut owner,

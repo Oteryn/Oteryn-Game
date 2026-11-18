@@ -33,7 +33,11 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
     let _ = admission;
     if offers.offers.len() > 512
         || offers.offers.iter().any(|offer| {
-            offer.requires.len() > 8
+            offer
+                .placement
+                .as_ref()
+                .is_some_and(|placement| !placement.valid())
+                || offer.requires.len() > 8
                 || offer.minimum_level == Some(0)
                 || offer.failure_reply.len() > 8
                 || offer.failure_reply.iter().any(|line| {

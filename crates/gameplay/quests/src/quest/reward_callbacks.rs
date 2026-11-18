@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod dialogue_placement;
+pub use dialogue_placement::DialoguePlacement;
+
 #[cfg(test)]
 mod capture_tests;
 mod carried;
@@ -224,6 +227,9 @@ pub struct NativeClaimBinding {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
+    /// Source placement gates are proved by the live NPC dialogue dispatcher.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub placement: Option<DialoguePlacement>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes: bool,
     #[serde(default, skip_serializing_if = "is_false")]
@@ -734,7 +740,9 @@ fn validate_document_with_capacity(
         }
     }
     for c in &document.callbacks {
-        if c.requirements.as_ref().is_some_and(|r| !r.valid())
+        if c.placement.as_ref().is_some_and(|placement| {
+            !placement.valid() || c.carried_item.is_some() || c.world_claim.is_some()
+        }) || c.requirements.as_ref().is_some_and(|r| !r.valid())
             || c.give.as_ref().is_some_and(|g| !g.valid())
         {
             return Err(format!("invalid lane reward extension {}", c.key));
@@ -1175,6 +1183,16 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
             &callback.requires_completed_quests,
         ))
         .map_err(|error| error.to_string())?
+    };
+    let current = if let Some(placement) = &callback.placement {
+        serde_json::to_vec(&(
+            "oteryn:quest-reward-dialogue-placement-v1",
+            current,
+            placement,
+        ))
+        .map_err(|error| error.to_string())?
+    } else {
+        current
     };
     if callback.per_occurrence_mint {
         serde_json::to_vec(&("oteryn:quest-reward-occurrence-mint-v1", current))
