@@ -477,11 +477,11 @@ mod quest_mark_tests {
             "a new admission to the same World clears Character facts"
         );
         assert!(map.replace_quest_marks(treasure()));
-        map.edit_marker(31948, 31924, -7, "Local label".into(), 0)?;
+        map.edit_marker(31948, 31924, 7, "Local label".into(), 0)?;
         assert_eq!(map.quest_marks, treasure());
-        map.remove_marker(31948, 31924, -7)?;
+        map.remove_marker(31948, 31924, 7)?;
         assert_eq!(map.quest_marks, treasure());
-        map.edit_marker(10, 20, -7, "Home".into(), 1)?;
+        map.edit_marker(10, 20, 7, "Home".into(), 1)?;
         let path = map.path().ok_or("path")?;
         let encoded = std::fs::read_to_string(path)?;
         assert!(!encoded.contains("Treasure"));

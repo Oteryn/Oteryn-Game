@@ -64,7 +64,7 @@ fn camera_and_marker_validation_do_not_change_gameplay_positions()
     assert_eq!(map.position(16, 12), Some((109, 195, 7)));
     map.floor = 6;
     assert_eq!(map.position(15, 12), Some((105, 195, 6)));
-    assert!(map.edit_marker(0, 0, 2, "x".into(), 0).is_err());
+    assert!(map.edit_marker(0, 0, -2, "x".into(), 0).is_err());
     assert!(map.edit_marker(0, 0, 7, "\0".into(), 0).is_err());
     map.edit_marker(100, 200, 7, "Gate".into(), 2)?;
     map.edit_marker(100, 200, 7, "Exit".into(), 3)?;

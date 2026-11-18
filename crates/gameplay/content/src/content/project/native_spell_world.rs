@@ -1347,7 +1347,7 @@ mod tests {
             super::super::NativeEntryStart {
                 x: 33565,
                 y: 32758,
-                floor: -15
+                floor: 15
             }
         );
         assert_eq!(map.cell_count(), 537);
@@ -1357,7 +1357,7 @@ mod tests {
                 LogicalCell {
                     x: 33558,
                     y: 32759,
-                    z: -15
+                    z: 15
                 }
             ),
             Ok(CollisionClass::Walkable)
@@ -1368,7 +1368,7 @@ mod tests {
                 LogicalCell {
                     x: 33565,
                     y: 32758,
-                    z: -15
+                    z: 15
                 }
             ),
             Ok(CollisionClass::Walkable)
@@ -1379,7 +1379,7 @@ mod tests {
                 LogicalCell {
                     x: 33565,
                     y: 32758,
-                    z: -14
+                    z: 14
                 }
             )
             .is_err()

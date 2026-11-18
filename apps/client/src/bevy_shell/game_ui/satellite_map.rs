@@ -303,7 +303,7 @@ mod tests {
     fn satellite_floor_change() {
         let mut state = State::at((0, 0, 7));
         state.change_floor(true);
-        assert_eq!(state.floor, -6);
+        assert_eq!(state.floor, 6);
         state.change_floor(false);
         assert_eq!(state.floor, 7);
     }

@@ -360,7 +360,8 @@ impl Fixture {
     /// The client's window equals a fresh snapshot at its origin.
     fn assert_client_matches_a_fresh_snapshot(&mut self) {
         let client = self.client.clone().expect("joined");
-        let origin = client.header.origin;
+        let mut origin = client.header.origin;
+        origin.floor = -origin.floor;
         let source = MapViewSource {
             overlay: &self.overlay,
             facts: &self.facts,

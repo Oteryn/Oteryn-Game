@@ -207,7 +207,7 @@ fn replay() -> Result<(), Error> {
         }]
     );
     let kept = minimap.markers.clone();
-    assert!(minimap.edit_marker(x, y, 5, "Above ground".into(), 0).is_err());
+    assert!(minimap.edit_marker(x, y, -5, "Invalid floor".into(), 0).is_err());
     assert!(minimap.edit_marker(x, y, floor, "  ".into(), 0).is_err());
     assert_eq!(minimap.markers, kept);
     minimap.remove_marker(x, y, floor)?;

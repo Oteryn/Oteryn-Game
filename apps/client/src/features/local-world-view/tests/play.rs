@@ -9,7 +9,7 @@ fn the_map_is_drawn_only_on_the_join_floor() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     view.set_world(world).map_err(|e| e.to_string())?;
     let on_floor = view.scene().sprites().len();
-    view.apply(&moved_to(100, 200, -1))
+    view.apply(&moved_to(100, 200, 1))
         .map_err(|e| e.to_string())?;
     let off_floor = view.scene().sprites().len();
     view.apply(&moved_to(crate::map::START.0, crate::map::START.1, 7))
@@ -366,7 +366,7 @@ fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs()
         map: Some(Box::new(map)),
         ..Pushed::default()
     })?;
-    assert_eq!(view.map_center(), (101, 200, -8));
+    assert_eq!(view.map_center(), (101, 200, 8));
     // The map placeholder and player are drawn; item targets add no marker glyph.
     assert_eq!(view.scene().sprites().len(), 2);
     view.click(TileCoord::new(102, 200))?;

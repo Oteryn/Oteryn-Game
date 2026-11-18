@@ -7,7 +7,7 @@ fn fuzz_decode_world_map_snapshot() {
     crate::decoder_fuzz_support::codec(
         "decode_world_map_snapshot",
         |rng| {
-            let origin = position(100, 200, -7);
+            let origin = position(100, 200, 7);
             let mut value = tile(origin);
             value.ground_speed = rng.below(u64::from(MAX_GROUND_SPEED) + 1) as u16;
             WorldMapViewSnapshot {
@@ -22,12 +22,12 @@ fn fuzz_decode_world_map_snapshot() {
 
 #[test]
 fn fuzz_decode_world_map_delta() {
-    let view = header(position(100, 200, -7));
+    let view = header(position(100, 200, 7));
     crate::decoder_fuzz_support::codec(
         "decode_world_map_delta",
         |rng| WorldMapViewDelta {
             header: view,
-            tiles: vec![tile(position(100 + rng.below(5) as i32, 200, -7))],
+            tiles: vec![tile(position(100 + rng.below(5) as i32, 200, 7))],
             cleared: vec![],
         },
         |b| decode_world_map_delta(&view, b),

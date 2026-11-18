@@ -207,6 +207,14 @@ mod tests {
                 secondary_cue_id: 2,
             },
         ];
+        let invalid_pos = ActorPosition {
+            floor: -14,
+            ..position
+        };
+        use crate::world_spatial::encode_position;
+        let valid_position = encode_position(&position);
+        let invalid_position = encode_position(&invalid_pos);
+        assert_eq!(valid_position.len(), invalid_position.len());
         for kind in kinds {
             let events = [presentation::PresentationEvent {
                 decision_ordinal: 1,
@@ -215,15 +223,46 @@ mod tests {
             }];
             let bytes = encode_native_map_presentation_batch(&events)?;
             assert_eq!(decode_native_map_presentation_batch(&bytes)?, events);
-            assert!(presentation::encode_presentation_batch(&events).is_err());
-            assert!(presentation::decode_presentation_batch(&bytes).is_err());
+            assert_eq!(presentation::encode_presentation_batch(&events)?, bytes);
+            assert_eq!(presentation::decode_presentation_batch(&bytes)?, events);
+
+            let mut invalid_kind = kind;
+            let at = match &mut invalid_kind {
+                K::MagicEffect { position, .. }
+                | K::Missile { from: position, .. }
+                | K::SpellWords { position, .. }
+                | K::ValueText { position, .. }
+                | K::Sound { position, .. } => position,
+                K::AmbientSound { .. } => {
+                    return Err(crate::charm_wire::CyclopediaWireError::Malformed);
+                }
+            };
+            *at = invalid_pos;
+            let invalid = [presentation::PresentationEvent {
+                kind: invalid_kind,
+                ..events[0]
+            }];
+            assert!(encode_native_map_presentation_batch(&invalid).is_err());
+            assert!(presentation::encode_presentation_batch(&invalid).is_err());
+
+            // Mutate the position in place so the surrounding message lengths stay valid.
+            let mut malformed = bytes;
+            let Some(offset) = malformed
+                .windows(valid_position.len())
+                .position(|part| part == valid_position)
+            else {
+                return Err(crate::charm_wire::CyclopediaWireError::Malformed);
+            };
+            malformed[offset..offset + valid_position.len()].copy_from_slice(&invalid_position);
+            assert!(decode_native_map_presentation_batch(&malformed).is_err());
+            assert!(presentation::decode_presentation_batch(&malformed).is_err());
         }
         let mixed = [presentation::PresentationEvent {
             decision_ordinal: 1,
             emission_ordinal: 1,
             kind: K::Missile {
                 from: position,
-                to: ActorPosition { floor: 1, ..other },
+                to: ActorPosition { floor: -1, ..other },
                 missile_id: 1,
                 source: S::Creatures,
             },

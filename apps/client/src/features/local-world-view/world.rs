@@ -221,9 +221,9 @@ mod tests {
         use oteryn_renderer::{MAX_BATCH_QUADS, TileCoord};
         use std::sync::Arc;
         let mut world = World::builtin()?;
-        world.center = (100, 200, -8);
-        for floor in -10..=-8 {
-            let shift = i32::from(floor + 8);
+        world.center = (100, 200, 8);
+        for floor in (8..=10).rev() {
+            let shift = i32::from(8 - floor);
             for y in 195..=205 {
                 for x in 93..=107 {
                     world.insert_floor_tile(
@@ -235,7 +235,7 @@ mod tests {
                         crate::map::MapTile {
                             under: vec![
                                 Draw {
-                                    cell: if floor == -10 {
+                                    cell: if floor == 10 {
                                         MARKER_CELL
                                     } else {
                                         TARGET_CELL
@@ -306,7 +306,7 @@ mod tests {
         };
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let world = World::resolve_live_map(&root, &map)?;
-        assert_eq!(world.center(), (100, 200, -7));
+        assert_eq!(world.center(), (100, 200, 7));
         assert_eq!(world.tile_count(), 1);
         let tile = world.tile(100, 200).ok_or("live tile missing")?;
         assert!(
@@ -325,7 +325,7 @@ mod tests {
         let layered = World::resolve_live_map(&root, &map)?;
         assert_eq!(layered.tile_count(), 2);
         let upper = layered
-            .floor_tile(-6, 100, 200)
+            .floor_tile(6, 100, 200)
             .ok_or("upper floor missing")?;
         assert!(
             upper

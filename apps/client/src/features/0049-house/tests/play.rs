@@ -286,7 +286,7 @@ fn house_catalogue_details_reach_production_panel() -> Result<(), Box<dyn std::e
     let mut row = vec![10, 1, b'h', 16, 3, 24, 50, 32, 1, 40, 0, 56, 100, 80, 1];
     row.extend([64, 200, 1, 72, 150, 1]);
     // Detail metadata: name, area, beds and entrance x/y/floor from the server.
-    row.extend([98, 4, b'H', b'o', b'm', b'e', 104, 25, 112, 2, 120, 100, 128, 1, 110, 136, 1, 13]);
+    row.extend([98, 4, b'H', b'o', b'm', b'e', 104, 25, 112, 2, 120, 100, 128, 1, 110, 136, 1, 14]);
     let mut payload = vec![8, 1, 26, u8::try_from(row.len())?];
     payload.extend(row);
     outbox.properties_result(&command, &GatedCommandResult {
@@ -298,10 +298,10 @@ fn house_catalogue_details_reach_production_panel() -> Result<(), Box<dyn std::e
     assert!(text.contains("Auction ends (Unix ms): 200; your maximum bid: 150"));
     assert!(text.contains("Home"));
     assert!(text.contains("25 m²"));
-    assert!(text.contains("100,110,-7"));
+    assert!(text.contains("100,110,7"));
     let map = oteryn_client_ui::house::map_houses(&panel.model);
     assert_eq!(map.len(), 1);
-    assert_eq!(map[0].position, (100, 110, -7));
+    assert_eq!(map[0].position, (100, 110, 7));
     assert!(map[0].selected);
     assert_eq!(map[0].label, "1: Home");
     Ok(())

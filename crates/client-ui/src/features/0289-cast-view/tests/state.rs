@@ -52,7 +52,7 @@ fn s17b_public_picture_commits_atomically_and_slate_clears_private_free_view()
         },
         now,
     )?;
-    assert_eq!(panel.picture.tiles.get(&(-7, 16, 16)), Some(&vec![100]));
+    assert_eq!(panel.picture.tiles.get(&(7, 16, 16)), Some(&vec![100]));
     assert_eq!(panel.picture.actors[0].4, 75);
     protocol::apply(
         &mut panel,

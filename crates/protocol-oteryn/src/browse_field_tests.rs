@@ -136,8 +136,8 @@ fn browse_field_commands_reject_malformed_or_out_of_range_values() {
         &[0x0a, 0x04, 0x18, 0x80, 0x80, 0x04],
         &[0x0a, 0x02, 0x08, 0x01],
         &[0x0a, 0x04, 0x08, 0x80, 0x80, 0x08],
-        &[0x0a, 0x02, 0x18, 0x02],
-        &[0x0a, 0x02, 0x18, 0x1f],
+        &[0x0a, 0x02, 0x18, 0x01],
+        &[0x0a, 0x02, 0x18, 0x20],
     ] {
         assert!(
             decode_browse_field_intent(malformed).is_err(),
@@ -179,12 +179,12 @@ fn browse_field_commands_reject_malformed_or_out_of_range_values() {
         WorldTilePosition {
             x: 0,
             y: 0,
-            floor: 1,
+            floor: -1,
         },
         WorldTilePosition {
             x: 0,
             y: 0,
-            floor: -16,
+            floor: 16,
         },
     ] {
         assert_eq!(

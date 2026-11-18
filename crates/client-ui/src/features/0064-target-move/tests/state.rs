@@ -5,7 +5,7 @@ fn negotiation_and_pending_gate_world_input_and_refusal_allows_retry() {
     let position = ActorPosition {
         x: -50,
         y: 200,
-        floor: -3,
+        floor: 3,
     };
     let mut state = WalkState::default();
     assert_eq!(request(&mut state, position), None);

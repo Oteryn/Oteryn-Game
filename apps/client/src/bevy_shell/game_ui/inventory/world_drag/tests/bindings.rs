@@ -99,7 +99,7 @@ fn viewport_change_or_wrong_floor_cancels_an_active_ground_source() -> TestResul
         note_world(&mut gesture);
         let changed = if floor_change {
             let play = owner.play.as_mut().ok_or("play")?;
-            play.view = PlayView::new(TileCoord::new(100, 100), -1, &[])?;
+            play.view = PlayView::new(TileCoord::new(100, 100), 1, &[])?;
             viewport
         } else {
             WorldViewport {
