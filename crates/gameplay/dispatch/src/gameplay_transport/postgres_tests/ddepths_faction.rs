@@ -13,8 +13,8 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
         run(async |configured_admin| {
             assert!(admin == configured_admin);
             let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
-                x: 33830,
-                y: 32187,
+                x: 33829,
+                y: 32186,
                 floor: 14,
             })?;
             let h = Harness::create_with_admission_seed(
@@ -83,9 +83,9 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
             }
             deps.initialize(&owner).await;
             for (points, flags, x, y) in [
-                (9_i64, [1_i64, 1, 1], 33830, 32186),
-                (10, [1, 1, 0], 33830, 32186),
-                (14, [1, 1, 2], 33830, 32186),
+                (9_i64, [1_i64, 1, 1], 33829, 32185),
+                (10, [1, 1, 0], 33829, 32185),
+                (14, [1, 1, 2], 33829, 32185),
                 (15, [0, 0, 0], 33982, 32236),
                 (10, [1, 1, 1], 33982, 32236),
             ] {
@@ -124,8 +124,8 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
                     let mut runtime = owner.runtime.lock().await;
                     let current = runtime.read_actor_position(actor).map_err(debug)?;
                     let start = MovementLocalPosition {
-                        x: 33830,
-                        y: 32187,
+                        x: 33829,
+                        y: 32186,
                         floor: 14,
                     };
                     if current.position() == start {
@@ -152,7 +152,7 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
                     .checked_sub(std::time::Duration::from_secs(1))
                     .ok_or("paced step clock")?;
                 let (outcome, _) = owner
-                    .ordinary_paced_step(actor, session, StepDirection::West, Some(origin), None)
+                    .ordinary_paced_step(actor, session, StepDirection::South, Some(origin), None)
                     .await;
                 assert_eq!(outcome.disposition, StepDisposition::Moved);
                 assert_eq!(
