@@ -225,7 +225,9 @@ Compile the two targets serially in the existing archive. The PG
 planner lists both binary IDs and assigns each test once. The PR unit
 shards include the new target when dispatch is selected and keep their
 existing hash partition. The Merge Queue integration planner discovers
-it through Cargo metadata.
+it through Cargo metadata. The integration-rest command must also enable
+`test-support` because the planner emits test names from metadata without
+forwarding their required features.
 
 The proposed patch selects the target after it exists and updates the
 merge-authority workflow pin and command assertion. It passes
@@ -270,7 +272,14 @@ and proposed workflow diff.
              --partition "hash:${SHARD}" --no-tests=pass --no-fail-fast < /dev/null || code=$?
 --- a/.github/workflows/merge-group-gate.yml
 +++ b/.github/workflows/merge-group-gate.yml
-@@ -833,5 +833,5 @@
+@@ -630,3 +630,6 @@
+           mapfile -t shard_args < "$RUNNER_TEMP/shard-args.txt"
+           test "${#shard_args[@]}" -gt 0
++          if [[ "$SHARD" == integration-rest ]]; then
++            shard_args+=(--features oteryn-gameplay-dispatch/test-support)
++          fi
+           cargo +1.100.0 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast
+@@ -833,5 +836,5 @@
          run: |
            set -euo pipefail
 -          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
@@ -290,7 +299,7 @@ and proposed workflow diff.
 +++ b/.github/workflows/merge-authority-audit.yml
 @@ -29,5 +29,5 @@
 -      EXPECTED_MERGE_GROUP_GATE_BLOB: "67e38c236b1964e03f47f5180540168e39456c71"
-+      EXPECTED_MERGE_GROUP_GATE_BLOB: "2edad494f694cdbe9a230c9d9b70a3c447ab0099"
++      EXPECTED_MERGE_GROUP_GATE_BLOB: "aa14418aba596be4c78233dd9ffb9a9fbadac2df"
        EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
 -      EXPECTED_MERGE_GATE_BLOB: "0f72c838a4a374f2b18da314c0b72ac74038a0f0"
 +      EXPECTED_MERGE_GATE_BLOB: "15e5f7d4c48775da0ccedb63737409c083788e12"
