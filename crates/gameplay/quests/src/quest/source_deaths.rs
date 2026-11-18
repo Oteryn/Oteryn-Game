@@ -146,7 +146,7 @@ const DOCUMENTS: &[&[u8]] = &[
     ),
 ];
 fn documents() -> Result<Vec<Document>, String> {
-    DOCUMENTS
+    let mut documents: Vec<Document> = DOCUMENTS
         .iter()
         .map(|bytes| {
             let doc: Document = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
@@ -155,7 +155,46 @@ fn documents() -> Result<Vec<Document>, String> {
             }
             Ok(doc)
         })
-        .collect()
+        .collect::<Result<_, String>>()?;
+    // Crystal 9f5a72c and 201189f8, elemental_spheres/creaturescripts_overlord_kill.lua:2-5,24-26.
+    // Every damaging player shares BossStorage (storages.lua:1084, numeric key 41652).
+    let track = "oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage";
+    documents.push(Document {
+        schema: 1,
+        runtime_enabled: true,
+        quest: "oteryn:quest.elemental_spheres_quest".into(),
+        tracks: vec![Track {
+            key: track.into(),
+            initial: -1,
+            min: -1,
+            max: 1,
+        }],
+        rules: ["earth", "energy", "fire", "ice"]
+            .into_iter()
+            .map(|element| Rule {
+                creature: format!("oteryn:creature.{element}_overlord"),
+                transition: format!(
+                    "oteryn:quest-transition/elemental-spheres/{element}-overlord-death"
+                ),
+                effects: vec![Effect {
+                    track: track.into(),
+                    default: -1,
+                    from: Comparison {
+                        kind: "lt".into(),
+                        value: 1,
+                    },
+                    set: Some(1),
+                    add: None,
+                }],
+                room: None,
+                top_damage_only: false,
+                define_transition: true,
+                epoch_tracks: None,
+                quest: String::new(),
+            })
+            .collect(),
+    });
+    Ok(documents)
 }
 pub fn rules() -> Result<&'static [Rule], &'static str> {
     static RULES: OnceLock<Result<Vec<Rule>, String>> = OnceLock::new();
@@ -254,4 +293,74 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
         transitions.into_values().collect(),
     )
     .map_err(|error| format!("{error:?}"))
+}
+
+/// Closed donor callback owned atomically by the native death settlement.
+pub fn overlord(creature: &str) -> Option<&'static Rule> {
+    if !matches!(
+        creature,
+        "oteryn:creature.earth_overlord"
+            | "oteryn:creature.energy_overlord"
+            | "oteryn:creature.fire_overlord"
+            | "oteryn:creature.ice_overlord"
+    ) {
+        return None;
+    }
+    rules().ok()?.iter().find(|rule| rule.creature == creature)
+}
+
+/// Exact predecessor of the additive Elemental Spheres death callback. Existing
+/// tracks and transitions are unchanged; only the four callbacks and flag are new.
+pub fn overlord_predecessor(
+    catalogue: &QuestStateCatalogue,
+) -> Result<QuestStateCatalogue, String> {
+    let quest = "oteryn:quest.elemental_spheres_quest";
+    let flag = "oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage";
+    QuestStateCatalogue::new(
+        catalogue.content_revision.clone(),
+        catalogue
+            .tracks
+            .values()
+            .filter(|track| track.quest == quest && track.key != flag)
+            .cloned()
+            .collect(),
+        catalogue
+            .transitions
+            .values()
+            .filter(|transition| {
+                transition.quest == quest
+                    && !matches!(
+                        transition.key.as_str(),
+                        "oteryn:quest-transition/elemental-spheres/earth-overlord-death"
+                            | "oteryn:quest-transition/elemental-spheres/energy-overlord-death"
+                            | "oteryn:quest-transition/elemental-spheres/fire-overlord-death"
+                            | "oteryn:quest-transition/elemental-spheres/ice-overlord-death"
+                    )
+            })
+            .cloned()
+            .collect(),
+    )
+    .map_err(|error| format!("{error:?}"))
+}
+
+pub(super) fn retain_overlord_predecessor(
+    catalogue: &mut QuestStateCatalogue,
+) -> Result<(), String> {
+    let quest = "oteryn:quest.elemental_spheres_quest";
+    let previous = overlord_predecessor(catalogue)?;
+    let hash = previous
+        .definition_hash(quest)
+        .ok_or("Elemental Spheres predecessor missing")?;
+    let defaults = previous
+        .declared_tracks()
+        .map(|track| (track.key.clone(), track.initial))
+        .collect();
+    let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
+    if !predecessors
+        .iter()
+        .any(|predecessor| predecessor.hash == hash)
+    {
+        predecessors.push(super::NpcDefinitionPredecessor { hash, defaults });
+    }
+    Ok(())
 }

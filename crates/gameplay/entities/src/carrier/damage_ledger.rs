@@ -172,6 +172,8 @@ pub struct RewardDamageShare {
 /// duplikatów" -- nothing duplicated, nothing silently completed by a later generation).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DamageContributors {
+    /// Physical damagers, bounded by carrier actor slots rather than reward attribution.
+    pub source_players: Vec<super::native_source_death::SourcePlayerDamageShare>,
     pub entries: Vec<DamageContributor>,
 }
 
@@ -255,6 +257,24 @@ impl DamageContributors {
         let Some(actor) = source.actor else {
             return;
         };
+        let previous = self
+            .source_players
+            .iter()
+            .position(|entry| entry.actor.0.actor_local_id == actor.0.actor_local_id);
+        let old = previous
+            .map(|index| self.source_players[index])
+            .filter(|entry| entry.actor == actor && entry.character == character);
+        let share = super::native_source_death::SourcePlayerDamageShare {
+            actor,
+            character,
+            total: old.map_or(0, |entry| entry.total).saturating_add(damage),
+            last_damage_at_ms: old.and_then(|entry| entry.last_damage_at_ms).max(at_ms),
+        };
+        if let Some(index) = previous {
+            self.source_players[index] = share;
+        } else {
+            self.source_players.push(share);
+        }
         let Some(contributor) = self
             .entries
             .iter_mut()
@@ -1037,6 +1057,19 @@ impl ChannelActorCarrier {
         {
             damage_contributors
                 .entries
+                .try_reserve(1)
+                .map_err(|_| CarrierError::CommitAllocationFailed)?;
+        }
+        if !source_damage_canceled
+            && source.is_some_and(|source| {
+                matches!(
+                    source.kind,
+                    super::soul_war_health::HealthSourceKind::Player(_)
+                )
+            })
+        {
+            damage_contributors
+                .source_players
                 .try_reserve(1)
                 .map_err(|_| CarrierError::CommitAllocationFailed)?;
         }

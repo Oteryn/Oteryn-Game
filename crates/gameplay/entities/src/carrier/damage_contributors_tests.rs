@@ -239,11 +239,13 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
         last_damage_at_ms: None,
     };
     let contributors = DamageContributors {
+        source_players: Vec::new(),
         entries: vec![higher, lower],
     };
     assert_eq!(contributors.top_damage_character(), Some(character(3)));
     // Order-independent: the reverse entry order resolves identically.
     let reversed = DamageContributors {
+        source_players: Vec::new(),
         entries: vec![lower, higher],
     };
     assert_eq!(reversed.top_damage_character(), Some(character(3)));
@@ -303,7 +305,10 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
     ];
     for permutation in permutations {
         let entries = permutation.into_iter().map(|index| base[index]).collect();
-        let shuffled = DamageContributors { entries };
+        let shuffled = DamageContributors {
+            entries,
+            source_players: Vec::new(),
+        };
         assert_eq!(shuffled.top_damage_character(), expected);
     }
 }

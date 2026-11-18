@@ -1,7 +1,7 @@
 //! Personal reward entitlements owned by the existing boss settlement and item custody owners.
 use super::super::item_mint::TypedDefinitionRef;
 use crate::domain::CharacterId;
-use crate::foundation::GameSessionId;
+use crate::foundation::{GameSessionId, RuntimeScopeRefV1};
 use oteryn_gameplay_encounter_rules::boss::RewardParticipation;
 
 #[path = "reward_chest/settlement.rs"]
@@ -49,3 +49,49 @@ pub const BOSS_REWARD_ITEMS_MAX: usize = 1_000;
 pub const BOSS_REWARD_PARTICIPANTS_MAX: usize = 16;
 /// Incoming hits and healing can involve every member of the native fifty-character group.
 pub const BOSS_REWARD_CONTRIBUTORS_MAX: usize = 50;
+
+/// Stable native boss occurrence shared by chest and quest settlement.
+pub fn scoped_death_id(
+    scope: RuntimeScopeRefV1,
+    generation: u64,
+    actor: u32,
+    actor_generation: u64,
+) -> [u8; 16] {
+    let (kind, scope_id) = match scope {
+        RuntimeScopeRefV1::Channel { channel_id, .. } => (1_u8, *channel_id.as_bytes()),
+        RuntimeScopeRefV1::Instance { instance_id, .. } => (2_u8, instance_id),
+    };
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:personal-boss-death:v1\0")
+        .chain_update(scope.world_id().as_bytes())
+        .chain_update([kind])
+        .chain_update(scope_id)
+        .chain_update(generation.to_be_bytes())
+        .chain_update(actor.to_be_bytes())
+        .chain_update(actor_generation.to_be_bytes())
+        .finalize();
+    let mut result = [0; 16];
+    result.copy_from_slice(&digest[..16]);
+    result
+}
+
+/// Frozen canonical death with optional admitted private rewards. A withheld
+/// private table never invents a chest or prevents the donor's quest flag.
+#[derive(Clone, Debug)]
+pub struct BossDeathAtomicPlan {
+    pub death: [u8; 16],
+    pub boss_key: String,
+    pub minted_at_unix_ms: u64,
+    pub rewards: Option<BossRewardDeath>,
+}
+impl From<BossRewardDeath> for BossDeathAtomicPlan {
+    fn from(rewards: BossRewardDeath) -> Self {
+        Self {
+            death: rewards.death,
+            boss_key: rewards.boss_key.clone(),
+            minted_at_unix_ms: rewards.minted_at_unix_ms,
+            rewards: Some(rewards),
+        }
+    }
+}

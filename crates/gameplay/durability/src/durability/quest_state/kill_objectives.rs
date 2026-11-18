@@ -2,7 +2,7 @@
 use super::*;
 use oteryn_gameplay_quests::quest::kill_objectives::KillObjective;
 
-/// Captured only from a committed native death and its coherent Character quest copy.
+/// Captured from a committed native death and a sealed objective or damage witness.
 /// No wire command can construct the sealed death identity.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NativeObjectiveDeath {
@@ -12,6 +12,7 @@ pub struct NativeObjectiveDeath {
     observed_revision: u64,
     phase: i64,
     spawn_origin: Option<(i32, i32, i16)>,
+    overlord: bool,
 }
 
 impl NativeObjectiveDeath {
@@ -33,6 +34,40 @@ impl NativeObjectiveDeath {
             observed_revision,
             phase,
             spawn_origin: None,
+            overlord: false,
+        })
+    }
+
+    /// Damage eligibility is sealed independently of the optional quest cache.
+    pub fn capture_overlord(
+        runtime: &mut crate::foundation::ChannelRuntimeV1,
+        target: crate::foundation::ExactActorRef,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+    ) -> Option<Self> {
+        let lease = runtime.bound_attacker_lease(actor, session).ok()?;
+        let character = CharacterId::from_bytes(*lease.character_id().as_bytes()).ok()?;
+        if !runtime
+            .all_source_player_damage_shares(target)
+            .ok()?
+            .iter()
+            .any(|share| {
+                share.actor == actor
+                    && share.character.as_bytes() == character.as_bytes()
+                    && share.total > 0
+            })
+        {
+            return None;
+        }
+        let (death, at) = runtime.borrow_combat_death().projected_death(target).ok()?;
+        Some(Self {
+            death: super::super::party_kill_xp::encode_death_key(death),
+            character,
+            position: (at.x, at.y, at.floor),
+            observed_revision: 0,
+            phase: 0,
+            spawn_origin: None,
+            overlord: true,
         })
     }
 
@@ -85,17 +120,30 @@ impl NativeObjectiveDeath {
                 .finalize();
             binding[1..].copy_from_slice(&hash);
         }
+        if self.overlord {
+            let hash = Sha256::new()
+                .chain_update(*binding)
+                .chain_update(b"oteryn:overlord-damager:v1")
+                .finalize();
+            binding[1..].copy_from_slice(&hash);
+        }
         Ok(())
     }
 }
 
 enum Binding {
+    Overlord(&'static oteryn_gameplay_quests::quest::source_deaths::Rule),
     Objective(KillObjective),
     Goal(&'static oteryn_gameplay_quests::quest::native_kill_goals::Goal),
 }
 
 impl Binding {
     fn resolve(key: &str) -> Result<Self> {
+        if let Some(rule) = oteryn_gameplay_quests::quest::source_deaths::rule(key)
+            && oteryn_gameplay_quests::quest::source_deaths::overlord(&rule.creature).is_some()
+        {
+            return Ok(Self::Overlord(rule));
+        }
         if let Some(rule) = oteryn_gameplay_quests::quest::kill_objectives::binding(key) {
             return Ok(Self::Objective(rule));
         }
@@ -109,6 +157,7 @@ impl Binding {
 
     fn quest(&self) -> &str {
         match self {
+            Self::Overlord(rule) => &rule.quest,
             Self::Objective(rule) => rule.quest,
             Self::Goal(goal) => &goal.quest,
         }
@@ -116,6 +165,7 @@ impl Binding {
 
     fn phase_track(&self) -> &str {
         match self {
+            Self::Overlord(rule) => &rule.effects[0].track,
             Self::Objective(rule) => rule.phase_track,
             Self::Goal(goal) => &goal.phase,
         }
@@ -123,6 +173,7 @@ impl Binding {
 
     fn creatures(&self, source: &NativeObjectiveDeath) -> Vec<&str> {
         match self {
+            Self::Overlord(rule) if source.overlord => vec![rule.creature.as_str()],
             Self::Objective(rule)
                 if source.phase == rule.phase_before
                     && rule.contains(source.position.0, source.position.1, source.position.2) =>
@@ -191,7 +242,8 @@ pub async fn apply_batch_in_transaction(
         let transition = catalogue
             .transition(key)
             .ok_or(CharacterProgressionError::InvalidInput)?;
-        if component.quest() != rule.quest()
+        if matches!(component, Binding::Overlord(_)) != proof.overlord
+            || component.quest() != rule.quest()
             || transition.quest != rule.quest()
             || transition.experience.is_some()
             || transition.completes
@@ -237,6 +289,17 @@ pub async fn apply_batch_in_transaction(
         }
         return Ok(Some(decode_receipt(&row)?));
     }
+    if matches!(rule, Binding::Overlord(_)) {
+        let death = boss_death_id(source, &fence)?;
+        let previous: Option<Vec<u8>> = sqlx::query_scalar("SELECT request_binding FROM game_boss_death_quest_skips WHERE world_id=encode($1,'hex')::uuid AND death_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid AND quest_key=$4")
+            .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(death.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(rule.quest()).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?;
+        if let Some(previous) = previous {
+            if previous != binding {
+                return Err(CharacterProgressionError::ConflictingOccurrence);
+            }
+            return Ok(None);
+        }
+    }
     let row = sqlx::query("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
     let mut current = fence;
@@ -261,22 +324,55 @@ pub async fn apply_batch_in_transaction(
         return Err(CharacterProgressionError::ProgressionContextMismatch);
     }
     let state = sqlx::query("SELECT pinned_content_revision, definition_hash, completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(rule.quest()).fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
-    let hash: [u8; 32] = state
-        .try_get::<Vec<u8>, _>("definition_hash")
-        .map_err(DurabilityError::from)?
-        .try_into()
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    if catalogue.definition_hash(rule.quest()) != Some(hash)
-        && !state
-            .try_get::<bool, _>("completed")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(rule.quest()).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?;
+    let state_exists = state.is_some();
+    let (hash, pin) = if let Some(state) = state {
+        let hash: [u8; 32] = state
+            .try_get::<Vec<u8>, _>("definition_hash")
             .map_err(DurabilityError::from)?
-    {
-        return Err(CharacterProgressionError::ProgressionContextMismatch);
-    }
-    let pin: String = state
-        .try_get("pinned_content_revision")
-        .map_err(DurabilityError::from)?;
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if catalogue.definition_hash(rule.quest()) != Some(hash)
+            && (matches!(rule, Binding::Overlord(_))
+                || !state
+                    .try_get::<bool, _>("completed")
+                    .map_err(DurabilityError::from)?)
+        {
+            if !matches!(rule, Binding::Overlord(_)) {
+                return Err(CharacterProgressionError::ProgressionContextMismatch);
+            }
+            if oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                catalogue,
+                rule.quest(),
+                &hash,
+            )
+            .is_none()
+            {
+                let death = boss_death_id(source, &current)?;
+                sqlx::query("INSERT INTO game_boss_death_quest_skips(world_id,death_id,character_id,quest_key,definition_hash,request_binding,reason) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,'incompatible_definition') ON CONFLICT(world_id,death_id,character_id,quest_key) DO NOTHING")
+                    .bind(current.runtime_scope.world_id().as_bytes().as_slice()).bind(death.as_slice()).bind(current.character_id.as_bytes().as_slice()).bind(rule.quest()).bind(hash.as_slice()).bind(binding.as_slice()).execute(&mut **tx).await.map_err(DurabilityError::from)?;
+                return Ok(None);
+            }
+        }
+        (
+            hash,
+            state
+                .try_get::<String, _>("pinned_content_revision")
+                .map_err(DurabilityError::from)?,
+        )
+    } else {
+        if !matches!(rule, Binding::Overlord(_))
+            || !capacity::new_state_fits(tx, fence.character_id).await?
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        (
+            catalogue
+                .definition_hash(rule.quest())
+                .ok_or(CharacterProgressionError::InvalidInput)?,
+            catalogue.content_revision().to_owned(),
+        )
+    };
     let transition = *transitions
         .first()
         .ok_or(CharacterProgressionError::InvalidInput)?;
@@ -374,7 +470,7 @@ pub async fn apply_batch_in_transaction(
             hash: &hash,
             changes: &changes,
             binding: &binding,
-            state_exists: true,
+            state_exists,
         },
     )
     .await?;
@@ -400,6 +496,11 @@ async fn authorize(
     {
         return Ok(false);
     }
+    if matches!(rule, Binding::Overlord(_)) {
+        let death = boss_death_id(source, fence)?;
+        return sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_death_settlements WHERE world_id=encode($1,'hex')::uuid AND death_id=encode($2,'hex')::uuid AND created_xact_id=pg_current_xact_id() AND boss_key=ANY($3::text[])) OR EXISTS(SELECT 1 FROM game_party_kill_xp_receipts WHERE death_key=$4 AND created_xact_id=pg_current_xact_id() AND creature_key=ANY($3::text[]))")
+            .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(death.as_slice()).bind(rule.creatures(source)).bind(&source.death).fetch_one(&mut **tx).await.map_err(DurabilityError::from);
+    }
     // A shared-XP bystander is never the personal objective principal. Zero-stamina
     // deaths still have this native member audit and do not require an XP grant.
     sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_party_kill_xp_receipts d \
@@ -411,4 +512,33 @@ async fn authorize(
         .bind(&source.death).bind(fence.character_id.as_bytes().as_slice())
         .bind(rule.creatures(source)).bind(rule.quest()).bind(source.observed_revision.to_string())
         .fetch_one(&mut **tx).await.map_err(DurabilityError::from)
+}
+
+fn boss_death_id(
+    source: &NativeObjectiveDeath,
+    fence: &CurrentCharacterGameplayFence,
+) -> StoredResult<[u8; 16]> {
+    let start = source
+        .death
+        .len()
+        .checked_sub(12)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let actor = u32::from_be_bytes(
+        source.death[start..start + 4]
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    );
+    let generation = u64::from_be_bytes(
+        source.death[start + 4..]
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    );
+    Ok(
+        crate::durability::boss_encounter::reward_chest::scoped_death_id(
+            fence.runtime_scope,
+            fence.scope_ownership_generation.get(),
+            actor,
+            generation,
+        ),
+    )
 }

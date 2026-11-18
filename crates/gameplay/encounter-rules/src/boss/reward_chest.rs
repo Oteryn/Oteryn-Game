@@ -185,7 +185,8 @@ pub fn freeze_personal_rewards<I>(
     participants: &[FrozenBossContribution],
     mut rewards: impl FnMut([u8; 16], RewardParticipation) -> Vec<I>,
 ) -> Vec<PersonalRewardChest<I>> {
-    let eligibility = super::reward_eligibility(
+    let eligibility = super::reward_eligibility_for_boss(
+        boss_key,
         &participants
             .iter()
             .map(|participant| participant.contribution)
@@ -318,7 +319,7 @@ mod tests {
             },
         ];
         let chests = freeze_personal_rewards(
-            "oteryn:boss.fixture",
+            "oteryn:creature.earth_overlord",
             [9; 16],
             500,
             &participants,
@@ -394,7 +395,7 @@ mod tests {
             },
         ];
         let chests = freeze_personal_rewards(
-            "oteryn:boss.fixture",
+            "oteryn:creature.earth_overlord",
             [9; 16],
             REWARD_EXPIRY_MS,
             &participants,

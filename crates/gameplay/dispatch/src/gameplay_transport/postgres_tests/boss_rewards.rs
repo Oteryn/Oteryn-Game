@@ -34,17 +34,20 @@ mod paged_count;
 mod movement;
 
 #[path = "boss_rewards/privacy.rs"]
-mod privacy;
+pub(super) mod privacy;
 
 #[path = "boss_rewards/concurrent.rs"]
 mod concurrent;
 
 #[derive(Clone, Copy)]
 pub(super) enum Case {
+    AtomicDeathFault,
     LargePrivateCorpse,
     Collection,
     Expiry,
     NativeDeath,
+    NonOverlordHealing,
+    OrdinaryDamagerAndHealer,
     ProductionNativeDeath,
     OfflineReward,
     LivePrivacy,
@@ -102,9 +105,14 @@ pub(super) fn run_case(case: Case) -> TestResult {
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         super::reset();
-        let h = Harness::create_with_admission_seed(admin, "boss_rewards", true, false)
-            .await
-            .map_err(|error| format!("W03 fixture harness: {error:?}"))?;
+        let h = Harness::create_with_admission_seed(
+            admin,
+            "boss_rewards",
+            !matches!(case, Case::AtomicDeathFault),
+            false,
+        )
+        .await
+        .map_err(|error| format!("W03 fixture harness: {error:?}"))?;
         prepare_current_session(&h)
             .await
             .map_err(|error| format!("W03 fixture current session: {error:?}"))?;
@@ -119,7 +127,12 @@ fn scenario(case: Case) -> TestResult {
             .map_err(|error| format!("W03 fixture Character authority: {error:?}"))?;
         let mut deps = Dependencies::new()
             .map_err(|error| format!("W03 fixture native dependencies: {error:?}"))?;
-        let (controller, pin) = if matches!(case, Case::LargePrivateCorpse) {
+        let (controller, pin) = if matches!(case, Case::AtomicDeathFault) {
+            super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?
+        } else if matches!(case, Case::LargePrivateCorpse) {
             crate::content::native_gameplay::test_support::activated_reward_boss_corpse_capacity_fixture(
                 deps.admitted.world_id, None, Some(64),
             )
@@ -266,6 +279,15 @@ fn scenario(case: Case) -> TestResult {
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
+        if matches!(case, Case::AtomicDeathFault) {
+            owner.admit_progression_session(&mut admitted).await;
+            assert!(
+                owner
+                    .progression_binding(admitted.game_session_id)
+                    .is_some(),
+                "the fault case enters the real XP owner"
+            );
+        }
         // ITEM_VIEW_MOVE_V1 (4) requires WORLD_SPATIAL_ENTITIES (6). Omitting 6
         // legitimately prunes both 4 and its dependent BOSS_REWARDS_V1 (224).
         let supported = [4, 6, 117, CAPABILITY_BOSS_REWARDS_V1];
@@ -277,13 +299,27 @@ fn scenario(case: Case) -> TestResult {
             supported.as_slice(),
             "the physical reward fixture must negotiate every required capability"
         );
-        if matches!(case, Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse) {
-            let creature = if matches!(case, Case::ProductionNativeDeath) {
+        if matches!(
+            case,
+            Case::NativeDeath
+                | Case::AtomicDeathFault
+                | Case::ProductionNativeDeath
+                | Case::LargePrivateCorpse
+        ) {
+            let creature = if matches!(case, Case::ProductionNativeDeath | Case::AtomicDeathFault) {
                 "oteryn:creature.grand_mother_foulscale"
             } else {
                 "oteryn:creature.rat"
             };
-            native_death(&h, &owner, &mut admitted, fence, creature).await?;
+            native_death(
+                &h,
+                &owner,
+                &mut admitted,
+                fence,
+                creature,
+                matches!(case, Case::AtomicDeathFault),
+            )
+            .await?;
             eprintln!("BOSS_REWARDS POSTGRES_NATIVE_DEATH_COMPLETED");
             drop(owner);
             drop(authority);
@@ -302,15 +338,26 @@ fn scenario(case: Case) -> TestResult {
             Case::Collection
             | Case::LargePrivateCorpse
             | Case::NativeDeath
+            | Case::AtomicDeathFault
             | Case::ProductionNativeDeath
             | Case::OfflineReward
             | Case::LivePrivacy
+            | Case::OrdinaryDamagerAndHealer
+            | Case::NonOverlordHealing
             | Case::ConcurrentCollection => now,
             Case::Expiry => now - 604_800_000 + 1_000,
         };
         let contribution = RewardParticipation {
-            damage_dealt: 100,
-            damage_received: 20,
+            damage_dealt: if matches!(case, Case::NonOverlordHealing) {
+                0
+            } else {
+                100
+            },
+            damage_received: if matches!(case, Case::NonOverlordHealing) {
+                0
+            } else {
+                20
+            },
             healing_others: 10,
         };
         // The concurrent case isolates one live ordinal; all original cases retain four.
@@ -319,7 +366,7 @@ fn scenario(case: Case) -> TestResult {
         } else {
             4
         };
-        let plan = BossRewardDeath {
+        let mut plan = BossRewardDeath {
             death,
             boss_key: "oteryn:boss.reward_fixture".into(),
             minted_at_unix_ms: u64::try_from(minted)?,
@@ -343,6 +390,128 @@ fn scenario(case: Case) -> TestResult {
                 ],
             }],
         };
+        if matches!(case, Case::OrdinaryDamagerAndHealer) {
+            // The same compiled ordinary reward boss used by the production
+            // lethal-to-custody case; no synthetic boss identity defines policy.
+            plan.boss_key = "oteryn:creature.grand_mother_foulscale".into();
+            owner.reward_table().row(&plan.boss_key).map_err(debug)?;
+            let source = super::house_transfer::RecoverySource::start(&h).await?;
+            let session = privacy::admit_gameplay_peer(&h, &source.evidence, 1).await?;
+            let current =
+                crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                    .current_session_at(session)
+                    .await?
+                    .0;
+            let healer = item_fence_of(current).ok_or("healer fence")?;
+            plan.contributors.push(BossRewardContributor {
+                character_id: healer.character_id,
+                session_id: session,
+                lease_generation: healer.character_lease_generation,
+                contribution: RewardParticipation {
+                    damage_dealt: 0,
+                    damage_received: 0,
+                    healing_others: 100,
+                },
+            });
+            assert!(
+                h.root
+                    .settle_boss_reward_chests(
+                        &authority,
+                        &h.node,
+                        fence.runtime_scope,
+                        fence.scope_ownership_generation,
+                        plan.clone()
+                    )
+                    .await?,
+                "valid damager-plus-healer census settles without a healer chest"
+            );
+            assert!(
+                h.root
+                    .settle_boss_reward_chests(
+                        &authority,
+                        &h.node,
+                        fence.runtime_scope,
+                        fence.scope_ownership_generation,
+                        plan.clone()
+                    )
+                    .await?,
+                "durable replay settles once"
+            );
+            let census = plan
+                .contributors
+                .iter()
+                .map(|participant| {
+                    oteryn_gameplay_encounters::bosses::reward_chest::FrozenBossContribution {
+                        character: *participant.character_id.as_bytes(),
+                        contribution: participant.contribution,
+                    }
+                })
+                .collect::<Vec<_>>();
+            let planned = oteryn_gameplay_encounters::bosses::reward_chest::freeze_personal_rewards(
+                &plan.boss_key,
+                plan.death,
+                oteryn_gameplay_encounters::bosses::reward_chest::reward_expiry(
+                    plan.minted_at_unix_ms,
+                )
+                .ok_or("reward expiry")?,
+                &census,
+                |_, _| plan.chests[0].items.clone(),
+            );
+            assert_eq!(
+                planned
+                    .iter()
+                    .map(|chest| chest.character)
+                    .collect::<Vec<_>>(),
+                vec![*fence.character_id.as_bytes()],
+                "the production Rust planner excludes the healer too"
+            );
+            let counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_boss_reward_chests WHERE character_id=encode($1,'hex')::uuid)").bind(healer.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(counts, (1, 1, 0));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+        if matches!(case, Case::NonOverlordHealing) {
+            let result = h
+                .root
+                .settle_boss_reward_chests(
+                    &authority,
+                    &h.node,
+                    fence.runtime_scope,
+                    fence.scope_ownership_generation,
+                    plan,
+                )
+                .await;
+            assert!(
+                matches!(
+                    result,
+                    Err(crate::durability::DurabilityError::CommitRejected)
+                ),
+                "an unrelated reward boss must reject healing-only loot: {result:?}"
+            );
+            let counts: (i64, i64, i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_boss_reward_items)"
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(counts, (0, 0, 0));
+            let config: Option<Vec<String>> = sqlx::query_scalar(
+                "SELECT proconfig FROM pg_proc WHERE oid='game_boss_reward_death_complete()'::regprocedure"
+            ).fetch_one(&h.pool).await?;
+            let expected: String = sqlx::query_scalar(
+                "SELECT format('search_path=pg_catalog, %I, pg_temp', current_schema())",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                config,
+                Some(vec![expected]),
+                "the replacement keeps its fixed search path"
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let mut wrong_source_lease = plan.clone();
         wrong_source_lease.contributors[0].lease_generation += 1;
         wrong_source_lease.chests[0].lease_generation += 1;
@@ -441,7 +610,14 @@ fn scenario(case: Case) -> TestResult {
             )
             .await
             .map_err(|error| format!("W03 expiry scenario: {error}"))?,
-            Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse => return Err("native scenario already returned".into()),
+            Case::NativeDeath
+            | Case::AtomicDeathFault
+            | Case::ProductionNativeDeath
+            | Case::LargePrivateCorpse
+            | Case::OrdinaryDamagerAndHealer
+            | Case::NonOverlordHealing => {
+                return Err("native scenario already returned".into());
+            }
             Case::OfflineReward => {
                 assert_eq!(
                     sqlx::query_scalar::<_, i32>(

@@ -35,7 +35,9 @@ fn srx3_soul_war_personal_loot_keeps_literal_local_chance_for_every_recipient()
             let frozen = FrozenBossDeath {
                 participants: vec![
                     participant(10, 100, 0, 0),
-                    participant(20, 0, 100, 100),
+                    // Ordinary recipients must also damage the boss; this one
+                    // qualifies while healing and blocking the other attacks.
+                    participant(20, 1, 100, 100),
                     participant(30, 1, 0, 0),
                 ],
                 reward,

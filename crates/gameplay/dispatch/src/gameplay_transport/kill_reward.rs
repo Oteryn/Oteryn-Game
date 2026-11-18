@@ -126,6 +126,8 @@ pub struct PendingKillSettlement {
     /// Capability 492: each reward recipient's Moonsilver pity bonus (permille of base),
     /// read once before the personal roll so a settlement retry re-plans the same items.
     pub(super) boss_pity: Arc<OnceLock<BossSlotBonuses>>,
+    pub(super) boss_reward_plan:
+        Arc<OnceLock<crate::durability::boss_encounter::reward_chest::BossDeathAtomicPlan>>,
     pub ground: DeathGroundContext,
     /// The killed actor whose committed corpse projection the minted corpse
     /// Item binds to (MAP-ITEM-REF-1 Part B, D607).
@@ -186,6 +188,7 @@ pub(super) fn world_change_credits(
 pub(super) struct CapturedActivityDeath {
     pub(super) creature: String,
     pub(super) died_at_unix_ms: i64,
+    observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 }
 
 /// Closed native progression consumers. Missing loot never admits arbitrary XP.
@@ -250,6 +253,7 @@ impl PendingKillSettlement {
             bosstiary_only,
             boss_slot_bonuses: Arc::new(OnceLock::new()),
             boss_pity: Arc::new(OnceLock::new()),
+            boss_reward_plan: Arc::default(),
             ground,
             target,
             activity_observed_at: observed_at,
@@ -401,8 +405,8 @@ struct KillQueueState {
     prey_loot: Vec<(ExactActorRef, u8)>,
     /// At most one clock per bounded native corpse projection, including settled
     /// deaths whose original command may still replay. Pruned on every capture.
-    activity_deaths: Vec<(ExactActorRef, CapturedActivityDeath)>,
-    /// Same retained-projection bound as activity_deaths; no uncommitted death is
+    death_clocks: Vec<(ExactActorRef, CapturedActivityDeath)>,
+    /// Same retained-projection bound as death_clocks; no uncommitted death is
     /// recovered across a lost scope incarnation (D52).
     tutorial_loot: Vec<(
         ExactActorRef,
@@ -1151,21 +1155,22 @@ impl KillSettlementQueue {
         percent
     }
 
-    fn freeze_activity_death(
+    fn freeze_death_clock(
         &self,
         runtime: &ChannelRuntimeV1,
         target: ExactActorRef,
         creature: &str,
+        observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
     ) -> Option<CapturedActivityDeath> {
         let mut state = self.state();
         state
-            .activity_deaths
+            .death_clocks
             .retain(|(actor, _)| runtime.retains_corpse_projection(*actor));
         if !runtime.retains_corpse_projection(target) {
             return None;
         }
         if let Some((_, frozen)) = state
-            .activity_deaths
+            .death_clocks
             .iter()
             .find(|(actor, _)| *actor == target)
         {
@@ -1178,9 +1183,10 @@ impl KillSettlementQueue {
         let frozen = CapturedActivityDeath {
             creature: creature.to_owned(),
             died_at_unix_ms,
+            observed_at,
         };
-        state.activity_deaths.try_reserve(1).ok()?;
-        state.activity_deaths.push((target, frozen.clone()));
+        state.death_clocks.try_reserve(1).ok()?;
+        state.death_clocks.push((target, frozen.clone()));
         Some(frozen)
     }
 
@@ -1973,17 +1979,33 @@ pub fn record_creature_kill(
     // Retain room victory independently of loot admission. If a personal reward
     // plan is admitted, its existing atomic settlement consumes the room death;
     // otherwise the nonreward descendant still needs this sealed occurrence.
-    let activity_death = if matches!(
+    let in_instance = matches!(
         target.runtime_scope(),
         crate::foundation::RuntimeScopeRefV1::Instance { .. }
-    ) {
-        let Some(frozen) = sink.queue.freeze_activity_death(runtime, target, &creature) else {
-            refuse("activity_death_capture_unavailable", &creature);
+    );
+    let overlord = oteryn_gameplay_quests::quest::source_deaths::overlord(&creature).is_some();
+    let (activity_death, overlord_death_at, observed_at) = if in_instance || overlord {
+        let Some(frozen) = sink
+            .queue
+            .freeze_death_clock(runtime, target, &creature, observed_at)
+        else {
+            refuse("death_clock_capture_unavailable", &creature);
             return;
         };
-        Some(frozen)
+        let overlord_death_at = overlord.then_some(frozen.died_at_unix_ms);
+        // The XP receipt binds the original activity time to this exact death.
+        let observed_at = if overlord {
+            frozen.observed_at
+        } else {
+            observed_at
+        };
+        (
+            in_instance.then_some(frozen),
+            overlord_death_at,
+            observed_at,
+        )
     } else {
-        None
+        (None, None, observed_at)
     };
     let mut owner = runtime.borrow_combat_death();
     let Ok(top) = owner.top_damage_contributor(target) else {
@@ -2019,7 +2041,9 @@ pub fn record_creature_kill(
     else {
         return;
     };
-    facts.died_at_unix_ms = u64::try_from(super::npc_trade_command::unix_ms_now()).unwrap_or(0);
+    facts.died_at_unix_ms =
+        u64::try_from(overlord_death_at.unwrap_or_else(super::npc_trade_command::unix_ms_now))
+            .unwrap_or(0);
     if untracked {
         // The lethal hit is the untracked principal's own clocked damage.
         facts.principal_last_damage_at_ms = Some(facts.death_at_ms);
@@ -2147,7 +2171,8 @@ pub fn record_creature_kill(
             // death with a present principal may carry its separately sourced work;
             // no fallback invents XP, a loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
-            if boss.is_none()
+            if !overlord
+                && boss.is_none()
                 && (top.present().is_none()
                     || !super::grizzly_kills::tracks_creature(&creature)
                         && !super::grizzly_kills::tracks_native_creature(sink.queue, &creature)
@@ -2178,6 +2203,7 @@ pub fn record_creature_kill(
                             bosstiary_only: None,
                             boss_slot_bonuses: Arc::new(OnceLock::new()),
                             boss_pity: Arc::new(OnceLock::new()),
+                            boss_reward_plan: Arc::default(),
                             ground,
                             target,
                             activity_observed_at: observed_at,
@@ -2595,6 +2621,7 @@ pub fn record_creature_kill(
         bosstiary_only: None,
         boss_slot_bonuses: Arc::new(OnceLock::new()),
         boss_pity: Arc::new(OnceLock::new()),
+        boss_reward_plan: Arc::default(),
         ground,
         target,
         source_death_pending: false,
@@ -3641,6 +3668,29 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         }
+        // Crystal grants BossStorage directly from the death's damage map. A missing
+        // corpse reward row still has a canonical death and frozen quest recipients.
+        if entry.row.is_none()
+            && entry.encounter_experience.is_none()
+            && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
+        {
+            let Some(permit) = admission.spell_lane_permit().await else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            if admission
+                .settle_boss_without_experience(&permit, entry)
+                .await
+                .is_err()
+            {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
+        }
         if let Some(experience) = entry.encounter_experience {
             let Some(permit) = admission.spell_lane_permit().await else {
                 return SettleReport {
@@ -3781,6 +3831,16 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .iter()
             .any(|death| death.occurrence == entry.facts.occurrence && death.reward_principal_gone);
         if proficiency_only {
+            if admission
+                .settle_boss_without_experience(&permit, entry)
+                .await
+                .is_err()
+            {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
             drop(permit);
             if let Some(race) = entry.row.as_ref().and_then(|row| row.race.as_ref())
                 && !admission
@@ -3800,6 +3860,22 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             );
             return SettleReport {
                 verdict: SettleVerdict::Final,
+                no_progression: false,
+            };
+        }
+        // A session without an XP binding keeps its existing no-write XP refusal.
+        // Its admitted private rewards still use the same canonical death owner.
+        if admission
+            .progression_binding(self.fence.game_session_id)
+            .is_none()
+            && entry.boss_reward_plan.get().is_some()
+            && admission
+                .settle_boss_without_experience(&permit, entry)
+                .await
+                .is_err()
+        {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
                 no_progression: false,
             };
         }
