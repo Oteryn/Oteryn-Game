@@ -325,6 +325,9 @@ pub struct Encounter {
     pub monsters: Vec<EncounterMonster>,
     pub room_min: Position,
     pub room_max: Position,
+    /// Crystal the_annihilator/lever.lua:28-39,52-60 reads the top creature on each pad.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub select_top_creature: bool,
     /// A value-free source switch schedules native monsters without moving a party.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timing: Option<EncounterTiming>,
@@ -1190,6 +1193,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             }
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())
+            || (encounter.select_top_creature && encounter.players.is_empty())
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()

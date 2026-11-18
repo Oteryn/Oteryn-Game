@@ -10,7 +10,7 @@ fn timed_encounter_moves_the_admitted_group_at_expiry_and_resets_the_lever() -> 
 }
 
 #[test]
-fn timed_encounter_uses_the_lever_to_admit_and_eject_two_players() -> TestResult {
+fn timed_encounter_admits_and_ejects_only_the_top_players_on_two_pads() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };

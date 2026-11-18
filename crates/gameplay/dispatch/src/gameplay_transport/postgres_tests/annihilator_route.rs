@@ -226,7 +226,8 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let mut operations = Vec::new();
         let participants = match route {
             Route::CathedralNote | Route::Logic | Route::TimedPassage => 1,
-            Route::Ashmunrah | Route::BansheeWindows | Route::CoalBasin | Route::Demonrage | Route::Lord | Route::TimedPair => 2,
+            Route::Ashmunrah | Route::BansheeWindows | Route::CoalBasin | Route::Demonrage | Route::Lord => 2,
+            Route::TimedPair => 3,
             _ => 4,
         };
         for index in 0..participants {
@@ -711,13 +712,35 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                 .ok_or("fixture encounter")?
                 .clone();
             // Exercise the Lord deadline (actions_lord_of_elements_lever.lua:63-69,180)
-            // on the real Annihilator pads. The pair fixture keeps the first
-            // two donor pads and destinations without modifying the source row.
-            if route == Route::TimedPair {
-                entry.effects.encounter.as_mut().ok_or("fixture encounter effect")?
-                    .players.truncate(admitted.len());
-            }
+            // on the real Annihilator pads. Crystal the_annihilator/lever.lua:28-39,52-60
+            // selects the top creature at each pad even if another player is underneath.
             let mut authored = serde_json::to_value(&entry)?;
+            authored["effects"]["encounter"]["select_top_creature"] = true.into();
+            if route == Route::TimedPair {
+                let pads = authored["effects"]["encounter"]["players"]
+                    .as_array_mut()
+                    .ok_or("fixture encounter pads")?;
+                pads.truncate(2);
+                let pad = serde_json::from_value(pads[1]["from"].clone())?;
+                let guest = &admitted[2];
+                let actor = guest.runtime_actor.ok_or("stacked participant")?;
+                let mut runtime = owner.runtime.lock().await;
+                let expected = runtime.read_actor_position(actor).map_err(debug)?;
+                let doors = crate::map::floor::BundleDoors(&map.facts);
+                let proof = crate::map::floor::prepare_quest_encounter_ejection(
+                    &runtime,
+                    owner.movement_cells(),
+                    actor,
+                    guest.game_session_id,
+                    expected,
+                    local(pad),
+                    &doors,
+                )
+                .map_err(debug)?;
+                runtime.commit_source_step(proof).map_err(debug)?;
+                assert_eq!(runtime.current_top_actor_on_cell(local(pad)).map_err(debug)?, Some(actor));
+                admitted.swap(1, 2);
+            }
             authored["effects"]["timed_group_transfer"] = serde_json::json!({
                 "after_ms": 600000,
                 "destination": start,
@@ -742,12 +765,17 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             UseDisposition::Committed
         );
         let runtime = owner.runtime.lock().await;
-        for (member, x) in admitted.iter().zip([33222, 33221, 33220, 33219]) {
+        let arrivals: &[(i32, i32)] = if route == Route::TimedPair {
+            &[(33222, 31659), (33221, 31659), (33224, 31671)]
+        } else {
+            &[(33222, 31659), (33221, 31659), (33220, 31659), (33219, 31659)]
+        };
+        for (member, &(x, y)) in admitted.iter().zip(arrivals) {
             let at = runtime
                 .read_actor_position(member.runtime_actor.ok_or("actor")?)
                 .map_err(debug)?
                 .position();
-            assert_eq!((at.x, at.y, at.floor), (x, 31659, 13));
+            assert_eq!((at.x, at.y, at.floor), (x, y, 13));
         }
         assert_eq!(runtime.visible_entities().creatures.len(), 6);
         drop(runtime);
@@ -795,6 +823,12 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                     Position {
                         x: start.x + 2,
                         ..start
+                    }
+                } else if route == Route::TimedPair && index == 2 {
+                    Position {
+                        x: 33224,
+                        y: 31671,
+                        floor: -13,
                     }
                 } else {
                     start

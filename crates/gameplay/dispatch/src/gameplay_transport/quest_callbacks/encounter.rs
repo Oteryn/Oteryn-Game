@@ -212,9 +212,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut players = Vec::new();
         let mut proofs = Vec::new();
         for member in &encounter.players {
-            let mut occupants = census
-                .iter()
-                .filter(|(_, pos, _)| pos.position() == local(member.from));
+            let station = local(member.from);
+            let top = if encounter.select_top_creature {
+                let Ok(top) = runtime.current_top_actor_on_cell(station) else {
+                    return UseDisposition::Rejected;
+                };
+                top
+            } else {
+                None
+            };
+            let mut occupants = census.iter().filter(|(actor, pos, _)| {
+                pos.position() == station && (!encounter.select_top_creature || top == Some(*actor))
+            });
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
                 if encounter.phase
