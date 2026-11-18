@@ -27,12 +27,22 @@ pub(super) fn prepare(
             // Crystal rapanaio.lua:90-100,206-235. Keep the prompt and its
             // confirmation on the same topic owner once the intake is authored.
             if context.2 == "oteryn:npc.rapanaio"
-                && matches!(decision.next_topic, Some(10 | 11))
+                && let Some(topic @ (10 | 11)) = decision.next_topic
                 && admission.quest_catalogue.as_ref().is_some_and(|catalogue| {
                     NpcRuleCatalog::for_state(catalogue)
                         .ok()
                         .and_then(|source| source.admitted_for_npc(&context.2, catalogue).ok()?)
-                        .is_some_and(|source| source.item_exchange_keys(&context.2).is_some())
+                        .is_some_and(|source| {
+                            source.item_exchange_keys(&context.2).is_some()
+                                && source.programs().iter().flat_map(|p| &p.document.rules).any(|rule| {
+                                    rule.npc == context.2
+                                        && rule.topics.as_ref().is_some_and(|topics| topics.contains(&i32::from(topic)))
+                                        && rule.effects.iter().any(|effect| matches!(
+                                            effect,
+                                            oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::TakeItem { subtype: Some(_), .. }
+                                        ))
+                                })
+                        })
                 })
             {
                 return None;

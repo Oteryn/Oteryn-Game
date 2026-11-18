@@ -1,5 +1,6 @@
 // Keep delegated lane futures off the shared scenario stack as the integration grows.
 use super::*;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
     scenario_case(name, trigger, lever_fixture, None)
@@ -1584,6 +1585,13 @@ fn scenario_case(
         runtime
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
+        if boreth_cleanup || marziel_blood {
+            generation
+                .native_gameplay()
+                .ok_or("native encounter policies")?
+                .install_companion_policies(&mut runtime)
+                .map_err(debug)?;
+        }
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let premium = if name.starts_with("authored-")
             || name == "nx6-wayfarer"
