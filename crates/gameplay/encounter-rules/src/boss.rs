@@ -94,13 +94,8 @@ pub fn reward_eligibility_for_boss(boss: &str, participants: &[RewardParticipati
         .map(|p| u128::from(p.healing_others))
         .sum();
     let dealers = participants.iter().filter(|p| p.damage_dealt > 0).count() as u128;
-    let fraction = |value: u64, total: u128| {
-        if total == 0 {
-            0
-        } else {
-            u128::from(value) * SCALE / total
-        }
-    };
+    let fraction =
+        |value: u64, total: u128| (u128::from(value) * SCALE).checked_div(total).unwrap_or(0);
     participants
         .iter()
         .map(|p| {
