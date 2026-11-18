@@ -214,6 +214,26 @@ impl DurabilityRoot {
     }
 }
 
+/// Crystal 201189f8, a_piece_of_cake_config.lua:116-118 and world_bonus.lua:3-42.
+impl CakeWorldBonus {
+    pub const EXPERIENCE_PERCENT: i64 = 50;
+    pub const REGENERATION_PERCENT: u32 = 25;
+}
+
+pub(super) async fn bonus_active_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    world: WorldId,
+) -> Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_cake_phases
+         WHERE world_id=encode($1,'hex')::uuid
+         AND bonus_activated_at<=transaction_timestamp() AND transaction_timestamp()<bonus_until)",
+    )
+    .bind(world.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CakeWorldBonus {
     pub remaining_ms: u64,

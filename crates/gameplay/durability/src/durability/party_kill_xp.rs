@@ -294,6 +294,11 @@ pub async fn commit_in_transaction<const N: usize>(
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
     super::world_event_outcomes::capture_kill(tx, &input).await?;
     super::world_event::capture_kill(tx, &input).await?;
+    let cake_bonus = if input.members.iter().any(|member| member.premium) {
+        super::cake_event::bonus_active_in_transaction(tx, scope.runtime_scope().world_id()).await?
+    } else {
+        false
+    };
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
         let bounty = super::task_board::read_talisman_in_transaction(tx, member.fence).await?;
@@ -375,6 +380,15 @@ pub async fn commit_in_transaction<const N: usize>(
             modifiers.level,
         )
         .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let amount = if cake_bonus && member.premium {
+            let bonus = i128::from(amount)
+                * i128::from(super::cake_event::CakeWorldBonus::EXPERIENCE_PERCENT)
+                / 100;
+            i64::try_from(i128::from(amount) + bonus)
+                .map_err(|_| CharacterProgressionError::InvalidInput)?
+        } else {
+            amount
+        };
         let mut request = member.request;
         request.amount = oteryn_simulation_determinism::ExactI64::new(amount);
         let xp = if amount > 0 {

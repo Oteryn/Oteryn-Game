@@ -67,6 +67,7 @@ pub(super) enum Case {
     CharmParry,
     T94,
     CharmSecondary,
+    CakeBonus,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -91,6 +92,7 @@ impl Case {
         matches!(
             self,
             Self::Shared
+                | Self::CakeBonus
                 | Self::Modifiers
                 | Self::Replay
                 | Self::Rollback
@@ -577,6 +579,9 @@ async fn scenario(
                 .is_some()
         );
         assert!(states.load_owned_build(&runtime, actor, session, &build));
+    }
+    if matches!(case, Case::CakeBonus) {
+        Box::pin(super::cake_world_bonus::activate(&owner, h, &players)).await?;
     }
     for (actor, session) in &players {
         assert!(owner.refresh_source_party_presence(*actor, *session).await);
@@ -1551,7 +1556,9 @@ async fn scenario(
         .map(|r| r.1)
         .sum::<i64>();
     // Every Character here is level 1: the Global low-level bonus (+100%) doubles each award.
-    if matches!(case, Case::Inactive) {
+    if matches!(case, Case::CakeBonus) {
+        super::cake_world_bonus::check_awards(first_award, second_award);
+    } else if matches!(case, Case::Inactive) {
         assert_eq!((first_award, second_award), (10, 0));
     } else if matches!(case, Case::Concurrent) {
         assert_eq!((first_award, second_award), (22, 22));

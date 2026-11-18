@@ -163,6 +163,100 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         *cache = Some((bundle, native.source_digest(), sources.clone()));
         Some(sources)
     }
+    /// Project the current World reward onto present owners. A saved or already
+    /// projected Cake condition keeps its original expiry and partial ticks.
+    pub(super) async fn refresh_cake_regeneration(&self) {
+        use crate::domain::condition::{ConditionValues, ConflictKey};
+        use crate::foundation::condition::{
+            ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+        };
+        use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+        const KEY: &str = "source.cake.world-regeneration";
+        let sampled = self.owner_now().get();
+        let Ok(Some(bonus)) = self.root.cake_world_bonus(self.world_id).await else {
+            return;
+        };
+        let runtime = self.runtime.lock().await;
+        if runtime.owner_fence().is_err() || runtime.binding().world_id() != self.world_id {
+            return;
+        }
+        let mut states = self.states.spell_states.lock().await;
+        let now = self.owner_now().get();
+        let remaining_ms = bonus
+            .remaining_ms
+            .saturating_sub(now.saturating_sub(sampled).div_ceil(1000));
+        let Ok(duration_ms) = u32::try_from(remaining_ms) else {
+            return;
+        };
+        if duration_ms == 0 {
+            return;
+        }
+        let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        for index in 0..states.actors.len() {
+            let (actor, session, _) = states.actors[index];
+            let Some(current) = states.get(&runtime, actor, session) else {
+                continue;
+            };
+            let store = current.owned_conditions();
+            if current.vitals().health == 0
+                || store
+                    .active_at(ConflictKey::Recovery, now)
+                    .is_some_and(|active| active.definition().key() == KEY)
+            {
+                continue;
+            }
+            let rate = crate::spell::food_regeneration::rate(current.character_facts().vocation);
+            let extra = |gain: u32| {
+                (gain * crate::durability::cake_event::CakeWorldBonus::REGENERATION_PERCENT / 100)
+                    .max(u32::from(gain > 0))
+            };
+            let Some(definition) = ConditionDefinition::new(
+                KEY,
+                1,
+                ConditionValues::SpellRegeneration {
+                    sub_id: 0,
+                    duration_ms,
+                    health_gain: extra(rate.health_amount),
+                    health_interval_ms: rate.health_period_ms,
+                    mana_gain: extra(rate.mana_amount),
+                    mana_interval_ms: rate.mana_period_ms,
+                },
+            ) else {
+                continue;
+            };
+            let mut conditions = store.clone();
+            if conditions
+                .apply(
+                    &definition,
+                    None,
+                    ConditionSourceKind::SelfUse,
+                    &[],
+                    &ApplicationFacts {
+                        now,
+                        base_speed: 0,
+                        mana_shield_capacity: 0,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: true,
+                        decision_root: &root,
+                        occurrence: DecisionOccurrenceId::from_bytes(actor.placement_identity()),
+                    },
+                )
+                .is_err()
+            {
+                continue;
+            }
+            let mut next = current.clone();
+            if next.apply_batch_conditions(store, &conditions).is_ok()
+                && next.advance_batch_revision().is_ok()
+                && states.commit(&runtime, actor, session, next)
+            {
+                states.owner_wake.notify_one();
+            }
+        }
+    }
+
     pub(in crate::gameplay_transport) async fn refresh_cake_world_map(&self) -> bool {
         let Some(native) = self
             .active_generation

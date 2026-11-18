@@ -93,7 +93,12 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             self.background_unit("item-clock", index + 1, async {
                 match index {
                     0 => self.drain_corpse_deadlines().await,
-                    1 => self.refresh_terrain_tools().await,
+                    1 => {
+                        self.refresh_terrain_tools().await;
+                        self.root
+                            .with_background_operation(self.refresh_cake_regeneration())
+                            .await;
+                    }
                     index if index < 2 + sessions.len() * 2 => {
                         let (actor, session) = sessions[(index - 2) / 2];
                         let Some(_permit) = self.spell_lane_permit().await else {
