@@ -70,7 +70,7 @@ fn bindings() -> TestResult<Bindings> {
     let callback = serde_json::json!({
         "key":"oteryn:quest-callback/banshee/plague-entrance",
         "quest":QUEST, "trigger":"step_in",
-        "selector":{"action":35002,"appearance":1949},
+        "selector":{"action":35002,"appearance":1949,"position":position(TRIGGER)},
         "requires_world_admission":true, "reversible":false, "passages":[],
         "return_on_failure":true, "teleport":position(DESTINATION),
         "storage":[{"track":SECOND,"minimum":-1,"maximum":0,"set":0,"preserve":true}],
@@ -81,7 +81,15 @@ fn bindings() -> TestResult<Bindings> {
         "effects":{"teleport_effect":11},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-2-second_seal_pearl.lua:3-33"]
     });
-    let recipe_sha256: String = Sha256::digest(serde_json::to_vec(&callback)?)
+    let mut east = callback.clone();
+    east["key"] = "oteryn:quest-callback/banshee/plague-entrance-east".into();
+    east["selector"]["position"] = position(EAST_TRIGGER);
+    east["teleport"] = position(EAST_DESTINATION);
+    let stages = serde_json::json!([
+        {"key":"plague-entrance","completes":false,"trigger":{"kind":"step_in","callback":callback}},
+        {"key":"plague-entrance-east","completes":false,"trigger":{"kind":"step_in","callback":east}}
+    ]);
+    let recipe_sha256: String = Sha256::digest(serde_json::to_vec(&stages)?)
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect();
@@ -89,7 +97,7 @@ fn bindings() -> TestResult<Bindings> {
         "schema":1,"quests":[{
             "quest":QUEST,"recipe_sha256":recipe_sha256,"sources":callback["sources"],
             "tracks":[{"key":SECOND,"initial":-1,"minimum":-1,"maximum":1}],
-            "stages":[{"key":"plague-entrance","completes":false,"trigger":{"kind":"step_in","callback":callback}}]
+            "stages":stages
         }]
     }))?)?)
 }
@@ -331,7 +339,7 @@ fn scenario() -> TestResult {
         .fetch_all(&h.pool)
         .await?;
         assert_eq!(receipt_guards, [true, true]);
-        let consumption_counts: Vec<i32> = sqlx::query_scalar("SELECT quantity FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-callback/banshee/plague-entrance' ORDER BY item_instance_id")
+        let consumption_counts: Vec<i32> = sqlx::query_scalar("SELECT quantity FROM game_quest_callback_consumptions WHERE transition_key IN ('oteryn:quest-callback/banshee/plague-entrance','oteryn:quest-callback/banshee/plague-entrance-east') ORDER BY item_instance_id")
             .fetch_all(&h.pool).await?;
         assert_eq!(consumption_counts, [1, 1, 1, 1]);
         drop(owner);
