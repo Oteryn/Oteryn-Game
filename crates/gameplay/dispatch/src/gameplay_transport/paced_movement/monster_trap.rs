@@ -526,10 +526,18 @@ mod tests {
             let crate::map::view::EntrySource::Added(id) = current[0].source else {
                 return Err("created source identity".into());
             };
-            assert!(
-                !map.facts.compare_transform_movement_item(id.get(), 0, trap),
-                "a stale revision cannot rearm a consumed trap"
-            );
+            if trap == 12187 && creature != "oteryn:creature.travelling_merchant" {
+                assert_eq!(
+                    map.facts.object_revision(id.get()),
+                    0,
+                    "a non-merchant leaves the net untouched"
+                );
+            } else {
+                assert!(
+                    !map.facts.compare_transform_movement_item(id.get(), 0, trap),
+                    "a stale revision cannot rearm a consumed trap"
+                );
+            }
             assert!(
                 !map.facts.compare_transform_movement_item(
                     crate::map::view::placement_key(pos, 0).ok_or("base key")?,
