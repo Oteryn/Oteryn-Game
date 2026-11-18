@@ -4,7 +4,8 @@
 use crate::item_craft::CookingConversion;
 use crate::novelty_items::{GroundEffect, NoveltyCue, NoveltyEffects, NoveltyKind, NoveltyPlan};
 use crate::reward_bag::{
-    event_containers::event_container_rule, reward_bag_conversion, reward_bag_draw,
+    event_containers::{event_container_rule, legacy_conversion_rule},
+    reward_bag_conversion, reward_bag_draw,
 };
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
@@ -58,6 +59,7 @@ pub fn effects(key: &str, source_position: Option<GroundEffect>) -> Option<Novel
     })
 }
 
+/// Carried SP04 sources must reach item craft and keep its instance-tagged receipt.
 pub fn conversion(
     native: &NativeGameplayState,
     used: &TypedDefinitionRef,
@@ -65,7 +67,7 @@ pub fn conversion(
     command: u64,
     source: [u8; 16],
 ) -> Option<CookingConversion> {
-    event_container_rule(&used.production_key)?;
+    legacy_conversion_rule(&used.production_key)?;
     reward_bag_conversion(native, used, reward_bag_draw(session, command, source))
 }
 
@@ -77,8 +79,9 @@ pub fn plan(
     source: [u8; 16],
     ground: Option<GroundEffect>,
 ) -> Option<NoveltyPlan> {
-    let conversion = conversion(native, used, session, command, source)?;
     let effects = effects(&used.production_key, ground)?;
+    let conversion =
+        reward_bag_conversion(native, used, reward_bag_draw(session, command, source))?;
     Some(NoveltyPlan {
         recipe: format!("oteryn:event-container.{}", effects.source_item_id),
         outputs: conversion.outputs,

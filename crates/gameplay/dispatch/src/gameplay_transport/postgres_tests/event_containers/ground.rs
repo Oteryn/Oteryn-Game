@@ -1,4 +1,7 @@
 //! Ground event bags use SP04 rewards with the fenced ground action receipt.
+//! Crystal 201189f8 special_boxes.lua:109-124 awards one gift at the source
+//! tile. anniversary_reward_boxes.lua:59-71 awards the full bundle to the
+//! player and removes the source stack regardless of its position.
 use super::*;
 use serde_json::Value;
 

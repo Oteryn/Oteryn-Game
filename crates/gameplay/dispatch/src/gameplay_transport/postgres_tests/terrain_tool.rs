@@ -35,6 +35,8 @@ fn m08_multi_scythe_harvests_wheat_through_the_wire() -> TestResult {
     run_case_with_decay("oteryn:item.tibia.i9596", 3653, 3651, vec![3652, 3653])
 }
 
+// Crystal 201189f8 register_actions.lua:1035-1044 transforms burning cane to
+// 5463 for both tools. Item 5463 has no decay target (items.xml:15002-15005).
 #[test]
 fn m08_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
     run_case_with_decay("oteryn:item.tibia.i3453", 5464, 5463, Vec::new())
