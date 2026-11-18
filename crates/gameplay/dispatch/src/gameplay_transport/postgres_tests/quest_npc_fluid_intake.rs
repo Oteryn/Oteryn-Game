@@ -22,9 +22,15 @@ const LAZARAN_BEER: &str =
 const MISSING: &str = "You have not brought the requested drink.";
 const ACCEPTED: &str = "Thank you for the drink.";
 
-pub(super) fn generation_with_items(
+pub(super) enum FixtureItem {
+    Pot,
+    Skull,
+    HeatedHammer,
+}
+
+pub(super) fn generation_with_item(
     world: crate::foundation::WorldId,
-    skull: bool,
+    item: FixtureItem,
 ) -> TestResult<(
     crate::content::ContentActivationController,
     crate::content::NativeEntryContentPin,
@@ -34,17 +40,23 @@ pub(super) fn generation_with_items(
     let profiles = input.item_profiles.as_mut().ok_or("native item profiles")?;
     let mut packet: Value = serde_json::from_slice(&profiles.bytes)?;
     let records = packet["records"].as_array_mut().ok_or("profile records")?;
-    let (id, template, name, weight) = if skull {
+    let (id, template, name, weight) = match item {
         // Crystal 201189f8 data/items/items.xml:26533-26536.
-        (
+        FixtureItem::Skull => (
             10159,
             "oteryn:item.tibia.i10198",
             "skull of a caveman",
             2180,
-        )
-    } else {
+        ),
         // Crystal 201189f8 data/items/items.xml:10874-10878.
-        (3465, "oteryn:item.tibia.i2874", "pot", 5250)
+        FixtureItem::Pot => (3465, "oteryn:item.tibia.i2874", "pot", 5250),
+        // Crystal 201189f8 data/items/items.xml:24803-24809.
+        FixtureItem::HeatedHammer => (
+            9201,
+            "oteryn:item.tibia.i10198",
+            "heated worm punisher",
+            6450,
+        ),
     };
     let key = format!("oteryn:item.tibia.i{id}");
     if !records

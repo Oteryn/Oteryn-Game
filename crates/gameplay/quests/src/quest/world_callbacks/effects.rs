@@ -45,6 +45,9 @@ pub struct ItemDisguiseRequirement {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Earned from this committed world stage through the existing account ledger.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub achievement: Option<String>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -435,6 +438,15 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.achievement.as_ref().is_some_and(|key| {
+        !key.starts_with("oteryn:achievement/")
+            || !super::super::valid_quest_key(key)
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !callback.has_state_writes()
+    }) {
+        return false;
+    }
     if effects
         .progress_magic
         .as_ref()

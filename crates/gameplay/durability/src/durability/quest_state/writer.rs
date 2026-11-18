@@ -2290,6 +2290,17 @@ impl DurabilityRoot {
                             &context.content_revision, achievement.as_ref()).await?;
                         super::super::quest_unnatural_selection::earn(&mut tx, fence, &request, callback,
                             &changes, dance_achievement.as_ref()).await?;
+                        // Crystal actions_heated_worm_punisher.lua:39-46. The
+                        // account grant belongs to the same committed use.
+                        if let Some(key) = callback.effects.achievement.as_deref() {
+                            let (cause, ordinal) = request.cause.key();
+                            let mut event = character.as_bytes().to_vec();
+                            event.extend_from_slice(&cause);
+                            event.extend_from_slice(&ordinal.to_be_bytes());
+                            super::super::account_achievement::grant_missing(
+                                &mut tx, character, &[key], "oteryn:quest-world-callback", &event,
+                            ).await?;
+                        }
                     }
                     // Item custody participants finish before the account appearance lock.
                     if let Some(world) = &callback
