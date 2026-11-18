@@ -256,11 +256,8 @@ fn chamber(two_players: bool) -> TestResult {
                     let key = source_lever(map, world_tile(station.lever))?;
                     let mut placement = world.base().digest().to_vec();
                     placement.extend_from_slice(&key.to_be_bytes());
-                    // Advance the fixture's monotonic owner time between USEs.
-                    owner.states.test_owner_time.store(
-                        owner.owner_now().get() + 1_000_001,
-                        std::sync::atomic::Ordering::Relaxed,
-                    );
+                    // The ordinary USE gate measures the real Channel clock.
+                    tokio::time::sleep(std::time::Duration::from_millis(210)).await;
                     let outcome = owner
                         .use_object(
                             actor,
