@@ -999,7 +999,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect::<Vec<_>>();
         let source_trial = selected
             .iter()
-            .any(|c| c.effects.target_transform.is_some());
+            .any(|c| c.effects.target_transform.is_some() || c.effects.use_spawn.is_some());
         self.select_source_phase(&mut selected, actor, &command)
             .await;
         if source_trial && selected.is_empty() {

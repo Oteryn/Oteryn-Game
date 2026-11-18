@@ -66,8 +66,8 @@ pub(super) fn callback() -> TestResult<Callback> {
         "requires_world_admission": true,
         "passages": [],
         "storage": [
-            {"track": COUNT, "minimum": 0, "maximum": 1, "set": 1, "increment": true},
-            {"track": MISSION, "minimum": 1, "maximum": 3, "set": 1, "increment": true}
+            {"track": COUNT, "minimum": i32::MIN, "maximum": -1, "set": 1},
+            {"track": MISSION, "minimum": -1, "maximum": i32::MAX - 1, "set": 1, "increment": true}
         ],
         "item_on_target": {
             "item": PICK,
@@ -78,6 +78,7 @@ pub(super) fn callback() -> TestResult<Callback> {
         "effects": {
             "transform": 7186,
             "reset_after_ms": 60000,
+            "magic": {"position": CRACK, "effect": 3},
             "use_spawn": {"positions": SPAWNS, "creatures": CREATURES, "effect": 11}
         },
         "offerings": [],
@@ -87,31 +88,48 @@ pub(super) fn callback() -> TestResult<Callback> {
 }
 
 pub(super) fn catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> {
+    let mut repeat = serde_json::to_value(callback)?;
+    repeat["key"] = "oteryn:quest-callback/qcx60/advance-breaking-ice-fixture".into();
+    repeat["storage"][0] =
+        json!({"track": COUNT, "minimum": 0, "maximum": 1, "set": 1, "increment": true});
     let mut completion = serde_json::to_value(callback)?;
     completion["key"] = "oteryn:quest-callback/qcx60/breaking-ice-finish-fixture".into();
     completion["storage"] = json!([
         {"track": COUNT, "minimum": 2, "maximum": 2, "set": 3},
-        {"track": MISSION, "minimum": 1, "maximum": 3, "set": 4},
-        {"track": QUESTLINE, "minimum": 3, "maximum": 3, "set": 4}
+        {"track": MISSION, "minimum": -1, "maximum": i32::MAX, "set": 4},
+        {"track": QUESTLINE, "minimum": 0, "maximum": 44, "set": 4}
     ]);
+    let mut historical = completion.clone();
+    historical["key"] = "oteryn:quest-callback/qcx60/resume-breaking-ice-fixture".into();
+    historical["storage"][0] =
+        json!({"track": COUNT, "minimum": 3, "maximum": i32::MAX - 1, "set": 1, "increment": true});
+    historical["storage"][1] = json!({"track": MISSION, "minimum": 1, "maximum": 2, "set": 4});
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
         "schema": 1,
         "quests": [{
             "quest": QUEST,
             "recipe_sha256": "5121124402c29aead613174c80e94e6b8d5c7db1e62ad152ad68f1280fc3df6d",
             "tracks": [
-                {"key": COUNT, "initial": 0, "minimum": 0, "maximum": 3},
-                {"key": MISSION, "initial": 1, "minimum": -1, "maximum": 4},
-                {"key": QUESTLINE, "initial": 3, "minimum": 3, "maximum": 4}
+                {"key": COUNT, "initial": -1, "minimum": i32::MIN, "maximum": i32::MAX},
+                {"key": MISSION, "initial": 1, "minimum": -1, "maximum": i32::MAX},
+                {"key": QUESTLINE, "initial": 3, "minimum": 0, "maximum": 44}
             ],
             "stages": [{
                 "key": "pick",
                 "completes": false,
                 "trigger": {"kind": "map_use", "callback": callback}
             }, {
+                "key": "advance-breaking-the-ice",
+                "completes": false,
+                "trigger": {"kind": "map_use", "callback": repeat}
+            }, {
                 "key": "finish-breaking-the-ice",
                 "completes": false,
                 "trigger": {"kind": "map_use", "callback": completion}
+            }, {
+                "key": "resume-breaking-the-ice",
+                "completes": false,
+                "trigger": {"kind": "map_use", "callback": historical}
             }],
             "sources": [SOURCE]
         }]
@@ -157,7 +175,25 @@ pub(super) async fn exercise(
         .ok_or("pick ref")?;
 
     let mut reset = None;
-    for count in 1..=3_i64 {
+    for (count, allowed) in [(1_i64, true), (2, true), (3, true), (3, false), (4, true)] {
+        if count == 4 {
+            // Crystal register_actions.lua:702 permits a high legacy PickAmount
+            // while Mission02 is still 1 or 2. Import that prior live state.
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            let updated = sqlx::query(
+                "UPDATE game_character_quest_tracks SET value=1
+                 WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(MISSION)
+            .execute(&mut *tx)
+            .await?;
+            assert_eq!(updated.rows_affected(), 1);
+            tx.commit().await?;
+        }
         owner.clock_origin -= std::time::Duration::from_secs(2);
         let map = owner.bundle_map().ok_or("map")?;
         let mut placement = map.overlay.base().digest().to_vec();
@@ -181,7 +217,7 @@ pub(super) async fn exercise(
         )
         .await?;
         *admitted = next;
-        assert_eq!(accepted, UseDisposition::Committed);
+        assert_eq!(accepted == UseDisposition::Committed, allowed);
 
         let due = map.facts.next_movement_decay_time().ok_or("crack reset")?;
         assert_eq!(*reset.get_or_insert(due), due);
@@ -203,8 +239,8 @@ pub(super) async fn exercise(
             .await
             .map_err(debug)?;
         assert_eq!(state.tracks().get(COUNT), Some(&count));
-        assert_eq!(state.tracks().get(MISSION), Some(&(count + 1)));
-        if count == 3 {
+        assert_eq!(state.tracks().get(MISSION), Some(&(count + 1).min(4)));
+        if count >= 3 {
             assert_eq!(state.tracks().get(QUESTLINE), Some(&4));
         }
     }
