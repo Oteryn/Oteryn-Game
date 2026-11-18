@@ -838,6 +838,8 @@ def _main() -> int:
     # Replay the same source-qualified Demon loot packet used by the producer.
     from encounter_loot_item_admissions import apply_admissions as apply_encounter_loot_admissions
     apply_encounter_loot_admissions(legacy_items, ROOT)
+    from elemental_spheres_item_profiles import apply_admissions as apply_elemental_spheres_admissions
+    apply_elemental_spheres_admissions(legacy_items, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(legacy_items, ROOT)
     from tainted_talisman import apply_admissions as apply_tainted_talisman

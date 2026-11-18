@@ -114358,7 +114358,7 @@
       "binding_status": "EXPLICIT_ARTICLE_ALIAS_AND_REVISIONED_WIKI",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31500-31999.json",
-        "canonical_definition_sha256": "7e16a2f79c7986027f5d58b117b796098e8bb0c14f3c6eb08e2b9d23c799bf82",
+        "canonical_definition_sha256": "27eb0f22b8b6f17f47687b11ec1044f42633deba423ff79a20359aa26f73a106",
         "canonical_name": "ironworker",
         "wiki_observations": [
           {

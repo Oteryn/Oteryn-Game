@@ -29,6 +29,9 @@ def module(name, root):
 
 def policies(root=ROOT):
     creatures = {o['creature'] for g in json.loads((root / GOALS).read_bytes())['goals'] for o in g['origins']}
+    # Crystal 201189f8 Lord death produces 8181; the retained XML matches
+    # all four durations and decay edges, including the ten-second loot form.
+    creatures.add('oteryn:creature.lord_of_the_elements')
     raw = (root / CREATURES).read_bytes()
     manifest = json.loads((root / 'content/spells.manifest.json').read_bytes())
     if hashlib.sha256(raw).hexdigest() != manifest['creature_profiles']['sha256']:
