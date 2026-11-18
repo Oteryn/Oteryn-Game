@@ -419,10 +419,34 @@ impl RewardCallback {
             && !self.take.is_empty()
             && self.give.is_some()
     }
+    fn consumes_participant_task(&self) -> bool {
+        let [participant] = self.participants.as_slice() else {
+            return false;
+        };
+        let [task] = participant.storage.as_slice() else {
+            return false;
+        };
+        // Crystal npc/barnabas_dee.lua:84-94 consumes the active Oramond
+        // task and the pollen together, leaving the Dark Trails track intact.
+        !self.take.is_empty()
+            && !self.storage.is_empty()
+            && self.storage.iter().all(|state| state.preserve)
+            && self.carried_item.is_none()
+            && self.world_claim.is_none()
+            && self.give.is_none()
+            && !self.completes
+            && !task.preserve
+            && task.minimum == task.maximum
+            && task.set < task.minimum
+            && matches!(participant.state_ops.as_slice(), [operation]
+                if matches!(operation.effect, StateMutation::AddAtLeast { value: 1, minimum: 1 }))
+    }
+
     fn value_only_guarded(&self) -> bool {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
         temporal_payment::guarded(self)
+            || self.consumes_participant_task()
             || (self.repeatable
                 && (!self.take.is_empty() || self.fee.is_some())
                 && (self.give.is_some() || self.experience.is_some()))
