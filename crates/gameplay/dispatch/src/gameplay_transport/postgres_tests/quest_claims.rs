@@ -33,6 +33,9 @@ const CHOICE: &str = "oteryn:quest-progress/qonce-dispatch/choice";
 const HUNT_GATE: &str = "oteryn:quest-progress/qonce-dispatch/hunt-gate";
 const HUNT_KILL: &str = "oteryn:quest-transition/native-kills/qonce-hoard-dragon";
 const DRAGON: &str = "oteryn:creature.dragon";
+const LION: &str = "oteryn:creature.noble_lion";
+const LION_MOUNT: &str = "oteryn:content.mount.noble_lion";
+const LIONS_HEART: u16 = 21439;
 const COUNT: &str = "oteryn:quest-progress/qonce-dispatch/count";
 const WELL_ACHIEVEMENT: &str = "oteryn:achievement/fountain_of_life";
 const HOARD_ACHIEVEMENT: &str = "oteryn:achievement/hoard_of_the_dragon";
@@ -142,6 +145,59 @@ async fn use_claim(
     ).await.ok_or("claim callback did not dispatch")?.disposition)
 }
 
+async fn tame_noble_lion(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{UseIntent, UseTarget};
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+
+    let mut ordinal = 88_100;
+    super::qengine_voucher_stories::mint(owner, admitted, LIONS_HEART, 1, &mut ordinal).await?;
+    let source = owner.active_generation.and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i21439", "definition-r1"))
+        .ok_or("Lion's Heart definition")?;
+    let actor = admitted.runtime_actor.ok_or("admitted lion tamer")?;
+    let entity = {
+        let mut runtime = owner.runtime.lock().await;
+        let from = runtime.read_actor_position(actor).map_err(debug)?.position();
+        let target = runtime.admit_source_pinned_lab_creature(
+            crate::foundation::MovementLocalPosition { x: from.x + 1, ..from },
+            LION, 100,
+        ).map_err(debug)?;
+        let visible = runtime.visible_entities();
+        let lion = visible.creatures.iter().find(|creature| creature.actor == target)
+            .ok_or("visible Noble Lion")?;
+        EntityRef { identity: target.placement_identity(), generation: lion.generation }
+    };
+    crate::gameplay_transport::mount_taming::test_draw::set(0);
+    let result = owner.tame_mount_impl(
+        actor,
+        UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: 88_101,
+            item_fence: admitted.item_fence,
+        },
+        UseIntent {
+            target: UseTarget::ItemByDefinition(source),
+            use_with: Some(entity),
+            use_with_map_item: None,
+            use_with_position: None,
+        },
+        None,
+        None,
+        true,
+    ).await.map_err(|()| "Noble Lion taming dispatch")?.ok_or("Noble Lion taming result")?;
+    assert_eq!(result.disposition, UseDisposition::Committed);
+    let entitlement: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_account_appearance_unlocks WHERE unlock_key='oteryn:taming.noble_lion')",
+    ).fetch_one(&h.pool).await?;
+    assert!(entitlement, "the normal taming owner grants the Noble Lion before the fountain");
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -163,8 +219,9 @@ pub(super) async fn exercise(
     };
     if let Some((seconds, refusal)) = period {
         tracks.push(track(LEDGER, -1, -1, i64::MAX));
-        tracks.push(track(CHOICE, 0, 0, 1));
-        callback["storage"] = json!([storage(CHOICE, 0, 1, 0)]);
+        let choices = if name == DAILY { 2 } else { 1 };
+        tracks.push(track(CHOICE, 0, 0, choices));
+        callback["storage"] = json!([storage(CHOICE, 0, choices, 0)]);
         callback["state_operations"] = json!([{
             "track": LEDGER, "from": {"kind":"elapsed_at_least","seconds":seconds},
             "effect":{"kind":"set_now"}
@@ -176,8 +233,15 @@ pub(super) async fn exercise(
         } else {
             json!({"item":"oteryn:item.tibia.i3031","count":2})
         };
+        let mut rewards = vec![json!({"give":give})];
+        if name == DAILY {
+            rewards.insert(0, json!({
+                "give":{"item":"oteryn:item.tibia.i21439","count":1},
+                "exclude_owned_mount":LION_MOUNT
+            }));
+        }
         effects = json!({"reset":{"kind":"elapsed","track":LEDGER,"seconds":seconds},
-            "selection_track":CHOICE,"rewards":[{"give":give}]});
+            "selection_track":CHOICE,"rewards":rewards});
     } else if name == HOARD {
         tracks.extend([
             track(LEDGER, 49, 0, 50), track(COUNT, 9, 0, 100),
@@ -309,6 +373,9 @@ pub(super) async fn exercise(
     }
 
     h.root.set_test_quest_clock(100_000_000).map_err(debug)?;
+    if name == DAILY {
+        tame_noble_lion(owner, admitted, h).await?;
+    }
     if name == HOARD {
         owner.active_generation.and_then(|generation| generation.native_gameplay())
             .ok_or("native creature policies")?
@@ -317,6 +384,7 @@ pub(super) async fn exercise(
         assert_eq!(track_value(h, LEDGER).await?, 50, "the death opens the hoard");
     }
     let before = super::qengine_voucher_stories::quantity(h, 3031).await?;
+    let before_hearts = super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?;
     let before_red_gems = super::qengine_voucher_stories::quantity(h, 3039).await?;
     let (first, second) = tokio::join!(use_claim(owner, *admitted, 1), use_claim(owner, *admitted, 2));
     let committed = [first?, second?].into_iter().filter(|outcome| *outcome == UseDisposition::Committed).count();
@@ -356,6 +424,10 @@ pub(super) async fn exercise(
             "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
         ).bind(HUNT_KILL).fetch_one(&h.pool).await?;
         assert_eq!(deaths, 2, "duplicate death delivery earns one credit per death");
+    }
+    if name == DAILY {
+        assert_eq!(track_value(h, CHOICE).await?, 2);
+        assert_eq!(super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?, before_hearts);
     }
     let atomic: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_reward_claim_mint_receipts m \
