@@ -24,6 +24,7 @@ const REWAR_ENTRY_POLL_US: u64 = 1_000_000;
 const FETTER_DEATH_CHECK_US: u64 = 200_000;
 const FETTER_WAVE_US: u64 = 20_000_000;
 const FETTER_LIMIT: usize = 6;
+const RITUAL_CHECK_US: u64 = 300_000;
 const HALF_AFTER_US: u64 = 6 * 60 * 1_000_000;
 const LIMIT_US: u64 = 24 * 60 * 1_000_000;
 
@@ -190,6 +191,19 @@ impl ZelosEncounter {
         actor: ExactActorRef,
         now: u64,
     ) -> Result<bool, CarrierError> {
+        let recorded = self.record_death(runtime, actor, now)?;
+        if recorded && self.ritual_broken() {
+            self.ritual_completed_us.get_or_insert(now);
+        }
+        Ok(recorded)
+    }
+
+    fn record_death(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        now: u64,
+    ) -> Result<bool, CarrierError> {
         if self.fetters.contains(&actor) {
             self.phase.current(runtime)?;
             runtime.borrow_combat_death().projected_death(actor)?;
@@ -331,11 +345,10 @@ impl ZelosEncounter {
         if !self.magnor_bursts.is_empty() || self.phase.pending().next().is_some() {
             due = due.min(self.start_us);
         }
-        if !self.king_gate_released && self.ritual_broken() {
-            due = due.min(
-                self.ritual_completed_us
-                    .map_or(self.start_us, |completed| completed.saturating_add(300_000)),
-            );
+        if !self.king_gate_released
+            && let Some(completed) = self.ritual_completed_us
+        {
+            due = due.min(completed.saturating_add(RITUAL_CHECK_US));
         }
         due
     }
@@ -412,17 +425,17 @@ impl ZelosEncounter {
                 _ => return Err(CarrierError::PlanConflict),
             }
         }
-        if self.ritual_broken() && !self.king_gate_released {
-            let completed = *self.ritual_completed_us.get_or_insert(now);
-            if now >= completed.saturating_add(300_000) {
-                let king = self.king()?;
-                if completed.saturating_sub(self.start_us) > HALF_AFTER_US {
-                    super::gates::halve(runtime, king)?;
-                } else {
-                    super::gates::unprotect(runtime, king)?;
-                }
-                self.king_gate_released = true;
+        if !self.king_gate_released
+            && let Some(completed) = self.ritual_completed_us
+            && now >= completed.saturating_add(RITUAL_CHECK_US)
+        {
+            let king = self.king()?;
+            if completed.saturating_sub(self.start_us) > HALF_AFTER_US {
+                super::gates::halve(runtime, king)?;
+            } else {
+                super::gates::unprotect(runtime, king)?;
             }
+            self.king_gate_released = true;
         }
         Ok(true)
     }
