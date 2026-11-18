@@ -64,8 +64,11 @@ impl SourceDeathContext {
             || self.character != *fence.character_id.as_bytes()
             || self.session != fence.game_session_id
             || self.lease_generation != fence.character_lease_generation
-            || !rule.recipient(self.position, self.dealt_damage)
-            || (rule.top_damage_only && self.top_damage_character != Some(self.character))
+            || !rule.accepts_participant(
+                self.position,
+                self.dealt_damage,
+                self.top_damage_character == Some(self.character),
+            )
         {
             return Ok(false);
         }

@@ -65,18 +65,17 @@ pub(super) fn capture(
                 && share.session == Some(snapshot.session)
                 && share.lease_generation == Some(snapshot.lease_generation)
         });
+        let most_damage = principal_present
+            && principal.actor == snapshot.actor
+            && principal.session == snapshot.session
+            && principal.character.as_bytes() == &snapshot.character
+            && principal.lease_generation == snapshot.lease_generation;
         for key in &snapshot.objectives {
             let Some(rule) = source_deaths::rule(key) else {
                 continue;
             };
             if rule.creature != entry.creature
-                || !rule.recipient(position, damaged)
-                || (rule.top_damage_only
-                    && (!principal_present
-                        || principal.actor != snapshot.actor
-                        || principal.session != snapshot.session
-                        || principal.character.as_bytes() != &snapshot.character
-                        || principal.lease_generation != snapshot.lease_generation))
+                || !rule.accepts_participant(position, damaged, most_damage)
             {
                 continue;
             }

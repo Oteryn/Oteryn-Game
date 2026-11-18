@@ -28,10 +28,10 @@ def outputs(root):
     guard = lambda track, op, value: {'kind': 'storage', 'track': PREFIX + track, 'op': op, 'value': value}
     set_value = lambda track, value: {'kind': 'set', 'track': PREFIX + track, 'value': value}
     topic = lambda value: {'kind': 'set_topic', 'value': value}
-    def rule(name, words, quoted, effects, guards, span, topics=()):
+    def rule(name, words, quoted, effects, guards, span, topics=(), reply=()):
         return dict(key=f'oteryn:quest-npc/the_inquisition/henricus/{name}', quest=QUEST,
                     npc='oteryn:npc.henricus', trigger='say', keywords=words, guards=guards,
-                    reply=[quote(n) for n in quoted], effects=effects, sources=[cite(span)],
+                    reply=list(reply) or [quote(n) for n in quoted], effects=effects, sources=[cite(span)],
                     **({'topics': list(topics)} if topics else {}))
     words = ['mission', 'report']
     rules = [
@@ -43,6 +43,16 @@ def outputs(root):
         rule('mission-offer', words, [90], [topic(2)], [guard('questline', 'lt', 1)], '88-91'),
         rule('mission-start', words, [94, 95], [set_value('questline', 2), set_value('mission01', 1), topic(0)], [guard('questline', 'eq', 1)], '92-99'),
         rule('mission-report', words, [101], [topic(3)], [guard('questline', 'eq', 2)], '100-102'),
+        rule('ungreez-start', words, [],
+             [set_value('questline', 18), set_value('mission06', 1), topic(0)],
+             [guard('questline', 'eq', 17)], '170-178',
+             reply=('Ungreez killed our investigators in Edron. Find him in the depths and defeat him.',)),
+        rule('ungreez-pending', words, [], [topic(0)], [guard('questline', 'eq', 18)], '179-181',
+             reply=('You still need to defeat Ungreez beneath Edron.',)),
+        rule('ungreez-report', words, [],
+             [set_value('questline', 20), set_value('mission06', 3), topic(0)],
+             [guard('questline', 'eq', 19)], '182-189',
+             reply=('Ungreez is defeated. Speak to me again when you are ready for your next mission.',)),
         rule('join-accept', ['yes'], [205], [set_value('questline', 1), topic(0)], [], '203-207', (2,)),
         rule('report-accept', ['yes'], [217, 218], [set_value('questline', 3), set_value('mission01', 7), topic(0)], [guard(flag, 'eq', 1) for flag in FLAGS], '208-225', (3,)),
     ]
@@ -50,7 +60,7 @@ def outputs(root):
                       [guard(flag, 'ne', 1)], '208-225', (3,)) for flag in FLAGS)
     rules.append(rule('decline', ['no'], [288], [topic(0)], [], '286-290', (2, 3)))
     state = json.loads((root / 'content/quests/missions/quest-state.json').read_bytes())
-    wanted = {PREFIX + key for key in ('questline', 'mission01', *FLAGS)}
+    wanted = {PREFIX + key for key in ('questline', 'mission01', 'mission06', *FLAGS)}
     tracks = [{**{key: track[key] for key in ('key', 'quest', 'initial', 'min', 'max')},
                'sources': [cite('65-225')]} for quest in state['quests'] if quest['quest'] == QUEST
               for track in quest['tracks'] if track['key'] in wanted]

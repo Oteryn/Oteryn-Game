@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "runtime_enabled": true,
+  "quest": "oteryn:quest.the_inquisition_quest",
+  "rules": [
+    {
+      "creature": "oteryn:creature.ungreez",
+      "transition": "oteryn:quest-transition/inquisition/ungreez-death",
+      "define_transition": true,
+      "room": null,
+      "top_damage_only": true,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission06",
+          "default": 0,
+          "from": { "kind": "any" },
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "default": 0,
+          "from": { "kind": "eq", "value": 18 },
+          "set": 19
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_ungreez.lua:2-10"
+      ]
+    }
+  ],
+  "tracks": []
+}

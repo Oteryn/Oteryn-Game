@@ -82,6 +82,16 @@ impl Rule {
             None => dealt_damage,
         }
     }
+    /// Apply the same recipient policy at capture and at the durable write.
+    pub fn accepts_participant(
+        &self,
+        position: [i32; 3],
+        dealt_damage: bool,
+        most_damage: bool,
+    ) -> bool {
+        self.recipient(position, dealt_damage) && (!self.top_damage_only || most_damage)
+    }
+
     pub(super) fn transition(&self) -> Result<QuestTransition, String> {
         Ok(QuestTransition {
             key: self.transition.clone(),
@@ -123,6 +133,9 @@ struct Track {
     max: i64,
 }
 const DOCUMENTS: &[&[u8]] = &[
+    include_bytes!(
+        "../../../../../content/quests/native-death-bindings/bosscred-inquisition-ungreez.json"
+    ),
     include_bytes!(
         "../../../../../content/quests/native-death-bindings/qmech-m24-a_piece_of_cake.json"
     ),

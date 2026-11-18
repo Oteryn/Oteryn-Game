@@ -44,6 +44,16 @@
       ]
     },
     {
+      "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission06",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:65-225"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
       "quest": "oteryn:quest.the_inquisition_quest",
       "initial": 0,
@@ -302,6 +312,116 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:100-102"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/ungreez-start",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "report"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "op": "eq",
+          "value": 17
+        }
+      ],
+      "reply": [
+        "Ungreez killed our investigators in Edron. Find him in the depths and defeat him."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "value": 18
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission06",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:170-178"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/ungreez-pending",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "report"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "op": "eq",
+          "value": 18
+        }
+      ],
+      "reply": [
+        "You still need to defeat Ungreez beneath Edron."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:179-181"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_inquisition/henricus/ungreez-report",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.henricus",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "report"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "op": "eq",
+          "value": 19
+        }
+      ],
+      "reply": [
+        "Ungreez is defeated. Speak to me again when you are ready for your next mission."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "value": 20
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission06",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:182-189"
       ]
     },
     {
