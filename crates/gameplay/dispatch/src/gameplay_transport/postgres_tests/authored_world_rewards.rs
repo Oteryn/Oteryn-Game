@@ -53,9 +53,15 @@ const WARZONE_PORTAL_CASES: [&str; 3] = [
 
 pub(super) fn warzone_portal(name: &str) -> Option<(Position, &'static str)> {
     let (x, y, boss) = match name {
-        "qengine-rewards-ddepths-portal-baron" => (33460, 32267, "oteryn:boss.the_baron_from_below"),
-        "qengine-rewards-ddepths-portal-count" => (33324, 32109, "oteryn:boss.the_count_of_the_core"),
-        "qengine-rewards-ddepths-portal-duke" => (33275, 32316, "oteryn:boss.the_duke_of_the_depths"),
+        "qengine-rewards-ddepths-portal-baron" => {
+            (33460, 32267, "oteryn:boss.the_baron_from_below")
+        }
+        "qengine-rewards-ddepths-portal-count" => {
+            (33324, 32109, "oteryn:boss.the_count_of_the_core")
+        }
+        "qengine-rewards-ddepths-portal-duke" => {
+            (33275, 32316, "oteryn:boss.the_duke_of_the_depths")
+        }
         _ => return None,
     };
     Some((Position { x, y, floor: -15 }, boss))
@@ -82,35 +88,97 @@ pub(super) async fn exercise_warzone_portal_cooldown(
     portal: Position,
     boss: &str,
 ) -> TestResult {
-    use crate::gameplay_transport::capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities};
+    use crate::gameplay_transport::capabilities::{
+        BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+    };
     use oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1;
+    use oteryn_protocol_oteryn::chat::ChatLine;
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
     let actor = admitted.runtime_actor.ok_or("portal actor")?;
     let session = admitted.game_session_id;
     let fence = admitted.item_fence.ok_or("portal Character fence")?;
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        BUNDLE_WORLD_OFFERED_CAPABILITIES, &[CAPABILITY_BOSS_ENCOUNTER_V1],
-    ).ok_or("boss capability")?;
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        &[CAPABILITY_BOSS_ENCOUNTER_V1],
+    )
+    .ok_or("boss capability")?;
     owner.activity_runtimes.remember(*admitted).map_err(debug)?;
 
+    let clock: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    h.root.set_test_quest_clock(clock)?;
+    owner
+        .states
+        .chat
+        .admit(session, "Portal entrant", owner.owner_now());
     let until: i64 = sqlx::query_scalar(
         "INSERT INTO game_character_boss_cooldowns(character_id,boss_key,available_at,admission,reset_epoch)
-         VALUES(encode($1,'hex')::uuid,$3,
-            floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint + 36000000,
+         VALUES(encode($1,'hex')::uuid,$3,$4,
             encode($2,'hex')::uuid,0) RETURNING available_at"
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(super::fixture::id(92).as_slice())
     .bind(boss)
+    .bind((clock + 3661) * 1000)
     .fetch_one(&h.pool).await?;
 
-    let origin = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
-    assert_eq!((origin.position().x,origin.position().y,origin.position().floor), (i32::from(portal.x) - 1, i32::from(portal.y), 15));
-    let (outcome, _) = owner.ordinary_paced_step(actor, session, StepDirection::East, Some(origin), None).await;
+    let origin = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
+    assert_eq!(
+        (
+            origin.position().x,
+            origin.position().y,
+            origin.position().floor
+        ),
+        (i32::from(portal.x) - 1, i32::from(portal.y), 15)
+    );
+    let (outcome, _) = owner
+        .ordinary_paced_step(actor, session, StepDirection::East, Some(origin), None)
+        .await;
     assert_eq!(outcome.disposition, StepDisposition::Moved);
-    let returned = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+    let returned = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
     assert_eq!(returned.position(), origin.position());
     assert!(returned.revision() > origin.revision());
+    let boss_name = match boss {
+        "oteryn:boss.the_baron_from_below" => "The Baron from Below",
+        "oteryn:boss.the_count_of_the_core" => "The Count of the Core",
+        "oteryn:boss.the_duke_of_the_depths" => "The Duke of the Depths",
+        _ => return Err("unexpected Warzone boss".into()),
+    };
+    assert_eq!(
+        owner.states.chat.drain(session),
+        vec![ChatLine::Private {
+            speaker_name: "Game".into(),
+            text: format!("You have to wait 1 hour, 1 minute, 1 second to face {boss_name} again!"),
+        }]
+    );
+    let effects: Vec<_> = owner
+        .bundle_map()
+        .ok_or("portal World")?
+        .facts
+        .movement_effects_since(0)
+        .into_iter()
+        .filter(|(_, position, _)| {
+            position.x == portal.x - 1 && position.y == portal.y && position.floor == portal.floor
+        })
+        .map(|(_, _, effect)| effect)
+        .collect();
+    assert_eq!(
+        effects,
+        [11, 3],
+        "cooldown refusal cues occur at the return tile"
+    );
     let preserved: i64 = sqlx::query_scalar(
         "SELECT available_at FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid
            AND boss_key=$2",
@@ -135,7 +203,12 @@ pub(super) async fn exercise_warzone_portal_cooldown(
         .ordinary_paced_step(actor, session, StepDirection::East, Some(returned), None)
         .await;
     assert_eq!(outcome.disposition, StepDisposition::Moved);
-    let refused = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+    let refused = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
     assert_eq!(refused.position(), origin.position());
     assert!(refused.revision() > returned.revision());
     Ok(())
@@ -181,10 +254,15 @@ pub(super) async fn exercise_warzone_pump(
     (pos, award, combined, ordinal): (Position, &str, bool, u8),
 ) -> TestResult {
     if combined {
-        use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+        use crate::durability::quest_state::{
+            QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+        };
         use crate::foundation::{CommandId, CommandRef};
-        let fence = owner.current_quest_fence(admitted.game_session_id)
-            .await.map_err(debug)?.ok_or("pump Character fence")?;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(debug)?
+            .ok_or("pump Character fence")?;
         let catalogue = owner.quest_catalogue.clone().ok_or("pump catalogue")?;
         // Commit a real quest transition to establish the first Character revision
         // before staging the previously earned pump flags for this isolated case.
@@ -197,11 +275,18 @@ pub(super) async fn exercise_warzone_pump(
                 },
                 catalogue,
             ).await.map_err(debug)?;
-        assert!(matches!(result, QuestTransitionOutcome::Committed(_)), "{result:?}");
+        assert!(
+            matches!(result, QuestTransitionOutcome::Committed(_)),
+            "{result:?}"
+        );
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx).await?;
-        for key in ["the_baron_from_below_achiev", "the_count_of_the_core_achiev"] {
+            .execute(&mut *tx)
+            .await?;
+        for key in [
+            "the_baron_from_below_achiev",
+            "the_count_of_the_core_achiev",
+        ] {
             sqlx::query(
                 "INSERT INTO game_character_quest_tracks
                 (character_id, track_key, quest_key, value, committed_character_revision)
@@ -222,16 +307,28 @@ pub(super) async fn exercise_warzone_pump(
     let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
         placement,
         expected_revision: map.facts.object_revision(key),
-    }).map_err(debug)?;
+    })
+    .map_err(debug)?;
     let result = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?;
-    assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
+    assert_eq!(
+        oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
+        UseDisposition::Committed
+    );
     let award = format!("oteryn:achievement/{award}");
     let combined_key = "oteryn:achievement/death_in_the_depths";
     let awards: Vec<String> = sqlx::query_scalar(
         "SELECT achievement_key FROM game_account_achievements WHERE achievement_key IN ($1,$2)
          ORDER BY achievement_key",
-    ).bind(&award).bind(combined_key).fetch_all(&h.pool).await?;
-    let expected = if combined { vec![combined_key.to_owned(), award] } else { vec![award] };
+    )
+    .bind(&award)
+    .bind(combined_key)
+    .fetch_all(&h.pool)
+    .await?;
+    let expected = if combined {
+        vec![combined_key.to_owned(), award]
+    } else {
+        vec![award]
+    };
     assert_eq!(awards, expected);
     Ok(())
 }
@@ -267,7 +364,11 @@ pub(super) async fn exercise_achievement_routes(
         }]
     });
     let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
-    let revision = owner.quest_catalogue.as_deref().ok_or("native catalogue")?.content_revision();
+    let revision = owner
+        .quest_catalogue
+        .as_deref()
+        .ok_or("native catalogue")?
+        .content_revision();
     let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
 
@@ -277,9 +378,10 @@ pub(super) async fn exercise_achievement_routes(
         let revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
         let target = target(owner, revision)?;
         let disposition = if command == 1 {
-            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target)
-                .map_err(debug)?;
-            let result = super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
+            let payload =
+                oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
+            let result =
+                super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
             oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?
         } else {
             // Reproduce progress committed outside this connection's quest
@@ -298,15 +400,18 @@ pub(super) async fn exercise_achievement_routes(
             assert_eq!(changed.rows_affected(), 1);
             tx.commit().await?;
             tokio::time::sleep(std::time::Duration::from_millis(210)).await;
-            owner.use_world_object(
-                admitted.runtime_actor.ok_or("actor")?,
-                crate::gameplay_transport::connection::UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command,
-                    item_fence: admitted.item_fence,
-                },
-                target,
-            ).await.disposition
+            owner
+                .use_world_object(
+                    admitted.runtime_actor.ok_or("actor")?,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command,
+                        item_fence: admitted.item_fence,
+                    },
+                    target,
+                )
+                .await
+                .disposition
         };
         assert_eq!(disposition, UseDisposition::Committed);
         let earned: Vec<String> = sqlx::query_scalar(
