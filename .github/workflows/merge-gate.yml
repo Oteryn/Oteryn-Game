@@ -969,7 +969,6 @@ jobs:
         if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true'
         env:
           SHARD: ${{ matrix.shard }}
-          CARGO_BUILD_JOBS: "1"
           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
