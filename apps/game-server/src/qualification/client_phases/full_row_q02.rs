@@ -319,7 +319,7 @@ async fn warlock(
         &mut passages,
     )
     .await?;
-    let target = approach_spawn_target(
+    let target = approach_visible_spawn_target(
         client,
         planner.world,
         "Court Warlock",

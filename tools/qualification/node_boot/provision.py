@@ -9,8 +9,9 @@ from threading import Thread
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk")
+PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "combat-progression", "private-channel")
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
+CAPACITY = re.compile(rb"capacity [1-9][0-9]* [1-9][0-9]*\n")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
 
 
@@ -81,6 +82,20 @@ def spawn(socket_path, session, creature_key):
     return answer.decode("ascii").rstrip("\n")
 
 
+def carry_capacity(socket_path, session):
+    """Read the current Character's level and carried-weight limit in centi-ounces."""
+    identifier = uuid.UUID(session)
+    if identifier.version != 7 or str(identifier) != session:
+        raise ValueError("invalid qualification capacity request")
+    answer = bytes(_request(socket_path, f"capacity {session}\n", 64))
+    if not CAPACITY.fullmatch(answer):
+        raise RuntimeError(
+            f"node refused qualification capacity: node_answer={answer[:64]!r} "
+            f"truncated={len(answer) > 64}"
+        )
+    return answer.decode("ascii").rstrip("\n")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
@@ -91,6 +106,7 @@ if __name__ == "__main__":
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--item-handle", type=int)
     group.add_argument("--recovery-epoch", type=int)
+    group.add_argument("--capacity", action="store_true")
     args = parser.parse_args()
     if args.watch_stdin:
         def stop_when_parent_drops_pipe():
@@ -114,6 +130,8 @@ if __name__ == "__main__":
         if not re.fullmatch(rb"instance [0-9a-f-]{36}\n", answer):
             raise RuntimeError("item handle has no live durable instance")
         print(answer.decode("ascii").strip())
+    elif args.capacity:
+        print(carry_capacity(args.socket, args.session))
     elif args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
     else:

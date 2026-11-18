@@ -163,6 +163,8 @@ mod primal_entry;
 mod primal_menace;
 mod primal_pods;
 mod private_channel_world;
+#[cfg(feature = "qualification-private-channel")]
+pub use private_channel_world::prepare_channel_owner;
 mod proficiency_checkpoint;
 mod promotion_death;
 mod promotion_login;

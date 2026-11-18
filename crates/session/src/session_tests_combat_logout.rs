@@ -281,6 +281,20 @@ async fn logout_session(
 }
 
 #[test]
+fn cancelled_exchange_refuses_logout_before_advancing_the_stream() -> Result<(), BoxError> {
+    block_on(async {
+        let (mut session, server) = logout_session(vec![]).await?;
+        let command = session.next_command_id();
+        session.invalidate_after_cancellation();
+        assert!(matches!(session.logout().await, Err(SessionError::SessionUnusable)));
+        assert_eq!(session.next_command_id(), command);
+        drop(session);
+        server.await??;
+        Ok(())
+    })?
+}
+
+#[test]
 fn a_refused_logout_keeps_the_session_playing_and_an_accepted_one_ends_it() -> Result<(), BoxError>
 {
     block_on(async {

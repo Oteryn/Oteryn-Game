@@ -1322,6 +1322,30 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
     character: CharacterId,
     weights: &dyn ItemWeightLookup,
 ) -> std::result::Result<u64, DurabilityError> {
+    read_transfer_capacity(tx, character, |account| weights.wheel_premium_current(account))
+        .await
+        .map(|(_, capacity)| capacity)
+}
+
+/// Read the inventory owner's effective capacity for the current admission, without an item write.
+pub async fn read_qualification_carry_capacity(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    wheel_premium_current: impl Fn([u8; 16]) -> bool,
+) -> std::result::Result<(u32, u64), DurabilityError> {
+    match super::character_progression::assert_item_only_fence(tx, fence, node).await? {
+        Ok(_) => read_transfer_capacity(tx, fence.character_id, wheel_premium_current).await,
+        Err(super::character_progression::CharacterProgressionError::Unavailable(error)) => Err(error),
+        Err(_) => Err(DurabilityError::InvalidStoredState),
+    }
+}
+
+async fn read_transfer_capacity(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    wheel_premium_current: impl Fn([u8; 16]) -> bool,
+) -> std::result::Result<(u32, u64), DurabilityError> {
     // The native transfer fence already holds this live root. Reacquire that same row before
     // taking progression/build locks, retaining the native per-Character serialization order.
     let account: Option<Vec<u8>> = sqlx::query_scalar(
@@ -1361,14 +1385,14 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
     let base =
         oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let wheel = if weights.wheel_premium_current(account) {
+    let wheel = if wheel_premium_current(account) {
         super::character_wheel::read_capacity_bonus_in_transaction(tx, character, vocation, level)
             .await?
     } else {
         0
     };
-    base.checked_add(wheel)
-        .ok_or(DurabilityError::InvalidStoredState)
+    let capacity = base.checked_add(wheel).ok_or(DurabilityError::InvalidStoredState)?;
+    Ok((level, capacity))
 }
 
 /// Rejection-only eligibility for an actual stored source under a proven current

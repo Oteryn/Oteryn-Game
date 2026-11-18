@@ -1,8 +1,6 @@
 //! E2EF19: private messages and transient private chat channels between real players.
 use super::*;
-use oteryn_dev_client::{
-    ChatDisposition, ChatIntent, ChatLine, DevClientSession, SessionEvent,
-};
+use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::chat::private_channel::{ChatChannelList, PrivateChannelIntent};
 
 const ACTIONS: &[&str] = &[
@@ -36,7 +34,9 @@ impl Row {
 
     fn pass(&mut self, action: &'static str) {
         if ACTIONS.contains(&action) && self.passed.insert(action) {
-            evidence(&format!("E2EF19_CHECK S04b {action} PASS observed-native-reply-and-delta"));
+            evidence(&format!(
+                "E2EF19_CHECK S04b {action} PASS observed-native-reply-and-delta"
+            ));
         }
     }
 
@@ -47,7 +47,10 @@ impl Row {
             }
         }
         if let Err(error) = result {
-            evidence(&format!("E2EF19_GAP S04b observed={error}"));
+            evidence(&format!(
+                "E2EF19_GAP S04b observed={}",
+                error_evidence(error.as_ref())
+            ));
         }
         let suffix = result.as_ref().err().map_or_else(String::new, |error|
             verdict::classify(error.as_ref()).suffix("S04b.full/journey"));
@@ -59,14 +62,20 @@ impl Row {
                 "FAIL"
             },
             self.started.elapsed().as_secs_f64(),
-            result
-                .as_ref()
-                .err()
-                .map_or("private-message-and-channel-lifecycle-observed".into(), |error| {
-                    format!("step-reply:{error}").replace(' ', "-")
-                }),
+            result.as_ref().err().map_or(
+                "private-message-and-channel-lifecycle-observed".into(),
+                |error| { error_evidence(error.as_ref()) }
+            ),
         ));
     }
+}
+
+fn error_evidence(error: &dyn std::error::Error) -> String {
+    format!("step-reply:{error}").replace(char::is_whitespace, "-")
+}
+
+fn transient_channel_observed(before: Option<u16>, after: Option<u16>) -> bool {
+    before.is_some() && after.is_none()
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) -> TestResult {
@@ -79,7 +88,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) -> TestResult {
 }
 
 fn own_name(client: &DevClientSession) -> TestResult<String> {
-    let entities = client.world_entities().ok_or("names:world-entities-missing")?;
+    let entities = client
+        .world_entities()
+        .ok_or("names:world-entities-missing")?;
     let name = entities
         .iter()
         .find(|entity| entity.entity.identity == *entities.own_identity())
@@ -192,9 +203,10 @@ async fn wait_delivery(
 }
 
 async fn channel_list(client: &mut DevClientSession, step: &str) -> TestResult<ChatChannelList> {
-    let sequence = accepted(
+    let sequence = expect_disposition(
         client,
         ChatIntent::PrivateChannel(PrivateChannelIntent::List),
+        ChatDisposition::Ok,
         step,
     ).await?;
     wait_chat_event(async |window| {
@@ -209,6 +221,28 @@ async fn channel_list(client: &mut DevClientSession, step: &str) -> TestResult<C
         }
         Ok(list)
     }).await?.ok_or_else(|| format!("{step}:accepted-but-channel-list-delta-missing").into())
+}
+
+async fn prepare_channel_owner(client: &mut DevClientSession) -> TestResult {
+    full_e2ef18::fixture_request(client, &["--profile", "private-channel"]).await?;
+    Ok(())
+}
+
+async fn durable_channel_rows(
+    database: &sqlx::PgPool,
+    world: &[u8; 16],
+    owner: &[u8; 16],
+    channel: u16,
+) -> TestResult<(i64, i64)> {
+    Ok(sqlx::query_as(
+        "SELECT
+            (SELECT count(*) FROM game_private_chat_channels
+             WHERE world_id = encode($1,'hex')::uuid AND owner_session_id = encode($2,'hex')::uuid),
+            (SELECT count(*) FROM game_private_chat_members
+             WHERE world_id = encode($1,'hex')::uuid AND channel_id = $3)",
+    )
+    .bind(world.as_slice()).bind(owner.as_slice()).bind(i32::from(channel))
+    .fetch_one(database).await?)
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -253,6 +287,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .await?;
         row.pass("offline-refusal");
 
+        prepare_channel_owner(&mut a).await?;
         accepted(&mut a, ChatIntent::PrivateChannel(PrivateChannelIntent::Create), "channel-create").await?;
         let channel_id = channel_list(&mut a, "channel-create-list").await?.own_channel
             .ok_or("channel-create:accepted-but-own-channel-absent")?;
@@ -293,16 +328,98 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         if channel_list(&mut a, "channel-close-list").await?.own_channel.is_some() { return Err("channel-close:own-channel-still-listed".into()); }
         row.pass("channel-close");
 
+        prepare_channel_owner(&mut a).await?;
+        accepted(
+            &mut a,
+            ChatIntent::PrivateChannel(PrivateChannelIntent::Create),
+            "relog-create-channel",
+        )
+        .await?;
+        let before_logout = channel_list(&mut a, "before-logout-list")
+            .await?
+            .own_channel;
+        let transient_id = before_logout.ok_or("relog-transient:owner-has-no-open-channel")?;
+        accepted(
+            &mut a,
+            ChatIntent::PrivateChannel(PrivateChannelIntent::Invite {
+                name: b_name.clone(),
+            }),
+            "relog-transient-invite",
+        )
+        .await?;
+        if !channel_list(&mut b, "before-owner-logout-invite-list")
+            .await?
+            .invited
+            .iter()
+            .any(|invite| invite.channel_id == transient_id)
+        {
+            return Err("relog-transient:peer-invitation-missing-before-logout".into());
+        }
+        // private-channel-count uses a SELECT over the stored rows, before any
+        // List mutation or fresh admission can sweep the terminal owner's room.
+        let database = sqlx::postgres::PgPoolOptions::new().max_connections(1)
+            .connect(clients.url).await?;
+        let owner = *a.join_snapshot().game_session_id.as_bytes();
+        let before_rows = durable_channel_rows(&database, &clients.world, &owner, transient_id).await?;
+        if before_rows != (1, 2) {
+            return Err(format!("private-channel-count before logout: {before_rows:?}").into());
+        }
         logout(&mut a).await?;
+        let until = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let rows = durable_channel_rows(&database, &clients.world, &owner, transient_id).await?;
+            if rows == (0, 0) {
+                break;
+            }
+            if tokio::time::Instant::now() >= until {
+                return Err(format!("private-channel-count after logout and before List: {rows:?}").into());
+            }
+            b.service_liveness(Duration::from_millis(50)).await?;
+            b.take_events();
+        }
         a = connect_character(clients, 0xe3, 0).await?;
-        if channel_list(&mut a, "relog-transient-list").await?.own_channel.is_some() { return Err("relog-transient:channel-replayed".into()); }
+        if !transient_channel_observed(
+            before_logout,
+            channel_list(&mut a, "relog-transient-list")
+                .await?
+                .own_channel,
+        ) || channel_list(&mut b, "after-owner-logout-invite-list")
+            .await?
+            .invited
+            .iter()
+            .any(|invite| invite.channel_id == transient_id)
+        {
+            return Err("relog-transient:channel-or-invitation-replayed".into());
+        }
         row.pass("relog-transient");
         accepted(&mut a, ChatIntent::Private { recipient_name: b_name, text: "e2ef19-relog-pm".into() }, "relog-private-message").await?;
         if !wait_delivery(&mut b, |client| take_private(client, &a_name, "e2ef19-relog-pm")).await? { return Err("relog-private-message:accepted-but-line-missing".into()); }
         row.pass("relog-private-message");
         Ok(())
-    }.await;
+    }
+    .await;
     let a_logout = logout(&mut a).await;
     let b_logout = logout(&mut b).await;
     result.and(a_logout).and(b_logout)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn chat_error_evidence_stays_a_single_token() {
+        let error = std::io::Error::other("first line	field\nsecond\rline");
+        assert_eq!(
+            error_evidence(&error),
+            "step-reply:first-line-field-second-line"
+        );
+    }
+
+    #[test]
+    fn transient_channel_requires_open_channel_at_logout() {
+        assert!(!transient_channel_observed(None, None));
+        assert!(!transient_channel_observed(Some(42), Some(42)));
+        assert!(transient_channel_observed(Some(42), None));
+    }
 }

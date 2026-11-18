@@ -19,8 +19,9 @@ use crate::durability::character_progression::{
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionAuthoritySnapshot};
+use oteryn_simulation_determinism::ExactI64;
 #[cfg(test)]
-use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+use oteryn_simulation_determinism::RoundingMode;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -75,6 +76,65 @@ pub(super) fn authority_busy(
             crate::durability::DurabilityError::RootUnavailable
         )
     )
+}
+
+/// Derive receipt identities from the fixture and Character so a new control
+/// request can reconcile either write after an ambiguous reply.
+fn fixture_build_occurrence(character: &[u8; 16], vocation: &str, domain: &[u8]) -> [u8; 16] {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::new()
+        .chain_update(domain)
+        .chain_update(character)
+        .chain_update(vocation.as_bytes())
+        .finalize();
+    let mut occurrence = [0; 16];
+    occurrence.copy_from_slice(&digest[..16]);
+    occurrence[6] = (occurrence[6] & 0x0f) | 0x70;
+    occurrence[8] = (occurrence[8] & 0x3f) | 0x80;
+    occurrence
+}
+
+pub(super) fn fixture_occurrences(
+    character: CharacterId,
+    vocation: &str,
+    level: u32,
+    before_level_up: bool,
+) -> ([u8; 16], [u8; 16]) {
+    if level == 100 && !before_level_up {
+        return (
+            fixture_build_occurrence(
+                character.as_bytes(),
+                vocation,
+                b"oteryn:qualification.level100.xp:v1",
+            ),
+            fixture_build_occurrence(
+                character.as_bytes(),
+                vocation,
+                b"oteryn:qualification.level100.build:v1",
+            ),
+        );
+    }
+    use sha2::{Digest, Sha256};
+    let occurrence = |stage: &str| {
+        let mut hash = Sha256::new();
+        if before_level_up {
+            // Keep prior C14 receipts resumable.
+            hash.update(b"node-boot-c14-progression-v1");
+        } else {
+            hash.update(b"node-boot-build-profile-v1");
+            hash.update(vocation.as_bytes());
+            hash.update(level.to_be_bytes());
+        }
+        hash.update(character.as_bytes());
+        hash.update(stage.as_bytes());
+        let digest = hash.finalize();
+        let mut id = [0; 16];
+        id.copy_from_slice(&digest[..16]);
+        id[6] = (id[6] & 0x0f) | 0x70;
+        id[8] = (id[8] & 0x3f) | 0x80;
+        id
+    };
+    (occurrence("experience"), occurrence("build"))
 }
 
 /// The caller must own the actual node proof and independently resolve the
@@ -188,11 +248,16 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
         current,
         spec,
         policy,
+        false,
         tokio::time::Instant::now() + std::time::Duration::from_secs(15),
     )
     .await
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fixture setup binds the actual owners and served policy"
+)]
 #[derive(Debug, PartialEq, Eq)]
 enum PreparationStage {
     Initial,
@@ -237,6 +302,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
     spec: QualificationBuildSpec<'_>,
     policy: FiniteProgressionPolicy<String, N>,
+    before_level_up: bool,
     deadline: tokio::time::Instant,
 ) -> TestResult {
     if !PLAYABLE_VOCATIONS.contains(&spec.vocation) || !(1..=1000).contains(&spec.level) {
@@ -271,12 +337,28 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     if policy.context != context {
         return Err("qualification policy context mismatch".into());
     }
-    let experience = policy
+    let floor = policy
         .thresholds
         .iter()
         .find(|threshold| threshold.level == level)
         .ok_or("qualification level absent from the served progression policy")?
         .minimum_experience;
+    let experience = if before_level_up {
+        let next = policy
+            .thresholds
+            .iter()
+            .find(|threshold| threshold.level == level + 1)
+            .ok_or("qualification next level absent from the served progression policy")?;
+        let just_before = next
+            .minimum_experience
+            .get()
+            .checked_sub(1)
+            .filter(|amount| *amount >= floor.get())
+            .ok_or("qualification next level threshold is invalid")?;
+        ExactI64::new(just_before)
+    } else {
+        floor
+    };
     if let Some(state) = &progression {
         if state.context != policy.context {
             return Err("spell fixture progression context mismatch".into());
@@ -293,7 +375,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .as_ref()
         .is_some_and(|state| state.level == level && state.total_experience == experience)
     {
-        if level == 1 {
+        if experience.get() == 0 {
             vocation_set
         } else {
             retry_holder(Some(root), deadline, progression_busy, async || {
@@ -304,6 +386,8 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             .map_err(debug)?
             .is_some_and(|receipt| {
                 receipt.character_id == character
+                    && receipt.level_before == 1
+                    && receipt.experience_before.get() == 0
                     && receipt.level_after == level
                     && receipt.experience_after == experience
                     && receipt.experience_awarded == experience
@@ -323,6 +407,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .is_some_and(|receipt| {
             receipt.character_id == character
                 && receipt.cause == BuildCause::VocationChoice
+                && receipt.before == DurableBuildState::default()
                 && receipt.after == before
         });
     let stage = preparation_stage(vocation_set, xp_committed, build_committed)?;
@@ -399,7 +484,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .await
         .map_err(debug)?;
     }
-    if level > 1 && stage == PreparationStage::Initial {
+    if experience.get() > 0 && stage == PreparationStage::Initial {
         retry_holder(Some(root), deadline, progression_busy, async || {
             slot.commit_experience(
                 root,

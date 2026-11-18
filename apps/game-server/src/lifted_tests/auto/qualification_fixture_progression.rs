@@ -10,7 +10,7 @@ use crate::durability::character_progression::{
     ExperienceAwardRequest, ExperienceRewardOccurrence,
 };
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
-use crate::qualification_spell_character::{QualificationBuildSpec, prepare_character_with_policy};
+use crate::qualification_spell_character::{QualificationBuildSpec, fixture_occurrences, prepare_character_with_policy};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
 // Use the same production binder as the existing progression PostgreSQL target.
@@ -33,6 +33,8 @@ enum Case {
     MismatchedPolicy,
     MismatchedReward,
     BootstrapOnly,
+    CombatSetupReplay,
+    BuildSetupReplay,
 }
 
 fn policy() -> FiniteProgressionPolicy<String, 2> {
@@ -154,6 +156,51 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     }
     let sequencer = CharacterRevisionSequencer::new();
     let mut slot = sequencer.acquire(initial.character_id).await;
+    if matches!(case, Case::CombatSetupReplay | Case::BuildSetupReplay) {
+        let served = policy();
+        let current = fixture_session()?;
+        let before_level_up = matches!(case, Case::CombatSetupReplay);
+        let (vocation, level, xp) = if before_level_up {
+            ("sorcerer", 1, 99)
+        } else {
+            ("knight", 2, 100)
+        };
+        let (xp_occurrence, _) =
+            fixture_occurrences(initial.character_id, vocation, level, before_level_up);
+        // Simulate losing the fixture caller after the XP transaction committed.
+        slot.commit_experience(
+            &h.root, &authority, &h.node, initial,
+            ExperienceAwardRequest {
+                occurrence: ExperienceRewardOccurrence::from_bytes(xp_occurrence).map_err(debug)?,
+                amount: ExactI64::new(xp),
+                context: served.context.clone(),
+                policy_revision: served.policy_revision.clone(),
+                reward_revision: served.reward_revision.clone(),
+                policy: served.clone(),
+            }, None,
+        ).await.map_err(debug)?;
+        drop(slot);
+        for _ in 0..2 {
+            let (xp_occurrence, build_occurrence) =
+                fixture_occurrences(initial.character_id, vocation, level, before_level_up);
+            crate::qualification_spell_character::prepare_character_with_policy_until(
+                &h.root, &authority, &h.node, &current,
+                QualificationBuildSpec {
+                    vocation,
+                    level,
+                    context: served.context.clone(),
+                    xp_occurrence,
+                    build_occurrence,
+                },
+                served.clone(), before_level_up, tokio::time::Instant::now() + std::time::Duration::from_secs(15),
+            ).await?;
+        }
+        let saved = h.root.read_character_progression(&authority, initial.character_id)
+            .await.map_err(debug)?.ok_or("replayed progression absent")?;
+        assert_eq!((saved.level, saved.total_experience.get(), saved.character_revision.get()), (level, xp, 3));
+        assert_eq!(h.root.read_character_build_state(&authority, initial.character_id).await.map_err(debug)?.vocation(), vocation);
+        return Ok(());
+    }
     if matches!(case, Case::Advanced | Case::EarnedThenDied) {
         // Still level one: even one earned XP must make the Character ineligible.
         slot.commit_experience(
@@ -357,7 +404,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             Case::MismatchedContext => "spell fixture progression context mismatch",
             Case::MismatchedPolicy => "spell fixture progression policy revision mismatch",
             Case::MismatchedReward => "spell fixture progression reward revision mismatch",
-            Case::Admitted | Case::BootstrapOnly => {
+            Case::Admitted | Case::BootstrapOnly | Case::CombatSetupReplay | Case::BuildSetupReplay => {
                 return Err("positive fixture case reached refusal assertion".into());
             }
         };
@@ -428,4 +475,15 @@ fn qualification_fixture_refuses_earned_skills_without_xp() -> TestResult {
 #[test]
 fn qualification_fixture_refuses_earned_xp_after_death_returns_it_to_zero() -> TestResult {
     run(Case::EarnedThenDied, "qfixture_earned_death")
+}
+
+#[test]
+fn qualification_combat_fixture_resumes_partial_and_completed_setup() -> TestResult {
+    run(Case::CombatSetupReplay, "qfixture_combat_replay")
+}
+
+
+#[test]
+fn qualification_ordinary_build_resumes_partial_and_completed_setup() -> TestResult {
+    run(Case::BuildSetupReplay, "qfixture_build_replay")
 }

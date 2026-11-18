@@ -58,6 +58,13 @@ pub(super) async fn hunt_target(
         .and_then(|entities| select_hunt_target(entities.iter(), position, requested))
         .copied()
         .ok_or("hunt route has no visible monster")?;
+    hunt_observed_target(client, target).await
+}
+
+pub(super) async fn hunt_observed_target(
+    client: &mut DevClientSession,
+    target: WorldSpatialEntity,
+) -> TestResult {
     let handle = kill(
         client,
         target,

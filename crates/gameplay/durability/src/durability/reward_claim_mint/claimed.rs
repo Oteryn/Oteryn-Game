@@ -13,6 +13,33 @@ impl DurabilityRoot {
         if !valid_quest_key(&claim) || !claim.starts_with("oteryn:reward-claim.") {
             return Err(RewardClaimMintError::InvalidInput);
         }
+        self.read_once_reward_claim(authority, node, fence, claim).await
+    }
+
+    /// Read the durable once-claim for one of the disposable node-boot tools
+    /// without charging the original command's reconciliation budget.
+    pub async fn qualification_fixture_item_is_claimed(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        item: u32,
+    ) -> Result<bool> {
+        if !matches!(item, 3276 | 3003 | 3457) {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
+        self.read_once_reward_claim(
+            authority, node, fence, format!("oteryn:qualification.item.i{item}"),
+        ).await
+    }
+
+    async fn read_once_reward_claim(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        claim: String,
+    ) -> Result<bool> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;

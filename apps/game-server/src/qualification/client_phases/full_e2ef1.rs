@@ -53,9 +53,9 @@ pub(super) async fn provision(
     let client = connect_character(clients, 0x91, index).await?;
     original::provision(client, clients, index).await
 }
-mod e2ef1 {
+pub(super) mod e2ef1 {
     use super::*;
-    use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, EntityRef};
+    use oteryn_dev_client::{DevClientSession, EntityDetail, EntityRef};
     use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
     use std::collections::BTreeSet;
 
@@ -78,7 +78,7 @@ mod e2ef1 {
         ),
         (
             "M04",
-            &["push-player", "push-creature", "collision", "relogin"],
+            &["collision", "push-player", "push-creature", "relogin"],
         ),
         (
             "M05",
@@ -100,15 +100,18 @@ mod e2ef1 {
         done: BTreeSet<&'static str>,
         current: Option<&'static str>,
         aborted: Option<verdict::Cause>,
+        action_failure: Option<(String, verdict::Cause)>,
     }
     impl Drop for Verdicts {
         fn drop(&mut self) {
             let current = self.current.unwrap_or(ROWS[0].0);
-            let root = format!("{current}/lifecycle");
+            let (root, action) = self.action_failure.take().map_or_else(
+                || (format!("{current}/lifecycle"), None),
+                |(root, cause)| (root, Some(cause)),
+            );
             // Without a recorded error the journey future was cancelled by its caller's deadline.
-            let cause = self
-                .aborted
-                .take()
+            let cause = action
+                .or(self.aborted.take())
                 .unwrap_or(verdict::Cause::Deadline { phase: "cancelled" });
             let blocked = verdict::Cause::BlockedBy { root: root.clone() };
             for (row, _) in ROWS {
@@ -126,6 +129,7 @@ mod e2ef1 {
         row: &'static str,
         passed: BTreeSet<&'static str>,
         missing: BTreeMap<&'static str, &'static str>,
+        active: Option<&'static str>,
     }
     impl Checks {
         fn pass(&mut self, case: &'static str, detail: impl std::fmt::Debug) {
@@ -141,6 +145,24 @@ mod e2ef1 {
                 self.row
             ));
             self.missing.insert(case, source);
+        }
+        fn action_failure(
+            &self,
+            required: &[&str],
+            error: &(dyn std::error::Error + 'static),
+        ) -> (String, verdict::Cause) {
+            let action = self.active.unwrap_or_else(|| {
+                required
+                    .iter()
+                    .find(|action| **action != "relogin" && !self.passed.contains(**action))
+                    .copied()
+                    .unwrap_or(if self.row == "M04" {
+                        "protection-zone-return"
+                    } else {
+                        "action"
+                    })
+            });
+            (format!("{}/{action}", self.row), verdict::classify(error))
         }
         fn complete(&self, required: &[&str]) -> bool {
             required.iter().all(|case| self.passed.contains(case))
@@ -366,7 +388,7 @@ mod e2ef1 {
         wanted: impl Fn(Object) -> bool,
         range: u16,
     ) -> TestResult<Object> {
-        let from = tile(client.world_spatial().actor_position)?;
+        let from = actor_tile(client)?;
         let mut candidates: Vec<_> = objects.iter().copied().filter(|o| wanted(*o)).collect();
         candidates.sort_by_key(|object| (distance(from, object.at), object.at, object.ordinal));
         let candidate_count = candidates.len();
@@ -388,13 +410,13 @@ mod e2ef1 {
         let path = reach_route(client, world, from, |at| goals.contains_key(&at)).await?;
         match path {
             Ok(path) => {
-                let start = tile(client.world_spatial().actor_position)?;
+                let start = actor_tile(client)?;
                 let landing = path.iter().try_fold(start, |at, direction| destination(world, at, *direction)).ok_or("approach landing absent")?;
                 let object = goals.get(&landing).copied().ok_or("approach candidate absent")?;
                 walk(client, world, &path).await?;
                 Ok(object)
             }
-            Err(failure) => Err(MissingAuthoredTarget(format!("no reachable exact authored target: from={from:?} candidates={candidate_count} within_160={within_old_budget} {failure}")).into()),
+            Err(failure) => Err(format!("no reachable exact authored target: from={from:?} candidates={candidate_count} within_160={within_old_budget} {failure}").into()),
         }
     }
 
@@ -408,26 +430,24 @@ mod e2ef1 {
         if spatial_basis::current(peer)? != basis {
             return Err("peer spatial basis differs from actor".into());
         }
-        let start = tile(client.world_spatial().actor_position)?;
+        let start = actor_tile(client)?;
         let path = route(world, start, |at| distance(at, start) == 4)
             .ok_or("no four-tile movement lane")?;
         let first = *path.first().ok_or("empty movement lane")?;
         let moved = client.step(first).await?;
         if moved.disposition != StepDisposition::Moved
             || moved.world_spatial_delta.is_none()
-            || Some(tile(client.world_spatial().actor_position)?)
-                != destination(world, start, first)
+            || Some(actor_tile(client)?) != destination(world, start, first)
         {
             return Err("paced first step did not reach its predicted landing".into());
         }
         let next = *path.get(1).ok_or("short movement lane")?;
-        let second_from = tile(client.world_spatial().actor_position)?;
+        let second_from = actor_tile(client)?;
         let paced_at = std::time::Instant::now();
         let moved = client.step(next).await?;
         if moved.disposition != StepDisposition::Moved
             || moved.world_spatial_delta.is_none()
-            || Some(tile(client.world_spatial().actor_position)?)
-                != destination(world, second_from, next)
+            || Some(actor_tile(client)?) != destination(world, second_from, next)
         {
             return Err("paced second step did not reach its predicted landing".into());
         }
@@ -435,7 +455,7 @@ mod e2ef1 {
             return Err("second immediate STEP bypassed the minimum server pacing beat".into());
         }
         checks.pass("paced-step", (paced_at.elapsed(), client.world_spatial()));
-        let here = tile(client.world_spatial().actor_position)?;
+        let here = actor_tile(client)?;
         let goal_path =
             route(world, here, |at| distance(at, here) == 4).ok_or("autowalk lane absent")?;
         let mut goal = here;
@@ -468,14 +488,10 @@ mod e2ef1 {
             }
         }
         checks.pass("turn", own(client)?);
-        let peer_at = tile(peer.world_spatial().actor_position)?;
-        let path = route(world, peer_at, |at| {
-            distance(
-                at,
-                tile(client.world_spatial().actor_position).unwrap_or(start),
-            ) == 3
-        })
-        .ok_or("follow peer approach")?;
+        let peer_at = actor_tile(peer)?;
+        let follow_origin = actor_tile(client)?;
+        let path = route(world, peer_at, |at| distance(at, follow_origin) == 3)
+            .ok_or("follow peer approach")?;
         walk(peer, world, &path).await?;
         let reference = own(peer)?.entity;
         until_with_peer(client, peer, |c| {
@@ -488,18 +504,19 @@ mod e2ef1 {
         let mut payload = vec![34, u8::try_from(encoded.len())?];
         payload.extend(encoded);
         target_command(client, &payload).await?;
-        let peer_at = tile(peer.world_spatial().actor_position)?;
+        let peer_at = actor_tile(peer)?;
         until_with_peer(client, peer, |c| {
-            tile(c.world_spatial().actor_position).is_ok_and(|at| distance(at, peer_at) == 1)
+            served_tile(c.world_spatial().actor_position, basis)
+                .is_ok_and(|at| distance(at, peer_at) == 1)
         })
         .await?;
-        let follower_at = tile(client.world_spatial().actor_position)?;
+        let follower_at = actor_tile(client)?;
         let path = route(world, peer_at, |at| distance(at, follower_at) == 4)
             .ok_or("moving follow target lane")?;
         walk(peer, world, &path).await?;
-        let peer_at = tile(peer.world_spatial().actor_position)?;
+        let peer_at = actor_tile(peer)?;
         until_with_peer(client, peer, |c| {
-            tile(c.world_spatial().actor_position)
+            served_tile(c.world_spatial().actor_position, basis)
                 .is_ok_and(|at| at != follower_at && distance(at, peer_at) == 1)
         })
         .await?;
@@ -527,6 +544,7 @@ mod e2ef1 {
         objects: &[Object],
         checks: &mut Checks,
         revisions: &mut BTreeMap<(TilePos, u8), u64>,
+        metadata: &oteryn_world_bundle::bundle::Visited,
     ) -> TestResult {
         let used = far_use(client, world, objects, checks, revisions).await;
         if let Err(error) = &used {
@@ -537,7 +555,7 @@ mod e2ef1 {
                 "E2EF1_GAP row=M02 case=far-use-retry error={error}"
             ));
         }
-        let moved = far_move(client, world, checks).await;
+        let moved = far_move(client, world, checks, metadata).await;
         if let Err(error) = &moved {
             evidence(&format!(
                 "E2EF1_GAP row=M02 case=far-move-retry error={error}"
@@ -561,15 +579,14 @@ mod e2ef1 {
             3,
         )
         .await?;
-        let before = tile(client.world_spatial().actor_position)?;
+        let before = actor_tile(client)?;
         let revision = *revisions.get(&(object.at, object.ordinal)).unwrap_or(&0);
         if door_use(client, world, object, revision).await? != UseDisposition::Committed
-            || distance(tile(client.world_spatial().actor_position)?, object.at) > 1
-            || tile(client.world_spatial().actor_position)? == before
+            || distance(actor_tile(client)?, object.at) > 1
+            || actor_tile(client)? == before
         {
             return Err("far USE did not walk and commit retry".into());
         }
-        checks.pass("far-use-retry", (before, object, client.world_spatial()));
         // Restore the channel-scoped door, using its actual transition revision.
         let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
         loop {
@@ -582,6 +599,7 @@ mod e2ef1 {
             }
         }
         revisions.insert((object.at, object.ordinal), revision + 2);
+        checks.pass("far-use-retry", (before, object, client.world_spatial()));
         Ok(())
     }
     fn dropped_handle_matches(
@@ -604,16 +622,23 @@ mod e2ef1 {
             .sum()
     }
 
-    fn map_drop_matches(map: ActorPosition, actor: ActorPosition) -> TestResult<bool> {
-        Ok(map.x == actor.x && map.y == actor.y && map.floor == i16::from(tile(actor)?.floor))
+    fn map_drop_matches(
+        map: ActorPosition,
+        actor: ActorPosition,
+        basis: spatial_basis::Basis,
+    ) -> TestResult<bool> {
+        Ok(map.x == actor.x
+            && map.y == actor.y
+            && map.floor == i16::from(served_tile(actor, basis)?.floor))
     }
     fn ground_drop_position(
         at: ActorPosition,
+        basis: spatial_basis::Basis,
     ) -> TestResult<oteryn_protocol_oteryn::item_view::WorldTilePosition> {
         Ok(oteryn_protocol_oteryn::item_view::WorldTilePosition {
             x: at.x,
             y: at.y,
-            floor: i16::from(tile(at)?.floor),
+            floor: i16::from(served_tile(at, basis)?.floor),
         })
     }
 
@@ -685,7 +710,8 @@ mod e2ef1 {
                 .map_err(|e| format!("drop lane query: {e:?}"))?;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
         let result = loop {
-            if ground_drop_position(client.world_spatial().actor_position)? != position {
+            let basis = spatial_basis::current(client)?;
+            if ground_drop_position(client.world_spatial().actor_position, basis)? != position {
                 return Err("drop lane origin displaced".into());
             }
             let result = tokio::time::timeout_at(
@@ -743,15 +769,46 @@ mod e2ef1 {
         }
     }
 
+    fn acquire_movement_item(has_item: bool) -> bool {
+        !has_item
+    }
+
+    async fn buy_rope(
+        client: &mut DevClientSession,
+        world: &BundleWorld,
+        metadata: &oteryn_world_bundle::bundle::Visited,
+    ) -> TestResult {
+        const ROPE: u32 = 3003;
+        full_gold::earn(
+            client,
+            world,
+            &metadata.spawns,
+            "movement-rope",
+            full_gold::price(ROPE, 1)?,
+        )
+        .await?;
+        full_gold::buy(client, world, &metadata.npcs, ROPE, 1).await?;
+        Ok(())
+    }
+
     async fn far_move(
         client: &mut DevClientSession,
         world: &BundleWorld,
         checks: &mut Checks,
+        metadata: &oteryn_world_bundle::bundle::Visited,
     ) -> TestResult {
         use oteryn_dev_client::client_runtime::inventory::MoveRequest;
         use oteryn_dev_client::{ItemMoveDestination, ItemMoveOutcome};
+        if acquire_movement_item(
+            client
+                .inventory()
+                .is_some_and(|view| !view.entries.is_empty()),
+        ) {
+            buy_rope(client, world, metadata).await?;
+        }
         let ground = client.world_spatial().actor_position;
-        let native_ground = ground_drop_position(ground)?;
+        let basis = spatial_basis::current(client)?;
+        let native_ground = ground_drop_position(ground, basis)?;
         let baseline = drop_lane(client, native_ground).await?;
         let item = client
             .inventory()
@@ -814,10 +871,9 @@ mod e2ef1 {
                         }
                         _ => continue,
                     };
-                    for tile in tiles
-                        .iter()
-                        .filter(|tile| map_drop_matches(tile.position, ground).unwrap_or(false))
-                    {
+                    for tile in tiles.iter().filter(|tile| {
+                        map_drop_matches(tile.position, ground, basis).unwrap_or(false)
+                    }) {
                         for entry in &tile.items {
                             if entry.definition
                                 == oteryn_protocol_oteryn::world_map::MapDefinition::Item(
@@ -846,8 +902,8 @@ mod e2ef1 {
             client.service_liveness(Duration::from_millis(25)).await?;
         };
         let result: TestResult = async {
-            let from = tile(ground)?;
-            let actual = tile(client.world_spatial().actor_position)?;
+            let from = served_tile(ground, basis)?;
+            let actual = actor_tile(client)?;
             let path = route(world, actual, |at| distance(at, from) == 3)
                 .ok_or("far MOVE retreat route")?;
             walk(client, world, &path).await?;
@@ -863,7 +919,7 @@ mod e2ef1 {
             .await?;
             if moved.outcome != ItemMoveOutcome::Moved
                 || client.world_spatial().actor_position == before
-                || distance(tile(client.world_spatial().actor_position)?, from) > 1
+                || distance(actor_tile(client)?, from) > 1
             {
                 return Err(format!("far MOVE did not walk and retry: {moved:?}").into());
             }
@@ -876,8 +932,8 @@ mod e2ef1 {
             evidence(&format!("E2EF1_MOVE_RECOVERY original_error={error}"));
             let restored = |c: &DevClientSession| quantity(c) == before_quantity;
             if !restored(client) {
-                let drop = tile(ground)?;
-                let from = tile(client.world_spatial().actor_position)?;
+                let drop = served_tile(ground, basis)?;
+                let from = actor_tile(client)?;
                 let path = reach_route(client, world, from, |at| distance(at, drop) <= 1)
                     .await?
                     .map_err(|failure| format!("dropped item recovery route: {failure}"))?;
@@ -957,7 +1013,7 @@ mod e2ef1 {
             .min_by_key(|(_, spell)| (spell.level, spell.cooldown_micros))
     }
 
-    async fn fixture_spell_facts(
+    pub(in super::super) async fn fixture_spell_facts(
         client: &mut DevClientSession,
     ) -> TestResult<(u32, crate::spell::Vocation)> {
         use oteryn_protocol_oteryn::cyclopedia_character as wire;
@@ -1012,6 +1068,14 @@ mod e2ef1 {
             level,
             crate::spell::Vocation::from_key(key).ok_or("fixture vocation unknown")?,
         ))
+    }
+
+    fn stair_landing(from: i8, to: i8, teleport: bool) -> bool {
+        from != to && !teleport
+    }
+
+    fn completed_row(actions: bool, durable: bool, returned: bool) -> bool {
+        actions && durable && returned
     }
 
     async fn m03(
@@ -1099,19 +1163,22 @@ mod e2ef1 {
                 pump(client).await?;
             }
             let result: TestResult = async {
-                let from = tile(client.world_spatial().actor_position)?;
+                let from = actor_tile(client)?;
                 let outside = |at: TilePos| world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone());
                 if teleport {
                     let object = approach(client, world, objects, |o| world.floors().teleport(o.at).is_some_and(|to| to.floor != o.at.floor && outside(to)), 1).await?;
-                    let at = tile(client.world_spatial().actor_position)?;
+                    let at = actor_tile(client)?;
                     let expected = world.floors().teleport(object.at).ok_or("teleport destination")?;
                     let direction = DIRS.into_iter().find(|d| destination(world, at, *d) == Some(expected)).ok_or("no automatic teleport entry edge")?;
                     walk(client, world, &[direction]).await?;
                     checks.pass("teleport", (object.at, expected));
                 } else {
-                    let path = route(world, from, |at| at.floor != from.floor && outside(at)).ok_or("no reachable outside-PZ stair transition")?;
+                    let path = route_with_edges(from, |at| at.floor != from.floor, |at, direction| {
+                        let (to, teleport) = landing(world, at, direction)?;
+                        (!teleport && (to.floor == at.floor || (stair_landing(at.floor, to.floor, teleport) && outside(to)))).then_some(to)
+                    }).ok_or("no reachable outside-PZ stair transition")?;
                     walk(client, world, &path).await?;
-                    if tile(client.world_spatial().actor_position)?.floor == from.floor { return Err("stairs did not change floor".into()); }
+                    if actor_tile(client)?.floor == from.floor { return Err("stairs did not change floor".into()); }
                     checks.pass("stairs", client.world_spatial());
                 }
                 let Some((index, _)) = selected else {
@@ -1158,11 +1225,14 @@ mod e2ef1 {
         Ok(())
     }
 
+    use oteryn_protocol_oteryn::creature_push::CreaturePushDisposition;
+
     async fn push(
         client: &mut DevClientSession,
         reference: EntityRef,
         at: TilePos,
-    ) -> TestResult<u8> {
+        expected: CreaturePushDisposition,
+    ) -> TestResult {
         let basis = spatial_basis::current(client)?;
         use oteryn_protocol_oteryn::creature_push::*;
         let payload = encode_creature_push_intent(&CreaturePushIntent {
@@ -1178,13 +1248,41 @@ mod e2ef1 {
                 &payload,
             )
             .await?;
-        if result.status != CommandStatus::Accepted
-            || result.payload.len() != 2
-            || result.payload[0] != 8
-        {
-            return Err(format!("push result: {result:?}").into());
+        expect_push(result.status, &result.payload, expected)
+    }
+
+    fn expect_push(
+        status: CommandStatus,
+        payload: &[u8],
+        expected: CreaturePushDisposition,
+    ) -> TestResult {
+        if status == CommandStatus::Rejected {
+            return Err(verdict::HarnessError::boxed(
+                verdict::Cause::ServerRefused {
+                    code: status as u32,
+                },
+                format!("push command refused: {status:?}, payload={payload:?}"),
+            ));
         }
-        Ok(result.payload[1])
+        let [8, code @ 1..=7] = payload else {
+            return Err(format!("malformed push reply: {status:?}, payload={payload:?}").into());
+        };
+        if status != CommandStatus::Accepted {
+            return Err(format!("unexpected push command status: {status:?}").into());
+        }
+        if *code == expected as u8 {
+            return Ok(());
+        }
+        let message = format!("push disposition {code}, expected {expected:?}");
+        if *code == CreaturePushDisposition::Moved as u8 {
+            return Err(message.into());
+        }
+        Err(verdict::HarnessError::boxed(
+            verdict::Cause::ServerRefused {
+                code: u32::from(*code),
+            },
+            message,
+        ))
     }
     async fn m04(
         client: &mut DevClientSession,
@@ -1194,9 +1292,11 @@ mod e2ef1 {
         checks: &mut Checks,
     ) -> TestResult {
         let player = player_push(client, peer, world, checks).await;
+        let player_action = checks.active;
         if let Err(error) = &player {
             evidence(&format!("E2EF1_GAP row=M04 case=push-player error={error}"));
         }
+        checks.active = Some("push-creature");
         let creature = creature_push(client, world, bytes, checks).await;
         if let Err(error) = &creature {
             evidence(&format!(
@@ -1206,8 +1306,14 @@ mod e2ef1 {
         // Leave the lethal encounter for the nearest authored protection zone.
         // The row's later origin return still enforces its fixture-town requirement.
         let left = return_to_protection_zone(client, world).await.map(|_| ());
-        left?;
-        player.and(creature)
+        checks.active = if player.is_err() {
+            player_action
+        } else if creature.is_err() {
+            Some("push-creature")
+        } else {
+            Some("protection-zone-return")
+        };
+        player.and(creature).and(left)
     }
     async fn player_push(
         client: &mut DevClientSession,
@@ -1215,12 +1321,13 @@ mod e2ef1 {
         world: &BundleWorld,
         checks: &mut Checks,
     ) -> TestResult {
+        checks.active = Some("push-player");
         let basis = spatial_basis::current(client)?;
         if spatial_basis::current(peer)? != basis {
             return Err("peer spatial basis differs from actor".into());
         }
-        let here = tile(client.world_spatial().actor_position)?;
-        let path = route(world, tile(peer.world_spatial().actor_position)?, |at| {
+        let here = actor_tile(client)?;
+        let path = route(world, actor_tile(peer)?, |at| {
             distance(at, here) == 1
                 && DIRS.into_iter().any(|d| {
                     destination(world, at, d)
@@ -1229,7 +1336,7 @@ mod e2ef1 {
         })
         .ok_or("adjacent push-player lane")?;
         walk(peer, world, &path).await?;
-        let original = tile(peer.world_spatial().actor_position)?;
+        let original = actor_tile(peer)?;
         let reference = own(peer)?.entity;
         until_with_peer(client, peer, |c| {
             c.world_entities().is_some_and(|entities| {
@@ -1239,19 +1346,23 @@ mod e2ef1 {
             })
         })
         .await?;
-        if push(client, reference, here).await? != 5 {
-            return Err("occupied push destination did not refuse NotEnoughRoom".into());
-        }
+        checks.active = Some("collision");
+        push(
+            client,
+            reference,
+            here,
+            CreaturePushDisposition::NotEnoughRoom,
+        )
+        .await?;
         stable(peer, 300).await?;
         checks.pass("collision", (reference, here, original));
+        checks.active = Some("push-player");
         let landing = DIRS
             .into_iter()
             .filter_map(|d| destination(world, original, d))
             .find(|at| *at != here && distance(*at, here) == 1)
             .ok_or("free push landing")?;
-        if push(client, reference, landing).await? != 1 {
-            return Err("push-player did not move".into());
-        }
+        push(client, reference, landing, CreaturePushDisposition::Moved).await?;
         until_with_peer(peer, client, |c| {
             c.world_spatial().actor_position == position(landing, basis)
         })
@@ -1282,21 +1393,18 @@ mod e2ef1 {
     ) -> TestResult {
         let basis = spatial_basis::current(client)?;
         let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
-        travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat")
-            .await
-            .inspect_err(|error| evidence(&format!("E2EF1_PUSH phase=approach error={error}")))?;
-        let here = tile(client.world_spatial().actor_position)?;
-        let creature = client
-            .world_entities()
-            .and_then(|entities| {
-                entities.iter().find(|e| {
-                    e.kind == EntityKind::Creature
-                        && tile(e.position).is_ok_and(|at| distance(at, here) == 1)
-                })
-            })
-            .copied()
-            .ok_or("no adjacent live push creature")?;
-        let from = tile(creature.position)?;
+        let creature = approach_spawn_target(
+            client,
+            world,
+            &metadata.spawns,
+            "oteryn:creature.rat",
+            SpawnRespawn::Wait,
+            None,
+        )
+        .await?
+        .ok_or("no reachable adjacent rat to push")?;
+        let here = actor_tile(client)?;
+        let from = served_tile(creature.position, basis)?;
         let landing = DIRS
             .into_iter()
             .filter_map(|d| destination(world, from, d))
@@ -1306,11 +1414,9 @@ mod e2ef1 {
             "E2EF1_PUSH phase=command command_type=98 from={from:?} to={landing:?} entity={:?}",
             creature.entity
         ));
-        if push(client, creature.entity, landing).await.inspect_err(|error| {
+        push(client, creature.entity, landing, CreaturePushDisposition::Moved).await.inspect_err(|error| {
             evidence(&format!("E2EF1_PUSH phase=command error={error} visibility_codec=domain:1,type:2 source=crates/session/src/domain_dispatch.rs:160"));
-        })? != 1 {
-            return Err("live creature push did not move".into());
-        }
+        })?;
         until(client, |c| {
             c.world_entities().is_some_and(|entities| {
                 entities
@@ -1355,7 +1461,7 @@ mod e2ef1 {
         revision: u64,
     ) -> TestResult {
         let basis = spatial_basis::current(client)?;
-        let at = tile(client.world_spatial().actor_position)?;
+        let at = actor_tile(client)?;
         let direction = DIRS
             .into_iter()
             .find(|direction| {
@@ -1481,11 +1587,25 @@ mod e2ef1 {
         world: &BundleWorld,
         objects: &[Object],
         checks: &mut Checks,
+        metadata: &oteryn_world_bundle::bundle::Visited,
     ) -> TestResult {
         use oteryn_protocol_oteryn::world_object::*;
         let index = provisioning::item_index()?;
         let reference = provisioning::item_reference(&index, 3003)?;
-        let rope = client.inventory().and_then(|i| i.entries.iter().find(|entry| entry.item_definition_ref == reference)).copied().ok_or("FAIL: ordinarily acquired rope content:oteryn:item.tibia.i3003 absent; starter_grant.rs grants only a backpack; fixture provisioning forbidden for full evidence")?;
+        let carried_rope = |client: &DevClientSession| {
+            client
+                .inventory()
+                .and_then(|i| {
+                    i.entries
+                        .iter()
+                        .find(|entry| entry.item_definition_ref == reference)
+                })
+                .copied()
+        };
+        if acquire_movement_item(carried_rope(client).is_some()) {
+            buy_rope(client, world, metadata).await?;
+        }
+        let rope = carried_rope(client).ok_or("ordinary rope purchase did not deliver the rope")?;
         checks.pass("carried-rope", rope);
         // Production rope resolver's exact ground and top item source ids.
         let object = approach(
@@ -1596,12 +1716,13 @@ mod e2ef1 {
     ) -> TestResult<DevClientSession> {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let objects = objects(&bytes)?;
+        let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
         let mut failed = false;
         let mut revisions = BTreeMap::new();
         for (ordinal, (row, required)) in ROWS.iter().enumerate() {
-            let origin = tile(client.world_spatial().actor_position)?;
-            let started = std::time::Instant::now();
             verdicts.current = Some(row);
+            let origin = actor_tile(&mut client)?;
+            let started = std::time::Instant::now();
             let mut checks = Checks {
                 row,
                 ..Checks::default()
@@ -1621,7 +1742,17 @@ mod e2ef1 {
                     )
                     .await
                 }
-                "M02" => m02(&mut client, world, &objects, &mut checks, &mut revisions).await,
+                "M02" => {
+                    m02(
+                        &mut client,
+                        world,
+                        &objects,
+                        &mut checks,
+                        &mut revisions,
+                        &metadata,
+                    )
+                    .await
+                }
                 "M03" => m03(&mut client, world, &objects, &mut checks).await,
                 "M04" => {
                     m04(
@@ -1634,10 +1765,11 @@ mod e2ef1 {
                     .await
                 }
                 "M05" => m05(&mut client, world, &objects, &mut checks, &mut revisions).await,
-                "M07" => m07(&mut client, world, &objects, &mut checks).await,
+                "M07" => m07(&mut client, world, &objects, &mut checks, &metadata).await,
                 _ => unreachable!(),
             };
             if let Err(error) = &result {
+                verdicts.action_failure = Some(checks.action_failure(required, error.as_ref()));
                 evidence(&format!("E2EF1_GAP row={row} error={error}"));
             }
             // Every position-changing row saves its actual landing via ordinary
@@ -1656,8 +1788,8 @@ mod e2ef1 {
                 let mut peer = connect_character(clients, 0xc0 + u8::try_from(ordinal)?, 0).await?;
                 peer_durable &= peer.world_spatial().actor_position == saved
                     && peer.join_snapshot().game_session_id != previous;
-                let back =
-                    route(world, tile(saved)?, |at| at == TOWN).ok_or("peer return route")?;
+                let back = route(world, actor_tile(&mut peer)?, |at| at == TOWN)
+                    .ok_or("peer return route")?;
                 walk(&mut peer, world, &back).await?;
                 logout(&mut peer).await?;
             }
@@ -1690,9 +1822,17 @@ mod e2ef1 {
                     return Err(detail.into());
                 }
             };
-            walk(&mut client, world, &back).await
+            walk(&mut client, world, &back).await?;
+            if actor_tile(&mut client)? != origin {
+                return Err("row return did not reach its origin".into());
+            }
+            Ok(())
             }.await;
-            let passed = result.is_ok() && restored.is_ok() && durable && checks.complete(required);
+            let passed = completed_row(
+                result.is_ok() && checks.complete(required),
+                durable,
+                restored.is_ok(),
+            );
             failed |= !passed;
             let gaps: Vec<_> = required
                 .iter()
@@ -1703,12 +1843,15 @@ mod e2ef1 {
                 "E2EF1_ROW row={row} missing={gaps:?} result={result:?} durable={durable}"
             ));
             verdicts.done.insert(row);
+            let action_failure = verdicts.action_failure.take();
             let suffix = if passed {
                 String::new()
+            } else if let Some((root, cause)) = action_failure {
+                cause.suffix(&root)
             } else {
                 let cause = match verdict::release_affects_verdict(&result, &restored) {
                     Err(error) => verdict::classify(error.as_ref()),
-                    Ok(()) => verdict::Cause::Assertion,
+                    Ok(_) => verdict::Cause::Assertion,
                 };
                 cause.suffix(&format!(
                     "{row}/{}",
@@ -1737,6 +1880,72 @@ mod e2ef1 {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn m04_collision_verdict_keeps_the_classified_failure() -> TestResult {
+            let mut checks = Checks {
+                row: "M04",
+                active: Some("push-player"),
+                ..Checks::default()
+            };
+            let setup: Box<dyn std::error::Error> = "peer lane unavailable".into();
+            let (root, cause) = checks.action_failure(ROWS[3].1, setup.as_ref());
+            assert_eq!(cause.suffix(&root), " cause=assertion root=M04/push-player");
+
+            checks.active = Some("collision");
+            for (status, payload, code) in [
+                (CommandStatus::Rejected, &[][..], 2),
+                (CommandStatus::Accepted, &[8, 7][..], 7),
+            ] {
+                let failure = expect_push(status, payload, CreaturePushDisposition::NotEnoughRoom)
+                    .err()
+                    .ok_or("command or disposition must be refused")?;
+                let (root, cause) = checks.action_failure(ROWS[3].1, failure.as_ref());
+                assert_eq!(cause, verdict::Cause::ServerRefused { code });
+                assert_eq!(
+                    cause.suffix(&root),
+                    " cause=server-refused root=M04/collision"
+                );
+            }
+            assert!(
+                expect_push(
+                    CommandStatus::Accepted,
+                    &[8, 5],
+                    CreaturePushDisposition::NotEnoughRoom
+                )
+                .is_ok()
+            );
+            assert!(
+                expect_push(
+                    CommandStatus::Accepted,
+                    &[8, 1],
+                    CreaturePushDisposition::Moved
+                )
+                .is_ok()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn empty_starter_requires_ordinary_movement_item_acquisition() {
+            assert!(acquire_movement_item(false));
+            assert!(!acquire_movement_item(true));
+        }
+
+        #[test]
+        fn stairs_evidence_rejects_a_teleport_landing() {
+            assert!(stair_landing(-7, -8, false));
+            assert!(!stair_landing(-7, -8, true));
+            assert!(!stair_landing(-7, -7, false));
+        }
+
+        #[test]
+        fn movement_verdict_requires_successful_return() {
+            assert!(completed_row(true, true, true));
+            assert!(!completed_row(true, true, false));
+            assert!(!completed_row(true, false, true));
+            assert!(!completed_row(false, true, true));
+        }
+
         #[test]
         fn qualification_floor_exhaust_spell_fits_pristine_sorcerer() -> TestResult {
             std::thread::Builder::new()
@@ -1767,7 +1976,11 @@ mod e2ef1 {
                 floor: 8,
             };
             let native = ActorPosition { floor: -8, ..actor };
-            assert!(map_drop_matches(native, actor)?);
+            assert!(map_drop_matches(
+                native,
+                actor,
+                spatial_basis::Basis::Legacy
+            )?);
             Ok(())
         }
 
@@ -1778,7 +1991,7 @@ mod e2ef1 {
                 y: 32238,
                 floor: 7,
             };
-            let drop = ground_drop_position(at)?;
+            let drop = ground_drop_position(at, spatial_basis::Basis::Legacy)?;
             assert_eq!(drop.floor, -7);
             Ok(())
         }

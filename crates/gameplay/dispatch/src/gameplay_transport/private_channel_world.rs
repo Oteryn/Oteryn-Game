@@ -24,6 +24,36 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
 };
 
+// The root-only disposable fixture issues one Create for an exact session.
+#[cfg(feature = "qualification-private-channel")]
+static QUALIFICATION_CREATE: Mutex<Option<(GameSessionId, std::time::Instant)>> = Mutex::new(None);
+
+#[cfg(feature = "qualification-private-channel")]
+pub fn prepare_channel_owner(session: GameSessionId) -> bool {
+    QUALIFICATION_CREATE.lock().is_ok_and(|mut permit| {
+        *permit = Some((
+            session,
+            std::time::Instant::now() + std::time::Duration::from_secs(15),
+        ));
+        true
+    })
+}
+
+#[cfg(feature = "qualification-private-channel")]
+fn take_qualification_create(session: GameSessionId, intent: &PrivateChannelIntent) -> bool {
+    matches!(intent, PrivateChannelIntent::Create)
+        && QUALIFICATION_CREATE.lock().is_ok_and(|mut permit| {
+            if permit.is_some_and(|(owner, expires)| {
+                owner == session && std::time::Instant::now() < expires
+            }) {
+                permit.take();
+                true
+            } else {
+                false
+            }
+        })
+}
+
 #[derive(Default)]
 pub(super) struct PrivateChannelRuntime {
     entries: Mutex<HashMap<GameSessionId, Binding>>,
@@ -425,7 +455,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let reply = if matches!(intent, PrivateChannelIntent::Create) {
+        #[cfg(feature = "qualification-private-channel")]
+        let qualification_create = take_qualification_create(fence.game_session_id, intent);
+        #[cfg(not(feature = "qualification-private-channel"))]
+        let qualification_create = false;
+        let reply = if qualification_create {
+            prepared
+                .commit(PremiumStatus::Current, None, sealed)
+                .await
+                .ok()
+        } else if matches!(intent, PrivateChannelIntent::Create) {
             self.with_premium_gate(prepared.account, move |status, tx| {
                 Box::pin(async move { prepared.commit(status, tx, sealed).await })
             })
@@ -601,3 +640,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 #[path = "private_channel_world_tests.rs"]
 mod tests;
+
+#[cfg(all(test, feature = "qualification-private-channel"))]
+#[test]
+fn qualification_channel_create_is_session_bound_and_single_use()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut id = [0; 16];
+    id[6] = 0x70;
+    id[8] = 0x80;
+    let owner = GameSessionId::decode(&id)?;
+    id[15] = 1;
+    let peer = GameSessionId::decode(&id)?;
+    assert!(prepare_channel_owner(owner));
+    assert!(!take_qualification_create(
+        peer,
+        &PrivateChannelIntent::Create
+    ));
+    assert!(!take_qualification_create(
+        owner,
+        &PrivateChannelIntent::List
+    ));
+    assert!(take_qualification_create(
+        owner,
+        &PrivateChannelIntent::Create
+    ));
+    assert!(!take_qualification_create(
+        owner,
+        &PrivateChannelIntent::Create
+    ));
+    Ok(())
+}

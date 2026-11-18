@@ -257,7 +257,7 @@ async fn earn(
             async |client| walk(client, world, &path).await,
         )
         .await?;
-        let target = approach_spawn_target(client, world, "Rat", deadline, Some(&mut fare_work_deadline))
+        let target = approach_visible_spawn_target(client, world, "Rat", deadline, Some(&mut fare_work_deadline))
             .await?;
         approach_action(
             client,
