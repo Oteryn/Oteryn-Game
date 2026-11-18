@@ -6,6 +6,7 @@ use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_gameplay_entities::carrier::QuestCorpseStep;
 use oteryn_gameplay_quests::quest::world_callbacks::{DeathArea, DeathPhases, Encounter, Position};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
+use oteryn_gameplay_world::map::view::MapFacts;
 use std::collections::BTreeSet;
 
 use super::terminal_portal::Portal;
