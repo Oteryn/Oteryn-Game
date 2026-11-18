@@ -227,7 +227,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             admitted,
             Some(proof.command),
             ActivityReturnReason::Exit,
-            Some(SourceBossExitProof::Use(proof)),
+            Some(SourceBossExitProof::Use(Box::new(proof))),
         )
         .await
     }

@@ -71,7 +71,7 @@ impl SourceBossStepExitProof {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum SourceBossExitProof {
     Step(Box<SourceBossStepExitProof>),
-    Use(SourceBossUseExitProof),
+    Use(Box<SourceBossUseExitProof>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
