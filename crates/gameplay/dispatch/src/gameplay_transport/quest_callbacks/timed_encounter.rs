@@ -15,12 +15,42 @@ pub(super) struct TimedEncounter {
     map: [u8; 32],
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     participant: Option<(ExactActorRef, GameSessionId)>,
+    roster: Vec<(ExactActorRef, GameSessionId)>,
     spawn_at: u64,
     reset_at: u64,
     attempted_spawn: bool,
     spawned: Vec<ExactActorRef>,
 }
 impl TimedEncounter {
+    pub(super) fn group(
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        callback: &Callback,
+        source: (u64, u64),
+        now: u64,
+        roster: Vec<(ExactActorRef, GameSessionId)>,
+    ) -> Option<Self> {
+        let transfer = callback.effects.timed_group_transfer?;
+        Some(Self {
+            callback: callback.clone(),
+            key: source.0,
+            revision: source.1.checked_add(1)?,
+            content: runtime.content_pin().server_artifact_digest(),
+            map: map.overlay.base().digest(),
+            scope: runtime.encounter_owner_scope(),
+            participant: None,
+            roster,
+            spawn_at: now,
+            reset_at: now.checked_add(u64::from(transfer.after_ms) * 1_000)?,
+            attempted_spawn: true,
+            spawned: Vec::new(),
+        })
+    }
+
+    pub(super) fn bind_spawns(&mut self, spawned: Vec<ExactActorRef>) {
+        self.spawned = spawned;
+    }
+
     pub(super) fn source_key(&self) -> u64 {
         self.key
     }
@@ -34,11 +64,12 @@ impl TimedEncounter {
         position: MovementLocalPosition,
         now: u64,
     ) -> bool {
-        now < self.reset_at
+        (now < self.reset_at || self.callback.effects.timed_group_transfer.is_some())
             && self.scope == runtime.encounter_owner_scope()
             && self.content == runtime.content_pin().server_artifact_digest()
             && self.map == map.overlay.base().digest()
             && self.revision == map.facts.object_revision(self.key)
+            && (self.roster.is_empty() || self.roster.contains(&(actor, session)))
             && self
                 .participant
                 .is_none_or(|participant| participant == (actor, session))
@@ -145,6 +176,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map: map.overlay.base().digest(),
             scope: runtime.encounter_owner_scope(),
             participant: personal.then_some((actor, session)),
+            roster: Vec::new(),
             spawn_at,
             reset_at,
             attempted_spawn: false,
@@ -170,6 +202,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let mut states = self.states.spell_states.lock().await;
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };
@@ -193,6 +226,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
+            if let Some(transfer) = memo.callback.effects.timed_group_transfer {
+                if self.expire_group(&mut runtime, &mut states, map, memo, transfer.destination) {
+                    pending.remove(index);
+                } else {
+                    index += 1;
+                }
+                continue;
+            }
             let Ok(census) = runtime.current_live_creature_census() else {
                 index += 1;
                 continue;
@@ -287,5 +328,87 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Death/despawn and source cleanup release only their source-owned ladder.
         super::monsters::settle_authored_monster_puzzles(&runtime, map);
+    }
+
+    // Crystal 201189f8 actions_lord_of_elements_lever.lua:63-99,168-180.
+    // The deadline acts on the captured roster still inside the source room.
+    fn expire_group(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        memo: &TimedEncounter,
+        destination: Position,
+    ) -> bool {
+        let (Some(room), Some([closed_appearance, _])) =
+            (&memo.callback.effects.encounter, memo.callback.lever)
+        else {
+            return false;
+        };
+        let Some(restore) = map
+            .facts
+            .quest_callback_replacement(memo.key, closed_appearance)
+        else {
+            return false;
+        };
+        let doors = crate::map::floor::BundleDoors(&map.facts);
+        let mut participants = Vec::new();
+        let mut proofs = Vec::new();
+        for &(actor, session) in &memo.roster {
+            if states.is_dead(actor) || runtime.bound_attacker_lease(actor, session).is_err() {
+                continue;
+            }
+            let Ok(expected) = runtime.read_actor_position(actor) else {
+                continue;
+            };
+            if !super::encounter::room_contains(room, expected.position()) {
+                continue;
+            }
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                expected,
+                local(destination),
+                &doors,
+            ) else {
+                return false;
+            };
+            participants.push((actor, session, expected.position()));
+            proofs.push(proof);
+        }
+        let Ok(landed) = runtime.commit_quest_relocation(proofs, || {
+            map.facts
+                .apply_quest_callback(memo.key, memo.revision, restore, &[], &[], true, None)
+        }) else {
+            return false;
+        };
+        for &creature in &memo.spawned {
+            let _ = runtime.remove_encounter_actor(creature);
+        }
+        let now = self.owner_now().get();
+        for ((actor, session, before), after) in participants.into_iter().zip(landed) {
+            states.stage_special_movement_step(
+                runtime,
+                map,
+                actor,
+                session,
+                now,
+                Some(before),
+                after.position(),
+                None,
+            );
+            states.stage_underwater_step(
+                runtime,
+                actor,
+                session,
+                now,
+                underwater(map, before),
+                underwater(map, after.position()),
+            );
+            map.facts.emit_movement_effect(tile(destination), 11);
+        }
+        true
     }
 }

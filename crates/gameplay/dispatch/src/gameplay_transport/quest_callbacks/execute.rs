@@ -454,18 +454,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 passages.push(*passage);
             }
         }
-        projection = match super::timed_passages::prepare(
-            map,
-            callback,
-            (key, expected_revision),
-            lifecycle_now,
-            projection,
-            &mut passages,
-            &mut replacements,
-        ) {
-            Ok(projection) => projection,
-            Err(result) => return result,
-        };
+        // Crystal 201189f8 action-1-first_seal_lever.lua:24-36 closes the
+        // passage immediately on a second USE. Only opening arms a deadline.
+        if !close {
+            projection = match super::timed_passages::prepare(
+                map,
+                callback,
+                (key, expected_revision),
+                lifecycle_now,
+                projection,
+                &mut passages,
+                &mut replacements,
+            ) {
+                Ok(projection) => projection,
+                Err(result) => return result,
+            };
+        }
         let projection_target = match &projection {
             Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 key, ..

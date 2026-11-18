@@ -75,6 +75,9 @@ pub struct CallbackEffects {
     pub quest_completion: Option<QuestCompletion>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub party_transfer: Option<PartyTransfer>,
+    /// Transfer the admitted roster still in the encounter room when it expires.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timed_group_transfer: Option<TimedGroupTransfer>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reward_door: Option<RewardDoor>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -324,6 +327,13 @@ pub enum EncounterPhase {
 pub struct EncounterTiming {
     pub spawn_after_ms: u32,
     pub reset_after_ms: u32,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TimedGroupTransfer {
+    pub after_ms: u32,
+    pub destination: Position,
 }
 
 /// A source rite transports the exact players on bounded stations. The initiator
@@ -646,7 +656,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
                 || callback.trigger != Trigger::Use
-                || callback.reversible
+                || (callback.reversible && callback.lever.is_none())
                 || callback.passages.is_empty()
                 || callback
                     .passages
@@ -828,6 +838,25 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || cycle.remove == 0
             || cycle.create == 0
             || cycle.remove == cycle.create)
+    {
+        return false;
+    }
+    if let Some(transfer) = effects.timed_group_transfer
+        && (!pos(transfer.destination)
+            || !(1..=3_600_000).contains(&transfer.after_ms)
+            || callback.trigger != Trigger::Use
+            || callback.lever.is_none()
+            || callback.has_personal_state()
+            || effects.encounter.as_ref().is_none_or(|encounter| {
+                encounter.players.is_empty()
+                    || encounter.timing.is_some()
+                    || encounter.phase.is_some()
+                    || (transfer.destination.floor == encounter.room_min.floor
+                        && (encounter.room_min.x..=encounter.room_max.x)
+                            .contains(&transfer.destination.x)
+                        && (encounter.room_min.y..=encounter.room_max.y)
+                            .contains(&transfer.destination.y))
+            }))
     {
         return false;
     }

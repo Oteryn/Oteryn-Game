@@ -361,20 +361,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let mut visits = if encounter.phase.is_none() && !monsters.is_empty() {
-            let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+        let mut timed_group = if callback.effects.timed_group_transfer.is_some() {
+            let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
                 return UseDisposition::Rejected;
             };
-            visits.retain(|visit| visit.active(runtime));
-            if visits.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
-                || visits.try_reserve(1).is_err()
+            if pending.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                || pending.iter().any(|window| window.source_key() == key)
+                || pending.try_reserve(1).is_err()
             {
                 return UseDisposition::Exhausted;
             }
-            Some(visits)
+            let Some(window) = super::timed_encounter::TimedEncounter::group(
+                runtime,
+                map,
+                callback,
+                (key, expected_revision),
+                self.owner_now().get(),
+                party.clone(),
+            ) else {
+                return UseDisposition::Exhausted;
+            };
+            Some((pending, window))
         } else {
             None
         };
+        let mut visits =
+            if encounter.phase.is_none() && timed_group.is_none() && !monsters.is_empty() {
+                let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+                    return UseDisposition::Rejected;
+                };
+                visits.retain(|visit| visit.active(runtime));
+                if visits.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                    || visits.try_reserve(1).is_err()
+                {
+                    return UseDisposition::Exhausted;
+                }
+                Some(visits)
+            } else {
+                None
+            };
         let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
@@ -421,6 +446,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
         }
         drop(visits);
+        if let Some((pending, window)) = timed_group.take() {
+            let mut pending = pending;
+            let mut window = window;
+            window.bind_spawns(actors.clone());
+            pending.push(window);
+            states.owner_wake.notify_one();
+        }
         if let Some(reservation) = reservation
             && let Err(disposition) = reservation.publish(runtime, actors)
         {
