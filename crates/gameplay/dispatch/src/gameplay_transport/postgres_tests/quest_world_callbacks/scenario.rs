@@ -58,7 +58,8 @@ fn scenario_case(
     let nomads_window = name.starts_with(super::super::qengine_m02_use::NAME);
     let m01b_explore = name.starts_with("m01b/");
     let ice_chakoya = name == super::super::qcx60_chakoya::NAME;
-    let ice_tools = name == super::super::qcx60_carried_tools::NAME;
+    let ice_cure = name == super::super::qcx60_carried_tools::CURE_NAME;
+    let ice_tools = ice_cure || name == super::super::qcx60_carried_tools::NAME;
     let qready_craft = name == super::super::qready1_crafting::NAME;
     let qready_workbench = super::super::qready1_workbenches::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -1700,7 +1701,7 @@ fn scenario_case(
         }
         if ice_tools {
             owner.quest_catalogue = Some(std::sync::Arc::new(
-                super::super::qcx60_carried_tools::catalogue(&callback)?,
+                super::super::qcx60_carried_tools::catalogue(&callback, ice_cure)?,
             ));
         }
         if draconia_escape {
@@ -2558,7 +2559,7 @@ fn scenario_case(
             )).await?;
         } else if ice_tools {
             Box::pin(super::super::qcx60_carried_tools::exercise(
-                &mut owner, &mut admitted, &h,
+                &mut owner, &mut admitted, &h, ice_cure,
             )).await?;
         } else if name == "engitem-native-seal-paint" {
             Box::pin(super::super::engitem_seal_paint::exercise(

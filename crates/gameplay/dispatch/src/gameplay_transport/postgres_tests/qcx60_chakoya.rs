@@ -18,6 +18,7 @@ const QUEST: &str = "oteryn:quest.the_ice_islands_quest";
 const PICK: &str = "oteryn:item.tibia.i3456";
 const COUNT: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/pick_amount";
 const MISSION: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission02";
+const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline";
 const CRACK: Position = Position {
     x: 32399,
     y: 31051,
@@ -65,7 +66,7 @@ pub(super) fn callback() -> TestResult<Callback> {
         "requires_world_admission": true,
         "passages": [],
         "storage": [
-            {"track": COUNT, "minimum": 0, "maximum": 2, "set": 1, "increment": true},
+            {"track": COUNT, "minimum": 0, "maximum": 1, "set": 1, "increment": true},
             {"track": MISSION, "minimum": 1, "maximum": 3, "set": 1, "increment": true}
         ],
         "item_on_target": {
@@ -86,6 +87,13 @@ pub(super) fn callback() -> TestResult<Callback> {
 }
 
 pub(super) fn catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> {
+    let mut completion = serde_json::to_value(callback)?;
+    completion["key"] = "oteryn:quest-callback/qcx60/breaking-ice-finish-fixture".into();
+    completion["storage"] = json!([
+        {"track": COUNT, "minimum": 2, "maximum": 2, "set": 3},
+        {"track": MISSION, "minimum": 1, "maximum": 3, "set": 4},
+        {"track": QUESTLINE, "minimum": 3, "maximum": 3, "set": 4}
+    ]);
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
         "schema": 1,
         "quests": [{
@@ -93,12 +101,17 @@ pub(super) fn catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> 
             "recipe_sha256": "5121124402c29aead613174c80e94e6b8d5c7db1e62ad152ad68f1280fc3df6d",
             "tracks": [
                 {"key": COUNT, "initial": 0, "minimum": 0, "maximum": 3},
-                {"key": MISSION, "initial": 1, "minimum": -1, "maximum": 4}
+                {"key": MISSION, "initial": 1, "minimum": -1, "maximum": 4},
+                {"key": QUESTLINE, "initial": 3, "minimum": 3, "maximum": 4}
             ],
             "stages": [{
                 "key": "pick",
                 "completes": false,
                 "trigger": {"kind": "map_use", "callback": callback}
+            }, {
+                "key": "finish-breaking-the-ice",
+                "completes": false,
+                "trigger": {"kind": "map_use", "callback": completion}
             }],
             "sources": [SOURCE]
         }]
@@ -144,7 +157,7 @@ pub(super) async fn exercise(
         .ok_or("pick ref")?;
 
     let mut reset = None;
-    for count in 1..=2_i64 {
+    for count in 1..=3_i64 {
         owner.clock_origin -= std::time::Duration::from_secs(2);
         let map = owner.bundle_map().ok_or("map")?;
         let mut placement = map.overlay.base().digest().to_vec();
@@ -190,6 +203,10 @@ pub(super) async fn exercise(
             .await
             .map_err(debug)?;
         assert_eq!(state.tracks().get(COUNT), Some(&count));
+        assert_eq!(state.tracks().get(MISSION), Some(&(count + 1)));
+        if count == 3 {
+            assert_eq!(state.tracks().get(QUESTLINE), Some(&4));
+        }
     }
     let burns: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions")
         .fetch_one(&harness.pool)

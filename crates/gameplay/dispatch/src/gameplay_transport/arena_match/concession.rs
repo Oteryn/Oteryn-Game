@@ -12,6 +12,28 @@ const ACTION: u16 = 25300;
 const LOOK_TYPE: u32 = 111;
 const DURATION_MS: u32 = 120_000;
 
+/// The imported B3 forcefields have no action attribute. An authored STEP
+/// counterpart supplies the same source action and its exact map-stack selector.
+pub(in crate::gameplay_transport) fn owns_callback(
+    callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
+) -> bool {
+    use oteryn_gameplay_quests::quest::world_callbacks::{ActorKind, Trigger};
+
+    callback.quest == "oteryn:quest.barbarian_arena_quest"
+        && callback.trigger == Trigger::StepIn
+        && callback.actor_kind == ActorKind::Player
+        && callback.selector.action == Some(ACTION)
+        && callback
+            .selector
+            .native
+            .as_ref()
+            .is_some_and(|source| source.appearance == 1949)
+        && callback.effects.is_empty()
+        && !callback.has_state()
+        && callback.teleport.is_none()
+        && callback.passages.is_empty()
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn step_arena_concession(
         &self,
@@ -20,7 +42,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         origin: MovementPositionSnapshot,
         entered: MovementPositionSnapshot,
     ) -> Option<MovementPositionSnapshot> {
-        if origin.position() == entered.position() {
+        if origin.position() == entered.position()
+            || !(1..=10).any(|pit| in_pit(entered.position(), pit))
+        {
             return None;
         }
         let map = self.bundle_map()?;
@@ -37,9 +61,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .filter(|key| {
                 !map.facts.base_hidden(*key)
-                    && map
+                    && (map
                         .facts
                         .quest_callback_matches(*key, None, Some(ACTION), None)
+                        || self.callback_content().iter().any(|callback| {
+                            owns_callback(callback)
+                                && super::super::quest_callbacks::matches(map, callback, *key)
+                        }))
             });
         let source = portals.next()?;
         if portals.next().is_some() {

@@ -62,8 +62,12 @@ pub fn select_storage_phase<'a>(
 
 pub fn exclusive(left: &Callback, right: &Callback) -> bool {
     let source_trial = left.trigger == Trigger::Use
-        && left.effects.target_transform.is_some()
-        && left.effects.target_transform == right.effects.target_transform
+        && ((left.effects.target_transform.is_some()
+            && left.effects.target_transform == right.effects.target_transform)
+            // Crystal 201189f8 register_actions.lua:698-750 uses the same
+            // crack and pick for disjoint progress and completion branches.
+            || (left.effects.use_spawn.is_some()
+                && left.effects.use_spawn == right.effects.use_spawn))
         && left.item_on_target == right.item_on_target;
     left.actor_kind == ActorKind::Player
         && right.actor_kind == ActorKind::Player

@@ -118,7 +118,13 @@ pub struct UseSpawn {
 
 impl UseSpawn {
     fn valid_for(&self, callback: &Callback) -> bool {
-        let Some(source) = callback.selector.native.as_ref() else {
+        let Some(source) = callback
+            .selector
+            .native
+            .as_ref()
+            .map(|native| native.position)
+            .or_else(|| callback.selector.action.and(callback.selector.position))
+        else {
             return false;
         };
         callback.trigger == Trigger::Use
@@ -142,9 +148,9 @@ impl UseSpawn {
             && self.positions.iter().collect::<BTreeSet<_>>().len() == self.positions.len()
             && self.creatures.iter().collect::<BTreeSet<_>>().len() == self.creatures.len()
             && self.positions.iter().all(|point| {
-                point.floor == source.position.floor
-                    && point.x.abs_diff(source.position.x) <= 32
-                    && point.y.abs_diff(source.position.y) <= 32
+                point.floor == source.floor
+                    && point.x.abs_diff(source.x) <= 32
+                    && point.y.abs_diff(source.y) <= 32
             })
             && self.creatures.iter().all(|key| {
                 key.starts_with("oteryn:creature.") && super::super::valid_quest_key(key)

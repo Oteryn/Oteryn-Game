@@ -143,21 +143,28 @@ fn bundle_layout(
         }
     }
     if with_concession {
-        let (x, y) = donor::CENTERS[0];
-        let tile = tiles
-            .get_mut(&(u16::try_from(x)?, u16::try_from(y + 1)?, -7))
-            .ok_or("south portal fixture")?;
-        let portal = u32::try_from(bundle.manifest.palette.iter()
-            .position(|entry| entry.key == "oteryn:item.tibia.i5022")
-            .ok_or("portal palette")?)?;
-        tile.items.push(oteryn_world_bundle::sector::Item {
-            palette: portal,
-            depth: 0,
-            attrs: oteryn_world_bundle::sector::Attrs {
-                action: Some(25300),
-                ..Default::default()
-            },
+        // The B3 counterpart is untagged Item1949 at ordinal 1.
+        let appearance = u32::try_from(bundle.manifest.palette.len())?;
+        bundle.manifest.palette.push(oteryn_world_bundle::writer::PaletteEntry {
+            key: "oteryn:terrain.tibia.i1949".into(),
+            family: oteryn_world_bundle::bundle::Family::Terrain,
+            id: appearance,
+            terrain: Some(oteryn_world_bundle::writer::Terrain {
+                kind: oteryn_world_bundle::bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
         });
+        let mut tile = bundle.sectors[0].tiles[0].clone();
+        tile.x = 32209;
+        tile.y = 31104;
+        tile.items.push(oteryn_world_bundle::sector::Item {
+            palette: appearance,
+            depth: 0,
+            attrs: Default::default(),
+        });
+        tiles.insert((tile.x, tile.y, -7), tile);
     }
     if with_reward_chest {
         // Crystal 201189f8 chest.lua:2324-2329.

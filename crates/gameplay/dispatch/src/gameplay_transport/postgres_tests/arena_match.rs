@@ -571,6 +571,17 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             };
             if concede {
                 // Crystal 201189f8 movements_arena_pit.lua:1-21,70-72.
+                owner.states.quest_callbacks.fixture.set(vec![
+                    super::qcx61_south_portal::callback()?,
+                ]).map_err(|_| "arena callback fixture")?;
+                {
+                    let mut runtime = deps.runtime.lock().await;
+                    let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                    runtime.relocate_arena_player(
+                        deps.actor, admitted.game_session_id, before,
+                        crate::foundation::MovementLocalPosition { x: 32209, y: 31103, floor: 7 },
+                    ).map_err(debug)?;
+                }
                 let (outcome, _) = owner.ordinary_paced_step(
                     deps.actor, admitted.game_session_id,
                     oteryn_protocol_oteryn::world_spatial::StepDirection::South, None, None,

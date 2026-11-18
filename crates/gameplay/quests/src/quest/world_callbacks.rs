@@ -564,6 +564,22 @@ impl Callback {
             .any(|state| !state.preserve && !state.read_only)
             || self.operations().any(state_operations::mutates)
     }
+    /// Crystal 201189f8 actions_cure.lua:2-10 transforms the selected item
+    /// under a questline predicate without advancing the questline.
+    fn exact_guarded_item_transform(&self) -> bool {
+        self.requires_world_admission
+            && self.trigger == Trigger::Use
+            && !self.storage.is_empty()
+            && self
+                .storage
+                .iter()
+                .all(|guard| guard.preserve && !guard.read_only)
+            && self.operation_count() == 0
+            && !self.opening_only
+            && self.item_on_target.as_ref().is_some_and(|tool| {
+                tool.selected_instance && !tool.on_step && tool.replacement.is_some()
+            })
+    }
     /// Each accepted use has its own ordinary MINT occurrence, guarded by an
     /// elapsed-time predicate and timestamp write in that same transaction.
     pub fn has_repeating_clock(&self) -> bool {
@@ -1003,7 +1019,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
-                && (!callback.has_state_writes()
+                && ((!callback.has_state_writes() && !callback.exact_guarded_item_transform())
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use
@@ -1533,7 +1549,11 @@ fn extend_callbacks(
 /// Exact canonical state operation used by both lowering and the mutation boundary.
 pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
-    let bound_index = callback.storage.iter().position(|state| !state.preserve);
+    let bound_index = callback
+        .storage
+        .iter()
+        .position(|state| !state.preserve)
+        .or_else(|| callback.exact_guarded_item_transform().then_some(0));
     let mut effects: Vec<_> = callback
         .storage
         .iter()
@@ -1548,7 +1568,10 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
                     value: state.set,
                 },
                 None if state.add.is_some() => QuestEffectKind::Add(state.add.unwrap_or(0)),
-                None if state.preserve => QuestEffectKind::Add(0),
+                None if state.preserve => match binding.filter(|_| Some(index) == bound_index) {
+                    Some(binding) => QuestEffectKind::AddWithBinding { delta: 0, binding },
+                    None => QuestEffectKind::Add(0),
+                },
                 None if state.at_least => match binding.filter(|_| Some(index) == bound_index) {
                     Some(binding) => QuestEffectKind::RaiseToWithBinding {
                         value: state.set,

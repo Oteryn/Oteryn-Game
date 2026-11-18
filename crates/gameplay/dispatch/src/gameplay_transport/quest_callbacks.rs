@@ -1337,6 +1337,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .filter(move |c| {
                             c.actor_kind == world_callbacks::ActorKind::Player
                                 && c.trigger == trigger
+                                && !super::arena_match::concession::owns_callback(c)
                                 && matches(map, c, key)
                         })
                         .map(move |c| (c, key)),
