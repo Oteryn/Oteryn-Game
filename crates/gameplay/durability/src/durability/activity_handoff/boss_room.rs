@@ -673,7 +673,7 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     if death == [0; 16] || minted < 0 {
         return Ok(BossRoomDefeatDecision::Conflict);
     }
-    let row=sqlx::query("SELECT a.admission,a.state,a.opened_at,a.deadline,a.after_kill_ms,uuid_send(a.defeat_id) AS defeat_id,a.terminal_at FROM game_boss_room_activities a \
+    let row=sqlx::query("SELECT a.admission,a.state,a.opened_at,a.deadline,a.after_kill_ms,a.boss_creature_key,uuid_send(a.defeat_id) AS defeat_id,a.terminal_at FROM game_boss_room_activities a \
         JOIN game_activity_handoff_groups g ON g.handoff_id=a.admission WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid \
           AND g.ownership_generation=$3::text::numeric AND g.state=2 AND (a.boss_creature_key=$4 OR a.boss_key=$4) FOR UPDATE OF a")
         .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(generation.get().to_string()).bind(boss_key).fetch_optional(&mut **tx).await?;
@@ -703,7 +703,12 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     // Crystal boss_lever_death.lua:26 cancels the fight timeout but creates
     // no after-kill timer when the authored value is zero.
     let after_kill_ms: i64 = row.try_get("after_kill_ms")?;
-    let exit = if after_kill_ms == 0 {
+    // The Lore Keeper's lever schedules one kick at the original room deadline.
+    let exit = if row.try_get::<&str, _>("boss_creature_key")?
+        == "oteryn:creature.the_last_lore_keeper"
+    {
+        Some(row.try_get::<i64, _>("deadline")?)
+    } else if after_kill_ms == 0 {
         None
     } else {
         Some(

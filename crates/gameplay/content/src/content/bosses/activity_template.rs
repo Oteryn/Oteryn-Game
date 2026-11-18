@@ -14,6 +14,7 @@ mod first_dragon;
 #[path = "activity_template/galthen.rs"]
 mod galthen;
 pub use galthen::{BossCallbackSourceClosure, QualifiedBossExitTeleporter};
+mod lore_keeper;
 mod outburst;
 #[path = "activity_template/rotten_blood.rs"]
 mod rotten_blood;
@@ -497,6 +498,13 @@ impl ContentActivationController {
                     diagnostics.push(ActivityTemplateDiagnostic::rejected(candidate, reason))
                 }
             }
+        }
+        if let Some(active) = self.active()
+            && let Ok(template) =
+                active.qualify_lore_keeper_activity_template(parent, room, content_revision)
+        {
+            templates.push(template);
+            templates.sort_by(|a, b| a.source_path().cmp(b.source_path()));
         }
         (templates, diagnostics)
     }
