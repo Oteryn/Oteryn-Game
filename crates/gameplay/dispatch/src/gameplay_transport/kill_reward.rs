@@ -188,6 +188,7 @@ pub(super) fn world_change_credits(
 pub(super) struct CapturedActivityDeath {
     pub(super) creature: String,
     pub(super) died_at_unix_ms: i64,
+    observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 }
 
 /// Closed native progression consumers. Missing loot never admits arbitrary XP.
@@ -1159,6 +1160,7 @@ impl KillSettlementQueue {
         runtime: &ChannelRuntimeV1,
         target: ExactActorRef,
         creature: &str,
+        observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
     ) -> Option<CapturedActivityDeath> {
         let mut state = self.state();
         state
@@ -1181,6 +1183,7 @@ impl KillSettlementQueue {
         let frozen = CapturedActivityDeath {
             creature: creature.to_owned(),
             died_at_unix_ms,
+            observed_at,
         };
         state.death_clocks.try_reserve(1).ok()?;
         state.death_clocks.push((target, frozen.clone()));
@@ -1981,15 +1984,20 @@ pub fn record_creature_kill(
         crate::foundation::RuntimeScopeRefV1::Instance { .. }
     );
     let overlord = oteryn_gameplay_quests::quest::source_deaths::overlord(&creature).is_some();
-    let (activity_death, overlord_death_at) = if in_instance || overlord {
-        let Some(frozen) = sink.queue.freeze_death_clock(runtime, target, &creature) else {
+    let (activity_death, overlord_death_at, observed_at) = if in_instance || overlord {
+        let Some(frozen) = sink
+            .queue
+            .freeze_death_clock(runtime, target, &creature, observed_at)
+        else {
             refuse("death_clock_capture_unavailable", &creature);
             return;
         };
         let overlord_death_at = overlord.then_some(frozen.died_at_unix_ms);
-        (in_instance.then_some(frozen), overlord_death_at)
+        // The XP receipt binds the original activity time to this exact death.
+        let observed_at = if overlord { frozen.observed_at } else { observed_at };
+        (in_instance.then_some(frozen), overlord_death_at, observed_at)
     } else {
-        (None, None)
+        (None, None, observed_at)
     };
     let mut owner = runtime.borrow_combat_death();
     let Ok(top) = owner.top_damage_contributor(target) else {
