@@ -68,14 +68,15 @@ pub(super) async fn exercise(
             .await
             .premium_current()
     );
-    step(owner, admitted, 1, ORIGIN).await?;
+    step(owner, admitted, 1, StepDirection::North, ORIGIN).await?;
     let mut ordinal = 101;
     super::qengine_voucher_stories::mint(owner, admitted, 2836, 1, &mut ordinal).await?;
     let premium = owner.premium_coordinator.take();
-    let result = step(owner, admitted, 2, ORIGIN).await;
+    let result = step(owner, admitted, 2, StepDirection::North, ORIGIN).await;
     owner.premium_coordinator = premium;
     result?;
-    step(owner, admitted, 3, LANDING).await?;
+    step(owner, admitted, 3, StepDirection::North, LANDING).await?;
+    step(owner, admitted, 4, StepDirection::South, ORIGIN).await?;
     assert_eq!(
         super::qengine_voucher_stories::quantity(harness, 2836).await?,
         1
@@ -87,6 +88,7 @@ async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     command: u64,
+    direction: StepDirection,
     expected: Position,
 ) -> TestResult {
     owner.clock_origin -= std::time::Duration::from_secs(2);
@@ -95,7 +97,7 @@ async fn step(
         admitted,
         command,
         COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-        encode_step_intent(StepDirection::North),
+        encode_step_intent(direction),
     )
     .await?;
     assert_eq!(

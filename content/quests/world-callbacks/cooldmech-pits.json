@@ -38,7 +38,7 @@
       },
       "effects": {
         "scripted_teleport": true,
-        "teleport_effect": 10
+        "teleport_effect": 11
       },
       "storage": [
         {
@@ -103,7 +103,7 @@
       },
       "effects": {
         "scripted_teleport": true,
-        "teleport_effect": 10
+        "teleport_effect": 11
       },
       "storage": [
         {
