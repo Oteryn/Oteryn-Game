@@ -11,6 +11,7 @@ mod npc_input;
 pub mod replica_window;
 mod selected_tool;
 mod tool_reads;
+pub(crate) mod world_tree;
 pub use selected_tool::QuestWorldToolContext;
 
 /// Test-only entry for the lifted PostgreSQL harness; the opaque transaction

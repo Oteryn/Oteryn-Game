@@ -9,3 +9,12 @@ CREATE TABLE game_forgotten_knowledge_replica_windows (
 REVOKE ALL ON game_forgotten_knowledge_replica_windows FROM PUBLIC;
 GRANT SELECT, INSERT, UPDATE ON game_forgotten_knowledge_replica_windows TO oteryn_game_runtime;
 GRANT SELECT ON game_forgotten_knowledge_replica_windows TO oteryn_game_control;
+
+-- Only one selected-phial activation can own the tree per World.
+CREATE TABLE game_forgotten_knowledge_tree_windows (
+    world_id uuid PRIMARY KEY,
+    expires_at timestamptz NOT NULL
+);
+REVOKE ALL ON game_forgotten_knowledge_tree_windows FROM PUBLIC;
+GRANT SELECT, INSERT, UPDATE ON game_forgotten_knowledge_tree_windows TO oteryn_game_runtime;
+GRANT SELECT ON game_forgotten_knowledge_tree_windows TO oteryn_game_control;

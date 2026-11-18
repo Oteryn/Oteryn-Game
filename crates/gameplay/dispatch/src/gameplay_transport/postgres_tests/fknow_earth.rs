@@ -326,6 +326,14 @@ pub(super) async fn exercise_tree(
     .await?;
     *admitted = next;
     assert_eq!(result, UseDisposition::Committed);
+    let active: bool = sqlx::query_scalar(
+        "SELECT expires_at > statement_timestamp()
+         FROM game_forgotten_knowledge_tree_windows WHERE world_id=encode($1,'hex')::uuid",
+    )
+    .bind(admitted.world_id.as_bytes().as_slice())
+    .fetch_one(&harness.pool)
+    .await?;
+    assert!(active);
     assert_eq!(appearance(CROWN)?, 3617);
     assert_eq!(appearance(FOREST_GROUND)?, 4515);
     assert_eq!(

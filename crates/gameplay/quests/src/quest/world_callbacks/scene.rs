@@ -2,6 +2,7 @@
 use super::*;
 
 pub const MAX_SCENE_EDITS: usize = 32;
+pub const EARTH_TREE_CALLBACK: &str = "oteryn:quest-callback/forgotten-knowledge/water-world-tree";
 pub const EARTH_TREE_LIFETIME_US: u64 = 60_000_000;
 
 pub const EARTH_TREE: Position = Position {
@@ -37,7 +38,8 @@ pub const EARTH_TREE_REQUIREMENTS: [(&str, i64); 2] = [
 
 /// The Crystal world-tree action borrows a phial and shares one one-minute scene.
 pub fn earth_tree_scene(callback: &Callback) -> bool {
-    callback.quest == "oteryn:quest.forgotten_knowledge_quest"
+    callback.key == EARTH_TREE_CALLBACK
+        && callback.quest == "oteryn:quest.forgotten_knowledge_quest"
         && callback.selector.position == Some(EARTH_TREE)
         && callback.selector.appearance == Some(6180)
         && callback.lever.is_none()

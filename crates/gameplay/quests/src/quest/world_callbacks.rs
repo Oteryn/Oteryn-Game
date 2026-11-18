@@ -93,8 +93,9 @@ pub use ground_stack::{
 
 mod scene;
 pub use scene::{
-    EARTH_TREE_CHAMBER, EARTH_TREE_LIFETIME_US, EARTH_TREE_PORTAL, EARTH_TREE_REQUIREMENTS,
-    EARTH_TREE_RETURN, SceneEdit, SceneEdits, SceneEvacuation, SceneRelocation, earth_tree_scene,
+    EARTH_TREE_CALLBACK, EARTH_TREE_CHAMBER, EARTH_TREE_LIFETIME_US, EARTH_TREE_PORTAL,
+    EARTH_TREE_REQUIREMENTS, EARTH_TREE_RETURN, SceneEdit, SceneEdits, SceneEvacuation,
+    SceneRelocation, earth_tree_scene,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

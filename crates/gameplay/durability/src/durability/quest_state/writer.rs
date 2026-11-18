@@ -2166,6 +2166,12 @@ impl DurabilityRoot {
                     if receipt.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
                     }
+                    if request.transition_key == oteryn_gameplay_quests::quest::world_callbacks::EARTH_TREE_CALLBACK
+                        && !super::super::quest_world_callback::world_tree::open(&mut tx, fence.runtime_scope).await?
+                    {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     use crate::durability::quest_world_callback::replica_window;
                     if let Some(kind) = replica_window::ReplicaKind::from_death_transition(&request.transition_key) {
                         replica_window::credit(&mut tx, fence.runtime_scope, kind).await?;
