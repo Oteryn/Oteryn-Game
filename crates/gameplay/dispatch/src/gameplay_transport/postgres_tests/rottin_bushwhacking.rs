@@ -443,10 +443,21 @@ pub(super) async fn exercise_wave(
         y: 2,
         floor: -7,
     };
+    let ordinary_ground = TilePos {
+        x: 2,
+        y: 3,
+        floor: -7,
+    };
     assert!(
         !map.facts
             .quest_callback_blocked(map.overlay.base(), entrance, false)
     );
+    assert_eq!(
+        use_net(owner, admitted, ordinary_ground, 69, 2).await?,
+        UseDisposition::NothingToUse,
+        "the selected net requires the authored trap ground"
+    );
+    assert!(map.facts.movement_items(ordinary_ground).is_empty());
     assert_eq!(
         use_net(owner, admitted, early, 1, 70).await?,
         UseDisposition::NothingToUse,
