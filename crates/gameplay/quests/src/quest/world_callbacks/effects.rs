@@ -42,6 +42,14 @@ pub struct ItemDisguiseRequirement {
     pub condition: String,
 }
 
+/// Conditions that keep a player from being spotted on a guard tile.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case", tag = "kind", deny_unknown_fields)]
+pub enum GuardBypass {
+    ActiveRelay { position: Position, ordinal: u8 },
+    DisguiseAndClosedDoor { position: Position },
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
@@ -64,6 +72,8 @@ pub struct CallbackEffects {
     /// A capture step confiscates a carried item when present.
     #[serde(default, skip_serializing_if = "is_false")]
     pub optional_step_input: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub guard_bypass: Option<GuardBypass>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mount_reward: Option<MountReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -499,6 +509,20 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || callback.actor_kind != ActorKind::Player
                 || callback.teleport.is_none()))
     {
+        return false;
+    }
+    if effects.guard_bypass.is_some_and(|rule| {
+        let position = match rule {
+            GuardBypass::ActiveRelay { position, .. }
+            | GuardBypass::DisguiseAndClosedDoor { position } => position,
+        };
+        callback.trigger != Trigger::StepIn
+            || callback.actor_kind != ActorKind::Player
+            || callback.teleport.is_none()
+            || position.x == 0
+            || position.y == 0
+            || !(-15..=0).contains(&position.floor)
+    }) {
         return false;
     }
     if effects.optional_step_input

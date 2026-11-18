@@ -63,3 +63,48 @@ pub(super) fn tick(map: &BundleMap, now: u64) {
         }
     }
 }
+
+pub(super) fn bypasses_guard(
+    map: &BundleMap,
+    rule: oteryn_gameplay_quests::quest::world_callbacks::GuardBypass,
+    player: Option<&crate::spell::cast::PlayerSpellState>,
+    now: u64,
+) -> bool {
+    use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
+    use oteryn_gameplay_quests::quest::world_callbacks::GuardBypass;
+
+    match rule {
+        GuardBypass::ActiveRelay { position, ordinal } => crate::map::view::placement_key(
+            TilePos {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            },
+            ordinal,
+        )
+        .is_some_and(|key| map.facts.timed_passage_switch_active(key, now)),
+        GuardBypass::DisguiseAndClosedDoor { position } => {
+            player.is_some_and(|state| {
+                matches!(state.owned_conditions().displayed_temporary_appearance_at(now),
+                    Some(TemporaryDisplayedAppearance::Item(item))
+                    if item.definition_key() == "oteryn:item.tibia.i11328")
+            }) && compose_tile(
+                &map.overlay,
+                &map.facts,
+                TilePos {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                },
+            )
+            .ok()
+            .flatten()
+            .is_some_and(|tile| {
+                !tile
+                    .entries
+                    .iter()
+                    .any(|entry| entry.facts.appearance_id == DETECTING)
+            })
+        }
+    }
+}

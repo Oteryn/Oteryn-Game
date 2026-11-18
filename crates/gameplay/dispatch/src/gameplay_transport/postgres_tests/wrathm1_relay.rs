@@ -185,6 +185,12 @@ pub(super) async fn exercise(
     guard.lever = None;
     guard.reversible = false;
     guard.effects = Default::default();
+    guard.effects.guard_bypass = Some(
+        oteryn_gameplay_quests::quest::world_callbacks::GuardBypass::ActiveRelay {
+            position: SOURCE,
+            ordinal: 2,
+        },
+    );
     guard.passages.clear();
     guard.teleport = Some(PRISON);
     owner

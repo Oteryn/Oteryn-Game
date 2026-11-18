@@ -1503,6 +1503,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.read_actor_position(actor) != Ok(entered) {
                 return entered;
             }
+            if let Some(rule) = callback.effects.guard_bypass
+                && super::wrath_trapdoors::bypasses_guard(
+                    map,
+                    rule,
+                    states.get(&runtime, actor, session),
+                    self.owner_now().get(),
+                )
+            {
+                return entered;
+            }
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
