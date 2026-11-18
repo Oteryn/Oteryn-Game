@@ -60,6 +60,23 @@ pub(super) fn register(
                 });
         }
     }
+    // Measured from the complete base catalogue at 871c1dec7, including the
+    // Festive reward and native encounter. The quiz reuses the existing track.
+    let quest = "oteryn:quest.the_first_dragon_quest";
+    if active.definition_hash(quest).is_some() {
+        active
+            .predecessors
+            .entry(quest.into())
+            .or_default()
+            .push(NpcDefinitionPredecessor {
+                hash: [
+                    0xa4, 0xef, 0x0e, 0x5a, 0x69, 0xd1, 0xe2, 0xb4, 0x0a, 0xe7, 0x8d, 0xc4, 0x2b,
+                    0xd1, 0xc9, 0x3f, 0x4d, 0xe8, 0xe8, 0xc3, 0xb7, 0x29, 0x61, 0xcc, 0x59, 0x05,
+                    0x58, 0xee, 0x47, 0xc7, 0xb2, 0x02,
+                ],
+                defaults: BTreeMap::new(),
+            });
+    }
     Ok(())
 }
 
