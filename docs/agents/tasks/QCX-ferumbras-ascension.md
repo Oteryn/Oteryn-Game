@@ -8,7 +8,7 @@ Base `98d09d5ce17df2a621df3fac9c2ce341dccc073b`.
 - The spoiler is [curid 76902, oldid 1204031](https://tibia.fandom.com/?curid=76902&oldid=1204031).
 - Crystal `201189f871d23597b82caf88fd611454a2ddefb8`. Paths below are relative to this revision. The older Crystal reward script digest already in the repository matches this revision byte for byte. [Crystal reward action](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/ferumbras_ascension/actions_reward.lua#L1-L42)
 
-## Compatibility comparison
+## Compatibility comparison against the base
 
 | Area | Global and Crystal evidence | Repository and remaining difference |
 | --- | --- | --- |
@@ -31,6 +31,10 @@ No Ferumbras quest callback row was found in `world-callbacks-held`. The active 
 
 ## Blockers and open facts
 
+- BLOCKER Ferumbras chest reward for existing in-progress characters shared quest-definition predecessor registration data-global/scripts/quests/ferumbras_ascension/actions_reward.lua:13
+
+The completion callback contributes to the persisted definition hash. The reward changes it from `e86e12f668231e6ff93181caf6bd34a4dde5b7d53b9bacff6bc4a44bd12fb464` to `483defef5b899b2ab5eef7a8fbb59adcd777dc4c6979f671e1336020891463df`. The shared durability writer requires a registered predecessor to advance incomplete state persisted under the old hash. The predecessor catalogue has no data-only entry point. Existing in-progress characters require that registration before this correction can be rolled out to them.
+
 - BLOCKER Ferumbras seal exits damage-participant death scheduling with temporary portal destination and restoration data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:114
 - BLOCKER Ferumbras final encounter source-specific crystal and multi-phase actor composition data-global/scripts/quests/ferumbras_ascension/actions_ferumbras_lever.lua:35
 - BLOCKER Zamulosh habitat puzzle paired creature and timed terrain credit data-global/scripts/quests/ferumbras_ascension/movements_lovely_monsters.lua:1
@@ -38,7 +42,7 @@ No Ferumbras quest callback row was found in `world-callbacks-held`. The active 
 
 OPEN-FACTS Global chest container and UID; exact positions for every intermediate selector; exact Global Mortal Shell loot probabilities; persisted grandfathered-access compatibility; Global outfit addon delivery timing and ownership. Crystal confirms its own chest packaging and server IDs.
 
-PARTIAL Mazarius entry and portal, source map bindings, independent Godbreaker routes, minion puzzles and timed retry/exit, final phases, journal classification, Heavenly Messenger completion, and the exact loot audit. The selected route currently couples essence payment, sequential arenas, and chest cosmetics. Source progression should use Mazarius, the portal and separate Godbreaker flags, and grant cosmetics from Heavenly Messenger.
+PARTIAL Existing-save predecessor registration, Mazarius entry and portal, source map bindings, independent Godbreaker routes, minion puzzles and timed retry/exit, final phases, journal classification, Heavenly Messenger completion, and the exact loot audit. The selected route currently couples essence payment, sequential arenas, and chest cosmetics. Source progression should use Mazarius, the portal and separate Godbreaker flags, and grant cosmetics from Heavenly Messenger.
 
 
 ## Chest correction
@@ -46,3 +50,10 @@ PARTIAL Mazarius entry and portal, source map bindings, independent Godbreaker r
 The generated callback grants one bag 2853 with five Silver Tokens 22516, four Folded Rift Carpets 22737, four individual Rift Tapestries 22731, one Ferumbras' Teddy 22775 and ten Crystal Coins 3043. The bag uses eight slots because carpets, coins and tokens stack. The loot claim remains once per character. The native Item profile generator admits the Tapestry and Teddy from its pinned physical and appearance evidence. [TibiaWiki quest reward](https://tibia.fandom.com/?curid=76901&oldid=1110095) · [Crystal reward action](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/ferumbras_ascension/actions_reward.lua#L1-L42)
 
 The PostgreSQL regression earns the existing seal and passage state through dispatch, uses the chest, checks command replay and repeat refusal, then counts each item inside the durable reward bag. The baseline at `48c1fe652` failed with zero nested Silver Tokens where five were expected in 42.98 s. The earlier isolated fixture refused the chest before the inventory assertion and is excluded from regression evidence.
+
+## Verification
+
+- PG via shard (pgsplit build files applied on `7693aa2df33238c9b6f5d18558845cdb8d9dbf88`). One case passed, zero failed, in 58.83 s. The shard files were removed from the local checkout after verification.
+- The same filter with `OTERYN_TEST_POSTGRES_ADMIN_URL` unset returned successfully in 0.00 s, exercising the no-database return.
+- Quest authoring checks passed, including 27 embedded unit cases. Generated native quest evidence passed its check. World bundle pin-check passed for one world.
+- Cargo formatting and dispatch library Clippy with warnings denied passed.
