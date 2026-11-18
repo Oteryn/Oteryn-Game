@@ -469,6 +469,25 @@ fn scenario(canonical: bool) -> TestResult {
             assert_eq!(status, CommandStatus::Accepted);
             assert_eq!(no_hidden_points[0], 5, "all seven candidates are in view");
             assert_eq!(no_hidden_points[9], 1, "a refused reset keeps completion");
+
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "UPDATE game_character_cyclopedia SET progress=jsonb_set(\
+                 progress, '{subareas,3,discovered}', 'false'::jsonb)",
+            )
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
+            let query_id = admitted.continuity.next_command_id;
+            let (status, small) = support::exchange(&owner, &mut admitted, query_id, 72, &[]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(small[0], 0, "the map query succeeds without an exploration");
+            assert_eq!(small[9], 0, "an unsuccessful roll leaves the subarea incomplete");
+            assert_eq!(count(&small), 0, "no viewpoints were generated");
+            assert_eq!(pool(&small), 25_000_001, "the donation pool is still visible");
             speed::completed_discovery_keeps_step_pace_and_speed_query_refuses(
                 &mut owner,
                 &deps,

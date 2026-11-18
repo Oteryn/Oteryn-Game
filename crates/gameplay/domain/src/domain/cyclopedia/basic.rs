@@ -146,7 +146,12 @@ impl BasicArea {
             && state.exploration.is_none()
             && matches!(action, MapAction::Query | MapAction::Find)
         {
-            self.apply(state, MapAction::Start, pool, at, false, occurrence)?
+            match self.apply(state, MapAction::Start, pool, at, false, occurrence) {
+                // Crystal discovery_system.lua:578-585,766-767 keeps map and donation
+                // data available when there are too few tiles for an exploration.
+                Err(MapRefusal::InsufficientPool) if action == MapAction::Query => false,
+                result => result?,
+            }
         } else {
             false
         };

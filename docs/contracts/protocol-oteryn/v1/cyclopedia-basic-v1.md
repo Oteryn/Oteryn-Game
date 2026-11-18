@@ -55,17 +55,19 @@ decisions: `docs/reference/content-prep/world-src-1105/map.md`.
 
 ## Automatic discovery and POI reset (T186/T187, 2026-11-09)
 
-Every admitted subarea is active for every character without Start or Premium.
-The first current-location query or accepted STEP materializes the character's
-private POIs; an initializing query advances the Character revision atomically.
+Every admitted subarea is available to every character without Start or Premium.
+The first current-location query or accepted STEP can materialize the character's
+private POIs. An initializing query advances the Character revision atomically.
 Accepted movement finds all unseen POIs on the same floor within seven tiles
 horizontally and five vertically of the server-owned position. Intent 3 applies
 the same check explicitly. Legacy Start initializes an absent run and is
 idempotent while one is active. Sampling selects seven walkable POIs outside the
 eight-by-six tile half-extents of the starting view. Same-floor points are
 separated by at least four tiles along one axis when the bounded pool permits.
-Spacing may relax in a dense pool, and fewer than seven hidden candidates returns
-code 5. Crystal source: `data/scripts/discovery_system.lua:16-19,460-488,643`.
+Spacing may relax in a dense pool. With fewer than seven hidden candidates, a
+current-location query still returns progress and donation information. An
+explicit exploration attempt that requires a new roll returns code 5. Crystal
+source: `data/scripts/discovery_system.lua:16-19,460-488,578-585,643,766-767`.
 
 Shuffle resets POIs, found count and completion. A same-transaction typed reset
 receipt permits the affected canonical subarea to lose completion; other progress
