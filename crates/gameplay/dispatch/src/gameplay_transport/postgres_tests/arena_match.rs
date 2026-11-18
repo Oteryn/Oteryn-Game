@@ -10,6 +10,9 @@ use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction as A, ArenaDisposi
 #[path = "arena_match/fixture.rs"]
 pub(super) mod fixture;
 
+#[path = "arena_match/btest2_npc.rs"]
+mod btest2_npc;
+
 #[test]
 fn arena_match_real_connection_status_and_full_match() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -121,8 +124,50 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
     Ok(())
 }
 
+#[test]
+fn btest2_arena_step_requires_barbarian_completion() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_route(true, Some(NativeScenario::CompletionGate)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "arena completion gate worker panicked")??;
+    Ok(())
+}
+
+#[test]
+fn btest2_buddel_exchanges_ring_for_confirmed_destination() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_route(true, Some(NativeScenario::Buddel)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "Buddel worker panicked")??;
+    Ok(())
+}
+
+#[test]
+fn btest2_iskan_reports_sniffler_and_unlocks_passage() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_route(true, Some(NativeScenario::Iskan)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "Iskan worker panicked")??;
+    Ok(())
+}
+
 #[derive(Clone, Copy)]
 enum NativeScenario {
+    Buddel,
+    CompletionGate,
+    Iskan,
     Portals,
     RecreatedPillars,
     Departure,
@@ -314,7 +359,11 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         } else {
             "oteryn:item.tibia.i3035"
         };
-        super::item_look::seed_main_backpack(&harness, &[(coins, 2)]).await?;
+        if matches!(route, Some(NativeScenario::Buddel)) {
+            super::item_look::seed_main_backpack(&harness, &[(coins, 2), ("oteryn:item.tibia.i3097", 1)]).await?;
+        } else {
+            super::item_look::seed_main_backpack(&harness, &[(coins, 2)]).await?;
+        }
         fixture::equip_sword(&harness).await?;
         owner.admit_progression_session(&mut admitted).await;
         assert!(
@@ -419,6 +468,21 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         } else {
             None
         };
+        if matches!(route, Some(NativeScenario::CompletionGate)) {
+            let before = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
+            crate::gameplay_transport::connection::regression_routed_step(
+                &owner,
+                admitted,
+                deps.actor,
+                oteryn_protocol_oteryn::world_spatial::StepDirection::West,
+            ).await?;
+            let after = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
+            assert_eq!(after.position(), before.position(), "unfinished Barbarian Test must return the player to the entrance origin");
+        }
+        if let Some(route @ (NativeScenario::Buddel | NativeScenario::Iskan)) = route {
+            btest2_npc::exercise(owner, &deps, &harness, route).await?;
+            return harness.cleanup().await;
+        }
         let entry_id = admitted.continuity.next_command_id;
         let entered = command(&owner, &mut admitted, A::Enter).await?;
         if !funded {

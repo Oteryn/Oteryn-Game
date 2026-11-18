@@ -61,10 +61,10 @@ fn bundle_layout(
             });
     }
     bundle.manifest.world = Extent {
-        min_x: 32160,
+        min_x: 32021,
         min_y: 31045,
-        max_x: 32260,
-        max_y: 31105,
+        max_x: 32462,
+        max_y: 31381,
         floors: vec![-7, -6],
     };
     let mut tiles = std::collections::BTreeMap::new();
@@ -79,9 +79,18 @@ fn bundle_layout(
                 let mut tile = bundle.sectors[0].tiles[0].clone();
                 tile.x = at.0;
                 tile.y = at.1;
+                if at == (32250, 31098, -6) {
+                    tile.items[0].attrs.action = Some(25100);
+                }
                 tiles.insert(at, tile);
             }
         }
+    }
+    for (x, y) in [(32021, 31294), (32225, 31381), (32325, 31049), (32333, 31227), (32462, 31174)] {
+        let mut tile = bundle.sectors[0].tiles[0].clone();
+        tile.x = x;
+        tile.y = y;
+        tiles.insert((x, y, -7), tile);
     }
     // M51 source pillars and portal Item facts, without changing production
     // definitions. Crystal svargrond_arena.lua:25-115,207-246.
