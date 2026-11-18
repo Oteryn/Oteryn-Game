@@ -184,57 +184,71 @@ impl ChatRuntime {
         session: GameSessionId,
         speech: &str,
     ) {
-        if runtime.owner_fence().is_err() || runtime.player_control_facts(actor, session).is_err() {
-            return;
+        if let Some(lines) = self.prepare_quest_speech(runtime, actor, session, speech) {
+            self.publish_quest_speech_lines(lines);
         }
-        let Ok(position) = runtime.read_actor_position(actor) else {
-            return;
-        };
-        let position = position.position();
-        let (Some(generation), Ok(floor), Ok(text)) = (
-            NonZeroU64::new(actor.actor_local_generation()),
-            u8::try_from(position.floor),
-            ChatText::parse(speech),
-        ) else {
-            return;
-        };
+    }
+
+    /// Capture the local audience before a quest scene relocates its participants.
+    pub(in crate::gameplay_transport) fn prepare_quest_speech(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        speech: &str,
+    ) -> Option<Vec<(GameSessionId, ChatLine)>> {
+        if runtime.owner_fence().is_err() || runtime.player_control_facts(actor, session).is_err() {
+            return None;
+        }
+        let position = runtime.read_actor_position(actor).ok()?.position();
+        let generation = NonZeroU64::new(actor.actor_local_generation())?;
+        let text = ChatText::parse(speech).ok()?;
         let at = ChatPosition {
             x: position.x,
             y: position.y,
-            floor,
+            floor: u8::try_from(position.floor).ok()?,
         };
-        let Ok(mut sessions) = self.sessions.lock() else {
-            return;
-        };
-        let Some(speaker) = sessions.get(&session) else {
-            return;
-        };
-        let name = speaker.name.clone();
-        let listeners = sessions
-            .keys()
-            .filter_map(|listener| {
-                let (_, position) = runtime.positioned_player_for_session(*listener).ok()??;
-                let position = position.position();
-                Some((
-                    *listener,
-                    ChatPosition {
-                        x: position.x,
-                        y: position.y,
-                        floor: u8::try_from(position.floor).ok()?,
-                    },
-                ))
-            })
-            .collect::<Vec<_>>();
+        let sessions = self.sessions.lock().ok()?;
+        let name = &sessions.get(&session)?.name;
+        let listeners = sessions.keys().filter_map(|listener| {
+            let (_, position) = runtime.positioned_player_for_session(*listener).ok()??;
+            let position = position.position();
+            Some((
+                *listener,
+                ChatPosition {
+                    x: position.x,
+                    y: position.y,
+                    floor: u8::try_from(position.floor).ok()?,
+                },
+            ))
+        });
         let speaker = ChatSpeaker {
             identity: actor.placement_identity(),
             generation,
         };
-        for (listener, heard) in local_listeners(SpeechMode::Say, at, listeners) {
+        Some(
+            local_listeners(SpeechMode::Say, at, listeners)
+                .into_iter()
+                .map(|(listener, heard)| {
+                    let mut line = local_line(speaker, name, SpeechMode::Say, &text, at, heard);
+                    if let ChatLine::Local { mode, .. } = &mut line {
+                        *mode = ChatSpeechMode::MonsterSay;
+                    }
+                    (listener, line)
+                })
+                .collect(),
+        )
+    }
+
+    pub(in crate::gameplay_transport) fn publish_quest_speech_lines(
+        &self,
+        lines: Vec<(GameSessionId, ChatLine)>,
+    ) {
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return;
+        };
+        for (listener, line) in lines {
             if let Some(entry) = sessions.get_mut(&listener) {
-                let mut line = local_line(speaker, &name, SpeechMode::Say, &text, at, heard);
-                if let ChatLine::Local { mode, .. } = &mut line {
-                    *mode = ChatSpeechMode::MonsterSay;
-                }
                 entry.egress.push(line);
             }
         }

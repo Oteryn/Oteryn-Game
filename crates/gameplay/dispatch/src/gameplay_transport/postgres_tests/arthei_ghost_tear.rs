@@ -2,10 +2,11 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
-use crate::foundation::{ExactActorRef, GameSessionId};
+use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Offering, Position};
+use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
@@ -17,6 +18,7 @@ const MISSION: &str = "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10
 const TEAR: &str = "oteryn:item.tibia.i8746";
 const ARTHEI: &str = "oteryn:creature.arthei";
 const VAMPIRE: &str = "oteryn:creature.vampire";
+const TAUNT: &str = "YES... THAT FEELING... IS... HUNGER!!";
 const STATUE: Position = Position {
     x: 32953,
     y: 31440,
@@ -60,7 +62,7 @@ fn binding() -> Value {
         "storage":[{"track":MISSION,"minimum":-1,"maximum":1,"set":1,"preserve":true}],
         "effects":{
             "source_must_match":true,"transform":8326,"source_magic":16,
-            "player_speech":"YES... THAT FEELING... IS... HUNGER!!",
+            "player_speech":TAUNT,
             "encounter_group":{
                 "minimum":{"x":32941,"y":31431,"floor":-2},
                 "maximum":{"x":32957,"y":31447,"floor":-2},
@@ -129,6 +131,12 @@ pub(super) async fn exercise(
         Position { x: 32954, ..STATUE },
     )
     .await?;
+    let sessions = [admitted.game_session_id, peer_session];
+    for session in sessions {
+        owner.states.chat.admit(session, "Fixture Hero", owner.owner_now());
+    }
+    let before = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
+    let effect_cursor = group_effect_cursor(owner)?;
     let tear = {
         let runtime = owner.runtime.lock().await;
         crate::gameplay_transport::item_ref_admission::pinned_index(
@@ -158,6 +166,8 @@ pub(super) async fn exercise(
         super::item_craft::exchange(owner, *admitted, command, &intent, Some(tear)).await?;
     *admitted = next;
     assert_eq!(outcome, UseDisposition::Committed);
+    assert_group_source_speech(owner, actor, sessions, before, TAUNT);
+    assert_group_magic(owner, effect_cursor, STATUE, LANDING, 16)?;
     assert_eq!(super::m39_bone_journey::stage(h, MISSION).await?, Some(1));
     assert_eq!(super::m39_bone_journey::carried(h, 8746).await?, 0);
     let spent: i64 = sqlx::query_scalar(
@@ -190,6 +200,44 @@ pub(super) async fn exercise(
         EXIT,
     )
     .await
+}
+
+pub(super) fn assert_group_source_speech(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    sessions: [GameSessionId; 2],
+    source: MovementLocalPosition,
+    taunt: &str,
+) {
+    for session in sessions {
+        let lines = owner.states.chat.drain(session);
+        assert!(matches!(
+            lines.as_slice(),
+            [ChatLine::Local { speaker, mode: ChatSpeechMode::MonsterSay, text, position, .. }]
+                if speaker.identity == actor.placement_identity() && text == taunt
+                    && (position.x, position.y, position.floor) == (source.x, source.y, source.floor)
+        ), "{lines:?}");
+    }
+}
+
+pub(super) fn group_effect_cursor(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<u64> {
+    let map = owner.bundle_map().ok_or("map")?;
+    Ok(map.facts.movement_effects_since(0).last().map_or(0, |effect| effect.0))
+}
+
+pub(super) fn assert_group_magic(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    cursor: u64,
+    source: Position,
+    landing: Position,
+    source_effect: u16,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("map")?;
+    let tile = |p: Position| crate::map::overlay::TilePos { x: p.x, y: p.y, floor: p.floor };
+    let events: Vec<_> = map.facts.movement_effects_since(cursor).into_iter()
+        .map(|(_, position, effect)| (position, effect)).collect();
+    assert_eq!(events, [(tile(source), source_effect), (tile(landing), 11), (tile(landing), 11)]);
+    Ok(())
 }
 
 pub(super) async fn admit_peer(

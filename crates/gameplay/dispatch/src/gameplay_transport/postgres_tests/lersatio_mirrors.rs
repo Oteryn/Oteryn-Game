@@ -16,6 +16,7 @@ const COUNTER: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/mirror_counter";
 const LERSATIO: &str = "oteryn:creature.lersatio";
 const VAMPIRE: &str = "oteryn:creature.vampire";
+const SECOND_TAUNT: &str = "FINE. DIE PRETTY!";
 const MIRROR: Position = Position {
     x: 32965,
     y: 31457,
@@ -52,7 +53,7 @@ fn binding(second: bool) -> Value {
     let mut effects = json!({
         "transform":8721, "reset_after_ms":30000, "source_magic":3, "source_must_match":true,
         "player_speech": if second {
-            "FINE. DIE PRETTY!"
+            SECOND_TAUNT
         } else {
             "STOP THAT, YOU WORM, OR I'LL SHOW YOU THE BEAUTY OF DEATH."
         }
@@ -109,6 +110,10 @@ pub(super) async fn exercise(
     let peer_start = Position { x: 32966, ..MIRROR };
     let (peer, peer_session) =
         super::arthei_ghost_tear::admit_peer(owner, admitted, h, authority, peer_start).await?;
+    let sessions = [admitted.game_session_id, peer_session];
+    for session in sessions {
+        owner.states.chat.admit(session, "Fixture Hero", owner.owner_now());
+    }
     let start = owner
         .runtime
         .lock()
@@ -173,10 +178,16 @@ pub(super) async fn exercise(
     .await?;
     repaired?;
 
+    for session in sessions {
+        let _ = owner.states.chat.drain(session);
+    }
+    let effect_cursor = super::arthei_ghost_tear::group_effect_cursor(owner)?;
     assert_eq!(
         use_mirror(owner, admitted, 3).await?,
         UseDisposition::Committed
     );
+    super::arthei_ghost_tear::assert_group_source_speech(owner, actor, sessions, start, SECOND_TAUNT);
+    super::arthei_ghost_tear::assert_group_magic(owner, effect_cursor, MIRROR, DESTINATION, 3)?;
     assert_eq!(super::m39_bone_journey::stage(h, COUNTER).await?, Some(0));
     let destination = super::quest_world_callbacks::local(DESTINATION);
     let runtime = owner.runtime.lock().await;

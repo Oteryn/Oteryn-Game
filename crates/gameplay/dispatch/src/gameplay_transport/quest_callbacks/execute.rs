@@ -1431,6 +1431,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .ok()
             .and_then(|records| records.get(&session).and_then(|p| p.flame.clone()));
+        let mut group_source_presented = false;
         if let Some(input) = flame {
             if !super::rotten_flame::publish(runtime, map, &input) {
                 return UseDisposition::Rejected;
@@ -1554,11 +1555,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             };
             if let Some(group) = group {
+                // Crystal actions_ghost_tear.lua:16-29 and actions_lersatio_mirrors.lua:38-72
+                // present the source action before the group changes floors.
+                let source_speech = if fresh_effects {
+                    callback
+                        .effects
+                        .player_speech
+                        .as_deref()
+                        .and_then(|speech| {
+                            self.states
+                                .chat
+                                .prepare_quest_speech(runtime, actor, session, speech)
+                        })
+                } else {
+                    None
+                };
                 let Ok(snapshots) =
                     runtime.commit_quest_group_spawn(group.proofs, &stationary, apply_scene)
                 else {
                     return UseDisposition::Rejected;
                 };
+                if fresh_effects && let Some(effect) = callback.effects.source_magic {
+                    map.facts.emit_movement_effect(pos, effect);
+                }
+                if let Some(lines) = source_speech {
+                    self.states.chat.publish_quest_speech_lines(lines);
+                }
+                group_source_presented = true;
                 for ((moved_actor, moved_session, before), after) in
                     group.players.into_iter().zip(snapshots)
                 {
@@ -1741,7 +1764,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         // Crystal 201189f8 actions_mission5_ray_of_light.lua:2-7.
-        if fresh_effects && let Some(effect) = callback.effects.source_magic {
+        if fresh_effects
+            && !group_source_presented
+            && let Some(effect) = callback.effects.source_magic
+        {
             map.facts.emit_movement_effect(pos, effect);
         }
         if let Some(magic) = &callback.effects.magic {
@@ -1777,7 +1803,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(message) = success_preface {
             self.states.chat.push_quest_feedback(session, message);
         }
-        if fresh_effects && let Some(speech) = &callback.effects.player_speech {
+        if fresh_effects
+            && !group_source_presented
+            && let Some(speech) = &callback.effects.player_speech
+        {
             self.states
                 .chat
                 .publish_quest_speech(runtime, actor, session, speech);
