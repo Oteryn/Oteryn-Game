@@ -14,10 +14,10 @@ fn dark_trails_npc_flow_commits_once_and_fences_conversation_topics() -> TestRes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("dark-trails-npc", scenario)
+    super::kill_reward_e2e::scenario_thread::run("dark-trails-npc", || scenario(false))
 }
 
-fn scenario() -> TestResult {
+pub(super) fn scenario(audit: bool) -> TestResult {
     let trigger = Position {
         x: 33294,
         y: 31677,
@@ -141,6 +141,84 @@ fn scenario() -> TestResult {
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
+
+        if audit {
+            use super::qengine_outfit_stories::seed_quest_prerequisites;
+
+            let [jacob, elliott, barazbaz] = install(
+                &owner,
+                &admitted,
+                [
+                    "oteryn:npc.jacob",
+                    "oteryn:npc.elliott",
+                    "oteryn:npc.barazbaz",
+                ],
+            )
+            .await?;
+            let track = |suffix| format!("{}{suffix}", quest::TRACK_PREFIX);
+            seed_quest_prerequisites(&h, &owner, &admitted, &[(track("mission05"), 1)], 108)
+                .await?;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
+            let book = quest::load()?;
+            let mut embedded_matches = Vec::new();
+            for (base, npc, reply) in [
+                (3100, jacob, "jacob-investigate"),
+                (3110, elliott, "elliott-investigate"),
+            ] {
+                talk(&mut owner, &admitted, npc, base, "hi").await?;
+                let singular =
+                    talk(&mut owner, &admitted, npc, base + 1, "abandoned sewer").await?;
+                let embedded =
+                    talk(&mut owner, &admitted, npc, base + 2, "the abandoned sewers").await?;
+                assert_ne!(singular, book.replies[reply].lines);
+                if embedded == book.replies[reply].lines {
+                    embedded_matches.push(reply);
+                }
+                assert_eq!(
+                    talk(&mut owner, &admitted, npc, base + 3, "abandoned sewers").await?,
+                    book.replies[reply].lines
+                );
+                talk(&mut owner, &admitted, npc, base + 4, "bye").await?;
+            }
+            talk(&mut owner, &admitted, elliott, 3120, "hi").await?;
+            talk(&mut owner, &admitted, elliott, 3121, "abandoned sewers").await?;
+            talk(&mut owner, &admitted, elliott, 3122, "report").await?;
+            assert_eq!(
+                progress(&owner, &admitted, &authority, &track("mission06")).await?,
+                1
+            );
+            talk(&mut owner, &admitted, elliott, 3123, "bye").await?;
+            talk(&mut owner, &admitted, barazbaz, 3124, "hi").await?;
+            talk(&mut owner, &admitted, barazbaz, 3125, "abandoned sewers").await?;
+            let archives_requested =
+                progress(&owner, &admitted, &authority, &track("mission07")).await?;
+            assert_eq!(
+                (embedded_matches, archives_requested),
+                (Vec::<&str>::new(), 1),
+                "only the exact sewer keyword opens the report, and Barazbaz accepts it before the vote"
+            );
+            talk(&mut owner, &admitted, barazbaz, 3126, "abandoned sewers").await?;
+            assert!(
+                progress(&owner, &admitted, &authority, &track("mission09")).await? < 1,
+                "Barazbaz still requires the archives vote"
+            );
+            seed_quest_prerequisites(&h, &owner, &admitted, &[(track("mission08"), 1)], 109)
+                .await?;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
+            assert_eq!(
+                talk(&mut owner, &admitted, barazbaz, 3127, "abandoned sewers").await?,
+                book.replies["barazbaz-archives"].lines
+            );
+            assert_eq!(
+                progress(&owner, &admitted, &authority, &track("mission09")).await?,
+                1
+            );
+            return Ok(());
+        }
 
         let [ezebeth, beggar, rapanaio] = install(
             &owner,

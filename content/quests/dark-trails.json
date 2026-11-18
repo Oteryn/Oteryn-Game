@@ -421,7 +421,7 @@
     {
       "key": "barazbaz-ritual",
       "npc": "oteryn:npc.barazbaz",
-      "keyword": "ritual",
+      "keyword": "abandoned sewers",
       "topic": null,
       "next_topic": 0,
       "greeting_only": false,
@@ -433,6 +433,11 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission07",
+          "minimum": -1,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/mission08",
           "minimum": -1,
           "maximum": 0
         }
