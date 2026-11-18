@@ -460,6 +460,16 @@ pub struct CorpsePortal {
     pub defeated: String,
     pub item: String,
     pub destination: Position,
+    /// A separate native item removed after the death at the corpse position.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cleanup: Option<CorpsePortalCleanup>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CorpsePortalCleanup {
+    pub appearance: u16,
+    pub delay_ms: u32,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -632,6 +642,9 @@ fn valid_death_phases(
             known.contains(portal.defeated.as_str())
                 && corpse_item(&portal.item)
                 && in_room(portal.destination)
+                && portal.cleanup.is_none_or(|cleanup| {
+                    cleanup.appearance != 0 && (1..=3_600_000).contains(&cleanup.delay_ms)
+                })
         })
         && plan.corpse_monster_step.as_ref().is_none_or(|step| {
             corpse_item(&step.item)

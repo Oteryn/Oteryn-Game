@@ -84,6 +84,7 @@ impl Replacements {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
         now_us: u64,
+        cells: &crate::content::NativeEntryMovementCells,
     ) -> Result<bool, CarrierError> {
         if !self.is_current(runtime) || self.finished {
             return Ok(false);
@@ -106,6 +107,9 @@ impl Replacements {
                 &portal.item,
                 QuestCorpseStep::Portal(super::super::quest_callbacks::local(portal.destination)),
             )?;
+            if let Some(cleanup) = portal.cleanup {
+                super::terminal_portal::schedule_cleanup(cells, at, cleanup, now_us);
+            }
         }
         if let Some(step) = &self.plan.corpse_monster_step
             && member.creature == step.defeated

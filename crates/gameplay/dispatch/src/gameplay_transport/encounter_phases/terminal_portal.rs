@@ -3,7 +3,9 @@ use crate::content::NativeEntryMovementCells;
 use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::map::view::{MapFacts, placement_key};
 use crate::map::{boot::BundleCollisionIndexExt, facts::QuestCallbackProjection, overlay::TilePos};
-use oteryn_gameplay_quests::quest::world_callbacks::{Position, TerminalPortal};
+use oteryn_gameplay_quests::quest::world_callbacks::{
+    CorpsePortalCleanup, Position, TerminalPortal,
+};
 
 #[derive(Debug)]
 pub(super) struct Portal {
@@ -81,5 +83,57 @@ impl Portal {
                 destination: tile(self.plan.destination),
             }),
         )
+    }
+}
+
+/// Crystal 201189f8, the_first_dragon/creaturescripts_death_fallen.lua:1-5,10-13.
+/// The movement owner removes the original scene entry. Corpse custody has its own expiry.
+pub(super) fn schedule_cleanup(
+    cells: &NativeEntryMovementCells,
+    position: crate::foundation::MovementLocalPosition,
+    cleanup: CorpsePortalCleanup,
+    now_us: u64,
+) {
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return;
+    };
+    let Some(at) = super::super::quest_callbacks::native(position) else {
+        return;
+    };
+    let map = index.map();
+    let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
+        return;
+    };
+    if map.facts.house_tile(at) {
+        return;
+    }
+    let Some(due) = now_us.checked_add(u64::from(cleanup.delay_ms) * 1_000) else {
+        return;
+    };
+    let source = base
+        .ids()
+        .iter()
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
+        .find_map(|(ordinal, (id, _))| {
+            let ordinal = u8::try_from(ordinal).ok()?;
+            let key = placement_key(at, ordinal)?;
+            let entry = map.facts.base_entry(at, ordinal, *id)?;
+            (entry.appearance_id == cleanup.appearance
+                && !entry.pickupable
+                && !map.facts.base_hidden(key))
+            .then_some((key, entry))
+        });
+    if let Some((key, entry)) = source {
+        map.facts.apply_quest_callback(
+            key,
+            map.facts.object_revision(key),
+            entry,
+            &[],
+            &[],
+            false,
+            Some(&QuestCallbackProjection::TimedRemoval { due, entry }),
+        );
     }
 }

@@ -74,6 +74,8 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// Hide the native source when its exact scheduled revision expires.
+    TimedRemoval { due: u64, entry: EntryFacts },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -355,7 +357,11 @@ impl CallbackStates {
                     }
                 }
             }
-            QuestCallbackProjection::TimedTransform { due, restore } => {
+            QuestCallbackProjection::TimedTransform { due, restore }
+            | QuestCallbackProjection::TimedRemoval {
+                due,
+                entry: restore,
+            } => {
                 let Some(revision) = self
                     .changed
                     .get(&owner)
@@ -369,7 +375,8 @@ impl CallbackStates {
                     MovementDecay {
                         revision,
                         restore: *restore,
-                        overlay: None,
+                        overlay: matches!(projection, QuestCallbackProjection::TimedRemoval { .. })
+                            .then_some((true, None)),
                     },
                 );
             }
@@ -1715,7 +1722,8 @@ impl BundleFacts {
                 QuestCallbackProjection::ItemLayout { positions, .. } => positions
                     .iter()
                     .any(|position| states.position_reserved(*position)),
-                QuestCallbackProjection::TimedTransform { .. } => false,
+                QuestCallbackProjection::TimedTransform { .. }
+                | QuestCallbackProjection::TimedRemoval { .. } => false,
             })
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8

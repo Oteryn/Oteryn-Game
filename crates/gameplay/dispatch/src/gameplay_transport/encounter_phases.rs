@@ -42,10 +42,11 @@ impl Fight {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
         now_us: u64,
+        cells: &crate::content::NativeEntryMovementCells,
     ) -> Result<bool, CarrierError> {
         match self {
             Self::Cults(fight) => fight.projected_death(runtime, actor),
-            Self::Replacements(fight) => fight.projected_death(runtime, actor, now_us),
+            Self::Replacements(fight) => fight.projected_death(runtime, actor, now_us, cells),
         }
     }
 
@@ -172,7 +173,11 @@ impl Registry {
             return;
         };
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
-            if phase.fight.projected_death(runtime, actor, now_us).is_ok() {
+            if phase
+                .fight
+                .projected_death(runtime, actor, now_us, &phase.cells)
+                .is_ok()
+            {
                 let ActivePhase { fight, cells, .. } = phase;
                 let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
                 if let Fight::Replacements(fight) = fight {
