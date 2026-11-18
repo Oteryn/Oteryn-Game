@@ -2,15 +2,16 @@
 //! The Fandom archive Secret Service Quest/Spoiler confirms the shared lockout.
 use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult,
-    fixture::{Harness, debug},
+    fixture::{Harness, debug, id},
 };
-use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
-use crate::foundation::{CommandId, CommandRef};
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
+use crate::gameplay_transport::connection::{
+    ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority, SessionContinuity,
+};
+use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
-    authored_bindings::Bindings,
+    QuestStateCatalogue, authored_bindings::Bindings,
     world_callbacks::{Offering, Position},
 };
 use oteryn_protocol_oteryn::world_object::{
@@ -29,7 +30,6 @@ const AT: Position = Position {
 };
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const TRACK: &str = "oteryn:quest-progress/dock-fire-fixture/mission";
-const REARM: &str = "oteryn:quest-transition/dock-fire-fixture/rearm";
 const FIRE_BUG: &str = "oteryn:item.tibia.i5467";
 const LIFETIME_MS: u32 = 420_000;
 
@@ -69,24 +69,7 @@ pub(super) async fn exercise(
         "stages":[{"key":"ignite","completes":false,"trigger":{"kind":"map_use","callback":callback}}]}]});
     let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
     let base = QuestStateCatalogue::empty("content-1").ok_or("revision")?;
-    let catalogue = Arc::new(
-        bindings
-            .attach(&base)?
-            .with_fixture_transition(QuestTransition {
-                key: REARM.into(),
-                quest: QUEST.into(),
-                effects: vec![QuestEffect {
-                    track: TRACK.into(),
-                    from: QuestComparison::Eq(2),
-                    effect: QuestEffectKind::Set(1),
-                }],
-                completes: false,
-                experience: None,
-                world_change: None,
-            })
-            .map_err(debug)?,
-    );
-    owner.quest_catalogue = Some(catalogue.clone());
+    owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -104,13 +87,14 @@ pub(super) async fn exercise(
         true,
     )
     .await?;
+    let mut peer = admit_peer(owner, admitted, h).await?;
     assert_bare_use_refused(owner, admitted, AT).await?;
     let ignition = owner.owner_now().get();
     assert_eq!(
         use_selected_tool(owner, admitted, AT, FIRE_BUG).await?,
         UseDisposition::Committed
     );
-    assert_eq!(super::qengine_voucher_stories::quantity(h, 5467).await?, 1);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 5467).await?, 2);
     let pos = crate::map::overlay::TilePos {
         x: AT.x,
         y: AT.y,
@@ -135,46 +119,14 @@ pub(super) async fn exercise(
         assert_eq!(map.facts.expire_movement_items(due - 1), 0);
         due
     };
-    // Restore eligibility through the ordinary fenced writer while the same shared fire burns.
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(|()| "fence")?
-        .ok_or("fence")?;
-    {
-        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        let result = slot
-            .commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                QuestTransitionRequest {
-                    transition_key: REARM.into(),
-                    cause: QuestCause::Command(CommandRef::new(
-                        admitted.game_session_id,
-                        CommandId::new(4690).map_err(debug)?,
-                    )),
-                },
-                catalogue,
-            )
-            .await
-            .map_err(debug)?;
-        assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
-    }
-    owner
-        .refresh_quest_session(admitted.game_session_id, false)
-        .await;
+    assert_eq!(mission_stage(h, &id(41)).await?, 2);
+    let peer_character = *peer.item_fence.ok_or("peer item fence")?.character_id.as_bytes();
+    assert_eq!(mission_stage(h, &peer_character).await?, 1);
     assert_eq!(
-        use_selected_tool(owner, admitted, AT, FIRE_BUG).await?,
+        use_selected_tool(owner, &mut peer, AT, FIRE_BUG).await?,
         UseDisposition::Occupied
     );
-    let stored: i64 =
-        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
-            .bind(TRACK)
-            .fetch_one(&h.pool)
-            .await?;
-    assert_eq!(stored, 1);
+    assert_eq!(mission_stage(h, &peer_character).await?, 1);
     let map = owner.bundle_map().ok_or("map")?;
     assert_eq!(map.facts.next_movement_decay_time(), Some(due));
     owner.clock_origin = owner
@@ -197,10 +149,129 @@ pub(super) async fn exercise(
     assert!(map.facts.movement_items(pos).is_empty());
     assert_eq!(map.facts.next_movement_decay_time(), None);
     assert_eq!(
-        use_selected_tool(owner, admitted, AT, FIRE_BUG).await?,
+        use_selected_tool(owner, &mut peer, AT, FIRE_BUG).await?,
         UseDisposition::Committed
     );
+    assert_eq!(mission_stage(h, &id(41)).await?, 2);
+    assert_eq!(mission_stage(h, &peer_character).await?, 2);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 5467).await?, 2);
     Ok(())
+}
+
+async fn mission_stage(h: &Harness, character: &[u8; 16]) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT COALESCE((SELECT value FROM game_character_quest_tracks
+          WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),1)",
+    )
+    .bind(character.as_slice())
+    .bind(TRACK)
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+async fn admit_peer(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    first: &AdmittedSession,
+    h: &Harness,
+) -> TestResult<AdmittedSession> {
+    use crate::world_party_runtime_postgres_cases::{
+        FreshPlayerOwners, committed_fresh_player_from_source_owned,
+    };
+    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+        .fetch_one(&h.pool)
+        .await?;
+    let (current, operation) = committed_fresh_player_from_source_owned(
+        &FreshPlayerOwners {
+            root: h.root.clone(),
+            node: h.node.clone(),
+            recovery: &h.recovery,
+        },
+        60,
+        63,
+        171,
+        now,
+        Some("platform-test"),
+    )
+    .await
+    .map_err(|error| format!("dock peer admission: {error}"))?;
+    let fence = crate::gameplay_transport::item_fence_of(current).ok_or("peer fence")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(fence.game_session_id).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(actor, super::quest_world_callbacks::local(AT))
+            .map_err(debug)?;
+        runtime
+            .bind_attacker_lease(actor, fence.game_session_id, current.current_character_lease())
+            .map_err(debug)?;
+        owner.states.spell_states.lock().await.initialize(
+            &runtime,
+            actor,
+            fence.game_session_id,
+            crate::gameplay_transport::actor_spell::tests::FACTS,
+            (3, 7_000_000),
+            owner.owner_now(),
+        ).ok_or("peer spell state")?;
+        actor
+    };
+    let mut peer = AdmittedSession {
+        game_session_id: fence.game_session_id,
+        world_id: first.world_id,
+        channel_id: first.channel_id,
+        runtime_actor: Some(actor),
+        first_entry: FirstEntryOutcome::Positioned,
+        controller: Some(ControllerBinding {
+            transport: current.current_transport().ok_or("peer transport")?,
+            account_id: id(63),
+        }),
+        continuity: SessionContinuity::FRESH,
+        item_fence: Some(fence),
+    };
+    let generation = owner.active_generation.ok_or("active generation")?;
+    let native = generation.native_gameplay().ok_or("native")?;
+    h.root
+        .initialize_admission_equipment(
+            owner.character,
+            owner.holder,
+            &fence,
+            generation.identity().server_artifact_digest(),
+            &operation,
+        )
+        .await
+        .map_err(debug)?;
+    let grant = h.root.grant_starter_items(
+        owner.character,
+        owner.holder,
+        &fence,
+        &NativeItemWeights(native),
+        &StarterTemplate {
+            definition: crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "oteryn:item.tibia.i2854".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            ..StarterTemplate::main()
+        },
+    ).await.map_err(debug)?;
+    assert!(!matches!(grant, StarterGrantOutcome::NotAdmitted));
+    owner.admit_progression_session(&mut peer).await;
+    owner.admit_quest_session(&peer).await;
+    let fence = owner.current_quest_fence(peer.game_session_id)
+        .await.map_err(|()| "peer quest fence")?.ok_or("peer quest fence")?;
+    super::quest_world_callbacks::input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: AT,
+            item: FIRE_BUG.into(),
+            count: 1,
+        },
+        4601,
+        true,
+    )
+    .await?;
+    Ok(peer)
 }
 
 pub(super) async fn assert_bare_use_refused(
