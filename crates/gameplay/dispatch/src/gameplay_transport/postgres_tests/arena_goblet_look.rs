@@ -68,18 +68,36 @@ pub(super) async fn client_looks(
             break;
         }
     }
-    // This inventory capability sends definition refs without appearance IDs.
-    assert_eq!(
-        entries.iter().map(|entry| Some(entry.item_definition_ref)).collect::<Vec<_>>(),
-        GOBLETS.map(|(key, _)| index.definition_ref("Item", key, "definition-r1"))
-    );
-    let selection = ItemLookSelection { extended: true };
-    for (offset, (entry, expected)) in entries.iter().zip([
-        Some("It is given to the courageous victor of the barbarian arena in greenhorn difficulty. Awarded to Arena Victor"),
-        Some("It is given to the courageous victor of the barbarian arena in scrapper difficulty. Awarded to Arena Victor."),
-        Some("It is given to the courageous victor of the barbarian arena in warlord difficulty. Awarded to Arena Victor."),
+    // The two golden goblets share a definition. Match the replies independent of display order.
+    let mut expected = Vec::new();
+    let inscriptions = [
+        Some(concat!(
+            "It is given to the courageous victor of the barbarian arena in ",
+            "greenhorn difficulty. Awarded to Arena Victor"
+        )),
+        Some(concat!(
+            "It is given to the courageous victor of the barbarian arena in ",
+            "scrapper difficulty. Awarded to Arena Victor."
+        )),
+        Some(concat!(
+            "It is given to the courageous victor of the barbarian arena in ",
+            "warlord difficulty. Awarded to Arena Victor."
+        )),
         None,
-    ]).enumerate() {
+    ];
+    for ((key, _), inscription) in GOBLETS.into_iter().zip(inscriptions) {
+        let reference = index.definition_ref("Item", key, "definition-r1")
+            .ok_or("goblet definition reference")?;
+        expected.push((reference, inscription.map(str::to_owned)));
+    }
+    expected.sort_unstable();
+    let mut observed_refs: Vec<_> = entries.iter().map(|entry| entry.item_definition_ref).collect();
+    observed_refs.sort_unstable();
+    assert_eq!(observed_refs, expected.iter().map(|(reference, _)| *reference).collect::<Vec<_>>());
+
+    let selection = ItemLookSelection { extended: true };
+    let mut descriptions = Vec::new();
+    for (offset, entry) in entries.iter().enumerate() {
         let command_id = u64::try_from(offset)? + 1;
         let payload = encode_item_look_intent_for(
             ItemLookIntent { target: ItemLookTarget::Item(entry.handle) },
@@ -106,10 +124,15 @@ pub(super) async fn client_looks(
                 return Err(format!("LOOK refused goblet {}", entry.item_definition_ref).into());
             };
             assert!(text.starts_with("You see "), "{text}");
-            assert_eq!(text.lines().find(|line| line.contains("Awarded to")), expected, "{text}");
+            descriptions.push((
+                entry.item_definition_ref,
+                text.lines().find(|line| line.contains("Awarded to")).map(str::to_owned),
+            ));
             break;
         }
     }
+    descriptions.sort_unstable();
+    assert_eq!(descriptions, expected, "Crystal arena goblet descriptions");
     client.shutdown().await?;
     let mut remaining = Vec::new();
     client.read_to_end(&mut remaining).await?;
