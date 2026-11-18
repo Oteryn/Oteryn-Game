@@ -232,9 +232,11 @@ fn admit_native_bindings(
             for quest in &bindings.quests {
                 let source = quest.sources.join(";");
                 for track in &quest.tracks {
+                    // A shared native counter keeps its donor witness (shared_tracks.rs).
                     lowered
                         .source_tracks
-                        .insert(track.key.clone(), source.clone());
+                        .entry(track.key.clone())
+                        .or_insert_with(|| source.clone());
                 }
             }
         }
@@ -634,6 +636,7 @@ mod tests {
             crate::quest::world_callbacks::EMBEDDED,
             // QMECH source cohorts retain their separate registration owners.
             include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
+            include_str!("../../../../../content/quests/world-callbacks/dream-courts.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"),
@@ -671,6 +674,9 @@ mod tests {
             include_str!("../../../../../content/quests/authored-world-callbacks.json"),
             include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
             include_str!("../../../../../content/quests/world-callbacks/feaster-phase-routes.json"),
+            include_str!(
+                "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
+            ),
             include_str!("../../../../../content/quests/questl2-djinn-world.json"),
         ];
         let mut expected = std::collections::BTreeSet::new();

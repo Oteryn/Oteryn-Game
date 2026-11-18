@@ -734,17 +734,11 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "Thank you for telling me what happened to my daughter."
+        "I always feared that I lost her. And yet, all those years, I still had a gleam of hope. I'm devastated to learn about her fate - but at least I have certainty now. Thank you for telling me."
       ],
       "sources": [
-        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
-        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
-        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
-        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
-        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
-        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
-        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
-        "Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+        "https://tibia.fandom.com/?curid=85334&oldid=1194739",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gail.lua:79-80"
       ],
       "requires_premium": true
     },
@@ -1046,6 +1040,46 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/chosen/children/phantom-army-report",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "completes": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i10199",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "experience": 10000,
+      "reply": [
+        "The resistance owes you its survival. Take this serpent crest and rest before the next fight."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua#L150-L162"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/chosen/wrath/start",
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "npc": "oteryn:npc.zalamon",
@@ -1084,7 +1118,16 @@
       ],
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: chosen once-only Wrath opening; three source nails953 and one wood5901 produce marked crate11328; original source questline and Mission01 retained."
+        "OTERYN_AUTHORED_APPROXIMATION: chosen once-only Wrath opening; three source nails953 and one wood5901 produce marked crate11328; original source questline and Mission01 retained.",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua#L150-L170"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        }
       ]
     },
     {

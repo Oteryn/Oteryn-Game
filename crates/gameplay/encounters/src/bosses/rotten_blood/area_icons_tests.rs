@@ -197,8 +197,9 @@ fn hazard_icon_uses_party_minimum_every_eight_seconds_with_ten_second_leader_cac
     }));
 }
 
+// Rotten Blood Quest/Spoiler, curid 102953, oldid 1107075, Rotten Charges.
 #[test]
-fn upper_left_arrow_counts_every_thirty_seconds_and_caps_at_one_hundred() {
+fn upper_left_arrow_counts_every_twenty_seconds_and_caps_at_one_hundred() {
     let mut owner = CanonicalFixture::default();
     let minion = position(33_850, 31_700, 14);
     let spectator = player(minion);
@@ -215,7 +216,7 @@ fn upper_left_arrow_counts_every_thirty_seconds_and_caps_at_one_hundred() {
                 .min(AREA_MAX_COUNT)]
         );
         let effects = owner
-            .think(minion, now + 29, &[spectator], || 1_400)
+            .think(minion, now + 19, &[spectator], || 1_400)
             .expect("early area think should succeed");
         assert!(icon_counts(&effects, RottenAreaIcon::AreaArrowUp).is_empty());
     }
@@ -395,7 +396,7 @@ fn srx3_rotten_area_current_owner_icon_count_and_durable_clock_survive_handoff()
     let current = RottenAreaCurrentFacts {
         actor: spectator.actor,
         last_hazard: 995,
-        last_area: 970,
+        last_area: 980,
         last_cross: 0,
         area_count: Some(17),
         cross_count: None,
@@ -412,7 +413,7 @@ fn srx3_rotten_area_current_owner_icon_count_and_durable_clock_survive_handoff()
         ..current
     };
     let effects = RottenAreaIconOwner::default()
-        .think_current(minion, 1_029, &[spectator], &[after_commit], || 1_400)
+        .think_current(minion, 1_019, &[spectator], &[after_commit], || 1_400)
         .expect("fresh callback owner after handoff must retain durable clock");
     assert!(icon_counts(&effects, RottenAreaIcon::AreaArrowUp).is_empty());
 }

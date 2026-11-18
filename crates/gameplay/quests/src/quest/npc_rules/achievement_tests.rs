@@ -134,6 +134,14 @@ fn m41_alyxo_finale_is_native_bound_and_keeps_canonical_remains() -> Result<(), 
             "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/fafnar".into(),
             301,
         ),
+        (
+            "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/lyre".into(),
+            4,
+        ),
+        (
+            "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/presente".into(),
+            3,
+        ),
         (remains.into(), 0),
     ]);
     let inventory = NpcInventorySnapshot::default();

@@ -21,7 +21,7 @@ class HeavyGateTests(unittest.TestCase):
         self.text = WORKFLOW.read_text()
         self.job = indented_yaml_mapping_block(self.text, "heavy_gate", 2)
 
-    def run_gate(self, *, heavy="true", real="true", build="success", pg="success", node_boot="success", pages=None, api_exit=0,
+    def run_gate(self, *, heavy="true", real="true", build="success", pg="success", pages=None, api_exit=0,
                  eligible="true", labels=(), labels_exit=0, forbid_api=False):
         self.assertIsNotNone(self.job)
         script = textwrap.dedent(self.job.split("        run: |\n", 1)[1])
@@ -43,7 +43,7 @@ class HeavyGateTests(unittest.TestCase):
             result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], env={
                 **os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
                 "IS_ELIGIBLE": eligible, "IS_HEAVY": heavy, "IS_REAL_RUN": real,
-                "BUILD_RESULT": build, "POSTGRES_RESULT": pg, "NODE_BOOT_RESULT": node_boot,
+                "BUILD_RESULT": build, "POSTGRES_RESULT": pg,
                 "REPOSITORY": "Oteryn/Oteryn-Game", "HEAD_SHA": "head",
                 "CHECK_PAGES": json.dumps(pages or [{"check_runs": []}]),
                 "API_EXIT": str(api_exit), "PR_NUMBER": "123",
@@ -54,17 +54,18 @@ class HeavyGateTests(unittest.TestCase):
                 self.assertFalse(api_calls.exists(), "Non-eligible PR called the API")
             return result
 
-    def test_real_run_requires_build_and_postgres_node_boot_is_informational(self):
+    def test_real_run_requires_build_and_postgres_and_does_not_wait_for_node_boot(self):
         for build in ("success", "failure", "cancelled", "skipped"):
             for pg in ("success", "failure", "cancelled", "skipped"):
-                for node_boot in ("success", "failure", "cancelled", "skipped"):
-                    with self.subTest(build=build, pg=pg, node_boot=node_boot):
-                        result = self.run_gate(build=build, pg=pg, node_boot=node_boot)
-                        self.assertEqual(result.returncode == 0, build == pg == "success", result.stderr)
-                        if result.returncode:
-                            self.assertIn(build, result.stdout)
-                            self.assertIn(pg, result.stdout)
-                            self.assertIn(node_boot, result.stdout)
+                with self.subTest(build=build, pg=pg):
+                    result = self.run_gate(build=build, pg=pg)
+                    self.assertEqual(result.returncode == 0, build == pg == "success", result.stderr)
+                    if result.returncode:
+                        self.assertIn(build, result.stdout)
+                        self.assertIn(pg, result.stdout)
+        # Node boot is opt-in on PRs (owner 2026-11-18): heavy-gate neither needs nor reads it.
+        self.assertNotIn("node_boot", self.job)
+        self.assertNotIn("NODE_BOOT", self.job)
 
     def test_non_eligible_succeeds_without_api_or_harness(self):
         for reason in ("draft", "dependabot"):
@@ -113,7 +114,7 @@ class HeavyGateTests(unittest.TestCase):
 
     def test_job_contract_and_event_classification(self):
         self.assertIsNotNone(self.job)
-        for fragment in ("    name: heavy-gate\n", "    needs: [build, durability_postgres, node_boot]\n",
+        for fragment in ("    name: heavy-gate\n", "    needs: [build, durability_postgres]\n",
                          "    if: always()\n", "    runs-on: ubuntu-24.04\n", "    timeout-minutes: 10\n",
                          "      checks: read\n", "      pull-requests: read\n",
                          "          PR_NUMBER: ${{ github.event.pull_request.number }}\n", "          GH_TOKEN: ${{ github.token }}\n"):
@@ -175,10 +176,13 @@ class HeavyGateTests(unittest.TestCase):
                     self.assertNotIn("    needs:", plan)
                     self.assertIn("    needs: node_boot_plan\n", shard)
                     self.assertIn("    needs: [node_boot_plan, node_boot_shard]\n", aggregate)
+                    # PR node boot is opt-in through its own `node-boot` label (owner 2026-11-18).
+                    node_boot_if = heavy_if.replace("'heavy-tests'", "'node-boot'")
+                    self.assertEqual(heavy_if.count("'heavy-tests'"), 2)
                     for job in (plan, shard):
-                        self.assertEqual(job.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0], heavy_if)
+                        self.assertEqual(job.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0], node_boot_if)
                     self.assertEqual(aggregate.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0],
-                                     "      always()\n      && " + heavy_if.lstrip())
+                                     "      always()\n      && " + node_boot_if.lstrip())
                 # Shard steps are the qualification workflow's, pinned to this gate's candidate.
                 expected = reference_steps.replace(
                     "        with:\n          persist-credentials: false\n",
@@ -191,7 +195,6 @@ class HeavyGateTests(unittest.TestCase):
                     self.assertIn(f"          ref: ${{{{ {ref} }}}}\n", job)
                     self.assertIn(f"          EXPECTED_SHA: ${{{{ {ref} }}}}\n", job)
                 self.assertNotIn("github.sha }}", actual.replace(ref, ""))
-        self.assertIn("          NODE_BOOT_RESULT: ${{ needs.node_boot.result }}\n", self.job)
 
     def run_aggregate(self, filename, *, plan="success", shards="success", status="PASS", scenarios=True):
         sys.path.insert(0, str(ROOT / "tools/qualification/node_boot"))

@@ -49,6 +49,14 @@ fn all_charms_delayed_chain_callback_carnage() -> TestResult {
     scenario(false, "carnage")
 }
 #[test]
+fn all_charms_delayed_chain_callback_carnage_after_retired_holder() -> TestResult {
+    retired_scenario(false, "carnage", RECEIPT_WRITE)
+}
+#[test]
+fn all_charms_delayed_chain_callback_zero_after_cancelled_tile_read() -> TestResult {
+    retired_scenario(false, "zero", TILE_READ)
+}
+#[test]
 fn all_charms_delayed_native_callback_fatal_hold() -> TestResult {
     scenario(true, "fatal_hold")
 }
@@ -109,6 +117,33 @@ fn all_charms_delayed_chain_callback_leech_minors() -> TestResult {
     scenario(false, "leech_minors")
 }
 fn scenario(delayed: bool, charm: &'static str) -> TestResult {
+    scenario_retiring(delayed, charm, None)
+}
+
+/// How the forced retire reaches the cast pass: the relation the blocker locks, and whether
+/// the waiting holder's statement is cancelled (as `transaction_timeout` does on a slow runner)
+/// instead of outliving the deadline.
+#[derive(Clone, Copy)]
+struct Retire {
+    lock: &'static str,
+    cancel_waiter_on: Option<&'static str>,
+}
+/// Only the cast pass writes a spell item receipt; reads stay open to earlier passes.
+const RECEIPT_WRITE: Retire = Retire {
+    lock: "LOCK TABLE game_spell_item_receipts IN EXCLUSIVE MODE",
+    cancel_waiter_on: None,
+};
+/// The cast prepare reads its tiles from the ground locations; that read fails mid-prepare.
+const TILE_READ: Retire = Retire {
+    lock: "LOCK TABLE game_item_ground_locations IN ACCESS EXCLUSIVE MODE",
+    cancel_waiter_on: Some("game_item_ground_locations"),
+};
+
+fn retired_scenario(delayed: bool, charm: &'static str, retire: Retire) -> TestResult {
+    scenario_retiring(delayed, charm, Some(retire))
+}
+
+fn scenario_retiring(delayed: bool, charm: &'static str, retire: Option<Retire>) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -120,7 +155,7 @@ fn scenario(delayed: bool, charm: &'static str) -> TestResult {
                     Harness::create_with_admission_seed(admin, "all_charms_delayed", false, false)
                         .await?;
                 let result = {
-                    let mut scenario = std::pin::pin!(scenario_with_harness(&h, delayed, charm, 3));
+                    let mut scenario = std::pin::pin!(scenario_with_harness(&h, delayed, charm, 3, retire));
                     std::future::poll_fn(|cx| {
                         match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                             std::future::Future::poll(scenario.as_mut(), cx)
@@ -146,7 +181,13 @@ fn scenario(delayed: bool, charm: &'static str) -> TestResult {
         .map_err(|_| "delayed charm thread panicked")?
         .map_err(Into::into)
 }
-async fn scenario_with_harness(h: &Harness, delayed: bool, charm: &str, stage: u8) -> TestResult {
+async fn scenario_with_harness(
+    h: &Harness,
+    delayed: bool,
+    charm: &str,
+    stage: u8,
+    retire: Option<Retire>,
+) -> TestResult {
     let native_path = false;
     let race = match charm {
         "immune" | "cripple_immune" => "oteryn:creature.dragon",
@@ -540,6 +581,9 @@ async fn scenario_with_harness(h: &Harness, delayed: bool, charm: &str, stage: u
             runtime
                 .set_test_creature_health(target, maximum)
                 .map_err(debug)?;
+        }
+        if let Some(retire) = retire {
+            cast_through_retired_holder(h, &owner, retire, actor, session, command, intent).await?;
         }
         let outcome = cast_ready(&owner, actor, session, command, intent).await?;
         assert_eq!(outcome.disposition, actor_spell::SpellCastDisposition::Cast);
@@ -1174,6 +1218,52 @@ fn expected_due_damage(
     )
 }
 
+/// A slow CI pass outlived the deadline and retired the sole holder mid-cast. Reproduce it:
+/// hold a relation the cast pass needs past the deadline, so its first pass retires.
+async fn cast_through_retired_holder(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    retire: Retire,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    command: u64,
+    intent: actor_spell::SpellCastIntent,
+) -> TestResult {
+    let mut blocker = h.pool.begin().await?;
+    sqlx::query(retire.lock).execute(&mut *blocker).await?;
+    let release = async {
+        let held_until = tokio::time::Instant::now() + crate::durability::DB_PASS_DEADLINE * 2;
+        if let Some(relation) = retire.cancel_waiter_on {
+            // Wait for the holder to queue on the lock, then end its backend mid-statement.
+            while tokio::time::Instant::now() < held_until {
+                let waiter: Option<i32> = sqlx::query_scalar(
+                    "SELECT pid FROM pg_locks WHERE relation = $1::regclass AND NOT granted LIMIT 1",
+                )
+                .bind(relation)
+                .fetch_optional(&h.pool)
+                .await?;
+                if let Some(pid) = waiter {
+                    sqlx::query("SELECT pg_terminate_backend($1)")
+                        .bind(pid)
+                        .execute(&h.pool)
+                        .await?;
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            }
+        }
+        tokio::time::sleep_until(held_until).await;
+        blocker.rollback().await
+    };
+    let (outcome, released) = tokio::join!(
+        owner.cast_spell_dispatch(actor, session, command, intent),
+        release
+    );
+    released?;
+    assert!(outcome.is_none(), "the blocked cast pass retires and stays pending");
+    Ok(())
+}
+
 async fn cast_ready(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
@@ -1181,19 +1271,22 @@ async fn cast_ready(
     command: u64,
     intent: actor_spell::SpellCastIntent,
 ) -> TestResult<crate::gameplay_transport::actor_spell::SpellCastOutcome> {
-    Ok(
-        tokio::time::timeout(std::time::Duration::from_secs(30), async {
-            loop {
-                if let Some(outcome) = owner
-                    .cast_spell_dispatch(actor, session, command, intent)
-                    .await
-                {
-                    return outcome;
-                }
-                tokio::task::yield_now().await;
+    tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        loop {
+            if let Some(outcome) = owner
+                .cast_spell_dispatch(actor, session, command, intent)
+                .await
+            {
+                return TestResult::Ok(outcome);
             }
-        })
-        .await
-        .map_err(|_| "source cast remained pending across bounded same-command retries")?,
-    )
+            // A pending cast may mean the durability holder retired; wait for the
+            // recovered holder instead of spinning against a retired one.
+            if !owner.root.is_ready() {
+                owner.root.await_ready().await?;
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .map_err(|_| "source cast remained pending across bounded same-command retries")?
 }

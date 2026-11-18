@@ -235,7 +235,3 @@ workspace = true
 [[test]]
 name = "house_interior_postgres"
 test = false
-
-[[test]]
-name = "qworld_live_admission_postgres"
-test = false

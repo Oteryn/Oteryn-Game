@@ -451,14 +451,14 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
-    # The legs together run what one serial job ran: every leg selects whole-workspace targets,
-    # so the resolved features match the protected-main cache and each other, and the job
-    # result that game_gate reads is success only when every leg succeeds.
+    # Workspace legs select whole-workspace targets so they share the protected-main cache's
+    # feature resolution. The Bevy client leg has its own time budget. The result that
+    # game_gate reads is success only when every leg succeeds.
     strategy:
       # Every partition and leg runs to the end, so one failure does not hide the others.
       fail-fast: false
       matrix:
-        shard: [lint, lib-content, lib-rest, integration-heavy, integration-rest, build-smoke]
+        shard: [lint, lib-content, lib-rest, integration-heavy, integration-rest, build-smoke, client-ui]
     steps:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -468,6 +468,13 @@ jobs:
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.100.0 --profile minimal --component clippy,rustfmt
+
+      - name: Free hosted runner disk for the Bevy build
+        if: matrix.shard == 'client-ui'
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
 
       - name: Restore trimmed Cargo cache from protected main
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -484,7 +491,7 @@ jobs:
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
 
-      # Every leg builds the dispatch library tests, which peak above the hosted runner's 16 GB
+      # The workspace library tests build dispatch, which peaks above the hosted runner's 16 GB
       # since #3056 (17.3 GB at -j1, 20.3 GB at -j4, measured 2026-11-17); without swap the
       # runner is killed and loses communication with the server.
       - name: Add swap for the workspace test build
@@ -584,7 +591,7 @@ jobs:
       # PR fast gate. nextest runs each test in its own process and runs the test binaries in
       # parallel instead of one after another. Doctests stay on `cargo test` in build-smoke.
       - name: Install pinned cargo-nextest
-        if: startsWith(matrix.shard, 'lib-') || startsWith(matrix.shard, 'integration-')
+        if: startsWith(matrix.shard, 'lib-') || startsWith(matrix.shard, 'integration-') || matrix.shard == 'client-ui'
         env:
           NEXTEST_VERSION: 0.9.146
           NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
@@ -617,6 +624,15 @@ jobs:
         if: matrix.shard == 'lib-rest'
         run: |
           cargo +1.100.0 nextest run --locked --workspace --lib --no-fail-fast -E 'not test(content::)'
+
+      - name: Test the native client game UI (bevy-shell)
+        if: matrix.shard == 'client-ui'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libudev-dev
+          cargo +1.100.0 nextest run --locked -p oteryn-client --features bevy-shell --lib --no-fail-fast
 
       - name: Test workspace integration targets
         if: matrix.shard == 'integration-heavy' || matrix.shard == 'integration-rest'
@@ -1243,7 +1259,7 @@ jobs:
           set -euo pipefail
           python3 tools/qualification/node_boot/matrix.py plan --set pr > "$RUNNER_TEMP/shards.json"
           # Every shard boots against the reviewed Platform producer.
-          test "$(python3 -c 'import json,sys; print(" ".join(sorted({s["platform_ref"] for s in json.load(open(sys.argv[1]))})))' "$RUNNER_TEMP/shards.json")" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          test "$(python3 -c 'import json,sys; print(" ".join(sorted({s["platform_ref"] for s in json.load(open(sys.argv[1]))})))' "$RUNNER_TEMP/shards.json")" = 6d04b52a16145723eedb0c56640ad052dbd26e94
           printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
 
   node_boot_shard:
