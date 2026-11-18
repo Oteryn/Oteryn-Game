@@ -309,20 +309,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(None) => {
                     self.states.chat.push_quest_feedback(
                         command.game_session_id,
-                        "The mechanism is still active.",
+                        "seems that the mechanism still active.",
                     );
                     return UseDisposition::Committed;
                 }
                 Err(_) => return UseDisposition::Rejected,
             }
         }
-        if map
+        if !map
             .facts
             .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
         {
-            UseDisposition::Committed
-        } else {
-            UseDisposition::Rejected
+            return UseDisposition::Rejected;
         }
+        if before.appearance_id == 9125 {
+            let message = match kind {
+                ReplicaKind::Diamond => {
+                    "5 diamond entities are consuming too much raw energy for the cosmic chamber to awaken, it will be put to rest again in 10 minutes."
+                }
+                ReplicaKind::Golden => {
+                    "5 golden entities are consuming too much raw energy for the cosmic chamber to awaken, it will be put to rest again in 10 minutes."
+                }
+            };
+            self.states
+                .chat
+                .push_quest_feedback(command.game_session_id, "*click*");
+            self.states
+                .chat
+                .push_quest_feedback(command.game_session_id, message);
+        }
+        UseDisposition::Committed
     }
 }
