@@ -2,8 +2,16 @@
 use super::{TestResult, quest_world_callbacks};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
-const MONUMENT: Position = Position { x: 32177, y: 31925, floor: -7 };
-const DESTINATION: Position = Position { x: 32515, y: 32535, floor: -12 };
+const MONUMENT: Position = Position {
+    x: 32177,
+    y: 31925,
+    floor: -7,
+};
+const DESTINATION: Position = Position {
+    x: 32515,
+    y: 32535,
+    floor: -12,
+};
 const SCYTHE: &str = "oteryn:item.tibia.i3453";
 const ALTERNATE: &str = "oteryn:item.tibia.i9596";
 
@@ -35,9 +43,19 @@ fn seclib1_isle_scythe_uses_selected_tool_and_exact_permission() -> TestResult {
             "return_on_failure":false,
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:1035-1059"]
         }))?;
-        for (stage, tool, expected) in [(7, SCYTHE, true), (7, ALTERNATE, true), (6, SCYTHE, false), (8, SCYTHE, false)] {
+        for (stage, tool, expected) in [
+            (7, SCYTHE, true),
+            (7, ALTERNATE, true),
+            (6, SCYTHE, false),
+            (8, SCYTHE, false),
+        ] {
             quest_world_callbacks::literal_uses::exercise_selected_tool(
-                callback.clone(), 2028, 1, stage, tool, expected,
+                callback.clone(),
+                2028,
+                1,
+                stage,
+                tool,
+                expected,
             )?;
         }
         Ok(())

@@ -117,13 +117,27 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
 }
 
 pub(in crate::gameplay_transport::monk_save_postgres_tests) fn exercise_selected_tool(
-    callback: Callback, appearance: u16, ordinal: u8, stage: i64, tool: &str, allowed: bool,
+    callback: Callback,
+    appearance: u16,
+    ordinal: u8,
+    stage: i64,
+    tool: &str,
+    allowed: bool,
 ) -> TestResult {
-    exercise_use(callback, appearance, ordinal, Some(stage), Some((tool, allowed)))
+    exercise_use(
+        callback,
+        appearance,
+        ordinal,
+        Some(stage),
+        Some((tool, allowed)),
+    )
 }
 
 fn exercise_use(
-    callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>,
+    callback: Callback,
+    appearance: u16,
+    ordinal: u8,
+    stage: Option<i64>,
     selected: Option<(&str, bool)>,
 ) -> TestResult {
     let started = std::time::Instant::now();
@@ -289,20 +303,39 @@ fn exercise_use(
                 .map_err(debug)?,
             );
             let catalogue = if selected.is_some() {
+                use oteryn_gameplay_quests::quest::authored_bindings::{
+                    Bindings, BoundQuest, Stage, Track, Trigger,
+                };
                 use sha2::Digest;
-                use oteryn_gameplay_quests::quest::authored_bindings::{Bindings, BoundQuest, Stage, Track, Trigger};
-                std::sync::Arc::new(Bindings {
-                    schema: 1,
-                    quests: vec![BoundQuest {
-                        quest: callback.quest.clone(),
-                        recipe_sha256: format!("{:x}", sha2::Sha256::digest(serde_json::to_vec(&callback)?)),
-                        occurrence: None,
-                        admission: None,
-                        tracks: vec![Track { key: storage.track.clone(), initial: -1, minimum: -1, maximum: 13 }],
-                        stages: vec![Stage { key: "isle-entry".into(), completes: false, trigger: Trigger::MapUse { callback: Box::new(callback.clone()) } }],
-                        sources: callback.sources.clone(),
-                    }],
-                }.attach(&catalogue)?)
+                std::sync::Arc::new(
+                    Bindings {
+                        schema: 1,
+                        quests: vec![BoundQuest {
+                            quest: callback.quest.clone(),
+                            recipe_sha256: format!(
+                                "{:x}",
+                                sha2::Sha256::digest(serde_json::to_vec(&callback)?)
+                            ),
+                            occurrence: None,
+                            admission: None,
+                            tracks: vec![Track {
+                                key: storage.track.clone(),
+                                initial: -1,
+                                minimum: -1,
+                                maximum: 13,
+                            }],
+                            stages: vec![Stage {
+                                key: "isle-entry".into(),
+                                completes: false,
+                                trigger: Trigger::MapUse {
+                                    callback: Box::new(callback.clone()),
+                                },
+                            }],
+                            sources: callback.sources.clone(),
+                        }],
+                    }
+                    .attach(&catalogue)?,
+                )
             } else {
                 catalogue
             };
@@ -361,41 +394,65 @@ fn exercise_use(
             sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
                 .fetch_one(&h.pool)
                 .await?;
-        let allowed = selected.map(|(_, allowed)| allowed).unwrap_or_else(|| callback
-            .storage
-            .first()
-            .is_none_or(|storage| stage.is_some_and(|stage| stage >= storage.minimum)));
+        let allowed = selected.map(|(_, allowed)| allowed).unwrap_or_else(|| {
+            callback
+                .storage
+                .first()
+                .is_none_or(|storage| stage.is_some_and(|stage| stage >= storage.minimum))
+        });
         let disposition = if let Some((tool, _)) = selected {
-            use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent, UseTarget, encode_item_use_intent};
-            input_item(&owner, fence.item_fence(), &oteryn_gameplay_quests::quest::world_callbacks::Offering {
-                position: trigger, item: tool.into(), count: 1,
-            }, 901, true).await?;
+            use oteryn_protocol_oteryn::world_object::{
+                MapUseTarget, UseIntent, UseTarget, encode_item_use_intent,
+            };
+            input_item(
+                &owner,
+                fence.item_fence(),
+                &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                    position: trigger,
+                    item: tool.into(),
+                    count: 1,
+                },
+                901,
+                true,
+            )
+            .await?;
             admitted.continuity.selected_capabilities =
                 crate::gameplay_transport::capabilities::SelectedCapabilities::select(
-                    owner.offered_capabilities(), &[4, 6, 11, 15, 18],
-                ).ok_or("selected item capability")?;
-            let reference = native.item_index().and_then(|index| index.definition_ref("Item", tool, "definition-r1")).ok_or("scythe definition")?;
+                    owner.offered_capabilities(),
+                    &[4, 6, 11, 15, 18],
+                )
+                .ok_or("selected item capability")?;
+            let reference = native
+                .item_index()
+                .and_then(|index| index.definition_ref("Item", tool, "definition-r1"))
+                .ok_or("scythe definition")?;
             let payload = encode_item_use_intent(&UseIntent {
                 target: UseTarget::ItemByDefinition(reference),
                 use_with: None,
                 use_with_map_item: Some(MapUseTarget::Object(target)),
                 use_with_position: None,
-            }).map_err(debug)?;
+            })
+            .map_err(debug)?;
             let (next, disposition, _) = super::super::item_craft::exchange(
-                &owner, admitted, admitted.continuity.next_command_id, &payload, Some(reference),
-            ).await?;
+                &owner,
+                admitted,
+                admitted.continuity.next_command_id,
+                &payload,
+                Some(reference),
+            )
+            .await?;
             admitted = next;
             disposition
         } else {
-        let reply = wire(
-            &owner,
-            &mut admitted,
-            1,
-            2,
-            oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
-        )
-        .await?;
-        oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?
+            let reply = wire(
+                &owner,
+                &mut admitted,
+                1,
+                2,
+                oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
+            )
+            .await?;
+            oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?
         };
         assert_eq!(
             disposition,
@@ -435,9 +492,14 @@ fn exercise_use(
             .await
             .map_err(debug)?;
         if selected.is_some() {
-            assert_eq!(before.tracks(), after.tracks(), "entry must preserve permission");
+            assert_eq!(
+                before.tracks(),
+                after.tracks(),
+                "entry must preserve permission"
+            );
             let reads: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_world_tool_reads")
-                .fetch_one(&h.pool).await?;
+                .fetch_one(&h.pool)
+                .await?;
             assert_eq!(reads, i64::from(allowed));
         } else {
             assert_eq!(before, after, "literal USE changed durable quest state");
@@ -446,7 +508,10 @@ fn exercise_use(
             sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
                 .fetch_one(&h.pool)
                 .await?;
-        assert_eq!(receipts, receipts_before + i64::from(selected.is_some() && allowed));
+        assert_eq!(
+            receipts,
+            receipts_before + i64::from(selected.is_some() && allowed)
+        );
         eprintln!(
             "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
             callback.key,
