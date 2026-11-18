@@ -103,7 +103,12 @@ pub(super) async fn exercise(
     );
     assert_eq!(super::m39_bone_journey::carried(h, 10159).await?, 1);
 
+    // Crystal movements_mission2_all_around_the_world.lua:79-86 compares the
+    // entire position. Enter the same-x neighbour while carrying the skull.
+    step(owner, admitted, StepDirection::North).await?;
     step(owner, admitted, StepDirection::East).await?;
+    assert_eq!(super::m39_bone_journey::stage(h, MISSION02).await?, Some(1));
+    step(owner, admitted, StepDirection::South).await?;
     assert_eq!(super::m39_bone_journey::stage(h, MISSION02).await?, Some(2));
     assert_eq!(super::m39_bone_journey::carried(h, 10159).await?, 1);
     step(owner, admitted, StepDirection::West).await?;
