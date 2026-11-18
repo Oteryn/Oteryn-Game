@@ -1,11 +1,11 @@
 //! Crystal 201189f8 data-global/npc/tonar.lua:66-81, data/items/items.xml:13001-13016.
 use std::sync::Arc;
 
-use super::TestResult;
 use super::archivist_vote::{FixtureItem, with_npc_items};
 use super::classic_quests::{talk, talk_with_disposition};
 use super::fixture::{Harness, debug, id, run};
 use super::scenarios::{mint_carried, quantity};
+use super::{ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 use serde_json::json;
@@ -47,7 +47,7 @@ fn tonar_refuses_a_fresh_shell_and_exchanges_each_mature_shell() -> TestResult {
     Ok(())
 }
 
-async fn exercise(h: &Harness) -> TestResult {
+pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
     let binding = Bindings::parse(json!({"schema":1,"quests":[{
         "quest":QUEST,
         "recipe_sha256":<sha2::Sha256 as sha2::Digest>::digest(SOURCE).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
@@ -62,6 +62,21 @@ async fn exercise(h: &Harness) -> TestResult {
         }}}],"sources":[SOURCE]
     }]}).to_string().as_bytes())?;
     let base = QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(debug)?;
+    Ok(binding.attach(&base)?)
+}
+
+pub(super) fn install_offer(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    owner.states.npc_conversations.fixture_reward_offers(
+        &json!({"schema":1,"offers":[{
+            "npc":NPC,"keywords":["ocarina","scarab"],"topic":0,"any_topic":true,"next_topic":1,
+            "storage":[],"reply":["Did you bring an intact shell?"]
+        }]})
+        .to_string(),
+    )?;
+    Ok(())
+}
+
+async fn exercise(h: &Harness) -> TestResult {
     let profiles = [
         FixtureItem {
             id: 4194,
@@ -82,11 +97,8 @@ async fn exercise(h: &Harness) -> TestResult {
             stackable: false,
         },
     ];
-    with_npc_items(h, Arc::new(binding.attach(&base)?), NPC, &profiles, async |owner, admitted, npc| {
-        owner.states.npc_conversations.fixture_reward_offers(&json!({"schema":1,"offers":[{
-            "npc":NPC,"keywords":["ocarina","scarab"],"topic":0,"any_topic":true,"next_topic":1,
-            "storage":[],"reply":["Did you bring an intact shell?"]
-        }]}).to_string())?;
+    with_npc_items(h, Arc::new(catalogue()?), NPC, &profiles, async |owner, admitted, npc| {
+        install_offer(owner)?;
         mint_carried(h, owner, *admitted, FRESH, 1, 92).await?;
         talk(owner, admitted, npc, 1, "hi").await?;
         talk(owner, admitted, npc, 2, "ocarina").await?;
