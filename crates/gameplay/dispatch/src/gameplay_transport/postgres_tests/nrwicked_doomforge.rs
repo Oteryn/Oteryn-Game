@@ -299,6 +299,19 @@ async fn two_player_exit(
         .await?
         .0
         .current_character_lease();
+    // These sessions are already admitted. Supply the initial Character state
+    // that the real quest writer locks before applying either member's credit.
+    for lease in [first_lease, second_lease] {
+        sqlx::query(
+            "INSERT INTO game_character_progression_state \
+             SELECT character_id,character_revision,1,0,profile_revision,ruleset_revision, \
+                    content_revision,'simulation-1','evidence-1','declaration-1','policy-1','reward-1' \
+             FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(lease.character_id().as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+    }
     let (controller, _) =
         super::death_ml_loss_composed::production_generation_with_pin(owner.world_id, "content-1")?;
     let native = controller
