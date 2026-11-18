@@ -1042,6 +1042,16 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn use_direct_corpse_claim(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _handle: oteryn_protocol_oteryn::item_view::ItemHandle,
+        _identity: [u8; 16],
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     fn look_item(
         &self,
         _actor: ExactActorRef,

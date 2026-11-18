@@ -1140,6 +1140,11 @@ impl DurabilityRoot {
             || request_binding(fence.character_id, &request),
             |payment| payment.binding(fence.character_id),
         );
+        if let Some(callback) = reward_callback.as_ref().filter(|c| c.direct_corpse_claim.is_some()) {
+            reward_admission.and_then(|admission| admission.creature_use)
+                .and_then(|proof| proof.bind_direct_corpse(&mut binding, fence, &request, callback))
+                .ok_or(CharacterProgressionError::InvalidInput)?;
+        }
         if let Some((_, handover)) = &benevola {
             handover.bind(&mut binding)?;
         }
@@ -1262,7 +1267,7 @@ impl DurabilityRoot {
                     lock_admission_relations(&mut tx).await?;
                     lock_receipt_key(&mut tx, character, &request).await?;
                     // The MINT cause precedes the Character root, matching the item owner.
-                    if reward_callback.as_ref().is_some_and(|c|c.give.is_some())
+                    if reward_callback.as_ref().is_some_and(|c|c.give.is_some() || c.direct_corpse_claim.is_some())
                         && let QuestCause::Command(command) | QuestCause::Use(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }

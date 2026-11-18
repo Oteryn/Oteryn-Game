@@ -493,6 +493,18 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with_position: None,
             }) => {
                 let key = item_view.as_ref().and_then(|view| view.resolve(handle));
+                if let Some(ItemKey::Entity(identity)) = key
+                    && let Some(outcome) = tokio::time::timeout(
+                        std::time::Duration::from_secs(10),
+                        authority.use_direct_corpse_claim(actor, UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: command.command_id,
+                            item_fence: admitted.item_fence,
+                        }, handle, identity),
+                    ).await.ok()?.ok()?
+                {
+                    return Some(Dispatch::Use(outcome));
+                }
                 // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
                 // and one out of reach is TOO_FAR; anything else takes the corpse path.
                 let container = match (key, &*container_views) {

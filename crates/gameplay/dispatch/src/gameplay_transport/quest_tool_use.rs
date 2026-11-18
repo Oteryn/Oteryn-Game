@@ -24,6 +24,148 @@ impl Drop for CreatureTurn<'_> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn claim_quest_corpse(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        handle: oteryn_protocol_oteryn::item_view::ItemHandle,
+        identity: [u8; 16],
+    ) -> Result<Option<UseOutcome>, ()> {
+        use crate::durability::quest_state::{
+            QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+        };
+        use crate::durability::reward_claim_mint::{
+            QuestRewardAdmission, quest_creature::QuestCreatureUseProof,
+        };
+        use oteryn_protocol_oteryn::world_object::UseTarget;
+
+        let Some(catalogue) = self.quest_catalogue.as_ref() else {
+            return Ok(None);
+        };
+        let Some(bindings) = catalogue.authored_bindings() else {
+            return Ok(None);
+        };
+        let callbacks = bindings
+            .reward_callbacks()
+            .filter(|c| c.direct_corpse_claim.is_some());
+        let key = {
+            let runtime = self.runtime.lock().await;
+            let Some(corpse) = runtime.bound_corpse(identity) else {
+                return Ok(None);
+            };
+            corpse.item.production_key
+        };
+        let mut selected = callbacks.filter(|c| {
+            c.direct_corpse_claim
+                .as_ref()
+                .is_some_and(|claim| key == format!("oteryn:item.tibia.i{}", claim.appearance))
+        });
+        let Some(callback) = selected.next() else {
+            return Ok(None);
+        };
+        let reject = || Some(UseOutcome::rejected());
+        if selected.next().is_some()
+            || !self
+                .states
+                .player_trades
+                .physical(command.game_session_id, None)
+        {
+            return Ok(reject());
+        }
+        let Some(item_fence) = command.item_fence else {
+            return Ok(reject());
+        };
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return Ok(reject());
+        };
+        let Some(fence) = self
+            .current_quest_fence(command.game_session_id)
+            .await
+            .map_err(|_| ())?
+        else {
+            return Ok(reject());
+        };
+        if fence.item_fence() != item_fence {
+            return Ok(reject());
+        }
+        let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+            return Ok(reject());
+        };
+        let command_ref = CommandRef::new(
+            command.game_session_id,
+            CommandId::new(command.command_id).map_err(|_| ())?,
+        );
+        let intent = UseIntent {
+            target: UseTarget::Item(handle),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
+        };
+        let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
+        let mut revision = self.revision_sequencer.acquire(fence.character_id).await;
+        let runtime = self.runtime.lock().await;
+        if super::item_ref_admission::pinned_index(&runtime, self.active_generation).is_none() {
+            return Ok(reject());
+        }
+        {
+            let states = self.states.spell_states.lock().await;
+            if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
+            {
+                return Ok(reject());
+            }
+        }
+        let Some(proof) = QuestCreatureUseProof::read_direct_corpse(
+            &runtime,
+            actor,
+            fence,
+            command_ref,
+            callback,
+            &intent,
+            identity,
+        ) else {
+            return Ok(reject());
+        };
+        let result = revision
+            .commit_quest_reward(
+                self.root,
+                self.character,
+                self.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: callback.key.clone(),
+                    cause: QuestCause::Command(command_ref),
+                },
+                std::sync::Arc::clone(catalogue),
+                QuestRewardAdmission {
+                    native,
+                    weights: &weights,
+                    fee_payment: None,
+                    actor_conditions: None,
+                    carried_use: None,
+                    creature_use: Some(&proof),
+                    peer_use: None,
+                },
+                &self.premium_coordinator,
+            )
+            .await
+            .map_err(|_| ())?;
+        drop(runtime);
+        drop(revision);
+        drop(_permit);
+        if !matches!(
+            result,
+            QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
+        ) {
+            return Ok(reject());
+        }
+        self.refresh_quest_session(command.game_session_id, false)
+            .await;
+        Ok(Some(UseOutcome {
+            disposition: UseDisposition::Committed,
+            ..UseOutcome::rejected()
+        }))
+    }
+
     /// Ordinary carried quest tools borrow the same fenced quest/value owner as
     /// NPC exchanges. The selected instance and ingress remain in its input proof.
     pub(super) async fn use_carried_quest_item(

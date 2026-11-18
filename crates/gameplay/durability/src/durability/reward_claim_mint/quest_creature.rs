@@ -126,6 +126,20 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             .flatten()
     }
 
+    pub(crate) fn bind_direct_corpse(
+        &self,
+        binding: &mut Vec<u8>,
+        fence: CurrentCharacterGameplayFence,
+        request: &QuestTransitionRequest,
+        callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+    ) -> Option<()> {
+        let (item, _) = self.permits_direct_corpse(fence, request, callback)?;
+        let ingress = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&self.intent).ok()?;
+        binding.extend_from_slice(&item);
+        binding.extend_from_slice(&ingress);
+        Some(())
+    }
+
     pub fn read_current(
         runtime: &'runtime ChannelRuntimeV1,
         actor: ExactActorRef,

@@ -1889,6 +1889,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         item_ref_admission::observe_item_target(self, actor, target).await
     }
 
+    async fn use_direct_corpse_claim(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        handle: oteryn_protocol_oteryn::item_view::ItemHandle,
+        identity: [u8; 16],
+    ) -> Result<Option<connection::UseOutcome>, ()> {
+        self.claim_quest_corpse(actor, command, handle, identity)
+            .await
+    }
+
     /// MAP-ITEM-REF-1 Part B: command 9's corpse-entry TRANSFER into the main backpack.
     async fn take_corpse_entry(
         &self,
