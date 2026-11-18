@@ -4,8 +4,7 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
 };
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
-use crate::foundation::{CommandId, CommandRef};
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use crate::foundation::{CommandId, CommandRef, WorldId};
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
@@ -49,16 +48,20 @@ async fn exercise(h: &Harness) -> TestResult {
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    let deps = Dependencies::new()?;
+    let world = WorldId::decode(&id(42)).map_err(debug)?;
+    let (controller, pin) =
+        super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+    let deps = Dependencies::with_content_and_capacity(
+        pin.into_channel_pin(),
+        crate::content::qualify_native_entry_room(world).map_err(debug)?,
+        crate::spell::cast::v1_spell_book().map_err(debug)?,
+        7,
+    )?;
     deps.runtime
         .lock()
         .await
         .initialize_first_entry_position(deps.actor)
         .map_err(debug)?;
-    let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
-        deps.admitted.world_id,
-        "content-1",
-    )?;
     let generation = controller.active().ok_or("active generation")?;
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(generation);
@@ -69,19 +72,24 @@ async fn exercise(h: &Harness) -> TestResult {
             .clone(),
     ));
     let mut admitted = deps.admitted.clone();
-    let [telas, boveas, cerdras, dreadeye, milos, scutty] = super::classic_quests::install(
-        &owner,
-        &admitted,
-        [
-            "oteryn:npc.telas",
-            "oteryn:npc.boveas",
-            "oteryn:npc.cerdras",
-            "oteryn:npc.dreadeye",
-            "oteryn:npc.milos",
-            "oteryn:npc.scutty",
-        ],
-    )
-    .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, true)
+        .await;
+    let [telas, boveas, cerdras, dreadeye, milos, scutty] =
+        super::classic_quests::install_with_offsets(
+            &owner,
+            &admitted,
+            [
+                "oteryn:npc.telas",
+                "oteryn:npc.boveas",
+                "oteryn:npc.cerdras",
+                "oteryn:npc.dreadeye",
+                "oteryn:npc.milos",
+                "oteryn:npc.scutty",
+            ],
+            Some([(0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)]),
+        )
+        .await?;
     super::qd_world::select_talk_capabilities(&owner, &mut admitted, &[3, 6, 25])?;
     let mut command = 1000;
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
@@ -100,29 +108,60 @@ async fn exercise(h: &Harness) -> TestResult {
         Some(h.root.clone()),
     );
 
+    converse(
+        &mut owner,
+        &mut admitted,
+        scutty,
+        &mut command,
+        "research notes",
+    )
+    .await?;
+    assert_eq!(
+        progress(
+            h,
+            "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_scutty"
+        )
+        .await?,
+        0,
+        "research notes require the errand to be active",
+    );
+
     level(h, 75).await?;
     owner.premium_coordinator = Some(&premium);
     converse(&mut owner, &mut admitted, telas, &mut command, "mission").await?;
-    assert_eq!(mission(h).await?, 0, "Mission 3 must be started first");
+    assert_eq!(
+        progress(h, MISSION).await?,
+        0,
+        "Mission 3 must be started first"
+    );
 
     start_prerequisite(&mut owner, &admitted).await?;
     level(h, 74).await?;
     converse(&mut owner, &mut admitted, telas, &mut command, "mission").await?;
-    assert_eq!(mission(h).await?, 0, "level 74 is too low");
+    assert_eq!(progress(h, MISSION).await?, 0, "level 74 is too low");
 
     level(h, 75).await?;
     owner.premium_coordinator = None;
     converse(&mut owner, &mut admitted, telas, &mut command, "mission").await?;
-    assert_eq!(mission(h).await?, 0, "Premium is required");
+    assert_eq!(progress(h, MISSION).await?, 0, "Premium is required");
 
     owner.premium_coordinator = Some(&premium);
     converse(&mut owner, &mut admitted, telas, &mut command, "mission").await?;
     assert_eq!(
-        mission(h).await?,
+        progress(h, MISSION).await?,
         1,
         "level 75, Premium and mission 3 unlock the errand"
     );
 
+    assert_eq!(
+        progress(
+            h,
+            "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline"
+        )
+        .await?,
+        1,
+        "acceptance opens the quest journal",
+    );
     for npc in [scutty, boveas, milos, dreadeye, scutty] {
         converse(
             &mut owner,
@@ -135,7 +174,7 @@ async fn exercise(h: &Harness) -> TestResult {
     }
     converse(&mut owner, &mut admitted, telas, &mut command, "mission").await?;
     assert_eq!(
-        mission(h).await?,
+        progress(h, MISSION).await?,
         1,
         "four researchers plus a repeat do not suffice"
     );
@@ -150,7 +189,7 @@ async fn exercise(h: &Harness) -> TestResult {
     .await?;
     converse(&mut owner, &mut admitted, telas, &mut command, "mission").await?;
     assert_eq!(
-        mission(h).await?,
+        progress(h, MISSION).await?,
         2,
         "five distinct researchers finish the errand"
     );
@@ -171,9 +210,9 @@ async fn converse(
     Ok(())
 }
 
-async fn mission(h: &Harness) -> TestResult<i64> {
+async fn progress(h: &Harness, track: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),0)")
-        .bind(id(41).as_slice()).bind(MISSION).fetch_one(&h.pool).await?)
+        .bind(id(41).as_slice()).bind(track).fetch_one(&h.pool).await?)
 }
 
 async fn level(h: &Harness, level: i64) -> TestResult {
@@ -181,8 +220,9 @@ async fn level(h: &Harness, level: i64) -> TestResult {
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE game_character_progression_state SET level=$1 WHERE character_id=encode($2,'hex')::uuid")
+    let updated = sqlx::query("UPDATE game_character_progression_state SET level=$1 WHERE character_id=encode($2,'hex')::uuid")
         .bind(level).bind(id(41).as_slice()).execute(&mut *tx).await?;
+    assert_eq!(updated.rows_affected(), 1);
     tx.commit().await?;
     Ok(())
 }
