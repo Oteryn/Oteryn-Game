@@ -69,3 +69,10 @@ Entry-stage and journal admission; gravel/chalk gathering and caves; wet mortar,
 
 - Baseline PG via shard (pgsplit build files applied on `5692cde459b410bdfa59cea223e2dea3d46e68a0`). One case reached dispatch and failed as expected in 19.40 s. Gravel and chalk returned `NothingToUse` where the test requires `Committed`.
 - Quest-authoring checks exited 0 on the baseline, running 44 named checks, including 269 schema cases.
+- PG via shard (pgsplit build files applied on `97720117e1d81f407789725ded2c930ec83b43ac`). One case passed in 24.57 s. The two selected buckets were consumed and the exact two outputs remained after command replay.
+- `cargo fmt --all -- --check` and an explicit rustfmt check of the auto-mounted case both exited 0.
+- The world pin refresh reproduced the existing Oteryn world digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`.
+- `oteryn-world-bundle-compiler pin-check . /tmp/qcx71-pin-check` verified one world and exited 0. The compiler requires an output directory for this command.
+- The same dispatch filter with `OTERYN_TEST_POSTGRES_ADMIN_URL` unset passed one guard case in 0.00 s. PostgreSQL was not exercised in that run.
+- Final quest-authoring checks exited 0, with 44 named checks and 269 schema cases.
+- `cargo clippy --locked -p oteryn-gameplay-dispatch --all-features --lib -- -D warnings` exited 0.
