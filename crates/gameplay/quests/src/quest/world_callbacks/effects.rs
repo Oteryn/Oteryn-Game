@@ -51,6 +51,9 @@ pub struct CallbackEffects {
     /// Opt in to source-script displacement onto a present blocked pad.
     #[serde(default, skip_serializing_if = "is_false")]
     pub scripted_teleport: bool,
+    /// Match the retained raw portal before overriding it with a conditional StepIn.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native_portal_destination: Option<Position>,
     /// Current native occupants must be absent before a previously started stage commits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clear_area: Option<ClearArea>,
@@ -682,6 +685,19 @@ pub(super) fn valid(callback: &Callback) -> bool {
         && (callback.teleport.is_none()
             || callback.selector.native.is_none()
             || callback.actor_kind != ActorKind::Player)
+    {
+        return false;
+    }
+    if effects
+        .native_portal_destination
+        .is_some_and(|destination| {
+            !(-15..=0).contains(&destination.floor)
+                || callback.trigger != Trigger::StepIn
+                || callback.actor_kind != ActorKind::Player
+                || callback.selector.native.is_none()
+                || callback.teleport.is_none()
+                || !callback.return_on_failure
+        })
     {
         return false;
     }

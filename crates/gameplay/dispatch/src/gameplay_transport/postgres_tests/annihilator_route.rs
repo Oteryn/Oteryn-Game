@@ -31,6 +31,7 @@ enum Route {
     TimedPassage,
     Ashmunrah,
     CathedralNote,
+    CathedralSwitches,
     CoalBasin,
     Demonrage,
     Logic,
@@ -90,6 +91,10 @@ pub(super) fn cathedral_note(admin: String) -> TestResult {
     run_with_admin(Route::CathedralNote, admin)
 }
 
+pub(super) fn cathedral_switches(admin: String) -> TestResult {
+    run_with_admin(Route::CathedralSwitches, admin)
+}
+
 pub(super) fn coal_basin_arrival(admin: String) -> TestResult {
     run_with_admin(Route::CoalBasin, admin)
 }
@@ -131,6 +136,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             | Route::TimedPassage
             | Route::Ashmunrah
             | Route::CathedralNote
+            | Route::CathedralSwitches
             | Route::CoalBasin
             | Route::Demonrage
             | Route::Logic
@@ -145,6 +151,8 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         super::quest_switch_windows::LORD_START
     } else if route == Route::CathedralNote {
         super::quest_switch_windows::CATHEDRAL_START
+    } else if route == Route::CathedralSwitches {
+        super::quest_cathedral_switches::START
     } else if route == Route::CoalBasin {
         super::quest_coal_basin::START
     } else if route == Route::Demonrage {
@@ -213,6 +221,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                 ),
                 match route {
                     Route::BansheeWindows => &[(125,124)],
+                    Route::CathedralSwitches => &[(127,127)],
                     Route::Demonrage => &[(126,124)],
                     _ => &[],
                 },
@@ -225,7 +234,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let mut currents = Vec::new();
         let mut operations = Vec::new();
         let participants = match route {
-            Route::CathedralNote | Route::Logic | Route::TimedPassage => 1,
+            Route::CathedralNote | Route::CathedralSwitches | Route::Logic | Route::TimedPassage => 1,
             Route::Ashmunrah | Route::BansheeWindows | Route::CoalBasin | Route::Demonrage | Route::Lord => 2,
             Route::TimedPair => 3,
             _ => 4,
@@ -589,6 +598,15 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         }
         if route == Route::Logic {
             let result = super::quest_banshee_logic::exercise(&mut owner, &mut admitted[0], map).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
+        if route == Route::CathedralSwitches {
+            let result =
+                super::quest_cathedral_switches::exercise(&mut owner, &mut admitted[0], map).await;
             drop(owner);
             drop(authority);
             drop(seal);

@@ -179,6 +179,22 @@ fn unique_eligible<'a>(
     eligible.next().is_none().then_some(selected)
 }
 
+fn native_portal_binding(
+    callback: &Callback,
+) -> Option<oteryn_gameplay_quests::quest::carried_step::NativeBinding> {
+    use oteryn_gameplay_quests::quest::carried_step::{self, NativeBinding};
+    if let Some(destination) = callback.effects.native_portal_destination {
+        let source = callback.selector.native.as_ref()?;
+        return Some(NativeBinding {
+            position: source.position,
+            ordinal: source.ordinal,
+            appearance: source.appearance,
+            raw_destination: destination,
+        });
+    }
+    carried_step::native_binding(&callback.key)
+}
+
 fn tile(p: Position) -> TilePos {
     TilePos {
         x: p.x,
@@ -267,6 +283,15 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return false;
     }
     if let Some(binding) = &callback.selector.native {
+        if let Some(destination) = callback.effects.native_portal_destination {
+            return tile(binding.position) == pos
+                && ordinal == binding.ordinal
+                && map.facts.quest_callback_native_teleport(
+                    key,
+                    binding.appearance,
+                    tile(destination),
+                );
+        }
         let matched = tile(binding.position) == pos
             && ordinal == binding.ordinal
             && map
@@ -1706,8 +1731,8 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
             return false;
         };
         if !self.callbacks.iter().any(|c| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
-                .is_some_and(|b| tile(b.position) == at)
+            c.trigger == Trigger::StepIn
+                && native_portal_binding(c).is_some_and(|binding| tile(binding.position) == at)
         }) {
             return false;
         }
@@ -1736,9 +1761,13 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
             }
         }
         selected.is_some_and(|(c, key)| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(|b| {
-                map.facts
-                    .quest_callback_native_teleport(key, b.appearance, tile(b.raw_destination))
+            native_portal_binding(c).is_some_and(|binding| {
+                placement_key(tile(binding.position), binding.ordinal) == Some(key)
+                    && map.facts.quest_callback_native_teleport(
+                        key,
+                        binding.appearance,
+                        tile(binding.raw_destination),
+                    )
             })
         })
     }
