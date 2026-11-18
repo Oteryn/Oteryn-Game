@@ -30,7 +30,15 @@ pub(super) async fn exercise(
     harness: &Harness,
 ) -> TestResult {
     super::questpc7_native_deaths::prepare_native_hunter(owner, admitted).await?;
-    for (kind, first_command) in [("diamond", 200), ("golden", 210)] {
+    sqlx::query(
+        "INSERT INTO game_forgotten_knowledge_replica_windows(world_id, replica_kind, expires_at)
+         VALUES (encode($1,'hex')::uuid, 1, statement_timestamp() + interval '10 minutes'),
+                (encode($1,'hex')::uuid, 2, statement_timestamp() - interval '1 second')",
+    )
+    .bind(admitted.world_id.as_bytes().as_slice())
+    .execute(&harness.pool)
+    .await?;
+    for (kind, first_command, window) in [("diamond", 200, 1_i16), ("golden", 210, 2)] {
         let creature = format!("oteryn:creature.{kind}_servant_replica");
         let track = format!(
             "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/{kind}_servant_counter"
@@ -51,6 +59,18 @@ pub(super) async fn exercise(
             .fetch_one(&harness.pool)
             .await?;
             assert_eq!(count, expected, "{kind} replica credit");
+            let world_count: i32 = sqlx::query_scalar(
+                "SELECT kills FROM game_forgotten_knowledge_replica_windows
+                 WHERE world_id=encode($1,'hex')::uuid AND replica_kind=$2",
+            )
+            .bind(admitted.world_id.as_bytes().as_slice())
+            .bind(window)
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(
+                i64::from(world_count),
+                if window == 1 { expected } else { 0 }
+            );
         }
     }
     Ok(())

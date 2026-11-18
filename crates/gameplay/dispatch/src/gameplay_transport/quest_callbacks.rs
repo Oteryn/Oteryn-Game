@@ -24,6 +24,7 @@ mod personal_encounter;
 mod personal_trial;
 mod phase;
 mod rafzane_elevator;
+mod replica_window;
 mod reward_door;
 mod rewards;
 mod rotten_flame;
@@ -993,6 +994,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
+        if selected_tool.is_none()
+            && let Some(outcome) = self
+                .use_replica_lever(actor, command, map, &resolved, target.expected_revision)
+                .await
+        {
+            return Some(outcome);
+        }
         let mut selected = self
             .callback_content()
             .iter()

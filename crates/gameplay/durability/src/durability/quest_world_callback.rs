@@ -8,6 +8,7 @@ mod ground_read;
 pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]
 mod npc_input;
+pub mod replica_window;
 mod selected_tool;
 mod tool_reads;
 pub use selected_tool::QuestWorldToolContext;
