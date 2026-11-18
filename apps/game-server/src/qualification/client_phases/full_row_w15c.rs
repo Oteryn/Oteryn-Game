@@ -200,6 +200,21 @@ fn from_ramp(
     Ok(path)
 }
 
+fn to_replay_ramp(world: &BundleWorld, from: TilePos) -> TestResult<Vec<StepDirection>> {
+    // Crystal's i484 trapdoor one tile south of the upper landing returns to
+    // the ramp foot. See data/items/items.xml:950-952 and data-global/world/world.otbm.
+    let landing = destination(world, RAMP_LANDING, StepDirection::South);
+    if landing != Some(RAMP_FOOT) {
+        return Err(
+            format!("step=replay observed=invalid-port-hope-ramp-return:{landing:?}").into(),
+        );
+    }
+    let mut path = route(world, from, |at| at == RAMP_LANDING)
+        .ok_or("step=replay observed=no-walk-route-back-to-ramp-landing")?;
+    path.push(StepDirection::South);
+    Ok(path)
+}
+
 fn near(at: TilePos, npc: &oteryn_world_bundle::npc::Npc) -> bool {
     npc.placements
         .iter()
@@ -532,8 +547,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         }
     };
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| at == RAMP_FOOT)
-        .ok_or("step=replay observed=no-walk-route-back-to-ramp-foot")?;
+    let path = to_replay_ramp(world, from)?;
     walk_leg(&mut client, world, "return-to-ramp-foot", &path).await?;
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xe5).await?;
@@ -699,7 +713,7 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
     let replay_start = check_leg(
         "Grizzly Adams to replay logout tile",
         reached,
-        route(&world, reached, |at| at == RAMP_FOOT).ok_or("logout ramp foot unreachable")?,
+        to_replay_ramp(&world, reached)?,
     )?;
     assert_eq!(replay_start, RAMP_FOOT);
     assert_eq!(
