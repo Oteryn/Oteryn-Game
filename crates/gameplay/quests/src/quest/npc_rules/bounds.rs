@@ -7,8 +7,8 @@ use super::{NpcRuleEffect, NpcRuleProgram};
 // Arithmetic and clock-derived writes remain checked against that range at plan time.
 pub(super) fn literal_write_bounds(program: &NpcRuleProgram) -> BTreeMap<String, (i64, i64)> {
     let mut bounds = BTreeMap::new();
-    let mut include = |track: &String, min, max| {
-        let range = bounds.entry(track.clone()).or_insert((min, max));
+    let mut include = |track: &str, min: i64, max: i64| {
+        let range = bounds.entry(track.to_owned()).or_insert((min, max));
         range.0 = range.0.min(min);
         range.1 = range.1.max(max);
     };
