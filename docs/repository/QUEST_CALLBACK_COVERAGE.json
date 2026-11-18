@@ -1,8 +1,8 @@
 {
   "counts": {
-    "dispatch_pg_qualified": 192,
+    "dispatch_pg_qualified": 198,
     "not_playable": 2,
-    "supported_unqualified": 142
+    "supported_unqualified": 136
   },
   "native_authored_claims": [
     {
@@ -6814,8 +6814,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_strong_potions_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/strong_potions_quest"
@@ -9212,8 +9212,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_the_shattered_isles_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/the_shattered_isles_quest"
@@ -9433,8 +9433,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_the_white_raven_monastery_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/the_white_raven_monastery_quest"
@@ -9527,8 +9527,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_throwing_star_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/throwing_star_quest"
@@ -9766,8 +9766,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_to_outfox_a_fox_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/to_outfox_a_fox_quest"
@@ -10031,8 +10031,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_vampire_hunter_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/vampire_hunter_quest"

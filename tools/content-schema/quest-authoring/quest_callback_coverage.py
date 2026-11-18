@@ -271,6 +271,12 @@ QUALIFIED.update({
     "oteryn:reward-claim.kv.sixrubies": "quest_catalogue_chests_qchk8_six_rubies_use_replay_and_refusal",
     "oteryn:reward-claim.kv.spikesword": "quest_catalogue_chests_qchk8_spike_sword_use_replay_and_refusal",
     "oteryn:reward-claim.kv.stealhring2": "quest_catalogue_chests_qchk8_stealth_ring_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.throwingstar": "quest_catalogue_chests_qchk8_throwing_star_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_24.family_brooch.brooch": "quest_catalogue_chests_qchk8_the_white_raven_monastery_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook": "quest_catalogue_chests_qchk8_the_shattered_isles_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_1.strong_potions.reward": "quest_catalogue_chests_qchk8_strong_potions_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_1.to_outfox_afox_quest.mining_helmet": "quest_catalogue_chests_qchk8_to_outfox_a_fox_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_2.vampire_hunter_quest.blood_skull": "quest_catalogue_chests_qchk8_vampire_hunter_use_replay_and_refusal",
 })
 
 
