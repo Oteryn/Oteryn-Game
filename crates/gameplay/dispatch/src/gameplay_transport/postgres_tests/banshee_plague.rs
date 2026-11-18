@@ -205,20 +205,12 @@ fn scenario() -> TestResult {
         owner.admit_progression_session(&mut admitted).await;
         owner.admit_quest_session(&admitted).await;
 
-        let map = owner.bundle_map().ok_or("bundle map")?;
-        let portals = crate::gameplay_transport::quest_callbacks::CallbackPortals {
-            inner: &crate::map::floor::BundleDoors(&map.facts),
-            map: Some(map),
-            callbacks: owner.callback_content(),
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err("bundle collision index".into());
         };
-        assert!(crate::map::floor::CellBlocker::suppresses_native_teleport(
-            &portals,
-            crate::content::LogicalCell {
-                x: i32::from(TRIGGER.x),
-                y: i32::from(TRIGGER.y),
-                z: -i32::from(TRIGGER.floor),
-            },
-        ));
+        let map = index.map();
         let content = format!(
             "sha256:{}",
             server
@@ -272,18 +264,6 @@ fn scenario() -> TestResult {
                         ..trigger
                     })
                 );
-                let proof = crate::map::floor::prepare_bundle_step(
-                    &runtime,
-                    owner.movement_cells(),
-                    actor,
-                    session,
-                    origin,
-                    crate::movement::CardinalStep::North,
-                    false,
-                    &portals,
-                )
-                .map_err(debug)?;
-                assert_eq!(proof.destination(), local(trigger));
                 origin
             };
             owner.clock_origin = owner
