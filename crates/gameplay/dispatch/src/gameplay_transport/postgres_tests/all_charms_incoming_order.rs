@@ -430,7 +430,7 @@ fn incoming_order_parry_uses_original_native_roll() {
         .expect("scenario");
 }
 
-struct CertainCharms(Vec<oteryn_gameplay_progression::charm_effects::CharmDefinition>);
+pub(super) struct CertainCharms(Vec<oteryn_gameplay_progression::charm_effects::CharmDefinition>);
 impl oteryn_gameplay_progression::charm_effects::CharmCatalogueRead for CertainCharms {
     fn charm(
         &self,
@@ -439,7 +439,7 @@ impl oteryn_gameplay_progression::charm_effects::CharmCatalogueRead for CertainC
         self.0.iter().find(|definition| definition.key() == key)
     }
 }
-fn assign_charms(
+pub(super) fn assign_charms(
     states: &mut ChannelSpellStates,
     runtime: &ChannelRuntimeV1,
     source: ExactActorRef,

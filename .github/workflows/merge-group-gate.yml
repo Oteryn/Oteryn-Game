@@ -484,6 +484,19 @@ jobs:
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
 
+      # Every leg builds the dispatch library tests, which peak above the hosted runner's 16 GB
+      # since #3056 (17.3 GB at -j1, 20.3 GB at -j4, measured 2026-11-17); without swap the
+      # runner is killed and loses communication with the server.
+      - name: Add swap for the workspace test build
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 16G /mnt/oteryn-extra.swap
+          sudo chmod 600 /mnt/oteryn-extra.swap
+          sudo mkswap /mnt/oteryn-extra.swap
+          sudo swapon /mnt/oteryn-extra.swap
+          swapon --show
+          free -h
+
       - name: Verify policy metadata and formatting
         if: matrix.shard == 'lint'
         shell: bash
@@ -1230,7 +1243,7 @@ jobs:
           set -euo pipefail
           python3 tools/qualification/node_boot/matrix.py plan --set pr > "$RUNNER_TEMP/shards.json"
           # Every shard boots against the reviewed Platform producer.
-          test "$(python3 -c 'import json,sys; print(" ".join(sorted({s["platform_ref"] for s in json.load(open(sys.argv[1]))})))' "$RUNNER_TEMP/shards.json")" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          test "$(python3 -c 'import json,sys; print(" ".join(sorted({s["platform_ref"] for s in json.load(open(sys.argv[1]))})))' "$RUNNER_TEMP/shards.json")" = 6d04b52a16145723eedb0c56640ad052dbd26e94
           printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
 
   node_boot_shard:
