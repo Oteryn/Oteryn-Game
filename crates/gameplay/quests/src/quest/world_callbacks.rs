@@ -605,11 +605,15 @@ impl Callback {
             self.key.as_str(),
             "oteryn:quest-callback/children-of-the-revolution-battle-passage-1"
                 | "oteryn:quest-callback/children-of-the-revolution-battle-passage-2"
-        ) && self.trigger == Trigger::StepIn
+        ) && self.quest == "oteryn:quest.children_of_the_revolution_quest"
+            && self.trigger == Trigger::StepIn
             && matches!(self.storage.as_slice(), [storage]
                 if storage.track == "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access"
                     && (storage.minimum, storage.maximum, storage.set) == (1, 1, 1)
                     && !storage.read_only
+                    && !storage.preserve
+                    && !storage.increment
+                    && !storage.at_least
                     && storage.set_if.is_none()
                     && storage.add.is_none())
     }
