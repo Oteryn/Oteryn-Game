@@ -34,8 +34,22 @@ BEGIN
                  AND c.cause_id = NEW.cause_id
                  AND c.cause_ordinal = NEW.cause_ordinal
                  AND c.transition_key = NEW.transition_key
+                 AND c.created_xact_id = NEW.created_xact_id
                  AND c.location_kind = 'ground') < 2 THEN
             RAISE EXCEPTION 'guard-only quest receipt requires a ground-funded step'
+                USING ERRCODE = '23514';
+        END IF;
+        IF EXISTS (
+                SELECT 1 FROM unnest(NEW.track_keys) AS k(track_key)
+                JOIN game_character_quest_tracks t USING (track_key)
+                WHERE t.character_id = NEW.character_id
+                  AND t.committed_character_revision = NEW.committed_character_revision)
+           OR EXISTS (
+                SELECT 1 FROM game_character_quest_states s
+                WHERE s.character_id = NEW.character_id
+                  AND s.quest_key = NEW.quest_key
+                  AND s.committed_character_revision = NEW.committed_character_revision) THEN
+            RAISE EXCEPTION 'guard-only quest receipt cannot write quest progress'
                 USING ERRCODE = '23514';
         END IF;
         RETURN NULL;
@@ -81,3 +95,8 @@ BEGIN
     RETURN NULL;
 END;
 $$;
+
+DO $$
+BEGIN
+    EXECUTE format('ALTER FUNCTION game_character_quest_receipt_guard() SET search_path = %I, pg_temp', current_schema());
+END $$;
