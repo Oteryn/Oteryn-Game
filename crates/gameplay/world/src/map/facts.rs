@@ -735,6 +735,36 @@ impl BundleFacts {
         }
     }
 
+    /// Crystal movement_wall_teleport.lua:28-37 reads the live tile flag.
+    pub fn immovable_solid_at(
+        &self,
+        overlay: &super::overlay::ChannelOverlay,
+        pos: TilePos,
+    ) -> Option<bool> {
+        let facts = self.pinned();
+        let stack = view::compose_tile(overlay, &facts, pos).ok()??;
+        Some(stack.entries.iter().any(|entry| {
+            let mut attrs = Attrs::default();
+            if let view::EntrySource::Base {
+                placement_key: key, ..
+            } = entry.source
+            {
+                if let Ok(index) = self.placements.binary_search_by_key(&key, |(key, _)| *key) {
+                    attrs.unique = self.placements[index].1.attrs.unique;
+                    attrs.action = self.placements[index].1.attrs.action;
+                }
+                if let Some(action) = facts
+                    .callbacks
+                    .as_ref()
+                    .and_then(|state| state.actions.get(&key))
+                {
+                    attrs.action = *action;
+                }
+            }
+            super::spell_tiles::immovable::flags(u32::from(entry.facts.appearance_id), &attrs)[0]
+        }))
+    }
+
     /// Immutable authored facts for a named-House view. The bundle palette and
     /// placements are shared; Channel door, rotation and callback state is not.
     pub fn base_only(&self) -> PinnedFacts<'_> {

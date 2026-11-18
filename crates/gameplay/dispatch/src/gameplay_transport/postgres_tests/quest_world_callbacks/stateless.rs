@@ -21,12 +21,14 @@ pub(super) async fn exercise(
     expected_destination: Position,
 ) -> TestResult {
     assert_eq!(callback.trigger, Trigger::StepIn);
-    assert_eq!(
-        callback
-            .teleport
-            .unwrap_or(callback.selector.position.ok_or("position")?),
-        expected_destination
-    );
+    if callback.effects.solid_teleport.is_none() {
+        assert_eq!(
+            callback
+                .teleport
+                .unwrap_or(callback.selector.position.ok_or("position")?),
+            expected_destination
+        );
+    }
     assert!(callback.storage.is_empty());
     assert!(callback.offerings.is_empty());
     assert!(callback.passages.is_empty());
@@ -139,6 +141,19 @@ pub(super) async fn exercise(
         "oteryn:quest-callback/waterfall-splash" => Some((32968, 32630, -7)),
         _ => None,
     };
+    if callback.effects.solid_teleport.is_some() {
+        let map = owner.bundle_map().ok_or("map")?;
+        let effects = map.facts.movement_effects_since(0);
+        assert_eq!(effects.len(), 1);
+        assert_eq!(
+            (effects[0].1, effects[0].2),
+            (crate::map::overlay::TilePos {
+                x: expected_destination.x,
+                y: expected_destination.y,
+                floor: expected_destination.floor,
+            }, 11)
+        );
+    }
     if let Some((x, y, floor)) = expected_effect {
         let map = owner.bundle_map().ok_or("map")?;
         let effects = map.facts.movement_effects_since(0);

@@ -519,6 +519,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 destination = Some(remote.destination);
             }
         }
+        if let Some(branch) = &callback.effects.solid_teleport {
+            // Crystal 201189f movement_wall_teleport.lua:28-37. Read the
+            // Channel's current stacks within the same turn as the landing.
+            let mut obstructed = false;
+            for cell in &branch.cells {
+                match map.facts.immovable_solid_at(&map.overlay, tile(*cell)) {
+                    Some(true) => {
+                        obstructed = true;
+                        break;
+                    }
+                    Some(false) => continue,
+                    None => return UseDisposition::Rejected,
+                }
+            }
+            if obstructed {
+                destination = Some(branch.destination);
+            }
+        }
         let scene_moves =
             match self.prepare_quest_scene_moves(runtime, states, map, callback, close) {
                 Ok(proof) => proof,
@@ -1606,7 +1624,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .emit_movement_effect(tile(magic.position), magic.effect);
         }
         if let Some(effect) = callback.effects.teleport_effect
-            && let Some(destination) = callback.teleport
+            && let Some(destination) = if callback.effects.solid_teleport.is_some() {
+                destination
+            } else {
+                callback.teleport
+            }
         {
             map.facts.emit_movement_effect(tile(destination), effect);
         }

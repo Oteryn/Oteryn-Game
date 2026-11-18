@@ -99,6 +99,8 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
     pub portals: Option<PortalPair>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub solid_teleport: Option<SolidTeleport>,
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
@@ -148,6 +150,34 @@ impl From<&str> for QuestCompletion {
 #[serde(deny_unknown_fields)]
 pub struct RewardDoor {
     pub claim: String,
+}
+
+/// Select an alternate landing when a live map cell contains an immovable solid.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SolidTeleport {
+    pub cells: Vec<Position>,
+    pub destination: Position,
+}
+
+impl SolidTeleport {
+    pub(super) fn valid(&self, callback: &Callback) -> bool {
+        callback.trigger == Trigger::StepIn
+            && callback.actor_kind == ActorKind::Player
+            && callback
+                .teleport
+                .is_some_and(|clear| clear != self.destination)
+            && callback.remote_teleport.is_none()
+            && !callback.has_personal_state()
+            && !self.cells.is_empty()
+            && self.cells.len() <= 32
+            && self.cells.iter().copied().collect::<BTreeSet<_>>().len() == self.cells.len()
+            && (-15..=0).contains(&self.destination.floor)
+            && self
+                .cells
+                .iter()
+                .all(|cell| (-15..=0).contains(&cell.floor))
+    }
 }
 
 impl CallbackEffects {
@@ -393,6 +423,13 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .solid_teleport
+        .as_ref()
+        .is_some_and(|teleport| !teleport.valid(callback))
+    {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

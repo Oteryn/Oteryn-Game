@@ -355,7 +355,7 @@ pub(super) fn world_with_cells(
     clippy::too_many_arguments,
     reason = "combines existing object and native item fixtures with explicit extra cells"
 )]
-fn world_cells(
+pub(super) fn world_cells(
     callback: &Callback,
     trigger: Position,
     appearance: u16,
@@ -376,7 +376,9 @@ fn world_cells(
         callback.native_rule,
         Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { seal: 122 })
     );
-    if callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY {
+    if callback.effects.solid_teleport.is_some() {
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i103".into();
+    } else if callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY {
         data.manifest.palette[0].key = "oteryn:terrain.tibia.i4515".into();
     } else if distinct_seals {
         data.manifest.palette[0].key = "oteryn:terrain.tibia.i6685".into();

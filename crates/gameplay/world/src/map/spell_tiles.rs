@@ -52,7 +52,7 @@ use oteryn_world_bundle::bundle::{Family, Manifest, Sector, TerrainKind};
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 
-mod immovable;
+pub(super) mod immovable;
 
 pub use crate::content::bundle_spell_tiles::BundleSpellTiles;
 use crate::content::bundle_spell_tiles::UNKNOWN;

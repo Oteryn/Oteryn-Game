@@ -350,7 +350,11 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    use super::super::dreamers_wall_portal;
+    let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR);
+    let mut callback = if dreamers_wall {
+        dreamers_wall_portal::binding()?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
@@ -646,7 +650,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if dreamers_wall {
+        dreamers_wall_portal::world(&callback, name == dreamers_wall_portal::BLOCKED)?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
@@ -1752,6 +1758,7 @@ fn scenario_case(
         if name.starts_with("qengine-rewards-questpc4-admission-")
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
             || lever_fixture
+            || dreamers_wall
             || target_swap
             || failure_landing
             || name.ends_with("-expiry")
