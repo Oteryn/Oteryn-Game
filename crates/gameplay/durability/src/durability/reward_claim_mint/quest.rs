@@ -362,6 +362,34 @@ pub(crate) async fn apply(
             return Ok(false);
         }
     }
+    let charged = if let Some(fee) = &callback.fee {
+        let multiplier = if let Some(key) = &fee.multiplier_track {
+            let Some(track) = catalogue.track(key) else {
+                return Ok(false);
+            };
+            let stored: Option<i64> = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks
+                 WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(key)
+            .bind(&track.quest)
+            .fetch_optional(&mut **tx)
+            .await?;
+            u64::try_from(stored.unwrap_or(track.initial)).ok()
+        } else {
+            Some(1)
+        };
+        let Some(gold) = multiplier
+            .and_then(|quantity| fee.gold.checked_mul(quantity))
+            .filter(|gold| (1..=1_000_000_000_000).contains(gold))
+        else {
+            return Ok(false);
+        };
+        Some((fee, gold))
+    } else {
+        None
+    };
     if !super::quest_participants::apply(
         tx,
         fence,
@@ -374,7 +402,7 @@ pub(crate) async fn apply(
     {
         return Ok(false);
     }
-    if let Some(fee) = &callback.fee {
+    if let Some((fee, gold)) = charged {
         use crate::durability::item_fee_burn::{
             FeeBurnCause, FeeBurnError, FeeBurnRequest, burn_quest_reward_fee_in_transaction,
         };
@@ -393,10 +421,10 @@ pub(crate) async fn apply(
             cause: FeeBurnCause::QuestRewardPayment {
                 callback: callback.key.clone(),
                 occurrence: payment.occurrence,
-                gold: fee.gold,
+                gold,
                 include_bank: fee.include_bank,
             },
-            fee_gold_units: fee.gold,
+            fee_gold_units: gold,
             transaction_id: payment.transaction_id,
             event_id: payment.event_id,
             occurred_at_unix_ms: payment.occurred_at_unix_ms,
@@ -414,7 +442,7 @@ pub(crate) async fn apply(
             Err(_) => return Err(DurabilityError::InvalidStoredState),
         }
     }
-    if let (Some(fee), Some(payment)) = (&callback.fee, admission.fee_payment) {
+    if let (Some((fee, gold)), Some(payment)) = (charged, admission.fee_payment) {
         let committed = fence
             .expected_character_revision
             .get()
@@ -423,7 +451,7 @@ pub(crate) async fn apply(
         sqlx::query("INSERT INTO game_quest_reward_fees(character_id,fee_occurrence,cause_id,cause_ordinal,transition_key,fee_gold_units,include_bank,committed_character_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8::text::numeric)")
             .bind(fence.character_id.as_bytes().as_slice()).bind(payment.occurrence.as_slice())
             .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
-            .bind(&callback.key).bind(i64::try_from(fee.gold).map_err(|_|DurabilityError::InvalidStoredState)?)
+            .bind(&callback.key).bind(i64::try_from(gold).map_err(|_|DurabilityError::InvalidStoredState)?)
             .bind(fee.include_bank).bind(committed.to_string()).execute(&mut **tx).await?;
     }
     if !super::super::quest_world_callback::consume_reward_inputs(
@@ -495,8 +523,15 @@ pub(crate) async fn apply(
             .await?
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
+    let mut source_plan = oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if let Some((fee, gold)) = charged
+        && fee.multiplier_track.is_some()
+    {
+        source_plan["fee"]["gold"] = serde_json::json!(gold);
+    }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(source_plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
     if callback.corpse_target.is_some() {
         let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
             return Ok(false);

@@ -83,10 +83,12 @@ fn m38_travel_ticket_fee_terms_change_the_primary_definition_hash() -> Result<()
         MonetaryFee {
             gold: 1001,
             include_bank: true,
+            multiplier_track: None,
         },
         MonetaryFee {
             gold: 1000,
             include_bank: false,
+            multiplier_track: None,
         },
     ] {
         let mut changed = callback.clone();

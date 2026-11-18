@@ -61,6 +61,7 @@ fn scenario_case(
     let ice_tools = super::super::qcx60_carried_tools::matches_name(name);
     let ice_iskan = name == super::super::qcx62_iskan::NAME;
     let barbarian_sven = name == super::super::qcx62_sven::NAME;
+    let barbarian_fine = name == super::super::qcx62_sven_fine::NAME;
     let qready_craft = name == super::super::qready1_crafting::NAME;
     let qready_workbench = super::super::qready1_workbenches::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -354,7 +355,7 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if ice_iskan || barbarian_sven {
+    let mut callback = if ice_iskan || barbarian_sven || barbarian_fine {
         super::super::authored_world_rewards::placeholder(trigger)?
     } else if m03_use {
         super::super::qengine_m03_use::callback()?
@@ -942,6 +943,7 @@ fn scenario_case(
             || ice_tools
             || ice_iskan
             || barbarian_sven
+            || barbarian_fine
             || shared_rewards
             || qengine_reward
             || outfit_world
@@ -1724,6 +1726,11 @@ fn scenario_case(
                 super::super::qcx62_sven::catalogue(
                     owner.quest_catalogue.as_deref().ok_or("Sven catalogue")?,
                 )?,
+            ));
+        }
+        if barbarian_fine {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::qcx62_sven_fine::catalogue()?,
             ));
         }
         if draconia_escape {
@@ -2589,6 +2596,10 @@ fn scenario_case(
             )).await?;
         } else if barbarian_sven {
             Box::pin(super::super::qcx62_sven::exercise(
+                &mut owner, &mut admitted, &h, &authority, trigger,
+            )).await?;
+        } else if barbarian_fine {
+            Box::pin(super::super::qcx62_sven_fine::exercise(
                 &mut owner, &mut admitted, &h, &authority, trigger,
             )).await?;
         } else if name == "engitem-native-seal-paint" {

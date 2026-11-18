@@ -12,7 +12,8 @@ fn koshei_paid_hand_in_and_delayed_collection_are_source_bound() -> Result<(), S
         start.fee,
         Some(MonetaryFee {
             gold: 5000,
-            include_bank: true
+            include_bank: true,
+            multiplier_track: None,
         })
     );
     assert_eq!(

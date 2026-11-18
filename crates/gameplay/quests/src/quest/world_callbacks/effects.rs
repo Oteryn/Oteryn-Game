@@ -484,6 +484,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                             .any(|ingredient| ingredient.item == input.item)
                 })
         })
+        || (!effects.optional_carried_inputs.is_empty() && effects.item_reward.is_some())
         || (count != 0
             && (callback.trigger != Trigger::Use
                 || !callback.has_state()

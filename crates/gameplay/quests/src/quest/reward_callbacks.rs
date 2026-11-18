@@ -112,6 +112,10 @@ pub struct OutfitReward {
 pub struct MonetaryFee {
     pub gold: u64,
     pub include_bank: bool,
+    /// Price per unit of this existing Quest track. The writer uses its locked value.
+    /// Crystal 201189f8 data-global/npc/sven.lua:118-126 charges per husky.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub multiplier_track: Option<String>,
 }
 
 /// Immutable creation-sex eligibility, independent of selected appearance.
@@ -1003,6 +1007,10 @@ fn validate_document_with_capacity(
             || c.fee.as_ref().is_some_and(|fee| {
                 fee.gold == 0
                     || fee.gold > 1_000_000_000_000
+                    || fee.multiplier_track.as_deref().is_some_and(|track| {
+                        !super::valid_quest_key(track)
+                            || !track.starts_with("oteryn:quest-progress/")
+                    })
                     || c.take.iter().any(|item| {
                         matches!(
                             item.item.as_str(),
@@ -2730,6 +2738,7 @@ mod lane_counter_tests {
         paid.fee = Some(MonetaryFee {
             gold: 50,
             include_bank: false,
+            multiplier_track: None,
         });
         let first = callback_hash(paid.clone(), Vec::new())?;
         assert_ne!(first, baseline);
@@ -2738,6 +2747,7 @@ mod lane_counter_tests {
         paid.fee = Some(MonetaryFee {
             gold: 50,
             include_bank: true,
+            multiplier_track: None,
         });
         assert_ne!(callback_hash(paid, Vec::new())?, first);
         let mut premium = legacy.clone();
