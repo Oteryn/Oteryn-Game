@@ -490,6 +490,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let mut boss_fights = if encounter.boss_phases.is_some() {
+            let Ok(mut fights) = states.encounter_phases.bosses.lock() else {
+                return UseDisposition::Rejected;
+            };
+            fights.retain(|fight| fight.active(runtime));
+            if fights.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                || fights.try_reserve(1).is_err()
+            {
+                return UseDisposition::Exhausted;
+            }
+            Some(fights)
+        } else {
+            None
+        };
         let timeout = encounter.solo_timeout.map(|timeout| RoomDeadline {
             due: self
                 .owner_now()
@@ -513,7 +527,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
+        let Ok((snapshots, (phase, bosses, actors, roster))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
             |runtime, actors| {
@@ -522,7 +536,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
                     )?)
                 } else { None };
-                credits
+                let phase = credits
                     .map(|credits| {
                         super::super::encounter_phases::bind(
                             runtime,
@@ -534,7 +548,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             self.movement_cells().clone(),
                         )
                     })
-                    .transpose().map(|phase| (phase, actors.to_vec(), roster))
+                    .transpose()?;
+                let bosses = encounter.boss_phases.as_ref().map(|_| {
+                    super::super::encounter_phases::bosses::BossFight::bind(
+                        runtime, encounter, actors, self.movement_cells().clone(),
+                    )
+                }).transpose()?;
+                Ok((phase, bosses, actors.to_vec(), roster))
             },
             || {
                 map.facts
@@ -550,6 +570,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let (Some(phases), Some(phase)) = (&mut phases, phase) {
             phases.push(phase);
         }
+        if let (Some(fights), Some(bosses)) = (&mut boss_fights, bosses) {
+            fights.push(bosses);
+        }
+        drop(boss_fights);
         drop(phases);
         if let Some(visits) = &mut visits {
             visits.push(EncounterVisit {

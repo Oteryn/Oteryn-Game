@@ -119,6 +119,8 @@ pub struct ActorCombatState {
     pub(super) soul_war_defense_delta: u32,
     /// Set only by the closed Greed/Malice source immunity stat owner.
     pub(super) soul_war_source_immunity: bool,
+    /// Holy-area feedback attached to the active authored boss speech shield.
+    pub(super) boss_speech_shield: Option<u8>,
     /// Literal absent-KV state differs from an explicitly reduced zero.
     pub(super) soul_war_cruelty_drain: Option<u64>,
     pub(super) soul_war_player_source: Option<Arc<super::soul_war_player_source::CurrentPlayerSource>>,

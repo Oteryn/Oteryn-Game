@@ -8,6 +8,8 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
+pub(super) mod bosses;
+
 const MAX_ENCOUNTERS: usize = 64;
 
 #[derive(Debug)]
@@ -24,6 +26,7 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    pub(super) bosses: Mutex<Vec<bosses::BossFight>>,
 }
 
 impl Registry {
@@ -87,6 +90,7 @@ impl Registry {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
     ) {
+        self.boss_death(runtime, actor);
         let Ok(mut active) = self.active.lock() else {
             return;
         };

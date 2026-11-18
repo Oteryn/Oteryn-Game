@@ -357,6 +357,115 @@ pub struct Encounter {
     /// An exact solo STEP cohort is sent to this exit after its fight window.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub solo_timeout: Option<SoloRoomTimeout>,
+    /// Live phases owned by the exact creature incarnations admitted by this encounter.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boss_phases: Option<BossPhases>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct BossPhases {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transformation: Option<BossTransformation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub death_replacement: Option<BossDeathReplacement>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub speech_shield: Option<BossSpeechShield>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct BossTransformation {
+    pub creature: String,
+    pub replacement: String,
+    pub at_percent: u8,
+    pub speech: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct BossDeathReplacement {
+    pub creature: String,
+    pub replacement: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct BossSpeechShield {
+    pub creature: String,
+    pub at_percent: u8,
+    pub lives: u8,
+    pub cooldown_ms: u32,
+    pub prompts: Vec<BossSpeechPrompt>,
+    pub summons: Vec<String>,
+    pub accepted_speech: String,
+    pub rejected_speech: String,
+    pub immunity_effect: u8,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct BossSpeechPrompt {
+    pub speech: String,
+    pub answers: Vec<String>,
+}
+
+impl BossPhases {
+    fn valid(&self, encounter: &Encounter, callback: &Callback) -> bool {
+        let key = super::super::valid_quest_key;
+        let present = |key: &str| {
+            encounter
+                .monsters
+                .iter()
+                .filter(|m| m.creature == key)
+                .count()
+                == 1
+        };
+        let spoken = |line: &str| {
+            !line.is_empty() && line.len() <= 1_020 && !line.chars().any(char::is_control)
+        };
+        let percent = |p| (1..100).contains(&p);
+        callback.trigger == Trigger::Use
+            && encounter.phase.is_none()
+            && encounter.timing.is_none()
+            && encounter.solo_timeout.is_none()
+            && (self.transformation.is_some()
+                || self.death_replacement.is_some()
+                || self.speech_shield.is_some())
+            && self.transformation.as_ref().is_none_or(|t| {
+                present(&t.creature)
+                    && key(&t.replacement)
+                    && t.replacement != t.creature
+                    && percent(t.at_percent)
+                    && spoken(&t.speech)
+            })
+            && self.death_replacement.as_ref().is_none_or(|r| {
+                present(&r.creature) && key(&r.replacement) && r.replacement != r.creature
+            })
+            && self.speech_shield.as_ref().is_none_or(|s| {
+                present(&s.creature)
+                    && self
+                        .transformation
+                        .as_ref()
+                        .is_none_or(|t| t.creature != s.creature)
+                    && percent(s.at_percent)
+                    && (1..=8).contains(&s.lives)
+                    && (1..=60_000).contains(&s.cooldown_ms)
+                    && (1..=16).contains(&s.prompts.len())
+                    && s.prompts.iter().all(|p| {
+                        spoken(&p.speech)
+                            && (1..=4).contains(&p.answers.len())
+                            && p.answers.iter().all(|a| spoken(a))
+                    })
+                    && (1..=8).contains(&s.summons.len())
+                    && s.summons
+                        .iter()
+                        .all(|summon| summon != &s.creature && key(summon))
+                    && spoken(&s.accepted_speech)
+                    && spoken(&s.rejected_speech)
+                    && s.immunity_effect != 0
+            })
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -960,20 +1069,25 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if encounter.solo_timeout.is_some_and(|timeout| {
-            callback.personal_room_entry().is_none()
-                || encounter.phase.is_some()
-                || encounter.monsters.len() != 1
-                || !(1..=3_600_000).contains(&timeout.after_ms)
-                || !pos(timeout.exit)
-                || in_room(timeout.exit)
-                || timeout.boss_cooldown_seconds.is_some_and(|seconds| {
-                    !(1..=30 * 24 * 60 * 60).contains(&seconds)
-                        || !encounter.monsters[0]
-                            .creature
-                            .starts_with("oteryn:creature.")
-                })
-        }) || (encounter.minimum_level == 0 && !source_party && encounter.solo_timeout.is_none())
+        if encounter
+            .boss_phases
+            .as_ref()
+            .is_some_and(|phases| !phases.valid(encounter, callback))
+            || encounter.solo_timeout.is_some_and(|timeout| {
+                callback.personal_room_entry().is_none()
+                    || encounter.phase.is_some()
+                    || encounter.monsters.len() != 1
+                    || !(1..=3_600_000).contains(&timeout.after_ms)
+                    || !pos(timeout.exit)
+                    || in_room(timeout.exit)
+                    || timeout.boss_cooldown_seconds.is_some_and(|seconds| {
+                        !(1..=30 * 24 * 60 * 60).contains(&seconds)
+                            || !encounter.monsters[0]
+                                .creature
+                                .starts_with("oteryn:creature.")
+                    })
+            })
+            || (encounter.minimum_level == 0 && !source_party && encounter.solo_timeout.is_none())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()

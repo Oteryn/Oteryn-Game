@@ -81,6 +81,7 @@ mod state_operations;
 mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
+pub use effects::BossPhases;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, CyclingAppearanceGuard, Encounter, EncounterMonster,
     EncounterPhase, EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement,

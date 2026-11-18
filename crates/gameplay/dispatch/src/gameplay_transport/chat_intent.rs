@@ -1140,7 +1140,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } => self.session_premium_gate(session).await,
             _ => PremiumGate::CLOSED,
         };
-        let runtime = self.runtime.lock().await;
+        let mut runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         let quest_tracks = self.states.quest_sessions.lock().ok().and_then(|sessions| {
             let copy = sessions.get(&session)?.copy.as_ref()?;
@@ -1151,7 +1151,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect::<BTreeMap<_, _>>(),
             )
         });
-        chat_with_quest_greetings(
+        let result = chat_with_quest_greetings(
             &self.states.chat,
             &runtime,
             &states,
@@ -1160,7 +1160,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent,
             now,
             quest_tracks.as_ref(),
-        )
+        );
+        if result.disposition == ChatDisposition::Ok
+            && let ChatIntent::Say {
+                mode: ChatSpeechMode::Say,
+                text,
+            } = intent
+            && let Some(map) = self.bundle_map()
+        {
+            states
+                .encounter_phases
+                .boss_hears(&mut runtime, map, actor, text, now.get());
+        }
+        result
     }
 
     /// A private or room line that passed the gate: the sender's level (and vocation, for

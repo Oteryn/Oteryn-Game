@@ -63,7 +63,7 @@ fn soul_war_child_allowed(parent: &str, child: &str) -> bool {
     }
 }
 
-fn source_damage_immunities() -> Vec<String> {
+pub(super) fn source_damage_immunities() -> Vec<String> {
     [
         "physical",
         "fire",
@@ -251,6 +251,13 @@ impl ChannelRuntimeV1 {
         let index = self
             .carrier
             .validate_ref(&self.continuity, current.actor.0)?;
+        if matches!(&self.carrier.slots[index], Slot::CreatureOccupied { spell_combat, .. }
+            if spell_combat.boss_speech_shield.is_some())
+        {
+            let mut expected = base.as_ref().clone();
+            expected.damage_immunities = source_damage_immunities();
+            return Ok(&expected == current.state.policy.as_ref());
+        }
         if !matches!(
             self.binding().runtime_scope(),
             RuntimeScopeRefV1::Instance { .. }

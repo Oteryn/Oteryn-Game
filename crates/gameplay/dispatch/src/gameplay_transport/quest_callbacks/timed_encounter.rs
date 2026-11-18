@@ -174,6 +174,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let mut states = self.states.spell_states.lock().await;
             self.expire_quest_room_visits(&mut runtime, &mut states, map, now);
+            states.encounter_phases.tick_bosses(&mut runtime, map);
         }
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;

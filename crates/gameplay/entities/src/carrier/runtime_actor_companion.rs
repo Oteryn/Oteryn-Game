@@ -73,6 +73,60 @@ pub struct PreparedCreatureProfileTransformation {
     restored_splinter_death: Option<Arc<super::native_xml_spawns::RestoredSplinterDeath>>,
 }
 impl ChannelRuntimeV1 {
+    /// Install the source damage immunity and full heal in the same creature
+    /// turn. Releasing a shield restores the exact pinned damage profile.
+    pub fn set_boss_speech_shield(
+        &mut self,
+        expected: &CompanionSnapshot,
+        effect: Option<u8>,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        self.validate_companion_snapshot(expected)?;
+        self.assert_actor_spell_unreserved(expected.actor)?;
+        if expected.health <= 0
+            || expected.state.master.is_some()
+            || expected.state.policy.is_familiar
+            || effect == Some(0)
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        let base = self.companion_policy(&expected.state.policy.definition_key)?;
+        let index = self.encounter_actor_index(expected.actor)?;
+        let mut next = expected.state.clone();
+        next.policy = base;
+        if effect.is_some() {
+            Arc::make_mut(&mut next.policy).damage_immunities =
+                super::soul_war::source_damage_immunities();
+        }
+        let (carrier, _) = self.encounter_parts_mut();
+        let Slot::CreatureOccupied {
+            companion,
+            health,
+            spell_combat,
+            ..
+        } = &mut carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if spell_combat.soul_war_source_immunity {
+            return Err(CarrierError::PlanConflict);
+        }
+        *companion = Some(Box::new(next));
+        spell_combat.boss_speech_shield = effect;
+        if effect.is_some() {
+            *health = expected.maximum_health;
+        }
+        Ok(())
+    }
+
+    pub fn boss_speech_shield_effect(&self, actor: ExactActorRef) -> Option<u8> {
+        let index = self.encounter_actor_index(actor).ok()?;
+        match self.encounter_slot(index) {
+            Slot::CreatureOccupied { spell_combat, .. } => spell_combat.boss_speech_shield,
+            _ => None,
+        }
+    }
+
     fn creature_transform_content_binding(&self) -> (WorldId, u64, [[u8; 32]; 4], LocalPosition) {
         let p = self.content_pin();
         (
