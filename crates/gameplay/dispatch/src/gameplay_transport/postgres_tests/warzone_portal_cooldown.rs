@@ -37,6 +37,7 @@ const RETURN: Position = at(33462, 32267);
 // The mounted encounter lever supplies the same native boss admission owner.
 const LEVER: Position = at(33650, 32314);
 const TELEPORT_EFFECT: u16 = 11; // Crystal items.xml:45547-45551, CONST_ME_TELEPORT.
+const VICTORY_MS: u32 = 20 * 60 * 1000; // Crystal creaturescripts_bosses_mission_depths.lua:26.
 
 struct Entry {
     portal: Position,
@@ -197,7 +198,7 @@ pub(super) fn terminal_callback(name: &str, lever: Position) -> TestResult<Callb
             "room_min":spec.room_min,"room_max":spec.room_max,
             "death_phases":{"terminal":spec.boss,"replacements":[],"terminal_portal":{
                 "position":spec.exit,"original_appearance":1949,"open_appearance":22761,
-                "destination":spec.alternate,"return_destination":spec.returns_to,"duration_ms":1200000,
+                "destination":spec.alternate,"return_destination":spec.returns_to,"duration_ms":VICTORY_MS,
                 "traversal_effect":TELEPORT_EFFECT
             }}
         }},
@@ -296,7 +297,9 @@ pub(super) async fn exercise_victory(
             .map(|facts| facts.appearance_id)
     };
     assert_eq!(appearance(), Some(1949));
+    let before_death = owner.owner_now().get();
     super::engenc2_cults::kill(owner, admitted, boss, spec.boss, 101).await?;
+    let after_death = owner.owner_now().get();
     assert_eq!(appearance(), Some(22761));
     assert_eq!(
         map.facts
@@ -349,6 +352,8 @@ pub(super) async fn exercise_victory(
         .facts
         .next_movement_decay_time()
         .ok_or("exit deadline")?;
+    let duration_us = u64::from(VICTORY_MS) * 1000;
+    assert!((before_death + duration_us..=after_death + duration_us).contains(&due));
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     assert_eq!(appearance(), Some(22761));
     assert!(map.facts.expire_movement_items(due) > 0);
@@ -358,6 +363,52 @@ pub(super) async fn exercise_victory(
     assert!(
         map.facts
             .quest_callback_native_teleport(key, 1949, tile(spec.returns_to))
+    );
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let approach = match spec.direction {
+            StepDirection::East => (spec.exit.x - 1, spec.exit.y),
+            StepDirection::South => (spec.exit.x, spec.exit.y - 1),
+            _ => return Err("unexpected Warzone exit approach".into()),
+        };
+        let current = runtime.read_actor_position(primary).map_err(debug)?;
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let proof = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime,
+            owner.movement_cells(),
+            primary,
+            admitted.game_session_id,
+            current,
+            super::quest_world_callbacks::local(Position {
+                x: approach.0,
+                y: approach.1,
+                floor: spec.exit.floor,
+            }),
+            false,
+            &closed,
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+    }
+    let (outcome, _) = owner
+        .ordinary_paced_step(
+            primary,
+            admitted.game_session_id,
+            spec.direction,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(outcome.disposition, StepDisposition::Moved);
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(primary)
+            .map_err(debug)?
+            .position(),
+        super::quest_world_callbacks::local(spec.returns_to)
     );
     Ok(())
 }
