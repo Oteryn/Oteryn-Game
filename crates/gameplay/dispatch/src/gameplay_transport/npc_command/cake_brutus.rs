@@ -55,7 +55,27 @@ pub(super) async fn apply(
         let reply = if keyword("help") {
             "Step on the cake base on the isle between visits to all five extraction machines: Thais, Carlin, Darashia, Liberty Bay and Edron."
         } else if keyword("cupcake") {
-            "You can have a blueberry cupcake, a strawberry cupcake or a lemon cupcake."
+            let Ok(Some(fence)) = admission.current_quest_fence(command.game_session_id).await
+            else {
+                return rejected();
+            };
+            if command.item_fence != Some(fence.item_fence()) {
+                return rejected();
+            }
+            // Global spoiler 50857/1164627 puts the offer after the five visits.
+            // Crystal brutus_the_baker.lua:102-112 supplies the exact replies.
+            match admission
+                .root
+                .cake_cupcake_claimed(admission.world_id, fence.character_id)
+                .await
+            {
+                Ok(None) => "I am sorry, but you did not earn your reward yet.",
+                Ok(Some(true)) => "Sorry, but you already got a cupcake this year.",
+                Ok(Some(false)) => {
+                    "You can have a blueberry cupcake, a strawberry cupcake or a lemon cupcake."
+                }
+                Err(_) => return rejected(),
+            }
         } else {
             "Choose a cake cabinet, cake backpack or cake tapestry. I will also give you a cupcake."
         };

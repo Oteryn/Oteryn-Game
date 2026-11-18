@@ -229,6 +229,36 @@ impl DurabilityRoot {
             commit_semantic_transaction(tx,deadline).await?;Ok(present)
         })).await
     }
+    /// Read the cupcake status of a completed errand while Brutus is present.
+    pub async fn cake_cupcake_claimed(
+        &self,
+        world: WorldId,
+        character: crate::domain::CharacterId,
+    ) -> Result<Option<bool>, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let status = sqlx::query_scalar(
+                        "SELECT e.cupcake_claimed
+                         FROM game_cake_errands e
+                         JOIN game_cake_phases p USING (world_id,event_year)
+                         WHERE e.world_id=encode($1,'hex')::uuid
+                           AND e.character_id=encode($2,'hex')::uuid
+                           AND e.event_year=(SELECT max(event_year) FROM game_cake_world_progress WHERE world_id=e.world_id)
+                           AND p.stage=3 AND p.brutus_present AND e.cities=31",
+                    )
+                    .bind(world.as_bytes().as_slice())
+                    .bind(character.as_bytes().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(status)
+                })
+            })
+            .await
+    }
+
     /// Expiry uses the same database clock that opens the seven-day bonus. The
     /// caller installs the remaining duration on the normal condition clock.
     pub async fn cake_world_bonus(
