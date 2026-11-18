@@ -15,6 +15,7 @@ pub(super) const ENERGY: &str = "forgotten-knowledge-prism-death-relocation";
 pub(super) const ESSENCE: &str = "first-dragon-essence-death-phase";
 pub(super) const FALLEN: &str = "first-dragon-fallen-challenger-portal";
 pub(super) const LORE: &str = "forgotten-knowledge-lore-keeper-death-phase";
+pub(super) const LORE_ROUTE: &str = "forgotten-knowledge-lore-keeper-power-route";
 pub(super) const VICTORY: &str = "first-dragon-reward-room-transfer";
 const MOUNTED: &str = "oteryn:creature.mounted_thorn_knight";
 const MOUNTED_SPAWN: Position = at(32624, 32880);
@@ -88,9 +89,20 @@ const REWARD_ROOM: Position = Position {
     y: 31020,
     floor: -13,
 };
+const BOUND_POWER: &str = "oteryn:creature.bound_astral_power";
+const POWER_ROUTE: [Position; 4] = [
+    below(31975, 32856),
+    below(31975, 32839),
+    below(31995, 32839),
+    below(31995, 32856),
+];
+const POWER_ANNOUNCEMENT: &str =
+    "The destruction of the power source gained you more time until the glyph is powered up!";
+const ASTRAL_PEER: Position = at(31981, 32850);
+const ASTRAL_PEER_AFTER_STEP: Position = at(31982, 32850);
 const ASTRAL_ACTORS: [(&str, Position); 5] = [
     ("oteryn:creature.a_shielded_astral_glyph", at(31986, 32840)),
-    ("oteryn:creature.bound_astral_power", below(31975, 32856)),
+    (BOUND_POWER, POWER_ROUTE[0]),
     ("oteryn:creature.the_astral_source", at(31987, 32839)),
     (
         "oteryn:creature.the_distorted_astral_source",
@@ -161,6 +173,17 @@ fn lore_keeper_lever_composes_both_floors_and_glyph_death_spawns_its_successor()
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(LORE, || {
         super::quest_world_callbacks::scenario(LORE, at(32019, 32843), false)
+    })
+}
+
+#[test]
+fn bound_astral_power_routes_from_top_damage_across_floors_at_six_but_not_seven() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(LORE_ROUTE, || {
+        super::quest_world_callbacks::scenario(LORE_ROUTE, at(32019, 32843), false)
     })
 }
 
@@ -292,8 +315,8 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
             .map_err(|_| "one Fallen Challenger phase callback")?;
         return Ok(callback);
     }
-    if name == LORE {
-        return lore_callback(lever);
+    if matches!(name, LORE | LORE_ROUTE) {
+        return lore_callback(name, lever);
     }
     if name == ENERGY {
         return energy_callback(lever);
@@ -365,24 +388,34 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
     Ok(callback)
 }
 
-fn lore_callback(lever: Position) -> TestResult<Callback> {
+fn lore_callback(name: &str, lever: Position) -> TestResult<Callback> {
     let players: Vec<_> = (32018..=32020)
         .flat_map(|x| (32844..=32848).map(move |y| json!({"from":at(x,y), "to":at(31985,32851)})))
         .collect();
     let monsters =
         ASTRAL_ACTORS.map(|(creature, position)| json!({"creature":creature,"position":position}));
+    let mut phases = json!({"terminal":KEEPER,"replacements":[{"defeated":GLYPH,"spawn":[{"creature":KEEPER}]}]});
+    if name == LORE_ROUTE {
+        let stops: Vec<_> = POWER_ROUTE
+            .iter()
+            .zip(POWER_ROUTE.iter().cycle().skip(1))
+            .map(|(near, spawn_at)| json!({"near":near,"spawn_at":spawn_at}))
+            .collect();
+        phases["contributor_route"] = json!({"creature":BOUND_POWER,"maximum_distance":6,"stops":stops,"announcement":POWER_ANNOUNCEMENT});
+    }
     let data = json!({"schema":1,"callbacks":[{
-        "key":format!("oteryn:quest-callback/{LORE}"),"quest":"oteryn:quest.forgotten_knowledge_quest",
+        "key":format!("oteryn:quest-callback/{name}"),"quest":"oteryn:quest.forgotten_knowledge_quest",
         "trigger":"use","selector":{"position":lever,"appearance":8911},
         "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
         "effects":{"encounter":{
             "minimum_level":0,"players":players,"monsters":monsters,
             "room_min":at(31968,32821),"room_max":below(32004,32865),"shared_staging":true,
-            "death_phases":{"terminal":KEEPER,"replacements":[{"defeated":GLYPH,"spawn":[{"creature":KEEPER}]}]}
+            "death_phases":phases
         }},
         "sources":[
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/actions_the_last_lore_keeper.lua:1-7,50-74",
-            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua:2-4"
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua:2-4",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bound_astral_power.lua:1-6,15-26"
         ]
     }]});
     let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
@@ -449,6 +482,10 @@ pub(super) fn world(
             FINALE,
             at(33622, 31023),
         ],
+        LORE_ROUTE => POWER_ROUTE
+            .into_iter()
+            .chain([ASTRAL_PEER, ASTRAL_PEER_AFTER_STEP])
+            .collect(),
         VICTORY => vec![at(33617, 31023), at(33622, 31023), REWARD_ROOM],
         _ => Vec::new(),
     };
@@ -573,6 +610,101 @@ async fn flower_bowl(
             local(FINALE)
         ),
         "the replacement's death completes the fixture encounter"
+    );
+    Ok(())
+}
+
+async fn astral_power_route(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef};
+    use oteryn_gameplay_entities::OwnerDamageCommand;
+    use oteryn_protocol_oteryn::world_spatial::StepDisposition;
+
+    let peer = super::ferumbras_crystal_reset::admit_peer(owner, h, ASTRAL_PEER).await?;
+    let peer_session = owner
+        .runtime
+        .lock()
+        .await
+        .positioned_melee_census()
+        .map_err(debug)?
+        .into_iter()
+        .find_map(|(actor, _, session)| (actor == peer).then_some(session).flatten())
+        .ok_or("astral peer session")?;
+    let [original] = live(owner, BOUND_POWER)
+        .await?
+        .try_into()
+        .map_err(|_| "initial astral power")?;
+    let mut defeated = original;
+    for (attack, x) in [(110, ASTRAL_PEER.x), (111, ASTRAL_PEER_AFTER_STEP.x)] {
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let peer_position = runtime.read_actor_position(peer).map_err(debug)?.position();
+            assert_eq!(
+                peer_position,
+                super::quest_world_callbacks::local(at(x, 32850))
+            );
+            let health = runtime.companion_snapshot(defeated).map_err(debug)?.health;
+            assert!(health > 2);
+            runtime
+                .borrow_exact_actor_commit_at(owner.owner_now().get() / 1000)
+                .commit_damage_for_bound_attacker(
+                    defeated,
+                    peer,
+                    CommandRef::new(peer_session, CommandId::new(attack).map_err(debug)?),
+                    0,
+                    OwnerDamageCommand {
+                        target: BOUND_POWER.as_bytes(),
+                        occurrence: b"astral-peer-hit",
+                        binding: b"astral-peer-contributor",
+                        damage: health - 1,
+                    },
+                )
+                .map_err(debug)?;
+        }
+        // The admitted player lands outside every qualifying corner and deals the last hit.
+        super::engenc2_cults::kill(owner, admitted, defeated, BOUND_POWER, attack).await?;
+        let remaining = live(owner, BOUND_POWER).await?;
+        if attack == 110 {
+            let [successor] = remaining
+                .try_into()
+                .map_err(|_| "one successor from the top contributor")?;
+            let at = owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(successor)
+                .map_err(debug)?
+                .position();
+            assert_eq!(at, super::quest_world_callbacks::local(POWER_ROUTE[1]));
+            defeated = successor;
+            let (outcome, _) = owner
+                .ordinary_paced_step(peer, peer_session, StepDirection::East, None, None)
+                .await;
+            assert_eq!(outcome.disposition, StepDisposition::Moved);
+        } else {
+            assert!(
+                remaining.is_empty(),
+                "distance seven does not summon another member"
+            );
+        }
+    }
+    let map = owner.bundle_map().ok_or("Astral arena map")?;
+    let lines: Vec<_> = map
+        .facts
+        .movement_speech_since(0)
+        .into_iter()
+        .filter(|(_, speech)| speech.text == POWER_ANNOUNCEMENT)
+        .collect();
+    let [(_, speech)] = lines.as_slice() else {
+        return Err("one Bound Astral Power announcement".into());
+    };
+    assert_eq!(speech.speaker, original);
+    assert_eq!(
+        (speech.position.x, speech.position.y, speech.position.floor),
+        (POWER_ROUTE[0].x, POWER_ROUTE[0].y, POWER_ROUTE[0].floor)
     );
     Ok(())
 }
@@ -903,7 +1035,7 @@ pub(super) async fn exercise(
             returned.facing(),
             Some(crate::foundation::MovementFacing::South)
         );
-    } else if name == LORE {
+    } else if matches!(name, LORE | LORE_ROUTE) {
         let runtime = owner.runtime.lock().await;
         let census = runtime.current_live_creature_census().map_err(debug)?;
         for (creature, position) in ASTRAL_ACTORS {
@@ -925,6 +1057,9 @@ pub(super) async fn exercise(
             );
         }
         drop(runtime);
+        if name == LORE_ROUTE {
+            astral_power_route(owner, admitted, h).await?;
+        }
         let [glyph] = live(owner, GLYPH)
             .await?
             .try_into()
