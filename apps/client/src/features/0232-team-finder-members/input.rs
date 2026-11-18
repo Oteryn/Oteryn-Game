@@ -75,7 +75,7 @@ impl PlayLink {
 /// The leader's advertisement typed as fields: minimum and maximum level, vocation mask,
 /// team size, free slots, party members join (0/1), activity (1 boss, 2 hunt, 3 quest),
 /// activity id, hunting area and an optional start timestamp.
-pub(in crate::play) fn listing_from_fields(
+pub(crate) fn listing_from_fields(
     fields: &[String],
 ) -> Option<oteryn_client_ui::team_finder_leader::LeaderListing> {
     use oteryn_client_ui::team_finder_leader::{LeaderListing, TeamTarget};
@@ -153,13 +153,23 @@ impl PlayLink {
             MemberStatus, TeamFinderResult, leader as decide, member, query,
         };
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.discovery.teams != *expected
-            || mailbox.discovery.leader != *leader
-            || !mailbox.discovery.teams.open
-        {
+        if !mailbox.discovery.teams.open {
+            return false;
+        }
+        if action == TeamControl::Close {
+            mailbox.discovery.teams.open = false;
+            return true;
+        }
+        let teams = &mailbox.discovery.teams;
+        if mailbox.discovery.leader != *leader {
             return false;
         }
         if matches!(action, TeamControl::Publish(_) | TeamControl::Withdraw) {
+            // Listing actions depend on the leader observation, even when a reply
+            // has changed the applicants page under the same mailbox lock.
+            if teams.applicants != expected.applicants {
+                return false;
+            }
             let panel = &mut mailbox.discovery.leader;
             let listing = match action {
                 TeamControl::Publish(fields) => {
@@ -192,11 +202,19 @@ impl PlayLink {
             }
             return true;
         }
-        let panel = &mut mailbox.discovery.teams;
-        if action == TeamControl::Close {
-            panel.open = false;
-            return true;
+        if teams != expected {
+            // Text edits can settle after layout. Filtering the same page is still
+            // valid when the only unprojected change is the selection highlight.
+            if !matches!(action, TeamControl::Filter(_)) {
+                return false;
+            }
+            let mut expected = expected.clone();
+            expected.selected_row = teams.selected_row;
+            if *teams != expected {
+                return false;
+            }
         }
+        let panel = &mut mailbox.discovery.teams;
         if !panel.selected || panel.pending.is_some() {
             return false;
         }

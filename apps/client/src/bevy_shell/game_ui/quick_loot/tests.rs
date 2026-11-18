@@ -419,6 +419,7 @@ fn quick_loot_can_add_carried_item_and_remove_confirmed_filter_entry() -> TestRe
             },
         },
     )]);
+    super::super::install::install_scroll_memory(&mut app);
     open(&mut app)?;
     fn named(app: &mut App, name: &str) -> Result<Entity, Box<dyn std::error::Error>> {
         app.world_mut()
@@ -430,7 +431,26 @@ fn quick_loot_can_add_carried_item_and_remove_confirmed_filter_entry() -> TestRe
     let add = named(&mut app, "quick_loot.add.accept")?;
     app.world_mut().trigger(Activate { entity: add });
     app.update();
+    app.world_mut().trigger(Activate { entity: add });
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query::<&Name>()
+            .iter(app.world())
+            .filter(|name| name.as_str() == "quick_loot.pick.7")
+            .count(),
+        1
+    );
     let pick = named(&mut app, "quick_loot.pick.7")?;
+    let column = app
+        .world()
+        .get::<ChildOf>(pick)
+        .ok_or("choices column")?
+        .parent();
+    assert_eq!(
+        app.world().get::<ChildOf>(column),
+        app.world().get::<ChildOf>(add)
+    );
     app.world_mut().trigger(Activate { entity: pick });
     let wire = request(&mut commands)?;
     assert_eq!(wire.action, QuickLootAction::FilterAdd);
@@ -440,10 +460,41 @@ fn quick_loot_can_add_carried_item_and_remove_confirmed_filter_entry() -> TestRe
     app.update();
     assert!(panel(&app)?.accepted.contains(&42));
     let remove = named(&mut app, "quick_loot.remove.accept.42")?;
+    let filters = |app: &mut App| -> Result<Entity, Box<dyn std::error::Error>> {
+        let title = app
+            .world_mut()
+            .query::<(Entity, &Text)>()
+            .iter(app.world())
+            .find_map(|(e, t)| (t.0 == "QuickLoot filter").then_some(e))
+            .ok_or("filter title")?;
+        Ok(app
+            .world()
+            .get::<ChildOf>(title)
+            .ok_or("filter pane")?
+            .parent())
+    };
+    let viewport = filters(&mut app)?;
+    app.world_mut()
+        .entity_mut(viewport)
+        .insert(ScrollPosition(Vec2::new(0., 120.)));
     app.world_mut().trigger(Activate { entity: remove });
     assert_eq!(
         request(&mut commands)?.action,
         QuickLootAction::FilterRemove
+    );
+    app.update();
+    let pending = filters(&mut app)?;
+    assert_eq!(
+        app.world().get::<ScrollPosition>(pending).map(|p| p.0.y),
+        Some(120.)
+    );
+    config_response(&outbox, CommandStatus::Accepted)?;
+    app.update();
+    assert!(!panel(&app)?.accepted.contains(&42));
+    let confirmed = filters(&mut app)?;
+    assert_eq!(
+        app.world().get::<ScrollPosition>(confirmed).map(|p| p.0.y),
+        Some(120.)
     );
     Ok(())
 }

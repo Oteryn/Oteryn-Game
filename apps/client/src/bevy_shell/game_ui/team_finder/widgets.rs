@@ -2,36 +2,94 @@ use super::*;
 use bevy::{
     input_focus::tab_navigation::{TabGroup, TabIndex},
     text::TextCursorStyle,
-    ui::InteractionDisabled,
+    ui::{InteractionDisabled, ScrollPosition},
     ui_widgets::{ScrollArea, TextInput},
 };
 use oteryn_client_ui::team_finder::{MemberStatus, TeamFinderResult};
 use oteryn_client_ui::team_finder_leader::{LeaderListing, TeamTarget};
 use oteryn_client_ui_bevy as source;
-/// How many leader listing editors there are, in the field order the session parses.
+
 pub(super) const LISTING_FIELDS: usize = 9;
+
 /// The leader listing editor captions, in the field order the session parses.
-fn listing_captions() -> [&'static str; LISTING_FIELDS] {
+fn listing_captions() -> [fn() -> &'static str; LISTING_FIELDS] {
     [
-        tr!("Minimum level"),
-        tr!("Maximum level"),
-        tr!("Vocation mask (1-255, at least one vocation)"),
-        tr!("Team size"),
-        tr!("Free slots"),
-        tr!("Party members join (0 or 1)"),
-        tr!("Activity (1 boss, 2 hunt, 3 quest)"),
-        tr!("Boss, hunt or quest id"),
-        tr!("Hunting area (hunts only)"),
+        || tr!("Minimum level"),
+        || tr!("Maximum level"),
+        || tr!("Vocation mask (1-255, at least one vocation)"),
+        || tr!("Team size"),
+        || tr!("Free slots"),
+        || tr!("Party members join (0 or 1)"),
+        || tr!("Activity (1 boss, 2 hunt, 3 quest)"),
+        || tr!("Boss, hunt or quest id"),
+        || tr!("Hunting area (hunts only)"),
     ]
 }
+
+#[derive(Component)]
+pub(super) struct Caption(fn() -> &'static str);
+
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Tab {
+    Join,
+    Manage,
+}
+
+impl Tab {
+    pub(super) fn for_panel(panel: &Panel) -> Self {
+        if panel.applicants {
+            Self::Manage
+        } else {
+            Self::Join
+        }
+    }
+}
+
+struct Button {
+    entity: Entity,
+    text: Entity,
+}
+
+impl Button {
+    fn project(&self, commands: &mut Commands, key: Key, kind: Kind, value: &str, enabled: bool) {
+        let mut entity = commands.entity(self.entity);
+        entity.insert((
+            Control { key, kind },
+            Name::new(format!("Team Finder: {value}")),
+        ));
+        if enabled {
+            entity.remove::<InteractionDisabled>();
+        } else {
+            entity.insert(InteractionDisabled);
+        }
+        commands.entity(self.text).insert(Text::new(value));
+    }
+}
+
+struct Page {
+    entity: Entity,
+    list: Entity,
+    status: Entity,
+    rows: Vec<Button>,
+    listing_handles: Vec<u64>,
+    feedback: Entity,
+    buttons: [Button; 8],
+}
+
+pub(super) struct Widgets {
+    header: Entity,
+    join: Page,
+    manage: Page,
+    leader_feedback: Entity,
+    close: Button,
+}
+
 pub(super) fn build(
     commands: &mut Commands,
     skins: &Skins,
-    key: Key,
-    panel: &Panel,
-    leader: &Leader,
-    values: &[String; LISTING_FIELDS],
-) -> Entity {
+    search: [&str; 2],
+    listing: &[String; LISTING_FIELDS],
+) -> (Entity, Widgets) {
     let root = commands
         .spawn((
             GameModal,
@@ -67,244 +125,121 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(root).add_child(dialog);
-    let enabled = panel.selected && panel.pending.is_none();
-    if panel.applicants {
-        source::dialog_caption(
-            commands,
-            dialog,
-            tr!("Social — Manage Team"),
-            skins.font.clone(),
-        );
-        manage(commands, skins, key, dialog, panel, leader, values);
-        return root;
-    }
-    source::dialog_caption(
-        commands,
-        dialog,
-        tr!("Social — Join Team"),
-        skins.font.clone(),
-    );
-    let tabs = row(commands, dialog);
-    button(
-        commands,
-        skins,
-        tabs,
-        key,
-        Kind::Applicants(false),
-        tr!("Manage Team"),
-        enabled,
-    );
-    label(
-        commands,
-        skins,
-        dialog,
+
+    let header = source::dialog_caption(commands, dialog, "", skins.font.clone());
+    let join = page_root(commands, dialog, Tab::Join);
+    let join_tabs = row(commands, join);
+    let join_switch = button(commands, skins, join_tabs, false);
+    caption(commands, skins, join, || {
         tr!(
             "Search this page by leader name and level (blank = any level). Filters apply to each page."
-        ),
-    );
-    for (field, value) in [
-        (Field::Name, panel.filter.name.clone()),
-        (
-            Field::Level,
-            panel
-                .filter
-                .level
-                .map(|level| level.to_string())
-                .unwrap_or_default(),
-        ),
-    ] {
-        input(commands, skins, dialog, field, value);
-    }
-    let filters = row(commands, dialog);
-    button(
-        commands,
-        skins,
-        filters,
-        key,
-        Kind::Filter(panel.filter.clone()),
-        tr!("Search"),
-        enabled,
-    );
-    let mut open = panel.filter.clone();
-    open.only_open = !open.only_open;
-    button(
-        commands,
-        skins,
-        filters,
-        key,
-        Kind::Filter(open),
-        if panel.filter.only_open {
-            tr!("Open slots only")
-        } else {
-            tr!("All capacities")
-        },
-        enabled,
-    );
-    let mut target = panel.filter.clone();
-    target.target = (target.target.min(3) + 1) % 4;
-    button(
-        commands,
-        skins,
-        filters,
-        key,
-        Kind::Filter(target),
-        [
-            tr!("All activities"),
-            tr!("Boss"),
-            tr!("Hunt"),
-            tr!("Quest"),
-        ][usize::from(panel.filter.target.min(3))],
-        enabled,
-    );
-    let list = commands
-        .spawn((
-            ScrollArea,
-            Node {
-                height: px(300.),
-                min_height: px(0.),
-                overflow: Overflow::scroll_y(),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(4.),
-                ..default()
-            },
-        ))
-        .id();
-    commands.entity(dialog).add_child(list);
-    if !panel.selected {
-        label(
-            commands,
-            skins,
-            list,
-            tr!("Team discovery is unavailable in this session"),
-        );
-    } else if panel.result.is_none() && panel.pending.is_none() {
-        label(commands, skins, list, tr!("Refresh to search for teams."));
-    } else if panel.result.is_some() && panel.visible_indices().is_empty() {
-        label(
-            commands,
-            skins,
-            list,
-            tr!("No teams match on this page. Adjust filters or browse the next page."),
-        );
-    }
-    for (index, name) in panel.visible_names().iter().enumerate() {
-        let caption = format!(
-            "{}{}",
-            if index == panel.selected_row {
-                "> "
-            } else {
-                ""
-            },
-            name
-        );
-        button(
-            commands,
-            skins,
-            list,
-            key,
-            Kind::Select(index),
-            &caption,
-            enabled,
-        );
-    }
-    label(commands, skins, dialog, &panel.feedback);
-    let footer = row(commands, dialog);
-    button(
-        commands,
-        skins,
-        footer,
-        key,
-        Kind::Browse(false),
-        tr!("Refresh"),
-        enabled,
-    );
-    button(
-        commands,
-        skins,
-        footer,
-        key,
-        Kind::Browse(true),
-        tr!("Next page"),
-        enabled && panel.next().is_some(),
-    );
-    let selected = match &panel.result {
-        Some(TeamFinderResult::Browse { listings, .. }) => panel
-            .visible_indices()
-            .get(panel.selected_row)
-            .and_then(|index| listings.get(*index)),
-        _ => None,
-    };
-    let apply = selected.is_some_and(|row| {
-        matches!(row.status, MemberStatus::None | MemberStatus::Denied)
-            && row.occupied_slots < row.listing.slots
-    });
-    let cancel = selected.is_some_and(|row| {
-        matches!(
-            row.status,
-            MemberStatus::Pending | MemberStatus::Invited | MemberStatus::Accepted
         )
     });
-    button(
-        commands,
-        skins,
-        footer,
-        key,
-        Kind::Apply(false),
-        tr!("Apply to team"),
-        enabled && apply,
-    );
-    button(
-        commands,
-        skins,
-        footer,
-        key,
-        Kind::Apply(true),
-        tr!("Cancel application"),
-        enabled && cancel,
-    );
-    button(
-        commands,
-        skins,
-        footer,
-        key,
-        Kind::Close,
-        tr!("Close"),
-        true,
-    );
-    root
+    for (field, value) in [Field::Name, Field::Level].into_iter().zip(search) {
+        input(commands, skins, join, field, value.to_owned());
+    }
+    let filters = row(commands, join);
+    let [search, capacity, activity] = buttons(commands, skins, filters);
+    let (list, status) = result_list(commands, skins, join, 300.);
+    let feedback = label(commands, skins, join, "");
+    let footer = row(commands, join);
+    let [refresh, next, apply, cancel] = buttons(commands, skins, footer);
+    let join = Page {
+        entity: join,
+        list,
+        status,
+        feedback,
+        rows: Vec::new(),
+        listing_handles: Vec::new(),
+        buttons: [
+            join_switch,
+            search,
+            capacity,
+            activity,
+            refresh,
+            next,
+            apply,
+            cancel,
+        ],
+    };
+
+    let manage = page_root(commands, dialog, Tab::Manage);
+    let manage_tabs = row(commands, manage);
+    let join_tab = button(commands, skins, manage_tabs, false);
+    caption(commands, skins, manage, || {
+        tr!("Players who applied to or were invited to your team. Select one to decide.")
+    });
+    let (list, status) = result_list(commands, skins, manage, 180.);
+    let feedback = label(commands, skins, manage, "");
+    let decisions = row(commands, manage);
+    let [refresh, next, invite, accept, decline] = buttons(commands, skins, decisions);
+    caption(commands, skins, manage, || tr!("Your team listing"));
+    for (index, value) in listing_captions().into_iter().enumerate() {
+        let line = row(commands, manage);
+        caption(commands, skins, line, value);
+        input(
+            commands,
+            skins,
+            line,
+            Field::Listing(index),
+            listing[index].clone(),
+        );
+    }
+    let leader_feedback = label(commands, skins, manage, "");
+    let footer = row(commands, manage);
+    let [publish, withdraw] = buttons(commands, skins, footer);
+    let manage = Page {
+        entity: manage,
+        list,
+        status,
+        feedback,
+        rows: Vec::new(),
+        listing_handles: Vec::new(),
+        buttons: [
+            join_tab, refresh, next, invite, accept, decline, publish, withdraw,
+        ],
+    };
+
+    let close = button(commands, skins, dialog, false);
+    (
+        root,
+        Widgets {
+            header,
+            join,
+            manage,
+            leader_feedback,
+            close,
+        },
+    )
 }
-/// The leader's applicants page and advertisement editor.
-fn manage(
+
+fn page_root(commands: &mut Commands, dialog: Entity, tab: Tab) -> Entity {
+    let page = commands
+        .spawn((
+            tab,
+            Node {
+                flex_direction: FlexDirection::Column,
+                row_gap: px(6.),
+                min_height: px(0.),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(dialog).add_child(page);
+    page
+}
+
+fn result_list(
     commands: &mut Commands,
     skins: &Skins,
-    key: Key,
-    dialog: Entity,
-    panel: &Panel,
-    leader: &Leader,
-    values: &[String; LISTING_FIELDS],
-) {
-    let ready = panel.selected && panel.pending.is_none();
-    let tabs = row(commands, dialog);
-    button(
-        commands,
-        skins,
-        tabs,
-        key,
-        Kind::Browse(false),
-        tr!("Join Team"),
-        ready,
-    );
-    label(
-        commands,
-        skins,
-        dialog,
-        tr!("Players who applied to or were invited to your team. Select one to decide."),
-    );
+    page: Entity,
+    height: f32,
+) -> (Entity, Entity) {
     let list = commands
         .spawn((
             ScrollArea,
             Node {
-                height: px(180.),
+                height: px(height),
                 min_height: px(0.),
                 overflow: Overflow::scroll_y(),
                 flex_direction: FlexDirection::Column,
@@ -313,113 +248,282 @@ fn manage(
             },
         ))
         .id();
-    commands.entity(dialog).add_child(list);
-    if !panel.selected {
-        label(
-            commands,
-            skins,
-            list,
-            tr!("Team discovery is unavailable in this session"),
-        );
-    } else if panel.result.is_none() && panel.pending.is_none() {
-        label(
-            commands,
-            skins,
-            list,
-            tr!("Refresh to see your applicants."),
-        );
-    } else if panel.result.is_some() && panel.visible_indices().is_empty() {
-        label(commands, skins, list, tr!("No applicants on this page."));
-    }
-    for (index, name) in panel.visible_names().iter().enumerate() {
-        let caption = format!(
-            "{}{}",
-            if index == panel.selected_row {
-                "> "
-            } else {
-                ""
-            },
-            name
-        );
-        button(
-            commands,
-            skins,
-            list,
-            key,
-            Kind::Select(index),
-            &caption,
-            ready,
-        );
-    }
-    label(commands, skins, dialog, &panel.feedback);
-    let decisions = row(commands, dialog);
-    button(
-        commands,
-        skins,
-        decisions,
-        key,
-        Kind::Applicants(false),
-        tr!("Refresh"),
-        ready,
-    );
-    button(
-        commands,
-        skins,
-        decisions,
-        key,
-        Kind::Applicants(true),
-        tr!("Next page"),
-        ready && panel.next().is_some(),
-    );
-    let chosen = ready && panel.handle().is_some();
-    for (action, caption) in [(2, tr!("Invite")), (3, tr!("Accept")), (4, tr!("Decline"))] {
-        button(
-            commands,
-            skins,
-            decisions,
-            key,
-            Kind::Decide(action),
-            caption,
-            chosen,
-        );
-    }
-    label(commands, skins, dialog, tr!("Your team listing"));
-    for (index, (caption, value)) in listing_captions().into_iter().zip(values).enumerate() {
-        let line = row(commands, dialog);
-        label(commands, skins, line, caption);
-        input(commands, skins, line, Field::Listing(index), value.clone());
-    }
-    label(commands, skins, dialog, &leader.feedback);
-    let editable = leader.selected && !leader.pending;
-    let footer = row(commands, dialog);
-    button(
-        commands,
-        skins,
-        footer,
-        key,
-        Kind::Publish(Vec::new()),
-        tr!("Publish listing"),
-        editable,
-    );
-    button(
-        commands,
-        skins,
-        footer,
-        key,
-        Kind::Withdraw,
-        tr!("Remove listing"),
-        editable && leader.confirmed.is_some(),
-    );
-    button(
-        commands,
-        skins,
-        footer,
-        key,
-        Kind::Close,
-        tr!("Close"),
-        true,
-    );
+    commands.entity(page).add_child(list);
+    (list, label(commands, skins, list, ""))
 }
+
+fn visibility(commands: &mut Commands, entity: Entity, visible: bool) {
+    commands
+        .entity(entity)
+        .queue(move |mut entity: EntityWorldMut| {
+            if let Some(mut node) = entity.get_mut::<Node>() {
+                node.display = if visible {
+                    Display::Flex
+                } else {
+                    Display::None
+                };
+            }
+            entity.insert(if visible {
+                Visibility::Inherited
+            } else {
+                Visibility::Hidden
+            });
+        });
+}
+
+impl Page {
+    fn project(
+        &mut self,
+        commands: &mut Commands,
+        skins: &Skins,
+        key: Key,
+        panel: &Panel,
+        tab: Tab,
+    ) {
+        let visible = Tab::for_panel(panel) == tab;
+        visibility(commands, self.entity, visible);
+        if !visible {
+            return;
+        }
+
+        // A pending refresh temporarily clears the result. Compare completed pages.
+        if let Some(result) = &panel.result {
+            let handles: Vec<_> = match result {
+                TeamFinderResult::Browse { listings, .. } => {
+                    listings.iter().map(|row| row.leader_handle).collect()
+                }
+                TeamFinderResult::Applicants { members, .. } => {
+                    members.iter().map(|row| row.handle).collect()
+                }
+            };
+            if self.listing_handles != handles {
+                commands.entity(self.list).insert(ScrollPosition::default());
+                self.listing_handles = handles;
+            }
+        }
+
+        let names = panel.visible_names();
+        let status = if !panel.selected {
+            tr!("Team discovery is unavailable in this session")
+        } else if panel.result.is_none() && panel.pending.is_none() {
+            match tab {
+                Tab::Join => tr!("Refresh to search for teams."),
+                Tab::Manage => tr!("Refresh to see your applicants."),
+            }
+        } else if panel.result.is_some() && names.is_empty() {
+            match tab {
+                Tab::Join => {
+                    tr!("No teams match on this page. Adjust filters or browse the next page.")
+                }
+                Tab::Manage => tr!("No applicants on this page."),
+            }
+        } else {
+            ""
+        };
+        commands.entity(self.status).insert(Text::new(status));
+        visibility(commands, self.status, !status.is_empty());
+        commands
+            .entity(self.feedback)
+            .insert(Text::new(panel.feedback.clone()));
+
+        // Grow with the page, then reuse the same row controls for later replies.
+        while self.rows.len() < names.len() {
+            self.rows.push(button(commands, skins, self.list, true));
+        }
+        for (index, row) in self.rows.iter().enumerate() {
+            let name = names.get(index);
+            visibility(commands, row.entity, name.is_some());
+            let value = match name {
+                Some(name) if index == panel.selected_row => format!("> {name}"),
+                Some(name) => name.clone(),
+                None => String::new(),
+            };
+            row.project(
+                commands,
+                key,
+                Kind::Select(index),
+                &value,
+                name.is_some() && panel.selected && panel.pending.is_none(),
+            );
+        }
+    }
+}
+
+pub(super) fn captions(mut captions: Query<(&Caption, &mut Text)>) {
+    for (caption, mut text) in &mut captions {
+        let value = (caption.0)();
+        if text.0 != value {
+            text.0 = value.into();
+        }
+    }
+}
+
+impl Widgets {
+    pub(super) fn project(
+        &mut self,
+        commands: &mut Commands,
+        skins: &Skins,
+        key: Key,
+        snapshot: &Snapshot,
+    ) {
+        let (_, panel, leader) = snapshot;
+        let title = if panel.applicants {
+            tr!("Social — Manage Team")
+        } else {
+            tr!("Social — Join Team")
+        };
+        commands
+            .entity(self.header)
+            .queue(move |header: EntityWorldMut| {
+                if let Some(text) = header
+                    .get::<Children>()
+                    .and_then(|children| children.first())
+                    .copied()
+                {
+                    header
+                        .into_world_mut()
+                        .entity_mut(text)
+                        .insert(Text::new(title));
+                }
+            });
+        self.join.project(commands, skins, key, panel, Tab::Join);
+        self.manage
+            .project(commands, skins, key, panel, Tab::Manage);
+
+        let ready = panel.selected && panel.pending.is_none();
+        if panel.applicants {
+            let [
+                join,
+                refresh,
+                next,
+                invite,
+                accept,
+                decline,
+                publish,
+                withdraw,
+            ] = &self.manage.buttons;
+            let chosen = ready && panel.handle().is_some();
+            let editable = leader.selected && !leader.pending;
+            for (button, kind, caption, enabled) in [
+                (join, Kind::Browse(false), tr!("Join Team"), ready),
+                (refresh, Kind::Applicants(false), tr!("Refresh"), ready),
+                (
+                    next,
+                    Kind::Applicants(true),
+                    tr!("Next page"),
+                    ready && panel.next().is_some(),
+                ),
+                (invite, Kind::Decide(2), tr!("Invite"), chosen),
+                (accept, Kind::Decide(3), tr!("Accept"), chosen),
+                (decline, Kind::Decide(4), tr!("Decline"), chosen),
+                (
+                    publish,
+                    Kind::Publish(Vec::new()),
+                    tr!("Publish listing"),
+                    editable,
+                ),
+                (
+                    withdraw,
+                    Kind::Withdraw,
+                    tr!("Remove listing"),
+                    editable && leader.confirmed.is_some(),
+                ),
+            ] {
+                button.project(commands, key, kind, caption, enabled);
+            }
+        } else {
+            let [
+                manage,
+                search,
+                capacity,
+                activity,
+                refresh,
+                next,
+                apply,
+                cancel,
+            ] = &self.join.buttons;
+            let mut open = panel.filter.clone();
+            open.only_open = !open.only_open;
+            let mut target = panel.filter.clone();
+            target.target = (target.target.min(3) + 1) % 4;
+            let selected = match &panel.result {
+                Some(TeamFinderResult::Browse { listings, .. }) => panel
+                    .visible_indices()
+                    .get(panel.selected_row)
+                    .and_then(|index| listings.get(*index)),
+                _ => None,
+            };
+            let can_apply = selected.is_some_and(|row| {
+                matches!(row.status, MemberStatus::None | MemberStatus::Denied)
+                    && row.occupied_slots < row.listing.slots
+            });
+            let can_cancel = selected.is_some_and(|row| {
+                matches!(
+                    row.status,
+                    MemberStatus::Pending | MemberStatus::Invited | MemberStatus::Accepted
+                )
+            });
+            for (button, kind, caption, enabled) in [
+                (manage, Kind::Applicants(false), tr!("Manage Team"), ready),
+                (
+                    search,
+                    Kind::Filter(panel.filter.clone()),
+                    tr!("Search"),
+                    ready,
+                ),
+                (
+                    capacity,
+                    Kind::Filter(open),
+                    if panel.filter.only_open {
+                        tr!("Open slots only")
+                    } else {
+                        tr!("All capacities")
+                    },
+                    ready,
+                ),
+                (
+                    activity,
+                    Kind::Filter(target),
+                    [
+                        tr!("All activities"),
+                        tr!("Boss"),
+                        tr!("Hunt"),
+                        tr!("Quest"),
+                    ][usize::from(panel.filter.target.min(3))],
+                    ready,
+                ),
+                (refresh, Kind::Browse(false), tr!("Refresh"), ready),
+                (
+                    next,
+                    Kind::Browse(true),
+                    tr!("Next page"),
+                    ready && panel.next().is_some(),
+                ),
+                (
+                    apply,
+                    Kind::Apply(false),
+                    tr!("Apply to team"),
+                    ready && can_apply,
+                ),
+                (
+                    cancel,
+                    Kind::Apply(true),
+                    tr!("Cancel application"),
+                    ready && can_cancel,
+                ),
+            ] {
+                button.project(commands, key, kind, caption, enabled);
+            }
+        }
+        commands
+            .entity(self.leader_feedback)
+            .insert(Text::new(leader.feedback.clone()));
+
+        self.close
+            .project(commands, key, Kind::Close, tr!("Close"), true);
+    }
+}
+
 /// The editor values for a listing, empty without one.
 pub(super) fn listing_values(listing: Option<LeaderListing>) -> [String; LISTING_FIELDS] {
     let Some(listing) = listing else {
@@ -466,12 +570,20 @@ fn input(commands: &mut Commands, skins: &Skins, parent: Entity, field: Field, v
         .id();
     commands.entity(parent).add_child(input);
 }
-fn label(commands: &mut Commands, skins: &Skins, parent: Entity, value: &str) {
+
+fn caption(commands: &mut Commands, skins: &Skins, parent: Entity, value: fn() -> &'static str) {
+    let entity = label(commands, skins, parent, value());
+    commands.entity(entity).insert(Caption(value));
+}
+
+fn label(commands: &mut Commands, skins: &Skins, parent: Entity, value: &str) -> Entity {
     let child = commands
         .spawn(source::text(value, source::font(skins.font.clone(), false)))
         .id();
     commands.entity(parent).add_child(child);
+    child
 }
+
 fn row(commands: &mut Commands, parent: Entity) -> Entity {
     let child = commands
         .spawn(Node {
@@ -484,21 +596,13 @@ fn row(commands: &mut Commands, parent: Entity) -> Entity {
     commands.entity(parent).add_child(child);
     child
 }
-fn button(
-    commands: &mut Commands,
-    skins: &Skins,
-    parent: Entity,
-    key: Key,
-    kind: Kind,
-    caption: &str,
-    enabled: bool,
-) {
-    let listing_row = matches!(kind, Kind::Select(_));
-    let mut entity = commands.spawn((
-        source::button(skins.buttons.clone(), 150.),
-        Control { key, kind },
-        Name::new(format!("Team Finder: {caption}")),
-    ));
+
+fn buttons<const N: usize>(commands: &mut Commands, skins: &Skins, parent: Entity) -> [Button; N] {
+    std::array::from_fn(|_| button(commands, skins, parent, false))
+}
+
+fn button(commands: &mut Commands, skins: &Skins, parent: Entity, listing_row: bool) -> Button {
+    let mut entity = commands.spawn((source::button(skins.buttons.clone(), 150.),));
     if listing_row {
         entity.insert(Node {
             width: percent(100.),
@@ -508,13 +612,10 @@ fn button(
             ..default()
         });
     }
-    if !enabled {
-        entity.insert(InteractionDisabled);
-    }
     let child = entity.observe(activate).id();
     commands.entity(parent).add_child(child);
     let text = commands
-        .spawn(source::button_caption(caption, skins.font.clone()))
+        .spawn(source::button_caption("", skins.font.clone()))
         .id();
     if listing_row {
         commands.entity(text).insert((
@@ -527,4 +628,8 @@ fn button(
         ));
     }
     commands.entity(child).add_child(text);
+    Button {
+        entity: child,
+        text,
+    }
 }

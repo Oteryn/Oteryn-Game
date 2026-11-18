@@ -17,16 +17,18 @@ use bevy::{
 use std::path::PathBuf;
 
 /// Layout entry of the main window: physical desktop position and logical size.
-const WINDOW: &str = "window";
+const WINDOW: &str = "window.logical";
 // The layout format caps rectangle sizes at 4096 but supports desktop coordinates
 // up to 32768. A point in window-local pixels records the full logical extent.
-const WINDOW_EXTENT: &str = "window.extent";
+const WINDOW_EXTENT: &str = "window.logical.extent";
 /// The local layout file and what it holds; without a path the layout stays transient.
 #[derive(Resource, Default)]
 pub(in crate::bevy_shell) struct LayoutStore {
     path: Option<PathBuf>,
     layout: WindowLayout,
     pending_save: bool,
+    #[cfg(test)]
+    rejection_count: usize,
     retry_after: std::time::Duration,
     rejected: std::collections::HashMap<&'static str, [i32; 4]>,
 }
@@ -43,10 +45,38 @@ impl LayoutStore {
             ..default()
         }
     }
+    pub(in crate::bevy_shell) fn primary_window_plugin(&self) -> WindowPlugin {
+        let mut window = Window {
+            title: "Oteryn".into(),
+            resolution: (1024, 720).into(),
+            resize_constraints: bevy::window::WindowResizeConstraints {
+                min_width: 1020.,
+                min_height: 650.,
+                ..default()
+            },
+            ..default()
+        };
+        if let Some([x, y, width, height]) = self.window()
+            && let (Ok(width), Ok(height)) = (u32::try_from(width), u32::try_from(height))
+        {
+            window.position = bevy::window::WindowPosition::At(IVec2::new(x, y));
+            window.resolution = (width, height).into();
+        }
+        WindowPlugin {
+            close_when_requested: false,
+            primary_window: Some(window),
+            ..default()
+        }
+    }
     /// The remembered main window physical desktop position and logical size.
     pub(in crate::bevy_shell) fn window(&self) -> Option<[i32; 4]> {
-        let [x, y, width, height] = self.layout.bounds(WINDOW)?;
-        if let Some([w, h, 1, 1]) = self.layout.bounds(WINDOW_EXTENT)
+        // The original key already stored logical dimensions.
+        self.bounds_with_extent(WINDOW, WINDOW_EXTENT)
+            .or_else(|| self.bounds_with_extent("window", "window.extent"))
+    }
+    fn bounds_with_extent(&self, id: &str, extent: &str) -> Option<[i32; 4]> {
+        let [x, y, width, height] = self.layout.bounds(id)?;
+        if let Some([w, h, 1, 1]) = self.layout.bounds(extent)
             && w.min(4096) == width
             && h.min(4096) == height
         {
@@ -61,7 +91,7 @@ impl LayoutStore {
         }
         self.rejected.remove(id);
         let result = if id == WINDOW {
-            if self.window() == Some(bounds) {
+            if self.bounds_with_extent(WINDOW, WINDOW_EXTENT) == Some(bounds) {
                 return;
             }
             self.record_window(bounds)
@@ -74,6 +104,10 @@ impl LayoutStore {
         match result {
             Ok(()) => self.pending_save = true,
             Err(error) => {
+                #[cfg(test)]
+                {
+                    self.rejection_count += 1;
+                }
                 self.rejected.insert(id, bounds);
                 leprintln!("Could not save window layout: {error}", error = error);
             }

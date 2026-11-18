@@ -84,24 +84,31 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
     let expected_panel_text = panels::configure(&link, &outbox)?;
     owner.play = Some(ActivePlay { view, link });
     owner.phase = Phase::Playing;
+    let dir = std::env::temp_dir().join(format!("native-layout-{}", std::process::id()));
+    let mut layout = crate::window_layout::WindowLayout::default();
+    layout.record("window.logical", [40, 80, 1200, 700])?;
+    layout.save(&dir.join("client-window-layout.json"))?;
     let options = bevy_shell::Options {
         ui_assets: PathBuf::from(assets),
-        preferences: None,
+        preferences: Some(dir.join("preferences.json")),
         login_settings: None,
         ui_audit: None,
         smoke: false,
     };
-    let mut app = bevy_shell::build_app(options, owner);
+    let mut app = bevy_shell::build_app(options, owner, DefaultPlugins.build());
     // Exercise real letterboxing: at the minimum width the 15x11 map nearly fills
     // its region, and a sample eight pixels inward belongs to unknown black tiles.
     {
         let mut windows = app
             .world_mut()
             .query_filtered::<&mut Window, With<bevy::window::PrimaryWindow>>();
-        windows
-            .single_mut(app.world_mut())?
-            .resolution
-            .set(1280., 720.);
+        let mut window = windows.single_mut(app.world_mut())?;
+        assert_eq!(window.size(), Vec2::new(1200., 700.));
+        assert_eq!(
+            window.position,
+            bevy::window::WindowPosition::At(IVec2::new(40, 80))
+        );
+        window.resolution.set(1280., 720.);
     }
     app.insert_resource(Capture {
         path: path.clone(),
@@ -116,6 +123,7 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
         return Err("native game shell failed".into());
     }
     // The screenshot observer writes before sending AppExit. A native timeout never creates it.
+    std::fs::remove_dir_all(dir)?;
     if !path.is_file() {
         return Err("native game shell capture missing".into());
     }
@@ -200,4 +208,44 @@ fn capture(
             });
         },
     );
+}
+
+#[test]
+fn build_app_restores_primary_window_without_native_fixture_assets()
+-> Result<(), Box<dyn std::error::Error>> {
+    let dir = std::env::temp_dir().join(format!("build-app-layout-{}", std::process::id()));
+    let mut layout = crate::window_layout::WindowLayout::default();
+    layout.record("window.logical", [40, 80, 1200, 700])?;
+    layout.save(&dir.join("client-window-layout.json"))?;
+    let options = bevy_shell::Options {
+        ui_assets: dir.join("unused-assets"),
+        preferences: Some(dir.join("preferences.json")),
+        login_settings: None,
+        ui_audit: None,
+        smoke: false,
+    };
+    let plugins = DefaultPlugins
+        .build()
+        .disable::<bevy::winit::WinitPlugin>()
+        .disable::<bevy::log::LogPlugin>()
+        .set(bevy::render::RenderPlugin {
+            render_creation: bevy::render::settings::WgpuSettings {
+                backends: None,
+                ..default()
+            }
+            .into(),
+            ..default()
+        });
+    let mut app = bevy_shell::build_app(options, HostOwner::new(None)?, plugins);
+    let mut windows = app
+        .world_mut()
+        .query_filtered::<&Window, With<bevy::window::PrimaryWindow>>();
+    let window = windows.single(app.world())?;
+    assert_eq!(window.size(), Vec2::new(1200., 700.));
+    assert_eq!(
+        window.position,
+        bevy::window::WindowPosition::At(IVec2::new(40, 80))
+    );
+    std::fs::remove_dir_all(dir)?;
+    Ok(())
 }

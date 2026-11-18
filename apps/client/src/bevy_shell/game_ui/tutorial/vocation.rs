@@ -59,7 +59,7 @@ fn project(
     }
     state.prompted = prompted;
     let refresh =
-        panel.observation.is_none() || panel.observation.is_some_and(|o| o.offered) || prompted;
+        panel.observation.is_none() || (prompted && !panel.observation.is_some_and(|o| o.offered));
     if panel.selected
         && refresh
         && !panel.pending
@@ -164,5 +164,56 @@ fn activate(
         && let Some(play) = &owner.play
     {
         play.link.tutorial_vocation_request(Some(choice.id));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn offered_choice_survives_poll_interval() -> Result<(), Box<dyn std::error::Error>> {
+        let mut owner = HostOwner::new(None)?;
+        let (link, mut rx, outbox) = crate::play::play_channel();
+        outbox.bevy_tutorial_vocation_initialize();
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+            link,
+            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        });
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+            .init_asset::<Image>()
+            .init_asset::<Font>()
+            .insert_non_send(owner)
+            .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        app.update();
+        rx.try_recv()?;
+        outbox.bevy_tutorial_vocation_result(&oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../crates/client-ui/src/features/0504-tutorial-vocation/fixtures/offer.bin"
+            ))
+            .to_vec(),
+        });
+        app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            Duration::from_secs(3),
+        ));
+        app.update();
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &Choice)>()
+            .iter(app.world())
+            .find(|(_, c)| c.id == 4)
+            .ok_or("choice")?
+            .0;
+        app.world_mut().trigger(Activate { entity });
+        let crate::combat_input::PlayCommand::Feature(command) = rx.try_recv()? else {
+            return Err("vocation command".into());
+        };
+        assert_eq!(command.payload, [4]);
+        Ok(())
     }
 }

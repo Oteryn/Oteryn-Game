@@ -109,14 +109,14 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
     owner.configure_login(options.login_settings.clone(), |name| {
         std::env::var(name).ok()
     });
-    let mut app = build_app(options, owner);
+    let mut app = build_app(options, owner, DefaultPlugins.build());
     // App::run transfers the app into its runner. HostOwner::drop owns shutdown there.
     match app.run() {
         AppExit::Success => Ok(()),
         AppExit::Error(code) => Err(format!("Bevy event loop exited with {code}").into()),
     }
 }
-fn build_app(options: Options, owner: HostOwner) -> App {
+fn build_app(options: Options, owner: HostOwner, plugins: bevy::app::PluginGroupBuilder) -> App {
     let mut app = App::new();
     if options.smoke {
         app.add_systems(Update, smoke_exit);
@@ -129,24 +129,8 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             .filter(|_| !options.smoke)
             .map(|path| path.with_file_name("client-window-layout.json")),
     );
-    let mut window = Window {
-        title: "Oteryn".into(),
-        resolution: (1024, 720).into(),
-        resize_constraints: bevy::window::WindowResizeConstraints {
-            min_width: 1020.,
-            min_height: 650.,
-            ..default()
-        },
-        ..default()
-    };
-    if let Some([x, y, width, height]) = layout.window()
-        && let (Ok(width), Ok(height)) = (u32::try_from(width), u32::try_from(height))
-    {
-        window.position = bevy::window::WindowPosition::At(IVec2::new(x, y));
-        window.resolution = (width, height).into();
-    }
     app.add_plugins(
-        DefaultPlugins
+        plugins
             .set(AssetPlugin {
                 file_path: options.ui_assets.to_string_lossy().into_owned(),
                 ..default()
@@ -155,11 +139,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
                 run_on_any_thread: cfg!(test),
             })
             .set(ImagePlugin::default_nearest())
-            .set(WindowPlugin {
-                close_when_requested: false,
-                primary_window: Some(window),
-                ..default()
-            })
+            .set(layout.primary_window_plugin())
             .set(diagnostics::log_plugin(&owner)),
     )
     .add_plugins((

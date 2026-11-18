@@ -7,7 +7,7 @@ pub(super) struct Draft {
     choices: BTreeMap<usize, usize>,
     base: Option<ProficiencyCatalogueEntry>,
     waiting: Option<(usize, usize)>,
-    applying: bool,
+    pub(super) applying: bool,
     close: bool,
     ask_close: bool,
     feedback: String,
@@ -42,14 +42,28 @@ pub(super) fn perform(
     panel: &WeaponProficiencyPanel,
     kind: Kind,
 ) {
-    if link.weapon_proficiency_panel() != *panel || panel.pending {
+    let d = &mut state.draft;
+    if d.applying {
+        if matches!(kind, Kind::Close) {
+            d.close = true;
+            d.feedback = tr!("Waiting for the server").into();
+            state.dirty = true;
+        }
+        return;
+    }
+    // Save and close records the intent against the displayed draft; advance rechecks
+    // the catalogue before sending, even if the refresh reply has already arrived.
+    let save_after_refresh = panel.pending && matches!(kind, Kind::SaveClose);
+    if (!save_after_refresh && link.weapon_proficiency_panel() != *panel)
+        || (panel.pending
+            && !matches!(
+                kind,
+                Kind::Close | Kind::SaveClose | Kind::DiscardClose | Kind::CancelClose
+            ))
+    {
         return;
     }
     state.dirty = true;
-    let d = &mut state.draft;
-    if d.applying {
-        return;
-    }
     match kind {
         Kind::Perk(level, perk) => {
             let Some(entry) = panel.weapon_entry() else {
@@ -87,7 +101,11 @@ pub(super) fn perform(
             d.applying = true;
             d.close = matches!(kind, Kind::SaveClose);
             d.ask_close = false;
-            send_next(link, d, panel);
+            if panel.pending {
+                d.feedback = tr!("Waiting for the server").into();
+            } else {
+                send_next(link, d, panel);
+            }
         }
         Kind::Reset | Kind::CancelClose => {
             if matches!(kind, Kind::Reset) {
@@ -137,6 +155,7 @@ fn send_next(link: &crate::play::PlayLink, d: &mut Draft, panel: &WeaponProficie
             d.waiting = Some((level, perk));
         } else {
             d.applying = false;
+            d.close = false;
             d.feedback =
                 "The server observation no longer permits this draft. Reset and review it again."
                     .into();
@@ -151,11 +170,17 @@ fn send_next(link: &crate::play::PlayLink, d: &mut Draft, panel: &WeaponProficie
         d.close = false;
     }
 }
-fn same_catalogue(base: &ProficiencyCatalogueEntry, current: &ProficiencyCatalogueEntry) -> bool {
+fn same_catalogue(
+    base: &ProficiencyCatalogueEntry,
+    current: &ProficiencyCatalogueEntry,
+    waiting: bool,
+) -> bool {
     let mut expected = base.clone();
     expected.experience = current.experience;
-    for (level, observed) in expected.levels.iter_mut().zip(&current.levels) {
-        level.selected = observed.selected;
+    if waiting {
+        for (level, observed) in expected.levels.iter_mut().zip(&current.levels) {
+            level.selected = observed.selected;
+        }
     }
     expected == *current
 }
@@ -186,7 +211,7 @@ pub(super) fn advance(
     if d.base
         .as_ref()
         .zip(panel.weapon_entry())
-        .is_none_or(|(base, current)| !same_catalogue(base, current))
+        .is_none_or(|(base, current)| !same_catalogue(base, current, d.waiting.is_some()))
     {
         d.applying = false;
         d.close = false;
@@ -195,8 +220,8 @@ pub(super) fn advance(
         state.dirty = true;
         return;
     }
+    state.dirty = true;
     if let Some((level, perk)) = d.waiting.take() {
-        state.dirty = true;
         if panel
             .weapon_entry()
             .and_then(|e| e.levels.get(level))

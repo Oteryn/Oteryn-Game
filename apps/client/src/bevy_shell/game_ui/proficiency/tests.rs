@@ -634,3 +634,190 @@ fn proficiency_shapes_slot_through_modify_rank_reshape_and_confirmed_clear() -> 
     }
     Ok(())
 }
+
+#[test]
+fn proficiency_close_while_catalogue_refresh_is_pending() -> Result {
+    let (mut app, mut commands, _) = app()?;
+    click(&mut app, |kind| matches!(kind, Kind::Refresh))?;
+    assert_eq!(command(&mut commands)?.kind, 660);
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Close))?;
+    let panel = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .weapon_proficiency_panel();
+    assert!(!panel.open);
+    Ok(())
+}
+
+#[test]
+fn save_and_close_waits_for_a_periodic_refresh() -> Result {
+    save_and_close_during_refresh(false)
+}
+
+#[test]
+fn regression_save_and_close_after_refresh_reply_before_projection() -> Result {
+    save_and_close_during_refresh(true)
+}
+
+fn save_and_close_during_refresh(reply_first: bool) -> Result {
+    let (mut app, mut commands, outbox) = app()?;
+    click(&mut app, |kind| matches!(kind, Kind::Weapon(0)))?;
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Perk(0, 1)))?;
+    app.update();
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .weapon_proficiency_tick(std::time::Instant::now() + std::time::Duration::from_secs(6));
+    assert_eq!(command(&mut commands)?.kind, 641);
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Close))?;
+    app.update();
+    let page = oteryn_client_runtime::weapon_proficiency::ProficiencyPage {
+        offset: 0,
+        total: 0,
+        rows: Vec::new(),
+    };
+    let progress = page.encode().ok_or("progress reply")?;
+    if reply_first {
+        reply(&outbox, 2, progress);
+        click(&mut app, |kind| matches!(kind, Kind::SaveClose))?;
+    } else {
+        click(&mut app, |kind| matches!(kind, Kind::SaveClose))?;
+        assert!(commands.try_recv().is_err());
+        reply(&outbox, 2, progress);
+    }
+    app.update();
+    assert!(SelectPerkRequest::decode(&command(&mut commands)?.payload).is_some());
+    confirm_perk(&outbox, 3)?;
+    app.update();
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .weapon_proficiency_is_open()
+    );
+    Ok(())
+}
+
+#[test]
+fn close_and_escape_wait_for_an_applying_draft() -> Result {
+    for escape in [false, true] {
+        let (mut app, mut commands, outbox) = app()?;
+        click(&mut app, |kind| matches!(kind, Kind::Weapon(0)))?;
+        app.update();
+        click(&mut app, |kind| matches!(kind, Kind::Perk(0, 1)))?;
+        app.update();
+        click(&mut app, |kind| matches!(kind, Kind::Apply))?;
+        command(&mut commands)?;
+        app.update();
+        if escape {
+            use bevy::input::keyboard::{Key, KeyboardInput};
+            app.world_mut().write_message(KeyboardInput {
+                key_code: KeyCode::Escape,
+                logical_key: Key::Escape,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+        } else {
+            click(&mut app, |kind| matches!(kind, Kind::Close))?;
+        }
+        app.update();
+        assert!(
+            app.world()
+                .non_send::<HostOwner>()
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .weapon_proficiency_is_open()
+        );
+        confirm_perk(&outbox, 2)?;
+        app.update();
+        assert!(
+            !app.world()
+                .non_send::<HostOwner>()
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .weapon_proficiency_is_open()
+        );
+    }
+    Ok(())
+}
+
+fn confirm_perk(outbox: &crate::play::Outbox, sequence: u64) -> Result {
+    use oteryn_client_runtime::weapon_proficiency::{SelectPerkReply, SelectPerkResult};
+    reply(
+        outbox,
+        sequence,
+        SelectPerkReply {
+            result: SelectPerkResult::Accepted,
+            selections: vec![Some(1), None],
+        }
+        .encode()
+        .ok_or("perk reply")?,
+    );
+    Ok(())
+}
+
+#[test]
+fn regression_proficiency_close_while_applying_feedback_is_localized() -> Result {
+    close_feedback_is_localized(false)
+}
+
+#[test]
+fn regression_proficiency_save_during_refresh_feedback_is_localized() -> Result {
+    close_feedback_is_localized(true)
+}
+
+fn close_feedback_is_localized(refresh: bool) -> Result {
+    use oteryn_client_ui::localization::{Language, translate, with_language};
+    let (mut app, mut commands, _outbox) = app()?;
+    click(&mut app, |kind| matches!(kind, Kind::Weapon(0)))?;
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Perk(0, 1)))?;
+    app.update();
+    if refresh {
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .weapon_proficiency_tick(std::time::Instant::now() + std::time::Duration::from_secs(6));
+    } else {
+        click(&mut app, |kind| matches!(kind, Kind::Apply))?;
+    }
+    command(&mut commands)?;
+    app.update();
+    with_language(Language::De, || {
+        click(&mut app, |kind| matches!(kind, Kind::Close))
+    })?;
+    app.update();
+    if refresh {
+        with_language(Language::De, || {
+            click(&mut app, |kind| matches!(kind, Kind::SaveClose))
+        })?;
+        app.update();
+    }
+    let source = "Waiting for the server";
+    let german = translate(Language::De, source);
+    assert_ne!(german, source);
+    assert!(texts(&mut app).iter().any(|text| text == german));
+    Ok(())
+}

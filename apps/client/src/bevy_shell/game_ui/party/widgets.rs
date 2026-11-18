@@ -81,7 +81,7 @@ pub(super) fn build(
         );
         combat::controls(commands, skin, root, generation, serial, panel);
         label(commands, skin, root, "Members");
-        let members = list(commands, root);
+        let members = list(commands, root, 0);
         let rows = panel.list_rows();
         let entries = rows
             .iter()
@@ -151,7 +151,7 @@ pub(super) fn build(
         }
         if !state.invitations.is_empty() {
             label(commands, skin, root, "Invitations");
-            let invitations = list(commands, root);
+            let invitations = list(commands, root, 1);
             for invitation in &state.invitations {
                 let entry = button(
                     commands,
@@ -263,11 +263,11 @@ pub(super) fn row(commands: &mut Commands, parent: Entity) -> Entity {
     commands.entity(parent).add_child(entity);
     entity
 }
-fn list(commands: &mut Commands, parent: Entity) -> Entity {
+fn list(commands: &mut Commands, parent: Entity, role: u32) -> Entity {
     let entity = commands
         .spawn((
             ScrollArea,
-            crate::bevy_shell::game_ui::install::RememberScroll("party", 0),
+            crate::bevy_shell::game_ui::install::RememberScroll("party", role),
             Node {
                 width: percent(100.),
                 max_height: px(180.),
