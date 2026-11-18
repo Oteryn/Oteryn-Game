@@ -393,7 +393,13 @@ fn jerom(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Op
 }
 
 pub fn queen_kiss_confirmation(text: &str, topic: Topic) -> bool {
-    topic == Topic::Queen(8) && !contains(text, "seventh seal") && contains(text, "yes")
+    topic == Topic::Queen(8)
+        && contains(text, "yes")
+        && !static_keyword_intercepts(QUEEN, text)
+        && !super::quests_2_focus::intercepts(text)
+        && !["seventh seal", "spectral dress", "addon", "orchid"]
+            .iter()
+            .any(|keyword| contains(text, keyword))
 }
 
 fn queen(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Option<Choice> {
