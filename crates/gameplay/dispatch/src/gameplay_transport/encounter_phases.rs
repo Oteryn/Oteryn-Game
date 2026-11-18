@@ -138,13 +138,16 @@ impl Fight {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        cells: &crate::content::NativeEntryMovementCells,
     ) -> Result<bool, CarrierError> {
         match self {
             Self::Cults(fight) => fight.projected_death(runtime, actor),
             Self::CountVlarkorth(fight) => fight.projected_death(runtime, actor),
             Self::DukeKrule(fight) => fight.projected_death(runtime, actor),
             Self::EarlOsam(fight) => fight.projected_death(runtime, actor),
-            Self::LordAzaram(fight) => fight.projected_death(runtime, actor),
+            Self::LordAzaram(fight) => fight.projected_death(runtime, actor, |at| {
+                remains_map(cells)?.create_movement_item_id(remains_tile(at)?, 31160, 0, || true)
+            }),
             Self::Sirs(fight) => fight.projected_death(runtime, actor),
             Self::Zelos(fight) => fight.projected_death(runtime, actor),
         }
@@ -162,13 +165,20 @@ impl Fight {
         }
     }
 
-    fn retire(&self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
+    fn retire(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+    ) -> Result<(), CarrierError> {
         match self {
             Self::Cults(_) => Err(CarrierError::PlanConflict),
             Self::CountVlarkorth(fight) => fight.retire(runtime),
             Self::DukeKrule(fight) => fight.retire(runtime),
             Self::EarlOsam(fight) => fight.retire(runtime),
-            Self::LordAzaram(fight) => fight.retire(runtime),
+            Self::LordAzaram(fight) => {
+                fight.clear_remains(|at, key| remove_remains(cells, at, key));
+                fight.retire(runtime)
+            }
             Self::Sirs(fight) => fight.retire(runtime),
             Self::Zelos(fight) => fight.retire(runtime),
         }
@@ -199,7 +209,9 @@ impl Fight {
                 None => Ok(true),
             },
             Self::LordAzaram(fight) => match now {
-                Some(now) => fight.advance(runtime, now, at),
+                Some(now) => {
+                    fight.advance(runtime, now, at, |at, key| remove_remains(cells, at, key))
+                }
                 None => Ok(true),
             },
             Self::Sirs(fight) => match now {
@@ -284,7 +296,10 @@ impl Registry {
         };
         for phase in active.iter_mut() {
             if let Fight::LordAzaram(fight) = &mut phase.fight
-                && let Err(error) = fight.step_on_splinter(runtime, step.actor, step.to, now)
+                && let Err(error) =
+                    fight.step_on_splinter(runtime, step.actor, step.to, now, |at, key| {
+                        remove_remains(&phase.cells, at, key)
+                    })
             {
                 super::operator_event(&format!(
                     "encounter_phase_deferred key={} reason={error:?}",
@@ -351,7 +366,7 @@ impl Registry {
             if phase.fight.timeout_participants(now).is_some() {
                 continue;
             }
-            let Ok(is_new_death) = phase.fight.projected_death(runtime, actor) else {
+            let Ok(is_new_death) = phase.fight.projected_death(runtime, actor, &phase.cells) else {
                 continue;
             };
             if is_new_death && phase.fight.owns_scoped_credit(actor) {
@@ -686,6 +701,35 @@ pub(super) fn bind(
     })
 }
 
+fn remains_tile(at: MovementLocalPosition) -> Option<crate::map::overlay::TilePos> {
+    Some(crate::map::overlay::TilePos {
+        x: u16::try_from(at.x).ok()?,
+        y: u16::try_from(at.y).ok()?,
+        floor: i8::try_from(at.floor).ok()?.checked_neg()?,
+    })
+}
+
+fn remains_map(
+    cells: &crate::content::NativeEntryMovementCells,
+) -> Option<&crate::map::facts::BundleFacts> {
+    match cells.index() {
+        crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
+            Some(&index.map().facts)
+        }
+        _ => None,
+    }
+}
+
+fn remove_remains(
+    cells: &crate::content::NativeEntryMovementCells,
+    at: MovementLocalPosition,
+    key: u64,
+) -> bool {
+    remains_map(cells)
+        .zip(remains_tile(at))
+        .is_some_and(|(map, tile)| map.remove_movement_item(tile, key, 31160))
+}
+
 fn placement(
     cells: &crate::content::NativeEntryMovementCells,
     runtime: &ChannelRuntimeV1,
@@ -749,7 +793,15 @@ fn tick_phase_kind(
     let mut exits = Vec::new();
     let mut duke_effects = Vec::new();
     let mut magnor_bursts = Vec::new();
-    active.retain(|phase| phase.fight.is_current(runtime));
+    active.retain_mut(|phase| {
+        if phase.fight.is_current(runtime) {
+            return true;
+        }
+        if let Fight::LordAzaram(fight) = &mut phase.fight {
+            fight.clear_remains(|at, key| remove_remains(&phase.cells, at, key));
+        }
+        false
+    });
     active.retain_mut(|phase| {
         let ActivePhase {
             key,
@@ -770,12 +822,12 @@ fn tick_phase_kind(
                 return false;
             };
             return !evacuate(runtime, cells, room, victors, &mut exits)
-                || fight.retire(runtime).is_err();
+                || fight.retire(runtime, cells).is_err();
         }
         if let Some(room) = timed_room.as_ref() {
             if let Some(participants) = fight.timeout_participants(now) {
                 return !evacuate(runtime, cells, room, participants, &mut exits)
-                    || fight.retire(runtime).is_err();
+                    || fight.retire(runtime, cells).is_err();
             }
             if let Fight::CountVlarkorth(count) = fight {
                 if let Err(error) = count.advance(

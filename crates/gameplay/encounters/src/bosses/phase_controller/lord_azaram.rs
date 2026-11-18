@@ -28,7 +28,7 @@ pub struct LordAzaramEncounter {
     lord_health: Option<i64>,
     positions: [MovementLocalPosition; 4],
     splinters: Vec<ExactActorRef>,
-    cleansed: Vec<MovementLocalPosition>,
+    cleansed: Vec<(MovementLocalPosition, u64)>,
     sins: Vec<ExactActorRef>,
     absorbed: u8,
 }
@@ -97,6 +97,7 @@ impl LordAzaramEncounter {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        project: impl FnOnce(MovementLocalPosition) -> Option<u64>,
     ) -> Result<bool, CarrierError> {
         if actor == self.lord {
             return self.owner.projected_death(runtime, actor);
@@ -107,8 +108,9 @@ impl LordAzaramEncounter {
             .position(|&splinter| splinter == actor)
         {
             let (_, position) = runtime.borrow_combat_death().projected_death(actor)?;
+            let key = project(position).ok_or(CarrierError::PlanConflict)?;
             self.splinters.swap_remove(index);
-            self.cleansed.push(position);
+            self.cleansed.push((position, key));
         }
         Ok(false)
     }
@@ -130,6 +132,10 @@ impl LordAzaramEncounter {
         (now >= self.expires).then_some(&self.owner.participants)
     }
 
+    pub fn clear_remains(&mut self, remove: impl Fn(MovementLocalPosition, u64) -> bool) {
+        self.cleansed.retain(|&(at, key)| !remove(at, key));
+    }
+
     pub fn retire(&self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
         self.owner.current(runtime)?;
         for actor in std::iter::once(self.lord)
@@ -149,6 +155,7 @@ impl LordAzaramEncounter {
         actor: ExactActorRef,
         position: MovementLocalPosition,
         now: u64,
+        remove: impl FnOnce(MovementLocalPosition, u64) -> bool,
     ) -> Result<(), CarrierError> {
         if actor != self.lord
             || self.lord_health.is_none()
@@ -157,17 +164,22 @@ impl LordAzaramEncounter {
         {
             return Ok(());
         }
-        let Some(index) = self.cleansed.iter().position(|&at| at == position) else {
+        let Some(index) = self.cleansed.iter().position(|&(at, _)| at == position) else {
             return Ok(());
         };
         self.owner.current(runtime)?;
         let snapshot = runtime.companion_snapshot(actor)?;
         let maximum =
             u64::try_from(snapshot.maximum_health).map_err(|_| CarrierError::PlanConflict)?;
+        let before = runtime.encounter_parts().0.clone();
         let healed = runtime.commit_source_creature_heal_batch(
             runtime.content_pin().server_artifact_digest(),
             &[(actor, SOUL.to_owned(), maximum, maximum / 3)],
         )?;
+        if !remove(position, self.cleansed[index].1) {
+            *runtime.encounter_parts_mut().0 = before;
+            return Err(CarrierError::PlanConflict);
+        }
         self.cleansed.swap_remove(index);
         self.absorbed += 1;
         if self.absorbed >= 3
@@ -185,6 +197,7 @@ impl LordAzaramEncounter {
         runtime: &mut ChannelRuntimeV1,
         now: u64,
         place: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+        remove: impl Fn(MovementLocalPosition, u64) -> bool,
     ) -> Result<bool, CarrierError> {
         self.owner.current(runtime)?;
         if !runtime.contains_live_creature(self.lord) {
@@ -213,7 +226,7 @@ impl LordAzaramEncounter {
                 self.lord_health = None;
                 self.return_at = None;
                 self.splinters.clear();
-                self.cleansed.clear();
+                self.clear_remains(&remove);
                 self.last_health = health;
                 self.damage = 0;
                 self.absorbed = 0;
@@ -223,6 +236,7 @@ impl LordAzaramEncounter {
             return Ok(true);
         }
 
+        self.clear_remains(&remove);
         self.damage = self
             .damage
             .saturating_add(self.last_health.saturating_sub(snapshot.health).max(0));

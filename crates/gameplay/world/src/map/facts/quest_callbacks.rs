@@ -1149,23 +1149,28 @@ impl BundleFacts {
         effect: u16,
         consume: impl FnOnce() -> bool,
     ) -> bool {
-        let Some(facts) = self.movement_item_facts(appearance) else {
-            return false;
-        };
+        self.create_movement_item_id(pos, appearance, effect, consume)
+            .is_some()
+    }
+
+    pub fn create_movement_item_id(
+        &self,
+        pos: TilePos,
+        appearance: u16,
+        effect: u16,
+        consume: impl FnOnce() -> bool,
+    ) -> Option<u64> {
+        let facts = self.movement_item_facts(appearance)?;
         let Ok(mut states) = self.callbacks.lock() else {
-            return false;
+            return None;
         };
         if states.position_reserved(pos) {
-            return false;
+            return None;
         }
-        let Some(sequence) = states.movement_sequence.checked_add(1) else {
-            return false;
-        };
-        let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
-            return false;
-        };
+        let sequence = states.movement_sequence.checked_add(1)?;
+        let id = super::super::overlay::EntryId::callback(sequence)?;
         if !states.has_capacity(1 + usize::from(effect != 0)) {
-            return false;
+            return None;
         }
         let entry = view::ComposedEntry {
             source: view::EntrySource::Added(id),
@@ -1173,7 +1178,7 @@ impl BundleFacts {
         };
         let states = Arc::make_mut(&mut states);
         if !consume() {
-            return false;
+            return None;
         }
         states.movement_sequence = sequence;
         states.movement_items.entry(pos).or_default().push(entry);
@@ -1185,7 +1190,7 @@ impl BundleFacts {
                 .movement_effects
                 .push_back((sequence, None, pos, effect));
         }
-        true
+        Some(id.get())
     }
 
     /// Crystal data-global/scripts/systems/hazard_primal.lua:53,68 removes
