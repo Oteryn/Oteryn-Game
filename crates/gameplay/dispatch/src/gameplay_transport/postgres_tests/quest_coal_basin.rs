@@ -140,5 +140,11 @@ pub(super) async fn exercise(
         "SELECT count(*) FROM game_character_pending_arrivals WHERE source_coal_basin",
     ).fetch_one(pool).await?;
     assert_eq!(pending,0);
+    let map = owner.bundle_map().ok_or("coal basin map")?;
+    let fire_cues = map.facts.movement_effects_since(0).into_iter().filter(|(_, at, effect)| {
+        (at.x, at.y, at.floor) == (basin.position.x, basin.position.y, basin.position.floor)
+            && *effect == crate::durability::item_loop_move::COIN_FIRE_EFFECT
+    }).count();
+    assert_eq!(fire_cues, 1, "rollback and reply replay emit no second fire cue");
     Ok(())
 }

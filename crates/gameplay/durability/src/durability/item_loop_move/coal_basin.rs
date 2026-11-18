@@ -12,6 +12,9 @@ use crate::durability::{
     npc_travel::{PendingArrival, TravelOccurrence},
 };
 
+// Crystal 201189f8 src/utils/utils_definitions.hpp:71, CONST_ME_HITBYFIRE.
+pub const COIN_FIRE_EFFECT: u16 = 16;
+
 #[derive(Debug, Clone)]
 pub struct CoalBasinTarget {
     pub binding: CoalBasin,
@@ -145,7 +148,7 @@ impl DurabilityRoot {
                  .bind(crate::durability::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope)
                  .execute(&mut **tx).await?;
                 sqlx::query("SET CONSTRAINTS ALL IMMEDIATE").execute(&mut **tx).await?;
-                moved.floor_effect = Some(15); // Crystal CONST_ME_HITBYFIRE.
+                moved.floor_effect = Some(COIN_FIRE_EFFECT);
                 Ok(moved)
             }.await;
             match attempt {

@@ -1173,9 +1173,9 @@ pub(super) async fn move_loop_item_with_house_capacity(
     #[cfg(test)]
     if at_basin
         && committed.as_ref().is_ok_and(|result| {
-            result
-                .as_ref()
-                .is_ok_and(|receipt| receipt.floor_effect == Some(15))
+            result.as_ref().is_ok_and(|receipt| {
+                receipt.floor_effect == Some(crate::durability::item_loop_move::COIN_FIRE_EFFECT)
+            })
         })
         && admission
             .states

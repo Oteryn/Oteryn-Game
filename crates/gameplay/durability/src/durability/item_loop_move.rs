@@ -23,7 +23,7 @@ pub use dreamer_ring::DreamerRingTarget;
 mod altar_arrival;
 pub use altar_arrival::{AltarFieldRead, AltarArrivalReceipt, AltarArrivalTarget, PendingAltarBoss, PendingAltarRealization};
 mod coal_basin;
-pub use coal_basin::{CoalBasinTarget, CoalBasinLanding};
+pub use coal_basin::{COIN_FIRE_EFFECT, CoalBasinLanding, CoalBasinTarget};
 
 mod elemental_arrival;
 pub use elemental_arrival::{ElementalArrivalProbe, ElementalArrivalTarget};
