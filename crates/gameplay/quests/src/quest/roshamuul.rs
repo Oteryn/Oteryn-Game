@@ -112,8 +112,11 @@ impl Registry {
             }
         } else if topic == Topic::Quantity {
             let maximum = self.registered_gold / u64::from(GOLD_PER_CLUSTER);
-            match message.trim().parse::<u32>() {
-                Ok(quantity) if quantity > 0 && u64::from(quantity) <= maximum => {
+            let quantity = message.trim().parse::<f64>().ok().filter(|value| {
+                (1.0..=f64::from(u32::MAX)).contains(value) && value.fract() == 0.0
+            });
+            match quantity.map(|value| value as u32) {
+                Some(quantity) if u64::from(quantity) <= maximum => {
                     reply.topic = Topic::Idle;
                     reply.clusters = quantity;
                     reply.registry.registered_gold -=
@@ -123,7 +126,7 @@ impl Registry {
                         reply.registry.registered_gold
                     )
                 }
-                Ok(quantity) if quantity > 0 => {
+                Some(_) => {
                     format!("You can ask for up to {maximum} clusters.")
                 }
                 _ => "Tell me a positive whole number.".into(),
@@ -166,7 +169,7 @@ mod tests {
             assert_eq!(refused.registry, trade.registry);
             assert_eq!(refused.clusters, 0);
         }
-        let bought = trade.registry.talk(trade.topic, "2").ok_or("exchange")?;
+        let bought = trade.registry.talk(trade.topic, "2.0").ok_or("exchange")?;
         assert_eq!(bought.clusters, 2);
         assert_eq!(bought.registry.registered_gold, 2);
         assert_eq!(bought.topic, Topic::Idle);
