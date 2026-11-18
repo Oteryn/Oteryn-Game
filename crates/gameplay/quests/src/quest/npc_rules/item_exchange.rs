@@ -24,6 +24,7 @@ impl NpcRuleCatalog {
                     | NpcRuleGuard::Vocation { .. }
                     | NpcRuleGuard::Premium { .. }
                     | NpcRuleGuard::Outfit { .. }
+                    | NpcRuleGuard::TemporaryOutfit { .. }
                     | NpcRuleGuard::Sex { .. } => {}
                     // Crystal 201189f8 data-global/npc/chantalle.lua:82-88.
                     NpcRuleGuard::Equipped { slot, .. }

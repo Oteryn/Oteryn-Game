@@ -2,6 +2,34 @@ use super::*;
 
 // Crystal 201189f8 actions_dwarf_disguise_kit.lua:1-13.
 const BRIDGE_ROBBERY_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_dwarf_disguise_kit.lua:1-13";
+const NURIK: &str = "oteryn:npc.nurik";
+const NURIK_WELCOME: &str = "It's .. It's YOU! At last!! So what's this special proposal you would like to make, my friend?";
+const NURIK_REFUSAL: &str = "Excuse me, but I'm waiting for someone important!";
+
+fn nurik_catalogue() -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, npc_rules::NpcRuleCatalog};
+    use serde_json::json;
+    const CRYSTAL: &str =
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nurik.lua:53-63,105";
+    const QUEST: &str = "oteryn:quest.the_thieves_guild_quest";
+    const MISSION: &str = "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04";
+    let program = json!({
+        "schema":1,"quest":QUEST,
+        "tracks":[{"key":MISSION,"quest":QUEST,"initial":6,"min":-1,"max":7,"sources":[CRYSTAL]}],
+        "rules":[
+            {"key":"oteryn:quest-npc/thieves-guild/nurik/disguised","quest":QUEST,"npc":NURIK,
+             "trigger":"greet","keywords":["hi","hello"],
+             "guards":[{"kind":"storage","track":MISSION,"op":"eq","value":6},
+                       {"kind":"temporary_outfit","look_type":66}],
+             "reply":[NURIK_WELCOME],"sources":[CRYSTAL]},
+            {"key":"oteryn:quest-npc/thieves-guild/nurik/refusal","quest":QUEST,"npc":NURIK,
+             "trigger":"greet","keywords":["hi","hello"],"reply":[NURIK_REFUSAL],
+             "effects":[{"kind":"end_conversation","delay_ms":0}],"sources":[CRYSTAL]}
+        ]
+    }).to_string();
+    let native = QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(debug)?;
+    Ok(NpcRuleCatalog::from_json_documents(&[&program])?.bind_fixture(native)?)
+}
 
 fn repin_fixture(pin: &mut crate::content::native_gameplay::PinnedGameplayBytes, bytes: Vec<u8>) {
     use sha2::{Digest, Sha256};
@@ -454,6 +482,16 @@ pub(super) fn scenario(case: Case) -> TestResult {
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
+        let nurik = if case == Case::BridgeRobberyDisguise {
+            owner.quest_catalogue = Some(std::sync::Arc::new(nurik_catalogue()?));
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
+            let [npc] = super::super::classic_quests::install(&owner, &admitted, [NURIK]).await?;
+            let reply = super::super::classic_quests::talk(&mut owner, &admitted, npc, 7865, "hi").await?;
+            assert_eq!(reply, [NURIK_REFUSAL]);
+            Some(npc)
+        } else {
+            None
+        };
         if case == Case::PendingLifecycle {
             super::pending::exercise(&owner, &harness, deps.actor, fence, source, intent).await?;
             eprintln!("W19 POSTGRES_CASE_COMPLETED novelty_items case={case:?}");
@@ -735,6 +773,15 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 .await?,
                 1
             );
+        }
+        if let Some(npc) = nurik {
+            let talk = super::super::classic_quests::talk;
+            assert_eq!(talk(&mut owner, &end, npc, 7866, "hi").await?, [NURIK_WELCOME]);
+            talk(&mut owner, &end, npc, 7867, "bye").await?;
+            owner.clock_origin = owner.clock_origin
+                .checked_sub(std::time::Duration::from_secs(300))
+                .ok_or("disguise clock")?;
+            assert_eq!(talk(&mut owner, &end, npc, 7868, "hi").await?, [NURIK_REFUSAL]);
         }
         if case.trumpet() {
             let (duration, delta): (i64, i64) = sqlx::query_as("SELECT p.duration_millis,p.expires_at_unix_ms-r.occurred_at FROM game_spell_item_temporal_schedules p JOIN game_item_consume_transform_records r ON r.transaction_id=p.source_transaction_id").fetch_one(&harness.pool).await?;

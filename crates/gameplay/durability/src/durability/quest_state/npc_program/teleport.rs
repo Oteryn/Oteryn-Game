@@ -98,6 +98,7 @@ pub fn preview_teleport(
             eligibility,
             player_name: None,
             appearance: (&BTreeMap::new(), 0),
+            greeting_outfit: None,
         },
     )
 }

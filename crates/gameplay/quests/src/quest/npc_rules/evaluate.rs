@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::{
     MAX_NPC_EFFECTS, MAX_NPC_TRACK_CHANGES, NpcInventorySnapshot, NpcItemKey, NpcKeywordMode,
     NpcRule, NpcRuleCatalog, NpcRuleEffect, NpcRuleError, NpcRuleGuard, NpcRuleInput, NpcRulePlan,
-    NpcRuleProgram, NpcTrackChange, NpcTrackDefinition, keyword,
+    NpcRuleProgram, NpcRuleTrigger, NpcTrackChange, NpcTrackDefinition, keyword,
 };
 
 struct Staged<'a> {
@@ -80,6 +80,7 @@ impl<'a> Staged<'a> {
         &mut self,
         guard: &NpcRuleGuard,
         input: &NpcRuleInput<'_>,
+        greeting_outfit: Option<u32>,
     ) -> Result<bool, NpcRuleError> {
         Ok(match guard {
             NpcRuleGuard::Storage {
@@ -138,6 +139,9 @@ impl<'a> Staged<'a> {
                 .outfits
                 .get(look_type)
                 .is_some_and(|owned| *owned & *addon == *addon),
+            NpcRuleGuard::TemporaryOutfit { look_type } => {
+                greeting_outfit == Some(u32::from(*look_type))
+            }
         })
     }
 
@@ -308,14 +312,38 @@ pub(super) fn plan(
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-    plan_with_teleport(catalogue, input, resolutions, storage_only, false)
+    plan_with_teleport(catalogue, input, resolutions, storage_only, false, None)
+}
+
+pub(super) fn plan_greeting(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+    look_type: Option<u32>,
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    if input.trigger != NpcRuleTrigger::Greet {
+        return Ok(None);
+    }
+    let plan = plan_with_teleport(catalogue, input, &BTreeMap::new(), true, false, look_type)?;
+    if plan.as_ref().is_some_and(|plan| {
+        plan.completes
+            || !plan.track_changes.is_empty()
+            || plan
+                .effects
+                .iter()
+                .any(|effect| !matches!(effect, NpcRuleEffect::EndConversation { .. }))
+    }) {
+        return Err(NpcRuleError::MissingNativeResolution(
+            "read-only outfit greeting".into(),
+        ));
+    }
+    Ok(plan)
 }
 
 pub(super) fn plan_teleport(
     catalogue: &NpcRuleCatalog,
     input: &NpcRuleInput<'_>,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-    plan_with_teleport(catalogue, input, &BTreeMap::new(), true, true)
+    plan_with_teleport(catalogue, input, &BTreeMap::new(), true, true, None)
 }
 
 fn plan_with_teleport(
@@ -324,6 +352,7 @@ fn plan_with_teleport(
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
     allow_teleport: bool,
+    greeting_outfit: Option<u32>,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
@@ -366,11 +395,12 @@ fn plan_with_teleport(
                             | NpcRuleGuard::Vocation { .. }
                             | NpcRuleGuard::Premium { .. }
                             | NpcRuleGuard::CalendarWindow { .. }
+                            | NpcRuleGuard::TemporaryOutfit { .. }
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
                 }
-                if !state.guard(guard, input)? {
+                if !state.guard(guard, input, greeting_outfit)? {
                     eligible = false;
                     break;
                 }

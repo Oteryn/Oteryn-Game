@@ -321,6 +321,15 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                     NpcRuleGuard::Premium { .. } => true,
                     NpcRuleGuard::Sex { value } => *value <= 1,
                     NpcRuleGuard::Outfit { look_type, addon } => *look_type > 0 && *addon <= 3,
+                    NpcRuleGuard::TemporaryOutfit { look_type } => {
+                        *look_type > 0
+                            && rule.trigger == NpcRuleTrigger::Greet
+                            && !rule.completes
+                            && !rule.continue_matching
+                            && rule.effects.iter().all(|effect| {
+                                matches!(effect, NpcRuleEffect::EndConversation { .. })
+                            })
+                    }
                 };
                 if !valid {
                     return Err(invalid(format!("invalid guard in {}", rule.key)));

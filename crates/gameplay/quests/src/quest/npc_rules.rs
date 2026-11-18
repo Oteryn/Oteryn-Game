@@ -183,6 +183,10 @@ pub enum NpcRuleGuard {
         look_type: u16,
         addon: u8,
     },
+    /// A live Channel outfit may qualify a read-only greeting.
+    TemporaryOutfit {
+        look_type: u16,
+    },
 }
 
 /// Effects retain source order. Storage/topic effects are evaluated in the plan;
@@ -637,6 +641,15 @@ impl NpcRuleCatalog {
         input: &NpcRuleInput<'_>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         evaluate::plan(self, input, &BTreeMap::new(), true)
+    }
+
+    /// Only the current NPC dialogue owner supplies a qualified, temporary outfit.
+    pub fn plan_greeting_with_outfit(
+        &self,
+        input: &NpcRuleInput<'_>,
+        look_type: Option<u32>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        evaluate::plan_greeting(self, input, look_type)
     }
 
     /// Inventory recipes own exact carried items and UTC calendar facts. Other

@@ -7,7 +7,9 @@ use crate::durability::quest_state::{
     npc_program::{self, NpcProgramRequest},
 };
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleTrigger};
+use oteryn_gameplay_quests::quest::npc_rules::{
+    NpcRuleCatalog, NpcRuleEffect, NpcRuleGuard, NpcRuleTrigger,
+};
 use std::sync::Arc;
 
 pub(in crate::gameplay_transport) mod teleport;
@@ -336,7 +338,18 @@ pub(super) fn prepare(
     let Some(appearance) = appearance else {
         return Some(Step::Refused);
     };
-    let needs_inventory = npc_program::requires_current_inventory(&request, &source);
+    // Crystal 201189f8 data-global/npc/nurik.lua:53-63 checks the live look
+    // when opening focus. The later deed exchange uses its ordinary custody owner.
+    let outfit_greeting = greeting
+        && source
+            .programs()
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .filter(|rule| rule.npc == request.npc && rule.trigger == NpcRuleTrigger::Greet)
+            .flat_map(|rule| &rule.guards)
+            .any(|guard| matches!(guard, NpcRuleGuard::TemporaryOutfit { .. }));
+    let needs_inventory =
+        !outfit_greeting && npc_program::requires_current_inventory(&request, &source);
     let inventory = if needs_inventory {
         let Some(snapshot) =
             inventory.and_then(|snapshot| snapshot.for_fence(&request.npc, command.item_fence?))
@@ -367,7 +380,42 @@ pub(super) fn prepare(
         .as_ref()
         .map(|p| Ok(Some(p.source.clone())))
         .unwrap_or_else(|| {
-            if let Some(inventory) = inventory {
+            if outfit_greeting {
+                let states = admission.states.spell_states.try_lock().ok();
+                let look_type = states.as_ref().and_then(|states| {
+                    use crate::foundation::condition::TemporaryDisplayedAppearance;
+                    let native = admission.active_generation?.native_gameplay()?;
+                    if native.source_digest() != runtime.content_pin().server_artifact_digest()
+                        || states.is_dead(actor)
+                    {
+                        return None;
+                    }
+                    let conditions = states
+                        .get(runtime, actor, command.game_session_id)?
+                        .owned_conditions();
+                    let now = admission.owner_now().get();
+                    let TemporaryDisplayedAppearance::Outfit(selection) =
+                        conditions.displayed_temporary_appearance_at(now)?
+                    else {
+                        return None;
+                    };
+                    let look_type = conditions.outfit_at(now)?;
+                    native
+                        .spell_appearances()?
+                        .for_selection(look_type, selection)?;
+                    Some(look_type)
+                });
+                npc_program::preview_greeting_with_outfit(
+                    &source,
+                    &request,
+                    &tracks,
+                    catalogue,
+                    now,
+                    &eligibility,
+                    player_name.as_deref(),
+                    look_type,
+                )
+            } else if let Some(inventory) = inventory {
                 npc_program::preview_with_inventory(
                     &request,
                     &tracks,

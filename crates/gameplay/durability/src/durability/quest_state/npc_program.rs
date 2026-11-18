@@ -129,6 +129,7 @@ pub fn preview_with_appearance(
         eligibility,
         player_name,
         appearance,
+        greeting_outfit: None,
     };
     let Some(source) = NpcRuleCatalog::for_catalogue(catalogue)?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
@@ -200,6 +201,34 @@ pub fn preview_with_appearance(
     }
 }
 
+/// Evaluate a read-only greeting with the current Channel-owned outfit.
+#[allow(clippy::too_many_arguments, reason = "the greeting shares the existing NPC preview facts")]
+pub fn preview_greeting_with_outfit(
+    source: &NpcRuleCatalog,
+    request: &NpcProgramRequest,
+    tracks: &BTreeMap<String, i64>,
+    catalogue: &QuestStateCatalogue,
+    now: i64,
+    eligibility: &NpcEligibility,
+    player_name: Option<&str>,
+    look_type: Option<u32>,
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
+    evaluate_source(
+        source,
+        request,
+        tracks,
+        catalogue,
+        now,
+        NpcEvaluationFacts {
+            eligibility,
+            player_name,
+            appearance: (&BTreeMap::new(), 0),
+            greeting_outfit: Some(look_type),
+        },
+        None,
+    )
+}
+
 /// Classify against a real fenced snapshot. Unlike an optimistic route preview,
 /// this never substitutes synthetic counts when the actual branch is absent.
 #[allow(clippy::too_many_arguments, reason = "the actual snapshot shares the existing source preview facts")]
@@ -217,7 +246,7 @@ pub fn preview_with_inventory(
         return Ok(None);
     };
     evaluate_source(&source, request, tracks, catalogue, now,
-        NpcEvaluationFacts { eligibility, player_name, appearance }, Some(inventory))
+        NpcEvaluationFacts { eligibility, player_name, appearance, greeting_outfit: None }, Some(inventory))
 }
 
 #[derive(Clone, Copy)]
@@ -225,6 +254,7 @@ struct NpcEvaluationFacts<'a> {
     eligibility: &'a NpcEligibility,
     player_name: Option<&'a str>,
     appearance: (&'a BTreeMap<u16, u8>, u8),
+    greeting_outfit: Option<Option<u32>>,
 }
 
 fn evaluate_source(
@@ -286,7 +316,9 @@ fn evaluate_source(
         sex: facts.appearance.1,
         outfits: facts.appearance.0,
     };
-    if hot_cuisine_m42::owns(request) {
+    if let Some(look_type) = facts.greeting_outfit {
+        source.plan_greeting_with_outfit(&input, look_type)
+    } else if hot_cuisine_m42::owns(request) {
         hot_cuisine_m42::plan(source, &input)
     } else if inventory.is_some() && marlin_trophy::owns(request) {
         source.plan_marlin_items(&input)
@@ -521,7 +553,7 @@ impl DurabilityRoot {
                 Some(super::super::character_chat_name::read_character_name_for_share_in_transaction(
                     &mut tx, character.as_bytes()).await?)
             } else { None };
-            let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref(), appearance: (&outfits,sex) };
+            let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref(), appearance: (&outfits,sex), greeting_outfit: None };
             let teleport_plan = if teleport.is_some() {
                 match teleport::evaluate(&source, &request, &effective_tracks, now, facts) {
                     Ok(Some(plan)) => Some(plan),
