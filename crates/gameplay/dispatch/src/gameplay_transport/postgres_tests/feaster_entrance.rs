@@ -195,6 +195,18 @@ async fn exercise(admin: String, capacity: Option<u8>) -> TestResult {
             .map_err(debug)?;
         assert_eq!(position.position().x, expected_x, "level {level}");
         if timed {
+            if solo {
+                assert_eq!(
+                    deps.runtime
+                        .lock()
+                        .await
+                        .current_live_creature_census()
+                        .map_err(debug)?
+                        .len(),
+                    1,
+                    "the solo boss must spawn during entry",
+                );
+            }
             let observer =
                 super::appearance_change_postgres::observer_visibility_tests::initialize(
                     &deps, &owner,
@@ -258,7 +270,36 @@ async fn exercise(admin: String, capacity: Option<u8>) -> TestResult {
                         .map_err(debug)?
                         .position()
                         .x,
-                    if solo && player == observer { 1 } else { 7 }
+                    if solo { 1 } else { 7 }
+                );
+            }
+            if solo {
+                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                drop(runtime);
+                let (step, _) = owner
+                    .ordinary_paced_step(
+                        deps.actor,
+                        session,
+                        StepDirection::East,
+                        Some(before),
+                        None,
+                    )
+                    .await;
+                assert_eq!(step.disposition, StepDisposition::Moved);
+                let runtime = deps.runtime.lock().await;
+                assert_eq!(
+                    runtime
+                        .read_actor_position(deps.actor)
+                        .map_err(debug)?
+                        .position()
+                        .x,
+                    1
+                );
+                assert!(
+                    runtime
+                        .current_live_creature_census()
+                        .map_err(debug)?
+                        .is_empty()
                 );
             }
         }
@@ -313,16 +354,16 @@ fn portal(capacity: Option<u8>) -> TestResult<Callback> {
         } else {
             "oteryn:creature.brain_head"
         };
-        let room_start = if solo { 2 } else { 1 };
+        let (room_start, room_end, spawn, exit) = if solo { (3, 7, 7, 1) } else { (1, 3, 1, 7) };
         callback["effects"]["encounter"] = serde_json::json!({
             "minimum_level": 250,
             "players": [],
-            "monsters": [{"position":{"x":room_start,"y":0,"floor":-7},"creature":defender}],
+            "monsters": [{"position":{"x":spawn,"y":0,"floor":-7},"creature":defender}],
             "room_min":{"x":room_start,"y":0,"floor":-7},
-            "room_max":{"x":3,"y":0,"floor":-7},
+            "room_max":{"x":room_end,"y":0,"floor":-7},
             "timing":{
                 "spawn_after_ms":if solo { 0 } else { 50 },"reset_after_ms":if solo { 600_000 } else { 300_000 },
-                "admission":{"capacity":capacity,"join_for_ms":if solo { 0 } else { 30_000 },"cooldown_s":if solo { 72_000 } else { 36_000 },"exit":{"x":7,"y":0,"floor":-7}}
+                "admission":{"capacity":capacity,"join_for_ms":if solo { 0 } else { 30_000 },"cooldown_s":if solo { 72_000 } else { 36_000 },"exit":{"x":exit,"y":0,"floor":-7}}
             }
         });
     }
