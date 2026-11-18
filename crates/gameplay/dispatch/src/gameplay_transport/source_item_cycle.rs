@@ -49,11 +49,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .and_then(|map| map.facts.next_movement_decay_time()),
                     )
                     .chain(self.states.quest_callbacks.next_encounter_due_us())
-                    .chain(
-                        self.rooms()
-                            .gate_monster_ai()
-                            .map(|_| states.next_monster_ai_pass_us),
-                    )
+                    .chain(self.rooms().gate_monster_ai().map(|_| {
+                        // A foreground owner may still hold durability when
+                        // the profile's immediate continuation wake is consumed.
+                        let next = states.next_monster_ai_pass_us;
+                        states
+                            .native_profile_pass
+                            .next_due(&runtime)
+                            .ok()
+                            .flatten()
+                            .map_or(next, |due| due.min(next))
+                    }))
                     .chain(
                         npc_voices
                             .as_ref()

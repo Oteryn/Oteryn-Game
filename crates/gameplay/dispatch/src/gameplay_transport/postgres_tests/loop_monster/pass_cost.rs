@@ -237,14 +237,18 @@ fn monster_pass_cost_spread_passive_census_batches_field_reads() -> TestResult {
 
 #[test]
 fn foreground_logout_gets_holder_between_large_monster_profile_batches() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     assert!(!admin.is_empty());
     pass_cost(true, false, Some(ProfileRegression::Logout))
 }
 
 #[test]
 fn every_awake_monster_thinks_once_per_due_cycle_across_profile_batches() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     assert!(!admin.is_empty());
     pass_cost(true, false, Some(ProfileRegression::DueCycle))
 }
@@ -295,8 +299,14 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
         if logout {
             deps.initialize(&owner).await;
             super::super::track(&owner, &deps)?;
-            admitted.item_fence = Some(owner.current_quest_fence(admitted.game_session_id)
-                .await.map_err(debug)?.ok_or("logout item fence")?.item_fence());
+            admitted.item_fence = Some(
+                owner
+                    .current_quest_fence(admitted.game_session_id)
+                    .await
+                    .map_err(debug)?
+                    .ok_or("logout item fence")?
+                    .item_fence(),
+            );
             use crate::gameplay_transport::connection::FirstEntryOutcome;
             admitted.first_entry = FirstEntryOutcome::Positioned;
             owner.admit_loop_training(&mut admitted).await;
@@ -423,46 +433,90 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
         if let Some(regression) = regression {
             let start = 10_000_000;
             let prepared = owner.capture_native_health_names(&runtime).map_err(debug)?;
-            let names = owner.read_prepared_native_health_names(&permit, prepared).await;
-            let names = owner.seal_native_health_names(&runtime, names).map_err(debug)?;
+            let names = owner
+                .read_prepared_native_health_names(&permit, prepared)
+                .await;
+            let names = owner
+                .seal_native_health_names(&runtime, names)
+                .map_err(debug)?;
             match regression {
                 ProfileRegression::Logout => {
                     use crate::gameplay_transport::connection::LogoutReply;
                     use oteryn_protocol_oteryn::logout::LogoutResult;
-                    let started = std::time::Instant::now();
                     let background = async {
                         // Own the guards here so the foreground can lock the runtime as
                         // soon as this physical pass returns.
                         let (mut runtime, mut states, mut attack) = (runtime, states, attack);
                         let profile_permit = permit;
-                        owner.drive_monster_profiles(
-                            &mut runtime, &mut states, &mut attack, &deps.room, native,
-                            &profile_permit, &revisions, &[], start, &names,
-                        ).await.map_err(debug)
+                        owner
+                            .drive_monster_profiles(
+                                &mut runtime,
+                                &mut states,
+                                &mut attack,
+                                &deps.room,
+                                native,
+                                &profile_permit,
+                                &revisions,
+                                &[],
+                                start,
+                                &names,
+                            )
+                            .await
+                            .map_err(debug)
                     };
                     let mut background = std::pin::pin!(background);
-                    assert!(std::future::poll_fn(|cx| std::task::Poll::Ready(
-                        std::future::Future::poll(background.as_mut(), cx).is_pending()
-                    )).await);
-                    assert!(!owner.root.is_ready(), "the profile pass already holds the root");
-                    let foreground = tokio::time::timeout(
-                        std::time::Duration::from_secs(2), owner.logout_session(admitted),
+                    assert!(
+                        std::future::poll_fn(|cx| std::task::Poll::Ready(
+                            std::future::Future::poll(background.as_mut(), cx).is_pending()
+                        ))
+                        .await
                     );
+                    assert!(
+                        !owner.root.is_ready(),
+                        "the profile pass already holds the root"
+                    );
+                    let bound = std::time::Duration::from_secs(2);
+                    let started = std::time::Instant::now();
+                    let foreground = async {
+                        let reply =
+                            tokio::time::timeout(bound, owner.logout_session(admitted)).await;
+                        (reply, started.elapsed())
+                    };
                     let (logout, profile) = tokio::join!(biased; foreground, background);
+                    let (logout, elapsed) = logout;
+                    eprintln!(
+                        "foreground logout elapsed_ms={} reply={logout:?} profile_complete={:?}",
+                        elapsed.as_millis(),
+                        profile.as_ref().map(|(_, _, complete)| *complete),
+                    );
+                    assert!(elapsed <= bound, "foreground logout exceeded {bound:?}");
                     assert_eq!(logout?, LogoutReply::Result(LogoutResult::Accepted));
                     let (_, _, complete) = profile?;
-                    assert!(!complete, "logout must get the holder before the profile cycle completes");
-                    eprintln!("foreground logout elapsed_ms={}", started.elapsed().as_millis());
+                    assert!(
+                        !complete,
+                        "logout must get the holder before the profile cycle completes"
+                    );
                 }
                 ProfileRegression::DueCycle => {
                     // Each synthetic viewer position represents interest in its
                     // spread chunk, making the full cohort due at the same tick.
-                    let viewers = actors.iter().map(|&actor| {
-                        runtime.read_actor_position(actor).map(|snapshot| snapshot.position())
-                    }).collect::<Result<Vec<_>, _>>().map_err(debug)?;
+                    let viewers = actors
+                        .iter()
+                        .map(|&actor| {
+                            runtime
+                                .read_actor_position(actor)
+                                .map(|snapshot| snapshot.position())
+                        })
+                        .collect::<Result<Vec<_>, _>>()
+                        .map_err(debug)?;
                     states.monster_melee.creature_ai.wake_indexed(
                         &viewers,
-                        |actor| runtime.read_actor_position(actor).ok().map(|snapshot| snapshot.position()),
+                        |actor| {
+                            runtime
+                                .read_actor_position(actor)
+                                .ok()
+                                .map(|snapshot| snapshot.position())
+                        },
                         0,
                     );
                     let started = std::time::Instant::now();
@@ -470,25 +524,59 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                     let mut turns = 0;
                     // The existing 1,024-think window is still enforced. The
                     // second window drains the rest of this same due cohort.
-                    for now in [start, start + crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS] {
+                    for now in [
+                        start,
+                        start + crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS,
+                    ] {
+                        let before = seen.len();
                         loop {
                             turns += 1;
                             assert!(turns <= 128, "profile cursor failed to drain");
-                            let (_, thought, complete) = owner.drive_monster_profiles(
-                                &mut runtime, &mut states, &mut attack, &deps.room, native,
-                                &permit, &revisions, &[], now, &names,
-                            ).await.map_err(debug)?;
+                            let (due, thought, complete) = owner
+                                .drive_monster_profiles(
+                                    &mut runtime,
+                                    &mut states,
+                                    &mut attack,
+                                    &deps.room,
+                                    native,
+                                    &permit,
+                                    &revisions,
+                                    &[],
+                                    now,
+                                    &names,
+                                )
+                                .await
+                                .map_err(debug)?;
                             for actor in thought {
                                 assert!(seen.insert(actor.placement_identity()), "duplicate think");
                             }
                             if complete {
                                 break;
                             }
+                            assert_eq!(
+                                due,
+                                Some(now),
+                                "unfinished work keeps its original due tick"
+                            );
                         }
+                        assert_eq!(
+                            seen.len() - before,
+                            crate::ai_think::CREATUREAI0_THINKS_PER_WINDOW,
+                            "drain the current window before advancing time",
+                        );
                     }
                     assert!(turns > 2, "the cohort should span several holder checkouts");
-                    assert_eq!(seen, actors.iter().map(|actor| actor.placement_identity()).collect());
-                    eprintln!("awake cohort turns={turns} elapsed_ms={}", started.elapsed().as_millis());
+                    assert_eq!(
+                        seen,
+                        actors
+                            .iter()
+                            .map(|actor| actor.placement_identity())
+                            .collect()
+                    );
+                    eprintln!(
+                        "awake cohort turns={turns} elapsed_ms={}",
+                        started.elapsed().as_millis()
+                    );
                 }
             }
             return Ok(());
@@ -503,21 +591,29 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                 .map_err(debug)?;
             let before = ground_scans(owner.root).await?;
             let started = std::time::Instant::now();
-            owner
-                .drive_monster_profiles(
-                    &mut runtime,
-                    &mut states,
-                    &mut attack,
-                    &deps.room,
-                    native,
-                    &permit,
-                    &revisions,
-                    &[],
-                    now,
-                    &names,
-                )
-                .await
-                .map_err(debug)?;
+            let mut turns = 0;
+            loop {
+                turns += 1;
+                assert!(turns <= 32, "profile failed to finish the census");
+                let (_, _, complete) = owner
+                    .drive_monster_profiles(
+                        &mut runtime,
+                        &mut states,
+                        &mut attack,
+                        &deps.room,
+                        native,
+                        &permit,
+                        &revisions,
+                        &[],
+                        now,
+                        &names,
+                    )
+                    .await
+                    .map_err(debug)?;
+                if complete {
+                    break;
+                }
+            }
             let elapsed = started.elapsed();
             let scans = ground_scans(owner.root).await? - before;
             eprintln!(
@@ -558,7 +654,11 @@ fn spread_dependencies_with_capacity(
     let mut deps = Dependencies::new()?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let entry = pin.qualified_room();
-    let world = crate::map::spell_tiles::tests::movement_arena::rectangle((0, 0), (u16::try_from(count * 16 - 1)?, 2), -7);
+    let world = crate::map::spell_tiles::tests::movement_arena::rectangle(
+        (0, 0),
+        (u16::try_from(count * 16 - 1)?, 2),
+        -7,
+    );
     let cells = world
         .movement_cells(entry.movement_cells())
         .map_err(debug)?;
