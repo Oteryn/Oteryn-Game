@@ -256,6 +256,11 @@ fn chamber(two_players: bool) -> TestResult {
                     let key = source_lever(map, world_tile(station.lever))?;
                     let mut placement = world.base().digest().to_vec();
                     placement.extend_from_slice(&key.to_be_bytes());
+                    // Advance the fixture's monotonic owner time between USEs.
+                    owner.states.test_owner_time.store(
+                        owner.owner_now().get() + 1_000_001,
+                        std::sync::atomic::Ordering::Relaxed,
+                    );
                     let outcome = owner
                         .use_object(
                             actor,
@@ -270,7 +275,12 @@ fn chamber(two_players: bool) -> TestResult {
                             },
                         )
                         .await;
-                    assert_eq!(outcome.disposition, UseDisposition::Committed);
+                    assert_eq!(
+                        outcome.disposition,
+                        UseDisposition::Committed,
+                        "switch {:?}",
+                        station.lever
+                    );
                 }
                 assert!(
                     owner
@@ -279,7 +289,10 @@ fn chamber(two_players: bool) -> TestResult {
                         .next_encounter_due_us()
                         .is_some()
                 );
-                owner.clock_origin -= std::time::Duration::from_secs(601);
+                owner.states.test_owner_time.store(
+                    owner.owner_now().get() + 601_000_001,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
                 owner.drain_quest_encounter_deadlines().await;
                 let runtime = owner.runtime.lock().await;
                 for actor in [deps.actor, peer_actor] {
