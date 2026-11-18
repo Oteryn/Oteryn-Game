@@ -10,6 +10,7 @@ use crate::map::{
     view::{MapFacts, placement_key},
 };
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use std::sync::atomic::Ordering;
 
 #[path = "l6_world_pickups/world.rs"]
 mod world;
@@ -20,7 +21,7 @@ const LEVER: TilePos = TilePos {
     floor: -14,
 };
 #[test]
-fn spawnsum_ferumbras_lever_admits_staged_players_and_opening_actors() -> TestResult {
+fn spawnsum_ferumbras_lever_admits_two_players_and_ejects_on_timeout() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -66,7 +67,7 @@ async fn exercise(h: &Harness) -> TestResult {
     let native = active.native_gameplay().ok_or("native item profiles")?;
     let world = world::native_scene_with_appearances(
         native,
-        [(33269, 31476, 33272, 31482), (33385, 31466, 33399, 31481)]
+        [(33269, 31476, 33272, 31482), (33385, 31461, 33399, 31481)]
             .into_iter()
             .map(|bounds| world::NativeCrop {
                 bytes: include_bytes!(concat!(
@@ -78,6 +79,16 @@ async fn exercise(h: &Harness) -> TestResult {
                 start: (33270, 31477),
                 expected: vec![],
             })
+            .chain(std::iter::once(world::NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z13-x130-y126.b3"
+                )),
+                region: (13, 130, 126),
+                bounds: (33319, 32318, 33320, 32319),
+                start: (33319, 32318),
+                expected: vec![],
+            }))
             .collect(),
         &[],
         &[8911, 8912, 14955, 14961],
@@ -165,7 +176,7 @@ async fn exercise(h: &Harness) -> TestResult {
             .disposition,
         UseDisposition::Committed
     );
-    let runtime = owner.runtime.lock().await;
+    let mut runtime = owner.runtime.lock().await;
     for actor in [deps.actor, second_actor] {
         assert_eq!(
             runtime
@@ -190,5 +201,29 @@ async fn exercise(h: &Harness) -> TestResult {
     };
     assert_eq!(count("oteryn:creature.ascending_ferumbras"), 1);
     assert_eq!(count("oteryn:creature.enthralled_demon"), 4);
+    let mut states = owner.states.spell_states.lock().await;
+    crate::gameplay_transport::encounter_phases::tick(&mut runtime, &mut states, 1_200_000_099);
+    assert_eq!(
+        runtime
+            .read_actor_position(second_actor)
+            .map_err(debug)?
+            .position()
+            .floor,
+        14
+    );
+    crate::gameplay_transport::encounter_phases::tick(&mut runtime, &mut states, 1_200_000_100);
+    for actor in [deps.actor, second_actor] {
+        assert_eq!(
+            runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            MovementLocalPosition {
+                x: 33319,
+                y: 32318,
+                floor: 13
+            }
+        );
+    }
     Ok(())
 }

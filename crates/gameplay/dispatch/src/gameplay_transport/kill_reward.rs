@@ -1962,9 +1962,11 @@ pub fn record_creature_kill(
         return;
     }
     if let Some(states) = sink.prey {
-        states
-            .encounter_phases
-            .note_projected_death(runtime, target);
+        states.encounter_phases.note_projected_death(
+            runtime,
+            target,
+            observed_at.map(|time| time.get()),
+        );
     }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");

@@ -347,7 +347,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )?)
                 } else { None };
                 let fight = ferumbras.then(|| super::super::encounter_phases::ferumbras::Fight::bind(
-                    runtime, actors, self.movement_cells().clone()
+                    runtime, actors, self.movement_cells().clone(), self.owner_now().get()
                 )).transpose()?;
                 credits
                     .map(|credits| {

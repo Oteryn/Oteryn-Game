@@ -67,11 +67,12 @@ impl Registry {
         &self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        now: Option<u64>,
     ) {
         if let Ok(mut fight) = self.ferumbras.lock()
             && let Some(fight) = fight.as_mut()
         {
-            fight.note_death(runtime, actor);
+            fight.note_death(runtime, actor, now);
         }
         let Ok(mut active) = self.active.lock() else {
             return;
@@ -241,7 +242,16 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) {
+pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStates, now: u64) {
+    // The existing owner pass holds the Channel lock. Move the phase out
+    // while applying ejection movement hooks, which also borrow spell state.
+    if let Ok(slot) = states.encounter_phases.ferumbras.get_mut()
+        && let Some(mut fight) = slot.take()
+        && !fight.tick(runtime, states, now).unwrap_or(false)
+        && let Ok(slot) = states.encounter_phases.ferumbras.get_mut()
+    {
+        *slot = Some(fight);
+    }
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
