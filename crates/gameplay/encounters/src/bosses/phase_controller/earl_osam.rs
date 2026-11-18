@@ -138,6 +138,11 @@ impl EarlOsamEncounter {
             ExactActorRef,
             MovementLocalPosition,
         ) -> Result<(), CarrierError>,
+        enter_centre: impl FnOnce(
+            &mut ChannelRuntimeV1,
+            ExactActorRef,
+            MovementLocalPosition,
+        ) -> Result<(), CarrierError>,
     ) -> Result<bool, CarrierError> {
         self.owner.current(runtime)?;
         if self.timeout_participants(now).is_some() {
@@ -172,7 +177,7 @@ impl EarlOsamEncounter {
                 let before = runtime.encounter_parts().0.clone();
                 let result = (|| {
                     if runtime.read_actor_position(self.earl)?.position() != self.centre {
-                        relocate(runtime, self.earl, self.centre)?;
+                        enter_centre(runtime, self.earl, self.centre)?;
                     }
                     let snapshot = runtime.companion_snapshot(self.earl)?;
                     // Both source forms share the same visible outfit and maximum health.
@@ -254,7 +259,7 @@ impl EarlOsamEncounter {
         ) -> Result<(), CarrierError>,
     ) -> Result<(), CarrierError> {
         if runtime.read_actor_position(self.earl)?.position() != self.centre {
-            relocate(runtime, self.earl, self.centre)?;
+            enter_centre(runtime, self.earl, self.centre)?;
         }
         self.spheres
             .retain(|&sphere| runtime.contains_live_creature(sphere));

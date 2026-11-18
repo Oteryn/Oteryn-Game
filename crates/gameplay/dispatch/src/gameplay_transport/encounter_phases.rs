@@ -151,7 +151,7 @@ impl Fight {
             Self::DukeKrule(fight) => fight.projected_death(runtime, actor),
             Self::EarlOsam(fight) => fight.projected_death(runtime, actor),
             Self::LordAzaram(fight) => fight.projected_death(runtime, actor, |at| {
-                remains_map(cells)?.create_movement_item_id(remains_tile(at)?, 31160, 0, || true)
+                encounter_map(cells)?.create_movement_item_id(remains_tile(at)?, 31160, 0, || true)
             }),
             Self::Sirs(fight) => fight.projected_death(runtime, actor),
             Self::Zelos(fight) => fight.projected_death(runtime, actor),
@@ -197,22 +197,12 @@ impl Fight {
     ) -> Result<bool, CarrierError> {
         let at = |runtime: &ChannelRuntimeV1, at| placement(cells, runtime, at);
         let relocate = |runtime: &mut ChannelRuntimeV1, actor, at| {
-            if !placement(cells, runtime, at) || runtime.position_occupied_by_other(actor, at)? {
-                return Err(CarrierError::WrongScope);
-            }
-            let before = runtime.read_actor_position(actor)?;
-            runtime
-                .borrow_movement_position()
-                .commit_creature_relocation(actor, before, at)
-                .map(|_| ())
+            relocate_encounter_creature(runtime, cells, actor, at)
         };
         match self {
             Self::Cults(fight) => fight.advance(runtime, at).map(|_| true),
             Self::CountVlarkorth(_) | Self::DukeKrule(_) => Err(CarrierError::PlanConflict),
-            Self::EarlOsam(fight) => match now {
-                Some(now) => fight.advance(runtime, now, at, relocate),
-                None => Ok(true),
-            },
+            Self::EarlOsam(_) => Ok(true),
             Self::LordAzaram(fight) => match now {
                 Some(now) => {
                     fight.advance(runtime, now, at, |at, key| remove_remains(cells, at, key))
@@ -814,7 +804,7 @@ fn remains_tile(at: MovementLocalPosition) -> Option<crate::map::overlay::TilePo
     })
 }
 
-fn remains_map(
+fn encounter_map(
     cells: &crate::content::NativeEntryMovementCells,
 ) -> Option<&crate::map::facts::BundleFacts> {
     match cells.index() {
@@ -830,7 +820,7 @@ fn remove_remains(
     at: MovementLocalPosition,
     key: u64,
 ) -> bool {
-    remains_map(cells)
+    encounter_map(cells)
         .zip(remains_tile(at))
         .is_some_and(|(map, tile)| map.remove_movement_item(tile, key, 31160))
 }
@@ -982,7 +972,25 @@ fn tick_phase_kind(
                 .map(|(centre, group)| (centre, group.to_vec())),
             _ => None,
         };
-        match fight.advance(runtime, Some(now), cells) {
+        let advanced = if let Fight::EarlOsam(osam) = fight {
+            let mut displaced = Vec::new();
+            let advanced = osam.advance(
+                runtime,
+                now,
+                |runtime, at| placement(cells, runtime, at),
+                |runtime, actor, at| relocate_encounter_creature(runtime, cells, actor, at),
+                |runtime, earl, centre| {
+                    enter_osam_centre(runtime, cells, earl, centre, &mut displaced)
+                },
+            );
+            if advanced.is_ok() {
+                exits.extend(displaced);
+            }
+            advanced
+        } else {
+            fight.advance(runtime, Some(now), cells)
+        };
+        match advanced {
             Ok(false) => return false,
             Ok(true) => {}
             Err(error) => {
@@ -1102,6 +1110,55 @@ fn evacuate(
         exits.push((cells.clone(), actor, session, before, after.position()));
     }
     true
+}
+
+fn relocate_encounter_creature(
+    runtime: &mut ChannelRuntimeV1,
+    cells: &crate::content::NativeEntryMovementCells,
+    actor: ExactActorRef,
+    at: MovementLocalPosition,
+) -> Result<(), CarrierError> {
+    if !placement(cells, runtime, at) || runtime.position_occupied_by_other(actor, at)? {
+        return Err(CarrierError::WrongScope);
+    }
+    let before = runtime.read_actor_position(actor)?;
+    runtime
+        .borrow_movement_position()
+        .commit_creature_relocation(actor, before, at)
+        .map(|_| ())
+}
+
+// Crystal 201189f grave_danger_earl_osam.lua:102–114. The channel start's
+// carrier checkpoint covers both the displacement and Earl's relocation.
+fn enter_osam_centre(
+    runtime: &mut ChannelRuntimeV1,
+    cells: &crate::content::NativeEntryMovementCells,
+    earl: ExactActorRef,
+    centre: MovementLocalPosition,
+    displaced: &mut Vec<EvacuatedPlayer>,
+) -> Result<(), CarrierError> {
+    let landing = MovementLocalPosition {
+        y: centre.y + 2,
+        ..centre
+    };
+    let map = encounter_map(cells).ok_or(CarrierError::WrongScope)?;
+    let doors = crate::map::floor::BundleDoors(map);
+    for (actor, before, session) in runtime.positioned_melee_census()? {
+        if actor == earl || before.position() != centre {
+            continue;
+        }
+        if let Some(session) = session {
+            let proof = crate::map::floor::prepare_quest_encounter_ejection(
+                runtime, cells, actor, session, before, landing, &doors,
+            )
+            .map_err(|_| CarrierError::PlanConflict)?;
+            let after = runtime.commit_source_step(proof)?;
+            displaced.push((cells.clone(), actor, session, centre, after.position()));
+        } else {
+            relocate_encounter_creature(runtime, cells, actor, landing)?;
+        }
+    }
+    relocate_encounter_creature(runtime, cells, earl, centre)
 }
 
 // Crystal 201189f grave_danger_earl_osam.lua:39–65.
