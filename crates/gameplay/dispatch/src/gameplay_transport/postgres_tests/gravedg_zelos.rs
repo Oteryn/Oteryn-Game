@@ -93,12 +93,14 @@ pub(super) async fn admit_partner(
             node: h.node.clone(),
             recovery: &h.recovery,
         },
-        61,
-        63,
-        71,
+        // The first peer opens the independent platform source once per harness.
+        60,
+        62,
+        70,
         now,
     )
-    .await?;
+    .await
+    .map_err(|error| format!("second player's durable admission: {error}"))?;
     let session = current.current_game_session_id();
     let actor = {
         let mut runtime = owner.runtime.lock().await;
