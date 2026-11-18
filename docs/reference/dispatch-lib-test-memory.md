@@ -38,6 +38,7 @@ The resubmission's startup verified both identity and SQL checks.
 | Dispatch lib test, dependencies cached | 1 | 16,559,372 | 392.963 | rustc SIGKILL before link |
 | Dispatch lib test with the combined package profile, dependencies cached | 1 | 16,340,144 | 1296.471 | Linked and listed 4,339 tests (4,341 output lines) |
 | Dispatch lib test with the checked-in profile, dependencies rebuilt | 1 | 16,283,852 | 939.934 | Linked and listed 4,339 tests (4,341 output lines) |
+| Current dispatch lib test with the checked-in profile, dependencies rebuilt | 1 | 16,267,684 | 1175.728 | Linked and listed 4,339 tests (4,341 output lines) |
 | Dispatch LLD replay with the combined package profile | — | 4,846,628 | 40.141 | Linked |
 | Dispatch lib test with the combined package profile, dependencies cached | 2 | 16,393,060 | 1005.117 | rustc SIGKILL with two LLVM workers |
 | Dispatch lib test with 512 units, dependencies cached | 2 | ≥16,393,384 | 647.152 | OOM counter increased before Cargo was stopped |
@@ -266,7 +267,7 @@ first appeared. The cgroup recorded zero OOM kills. Running the matching
 matching the pinned base's compiler registry count.
 
 Run the following with the checked-in profile and the retained Rust
-toolchain. The pipe counts the two summary lines as well as the test
+toolchain. The pipe counts the blank line and summary as well as the test
 names. Use `pipefail` so a failed Cargo invocation cannot produce a
 passing count.
 
@@ -287,9 +288,14 @@ estimating a compile speedup. The pinned base did not link, so its
 The current resubmission sampled the one-job dispatch rustc before and
 during LLVM. It mounted 735 generated PG roots and used 48 direct rlibs
 totalling 1,163,839,310 bytes, matching the previous one-job build. The
-last sample before the LLVM coordinator reached 14,633,728 KiB. With one
-observed optimization worker at a time, rustc reached 16,267,684 KiB
-during codegen without a cgroup OOM kill through that sample.
+last sample before the LLVM coordinator reached 14,633,728 KiB. Rustc
+reached its 16,267,684 KiB peak during codegen, and the cgroup recorded
+zero OOM kills. The fresh test binary was 1,259,896,936 bytes. LLD received
+241 rlibs totalling 1,487,365,036 bytes and 263 objects totalling
+1,447,064,280 bytes, including driver-added startup objects.
+The libtest listing contained 4,339 tests and no benchmarks.
+`content_npc_service_tests::stackable_count_boundaries` passed with
+4,338 tests filtered.
 
 The complete executable ran the exact
 `boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger`
