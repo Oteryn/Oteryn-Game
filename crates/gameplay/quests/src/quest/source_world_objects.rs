@@ -426,7 +426,22 @@ mod tests {
     }
 }
 
-/// Crystal 201189f actions_crude_lava_pump_achievements.lua:24–64.
+const DEPTHS_PUMP_PREFIX: &str = "oteryn:quest-callback/dangerous-depth-pump-";
+
+pub fn is_dangerous_depth_pump(callback: &Callback) -> bool {
+    callback.trigger == Trigger::Use
+        && callback.selector.action == Some(57303)
+        && callback.quest == "oteryn:quest.dangerous_depths_quest"
+        && callback.key.starts_with(DEPTHS_PUMP_PREFIX)
+}
+
+pub(super) fn is_dangerous_depth_pump_repeat(callback: &Callback) -> bool {
+    is_dangerous_depth_pump(callback)
+        && callback.key.ends_with("-repeat")
+        && callback.is_read_only()
+}
+
+/// Crystal 201189f actions_crude_lava_pump_achievements.lua:5–65.
 pub(crate) fn dangerous_depth_pumps() -> Vec<Callback> {
     const PUMPS: [(u16, u16, u8, &str, &str); 3] = [
         (
@@ -465,32 +480,35 @@ pub(crate) fn dangerous_depth_pumps() -> Vec<Callback> {
     };
     let mut callbacks = Vec::new();
     for (index, (x, y, ordinal, progress, achievement)) in PUMPS.into_iter().enumerate() {
+        let mut pump = uneasy_crystal();
+        pump.quest = "oteryn:quest.dangerous_depths_quest".into();
+        let position = Position { x, y, floor: -15 };
+        pump.selector = Selector {
+            position: Some(position),
+            action: Some(57303),
+            unique: None,
+            appearance: None,
+            // The retained World keeps the pump's lower half without a legacy AID.
+            native: Some(NativeSelector {
+                position,
+                ordinal,
+                appearance: 27501,
+            }),
+            ordinal: None,
+            position_aliases: Vec::new(),
+        };
+        pump.effects = CallbackEffectSet::default();
+        pump.sources = vec![
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_crude_lava_pump_achievements.lua:24-64".into()
+        ];
         let others: Vec<_> = PUMPS
             .iter()
             .enumerate()
             .filter_map(|(other, pump)| (other != index).then_some(pump.3))
             .collect();
         for (left, right) in [(0, 0), (0, 1), (1, 0), (1, 1)] {
-            let mut callback = uneasy_crystal();
-            callback.key =
-                format!("oteryn:quest-callback/dangerous-depth-pump-{achievement}-{left}{right}");
-            callback.quest = "oteryn:quest.dangerous_depths_quest".into();
-            let position = Position { x, y, floor: -15 };
-            callback.selector = Selector {
-                position: Some(position),
-                action: Some(57303),
-                unique: None,
-                appearance: None,
-                // The retained World keeps the pump's lower half without a legacy AID.
-                native: Some(NativeSelector {
-                    position,
-                    ordinal,
-                    appearance: 27501,
-                }),
-                ordinal: None,
-                position_aliases: Vec::new(),
-            };
-            callback.effects = CallbackEffectSet::default();
+            let mut callback = pump.clone();
+            callback.key = format!("{DEPTHS_PUMP_PREFIX}{achievement}-{left}{right}");
             callback.requires_world_admission = true;
             callback.storage = vec![
                 storage(progress, 0, true),
@@ -504,11 +522,14 @@ pub(crate) fn dangerous_depth_pumps() -> Vec<Callback> {
                     .achievements
                     .push("oteryn:achievement/death_in_the_depths".into());
             }
-            callback.sources = vec![
-                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_crude_lava_pump_achievements.lua:24-64".into()
-            ];
             callbacks.push(callback);
         }
+        let mut claimed = storage(progress, 1, false);
+        claimed.preserve = false;
+        claimed.read_only = true;
+        pump.key = format!("{DEPTHS_PUMP_PREFIX}{achievement}-repeat");
+        pump.storage = vec![claimed];
+        callbacks.push(pump);
     }
     callbacks
 }

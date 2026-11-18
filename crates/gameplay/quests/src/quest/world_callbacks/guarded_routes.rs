@@ -23,14 +23,14 @@ pub(super) fn disjoint(a: &Callback, b: &Callback) -> bool {
 }
 
 /// An achievement station can use disjoint durable progress bands to select
-/// its award bundle. This is selection advice; the writer still checks the
-/// selected callback's complete storage predicates under the Character fence.
+/// its award bundle or the already-claimed Warzone pump effect. The writer or
+/// read-only guard still checks the selected predicates under the Character fence.
 pub fn disjoint_achievement_routes(left: &Callback, right: &Callback) -> bool {
     let fenced = |callback: &Callback| {
         callback.actor_kind == ActorKind::Player
             && callback.trigger == Trigger::Use
-            && callback.requires_world_admission
-            && !callback.achievements.is_empty()
+            && ((callback.requires_world_admission && !callback.achievements.is_empty())
+                || crate::quest::source_world_objects::is_dangerous_depth_pump_repeat(callback))
             && callback.native_rule.is_none()
             && callback.lever.is_none()
             && callback.item_on_target.is_none()
