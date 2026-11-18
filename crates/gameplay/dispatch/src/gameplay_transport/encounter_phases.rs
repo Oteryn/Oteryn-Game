@@ -13,7 +13,7 @@ mod ghulosh;
 #[derive(Debug)]
 enum Fight {
     Cults(Box<CultsEncounter>),
-    Ghulosh(ghulosh::Ghulosh),
+    Ghulosh(Box<ghulosh::Ghulosh>),
 }
 
 impl Fight {
@@ -224,7 +224,7 @@ pub(super) fn bind(
     if encounter.phase == Some(EncounterPhase::Ghulosh) {
         return Ok(ActivePhase {
             key,
-            fight: Fight::Ghulosh(ghulosh::Ghulosh::bind(runtime, actors)?),
+            fight: Fight::Ghulosh(Box::new(ghulosh::Ghulosh::bind(runtime, actors)?)),
             credits,
             frozen: None,
             cells,
