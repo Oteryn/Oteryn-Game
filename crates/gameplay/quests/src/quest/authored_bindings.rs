@@ -340,7 +340,7 @@ impl Bindings {
                         if let Some(required) = &callback.effects.require_encounter_outcome
                             && !quest.stages.iter().any(|stage| {
                                 matches!(&stage.trigger, Trigger::MapUse { callback }
-                                    if callback.effects.encounter_outcome.as_ref().is_some_and(|source| source.outcome == *required))
+                                    if callback.effects.encounter_outcome.as_ref().is_some_and(|source| source.can_produce(required)))
                             })
                         {
                             return Err("authored exit lacks its encounter outcome source".into());

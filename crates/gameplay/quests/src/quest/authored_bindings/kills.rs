@@ -109,7 +109,7 @@ impl KillCounter {
                     || !quest.stages.iter().any(|stage| {
                         matches!(&stage.trigger, super::Trigger::MapUse { callback }
                         if callback.effects.encounter_outcome.as_ref().is_some_and(|source| {
-                            source.outcome == *required && source.terminal == self.creature
+                            source.can_credit(required, &self.creature)
                         }))
                     })
             })

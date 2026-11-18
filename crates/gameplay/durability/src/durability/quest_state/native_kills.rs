@@ -126,7 +126,7 @@ impl NativeQuestDeath {
                                         bindings.world_callbacks().any(|callback| {
                                             callback.key == source && callback.quest == counter.quest
                                                 && callback.effects.encounter_outcome.as_ref().is_some_and(|outcome| {
-                                                    &outcome.outcome == required && outcome.terminal == self.creature
+                                                    outcome.can_credit(required, &self.creature)
                                                 })
                                         })
                                     }),

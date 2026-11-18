@@ -451,6 +451,94 @@ impl OutcomeRequirement {
 pub struct EncounterOutcome {
     pub outcome: OutcomeRequirement,
     pub terminal: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shield_handoff: Option<ShieldHandoff>,
+}
+
+impl EncounterOutcome {
+    pub fn can_produce(&self, required: &OutcomeRequirement) -> bool {
+        self.outcome == *required
+            || (self.shield_handoff.is_some()
+                && self.outcome.group == required.group
+                && required.mode == EncounterMode::Hard)
+    }
+
+    pub fn can_credit(&self, required: &OutcomeRequirement, creature: &str) -> bool {
+        self.can_produce(required)
+            && if self.outcome.mode == required.mode {
+                self.terminal == creature
+            } else {
+                self.shield_handoff
+                    .as_ref()
+                    .is_some_and(|phase| phase.terminal == creature)
+            }
+    }
+}
+
+/// Crystal 201189f8 arbaziloth_fight.lua:28-53,125-274. The terminal
+/// changes only after every shield breaks and the support survives the delay.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ShieldHandoff {
+    pub support: String,
+    pub terminal: String,
+    pub thresholds_percent: Vec<u8>,
+    pub fire_min: Position,
+    pub fire_max: Position,
+    pub fire_appearance: u16,
+    pub fire_delay_ms: u32,
+    pub tool_appearance: u16,
+    pub dodge_percent: u8,
+    pub handoff_delay_ms: u32,
+}
+
+impl ShieldHandoff {
+    fn valid(&self, outcome: &EncounterOutcome, room: &Encounter) -> bool {
+        let creature =
+            |key: &str| key.starts_with("oteryn:creature.") && crate::quest::valid_quest_key(key);
+        let in_room = |position: Position| {
+            position.floor == room.room_min.floor
+                && (room.room_min.x..=room.room_max.x).contains(&position.x)
+                && (room.room_min.y..=room.room_max.y).contains(&position.y)
+        };
+        let width = u32::from(self.fire_max.x.saturating_sub(self.fire_min.x)) + 1;
+        let height = u32::from(self.fire_max.y.saturating_sub(self.fire_min.y)) + 1;
+        outcome.outcome.mode == EncounterMode::Easy
+            && creature(&self.support)
+            && creature(&self.terminal)
+            && self.support != outcome.terminal
+            && self.terminal != outcome.terminal
+            && self.terminal != self.support
+            && room
+                .monsters
+                .iter()
+                .filter(|monster| monster.creature == self.support)
+                .count()
+                == 1
+            && !room
+                .monsters
+                .iter()
+                .any(|monster| monster.creature == self.terminal)
+            && (1..=8).contains(&self.thresholds_percent.len())
+            && self
+                .thresholds_percent
+                .iter()
+                .all(|percent| (1..100).contains(percent))
+            && self
+                .thresholds_percent
+                .windows(2)
+                .all(|pair| pair[0] > pair[1])
+            && in_room(self.fire_min)
+            && in_room(self.fire_max)
+            && self.fire_min.x <= self.fire_max.x
+            && self.fire_min.y <= self.fire_max.y
+            && (2..=4096).contains(&width.saturating_mul(height))
+            && self.fire_appearance != 0
+            && self.tool_appearance != 0
+            && (1..=60_000).contains(&self.fire_delay_ms)
+            && (1..=60_000).contains(&self.handoff_delay_ms)
+            && self.dodge_percent < 100
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -533,6 +621,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || effects.encounter.as_ref().is_none_or(|room| {
                 room.phase.is_some()
                     || room.timing.is_some()
+                    || outcome
+                        .shield_handoff
+                        .as_ref()
+                        .is_some_and(|phase| !phase.valid(outcome, room))
                     || room
                         .monsters
                         .iter()
