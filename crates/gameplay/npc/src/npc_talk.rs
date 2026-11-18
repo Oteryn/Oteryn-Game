@@ -145,6 +145,7 @@ const OROCKLE_TRADE: &str = "Of course, just browse through my wares.";
 const SHARED_WORLD_NPC_SOURCE: &str = "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422:176-180;d2c5d365f1478af39aefe90776226f016ddd6f2fb595c94d38e0a557ae148b8d:77-83;75ad4f7af508e8ab40004b3413ff831e331072c605d1d2ba29dc303dc29dfdc5:26-60;8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a:81-82,92;wiki:69583@1149608:4e4593cc7f581654f984a86a66309f349dfb23f19a38adf9856c625a8522c0eb:158;yeo-retained-canonical-greeting-v1";
 
 const YASIR: &str = "oteryn:npc.yasir";
+const MORDECAI: &str = "oteryn:npc.mordecai";
 // Retained Crystal 9f5a72c: npc/yasir.lua d189aab0.. L812-833 and
 // npc_system/npc_handler.lua 8479e2aa.. L79-81 (unoverridden default greet).
 // The ariki handler opens the shop silently; the dispatch open grants Si, Ariki!.
@@ -226,16 +227,27 @@ impl NpcTalkEntry {
             .iter()
             .any(|greeting| contains_words(&said, &words(greeting)))
             || says_any(&said, &FAREWELLS)
+            || says_any(&said, &TRADE_WORDS)
             || self.dialogue_keyword(&said).is_some()
+    }
+
+    /// Whether the focused NPC's authored dialogue consumes the message.
+    pub fn matches_dialogue_keyword(&self, text: &str) -> bool {
+        self.dialogue_keyword(&words(text)).is_some()
     }
 
     fn dialogue_keyword(
         &self,
         said: &[String],
     ) -> Option<&crate::content::ProjectV2DialogueKeyword> {
-        self.dialogue_keywords
-            .iter()
-            .find(|keyword| contains_words(said, &keyword.triggers))
+        self.dialogue_keywords.iter().find(|keyword| {
+            let trigger: Vec<_> = keyword
+                .triggers
+                .iter()
+                .flat_map(|part| words(part))
+                .collect();
+            contains_words(said, &trigger)
+        })
     }
 
     /// The line that ends a conversation.
@@ -586,7 +598,7 @@ impl NpcTalkBook {
                 )
             } else if matches!(
                 reference.key.as_str(),
-                "oteryn:npc.frodo" | "oteryn:npc.mordecai" | "oteryn:npc.sinatuki"
+                "oteryn:npc.frodo" | MORDECAI | "oteryn:npc.sinatuki"
             ) {
                 // Use the pinned focus messages where supplied, with Crystal's defaults
                 // for Sinatuki. Only literal, single-line keywords are supported here.
@@ -808,7 +820,7 @@ impl NpcTalkBook {
                             reference.key.as_str(),
                             "oteryn:npc.al_dee"
                                 | "oteryn:npc.frodo"
-                                | "oteryn:npc.mordecai"
+                                | MORDECAI
                                 | "oteryn:npc.seymour"
                                 | "oteryn:npc.sinatuki"
                                 | "oteryn:npc.uzgod"
@@ -818,6 +830,10 @@ impl NpcTalkBook {
                         || journal_fallback,
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
+                    } else if reference.key == MORDECAI {
+                        npc.bank_dialogue
+                            .as_ref()
+                            .and_then(|dialogue| dialogue.walkaway.first().cloned())
                     } else {
                         isle_messages
                             .map(|messages| messages.walkaway)
@@ -956,17 +972,17 @@ pub fn talk<K: Copy + PartialEq>(
             *engaged = None;
             return start(speaker, text, npcs, engaged);
         };
+        if let Some(keyword) = npc.entry.dialogue_keyword(&said) {
+            return Some(NpcReply {
+                id: npc.id,
+                text: keyword.reply[0].clone(),
+            });
+        }
         if says_any(&said, &FAREWELLS) {
             *engaged = None;
             return Some(NpcReply {
                 id: npc.id,
                 text: npc.entry.farewell_reply.clone(),
-            });
-        }
-        if let Some(keyword) = npc.entry.dialogue_keyword(&said) {
-            return Some(NpcReply {
-                id: npc.id,
-                text: keyword.reply[0].clone(),
             });
         }
         if says_any(&said, &TOPICS) && !npc.entry.admitted_dialogue {
@@ -1351,7 +1367,13 @@ mod tests {
             .map_err(|error| format!("{error:?}"))?;
         let book = NpcTalkBook::from_model(&model);
         let entry = book.get("oteryn:npc.sinatuki").ok_or("Sinatuki missing")?;
-        for text in ["CHUQUA, nupi!", "hi nupi", "bye nupi"] {
+        for text in [
+            "CHUQUA, nupi!",
+            "hi nupi",
+            "bye nupi",
+            "trade nupi",
+            "offers nupi",
+        ] {
             assert!(entry.matches_focus_or_dialogue(text), "{text}");
         }
         for text in ["nupi", "this nupi", "ochuqua nupi", "byebye nupi"] {

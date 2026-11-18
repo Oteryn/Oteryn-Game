@@ -37,7 +37,11 @@ fn sinatuki_exchange_postgres_dispatch() -> TestResult {
     std::thread::Builder::new()
         .name("sinatuki-exchange".into())
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| {
+            scenario(false)
+                .and_then(|()| scenario(true))
+                .map_err(|error| error.to_string())
+        })?
         .join()
         .map_err(|_| "Sinatuki PostgreSQL thread panicked")??;
     eprintln!(
@@ -47,10 +51,14 @@ fn sinatuki_exchange_postgres_dispatch() -> TestResult {
     Ok(())
 }
 
-fn scenario() -> TestResult {
-    run(async |admin| {
-        let h =
-            Harness::create_with_admission_seed(admin, "sinatuki_exchange", true, false).await?;
+fn scenario(fragmented: bool) -> TestResult {
+    run(async move |admin| {
+        let label = if fragmented {
+            "sinatuki_fragmented"
+        } else {
+            "sinatuki_exchange"
+        };
+        let h = Harness::create_with_admission_seed(admin, label, true, false).await?;
         eprintln!("POSTGRES_STARTED sinatuki_exchange_postgres_dispatch");
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -143,12 +151,34 @@ fn scenario() -> TestResult {
             command_id,
             item_fence: Some(fence),
         };
-        seed(&h).await?;
+        seed(&h, fragmented).await?;
+        if fragmented {
+            assert_inventory(&h, [100, 100, 0]).await?;
+            let greeting = talk(&mut owner, deps.actor, command(1), npc, "hi").await?;
+            assert!(greeting.conversation.ok_or("Sinatuki greeting")?.open.is_some());
+            let exchanged = talk(&mut owner, deps.actor, command(2), npc, "nupi").await?;
+            assert!(exchanged.inventory_changed);
+            assert_eq!(
+                exchanged.conversation.ok_or("Sinatuki exchange")?.lines,
+                ["Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>"]
+            );
+            assert_inventory(&h, [100, 0, 5]).await?;
+            assert_eq!(receipt_count(&h).await?, 1);
+            let replay = talk(&mut owner, deps.actor, command(2), npc, "nupi").await?;
+            assert!(replay.inventory_changed, "the original receipt must be replayed");
+            assert!(replay.conversation.is_none());
+            assert_inventory(&h, [100, 0, 5]).await?;
+            assert_eq!(receipt_count(&h).await?, 1);
+            drop(seal);
+            return h.cleanup().await;
+        }
         for (id, text, expected) in [
             (1, "hi nupi", Some(("Greetings, Fixture Hero.", true))),
             (2, "chuqua nupi", Some(("Chuqua jamjam!! Tiyopa Sinatuki?", true))),
             (3, "hi nupi", None),
-            (4, "bye nupi", Some(("Good bye, Fixture Hero.", false))),
+            (4, "trade nupi", None),
+            (5, "offers nupi", None),
+            (6, "bye nupi", Some(("Good bye, Fixture Hero.", false))),
         ] {
             let outcome = talk(&mut owner, deps.actor, command(id), npc, text).await?;
             assert_eq!(outcome.conversation.is_some(), expected.is_some(), "{text}");
@@ -159,15 +189,9 @@ fn scenario() -> TestResult {
             }
             assert!(!outcome.inventory_changed, "{text}");
             assert_inventory(&h, [100, 99, 0]).await?;
-            let has_receipt: bool = sqlx::query_scalar(
-                "SELECT EXISTS (SELECT 1 FROM game_npc_trades WHERE npc_key=$1)",
-            )
-            .bind(NPC)
-            .fetch_one(&h.pool)
-            .await?;
-            assert!(!has_receipt, "{text}");
+            assert_eq!(receipt_count(&h).await?, 0, "{text}");
         }
-        let greeted = talk(&mut owner, deps.actor, command(5), npc, "hi").await?;
+        let greeted = talk(&mut owner, deps.actor, command(7), npc, "hi").await?;
         assert!(
             greeted.conversation.is_some(),
             "Sinatuki must open focus from the production talk book"
@@ -177,7 +201,7 @@ fn scenario() -> TestResult {
             let outcome = talk(
                 &mut owner,
                 deps.actor,
-                command(6 + u64::try_from(index)?),
+                command(8 + u64::try_from(index)?),
                 npc,
                 "nupi",
             )
@@ -189,20 +213,20 @@ fn scenario() -> TestResult {
         }
         for (id, reply, changed, expected) in [
             (
-                8,
+                10,
                 "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>",
                 true,
                 [0, 99, 5],
             ),
             (
-                9,
+                11,
                 "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>",
                 true,
                 [0, 0, 10],
             ),
-            (10, "Kisavuta! <giggles>", false, [0, 98, 10]),
+            (12, "Kisavuta! <giggles>", false, [0, 98, 10]),
         ] {
-            if id == 10 {
+            if id == 12 {
                 let mut fixture = h.pool.begin().await?;
                 sqlx::query("SET LOCAL session_replication_role=replica")
                     .execute(&mut *fixture)
@@ -255,7 +279,7 @@ async fn talk(
     Ok(outcome)
 }
 
-async fn seed(h: &Harness) -> TestResult {
+async fn seed(h: &Harness, fragmented: bool) -> TestResult {
     let mut fixture = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *fixture)
@@ -270,15 +294,29 @@ async fn seed(h: &Harness) -> TestResult {
     sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
         .bind(id(41).as_slice()).bind(id(200).as_slice()).bind(id(42).as_slice()).bind(id(245).as_slice())
         .execute(&mut *fixture).await?;
-    for (item, key, count, ordinal) in [
-        (201, TROUT, 60, 1),
-        (202, TROUT, 40, 2),
-        (203, PERCH, 99, 3),
-    ] {
+    let entries = if fragmented {
+        &[
+            (201, TROUT, 25, 1),
+            (202, TROUT, 25, 2),
+            (203, TROUT, 25, 3),
+            (204, TROUT, 25, 4),
+            (205, PERCH, 100, 5),
+        ][..]
+    } else {
+        &[(201, TROUT, 60, 1), (202, TROUT, 40, 2), (203, PERCH, 99, 3)][..]
+    };
+    for &(item, key, count, ordinal) in entries {
         seed_entry(&mut fixture, item, key, count, ordinal).await?;
     }
     fixture.commit().await?;
     Ok(())
+}
+
+async fn receipt_count(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT count(*) FROM game_npc_trades WHERE npc_key=$1")
+        .bind(NPC)
+        .fetch_one(&h.pool)
+        .await?)
 }
 
 async fn mint_fixture(
