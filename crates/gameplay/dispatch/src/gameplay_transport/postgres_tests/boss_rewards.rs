@@ -386,6 +386,10 @@ fn scenario(case: Case) -> TestResult {
             }],
         };
         if matches!(case, Case::OrdinaryDamagerAndHealer) {
+            // The same compiled ordinary reward boss used by the production
+            // lethal-to-custody case; no synthetic boss identity defines policy.
+            plan.boss_key = "oteryn:creature.grand_mother_foulscale".into();
+            owner.reward_table().row(&plan.boss_key).map_err(debug)?;
             let source = super::house_transfer::RecoverySource::start(&h).await?;
             let session = privacy::admit_gameplay_peer(&h, &source.evidence, 1).await?;
             let current =
@@ -423,10 +427,38 @@ fn scenario(case: Case) -> TestResult {
                         &h.node,
                         fence.runtime_scope,
                         fence.scope_ownership_generation,
-                        plan
+                        plan.clone()
                     )
                     .await?,
                 "durable replay settles once"
+            );
+            let census = plan
+                .contributors
+                .iter()
+                .map(|participant| {
+                    oteryn_gameplay_encounters::bosses::reward_chest::FrozenBossContribution {
+                        character: *participant.character_id.as_bytes(),
+                        contribution: participant.contribution,
+                    }
+                })
+                .collect::<Vec<_>>();
+            let planned = oteryn_gameplay_encounters::bosses::reward_chest::freeze_personal_rewards(
+                &plan.boss_key,
+                plan.death,
+                oteryn_gameplay_encounters::bosses::reward_chest::reward_expiry(
+                    plan.minted_at_unix_ms,
+                )
+                .ok_or("reward expiry")?,
+                &census,
+                |_, _| plan.chests[0].items.clone(),
+            );
+            assert_eq!(
+                planned
+                    .iter()
+                    .map(|chest| chest.character)
+                    .collect::<Vec<_>>(),
+                vec![*fence.character_id.as_bytes()],
+                "the production Rust planner excludes the healer too"
             );
             let counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_boss_reward_chests WHERE character_id=encode($1,'hex')::uuid)").bind(healer.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(counts, (1, 1, 0));

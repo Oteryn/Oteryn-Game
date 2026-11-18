@@ -912,6 +912,22 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         },
         "duplicate corpse projection must retain the first captured receipt"
     );
+    if mode == "overlordcr_old_pin" {
+        let previous = source_deaths::overlord_predecessor(&catalogue)?;
+        let stored: Vec<u8> = sqlx::query_scalar("SELECT definition_hash FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(&rule.quest).fetch_one(&h.pool).await?;
+        assert_eq!(
+            Some(stored.as_slice()),
+            previous
+                .definition_hash(&rule.quest)
+                .as_ref()
+                .map(|hash| hash.as_slice()),
+            "compatible quest pins remain immutable"
+        );
+        let skipped: i64 = sqlx::query_scalar("SELECT count(*) FROM game_boss_death_quest_skips")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(skipped, 0, "a compatible predecessor is never skipped");
+    }
     if mode == "overlordcr_fallback" {
         let xp: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_xp_receipts")
             .fetch_one(&h.pool)
