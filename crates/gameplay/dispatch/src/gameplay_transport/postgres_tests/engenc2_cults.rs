@@ -427,6 +427,20 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                     .await;
                 }
                 PhaseScenario::Zelos => {
+                    let cooldowns: Vec<(Vec<u8>, i64)> = sqlx::query_as(
+                        "SELECT uuid_send(character_id), available_at \
+                         FROM game_character_boss_cooldowns WHERE boss_key = $1 ORDER BY character_id",
+                    )
+                    .bind("oteryn:creature.king_zelos")
+                    .fetch_all(&h.pool)
+                    .await?;
+                    assert_eq!(
+                        cooldowns.len(),
+                        2,
+                        "the lever persists a cooldown for each entrant"
+                    );
+                    assert_ne!(cooldowns[0].0, cooldowns[1].0);
+                    assert_eq!(cooldowns[0].1, cooldowns[1].1);
                     return super::gravedg_zelos::exercise(
                         &owner,
                         &admitted,
