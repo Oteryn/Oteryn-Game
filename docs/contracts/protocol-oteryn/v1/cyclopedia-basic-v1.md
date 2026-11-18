@@ -70,7 +70,7 @@ code 5. Crystal source: `data/scripts/discovery_system.lua:16-19,460-488,643`.
 Shuffle resets POIs, found count and completion. A same-transaction typed reset
 receipt permits the affected canonical subarea to lose completion; other progress
 regressions remain rejected. Area percentages and completed-area census are derived
-from current subarea rows. Completion is persisted, not the resulting bonus.
+from persisted subarea completion.
 
 The STEP that completes all seven POIs queues the completion banner through the existing
 capability-31 status-text channel. The capability-57 client presents completion

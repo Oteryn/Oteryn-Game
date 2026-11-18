@@ -227,6 +227,30 @@ impl BasicArea {
 mod tests {
     #![allow(clippy::panic)]
     use super::*;
+
+    fn visit_remaining_points(area: &BasicArea, progress: &mut MapProgress, pool: &[Point]) {
+        for _ in 0..area.generated_count {
+            let Some(exploration) = &progress.exploration else {
+                break;
+            };
+            let next = exploration
+                .points
+                .iter()
+                .copied()
+                .enumerate()
+                .find(|(index, _)| exploration.found & (1 << index) == 0);
+            let Some((_, point)) = next else {
+                panic!("completed POI run remained active");
+            };
+            assert_eq!(
+                area.apply(progress, MapAction::Find, pool, point, false, &[2; 16]),
+                Ok(true)
+            );
+        }
+        assert!(progress.discovered);
+        assert!(progress.exploration.is_none());
+    }
+
     #[test]
     fn discovery_activates_without_premium_and_reset_removes_completion() {
         let Some(area) = BasicArea::embedded() else {
@@ -249,24 +273,8 @@ mod tests {
             area.apply(&mut progress, MapAction::Query, &pool, at, false, &[1; 16]),
             Ok(true)
         );
-        let Some(exploration) = progress.exploration.as_ref() else {
-            panic!("automatic exploration")
-        };
-        let points = exploration.points.clone();
-        for point in points {
-            assert_eq!(
-                area.apply(
-                    &mut progress,
-                    MapAction::Find,
-                    &pool,
-                    point,
-                    false,
-                    &[2; 16]
-                ),
-                Ok(true)
-            );
-        }
-        assert!(progress.discovered);
+        assert!(progress.exploration.is_some(), "automatic exploration");
+        visit_remaining_points(&area, &mut progress, &pool);
         assert_eq!(
             area.apply(
                 &mut progress,
@@ -427,14 +435,7 @@ mod tests {
             panic!("shuffled exploration")
         };
         assert_eq!(exploration.found, 0);
-        for p in exploration.points.iter().take(7) {
-            assert_eq!(
-                area.apply(&mut state, MapAction::Find, &pool, *p, false, &[3; 16]),
-                Ok(true)
-            );
-        }
-        assert!(state.discovered);
-        assert!(state.exploration.is_none());
+        visit_remaining_points(&area, &mut state, &pool);
         assert_eq!(
             area.apply(&mut state, MapAction::Start, &pool, start, true, &[3; 16]),
             Err(MapRefusal::AlreadyDiscovered)

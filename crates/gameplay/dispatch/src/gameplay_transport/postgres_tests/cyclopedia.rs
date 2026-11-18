@@ -909,8 +909,9 @@ fn scenario(canonical: bool) -> TestResult {
             .points;
         // From the one-tile generation margin, the query may show only the real viewport.
         let edge = points.first().ok_or("reset POI")?;
+        let edge_side: i32 = if edge.x <= 22 { 1 } else { -1 };
         let at = Point {
-            x: edge.x + if edge.x <= 23 { 8 } else { -8 },
+            x: edge.x + 8 * edge_side,
             ..*edge
         };
         move_fixture_actor(
@@ -956,19 +957,25 @@ fn scenario(canonical: bool) -> TestResult {
             .await
             .map_err(debug)?;
         let mut expected_found: u8 = 0;
-        for point in &points {
+        // Approach the first POI across the exact viewport edge before visiting the rest.
+        let landings = [(edge, 8 * edge_side), (edge, 7 * edge_side)]
+            .into_iter()
+            .chain(points.iter().map(|point| {
+                let side = if point.x <= 29 { 1 } else { -1 };
+                (point, side)
+            }));
+        for (point, offset) in landings {
             use oteryn_protocol_oteryn::world_spatial::StepDirection;
-            // Land beside the POI, with a walkable adjacent origin on the same row.
-            let (offset, direction) = if point.x <= 29 {
-                (1, StepDirection::West)
+            let direction = if offset > 0 {
+                StepDirection::West
             } else {
-                (-1, StepDirection::East)
+                StepDirection::East
             };
             move_fixture_actor(
                 &owner,
                 &deps,
                 MovementLocalPosition {
-                    x: point.x + 2 * offset,
+                    x: point.x + offset + offset.signum(),
                     y: point.y,
                     floor: -point.floor,
                 },
