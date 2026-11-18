@@ -200,9 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
-                {
+                if encounter.phase.is_some() {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -343,7 +341,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let credits = if encounter.phase.is_some() {
+        let credits = if encounter.linear_phases.is_some() {
+            Some(Vec::new())
+        } else if encounter.phase.is_some() {
             let Ok(credits) =
                 super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
             else {
@@ -354,7 +354,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let mut phases = if encounter.phase.is_some() {
-            let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
+            let Ok(active) = states
+                .encounter_phases
+                .reserve(runtime, key, self.owner_now().get())
+            else {
                 return UseDisposition::Occupied;
             };
             Some(active)
@@ -394,6 +397,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &party,
                             credits,
                             self.movement_cells().clone(),
+                            self.owner_now().get(),
                         )
                     })
                     .transpose().map(|phase| (phase, actors.to_vec(), roster))

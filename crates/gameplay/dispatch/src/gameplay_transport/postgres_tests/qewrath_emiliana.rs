@@ -80,7 +80,7 @@ pub(super) async fn exercise(
                     "maximum": {"x": 32420, "y": 32693, "floor": -12}
                 }},
             "take": [], "give": null, "outfit": null, "achievement": null, "reply": [BRIEFING],
-            "sources": ["crystal:201189f8:data-global/npc/emiliana.lua:209-242"]
+            "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emiliana.lua:209-242"]
         }))?])?;
     owner.states.npc_conversations.fixture_reward_offers(
         &json!({

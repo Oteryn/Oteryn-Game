@@ -1496,6 +1496,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
+            } else if let Some(spawn) = &callback.effects.awakened_creature {
+                if states
+                    .encounter_phases
+                    .awakened
+                    .publish(
+                        runtime,
+                        spawn,
+                        self.movement_cells().clone(),
+                        key,
+                        expected_revision,
+                        before,
+                        apply_scene,
+                    )
+                    .is_err()
+                {
+                    return UseDisposition::Rejected;
+                }
             } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
             {
                 return UseDisposition::Rejected;

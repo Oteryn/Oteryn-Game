@@ -8,6 +8,7 @@ use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeOwnershipGe
 
 pub mod cults;
 pub mod gates;
+pub mod linear;
 #[cfg(test)]
 mod tests;
 
@@ -26,40 +27,61 @@ pub struct Plan {
     pub terminal: u64,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RoleView<'a> {
+    pub creature: &'a str,
+    pub after: u64,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Progress {
-    plan: Plan,
+    roles: Vec<(String, u64)>,
+    terminal: u64,
     dead: u64,
 }
 impl Progress {
     pub fn new(plan: Plan) -> Result<Self, CarrierError> {
-        if plan.roles.is_empty() || plan.roles.len() > MAX_ROLES || plan.terminal == 0 {
+        Self::from_roles(
+            plan.roles
+                .iter()
+                .map(|role| (role.creature.to_owned(), role.after))
+                .collect(),
+            plan.terminal,
+        )
+    }
+
+    fn from_roles(roles: Vec<(String, u64)>, terminal: u64) -> Result<Self, CarrierError> {
+        if roles.is_empty() || roles.len() > MAX_ROLES || terminal == 0 {
             return Err(CarrierError::PlanConflict);
         }
-        let mask = u64::MAX >> (MAX_ROLES - plan.roles.len());
-        if plan.terminal & !mask != 0 {
+        let mask = u64::MAX >> (MAX_ROLES - roles.len());
+        if terminal & !mask != 0 {
             return Err(CarrierError::PlanConflict);
         }
         // Dependency order rules out cycles, unknown nodes and self dependencies.
-        for (i, role) in plan.roles.iter().enumerate() {
+        for (i, (creature, after)) in roles.iter().enumerate() {
             let predecessors = if i == 0 {
                 0
             } else {
                 u64::MAX >> (MAX_ROLES - i)
             };
-            if role.creature.is_empty() || role.after & !predecessors != 0 {
+            if creature.is_empty() || after & !predecessors != 0 {
                 return Err(CarrierError::PlanConflict);
             }
         }
-        Ok(Self { plan, dead: 0 })
+        Ok(Self {
+            roles,
+            terminal,
+            dead: 0,
+        })
     }
     pub fn ready(&self, role: usize) -> bool {
-        self.plan.roles.get(role).is_some_and(|node| {
-            self.dead & (1_u64 << role) == 0 && self.dead & node.after == node.after
+        self.roles.get(role).is_some_and(|(_, after)| {
+            self.dead & (1_u64 << role) == 0 && self.dead & after == *after
         })
     }
     pub fn record_death(&mut self, role: usize) -> Result<bool, CarrierError> {
-        if role >= self.plan.roles.len() {
+        if role >= self.roles.len() {
             return Err(CarrierError::PlanConflict);
         }
         let bit = 1_u64 << role;
@@ -76,7 +98,7 @@ impl Progress {
         self.dead
     }
     pub fn completed(&self) -> bool {
-        self.dead & self.plan.terminal == self.plan.terminal
+        self.dead & self.terminal == self.terminal
     }
 }
 
@@ -98,8 +120,16 @@ impl NativePhaseOwner {
         plan: Plan,
         participants: &[(ExactActorRef, GameSessionId)],
     ) -> Result<Self, CarrierError> {
+        Self::with_progress(runtime, Progress::new(plan)?, participants)
+    }
+
+    fn with_progress(
+        runtime: &ChannelRuntimeV1,
+        progress: Progress,
+        participants: &[(ExactActorRef, GameSessionId)],
+    ) -> Result<Self, CarrierError> {
         runtime.owner_fence()?;
-        if participants.is_empty() || participants.len() > 16 {
+        if participants.is_empty() || participants.len() > 36 {
             return Err(CarrierError::PlanConflict);
         }
         for (i, (actor, session)) in participants.iter().enumerate() {
@@ -113,9 +143,9 @@ impl NativePhaseOwner {
         }
         let pin = runtime.content_pin();
         Ok(Self {
-            progress: Progress::new(plan)?,
-            actors: vec![None; plan.roles.len()],
-            decorations: vec![None; plan.roles.len()],
+            actors: vec![None; progress.roles.len()],
+            decorations: vec![None; progress.roles.len()],
+            progress,
             participants: participants.to_vec(),
             scope: runtime.encounter_owner_scope(),
             activation: pin.activation_sequence(),
@@ -154,14 +184,13 @@ impl NativePhaseOwner {
         self.current(runtime)?;
         let node = self
             .progress
-            .plan
             .roles
             .get(role)
             .ok_or(CarrierError::PlanConflict)?;
         if !self.progress.ready(role)
             || self.actors[role].is_some()
             || self.actors.contains(&Some(actor))
-            || !runtime.matches_live_creature_identity(actor, node.creature.as_bytes())
+            || !runtime.matches_live_creature_identity(actor, node.0.as_bytes())
         {
             return Err(CarrierError::CreatureTargetMismatch);
         }
@@ -188,21 +217,27 @@ impl NativePhaseOwner {
                 target_identity,
                 ..
             } if *generation == actor.0.actor_local_generation.0
-                && target_identity.as_ref()
-                    == self.progress.plan.roles[role].creature.as_bytes() => {}
+                && target_identity.as_ref() == self.progress.roles[role].0.as_bytes() => {}
             _ => return Err(CarrierError::StaleActorGeneration),
         }
         runtime.borrow_combat_death().projected_death(actor)?;
         self.progress.record_death(role)
     }
-    pub fn pending(&self) -> impl Iterator<Item = (usize, Role)> + '_ {
+    pub fn pending(&self) -> impl Iterator<Item = (usize, RoleView<'_>)> + '_ {
         self.progress
-            .plan
             .roles
             .iter()
-            .copied()
             .enumerate()
             .filter(|(i, _)| self.actors[*i].is_none() && self.progress.ready(*i))
+            .map(|(i, (creature, after))| {
+                (
+                    i,
+                    RoleView {
+                        creature,
+                        after: *after,
+                    },
+                )
+            })
     }
     /// The settlement adapter reuses the existing boss/quest receipt owner. Until the
     /// final native death there is no participant completion set to persist.
@@ -233,7 +268,6 @@ impl NativePhaseOwner {
         self.current(runtime)?;
         let node = self
             .progress
-            .plan
             .roles
             .get(role)
             .ok_or(CarrierError::PlanConflict)?;
@@ -245,8 +279,9 @@ impl NativePhaseOwner {
         {
             return Err(CarrierError::PlanConflict);
         }
-        let policy = runtime.companion_policy(node.creature)?;
-        let mut spawns = vec![(node.creature, policy.maximum_health, position)];
+        let creature = node.0.clone();
+        let policy = runtime.companion_policy(&creature)?;
+        let mut spawns = vec![(creature.as_str(), policy.maximum_health, position)];
         if let Some((key, at)) = decoration {
             let policy = runtime.companion_policy(key)?;
             spawns.push((key, policy.maximum_health, at));

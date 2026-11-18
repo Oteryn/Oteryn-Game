@@ -1991,7 +1991,7 @@ pub(super) fn record_creature_kill_with_portals(
     if let Some(states) = sink.prey {
         states
             .encounter_phases
-            .note_projected_death(runtime, target);
+            .note_projected_death(runtime, target, now_ms.saturating_mul(1000));
     }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");

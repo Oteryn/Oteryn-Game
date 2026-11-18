@@ -3,17 +3,22 @@ use super::{actor_spell::ChannelSpellStates, grizzly_kills, kill_reward::Pending
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
-use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
+use oteryn_gameplay_encounters::bosses::phase_controller::{
+    cults::{self, CultsEncounter},
+    linear::LinearEncounter,
+};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
+
+mod awakened_creature;
 
 const MAX_ENCOUNTERS: usize = 64;
 
 #[derive(Debug)]
 pub(super) struct ActivePhase {
     key: u64,
-    fight: CultsEncounter,
+    fight: Fight,
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     credits: Vec<grizzly_kills::EncounterCredit>,
@@ -21,9 +26,100 @@ pub(super) struct ActivePhase {
     cells: crate::content::NativeEntryMovementCells,
 }
 
+#[derive(Debug)]
+enum Fight {
+    Cults(CultsEncounter),
+    Linear(LinearEncounter),
+}
+
+impl Fight {
+    fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        match self {
+            Self::Cults(fight) => fight.is_current(runtime),
+            Self::Linear(fight) => fight.is_current(runtime),
+        }
+    }
+
+    fn expired(&self, now_us: u64) -> bool {
+        matches!(self, Self::Linear(fight) if fight.expired(now_us))
+    }
+
+    fn contains(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(fight) => fight.contains(actor),
+            Self::Linear(fight) => fight.contains(actor),
+        }
+    }
+
+    fn contains_terminal(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(fight) => fight.contains_terminal(actor),
+            Self::Linear(_) => false,
+        }
+    }
+
+    fn victors(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.victors(runtime),
+            Self::Linear(fight) => fight.victors(runtime),
+        }
+    }
+
+    fn projected_death(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Result<bool, CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.projected_death(runtime, actor),
+            Self::Linear(fight) => fight.projected_death(runtime, actor),
+        }
+    }
+
+    fn advance(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+        now_us: u64,
+    ) -> Result<(), CarrierError> {
+        let map_admits = |runtime: &ChannelRuntimeV1, at| placement(cells, runtime, at);
+        match self {
+            Self::Cults(fight) => fight.advance(runtime, map_admits),
+            Self::Linear(fight) => {
+                if let Some(arrival) = fight.advance(runtime, now_us, map_admits)?
+                    && let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
+                        index,
+                    ) = cells.index()
+                    && let (Ok(x), Ok(y), Ok(floor)) = (
+                        u16::try_from(arrival.position.x),
+                        u16::try_from(arrival.position.y),
+                        i8::try_from(-arrival.position.floor),
+                    )
+                {
+                    index
+                        .map()
+                        .facts
+                        .emit_movement_speech(crate::map::facts::MovementSpeech {
+                            speaker: arrival.actor,
+                            position: crate::map::overlay::TilePos { x, y, floor },
+                            talk_type: 36,
+                            text: arrival.speech.to_owned(),
+                            captured_name: None,
+                        });
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    pub(super) awakened: awakened_creature::AwakenedCreatures,
 }
 
 impl Registry {
@@ -51,6 +147,7 @@ impl Registry {
         &'a self,
         runtime: &mut ChannelRuntimeV1,
         key: u64,
+        now_us: u64,
     ) -> Result<std::sync::MutexGuard<'a, Vec<ActivePhase>>, CarrierError> {
         let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
         active.retain_mut(|phase| {
@@ -58,15 +155,13 @@ impl Registry {
                 return false;
             }
             match phase.fight.victors(runtime) {
-                Ok(Some(_)) => {
+                Ok(victors) if victors.is_some() || phase.fight.expired(now_us) => {
                     // Credit was captured in the lethal turn. Release the lever
                     // only after exact terminal decorations retire; tick retries failures.
                     let ActivePhase { fight, cells, .. } = phase;
-                    fight
-                        .advance(runtime, |runtime, at| placement(cells, runtime, at))
-                        .is_err()
+                    fight.advance(runtime, cells, now_us).is_err()
                 }
-                Ok(None) => phase
+                Ok(_) => phase
                     .frozen
                     .as_ref()
                     .is_none_or(|(actor, _)| runtime.retains_corpse_projection(*actor)),
@@ -86,14 +181,16 @@ impl Registry {
         &self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        now_us: u64,
     ) {
+        self.awakened.restore(runtime, Some(actor));
         let Ok(mut active) = self.active.lock() else {
             return;
         };
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
             if phase.fight.projected_death(runtime, actor).is_ok() {
                 let ActivePhase { fight, cells, .. } = phase;
-                let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
+                let _ = fight.advance(runtime, cells, now_us);
             }
         }
         // Keep terminal admission credit until the same lethal turn captures it.
@@ -155,12 +252,26 @@ pub(super) fn bind(
     players: &[(ExactActorRef, GameSessionId)],
     credits: Vec<grizzly_kills::EncounterCredit>,
     cells: crate::content::NativeEntryMovementCells,
+    now_us: u64,
 ) -> Result<ActivePhase, CarrierError> {
     let encounter = callback
         .effects
         .encounter
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
+    if let Some(chain) = &encounter.linear_phases {
+        return Ok(ActivePhase {
+            key,
+            fight: Fight::Linear(LinearEncounter::bind(
+                runtime, chain, players, actors, now_us,
+            )?),
+            room: encounter.clone(),
+            participants: players.to_vec(),
+            credits,
+            frozen: None,
+            cells,
+        });
+    }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
         return Err(CarrierError::PlanConflict);
     }
@@ -210,7 +321,9 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: CultsEncounter::bind(runtime, players, pillars, stops, centre)?,
+        fight: Fight::Cults(CultsEncounter::bind(
+            runtime, players, pillars, stops, centre,
+        )?),
         room: encounter.clone(),
         participants: players.to_vec(),
         credits,
@@ -219,7 +332,7 @@ pub(super) fn bind(
     })
 }
 
-fn placement(
+pub(super) fn placement(
     cells: &crate::content::NativeEntryMovementCells,
     runtime: &ChannelRuntimeV1,
     at: MovementLocalPosition,
@@ -257,7 +370,8 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) {
+pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
+    states.encounter_phases.awakened.restore(runtime, None);
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
@@ -266,14 +380,15 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) 
         let ActivePhase {
             key, fight, cells, ..
         } = phase;
-        if let Err(error) = fight.advance(runtime, |runtime, at| placement(cells, runtime, at)) {
+        if let Err(error) = fight.advance(runtime, cells, now_us) {
             super::operator_event(&format!(
                 "encounter_phase_deferred key={key} reason={error:?}"
             ));
             return true;
         }
-        fight
-            .victors(runtime)
-            .is_ok_and(|victors| victors.is_none())
+        !fight.expired(now_us)
+            && fight
+                .victors(runtime)
+                .is_ok_and(|victors| victors.is_none())
     });
 }

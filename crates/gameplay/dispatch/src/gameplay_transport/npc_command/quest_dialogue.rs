@@ -123,10 +123,18 @@ pub(super) struct Step {
     transition: Option<String>,
     reply: Vec<String>,
     failure_reply: Vec<String>,
+    placement: Option<oteryn_gameplay_quests::quest::reward_callbacks::DialoguePlacement>,
     refused: bool,
 }
 
 impl Step {
+    pub(super) fn with_placement(
+        mut self,
+        placement: Option<oteryn_gameplay_quests::quest::reward_callbacks::DialoguePlacement>,
+    ) -> Self {
+        self.placement = placement;
+        self
+    }
     pub(super) fn with_failure_reply(mut self, lines: Vec<String>) -> Self {
         self.failure_reply = lines;
         self
@@ -187,6 +195,7 @@ pub(super) fn prepare(
         transition: choice.transition,
         reply: choice.reply,
         failure_reply: Vec::new(),
+        placement: None,
         refused: false,
     })
 }
@@ -296,10 +305,24 @@ pub(super) async fn apply(
     if rendered.disposition != NpcIntentDisposition::Ok {
         return rendered;
     }
+    let placement_admitted = |runtime| {
+        step.placement.as_ref().is_none_or(|placement| {
+            super::reward_callbacks::admits_placement(
+                Some(placement),
+                super::reward_callbacks::dialogue_location(
+                    runtime,
+                    actor,
+                    command.game_session_id,
+                    &intent,
+                ),
+            )
+        })
+    };
     let Some(transition) = step.transition else {
         let runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
-        if states.is_dead(actor)
+        if !placement_admitted(&runtime)
+            || states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
             || admission.states.npc_conversations.current_npc(
                 &admission.states.chat,
@@ -347,7 +370,8 @@ pub(super) async fn apply(
     let actor_conditions = {
         let runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
-        if states.is_dead(actor)
+        if !placement_admitted(&runtime)
+            || states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
             || (transition.starts_with("oteryn:quest-reward/")
                 && admission.active_generation.is_none_or(|generation| {

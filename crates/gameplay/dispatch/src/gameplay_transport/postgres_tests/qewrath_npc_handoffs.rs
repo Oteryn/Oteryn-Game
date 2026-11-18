@@ -62,7 +62,7 @@ pub(super) async fn exercise(
             28,
             vec![("questline", 28, 29), ("mission10", -1, 1)],
             Some("oteryn:item.tibia.i10343"),
-            "crystal:201189f8:data-global/npc/a_sleeping_dragon.lua:203-222",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sleeping_dragon.lua:203-222",
         )
     } else {
         // Crystal 201189f8 data-global/npc/zalamon.lua:143-149,337-345.
@@ -78,7 +78,7 @@ pub(super) async fn exercise(
                 ("mission05", -1, 1),
             ],
             None,
-            "crystal:201189f8:data-global/npc/zalamon.lua:143-149,337-345",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:143-149,337-345",
         )
     };
     let track = |name: &str| format!("oteryn:quest-progress/{prefix}/{name}");

@@ -57,7 +57,7 @@ impl NpcConversations {
 
 // Crystal 201189f8 data-global/npc/emiliana.lua:72-84,209-212 uses both
 // the engaged NPC's floor and the player's live position for dialogue selection.
-fn dialogue_location(
+pub(super) fn dialogue_location(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -75,7 +75,7 @@ fn dialogue_location(
     ))
 }
 
-fn admits_placement(
+pub(super) fn admits_placement(
     placement: Option<&DialoguePlacement>,
     location: Option<(i8, Position)>,
 ) -> bool {
@@ -134,6 +134,7 @@ pub(super) fn prepare(
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();
+    let mut selected_placement = None;
     let mut refused = false;
     let step = quest_dialogue::prepare(
         admission,
@@ -191,6 +192,7 @@ pub(super) fn prepare(
                     if selected.next().is_some() {
                         return None;
                     }
+                    selected_placement = callback.placement.clone();
                     if !meets_level(callback.minimum_level)
                         && let Some(choice) = refusal(&callback.failure_reply)
                     {
@@ -213,6 +215,7 @@ pub(super) fn prepare(
                     && blocked.next().is_none()
                     && let Some(choice) = refusal(&callback.failure_reply)
                 {
+                    selected_placement = callback.placement.clone();
                     return Some(choice);
                 }
                 return None;
@@ -221,6 +224,7 @@ pub(super) fn prepare(
                 in_placement(c.placement.as_ref())
                     && c.admits(&context.2, topic.number, &text, catalogue, tracks)
             }) {
+                selected_placement = offer.placement.clone();
                 if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
                 }
@@ -260,6 +264,7 @@ pub(super) fn prepare(
                 && blocked.next().is_none()
                 && let Some(choice) = refusal(&offer.failure_reply)
             {
+                selected_placement = offer.placement.clone();
                 return Some(choice);
             }
             // A unique exchange owns its exact keyword even before eligibility.
@@ -276,6 +281,7 @@ pub(super) fn prepare(
             if matching.next().is_some() {
                 return None;
             }
+            selected_placement = callback.placement.clone();
             if (!meets_level(callback.minimum_level)
                 || !callback
                     .inventory
@@ -293,7 +299,11 @@ pub(super) fn prepare(
             })
         },
     );
-    step.map(|step| step.with_failure_reply(failure_reply).with_refusal(refused))
+    step.map(|step| {
+        step.with_failure_reply(failure_reply)
+            .with_refusal(refused)
+            .with_placement(selected_placement)
+    })
 }
 
 #[cfg(test)]

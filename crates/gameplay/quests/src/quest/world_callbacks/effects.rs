@@ -103,6 +103,9 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    /// A retained tool awakens one transformed map object until its exact actor dies.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub awakened_creature: Option<EncounterMonster>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -311,12 +314,48 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub linear_phases: Option<LinearPhases>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "linear_death_chain")]
+    Linear,
+}
+
+/// Later forms replace the preceding form at its exact committed death cell.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct LinearPhases {
+    pub forms: Vec<String>,
+    /// Speech from forms 2 through the final form, in order.
+    pub speeches: Vec<String>,
+    pub reservation_ms: u32,
+}
+
+impl LinearPhases {
+    fn valid(&self, encounter: &Encounter) -> bool {
+        (2..=8).contains(&self.forms.len())
+            && self.forms.iter().collect::<BTreeSet<_>>().len() == self.forms.len()
+            && self.forms.iter().all(|form| {
+                form.starts_with("oteryn:creature.") && super::super::valid_quest_key(form)
+            })
+            && self.speeches.len() + 1 == self.forms.len()
+            && self
+                .speeches
+                .iter()
+                .all(|s| !s.is_empty() && s.len() <= 255 && !s.chars().any(char::is_control))
+            && (1..=3_600_000).contains(&self.reservation_ms)
+            && encounter
+                .monsters
+                .iter()
+                .filter(|member| self.forms.contains(&member.creature))
+                .map(|member| &member.creature)
+                .eq(self.forms.first())
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -393,6 +432,42 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.awakened_creature.as_ref().is_some_and(|spawn| {
+        callback.trigger != Trigger::Use
+            || !callback.requires_world_admission
+            || !callback.has_personal_state()
+            || callback.is_read_only()
+            || callback.reversible
+            || callback.lever.is_some()
+            || callback.teleport.is_some()
+            || !callback.passages.is_empty()
+            || !callback.offerings.is_empty()
+            || effects.scene.is_some()
+            || effects.portals.is_some()
+            || effects.encounter.is_some()
+            || effects.reset_after_ms.is_some()
+            || effects.transform.is_none()
+            || callback
+                .selector
+                .native
+                .as_ref()
+                .map(|source| source.appearance)
+                .or(callback.selector.appearance)
+                .is_none_or(|source| Some(source) == effects.transform)
+            || effects.item_reward.is_some()
+            || !callback.item_on_target.as_ref().is_some_and(|tool| {
+                tool.reusable
+                    && tool.selected_instance
+                    && !tool.target_remove
+                    && tool.target_replacement.is_none()
+            })
+            || !(-15..=0).contains(&spawn.position.floor)
+            || !spawn.creature.starts_with("oteryn:creature.")
+            || !super::super::valid_quest_key(&spawn.creature)
+    }) {
+        return false;
+    }
+
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8
@@ -840,7 +915,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let source_party = encounter.phase.is_some();
+        let party_limit = if encounter.phase == Some(EncounterPhase::Linear) {
+            36
+        } else if source_party {
+            16
+        } else {
+            8
+        };
+        if (encounter.phase == Some(EncounterPhase::Linear)) != encounter.linear_phases.is_some()
+            || encounter
+                .linear_phases
+                .as_ref()
+                .is_some_and(|chain| !chain.valid(encounter))
+        {
+            return false;
+        }
         if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
@@ -859,8 +949,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                    .contains(&encounter.players.len())
+                !(1..=party_limit).contains(&encounter.players.len())
             }
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())
