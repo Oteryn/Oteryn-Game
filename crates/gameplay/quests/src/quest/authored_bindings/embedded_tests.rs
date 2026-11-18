@@ -569,7 +569,7 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        assert_eq!(before.tracks.len(), 2123);
+        assert_eq!(before.tracks.len(), 2128);
         for (key, value) in &before.tracks {
             assert_eq!(after.tracks.get(key), Some(value), "legacy track {key}");
         }

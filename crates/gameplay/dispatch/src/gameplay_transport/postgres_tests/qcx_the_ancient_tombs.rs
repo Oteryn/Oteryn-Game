@@ -20,7 +20,28 @@ use oteryn_protocol_oteryn::world_spatial::{
 };
 use std::sync::Arc;
 
+macro_rules! region {
+    ($name:literal) => {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z",
+            $name,
+            ".b3"
+        ))
+    };
+}
+
 const QUEST: &str = "oteryn:quest.the_ancient_tombs_quest";
+const MORGUTHIS_ENTRY_ORIGIN: Position = Position {
+    x: 33257,
+    y: 32707,
+    floor: -13,
+};
+const MORGUTHIS_FLAMES_ORIGIN: Position = Position {
+    x: 33163,
+    y: 32696,
+    floor: -14,
+};
 const PREFIX: &str = "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/";
 
 #[test]
@@ -94,16 +115,12 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
         let origin = if rewards {
             local(approach(SARCOPHAGI[0].0))
         } else {
-            local(Position {
-                x: 33163,
-                y: 32696,
-                floor: -14,
-            })
+            local(MORGUTHIS_ENTRY_ORIGIN)
         };
         let world = if rewards {
             reward_world(native)?
         } else {
-            super::l6_native_flames::world(native)?
+            morguthis_world(native)?
         };
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
@@ -231,6 +248,62 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
         if rewards {
             return claim_parts(&mut owner, &mut admitted, &h, deps.actor).await;
         }
+        let result = wire(
+            &owner,
+            &mut admitted,
+            1,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            encode_step_intent(StepDirection::East),
+        )
+        .await?;
+        assert_eq!(
+            decode_step_result(&result).map_err(debug)?,
+            StepDisposition::Moved
+        );
+        let actual = deps
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(deps.actor)
+            .map_err(debug)?;
+        assert_eq!(
+            actual.position(),
+            local(Position {
+                x: 33259,
+                ..MORGUTHIS_ENTRY_ORIGIN
+            }),
+            "the room entrance admits a character with higher treasure progress"
+        );
+        let stored: i64 = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks
+             WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(id(41).as_slice())
+        .bind(&treasure)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            stored, 3,
+            "room entrance must preserve higher treasure progress"
+        );
+        let map = owner.bundle_map().ok_or("Morguthis room map")?;
+        let doors = crate::map::floor::BundleDoors(map.facts.doors());
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let proof = crate::map::floor::prepare_quest_callback_teleport(
+                &runtime,
+                &owner.movement_cells,
+                deps.actor,
+                admitted.game_session_id,
+                actual,
+                local(MORGUTHIS_FLAMES_ORIGIN),
+                false,
+                &doors,
+            )
+            .map_err(debug)?;
+            runtime.commit_source_step(proof).map_err(debug)?;
+        }
+        owner.clock_origin -= std::time::Duration::from_secs(2);
         let goal = local(Position {
             x: 33163,
             y: 32694,
@@ -239,7 +312,7 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
         let result = wire(
             &owner,
             &mut admitted,
-            1,
+            2,
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
             encode_step_intent(StepDirection::North),
         )
@@ -272,6 +345,43 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
     result
 }
 
+fn morguthis_world(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let crop = |bytes, z, bounds, tiles: [((u16, u16), u32); 3]| NativeCrop {
+        bytes,
+        region: (z, 129, 127),
+        bounds,
+        start: (MORGUTHIS_ENTRY_ORIGIN.x, MORGUTHIS_ENTRY_ORIGIN.y),
+        expected: tiles
+            .into_iter()
+            .map(|(position, id)| ExpectedTile {
+                position,
+                ids: vec![id],
+                counted_entry: None,
+            })
+            .collect(),
+    };
+    native_scene(
+        native,
+        vec![
+            crop(
+                region!("13-x129-y127"),
+                13,
+                (33257, 32707, 33260, 32708),
+                [((33257, 32707), 415), ((33258, 32707), 415), ((33259, 32707), 415)],
+            ),
+            crop(
+                region!("14-x129-y127"),
+                14,
+                (33163, 32694, 33164, 32697),
+                [((33163, 32694), 423), ((33163, 32695), 417), ((33163, 32696), 423)],
+            ),
+        ],
+        &[],
+    )
+}
+
 async fn seed_morguthis_progress(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -285,7 +395,10 @@ async fn seed_morguthis_progress(
     };
     let effects = (1..=7)
         .map(|n| effect(format!("{PREFIX}morguthis_blue_flame_storage{n}"), 1))
-        .chain(std::iter::once(effect(treasure.into(), 3)))
+        .chain([
+            effect(treasure.into(), 3),
+            effect(format!("{PREFIX}default_start"), 1),
+        ])
         .collect();
     // A restored character's progress must have a matching durable receipt.
     let catalogue = Arc::new(
@@ -332,17 +445,6 @@ async fn seed_morguthis_progress(
 }
 
 // Spoiler curid 5073 oldid 1174796 links each pharaoh to one distinct part.
-macro_rules! region {
-    ($name:literal) => {
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../content/world/placements/region-z",
-            $name,
-            ".b3"
-        ))
-    };
-}
-
 type Sarcophagus = ((u16, u16, u8), u16, &'static [u8]);
 const SARCOPHAGI: [Sarcophagus; 5] = [
     ((33126, 32589, 15), 3222, region!("15-x129-y127")),

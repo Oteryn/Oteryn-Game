@@ -251,9 +251,9 @@ async fn exercise_ice(
     talk(owner, admitted, npc, 35301, "hi").await?;
     give(owner, admitted, FISH, 49, 9400).await?;
     let denied = talk(owner, admitted, npc, 35302, "ice portal").await?;
-    assert!(
-        denied.iter().all(|line| !line.contains("50 fish")),
-        "{denied:?}"
+    assert_eq!(
+        denied,
+        ["Sorry, you first need to bring my Heavy Old Tomes or do the quest before continuing."]
     );
     talk(owner, admitted, npc, 35303, "yes").await?;
     assert_eq!(carried(h, FISH).await?, 49);

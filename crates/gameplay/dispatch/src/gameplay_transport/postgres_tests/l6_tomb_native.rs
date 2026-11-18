@@ -313,6 +313,16 @@ macro_rules! region {
 fn boss_portal_crops(unique: u16) -> Option<Vec<super::l6_world_pickups::NativeCrop>> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop};
     let (x, y, z) = boss_portal(unique)?;
+    type PortalCrops = (
+        &'static [u8],
+        u32,
+        &'static [u32],
+        (u16, u16, u8),
+        &'static [u8],
+        (u16, u16, u8),
+        &'static [u8],
+        u32,
+    );
     let (
         portal,
         portal_ground,
@@ -322,16 +332,7 @@ fn boss_portal_crops(unique: u16) -> Option<Vec<super::l6_world_pickups::NativeC
         destination,
         exit_region,
         exit_ground,
-    ): (
-        &'static [u8],
-        u32,
-        &[u32],
-        _,
-        &'static [u8],
-        _,
-        &'static [u8],
-        u32,
-    ) = match unique {
+    ): PortalCrops = match unique {
         3950 => (
             region!("14-x129-y127"),
             417,

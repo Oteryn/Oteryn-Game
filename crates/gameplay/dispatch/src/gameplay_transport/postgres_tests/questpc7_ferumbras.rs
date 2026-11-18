@@ -507,6 +507,37 @@ pub(super) async fn exercise(
     let sources:i64=sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE transition_key='oteryn:quest-callback/questpc7-ferumbras-reward'").fetch_one(&h.pool).await?;
     assert_eq!(sources, 0);
     super::questpc7_outfit_items::use_token(owner, a, 3578).await?;
+    // Restore the earned seals with the same quest-state and receipt pin a
+    // character saved on 871c1dec7 would have, then enter through the real chest writer.
+    const PUBLISHED_PIN: &str = "e86e12f668231e6ff93181caf6bd34a4dde5b7d53b9bacff6bc4a44bd12fb464";
+    let mut saved = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *saved)
+        .await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_quest_states SET definition_hash=decode($1,'hex')
+         WHERE character_id=encode($2,'hex')::uuid
+           AND quest_key='oteryn:quest.ferumbras_ascension_quest'
+           AND completed_character_revision IS NULL",
+    )
+    .bind(PUBLISHED_PIN)
+    .bind(super::fixture::id(41).as_slice())
+    .execute(&mut *saved)
+    .await?;
+    assert_eq!(updated.rows_affected(), 1);
+    let updated = sqlx::query(
+        "UPDATE game_character_quest_receipts SET definition_hash=decode($1,'hex')
+         WHERE character_id=encode($2,'hex')::uuid
+           AND quest_key='oteryn:quest.ferumbras_ascension_quest'",
+    )
+    .bind(PUBLISHED_PIN)
+    .bind(super::fixture::id(41).as_slice())
+    .execute(&mut *saved)
+    .await?;
+    assert!(updated.rows_affected() > 0);
+    saved.commit().await?;
+    owner.refresh_quest_session(a.game_session_id, false).await;
+
     let claim_command = a.continuity.next_command_id;
     let claim_payload = super::questpc7_hoist_story::target(owner, chest, 4073)?;
     assert_eq!(

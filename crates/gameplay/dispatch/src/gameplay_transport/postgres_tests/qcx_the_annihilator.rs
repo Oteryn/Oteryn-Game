@@ -35,7 +35,7 @@ fn avar_tar_accepts_demon_outfit_and_advances_to_the_choice() -> TestResult {
                     }),
                 )
                 .map_err(debug)?;
-            let mut admitted = deps.admitted;
+            let admitted = deps.admitted;
             let mut owner = deps.owner(&harness, &authority);
             owner.quest_catalogue = Some(Arc::new(
                 load_embedded_quest_state("content-1")
@@ -45,9 +45,9 @@ fn avar_tar_accepts_demon_outfit_and_advances_to_the_choice() -> TestResult {
             ));
             owner.admit_quest_session(&admitted).await;
             let [avar] = install(&owner, &admitted, ["oteryn:npc.avar_tar"]).await?;
-            talk(&mut owner, &mut admitted, avar, 2600, "hi").await?;
-            let explanation = talk(&mut owner, &mut admitted, avar, 2601, "demon outfit").await?;
-            let choice = talk(&mut owner, &mut admitted, avar, 2602, "yes").await?;
+            talk(&mut owner, &admitted, avar, 2600, "hi").await?;
+            let explanation = talk(&mut owner, &admitted, avar, 2601, "demon outfit").await?;
+            let choice = talk(&mut owner, &admitted, avar, 2602, "yes").await?;
             drop(owner);
             drop(authority);
             drop(seal);
