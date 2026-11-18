@@ -529,6 +529,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         disposition = D::ContentUnavailable;
                     }
                 }
+                A::ClaimReward { category: 4, .. } => {
+                    disposition = D::WrongState;
+                }
                 A::ClaimReward {
                     rank,
                     category,

@@ -53,13 +53,16 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         gameplay: CurrentCharacterGameplayFence,
-        mut request: RewardClaimMintRequest,
+        request: RewardClaimMintRequest,
         rank: u8,
         category: u8,
         choice: u8,
         payload: Vec<u8>,
         weights: &dyn super::super::item_transfer::ItemWeightLookup,
     ) -> Result<Vec<u8>> {
+        if category == 4 {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
         validate_request(&request)?;
         let expected = arena::donor::reward(rank, category, choice)
             .ok_or(RewardClaimMintError::InvalidInput)?;
@@ -120,16 +123,6 @@ impl DurabilityRoot {
                 if !matches!(error,RewardClaimMintError::Refused(_)) {return Ok(Err(error));}
                 let bytes=finish(&mut tx,gameplay,&request,&payload,&state,D::InventoryFull).await?;
                 tx.commit(deadline).await?;return Ok(Ok(bytes));
-            }
-            if category == 4 {
-                let name: String = sqlx::query_scalar(
-                    "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-                )
-                .bind(fence.character_id.as_bytes().as_slice())
-                .fetch_one(&mut **tx)
-                .await?;
-                request.root_text = Some(trophy_inscription(rank, &name)?);
-                validate_request(&request).map_err(|_| DurabilityError::InvalidStoredState)?;
             }
             let binding = intent_binding(&request, fence.character_id)
                 .map_err(|_| DurabilityError::InvalidStoredState)?;

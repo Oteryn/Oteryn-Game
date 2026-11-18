@@ -1,10 +1,10 @@
 use super::TestResult;
-use super::arena_match::{NativeScenario, command, scenario_route};
+use super::arena_match::{NativeScenario, scenario_route};
 use super::fixture::{Harness, debug};
 use crate::foundation::ExactActorRef;
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::AdmittedSession;
-use crate::gameplay_transport::item_view::{ItemKey, ItemViewContinuity, SessionItemView, inventory_from_backpack};
+use crate::gameplay_transport::item_view::{ItemKey, ItemViewContinuity, SessionItemView};
 use oteryn_protocol_oteryn::arena::{ArenaAction as A, ArenaDisposition as D};
 use oteryn_protocol_oteryn::item_look::ItemLookResult;
 
@@ -32,51 +32,29 @@ pub(super) async fn check_trophy_look(
     let session = admitted.game_session_id;
     let fence = admitted.item_fence.ok_or("item fence")?;
 
-    // The wire claim also checks that the character stands in the reward room.
-    let (x, y, floor) = crate::durability::arena_match::donor::REWARD_ROOM;
-    {
-        let mut runtime = owner.runtime.lock().await;
-        let before = runtime.read_actor_position(actor).map_err(debug)?;
-        runtime
-            .relocate_arena_player(
-                actor,
-                session,
-                before,
-                crate::foundation::MovementLocalPosition { x, y, floor },
-            )
-            .map_err(debug)?;
-    }
-
     let name: String = sqlx::query_scalar(
         "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .fetch_one(&harness.pool)
     .await?;
-    let index = owner.active_generation.and_then(|generation| generation.native_gameplay())
-        .and_then(|native| native.item_index()).ok_or("native Item index")?;
-    for (rank, item_id, difficulty, punctuation) in [
-        (1, 5807, "greenhorn", ""),
-        (2, 5806, "scrapper", "."),
-        (3, 5805, "warlord", "."),
+    for (offset, item_id, difficulty, punctuation) in [
+        (0, 5807, "greenhorn", ""),
+        (1, 5806, "scrapper", "."),
+        (2, 5805, "warlord", "."),
     ] {
-        assert_eq!(
-            command(owner, admitted, A::ClaimReward { rank, category: 4, choice: 1 })
-                .await?.disposition,
-            D::Applied
-        );
-        let backpack = harness.root.read_character_backpack(owner.character, fence.character_id).await?;
-        let inventory = inventory_from_backpack(backpack.as_ref(), |definition| {
-            index.definition_ref(&definition.family, &definition.production_key, &definition.revision_ref)
-        }).ok_or("backpack projection")?;
-        let mut views = SessionItemView::resume(ItemViewContinuity::default());
-        views.snapshot(inventory, None).map_err(debug)?;
+        route_trophy_step(owner, admitted, actor, offset).await?;
         let key = format!("oteryn:item.tibia.i{item_id}");
         let item: Vec<u8> = sqlx::query_scalar(
-            "SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1",
+            "SELECT uuid_send(i.item_instance_id) FROM game_item_instances i
+                JOIN game_item_ground_locations g USING(item_instance_id)
+                WHERE i.definition_production_key=$1 AND i.lifecycle=1",
         ).bind(key).fetch_one(&harness.pool).await?;
-        let handle = views.table().handle(&ItemKey::Instance(item.as_slice().try_into()?))
-            .ok_or("arena trophy handle")?;
+        let key = ItemKey::Instance(item.as_slice().try_into()?);
+        let mut views = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+        let handle = views.map_view(&[key], |handles| {
+            handles.handle(&key).ok_or(crate::gameplay_transport::item_view::ItemViewError::LimitExceeded)
+        }).map_err(debug)?;
         let looked = crate::gameplay_transport::item_look::look_item(
             owner, actor, session, Some(fence), &views, handle,
         ).await;
@@ -109,22 +87,12 @@ pub(super) async fn check_trophy_step(
     admitted: &AdmittedSession,
     actor: ExactActorRef,
 ) -> TestResult {
-    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
-
     seed_completion(harness, admitted).await?;
     let (x, y, floor) = crate::durability::arena_match::donor::REWARD_ROOM;
     for (offset, item) in [(0, 5807), (1, 5806), (2, 5805)] {
         let x = x + offset;
-        {
-            let mut runtime = owner.runtime.lock().await;
-            let before = runtime.read_actor_position(actor).map_err(debug)?;
-            runtime.relocate_arena_player(actor, admitted.game_session_id, before,
-                crate::foundation::MovementLocalPosition { x, y: y + 1, floor }).map_err(debug)?;
-        }
-        let moved = crate::gameplay_transport::connection::regression_routed_step(
-            owner, *admitted, actor, StepDirection::North,
-        ).await?;
-        assert_eq!(moved.disposition, StepDisposition::Moved);
+        route_trophy_step(owner, admitted, actor, offset).await?;
+        route_trophy_step(owner, admitted, actor, offset).await?;
         let positions: Vec<Vec<u8>> = sqlx::query_scalar(
             "SELECT g.spatial_position FROM game_item_ground_locations g
              JOIN game_item_instances i USING(item_instance_id)
@@ -133,9 +101,30 @@ pub(super) async fn check_trophy_step(
         let mut north = Vec::new();
         north.extend_from_slice(&x.to_be_bytes());
         north.extend_from_slice(&(y - 1).to_be_bytes());
-        north.extend_from_slice(&floor.to_be_bytes());
+        north.extend_from_slice(&(-floor).to_be_bytes());
         assert_eq!(positions, vec![north], "trophy {item} placement");
     }
+    Ok(())
+}
+
+pub(super) async fn route_trophy_step(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    actor: ExactActorRef,
+    offset: i32,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    let (x, y, floor) = crate::durability::arena_match::donor::REWARD_ROOM;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let before = runtime.read_actor_position(actor).map_err(debug)?;
+        runtime.relocate_arena_player(actor, admitted.game_session_id, before,
+            crate::foundation::MovementLocalPosition { x: x + offset, y: y + 1, floor }).map_err(debug)?;
+    }
+    let moved = crate::gameplay_transport::connection::regression_routed_step(
+        owner, *admitted, actor, StepDirection::North,
+    ).await?;
+    assert_eq!(moved.disposition, StepDisposition::Moved);
     Ok(())
 }
 

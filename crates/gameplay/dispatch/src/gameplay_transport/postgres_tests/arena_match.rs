@@ -200,9 +200,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         )?;
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
-        let (bytes, pins) = if matches!(route, Some(NativeScenario::TrophyStep)) {
-            fixture::bundle_with_trophy_tiles(native)?
-        } else if matches!(route, Some(NativeScenario::RecreatedPillars)) {
+        let (bytes, pins) = if matches!(route, Some(NativeScenario::RecreatedPillars)) {
             fixture::bundle_with_pillar_floors(native)?
         } else if native_portals {
             fixture::bundle_with_pillars(native)?
@@ -850,8 +848,10 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         let premium = SpellPremiumCoordinator::new(consumer, Some(clock), Some(activation), Some(harness.root.clone()));
         owner.premium_coordinator = Some(&premium);
         owner.admit_premium(id(40), admitted.game_session_id);
-        for rank in 1..=3 {
-            assert_eq!(command(&owner, &mut admitted, A::ClaimReward { rank, category: 4, choice: 1 }).await?.disposition, D::Applied);
+        for (offset, rank) in (1..=3).enumerate() {
+            super::barena2_trophy_look::route_trophy_step(&owner, &admitted, deps.actor, i32::try_from(offset)?).await?;
+            let status = command(&owner, &mut admitted, A::Status).await?;
+            assert_eq!(status.state.claimed_masks[rank - 1] & 8, 8);
             let completed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE quest_key='oteryn:quest.barbarian_arena_quest' AND completed_character_revision IS NOT NULL")
                 .fetch_one(&harness.pool).await?;
             assert_eq!(completed, 0, "three trophies and the prerequisite are mandatory");

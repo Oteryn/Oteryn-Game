@@ -9,32 +9,25 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false)
+    bundle_layout(native, true, false)
 }
 
 pub(in super::super) fn bundle_with_pillars(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false)
+    bundle_layout(native, true, false)
 }
 
 pub(in super::super) fn bundle_with_pillar_floors(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, false, true, false)
-}
-
-pub(in super::super) fn bundle_with_trophy_tiles(
-    native: &crate::content::native_gameplay::NativeGameplayState,
-) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, true)
+    bundle_layout(native, false, true)
 }
 
 fn bundle_layout(
     native: &crate::content::native_gameplay::NativeGameplayState,
     with_pillars: bool,
     pillar_floors_only: bool,
-    trophy_tiles: bool,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
@@ -135,7 +128,7 @@ fn bundle_layout(
             tiles.insert(at, tile);
         }
     }
-    if trophy_tiles {
+    {
         let (x, y, floor) = donor::REWARD_ROOM;
         for (offset, uid) in [(0, 3264), (1, 3265), (2, 3266)] {
             let tile = tiles

@@ -105,7 +105,7 @@ message OneItemTransactionV1 {
   oneof operation {
     OneItemMintV1 mint = 2;
     OneItemTransferV1 transfer = 3; // B3 destinations only (see above)
-    OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 or MAIL-owned Inbox (see below)
+    OneItemRewardClaimMintV1 reward_claim_mint = 4; // backpack, MAIL-owned Inbox or arena Ground
     OneItemDecayRetireV1 decay_retire = 5; // D3-6 corpse decay / MAP-OVERLAY-1c reset
     OneItemFeeBurnV1 fee_burn = 6; // coin fee BURN only (see above)
     OneItemTimedExpiryV1 timed_expiry = 7; // timed expiry only (see above)
@@ -368,6 +368,10 @@ message OneItemRewardClaimMintV1 {
   // Exactly this field or the legacy after/destination, never both. Source and
   // before_semantically_absent=true are mandatory in either shape.
   RewardClaimInboxMintV1 inbox = 5;
+  // Arena trophy StepIn uses a single fresh Ground item with the same claim cause.
+  // Ground is exclusive with destination and inbox.
+  OneItemGroundV1 ground = 6;
+  uint64 ground_connection_generation = 7; // positive only for Ground
 }
 
 // D3-6 `CorpseDecay { corpse_item, deadline }` (DUR-03 §39.4). Reset is

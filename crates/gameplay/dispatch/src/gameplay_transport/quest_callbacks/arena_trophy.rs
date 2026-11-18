@@ -65,7 +65,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(policy) = native.item_policy_for_source_id(source) else {
             return Ok(());
         };
-        let definition = &policy.record().production_definition;
+        let Ok(item) =
+            crate::durability::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy)
+        else {
+            return Ok(());
+        };
+        if !item.ground_destination {
+            return Ok(());
+        }
         let Some(fence) = self.current_quest_fence(session).await.ok().flatten() else {
             return Ok(());
         };
@@ -113,11 +120,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .collect::<String>()
                     ),
                     frame,
-                    item: crate::durability::item_mint::TypedDefinitionRef {
-                        family: definition.family.clone(),
-                        production_key: definition.production_key.clone(),
-                        revision_ref: definition.revision_ref.clone(),
-                    },
+                    item: item.definition,
                 },
             )
             .await?
