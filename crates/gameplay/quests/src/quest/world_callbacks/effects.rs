@@ -33,27 +33,6 @@ pub struct TargetTransform {
     pub from: u16,
     pub to: u16,
     pub reset_after_ms: u32,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub admission: Option<TimedRoomAdmission>,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct TimedRoomAdmission {
-    pub capacity: u8,
-    pub join_for_ms: u32,
-    pub exit: Position,
-}
-
-impl TimedRoomAdmission {
-    /// A running room closes at the join deadline. A solo room can restart when empty.
-    pub fn allows_join(self, occupants: usize, elapsed_ms: u64) -> bool {
-        if self.capacity == 1 {
-            occupants == 0
-        } else {
-            occupants < usize::from(self.capacity) && elapsed_ms < u64::from(self.join_for_ms)
-        }
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -353,6 +332,27 @@ impl Encounter {
 pub struct EncounterTiming {
     pub spawn_after_ms: u32,
     pub reset_after_ms: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admission: Option<TimedRoomAdmission>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TimedRoomAdmission {
+    pub capacity: u8,
+    pub join_for_ms: u32,
+    pub exit: Position,
+}
+
+impl TimedRoomAdmission {
+    /// A running room closes at the join deadline. A solo room can restart when empty.
+    pub fn allows_join(self, occupants: usize, elapsed_ms: u64) -> bool {
+        if self.capacity == 1 {
+            occupants == 0
+        } else {
+            occupants < usize::from(self.capacity) && elapsed_ms < u64::from(self.join_for_ms)
+        }
+    }
 }
 
 /// A source rite transports the exact players on bounded stations. The initiator
