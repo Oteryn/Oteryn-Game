@@ -1,4 +1,4 @@
-//! Crystal 201189f8 Hidden Seal wall switch, through production action USE.
+//! Crystal 201189f8 Hidden Seal wall switches and trapdoor, through production USE and StepIn.
 use super::{
     Dependencies, TestResult,
     fixture::{Harness, debug, id, run},
@@ -16,16 +16,54 @@ use oteryn_gameplay_quests::quest::world_callbacks::Callback;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use oteryn_world_bundle::{bundle, sector};
 
-const SWITCH: TilePos = TilePos {
-    x: 32315,
-    y: 31910,
-    floor: -12,
+#[derive(Clone, Copy)]
+struct Circuit {
+    switch: TilePos,
+    passage: TilePos,
+    unique: u16,
+    plate: Option<TilePos>,
+}
+
+impl Circuit {
+    fn start(self) -> TilePos {
+        TilePos {
+            x: self.switch.x - 1,
+            ..self.switch
+        }
+    }
+}
+
+const WALL: Circuit = Circuit {
+    switch: TilePos {
+        x: 32315,
+        y: 31910,
+        floor: -12,
+    },
+    passage: TilePos {
+        x: 32259,
+        y: 31891,
+        floor: -10,
+    },
+    unique: 30010,
+    plate: None,
 };
-const START: TilePos = TilePos { x: 32314, ..SWITCH };
-const WALL: TilePos = TilePos {
-    x: 32259,
-    y: 31891,
-    floor: -10,
+const TRAPDOOR: Circuit = Circuit {
+    switch: TilePos {
+        x: 32266,
+        y: 31861,
+        floor: -11,
+    },
+    passage: TilePos {
+        x: 32266,
+        y: 31860,
+        floor: -11,
+    },
+    unique: 30012,
+    plate: Some(TilePos {
+        x: 32266,
+        y: 31860,
+        floor: -12,
+    }),
 };
 const QUEST: &str = "oteryn:quest.the_queen_of_the_banshees_quest";
 
@@ -36,15 +74,40 @@ fn banshee_hidden_wall_use_resets_remotely_and_manual_close_reopens_safely_postg
         return Ok(());
     };
     drop(admin);
+    run_case(WALL)
+}
+
+#[test]
+fn banshee_hidden_trapdoor_use_and_pressure_step_restore_parity_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_case(TRAPDOOR)
+}
+
+fn run_case(circuit: Circuit) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || scenario(circuit).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Hidden Seal scenario panicked")?
         .map_err(Into::into)
 }
 
-fn scenario() -> TestResult {
+fn local(at: TilePos) -> MovementLocalPosition {
+    MovementLocalPosition {
+        x: at.x.into(),
+        y: at.y.into(),
+        floor: -i16::from(at.floor),
+    }
+}
+
+fn position(at: TilePos) -> serde_json::Value {
+    serde_json::json!({"x":at.x,"y":at.y,"floor":at.floor})
+}
+
+fn scenario(circuit: Circuit) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "banshee_circuit", false, false).await?;
         prepare_current_session(&h).await?;
@@ -54,16 +117,35 @@ fn scenario() -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let callback: Callback = serde_json::from_value(serde_json::json!({
-            "key":"oteryn:quest-callback/banshee/hidden-wall",
+        let mut lever = serde_json::json!({
+            "key":"oteryn:quest-callback/banshee/hidden-switch",
             "quest": QUEST,
-            "trigger":"use", "selector":{"unique":30010},
+            "trigger":"use", "selector":{"unique":circuit.unique},
             "lever":[2772,2773], "reversible":true,
             "storage":[], "offerings":[], "return_on_failure":false,
-            "passages":[{"position":{"x":WALL.x,"y":WALL.y,"floor":WALL.floor},"appearance":2129}],
-            "effects":{"passages_reset_after_ms":100000},
-            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-1-first_seal_lever.lua:24"]
-        }))?;
+            "passages":[{"position":position(circuit.passage),"appearance":2129}],
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-1-first_seal_lever.lua:3-45"]
+        });
+        if circuit.plate.is_some() {
+            lever["passages"][0]["replacement"] = 369.into();
+        } else {
+            lever["effects"] = serde_json::json!({"passages_reset_after_ms":100000});
+        }
+        let mut callbacks = vec![serde_json::from_value::<Callback>(lever)?];
+        if let Some(plate) = circuit.plate {
+            callbacks.push(serde_json::from_value(serde_json::json!({
+                "key":"oteryn:quest-callback/banshee/trapdoor-pressure-plate",
+                "quest": QUEST,
+                "trigger":"step_in", "selector":{"position":position(plate), "ordinal":0},
+                "reversible":false, "storage":[], "offerings":[], "return_on_failure":false,
+                "passages":[
+                    {"position":position(circuit.passage),"appearance":2129,"replacement":369},
+                    {"position":position(circuit.switch),"appearance":27260,"replacement":2773,"if_present":true}
+                ],
+                "effects":{"passages_close_after_ms":3000},
+                "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_close_mw.lua:46-68"]
+            }))?);
+        }
 
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
@@ -72,15 +154,11 @@ fn scenario() -> TestResult {
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = world()?;
+        let world = world(circuit)?;
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
-        let origin = MovementLocalPosition {
-            x: START.x.into(),
-            y: START.y.into(),
-            floor: 12,
-        };
+        let origin = local(circuit.start());
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -116,13 +194,13 @@ fn scenario() -> TestResult {
             .states
             .quest_callbacks
             .fixture
-            .set(vec![callback])
+            .set(callbacks)
             .map_err(|_| "duplicate callback installation")?;
         deps.initialize(&owner).await;
 
         let map = cells.map();
-        let switch = placement_key(SWITCH, 1).ok_or("switch placement")?;
-        let wall = placement_key(WALL, 1).ok_or("wall placement")?;
+        let switch = placement_key(circuit.switch, 1).ok_or("switch placement")?;
+        let wall = placement_key(circuit.passage, 1).ok_or("wall placement")?;
         let mut placement = map.overlay.base().digest().to_vec();
         placement.extend_from_slice(&switch.to_be_bytes());
         let actor = deps.actor;
@@ -135,7 +213,8 @@ fn scenario() -> TestResult {
             placement: placement.clone(),
             expected_revision,
         };
-        for revision in 0..=3 {
+        let uses = if circuit.plate.is_some() { 1 } else { 4 };
+        for revision in 0..uses {
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(1))
@@ -149,6 +228,9 @@ fn scenario() -> TestResult {
                 UseDisposition::Committed,
                 "switch revision {revision}"
             );
+            if circuit.plate.is_some() {
+                break;
+            }
             match revision {
                 0 => assert!(map.facts.base_hidden(wall)),
                 1 => {
@@ -170,6 +252,59 @@ fn scenario() -> TestResult {
             }
         }
 
+        if let Some(plate) = circuit.plate {
+            let appearance = |at: TilePos| -> TestResult<u16> {
+                let tile = map
+                    .overlay
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .ok_or("source tile")?;
+                let id = *tile.ids().get(1).ok_or("source item")?;
+                Ok(map
+                    .facts
+                    .base_entry(at, 1, id)
+                    .ok_or("source facts")?
+                    .appearance_id)
+            };
+            assert_eq!(appearance(circuit.passage)?, 369);
+            assert_eq!(appearance(circuit.switch)?, 2773);
+            assert_eq!(map.facts.next_movement_decay_time(), None);
+
+            let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
+            let (origin, entered) = {
+                let mut runtime = owner.runtime.lock().await;
+                let origin = runtime.read_actor_position(actor).map_err(debug)?;
+                let proof = crate::map::floor::prepare_quest_callback_teleport(
+                    &runtime,
+                    &owner.movement_cells,
+                    actor,
+                    session,
+                    origin,
+                    local(plate),
+                    false,
+                    &crate::map::floor::BundleDoors(&map.facts),
+                )
+                .map_err(debug)?;
+                let entered = runtime.commit_source_step(proof).map_err(debug)?;
+                (origin, entered)
+            };
+            assert_eq!(
+                owner
+                    .step_quest_callback(&permit, actor, session, origin, entered)
+                    .await,
+                entered
+            );
+            let due = map
+                .facts
+                .next_movement_decay_time()
+                .ok_or("pressure plate reset")?;
+            assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+            assert_eq!(appearance(circuit.passage)?, 369);
+            assert_eq!(map.facts.expire_movement_items(due), 2);
+            assert_eq!(appearance(circuit.passage)?, 2129);
+            assert_eq!(appearance(circuit.switch)?, 27260);
+        }
+
         let receipts: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key = $1",
         )
@@ -181,11 +316,17 @@ fn scenario() -> TestResult {
     })
 }
 
-fn world() -> TestResult<boot::BundleWorld> {
+fn world(circuit: Circuit) -> TestResult<boot::BundleWorld> {
     let (bytes, mut pins) = boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
-    for (appearance, walkable) in [(2772, true), (2773, true), (2129, false)] {
+    for (appearance, walkable) in [
+        (2772, true),
+        (2773, true),
+        (2129, false),
+        (369, true),
+        (27260, true),
+    ] {
         data.manifest.palette.push(bundle::PaletteEntry {
             key: format!("oteryn:terrain.tibia.i{appearance}"),
             family: bundle::Family::Terrain,
@@ -198,13 +339,6 @@ fn world() -> TestResult<boot::BundleWorld> {
             }),
         });
     }
-    data.manifest.world = bundle::Extent {
-        min_x: WALL.x,
-        min_y: WALL.y,
-        max_x: SWITCH.x + 1,
-        max_y: SWITCH.y + 1,
-        floors: vec![-12, -10],
-    };
     let tile = |at: TilePos, extra| {
         let mut items = vec![sector::Item {
             palette: 0,
@@ -230,23 +364,76 @@ fn world() -> TestResult<boot::BundleWorld> {
             items,
         }
     };
-    let mut sectors = [
-        bundle::Sector {
-            floor: SWITCH.floor,
-            sx: SWITCH.x / 32,
-            sy: SWITCH.y / 32,
-            tiles: vec![
-                tile(START, Some((2, None))),
-                tile(SWITCH, Some((1, Some(30010)))),
-            ],
-        },
-        bundle::Sector {
-            floor: WALL.floor,
-            sx: WALL.x / 32,
-            sy: WALL.y / 32,
-            tiles: vec![tile(WALL, Some((3, None)))],
-        },
+    let mut records = vec![
+        (circuit.start(), Some((2, None))),
+        (circuit.switch, Some((1, Some(circuit.unique)))),
+        (circuit.passage, Some((3, None))),
     ];
+    if let Some(plate) = circuit.plate {
+        records.extend([
+            (plate, None),
+            (
+                TilePos {
+                    x: plate.x + 1,
+                    ..plate
+                },
+                Some((4, None)),
+            ),
+            (
+                TilePos {
+                    x: plate.x + 2,
+                    ..plate
+                },
+                Some((5, None)),
+            ),
+        ]);
+    }
+    let mut floors = std::collections::BTreeSet::new();
+    let mut by_sector = std::collections::BTreeMap::<_, Vec<_>>::new();
+    for &(at, extra) in &records {
+        floors.insert(at.floor);
+        by_sector
+            .entry((at.floor, at.x / 32, at.y / 32))
+            .or_default()
+            .push(tile(at, extra));
+    }
+    data.manifest.world = bundle::Extent {
+        min_x: records
+            .iter()
+            .map(|(at, _)| at.x)
+            .min()
+            .ok_or("minimum x")?,
+        min_y: records
+            .iter()
+            .map(|(at, _)| at.y)
+            .min()
+            .ok_or("minimum y")?,
+        max_x: records
+            .iter()
+            .map(|(at, _)| at.x)
+            .max()
+            .ok_or("maximum x")?
+            + 1,
+        max_y: records
+            .iter()
+            .map(|(at, _)| at.y)
+            .max()
+            .ok_or("maximum y")?
+            + 1,
+        floors: floors.into_iter().collect(),
+    };
+    let mut sectors: Vec<_> = by_sector
+        .into_iter()
+        .map(|((floor, sx, sy), mut tiles)| {
+            tiles.sort_by_key(|tile| (tile.y, tile.x));
+            bundle::Sector {
+                floor,
+                sx,
+                sy,
+                tiles,
+            }
+        })
+        .collect();
     sectors.sort_by_key(bundle::order);
     let bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
     pins.digest = bundle::read(&bytes)?.digest;
@@ -256,7 +443,7 @@ fn world() -> TestResult<boot::BundleWorld> {
         &boot::BootPins {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
-            start: START,
+            start: circuit.start(),
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
