@@ -1,6 +1,6 @@
 //! chsw / GAME-CHANNEL-01 §8-§10: the durable facts of a voluntary Channel switch, read under the
 //! session fence: the cooldown left by the server clock, the locks the database can prove
-//! (migration 2901) and whether the target is a current Channel of the same World. The guard
+//! (migration 2858) and whether the target is a current Channel of the same World. The guard
 //! itself only advances inside the fresh admission receipt insert.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::assert_session_fence;

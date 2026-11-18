@@ -200,7 +200,7 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                         DROP TABLE game_channel_switch_guards, game_channel_pvp_types;")
                         .execute(&mut *upgrade).await?;
                     admit(&mut *upgrade, 12, CHANNEL_B).await?;
-                    sqlx::raw_sql(include_str!("../../../migrations/2901_channel_switch_guard.sql"))
+                    sqlx::raw_sql(include_str!("../../../migrations/2858_channel_switch_guard.sql"))
                         .execute(&mut *upgrade).await?;
                     admit(&mut *upgrade, 13, CHANNEL_B).await?;
                     let switches: i64 = sqlx::query_scalar("SELECT switch_count FROM game_channel_switch_guards WHERE character_id=$1::uuid")
@@ -279,7 +279,7 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                         assert_eq!(code(admit(&mut *tx, 12, CHANNEL_B).await).as_deref(), Some("OTH02"), "{deadline}");
                         tx.rollback().await?;
                     }
-                    // Migration 2902: a held Party membership survives a refused admission and
+                    // Migration 2859: a held Party membership survives a refused admission and
                     // is taken back by the committed admission into the target Channel.
                     let mut party = pool.begin().await?;
                     sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES($1::uuid,$2::uuid,$3::uuid,1,2)")

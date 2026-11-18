@@ -370,6 +370,17 @@ class ForgottenProgramme(unittest.TestCase):
 
 
 class FeasterPrefix(unittest.TestCase):
+    def test_norbert_mission_opens_the_death_knell_confirmation_topic(self):
+        import questpc7_feaster_programme as feaster
+        _, _, rewards = feaster.build(q.ROOT)
+        confirmation = next(row for row in rewards if row['key'].endswith('-feaster-mission'))
+        self.assertEqual((confirmation['keywords'], confirmation['topic'], confirmation['next_topic']),
+                         (['yes'], 1, 0))
+        offer = feaster.mission_offer()
+        self.assertEqual((offer['npc'], offer['keywords'], offer['topic'], offer['next_topic']),
+                         (confirmation['npc'], ['mission'], 0, confirmation['topic']))
+        self.assertEqual(offer['storage'], [feaster.state(feaster.TRACK, -1, -1, -1, True)])
+
     def test_personal_quota_tool_custody_and_exact_potion_inputs(self):
         import questpc7_feaster_programme as f
         worlds,objectives,rewards=f.build(q.ROOT)

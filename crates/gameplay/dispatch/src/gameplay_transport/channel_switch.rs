@@ -2,7 +2,7 @@
 //!
 //! A switch is the ordinary logout release (safe exit) after the switch locks pass; the client
 //! then enters the target Channel by a fresh admission, whose receipt insert revalidates the
-//! cooldown and the database locks and advances the guard (migration 2901).
+//! cooldown and the database locks and advances the guard (migration 2858).
 use super::logout::LogoutReply;
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::foundation::{ChannelRuntimeV1, CommandId, ExactActorRef, GameSessionId, RuntimeScopeRefV1};

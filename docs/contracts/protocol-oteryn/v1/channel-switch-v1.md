@@ -58,7 +58,7 @@ choice. A new Channel defaults to Optional PvP. A replacement retains the stored
 the operator supplies a new one.
 
 The first fresh admission in a World establishes the baseline. Migration
-`2901_channel_switch_guard.sql` uses the latest historical admission for an existing character.
+`2858_channel_switch_guard.sql` uses the latest historical admission for an existing character.
 A same-Channel relog preserves that baseline.
 A destination change checks cooldown, combat, kill and protection-zone deadlines, a saved
 House's origin Channel, and skull eligibility. The receipt and guard commit together. A
@@ -67,7 +67,7 @@ refused admission consumes no cooldown and a replay cannot advance the guard twi
 ## Party across the switch
 
 The terminal release of an accepted `CHANNEL_SWITCH_REQUEST` keeps the Character in its Party and
-holds the membership for two minutes (migration 2902). The committed admission into the World
+holds the membership for two minutes (migration 2859). The committed admission into the World
 retains membership if the hold is still current. A late admission and the periodic expiry drain
 both apply ordinary Party departure and leader succession. A refused admission leaves the hold intact. Party chat,
 Guild chat and private messages use the World relay and reach every Channel of the World.

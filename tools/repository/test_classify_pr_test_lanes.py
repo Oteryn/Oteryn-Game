@@ -1123,12 +1123,81 @@ def test_repository_tool_dependencies(module):
     print("Repository tool dependencies PASS: auxiliary case, consumer promotion, security and unknown FULL")
 
 
+def test_directory_reference_left_boundary(module):
+    """Prose naming a directory is not a consumer (#3243, #3236, #3211, #3197, #3192,
+    #3177, #3143); quoted, `/`-joined and exact-file references still are."""
+    prose = b'"source": "no pinned spawn chance in content or docs/reference"\n'
+    assert module.directory_reference_occurrences(prose, "docs/reference") == [], prose
+    for content in (b'"docs/reference"', b"'docs/reference'", b'"/../../docs/reference/"', b"docs/reference\n"):
+        assert module.directory_reference_occurrences(content, "docs/reference"), content
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        git(root, "init", "-q")
+        git(root, "config", "user.email", "ci@example.invalid")
+        git(root, "config", "user.name", "CI")
+        metadata = fixture()
+        metadata_root = PurePosixPath(metadata["workspace_root"])
+        for package in metadata["packages"]:
+            relative = PurePosixPath(package["manifest_path"]).relative_to(metadata_root)
+            manifest = root.joinpath(*relative.parts)
+            manifest.parent.mkdir(parents=True, exist_ok=True)
+            manifest.write_text("[package]\n", encoding="utf-8")
+        files = {
+            # tools/world-bundle-compiler/held-boss-chances.json:12
+            "crates/foundation/held-boss-chances.json":
+                '{"source": "BOSS-SPAWN-1 owner decision 2026-11-05; no pinned spawn chance in content or docs/reference"}\n',
+            # apps/game-server/src/node/serve/bundle_npcs.rs:799
+            "apps/game-server/src/bundle_npcs.rs":
+                'const E: &str = include_str!(concat!(\n    env!("CARGO_MANIFEST_DIR"),\n'
+                '    "/../../docs/reference/content-prep/season-20261107/seasonal-calendar-source.json"\n));\n',
+            # crates/gameplay/content/src/content/character_progression_content/tests.rs:138
+            "crates/foundation/src/tests.rs":
+                'const T: &[u8] = include_bytes!(\n'
+                '    "../../../../../../docs/reference/experience-table-20261005/evidence.json"\n);\n',
+            "apps/client/src/lib.rs": 'fn d() { let _ = std::fs::read_dir("/../../docs/reference/quoted"); }\n',
+        }
+        changed = (
+            "docs/reference/content-prep/season-20261107/seasonal-calendar-source.json",
+            "docs/reference/experience-table-20261005/evidence.json",
+            "docs/reference/parity/damage.md",
+            "docs/reference/global-test-server/batch-summary.json",
+            "docs/reference/quoted/data.json",
+        )
+        for path, text in files.items():
+            (root / path).parent.mkdir(parents=True, exist_ok=True)
+            (root / path).write_text(text, encoding="utf-8")
+        for path in changed:
+            (root / path).parent.mkdir(parents=True, exist_ok=True)
+            (root / path).write_text("{}\n", encoding="utf-8")
+        workflows = root / ".github/workflows"
+        workflows.mkdir(parents=True, exist_ok=True)
+        for name in ("merge-gate.yml", "merge-group-gate.yml", "rust.yml"):
+            (workflows / name).write_text("name: control\n", encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "fixture")
+        sha = git(root, "rev-parse", "HEAD")
+        old_cwd = os.getcwd()
+        os.chdir(root)
+        try:
+            found = module.candidate_reference_consumers(metadata, sha, list(changed))
+        finally:
+            os.chdir(old_cwd)
+    assert found["docs/reference/parity/damage.md"] == set(), found
+    assert found["docs/reference/global-test-server/batch-summary.json"] == set(), found
+    assert found[changed[0]] == {module.SERVER}, found
+    assert found[changed[1]] == {"oteryn-foundation"}, found
+    assert found["docs/reference/quoted/data.json"] == {"oteryn-client"}, found
+    print("Directory reference left boundary PASS: prose ignored; quoted, joined and exact-file consumers kept")
+
+
 def main() -> int:
     module = load_module()
     test_metadata_events()
     test_repository_tool_dependencies(module)
     test_routing_matrix(module)
     test_exact_candidate_reference_scan(module)
+    test_directory_reference_left_boundary(module)
     test_documentation_fast_path(module)
     test_candidate_modes(module)
     test_large_pr_fallback(module)

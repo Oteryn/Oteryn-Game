@@ -40,14 +40,14 @@ merge_authority: CP_ONLY
 
 | # | Gap | State |
 |---|---|---|
-| 1 | Durable guard table and migration | `apps/game-server/migrations/2901_channel_switch_guard.sql` |
+| 1 | Durable guard table and migration | `apps/game-server/migrations/2858_channel_switch_guard.sql` |
 | 2 | Classification and guard update in the final admission boundary | AFTER INSERT trigger on `game_durability_fresh_admission_receipts` (same transaction as admission) |
 | 3 | Lock enforcement | runtime locks in `crates/gameplay/dispatch/src/gameplay_transport/channel_switch.rs`; database locks in `game_channel_switch_lock` |
 | 4 | protocol-oteryn command and server flow | capability 512, commands 6247/6248/6251, `docs/contracts/protocol-oteryn/v1/channel-switch-v1.md` |
 | 5 | Client window, ping, selection-screen columns | window model in `crates/client-ui/src/features/0512-channel-switch/`; "Change Channel" menu entry and dialog (`apps/client/src/bevy_shell/gameplay_dialogs.rs`); the accepted switch re-enters through `gateway_login` with the target `channel_id` (`apps/client/src/bevy_shell/owner.rs`, `reentry.rs`); PvP type from `DirectoryChannel.pvp_type`; online count from command 6251. ping per client-channel-probe-v1 |
 | 6 | E2E with two Channels | `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/channel_switch_two_channels.rs`: two assigned Channel runtimes of one World; through the real connection the player reads 6251 (both Channels, one online each), 6247 (ready), 6248 to the same Channel (refused) and to the other (safe exit, session ended), then a fresh admission into the other Channel counts the switch and starts the cooldown |
 | 7 | Party, Guild and private chat across Channels of a World | World-keyed relay; test `party_guild_and_private_lines_cross_channels_of_a_world_and_never_another_world` |
-| 8 | Party survives a switch | `apps/game-server/migrations/2902_channel_switch_party_hold.sql`; switch release holds the membership (`world_party::hold_terminal_member_in_transaction`), admission takes it back, an expired hold leaves through the World Party drain |
+| 8 | Party survives a switch | `apps/game-server/migrations/2859_channel_switch_party_hold.sql`; switch release holds the membership (`world_party::hold_terminal_member_in_transaction`), admission takes it back, an expired hold leaves through the World Party drain |
 | 9 | Channel shown in VIP, Party and Guild rows; live update on a switch | capability 513: Party member field 7, VIP Online field 6, Guild member field 5; client rows in `crates/client-ui/src/features/0513-social-channel/`; a Party member on another Channel is greyed; VIP login/logout/channel-change notices |
 
 ## Platform fields needed

@@ -812,7 +812,7 @@ pub(super) async fn remove_terminal_member_in_transaction(
 
 /// chsw: the terminal release of a voluntary Channel switch keeps the member in its Party and
 /// holds the membership until the fresh admission into the target Channel takes it back
-/// (migration 2902). Called in the same deciding transaction instead of
+/// (migration 2859). Called in the same deciding transaction instead of
 /// [`remove_terminal_member_in_transaction`].
 pub(super) async fn hold_terminal_member_in_transaction(
     tx: &mut Transaction<'_, Postgres>,

@@ -108,8 +108,11 @@ The receiving agent cannot see this skill, so paste these lines verbatim:
 Before a returned diff goes onto a branch:
 
 1. Apply it to a worktree on the packet's base and check it against current
-   `main` with `git merge-tree --write-tree origin/main HEAD`; merge only on
-   a conflict.
+   `main`: `git fetch origin main`, then
+   `git merge-tree --write-tree origin/main HEAD`. Merge only on a conflict
+   (exit 1, or GitHub reports the PR conflicted; `oteryn-dev`
+   `references/ci-merge.md`, *Before every push*). Any other non-zero exit is
+   an error to fix.
 2. Read the full diff. Reject or trim: files outside the owned paths, stray
    notes/logs, weakened assertions, `#[ignore]`, hand-edited digests,
    renumbered migrations of other mechanics, unrelated refactors.

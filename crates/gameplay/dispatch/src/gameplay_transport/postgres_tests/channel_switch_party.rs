@@ -1,7 +1,7 @@
 //! chsw (owner, 2026-11-17): a Party and its chat survive a voluntary Channel switch. The
 //! switch's safe exit (the terminal release with `with_channel_switch`) holds the membership;
 //! an ordinary logout removes it; an expired hold without a current session leaves the Party
-//! through the real World Party expiry drain (migration 2902).
+//! through the real World Party expiry drain (migration 2859).
 use crate::bestiary_postgres_harness::{
     CHANNEL, Harness, TestResult, WORLD, configured_admin, debug, id, runtime,
 };

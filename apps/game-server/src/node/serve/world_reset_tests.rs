@@ -265,11 +265,11 @@ fn highscore_epoch_upgrade_replaces_unproven_cut_and_retains_history()
                 let activation_ms: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM activated_at)*1000)::bigint FROM game_world_reset_epochs").fetch_one(&h.pool).await?;
                 assert!(stale_xp.computed_at_ms >= activation_ms);
 
-                // Retain both snapshots but recreate the pre-2858 head shape before applying
+                // Retain both snapshots but recreate the pre-2903 head shape before applying
                 // the actual upgrade SQL in its own transaction, as the migrator does.
                 h.pool.execute("ALTER TABLE game_world_highscore_heads DROP COLUMN published_reset_epoch").await?;
                 let mut migration = h.pool.begin().await?;
-                sqlx::raw_sql(include_str!("../../../migrations/2858_highscore_reset_epoch.sql")).execute(&mut *migration).await?;
+                sqlx::raw_sql(include_str!("../../../migrations/2903_highscore_reset_epoch.sql")).execute(&mut *migration).await?;
                 migration.commit().await?;
 
                 h.root.await_ready().await?;

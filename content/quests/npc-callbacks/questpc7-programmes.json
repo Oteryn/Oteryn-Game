@@ -6,9 +6,9 @@
       "quest": "oteryn:quest.feaster_of_souls_quest",
       "npc": "oteryn:npc.para_norbert",
       "keywords": [
-        "mission"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 1,
       "next_topic": 0,
       "storage": [
         {
@@ -43,7 +43,8 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:a6a5fda33f1e0ecf8b75ae1e7cff8ee5fb296e8be1a7c8a367f79cde09b61a9e",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
-        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
+        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674",
+        "https://tibia.fandom.com/?curid=89657&oldid=1153851"
       ]
     },
     {
