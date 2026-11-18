@@ -1,5 +1,10 @@
 # Dispatch library test build memory
 
+One dispatch lib-test rustc process exceeds the hosted memory budget.
+Separating the generated PostgreSQL mount is the smallest tested
+structural direction. Two scratch executables cover the complete
+4,339-name baseline at a measured per-process peak of about 14.52 GiB.
+
 The requested base, `2c1e9158c30b411de28ec064bc7198ea4f87dd44`, is an ancestor
 of the fetched `origin/main` at `f64e785ee1e3c81361bbe4b958e5b2ee8ba13c2a`.
 The base and the resubmitted branch have identical build inputs.
@@ -136,6 +141,20 @@ fixture-preserving control. Both scratch replays use the same two
 workers and original test names, allowing their executable listings
 to be checked against the full MIR registry.
 
+The complementary replay built in 1,038.778 s at 15,228,376 KiB peak
+RSS (14.52 GiB). Its 1,127,211,160-byte executable listed 2,102 tests
+(2,104 lines), including every one of the 2,101 expected lib-slice
+tests and one registration from the generated PG mount. Its link peaked
+at 4,186,520 KiB over 14.952 s, with 241 rlibs (1,487,365,036 bytes)
+and 258 objects (1,195,435,168 bytes).
+
+The two executable lists have 4,339 unique names in their union, with
+zero missing or added names against the full libtest registry. The
+scratch lists share 218 names. Assigning ownership by the generated
+mount gives 2,238 PG tests and 2,101 lib tests, each listed by its
+intended executable. The production split must register each in one
+target. Neither scratch replay caused an OOM kill.
+
 ## Full suite with 256 codegen units and incremental off
 
 With the full 735-mount input restored, one Cargo job, and line tables
@@ -191,11 +210,12 @@ calls. Expose the required test hooks through the existing
 `test-support` feature and require the feature for the new target. The offline-death retry belongs to the generated mount. Retain
 the current test namespace so the exact-name filter keeps selecting it.
 
-The isolated PG control provides a planning peak of about 14 GiB for
-the new target. The fixture-preserving control for the existing lib
-target peaked at 11.10 GiB. Both are scratch measurements. Measure both
-real targets independently after fixture extraction and compare the
-combined sorted names with the 4,339-entry baseline registry.
+The two-job controls give a planning peak of about 14.6 GiB across
+the two targets, 8.2% below the full build. Their timings cover direct
+rustc replays with cached dependencies. The original baseline includes
+dependency builds. Both real targets still need measurement after
+fixture extraction, a sorted test-name comparison with the 4,339-entry
+baseline registry, and a hosted archive run to verify the job's wall time.
 
 Compile the two targets serially in the existing archive. The PG
 planner lists both binary IDs and assigns each test once. The PR unit
