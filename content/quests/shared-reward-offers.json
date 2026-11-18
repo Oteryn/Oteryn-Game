@@ -3258,6 +3258,74 @@
       ]
     },
     {
+      "npc": "oteryn:npc.lazaran",
+      "keywords": [
+        "help"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "You mean you want help us?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lazaran",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 12,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Me have many small task, but also big {mission}. You say what want."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lazaran",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 12,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Big problem we have! Skull of first leader gone. He ancestor of whole tribe but died long ago in war. We have keep his skull on our sacred place. ...",
+        "Then one night, green men came with wolves... and one of wolves took skull and ran off chewing on it! We need back - many wisdom and power is in skull. Maybe they took to north fortress. But can be hard getting in. You try get our holy skull back?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission03",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ]
+    },
+    {
       "npc": "oteryn:npc.legola",
       "keywords": [
         "sniper gloves"

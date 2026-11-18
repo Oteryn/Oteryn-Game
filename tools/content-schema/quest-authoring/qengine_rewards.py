@@ -18,6 +18,7 @@ import taming_cosmetics
 import wizard_cosmetics
 import engoutfit_m36
 import qmech_m39
+import qcx89_unnatural_selection
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -90,7 +91,7 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'rock_steady', *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
+        'morgan', 'navigator', 'rock_steady', qcx89_unnatural_selection.NPC, *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
@@ -1037,6 +1038,8 @@ def build():
     engoutfit_m36.append(add, storage, callbacks, offers, declarations,
         f'crystal:{PIN}:data-global/npc/rock_steady.lua:56-98:sha256:{sha(inputs["data-global/npc/rock_steady.lua"])}')
     qmech_m39.append(add, callbacks, offers, declarations, inputs, PIN)
+    qcx89_unnatural_selection.append(ROOT, add, callbacks, offers, storage,
+                                      inputs[qcx89_unnatural_selection.PATH])
     m39_keys = ('l2-cael-tome-', 'l2-zalamon-tome', 'l2-alliance-finish', 'l2-bone-', 'bone-pit-lost-sample')
     m39_callbacks = [callback for callback in callbacks if callback['key'].split('/')[-1].startswith(m39_keys)]
     callbacks = [callback for callback in callbacks if callback not in m39_callbacks]
