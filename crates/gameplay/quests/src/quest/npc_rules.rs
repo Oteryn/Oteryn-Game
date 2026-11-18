@@ -410,6 +410,8 @@ pub struct NpcRulePlan {
     pub next_topic: i32,
     pub observed_tracks: BTreeMap<String, i64>,
     pub track_changes: Vec<NpcTrackChange>,
+    /// A selected draw must reach the writer even when its preview matches the stored value.
+    pub requires_draw: bool,
     pub effects: Vec<NpcRuleEffect>,
     pub inventory_before: NpcInventorySnapshot,
     pub inventory_after: NpcInventorySnapshot,

@@ -363,6 +363,7 @@ fn plan_with_teleport(
         let mut reply = Vec::new();
         let mut effects = Vec::new();
         let mut completes = false;
+        let mut requires_draw = false;
         let mut inventory_failure_reply = Vec::new();
         for rule in &program.document.rules {
             if rule.npc != input.npc
@@ -431,6 +432,7 @@ fn plan_with_teleport(
                 let drawn;
                 let concrete = match effect {
                     NpcRuleEffect::Draw { tracks, candidates } => {
+                        requires_draw = true;
                         let seed = seed.ok_or_else(|| {
                             NpcRuleError::MissingNativeResolution(rule.key.clone())
                         })?;
@@ -504,6 +506,7 @@ fn plan_with_teleport(
             next_topic: state.topic,
             observed_tracks: state.observed,
             track_changes,
+            requires_draw,
             effects,
             inventory_before: input.inventory.clone(),
             inventory_after: state.inventory,

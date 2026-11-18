@@ -551,7 +551,7 @@ impl DurabilityRoot {
                 }
             }
             let evaluated = match teleport_plan { Some(plan) => Ok(Some(plan.source)), None => evaluate_source(&source,&request,&effective_tracks,&catalogue,now,facts,inventory.as_ref()) };
-            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.iter().all(|change| change.before == change.after) && !items::changes_items(plan) && !plan.completes && !rewards::has_experience(&plan.effects) && !plan.effects.iter().any(|effect| matches!(effect, oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::Outfit { .. } | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::OutfitAddon { .. })) {
+            if inventory_owned && let Ok(Some(plan)) = &evaluated && !plan.requires_draw && plan.track_changes.iter().all(|change| change.before == change.after) && !items::changes_items(plan) && !plan.completes && !rewards::has_experience(&plan.effects) && !plan.effects.iter().any(|effect| matches!(effect, oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::Outfit { .. } | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::OutfitAddon { .. })) {
                 let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan), magic_effects: Vec::new() };
                 tx.commit(deadline).await?;
                 return Ok(Ok(result));

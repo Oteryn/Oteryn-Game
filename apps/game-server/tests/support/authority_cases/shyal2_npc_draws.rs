@@ -122,7 +122,9 @@ fn draw_program(tracks: &[&str], pool: i64) -> fixture::TestResult<DrawProgram> 
         .map(|key| QuestTrack {
             key: (*key).into(),
             quest: QUEST.into(),
-            initial: 0,
+            // The fixed advisory seed picks 11 from the twelve-part pool.
+            // A fresh request must still run when the preview equals this value.
+            initial: if *key == PART { 11 } else { 0 },
             min: 0,
             max: pool,
         })

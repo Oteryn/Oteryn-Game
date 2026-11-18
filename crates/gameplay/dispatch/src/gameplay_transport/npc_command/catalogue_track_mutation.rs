@@ -2,7 +2,9 @@
 use oteryn_gameplay_quests::quest::npc_rules::NpcRulePlan;
 
 pub(super) fn has_mutation(plan: &NpcRulePlan) -> bool {
-    plan.track_changes
-        .iter()
-        .any(|change| change.before != change.after)
+    plan.requires_draw
+        || plan
+            .track_changes
+            .iter()
+            .any(|change| change.before != change.after)
 }

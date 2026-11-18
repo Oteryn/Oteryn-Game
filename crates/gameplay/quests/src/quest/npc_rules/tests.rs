@@ -601,6 +601,7 @@ fn npc_draw_can_request_the_same_repair_part_again() -> Result<(), NpcRuleError>
             return Err(NpcRuleError::Invalid("expected one repair request".into()));
         };
         assert_eq!(change.after, expected);
+        assert!(plan.requires_draw);
         facts.tracks.insert(track.into(), change.after);
     }
     Ok(())
