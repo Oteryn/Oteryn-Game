@@ -1,6 +1,7 @@
 use super::fixture::{Harness, debug, run};
 use super::{TestResult, prepare_current_session};
-use crate::foundation::MovementLocalPosition;
+use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 #[test]
@@ -19,7 +20,7 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
             let h = Harness::create_with_admission_seed(
                 configured_admin,
                 "ddepths_faction",
-                false,
+                true,
                 false,
             )
             .await?;
@@ -40,6 +41,27 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
                 .await
                 .map_err(|()| "Character fence")?
                 .ok_or("current Character fence")?;
+            let catalogue = std::sync::Arc::new(
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?
+                    .catalogue()
+                    .clone(),
+            );
+            let setup = owner.revision_sequencer.acquire(fence.character_id).await
+                .commit_quest_transition(
+                    owner.root, &authority, owner.holder, fence,
+                    QuestTransitionRequest {
+                        transition_key: "oteryn:quest-transition/quest/u11_50/dangerous_depths/gnomes/measurements/npc_2".into(),
+                        cause: QuestCause::Command(CommandRef::new(session, CommandId::new(1).map_err(debug)?)),
+                    },
+                    catalogue,
+                ).await.map_err(debug)?;
+            assert!(
+                matches!(setup, QuestTransitionOutcome::Committed(_)),
+                "{setup:?}"
+            );
+            // Fixture the previously earned faction points and Bigfoot flags.
+            // The portal itself must use its current fence and live PG values.
             let character = fence.character_id;
             {
                 let mut runtime = owner.runtime.lock().await;
