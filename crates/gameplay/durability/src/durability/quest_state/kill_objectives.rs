@@ -333,9 +333,10 @@ pub async fn apply_batch_in_transaction(
             .try_into()
             .map_err(|_| DurabilityError::InvalidStoredState)?;
         if catalogue.definition_hash(rule.quest()) != Some(hash)
-            && !state
-                .try_get::<bool, _>("completed")
-                .map_err(DurabilityError::from)?
+            && (matches!(rule, Binding::Overlord(_))
+                || !state
+                    .try_get::<bool, _>("completed")
+                    .map_err(DurabilityError::from)?)
         {
             if !matches!(rule, Binding::Overlord(_)) {
                 return Err(CharacterProgressionError::ProgressionContextMismatch);

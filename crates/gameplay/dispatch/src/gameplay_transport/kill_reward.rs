@@ -3818,6 +3818,22 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         }
+        // A session without an XP binding keeps its existing no-write XP refusal.
+        // Its admitted private rewards still use the same canonical death owner.
+        if admission
+            .progression_binding(self.fence.game_session_id)
+            .is_none()
+            && entry.boss_reward_plan.get().is_some()
+            && admission
+                .settle_boss_without_experience(&permit, entry)
+                .await
+                .is_err()
+        {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         if entry.talisman.get().is_none()
             && let Some(race) = entry.row.as_ref().and_then(|row| row.race.as_ref())
         {

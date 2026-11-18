@@ -155,6 +155,10 @@ pub(super) async fn native_death(
             (0, 0, 0, 0, 0),
             "death, chests, items and XP roll back together"
         );
+        let canonical: i64 = sqlx::query_scalar("SELECT count(*) FROM game_boss_death_settlements")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(canonical, 0, "the canonical death receipt rolls back too");
         for statement in [
             "DROP TRIGGER overlordcr_chest_fault ON game_party_kill_xp_receipts",
             "DROP FUNCTION overlordcr_chest_fault()",

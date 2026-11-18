@@ -1,5 +1,6 @@
 -- Elemental Spheres: scope donor eligibility to the four elemental overlords.
 -- Preserve complete census, late-death and personal reward integrity checks.
+-- Consistency guard for encounter-rules::boss::reward_eligibility_for_boss.
 CREATE OR REPLACE FUNCTION game_boss_reward_death_complete() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE c game_boss_reward_contributors%ROWTYPE;
     total_dealt NUMERIC; total_received NUMERIC; total_healed NUMERIC;
@@ -55,9 +56,7 @@ DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_boss_reward_death_complete() SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
 
--- A definition mismatch never discards the canonical death. Only the fenced
--- quest owner can record this terminal no-grant result in that death's transaction.
-
+-- The canonical receipt is shared by chest, XP and quest settlement.
 CREATE TABLE game_boss_death_settlements (
     world_id UUID NOT NULL,
     death_id UUID NOT NULL,
@@ -95,6 +94,7 @@ DO $$ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION game_boss_death_quest_skip_create_guard() FROM PUBLIC;
 
+-- Only an incompatible definition records a terminal no-grant result.
 CREATE TABLE game_boss_death_quest_skips (
     world_id UUID NOT NULL,
     death_id UUID NOT NULL,

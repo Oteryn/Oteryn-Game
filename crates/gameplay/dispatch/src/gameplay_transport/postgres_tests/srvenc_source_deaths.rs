@@ -788,6 +788,11 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         }
         assert_eq!(drained, DrainOutcome::Drained);
         if let Some((target, now, observed)) = crash_replay {
+            let canonical: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_boss_death_settlements")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(canonical, 1, "the canonical death committed once");
             let before: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
             let private_admitted = native.reward_table().row(&rule.creature).is_ok();
             assert_eq!(before.0, i64::from(private_admitted));
@@ -837,6 +842,14 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             assert_eq!(
                 before, after,
                 "durable death replay cannot mint or credit twice"
+            );
+            let canonical_after: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_boss_death_settlements")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(
+                canonical_after, canonical,
+                "replay never inserts a second canonical death"
             );
         }
     }

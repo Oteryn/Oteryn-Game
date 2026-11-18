@@ -282,7 +282,10 @@ fn plan_personal_death_with_slots(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn prepare_boss_rewards(&self, entry: &PendingKillSettlement) -> bool {
+    pub(in crate::gameplay_transport) async fn prepare_boss_rewards(
+        &self,
+        entry: &PendingKillSettlement,
+    ) -> bool {
         let admission = self;
         // W03 entitlement creation is independent of the top-damage principal's
         // current presence and must precede the proficiency-only early return.
