@@ -39,7 +39,7 @@ mod acl;
 #[path = "hireling_lifecycle/bank.rs"]
 mod bank;
 #[path = "hireling_lifecycle/cook.rs"]
-mod cook;
+pub(super) mod cook;
 #[path = "hireling_lifecycle/furniture.rs"]
 mod furniture;
 #[path = "hireling_lifecycle/gourmet.rs"]

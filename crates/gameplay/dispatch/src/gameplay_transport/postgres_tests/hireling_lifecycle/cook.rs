@@ -276,15 +276,15 @@ async fn coins(h: &Harness) -> TestResult<i64> {
 }
 
 #[derive(Clone)]
-pub(super) struct Talk {
+pub(in crate::gameplay_transport::monk_save::postgres_tests) struct Talk {
     pub(super) disposition: wire::NpcIntentDisposition,
-    pub(super) lines: Vec<String>,
+    pub(in crate::gameplay_transport::monk_save::postgres_tests) lines: Vec<String>,
     pub(super) window: Option<wire::NpcTradeWindow>,
 }
 
 /// One actual transport connection: the production reconnect snapshot legitimately closes
 /// old conversations. Every service/menu/confirmation below stays in this same stream.
-pub(super) struct Client {
+pub(in crate::gameplay_transport::monk_save::postgres_tests) struct Client {
     pub(super) stream: tokio::io::DuplexStream,
     pub(super) next_command: u64,
     generation: u64,
@@ -292,12 +292,12 @@ pub(super) struct Client {
     replies: std::collections::BTreeMap<u64,Talk>,
 }
 impl Client {
-    pub(super) fn new(stream:tokio::io::DuplexStream,admitted:AdmittedSession)->Self {
+    pub(in crate::gameplay_transport::monk_save::postgres_tests) fn new(stream:tokio::io::DuplexStream,admitted:AdmittedSession)->Self {
         Self {stream,next_command:admitted.continuity.next_command_id,
             generation:admitted.continuity.connection_generation,first_item:None,
             replies:std::collections::BTreeMap::new()}
     }
-    pub(super) async fn close(&mut self)->TestResult {self.stream.shutdown().await?;Ok(())}
+    pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn close(&mut self)->TestResult {self.stream.shutdown().await?;Ok(())}
     pub(super) async fn opaque(&mut self,kind:u32,payload:&[u8],command:u64)->TestResult<(CommandStatus,Vec<u8>)> {
         let fresh=command==self.next_command;
         self.send(kind,payload,command).await?;
@@ -312,7 +312,7 @@ impl Client {
         }
     }
 
-    pub(super) async fn talk(&mut self,npc:EntityRef,text:&str)->TestResult<Talk> {
+    pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn talk(&mut self,npc:EntityRef,text:&str)->TestResult<Talk> {
         let reply=self.talk_at(npc,text,self.next_command,false).await?;
         assert_eq!(reply.disposition,wire::NpcIntentDisposition::Ok,"talk {text}: {:?}",reply.lines);
         Ok(reply)
@@ -322,7 +322,7 @@ impl Client {
         assert_eq!(reply.disposition,wire::NpcIntentDisposition::Ok,"window {text}: {:?}",reply.lines);
         Ok(reply)
     }
-    pub(super) async fn talk_command(&mut self,npc:EntityRef,text:&str,command:u64)->TestResult<Talk> {
+    pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn talk_command(&mut self,npc:EntityRef,text:&str,command:u64)->TestResult<Talk> {
         self.talk_at(npc,text,command,false).await
     }
     async fn talk_at(&mut self,npc:EntityRef,text:&str,command:u64,want_window:bool)->TestResult<Talk> {
@@ -406,7 +406,7 @@ impl Client {
     }
 }
 
-pub(super) async fn drive<T,F>(owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:AdmittedSession,
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn drive<T,F>(owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:AdmittedSession,
     server:&mut tokio::io::DuplexStream,client:F)->TestResult<(AdmittedSession,T)>
 where F:std::future::Future<Output=TestResult<T>> {
     let mut server_run=std::pin::pin!(serve_admitted(server,admitted,owner,IDLE_LIVENESS));

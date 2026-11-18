@@ -218,22 +218,31 @@ async fn exercise_bulk(h: &Harness, recorded_gold: i64) -> TestResult {
                     (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$4 AND lifecycle=1)"
             ).bind(id(41).as_slice()).bind(GOLD).bind(recorded_gold).bind(ITEM).fetch_one(&h.pool).await
         };
-        talk(owner, admitted, npc, 1, "hi").await?;
-        talk(owner, admitted, npc, 2, "trade").await?;
-        assert_eq!(talk(owner, admitted, npc, 3, "102").await?, ["Your balance cannot cover that quantity."]);
-        assert_eq!(read().await?, (10_103, 0, 0, 0));
+        let mut admitted = *admitted;
+        super::qd_world::select_talk_capabilities(owner, &mut admitted, &[3, 6])?;
+        let (mut server, peer) = tokio::io::duplex(1 << 20);
+        use super::hireling_lifecycle::cook::{Client, drive};
+        let (_, ()) = drive(owner, admitted, &mut server, async {
+            let mut client = Client::new(peer, admitted);
+            client.talk(npc, "hi").await?;
+            client.talk(npc, "trade").await?;
+            assert_eq!(client.talk(npc, "102").await?.lines, ["Your balance cannot cover that quantity."]);
+            assert_eq!(read().await?, (10_103, 0, 0, 0));
 
-        // Crystal npc/sandomo.lua:151-165 charges for all requested clusters
-        // together. 101 crosses the current native stack size of 100.
-        let committed = talk(owner, admitted, npc, 4, "101").await?;
-        assert_eq!(committed, ["Clusters delivered."]);
-        assert_eq!(read().await?, (3, 1, 2, 101));
-        let stack_sizes: Vec<i64> = sqlx::query_scalar(
-            "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1 ORDER BY quantity"
-        ).bind(ITEM).fetch_all(&h.pool).await?;
-        assert_eq!(stack_sizes, [1, 100]);
-        assert_eq!(talk(owner, admitted, npc, 4, "101").await?, committed);
-        assert_eq!(read().await?, (3, 1, 2, 101));
+            // Crystal npc/sandomo.lua:151-165 charges for all requested clusters
+            // together. 101 crosses the current native stack size of 100.
+            let command = admitted.continuity.next_command_id + 3;
+            let committed = client.talk(npc, "101").await?;
+            assert_eq!(committed.lines, ["Clusters delivered."]);
+            assert_eq!(read().await?, (3, 1, 2, 101));
+            let stack_sizes: Vec<i64> = sqlx::query_scalar(
+                "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1 ORDER BY quantity"
+            ).bind(ITEM).fetch_all(&h.pool).await?;
+            assert_eq!(stack_sizes, [1, 100]);
+            assert_eq!(client.talk_command(npc, "101", command).await?.lines, committed.lines);
+            assert_eq!(read().await?, (3, 1, 2, 101));
+            client.close().await
+        }).await?;
         Ok(())
     }).await
 }
