@@ -68,42 +68,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .map_err(|_| refused)?
         };
-        let result = self
-            .root
-            .consume_mind_item(
+        let request = ConsumeTransformRequest {
+            command,
+            source,
+            target: None,
+            intent: [b"mind-potion:".as_slice(), source.as_slice()].concat(),
+        };
+        let content = super::super::item_ref_admission::NativeItemWeights(native)
+            .with_wheel(self.premium_coordinator);
+        let consume = || {
+            self.root.consume_mind_item(
                 permit,
                 self.character,
                 self.holder,
                 fence,
-                ConsumeTransformRequest {
-                    command,
-                    source,
-                    target: None,
-                    intent: [b"mind-potion:".as_slice(), source.as_slice()].concat(),
-                },
+                request.clone(),
                 native,
-                &super::super::item_ref_admission::NativeItemWeights(native),
+                &content,
                 MindAction::Potion,
             )
-            .await
-            .map_err(|_| UseDisposition::Rejected)?
-            .ok_or(refused)?;
+        };
+        let result = match consume().await {
+            Ok(result) => result,
+            // Retry while holding the same actor lane and exact landing proof.
+            // An acknowledged receipt can settle an uncertain first commit.
+            Err(_) => consume().await.map_err(|_| UseDisposition::Rejected)?,
+        }
+        .ok_or(refused)?;
         if result.disposition != UseDisposition::Committed {
             return Err(result.disposition);
         }
-        if result.fresh {
-            let mut runtime = self.runtime.lock().await;
-            runtime
-                .commit_source_step(proof)
-                .map_err(|_| UseDisposition::Rejected)?;
-            if let Some(at) = tile(destination) {
-                let _ = map.facts.emit_movement_effect(at, 38);
-            }
-            self.states.chat.push_quest_feedback(
-                session,
-                "You feel dizzy. When your sight clears, you are somewhere else.",
-            );
+        let mut runtime = self.runtime.lock().await;
+        runtime
+            .commit_source_step(proof)
+            .map_err(|_| UseDisposition::Rejected)?;
+        if let Some(at) = tile(destination) {
+            let _ = map.facts.emit_movement_effect(at, 38);
         }
+        self.states.chat.push_quest_feedback(
+            session,
+            "You feel dizzy. When your sight clears, you are somewhere else.",
+        );
         Ok(UseDisposition::Committed)
     }
 
@@ -171,7 +176,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     intent,
                 },
                 native,
-                &super::super::item_ref_admission::NativeItemWeights(native),
+                &super::super::item_ref_admission::NativeItemWeights(native)
+                    .with_wheel(self.premium_coordinator),
                 MindAction::Field,
             )
             .await;
