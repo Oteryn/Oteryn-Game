@@ -869,6 +869,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         callback,
                         pending.expected,
                         origin,
+                        result == UseDisposition::Occupied,
                     );
                 }
             }
@@ -1570,6 +1571,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     callback,
                     entered,
                     origin,
+                    result == UseDisposition::Occupied,
                 );
             }
             runtime.read_actor_position(actor).unwrap_or(entered)
@@ -1593,6 +1595,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         callback,
                         entered,
                         origin,
+                        false,
                     );
                 }
                 runtime.read_actor_position(actor).unwrap_or(entered)
@@ -1638,6 +1641,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         callback: &Callback,
         entered: MovementPositionSnapshot,
         origin: MovementPositionSnapshot,
+        occupied: bool,
     ) {
         if !callback.return_on_failure {
             return;
@@ -1693,6 +1697,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && let Some(at) = native(snapshot.position())
             {
                 let _ = map.facts.emit_movement_effect(at, effect);
+            }
+            if occupied
+                && let Some(room) = &callback.effects.encounter
+                && let Some(feedback) = &room.boss_feedback
+                && runtime.positioned_melee_census().is_ok_and(|census| {
+                    census.iter().any(|(who, pos, owner)| {
+                        *who != actor
+                            && owner.is_some()
+                            && encounter::room_contains(room, pos.position())
+                    })
+                })
+            {
+                self.states
+                    .chat
+                    .publish_quest_speech(runtime, actor, session, &feedback.occupied);
             }
         }
         if let Some(message) = &callback.failure_message {

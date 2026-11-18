@@ -304,11 +304,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && *who == actor
                     && *occupant_session == Some(session))
         }) {
-            if preflight && let Some(feedback) = &encounter.boss_feedback {
-                self.states
-                    .chat
-                    .publish_quest_speech(runtime, actor, session, &feedback.occupied);
-            }
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);

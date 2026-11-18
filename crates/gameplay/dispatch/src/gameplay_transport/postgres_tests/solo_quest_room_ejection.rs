@@ -472,7 +472,9 @@ async fn exercise_world(
             use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
             let mut feedback = feedback;
             feedback.extend(owner.states.chat.drain(admitted.game_session_id));
-            assert!(matches!(feedback.as_slice(), [ChatLine::Local { text, mode: ChatSpeechMode::MonsterSay, .. }] if text == ROOM_OCCUPIED_TEXT), "{feedback:?}");
+            assert!(matches!(feedback.as_slice(), [ChatLine::Local {
+                text, mode: ChatSpeechMode::MonsterSay, position, ..
+            }] if text == ROOM_OCCUPIED_TEXT && (position.x, position.y, position.floor) == (start.x, start.y, start.floor)), "{feedback:?}");
             assert_return_effect(&owner, start)?;
         }
         if keep_cave_monsters {
