@@ -107,11 +107,25 @@ fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> Test
     })
 }
 
+#[test]
+fn worldchg_coral_mine_use_grants_crate_and_advances_crystal() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::super::kill_reward_e2e::scenario_thread::run("coral-mine-use", || {
+        let mut coral = callback("deeplings-coral-crate")?;
+        coral.selector.position = Some(position((33522, 31194, -14)));
+        exercise(coral, 14163, 1, Some(11))
+    })
+}
+
 fn position((x, y, floor): (u16, u16, i8)) -> Position {
     Position { x, y, floor }
 }
 
 fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>) -> TestResult {
+    let coral = callback.key == "oteryn:quest-callback/deeplings-coral-crate";
     let started = std::time::Instant::now();
     let trigger = callback.selector.position.ok_or("position")?;
     let world = world_ordinal(&callback, trigger, appearance, ordinal)?;
@@ -259,7 +273,8 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                         min: -1,
                         max: 13,
                     }],
-                    vec![QuestTransition {
+                    {
+                        let mut transitions = vec![QuestTransition {
                         world_change: None,
                         key: seed.into(),
                         quest: callback.quest.clone(),
@@ -270,7 +285,15 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                         }],
                         completes: false,
                         experience: None,
-                    }],
+                    }];
+                        if coral {
+                            transitions.push(
+                                oteryn_gameplay_quests::quest::world_callbacks::primary_transition(&callback)
+                                    .map_err(debug)?,
+                            );
+                        }
+                        transitions
+                    },
                 )
                 .map_err(debug)?,
             );
@@ -357,7 +380,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                 .read_actor_position(deps.actor)
                 .map_err(debug)?
                 .position(),
-            if allowed {
+            if allowed && !coral {
                 local(callback.teleport.ok_or("destination")?)
             } else {
                 origin
@@ -378,12 +401,31 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             .read_character_quest_state(&authority, fence.character_id)
             .await
             .map_err(debug)?;
-        assert_eq!(before, after, "literal USE changed durable quest state");
+        if !coral {
+            assert_eq!(before, after, "literal USE changed durable quest state");
+        }
         let receipts: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
                 .fetch_one(&h.pool)
                 .await?;
-        assert_eq!(receipts, receipts_before);
+        if coral {
+            assert_eq!(receipts, receipts_before + 1);
+            let progress: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(&callback.storage[0].track)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(progress, 12);
+            let crates: i64 = sqlx::query_scalar(
+                "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i14165' AND lifecycle=1",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(crates, 1);
+        } else {
+            assert_eq!(receipts, receipts_before);
+        }
         eprintln!(
             "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
             callback.key,
