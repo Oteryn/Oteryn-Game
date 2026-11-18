@@ -1116,6 +1116,7 @@ async fn exercise_outcome(
         )
         .ok_or("lever key")?;
         let terminal = {
+            let permit = owner.spell_lane_permit().await.ok_or("lever spell lane")?;
             let mut runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             let player = players[0];
@@ -1131,10 +1132,11 @@ async fn exercise_outcome(
             let origins = players.iter().map(|player| runtime.read_actor_position(player.actor))
                 .collect::<Result<Vec<_>, _>>().map_err(debug)?;
             let creature_count = runtime.visible_entities().creatures.len();
-            let use_lever = |runtime: &mut ChannelRuntimeV1,
+            let use_lever = async |runtime: &mut ChannelRuntimeV1,
                              states: &mut crate::gameplay_transport::actor_spell::ChannelSpellStates,
                              revision| {
                 owner.execute_quest_encounter(
+                    &permit,
                     runtime,
                     states,
                     player.actor,
@@ -1147,16 +1149,16 @@ async fn exercise_outcome(
                     false,
                     crate::durability::quest_state::QuestCause::Use(command),
                     None,
-                )
+                ).await
             };
             assert_eq!(
-                use_lever(&mut runtime, &mut states, revision.checked_add(1).ok_or("stale revision")?),
+                use_lever(&mut runtime, &mut states, revision.checked_add(1).ok_or("stale revision")?).await,
                 oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
             );
             let competing_lever = map.facts.reserve_quest_encounter_lever(key, revision, after)
                 .ok_or("competing lever reservation")?;
             assert_eq!(
-                use_lever(&mut runtime, &mut states, revision),
+                use_lever(&mut runtime, &mut states, revision).await,
                 oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
             );
             drop(competing_lever);
@@ -1166,7 +1168,7 @@ async fn exercise_outcome(
                 assert_eq!(runtime.read_actor_position(member.actor).map_err(debug)?, origin);
             }
             assert_eq!(
-                use_lever(&mut runtime, &mut states, revision),
+                use_lever(&mut runtime, &mut states, revision).await,
                 oteryn_protocol_oteryn::world_object::UseDisposition::Committed
             );
             for (player, expected) in players.iter().zip(room) {

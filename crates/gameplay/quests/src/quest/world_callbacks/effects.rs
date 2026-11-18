@@ -463,6 +463,9 @@ pub struct EncounterOutcomeFeedback {
 pub struct EncounterOutcome {
     pub outcome: OutcomeRequirement,
     pub terminal: String,
+    /// Crystal 201189f8 arbaziloth_lever.lua:6, boss_lever.lua:191-208,266.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cooldown_seconds: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shield_handoff: Option<ShieldHandoff>,
 }
@@ -680,6 +683,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if effects.encounter_outcome.as_ref().is_some_and(|outcome| {
         !outcome.outcome.valid()
             || !outcome.terminal.starts_with("oteryn:creature.")
+            || outcome
+                .cooldown_seconds
+                .is_some_and(|seconds| !(1..=30 * 24 * 60 * 60).contains(&seconds))
             || effects.encounter.as_ref().is_none_or(|room| {
                 room.phase.is_some()
                     || room.timing.is_some()

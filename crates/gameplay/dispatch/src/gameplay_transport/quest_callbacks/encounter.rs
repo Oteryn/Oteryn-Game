@@ -1,6 +1,9 @@
 //! Source parties are the players standing on the exact staging tiles, not a social-party id.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
+use crate::durability::boss_encounter::channel_cooldown::{
+    ChannelBossCooldown, ChannelBossCooldownDecision,
+};
 use crate::map::view::EntryFacts;
 
 pub(in crate::gameplay_transport) fn room_contains(
@@ -70,8 +73,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         clippy::too_many_arguments,
         reason = "one owner turn binds party, native carrier, map and exact lever revision"
     )]
-    pub(super) fn execute_quest_encounter(
+    pub(super) async fn execute_quest_encounter(
         &self,
+        permit: &SpellLanePermit,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
@@ -86,6 +90,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
     ) -> UseDisposition {
         self.quest_encounter(
+            permit,
             runtime,
             states,
             actor,
@@ -99,11 +104,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cause,
             reservation,
         )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn preflight_personal_quest_encounter(
+    pub(super) async fn preflight_personal_quest_encounter(
         &self,
+        permit: &SpellLanePermit,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
@@ -116,6 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
     ) -> UseDisposition {
         self.quest_encounter(
+            permit,
             runtime,
             states,
             actor,
@@ -129,11 +137,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cause,
             None,
         )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn quest_encounter(
+    async fn quest_encounter(
         &self,
+        permit: &SpellLanePermit,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
@@ -337,6 +347,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .map(|(actor, session, _)| (*actor, *session))
             .collect();
+        let cooldown = if let Some(outcome) = outcome
+            && let Some(seconds) = outcome.cooldown_seconds
+        {
+            let QuestCause::Use(cause) = cause else {
+                return UseDisposition::Rejected;
+            };
+            let mut fences = Vec::with_capacity(party.len());
+            for &(actor, session) in &party {
+                let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                    return UseDisposition::Rejected;
+                };
+                if !runtime
+                    .bound_attacker_lease(actor, session)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    })
+                {
+                    return UseDisposition::Rejected;
+                }
+                fences.push(fence.item_fence());
+            }
+            Some(ChannelBossCooldown {
+                boss: &outcome.outcome.group,
+                seconds,
+                reset_epoch: self.reset_epoch,
+                cause,
+                lever_key: key,
+                lever_revision: expected_revision,
+                party: fences,
+            })
+        } else {
+            None
+        };
         let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
             let bindings = catalogue.authored_bindings()?;
             bindings.quests.iter().find(|quest| quest.stages.iter().any(|stage|
@@ -355,23 +399,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let mut capture = if let Some(attack) = attack.as_ref() {
-            match attack.kills().1.lock() {
-                Ok(capture) => Some(capture),
-                Err(_) => return UseDisposition::Rejected,
+        let prepared = if let Some(attack) = attack.as_ref() {
+            let Ok(mut capture) = attack.kills().1.lock() else {
+                return UseDisposition::Rejected;
+            };
+            if outcome.is_some_and(|outcome| !capture.outcomes.can_start(runtime, outcome)) {
+                return UseDisposition::Occupied;
             }
-        } else {
-            None
-        };
-        if let (Some(capture), Some(outcome)) = (capture.as_mut(), outcome)
-            && !capture.outcomes.can_start(runtime, outcome)
-        {
-            return UseDisposition::Occupied;
-        }
-        let prepared = if let (Some(capture), Some(hash)) = (capture.as_mut(), scoped_hash) {
-            match capture.prepare_encounter(runtime, &callback.key, hash, &party) {
-                Ok(prepared) => Some(prepared),
-                Err(_) => return UseDisposition::Rejected,
+            if let Some(hash) = scoped_hash {
+                match capture.prepare_encounter(runtime, &callback.key, hash, &party) {
+                    Ok(prepared) => Some(prepared),
+                    Err(_) => return UseDisposition::Rejected,
+                }
+            } else {
+                None
             }
         } else {
             None
@@ -386,15 +427,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let mut phases = if encounter.phase.is_some() {
-            let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
-                return UseDisposition::Occupied;
-            };
-            Some(active)
-        } else {
-            None
-        };
-        let mut visits = if encounter.phase.is_none() && !monsters.is_empty() {
+        if encounter.phase.is_some() && states.encounter_phases.reserve(runtime, key).is_err() {
+            return UseDisposition::Occupied;
+        }
+        let track_visit = encounter.phase.is_none() && !monsters.is_empty();
+        if track_visit {
             let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
                 return UseDisposition::Rejected;
             };
@@ -404,10 +441,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Exhausted;
             }
-            Some(visits)
-        } else {
-            None
-        };
+        }
         let Ok(admission) = runtime.prepare_quest_encounter_with_phase(
             proofs,
             &monsters,
@@ -448,6 +482,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .reserve_quest_encounter_lever(key, expected_revision, after)
         else {
             return UseDisposition::Rejected;
+        };
+        if let Some(cooldown) = cooldown {
+            let decision = self
+                .root
+                .commit_channel_boss_cooldown(self.character, self.holder, permit, cooldown.clone())
+                .await;
+            let decision = if decision.is_err() {
+                // Resolve a lost COMMIT against the same command, revision and full roster.
+                self.root
+                    .commit_channel_boss_cooldown(self.character, self.holder, permit, cooldown)
+                    .await
+            } else {
+                decision
+            };
+            match decision {
+                Ok(ChannelBossCooldownDecision::Admitted) => {}
+                Ok(ChannelBossCooldownDecision::OnCooldown) => {
+                    if let Some(message) = &callback.failure_message {
+                        self.states.chat.push_quest_feedback(session, message);
+                    }
+                    return UseDisposition::Rejected;
+                }
+                Ok(ChannelBossCooldownDecision::Rejected) | Err(_) => {
+                    return UseDisposition::Rejected;
+                }
+            }
+        }
+        // The runtime borrow still excludes all competing admissions. Reacquire short
+        // synchronous registry guards only for publication, after the SQL await.
+        let mut capture = if let Some(attack) = attack.as_ref() {
+            match attack.kills().1.lock() {
+                Ok(capture) => Some(capture),
+                Err(_) => return UseDisposition::Rejected,
+            }
+        } else {
+            None
+        };
+        let mut phases = if encounter.phase.is_some() {
+            match states.encounter_phases.active.lock() {
+                Ok(active) => Some(active),
+                Err(_) => return UseDisposition::Rejected,
+            }
+        } else {
+            None
+        };
+        let mut visits = if track_visit {
+            match self.states.quest_callbacks.encounters.lock() {
+                Ok(visits) => Some(visits),
+                Err(_) => return UseDisposition::Rejected,
+            }
+        } else {
+            None
         };
         let Ok((snapshots, (phase, actors, roster, prepared_outcome))) =
             admission.publish(|| lever.publish())
