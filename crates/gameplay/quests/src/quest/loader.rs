@@ -377,6 +377,12 @@ pub(super) fn lower_embedded_quest_state(
     }
     super::npc_rules::albinius_predecessor::register(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
+    // Shrine credit adds death transitions to the existing track definitions.
+    // Capture the previously shipped marker both before and after that extension.
+    super::source_deaths::extend_forgotten_knowledge(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
+    super::npc_rules::albinius_predecessor::register(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     restrict_runtime_scope(lowered, content_revision)
 }
 

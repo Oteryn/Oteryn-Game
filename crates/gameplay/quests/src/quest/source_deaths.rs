@@ -7,6 +7,9 @@
 use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
+mod forgotten_knowledge;
+pub(super) use forgotten_knowledge::extend as extend_forgotten_knowledge;
+
 use serde::Deserialize;
 use std::{collections::BTreeMap, sync::OnceLock};
 
@@ -186,6 +189,7 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
                     rules.push(rule);
                 }
             }
+            rules.extend(forgotten_knowledge::rules());
             Ok(rules)
         })
         .as_deref()
@@ -230,7 +234,11 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             }
         }
     }
-    for rule in rules().map_err(str::to_owned)? {
+    for rule in rules()
+        .map_err(str::to_owned)?
+        .iter()
+        .filter(|rule| !forgotten_knowledge::owns(rule))
+    {
         if rule.define_transition {
             let candidate = rule.transition()?;
             if let Some(existing) = transitions.insert(rule.transition.clone(), candidate.clone())
