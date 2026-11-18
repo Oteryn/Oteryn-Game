@@ -79,6 +79,8 @@ pub(super) fn apply_world_cake_regeneration(
     };
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
+    // The native condition tick samples time in whole milliseconds.
+    let now_us = now_us / 1_000 * 1_000;
     let before = state.owned_conditions();
     if state.vitals().health == 0
         || before

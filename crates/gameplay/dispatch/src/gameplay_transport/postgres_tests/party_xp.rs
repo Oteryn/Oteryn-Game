@@ -761,7 +761,14 @@ async fn scenario(
         sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until) VALUES(encode($1,'hex')::uuid,2026,3,4,statement_timestamp(),statement_timestamp()+interval '604800 seconds')")
             .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
         for (actor, session) in players.iter().copied() {
-            let _ = owner.tick_spell_periodic(actor, session).await;
+            let now = owner.owner_now().get() / 1_000 * 1_000 + 999;
+            let _ = owner
+                .tick_spell_periodic_at(
+                    actor,
+                    session,
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now),
+                )
+                .await;
         }
         let (actor, session) = players[0];
         let runtime = owner.runtime.lock().await;
@@ -1640,6 +1647,7 @@ async fn scenario(
                 .owned_conditions()
                 .get(ConflictKey::Recovery)
                 .ok_or("world regeneration applies to both premium and free players")?;
+            assert_eq!(effect.started_at() % 1_000, 0);
             assert!(matches!(
                 effect.definition().values(),
                 ConditionValues::SpellRegeneration {
