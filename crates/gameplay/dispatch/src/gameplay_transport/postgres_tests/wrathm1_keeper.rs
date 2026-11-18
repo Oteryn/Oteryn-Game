@@ -62,8 +62,11 @@ pub(super) async fn exercise(
     use super::quest_world_callbacks::{input_item, local, wire};
     let (_, mut second) =
         super::grizzly_boss::vacancy::second_player(owner, deps, h, local(SECOND)).await?;
-    let caps = SelectedCapabilities::select(owner.offered_capabilities(), &[4, 11, 15])
+    let caps = SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
         .ok_or("Keeper USE capabilities")?;
+    assert!(
+        caps.contains(oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1)
+    );
     admitted.continuity.selected_capabilities = caps.clone();
     second.continuity.selected_capabilities = caps;
     let native = owner
