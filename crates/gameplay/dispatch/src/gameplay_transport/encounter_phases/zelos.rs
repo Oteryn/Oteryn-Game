@@ -46,7 +46,6 @@ pub(super) fn apply_magnor_burst(
     }
 }
 
-
 // Crystal 201189f data/libs/functions/creature.lua:1–34 searches up to two
 // rings, breaking ties by distance from the creature and then ring order.
 pub(super) fn closest_vortex_landing(

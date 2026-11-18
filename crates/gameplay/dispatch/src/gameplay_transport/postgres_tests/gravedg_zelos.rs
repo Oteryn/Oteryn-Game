@@ -257,8 +257,15 @@ pub(super) async fn exercise(
             .await;
         assert_eq!(step.disposition, StepDisposition::Moved);
         let runtime = owner.runtime.lock().await;
-        let position = runtime.read_actor_position(player).map_err(debug)?.position();
-        assert_eq!((position.x, position.y, position.floor), expected, "blocked vortex landing");
+        let position = runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (position.x, position.y, position.floor),
+            expected,
+            "blocked vortex landing"
+        );
     }
     {
         let mut runtime = owner.runtime.lock().await;
