@@ -49,6 +49,31 @@ fn total(panel: &ui::StashPanel) -> u64 {
     panel.rows.iter().map(|row| u64::from(row.quantity)).sum()
 }
 
+fn stash_transition(delta: i128, aggregate: i128, selected: i128, carried: i128) -> bool {
+    aggregate == delta && selected == delta && carried == -delta
+}
+
+async fn carried_after(client: &mut DevClientSession, reference: std::num::NonZeroU32, wanted: u64) -> TestResult<u64> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let observed = carried(client, reference)?;
+        if observed == wanted {
+            return Ok(observed);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("E07 selected carried quantity {observed}, expected {wanted}").into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
+    }
+}
+
+fn carried(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
+    Ok(client.inventory().ok_or("E07 missing carried inventory")?.entries.iter()
+        .filter(|entry| entry.item_definition_ref == reference)
+        .map(|entry| u64::from(entry.count.get())).sum())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -89,6 +114,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .definition_at(item.item_definition_ref)
         .map(|(key, revision)| (key.to_owned(), revision.to_owned()))
         .ok_or("carried definition unknown")?;
+    let selected = |panel: &ui::StashPanel| panel.rows.iter()
+        .filter(|row| row.definition_key == key && row.definition_revision == revision)
+        .map(|row| u64::from(row.quantity)).sum::<u64>();
+    let selected_before = selected(&panel);
+    let carried_before = carried(&client, item.item_definition_ref)?;
+    let units = u64::from(item.count.get());
     panel.carried = vec![item];
     let (stowed, stow_bytes) = send(&mut client, &mut panel, ui::Intent::Stow(item.handle)).await?;
     if stowed.outcome != stash::StashOutcome::Committed
@@ -98,7 +129,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let (browsed, browse_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
     let after_stow = total(&panel);
-    if after_stow != before + u64::from(item.count.get()) {
+    let selected_stowed = selected(&panel);
+    let carried_stowed = carried_after(&mut client, item.item_definition_ref,
+        carried_before.checked_sub(units).ok_or("E07 invalid carried baseline")?).await?;
+    if browsed.outcome != stash::StashOutcome::Opened || !stash_transition(
+        i128::from(units), i128::from(after_stow) - i128::from(before),
+        i128::from(selected_stowed) - i128::from(selected_before),
+        i128::from(carried_stowed) - i128::from(carried_before),
+    ) {
         return Err("stash total differs from stowed quantity".into());
     }
     let row = browsed
@@ -115,9 +153,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if withdrawn.outcome != stash::StashOutcome::Committed {
         return Err(format!("withdraw outcome {:?}", withdrawn.outcome).into());
     }
-    let (_, after_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
+    let (refreshed, after_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
     let after_withdraw = total(&panel);
-    if after_withdraw != after_stow - 1 {
+    let carried_withdrawn = carried_after(&mut client, item.item_definition_ref,
+        carried_stowed.checked_add(1).ok_or("E07 carried quantity overflow")?).await?;
+    if refreshed.outcome != stash::StashOutcome::Opened || !stash_transition(
+        -1, i128::from(after_withdraw) - i128::from(after_stow),
+        i128::from(selected(&panel)) - i128::from(selected_stowed),
+        i128::from(carried_withdrawn) - i128::from(carried_stowed),
+    ) {
         return Err("one-unit withdrawal changed the wrong quantity".into());
     }
     let expected = format!(
@@ -130,7 +174,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("e07-withdraw.bin", &withdraw_bytes);
     capture("e07-after.bin", &after_bytes);
     capture("e07-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(format!(
         "key={key} stowed={} after_stow={after_stow} after_withdraw={after_withdraw}",
         item.count.get()
@@ -147,5 +191,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E07.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stash_requires_selected_definition_and_carried_conservation() {
+        assert!(!stash_transition(2, 2, 0, -2));
+        assert!(!stash_transition(2, 2, 2, 0));
+        assert!(stash_transition(2, 2, 2, -2));
+        assert!(stash_transition(-1, -1, -1, 1));
     }
 }

@@ -8,6 +8,8 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
     DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2, decode_world_spatial_entities_delta,
 };
 
+const PUSH_FIXTURES: (usize, usize) = (0, 1);
+
 const DIRECTIONS: [StepDirection; 4] = [
     StepDirection::North,
     StepDirection::East,
@@ -65,18 +67,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut pusher = connect_character(clients, 0x94, 0).await?;
-    let mut target = connect_character(clients, 0x95, 0).await?;
+    let mut pusher = connect_character(clients, 0x94, PUSH_FIXTURES.0).await?;
+    let mut target = connect_character(clients, 0x95, PUSH_FIXTURES.1).await?;
     let pusher_at = tile(pusher.world_spatial().actor_position)?;
     let path = route(world, tile(target.world_spatial().actor_position)?, |at| {
-        distance(at, pusher_at) == 1
+        at.floor == pusher_at.floor && distance(at, pusher_at) == 1
             && DIRECTIONS.into_iter().any(|direction| {
                 destination(world, at, direction)
                     .is_some_and(|next| next != pusher_at && distance(next, pusher_at) == 1)
             })
     })
     .ok_or("M04 no adjacent player push lane")?;
-    walk(&mut target, world, &path).await?;
+    with_peer(&mut pusher, walk(&mut target, world, &path)).await?;
     let before = tile(target.world_spatial().actor_position)?;
     let reference = own(&target)?.entity;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
@@ -90,6 +92,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         pusher.service_liveness(Duration::from_millis(25)).await?;
         target.service_liveness(Duration::from_millis(25)).await?;
+        target.take_events();
     }
     pusher.take_events();
     let blocked_intent = encode_creature_push_intent(&CreaturePushIntent {
@@ -180,4 +183,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn connected_pusher_and_target_use_distinct_fixtures() {
+        assert_ne!(PUSH_FIXTURES.0, PUSH_FIXTURES.1);
+    }
 }

@@ -29,7 +29,7 @@ struct Object {
     appearance: u16,
 }
 
-const CASES: [(&str, u32, u16, u16); 6] = [
+pub(super) const CASES: [(&str, u32, u16, u16); 6] = [
     ("shovel", 3457, 593, 594),
     ("machete", 3308, 3696, 3695),
     ("scythe", 3453, 3653, 3651),

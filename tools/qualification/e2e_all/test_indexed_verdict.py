@@ -89,8 +89,18 @@ class IndexedVerdictTests(unittest.TestCase):
 
     def test_real_c16_captures_do_not_write_fabricated_ids_or_repeat_full_packets(self):
         source = (PHASES / 'client_row_c16c.rs').read_text()
-        self.assertIn('status=MISSING-CLIENT', source)
-        self.assertNotIn('std::fs::write', source)
+        self.assertNotIn('status=MISSING-CLIENT', source)
+        self.assertIn('full_e2ef5::client_companions', source)
+        self.assertRegex(source, r'entities\s*\.get\(&companion\)')
+        self.assertIn('entities.get(&corpse).is_some()', source)
+        self.assertRegex(source, r'observed\s*\.entity\s*\.identity')
+        self.assertIn('observed.entity.generation', source)
+        journey = (PHASES / 'full_e2ef5.rs').read_text()
+        self.assertIn('client_row_c16c::capture(client, "convince", rat, None)', journey)
+        self.assertIn('client_row_c16c::capture(client, "animate", skeleton, Some(corpse.entity))', journey)
+        tile_capture = (PHASES / 'client_row_c16d.rs').read_text()
+        self.assertIn('full_e2ef5::client_tile_items', tile_capture)
+        self.assertIn('client_row_c16d::capture(client)', journey)
         for name in ['client_row_c16c', 'client_row_c16d']:
             self.assertNotIn('full_e2ef5::run(', (PHASES / (name + '.rs')).read_text())
 

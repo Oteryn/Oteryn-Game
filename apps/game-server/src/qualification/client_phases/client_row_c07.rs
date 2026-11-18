@@ -91,31 +91,58 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     let target = actor_position(target_tile);
     let health_before = client.actor_vitals().ok_or("step=field-step observed=no-vitals need=vitals-frame")?.health;
     client.take_events();
+    let remaining = quantity(&client, reference)?.checked_sub(1).ok_or("C07 no rune to debit")?;
     let (disposition, cast_sequence) = use_rune(&mut client, reference, target).await?;
     if disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
         return Err(format!("step=field-cast observed={disposition:?} need=Committed-and-field-delta").into());
     }
-    let placed = field_frame(&mut client, target, field, true, cast_sequence, Duration::from_secs(5)).await?;
-    inventory_count(&mut client, reference, before_count - 1).await?;
+    let placed = field_frame(&mut client, target, field, true, cast_sequence, Duration::from_secs(5), Some((reference, remaining))).await?;
     check("attack-rune", placed);
 
+    if contact_conditions(&mut client).await? != (false, false) || other_attackers(&client) {
+        return Err("C07 contact baseline requires a quiet tile and no active burn".into());
+    }
+    let contact_health = client.actor_vitals().ok_or("C07 pre-contact vitals absent")?.health;
+    client.take_events();
     let step = client.step_retrying(direction).await?;
     if step.disposition != StepDisposition::Moved || tile(client.world_spatial().actor_position)? != target_tile {
         return Err(format!("step=field-step observed={step:?} need=Moved-position-delta").into());
     }
-    let damaged = wait_health_below(&mut client, health_before).await?;
+    let damaged = wait_health_below(&mut client, contact_health, step.result_server_sequence).await?;
     check("field-contact-damage", damaged);
-    let expired = field_frame(&mut client, target, field, false, placed, Duration::from_secs(75)).await?;
+    let expired = field_frame(&mut client, target, field, false, placed, Duration::from_secs(75), None).await?;
     check("field-expiry", expired);
     capture_expected(&client, target, field, health_before)?;
 
     let back = route(world, target_tile, |at| at == from).ok_or("step=post-expiry-step observed=no-return-route need=adjacent-route")?;
     walk(&mut client, world, &back).await?;
+    let settle_deadline = tokio::time::Instant::now() + Duration::from_secs(75);
+    verdict::Harness::global().bounded_wait(settle_deadline, "prior burn expiry");
+    while burning(&mut client).await? {
+        if tokio::time::Instant::now() >= settle_deadline {
+            return Err("C07 initial burn still active after field expiry".into());
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+        client.take_events();
+    }
     let stable = client.actor_vitals().ok_or("step=post-expiry-step observed=no-vitals need=vitals-frame")?.health;
-    walk(&mut client, world, &[direction]).await?;
-    client.service_liveness(Duration::from_millis(250)).await?;
-    if client.actor_vitals().is_none_or(|v| v.health != stable) {
-        return Err("step=post-expiry-step observed=health-changed need=expired-field-no-contact-tick".into());
+    client.take_events();
+    let step = client.step_retrying(direction).await?;
+    if step.disposition != StepDisposition::Moved || tile(client.world_spatial().actor_position)? != target_tile {
+        return Err(format!("C07 re-step on expired field failed: {step:?}").into());
+    }
+    let observation_end = tokio::time::Instant::now() + Duration::from_secs(12);
+    while tokio::time::Instant::now() < observation_end {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        if client.actor_vitals().is_none_or(|vitals| vitals.health != stable)
+            || client.take_events().into_iter().any(|event| matches!(event,
+                SessionEvent::ActorVitals(delta) if delta.value.health != stable))
+        {
+            return Err("C07 health changed during expired field observation".into());
+        }
+    }
+    if burning(&mut client).await? {
+        return Err("C07 expired field applied a new burn".into());
     }
     check("field-step-expiry", client.last_server_sequence());
 
@@ -126,7 +153,7 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     let mut fresh = connect_world(clients, 0xc8).await?;
     if fresh.join_snapshot().game_session_id == old_session
         || fresh.world_spatial().actor_position != retained_position
-        || quantity(&fresh, reference)? != before_count - 1
+        || quantity(&fresh, reference)? != remaining
     {
         return Err("step=fresh-admission observed=session-position-or-rune-mismatch need=durable-payment-custody".into());
     }
@@ -181,9 +208,10 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld, npcs: &oter
     let window = wire::decode_npc_trade_window(&delta.payload).map_err(|e| format!("C07 trade window: {e:?}"))?;
     let (index, offer) = window.offers.iter().enumerate().find(|(_,o)| o.side == wire::NpcTradeSide::Buy && o.item_definition_ref == reference.get()).ok_or("step=acquire observed=rune-not-offered need=live-3188-offer")?;
     let before = quantity(client, reference)?;
+    let after = client.last_server_sequence();
     let reply = npc_shop::buy(client.session_mut(), &wire::NpcTradeIntent { npc_actor: actor, catalogue_revision: window.open.ok_or("C07 trade closed")?.1, offer_index: u32::try_from(index)?, side: offer.side, quantity: 2, expected_unit_price: offer.unit_price }).await?;
     if reply != wire::NpcIntentDisposition::Ok { return Err(format!("step=acquire-buy observed={reply:?} need=Ok-and-earned-funds unit_price={}", offer.unit_price).into()); }
-    inventory_count(client, reference, before + u64::from(offer.count) * 2).await
+    inventory_count(client, reference, before + u64::from(offer.count) * 2, after).await
 }
 
 async fn use_rune(client: &mut DevClientSession, reference: std::num::NonZeroU32, target: ActorPosition) -> TestResult<(oteryn_protocol_oteryn::world_object::UseDisposition,u64)> {
@@ -196,22 +224,119 @@ async fn use_rune(client: &mut DevClientSession, reference: std::num::NonZeroU32
     Ok((disposition, reply.server_sequence))
 }
 
-async fn inventory_count(client: &mut DevClientSession, reference: std::num::NonZeroU32, expected: u64) -> TestResult<u64> {
+fn inventory_matches(
+    delta: &oteryn_dev_client::AppliedDelta<oteryn_protocol_oteryn::item_view::CharacterInventory>,
+    reference: std::num::NonZeroU32,
+    after: u64,
+    expected: u64,
+) -> bool {
+    delta.server_sequence > after && delta.value.entries.iter()
+        .filter(|entry| entry.item_definition_ref == reference)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum::<u64>() == expected
+}
+
+async fn inventory_count(client: &mut DevClientSession, reference: std::num::NonZeroU32, expected: u64, after: u64) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop { for event in client.take_events() { if let SessionEvent::Inventory(delta) = event && quantity(client, reference)? == expected { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=inventory-delta observed={} need={expected}", quantity(client, reference)?).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::Inventory(delta) = event && inventory_matches(&delta, reference, after, expected) {
+                return Ok(delta.server_sequence);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=inventory-delta observed={} need={expected}", quantity(client, reference)?).into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
 }
 async fn later_frame(client: &mut DevClientSession) -> TestResult { client.service_liveness(Duration::from_millis(100)).await.map_err(Into::into) }
-async fn wait_health_below(client: &mut DevClientSession, before: u32) -> TestResult<u64> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop { for event in client.take_events() { if let SessionEvent::ActorVitals(delta) = event && delta.value.health < before { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=field-step observed=health:{} need=health-below:{before}", client.actor_vitals().map_or(0, |v| v.health)).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
+fn competing_damage(active_icons: &[u8]) -> bool {
+    active_icons.iter().any(|icon| (1..=8).contains(icon) && *icon != 2)
 }
-async fn field_frame(client: &mut DevClientSession, at: ActorPosition, reference: std::num::NonZeroU32, present: bool, after: u64, wait: Duration) -> TestResult<u64> {
+
+fn contact_damage(before: u32, after: u32, new_burn: bool, other_attackers: bool) -> bool {
+    new_burn && !other_attackers && after < before
+}
+
+fn other_attackers(client: &DevClientSession) -> bool {
+    use oteryn_dev_client::EntityKind;
+    client.world_entities().is_none_or(|entities| {
+        entities.others().any(|entity| matches!(entity.kind, EntityKind::Creature | EntityKind::Player))
+    })
+}
+
+async fn burning(client: &mut DevClientSession) -> TestResult<bool> {
+    let (status, _) = client_row_c17a::query(client).await?;
+    Ok(status.conditions.iter().any(|condition| condition.icon == 2))
+}
+
+async fn contact_conditions(client: &mut DevClientSession) -> TestResult<(bool, bool)> {
+    let (status, _) = client_row_c17a::query(client).await?;
+    let icons = status.conditions.iter().map(|entry| entry.icon).collect::<Vec<_>>();
+    Ok((icons.contains(&2), competing_damage(&icons)))
+}
+
+async fn wait_health_below(client: &mut DevClientSession, before: u32, step_sequence: u64) -> TestResult<u64> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let mut damage = None;
+    loop {
+        if other_attackers(client) {
+            return Err("C07 field contact site contains another possible damage source".into());
+        }
+        if let Some(delta) = client.take_events().into_iter().find_map(|event| match event {
+            SessionEvent::ActorVitals(delta) if delta.server_sequence > step_sequence && delta.value.health < before => Some(delta),
+            _ => None,
+        }) {
+            damage = Some(delta);
+        }
+        if let Some(delta) = &damage {
+            let (new_burn, competing_dot) = contact_conditions(client).await?;
+            if contact_damage(before, delta.value.health, new_burn, competing_dot || other_attackers(client)) {
+                return Ok(delta.server_sequence);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C07 field step did not produce both health damage and a new burn condition".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+}
+async fn field_frame(
+    client: &mut DevClientSession,
+    at: ActorPosition,
+    reference: std::num::NonZeroU32,
+    present: bool,
+    after: u64,
+    wait: Duration,
+    mut debit: Option<(std::num::NonZeroU32, u64)>,
+) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + wait;
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    loop { for event in client.take_events() { if let SessionEvent::WorldMap(delta) = event && delta.server_sequence > after && let Some(tile) = delta.value.tiles.iter().find(|t| t.position == at) && tile.items.iter().any(|item| item.definition == MapDefinition::Item(reference)) == present {
-        capture_map_delta(&delta, present);
-        return Ok(delta.server_sequence);
-    } } if tokio::time::Instant::now() >= deadline { return Err(format!("step={} observed=missing-map-delta tile={at:?} need=field-{present}", if present {"field-cast"} else {"field-expiry"}).into()); } client.service_liveness(Duration::from_millis(25)).await?; }
+    let mut map_delta = None;
+    loop {
+        for event in client.take_events() {
+            match event {
+                SessionEvent::WorldMap(delta)
+                    if map_delta.is_none() && delta.server_sequence > after
+                        && delta.value.tiles.iter().find(|tile| tile.position == at).is_some_and(|tile| {
+                            tile.items.iter().any(|item| item.definition == MapDefinition::Item(reference)) == present
+                        }) => map_delta = Some(delta),
+                SessionEvent::Inventory(delta) if debit.is_some_and(|(rune, expected)| {
+                    inventory_matches(&delta, rune, after, expected)
+                }) => debit = None,
+                _ => {}
+            }
+        }
+        if debit.is_none() && let Some(delta) = map_delta.take() {
+            capture_map_delta(&delta, present)?;
+            return Ok(delta.server_sequence);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step={} tile={at:?} observed=map-delta:{} pending-rune-debit={debit:?} need=field-{present}", if present {"field-cast"} else {"field-expiry"}, map_delta.is_some()).into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -219,12 +344,12 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     loop { let reply = client.session_mut().logout().await?; if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Ok(()); } else if tokio::time::Instant::now() >= deadline { return Err(format!("step=logout observed={:?} need=Accepted", reply.result).into()); } client.service_liveness(Duration::from_millis(250)).await?; }
 }
 
-fn capture_map_delta(delta: &oteryn_dev_client::AppliedDelta<oteryn_protocol_oteryn::world_map::WorldMapViewDelta>, present: bool) {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else { return; };
-    let result = oteryn_protocol_oteryn::world_map::encode_world_map_delta(&delta.value.header, &delta.value)
-        .map_err(|error| format!("C07 map encode: {error:?}"))
-        .and_then(|payload| std::fs::write(Path::new(&path).join(if present { "c07-map-placed.bin" } else { "c07-map-expired.bin" }), payload).map_err(|error| error.to_string()));
-    if let Err(error) = result { evidence(&format!("C07_CAPTURE_WRITE_ERROR {error}")); }
+fn capture_map_delta(delta: &oteryn_dev_client::AppliedDelta<oteryn_protocol_oteryn::world_map::WorldMapViewDelta>, present: bool) -> TestResult {
+    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else { return Ok(()); };
+    let payload = oteryn_protocol_oteryn::world_map::encode_world_map_delta(&delta.value.header, &delta.value)
+        .map_err(|error| format!("C07 map encode: {error:?}"))?;
+    std::fs::write(Path::new(&path).join(if present { "c07-map-placed.bin" } else { "c07-map-expired.bin" }), payload)?;
+    Ok(())
 }
 
 fn capture_expected(
@@ -262,6 +387,39 @@ fn capture_expected(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn field_contact_requires_burning_without_another_damage_source() {
+        assert!(!contact_damage(150, 130, true, competing_damage(&[1, 2])));
+        assert!(contact_damage(150, 130, true, competing_damage(&[2])));
+        assert!(!contact_damage(150, 130, false, false));
+        assert!(!contact_damage(150, 130, true, true));
+        assert!(!contact_damage(150, 150, true, false));
+        assert!(contact_damage(150, 130, true, false));
+    }
+
+    #[test]
+    fn inventory_sequence_matches_its_own_quantity() -> TestResult {
+        use oteryn_protocol_oteryn::item_view::{CharacterInventory, ItemEntry};
+        let reference = std::num::NonZeroU32::MIN;
+        let mut delta = oteryn_dev_client::AppliedDelta {
+            server_sequence: 20,
+            base_revision: 1,
+            new_revision: 2,
+            value: CharacterInventory::default(),
+        };
+        assert!(!inventory_matches(&delta, reference, 2, 2));
+        delta.value.entries.push(ItemEntry {
+            appearance_id: 0,
+            handle: std::num::NonZeroU64::MIN,
+            item_definition_ref: reference,
+            count: std::num::NonZeroU32::new(2).ok_or("count")?,
+            sub_type: 0,
+        });
+        assert!(inventory_matches(&delta, reference, 3, 2));
+        assert!(!inventory_matches(&delta, reference, 20, 2));
+        Ok(())
+    }
+
     #[test]
     fn field_ids_resolve_from_the_production_item_index() -> TestResult { let index = provisioning::item_index()?; let rune = provisioning::item_reference(&index, RUNE_ID)?; let field = provisioning::item_reference(&index, FIELD_ID)?; assert_ne!(rune, field); Ok(()) }
 }

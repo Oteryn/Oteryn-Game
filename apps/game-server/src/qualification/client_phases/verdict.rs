@@ -161,8 +161,6 @@ pub(crate) fn classify(error: &(dyn Error + 'static)) -> Cause {
                 DevClientError::Timeout(phase) => return Cause::Deadline { phase },
                 _ => return transport(None, None, context),
             }
-        } else if current.is::<std::io::Error>() {
-            return transport(None, None, context);
         } else if current.is::<tokio::time::error::Elapsed>() {
             return Cause::Deadline {
                 phase: "inner-timeout",
@@ -920,6 +918,12 @@ mod verdict_tests {
     }
 
     #[test]
+    fn classify_local_io_as_harness_failure() {
+        let error = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
+        assert_eq!(classify(&error), Cause::Assertion);
+    }
+
+    #[test]
     fn fail_cause_joins_step_and_sanitized_error() {
         assert_eq!(
             fail_cause("cast-rat", "reply  refused\nby server"),
@@ -1033,7 +1037,7 @@ mod verdict_tests {
         let plain: Box<dyn Error> = "town step changed position".into();
         assert_eq!(classify(plain.as_ref()), Cause::Assertion);
         let io: Box<dyn Error> = Box::new(std::io::Error::from(std::io::ErrorKind::UnexpectedEof));
-        assert_eq!(classify(io.as_ref()), transport(None, None, None));
+        assert_eq!(classify(io.as_ref()), Cause::Assertion);
         assert_eq!(
             session_cause(
                 "server closed the connection with E0042 (trace 0a1b2c)",

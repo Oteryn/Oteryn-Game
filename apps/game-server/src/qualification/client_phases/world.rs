@@ -2846,6 +2846,84 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
     })
 }
 
+fn first_reachable<T: Copy, P>(
+    candidates: impl IntoIterator<Item = T>,
+    mut plan: impl FnMut(T) -> Option<P>,
+) -> Option<(T, P)> {
+    candidates
+        .into_iter()
+        .find_map(|target| plan(target).map(|path| (target, path)))
+}
+
+#[cfg(test)]
+mod reachability_tests {
+    use super::*;
+
+    #[test]
+    fn later_reachable_placement_survives_unreachable_first_placement() {
+        assert_eq!(
+            first_reachable([10, 20], |at| (at == 20).then_some(vec![at])),
+            Some((20, vec![20]))
+        );
+    }
+}
+
+async fn pump_during<T>(
+    work: impl Future<Output = TestResult<T>>,
+    mut pump: impl AsyncFnMut() -> TestResult,
+) -> TestResult<T> {
+    let finished = std::cell::Cell::new(false);
+    let (result, ()) = tokio::try_join!(
+        async {
+            let result = work.await;
+            finished.set(true);
+            result
+        },
+        async {
+            while !finished.get() {
+                pump().await?;
+            }
+            Ok(())
+        },
+    )?;
+    Ok(result)
+}
+
+async fn with_peer<T>(
+    peer: &mut oteryn_dev_client::DevClientSession,
+    work: impl Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    pump_during(work, async || {
+        peer.service_liveness(Duration::from_millis(25)).await?;
+        peer.take_events();
+        Ok(())
+    })
+    .await
+}
+
+#[cfg(test)]
+mod peer_liveness_tests {
+    use super::*;
+
+    #[tokio::test(start_paused = true)]
+    async fn peer_is_serviced_while_primary_waits_for_work() -> TestResult {
+        let serviced = std::cell::Cell::new(0);
+        pump_during(
+            async {
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                assert!(serviced.get() >= 2);
+                Ok(())
+            },
+            async || {
+                serviced.set(serviced.get() + 1);
+                tokio::time::sleep(Duration::from_millis(25)).await;
+                Ok(())
+            },
+        )
+        .await
+    }
+}
+
 async fn walk(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -3170,7 +3248,6 @@ pub(super) async fn journeys(
         let clients = packet_clients;
         // Default runs retain the ordinary packets alongside the indexed rows.
         // Explicit groups can isolate those packets from the row batch.
-        include!("full_e2ef6_mount.rs");
         let batch = groups
             .runs("rows")
             .then(|| {
@@ -3189,6 +3266,19 @@ pub(super) async fn journeys(
             selected |= matches;
             matches
         };
+        let before_starter_capture = journey_verdicts();
+        if groups.runs("rows") && e2e_row_selected(146) {
+            verdict::indexed("C19a.client", async {
+                client_row_c19a::run_packet(clients, Box::pin(full_e2ef6::client_starter(clients)))
+                    .await;
+                release_row_characters(clients).await
+            })
+            .await;
+        }
+        let starter_capture_verdicts = journey_verdicts() - before_starter_capture;
+        let capture_loss = groups.runs("rows") && e2e_row_selected(110);
+        let capture_twist = groups.runs("rows") && e2e_row_selected(111);
+        let (full_loss, full_twist) = include!("full_e2ef6_mount.rs");
         if groups.runs("rows") {
             let before = journey_verdicts();
             release_row_characters(clients).await?;
@@ -3954,16 +4044,44 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
-            if e2e_row_selected(110) {
+            if capture_loss {
                 verdict::indexed("C20b.client", async {
-                    client_row_c20b::run_packet(clients).await;
+                    client_row_c20b::run_packet(async {
+                        match full_loss {
+                            Some(result) => result,
+                            None => {
+                                Box::pin(full_e2ef6::client_item_loss(
+                                    clients,
+                                    world,
+                                    &metadata.spawns,
+                                    &metadata.npcs,
+                                ))
+                                .await
+                            }
+                        }
+                    })
+                    .await;
                     release_row_characters(clients).await
                 })
                 .await;
             }
-            if e2e_row_selected(111) {
+            if capture_twist {
                 verdict::indexed("C20c.client", async {
-                    client_row_c20c::run_packet(clients).await;
+                    client_row_c20c::run_packet(async {
+                        match full_twist {
+                            Some(result) => result,
+                            None => {
+                                Box::pin(full_e2ef6::client_blessing_death(
+                                    clients,
+                                    world,
+                                    &metadata.spawns,
+                                    &metadata.npcs,
+                                ))
+                                .await
+                            }
+                        }
+                    })
+                    .await;
                     release_row_characters(clients).await
                 })
                 .await;
@@ -4209,13 +4327,6 @@ pub(super) async fn journeys(
             if e2e_row_selected(145) {
                 verdict::indexed("C17c.client", async {
                     client_row_c17c::run_packet(clients).await;
-                    release_row_characters(clients).await
-                })
-                .await;
-            }
-            if e2e_row_selected(146) {
-                verdict::indexed("C19a.client", async {
-                    client_row_c19a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
                 .await;
@@ -4780,7 +4891,7 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
-            journey_group_completed("rows_early", before);
+            journey_group_completed("rows_early", before - starter_capture_verdicts);
         }
         if groups.runs("f5") {
             let before = journey_verdicts();

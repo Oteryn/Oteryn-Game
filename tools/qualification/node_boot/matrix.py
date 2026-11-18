@@ -123,10 +123,21 @@ def row_indices(root: Path = ROOT) -> list[int]:
 def indexed_rows(root: Path = ROOT) -> dict[int, str]:
     """Resolve each indexed dispatcher entry to the scenario its reporter owns."""
     source = read(root, CLIENT_PHASES / "world.rs")
+    deferred = {
+        name: index for name, index in re.findall(
+            r'let (\w+) = groups\.runs\("rows"\) && e2e_row_selected\((\d+)\);', source
+        )
+    }
     rows = {}
-    for match in re.finditer(r'\be2e_row_selected\((\d+)\)\s*\{\s*(?:'
+    for match in re.finditer(r'(?:\be2e_row_selected\((\d+)\)|\bif (\w+))\s*\{\s*(?:'
                              r'verdict::indexed\(\s*"([\w.-]+)"|([a-z0-9_]+)::run_\w+\()', source):
-        index, scenario, module = match.groups()
+        index, selection, scenario, module = match.groups()
+        if index is None:
+            index = deferred.get(selection)
+            if index is None:
+                continue
+        if int(index) in rows:
+            raise PlanError(f"row index {index} has multiple reporters")
         if scenario is None:
             reporter = read(root, CLIENT_PHASES / f"{module}.rs")
             declared = set(re.findall(r"e2e_all scenario=([\w.-]+) status=", reporter))

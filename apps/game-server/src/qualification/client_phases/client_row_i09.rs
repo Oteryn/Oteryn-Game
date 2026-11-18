@@ -4,7 +4,7 @@
 //! client-visible `SessionEvent::WorldMap`; `Session::take_events` exposes it to the native client.
 use super::*;
 use oteryn_dev_client::SessionEvent;
-use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
+use oteryn_protocol_oteryn::world_map::{MapDefinition, MapItem, MapOrigin};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget,
     WorldObjectTarget, decode_use_result, encode_item_use_intent,
@@ -43,6 +43,10 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
+fn rotated_chair(item: &MapItem, ordinal: u8) -> bool {
+    item.appearance_id == 2359 && matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: value, object_revision: 1 } if value == ordinal)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -52,12 +56,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut furniture = None;
+    let mut furniture = Vec::new();
     oteryn_world_bundle::bundle::visit(&bytes, |manifest, sector| {
         for tile in sector.tiles {
             for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
                 if manifest.palette[item.palette as usize].key == BEFORE {
-                    furniture.get_or_insert((
+                    furniture.push((
                         TilePos {
                             x: tile.x,
                             y: tile.y,
@@ -72,14 +76,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         Ok(())
     })?;
-    let (at, ordinal) = furniture.ok_or("no compiled fixed chair 2358")?;
     let mut client = connect_world(clients, 0xc9).await?;
-    let path = route(
-        world,
-        tile(client.world_spatial().actor_position)?,
-        |cell| cell.floor == at.floor && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) <= 1,
-    )
-    .ok_or("no route to fixed chair 2358")?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let ((at, ordinal), path) = first_reachable(furniture, |(at, _)| {
+        route(world, from, |cell| {
+            cell.floor == at.floor && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) <= 1
+        })
+    }).ok_or("no route to fixed chair 2358")?;
     walk(&mut client, world, &path).await?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(
@@ -134,7 +137,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 }
         })
         .ok_or("rotation delta omitted target tile")?;
-    let item = tile.items.iter().find(|item| matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: value, object_revision: 1 } if value == ordinal)).ok_or("rotation delta omitted revised furniture")?;
+    let item = tile.items.iter().find(|item| rotated_chair(item, ordinal)).ok_or("rotation delta omitted revised furniture")?;
     let MapDefinition::Item(definition) = item.definition else {
         return Err("rotated furniture was not an item".into());
     };
@@ -166,4 +169,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("stale rotation was not refused".into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rotation_requires_chair_2359() {
+        let mut chair = MapItem {
+            definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
+            count: 1,
+            sub_type: 0,
+            origin: MapOrigin::BaseOrdinal { ordinal: 2, object_revision: 1 },
+            appearance_id: 2358,
+        };
+        assert!(!rotated_chair(&chair, 2));
+        chair.appearance_id = 2359;
+        assert!(rotated_chair(&chair, 2));
+        assert!(!rotated_chair(&chair, 3));
+    }
 }

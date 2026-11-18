@@ -10,7 +10,7 @@ use oteryn_protocol_oteryn::condition_status::{
 use oteryn_protocol_oteryn::chat::{ChatDisposition, ChatIntent, ChatSpeechMode};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = verdict::indexed_timeout(Duration::from_secs(30), verdict::observe(journey(clients))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(95), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence("SEAM_EVIDENCE e2e_all scenario=C17a.client status=PASS"),
         Ok(Err(error)) => evidence(&format!(
@@ -25,7 +25,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0xca, 1).await?;
     let (haste, haste_payload) = cast_and_query(&mut client, "utani hur").await?;
-    wait_support_cooldown(&mut client).await?;
     let (strong, strong_payload) = cast_and_query(&mut client, "utani gran hur").await?;
 
     if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
@@ -47,10 +46,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
+fn has_haste(status: &ConditionStatus) -> bool {
+    status.conditions.iter().any(|condition| condition.icon == 13)
+}
+
+fn haste_transition(before: &ConditionStatus, after: &ConditionStatus) -> bool {
+    !has_haste(before) && has_haste(after)
+}
+
 async fn cast_and_query(
     client: &mut oteryn_dev_client::DevClientSession,
     words: &str,
 ) -> TestResult<(ConditionStatus, Vec<u8>)> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(42);
+    let before = loop {
+        let (status, _) = query(client).await?;
+        if !has_haste(&status) {
+            break status;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C17a existing Haste did not expire before {words}").into());
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+        client.take_events();
+    };
     let cast = client
         .chat(&ChatIntent::Say {
             mode: ChatSpeechMode::Say,
@@ -60,6 +79,14 @@ async fn cast_and_query(
     if cast.status != CommandStatus::Accepted || cast.disposition != ChatDisposition::Ok {
         return Err(format!("C17a support cast refused: {words} {cast:?}").into());
     }
+    let (status, payload) = query(client).await?;
+    if !haste_transition(&before, &status) {
+        return Err(format!("C17a Haste icon absent after {words}").into());
+    }
+    Ok((status, payload))
+}
+
+pub(super) async fn query(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<(ConditionStatus, Vec<u8>)> {
     let reply = client
         .session_mut()
         .gated_command(
@@ -69,22 +96,10 @@ async fn cast_and_query(
         )
         .await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("C17a condition query refused after {words}").into());
+        return Err("condition-status query refused".into());
     }
-    let status = ConditionStatus::decode(&reply.payload).ok_or("C17a malformed condition reply")?;
-    if !status.conditions.iter().any(|condition| condition.icon == 13) {
-        return Err(format!("C17a Haste icon absent after {words}").into());
-    }
+    let status = ConditionStatus::decode(&reply.payload).ok_or("malformed condition-status reply")?;
     Ok((status, reply.payload))
-}
-
-async fn wait_support_cooldown(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    let until = tokio::time::Instant::now() + Duration::from_secs(3);
-    while tokio::time::Instant::now() < until {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
-    }
-    Ok(())
 }
 
 fn visible(status: &ConditionStatus) -> TestResult<String> {
@@ -102,4 +117,17 @@ fn visible(status: &ConditionStatus) -> TestResult<String> {
         )
     };
     Ok(format!("» Haste: {duration}\r\n"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_protocol_oteryn::condition_status::ActiveCondition;
+
+    #[test]
+    fn haste_requires_a_new_condition() {
+        let active = ConditionStatus { conditions: vec![ActiveCondition { icon: 13, sub_id: 0, remaining_ms: 10_000 }] };
+        assert!(haste_transition(&ConditionStatus::default(), &active));
+        assert!(!haste_transition(&active, &active));
+    }
 }

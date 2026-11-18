@@ -11,25 +11,40 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+fn verify_refusal(status: CommandStatus, payload: &[u8]) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, decode_use_result};
+    let disposition = decode_use_result(payload).map_err(|error| format!("C06 refusal decode: {error:?}"))?;
+    if status != CommandStatus::Accepted || disposition != UseDisposition::TargetIllegal {
+        return Err(format!("C06 owned cross-floor rune expected TargetIllegal, observed {status:?}/{disposition:?}").into());
+    }
+    Ok(())
+}
+
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xc6).await?;
+    let definitions = provisioning::item_index()?;
+    let runes = client.session_mut().spell_catalog()?
+        .ok_or("C06 spell catalog absent")?
+        .entries.into_iter().filter_map(|entry| entry.rune_item)
+        .filter_map(|id| provisioning::item_reference(&definitions, id).ok())
+        .collect::<std::collections::BTreeSet<_>>();
+    let owned = |client: &oteryn_dev_client::DevClientSession| {
+        client.inventory()?.entries.iter().find(|entry| runes.contains(&entry.item_definition_ref))
+            .map(|entry| entry.handle)
+    };
+    if owned(&client).is_none() {
+        let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+        let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+        let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+        let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+        full_gold::buy(&mut client, world, &metadata.npcs, 3188, 1).await?;
+    }
+    let rune = owned(&client).ok_or("C06 spell catalog has no owned rune")?;
     let before_inventory = client.inventory().cloned().ok_or("C06 inventory absent")?;
     let before_vitals = client.actor_vitals().copied().ok_or("C06 vitals absent")?;
-
-    // Drive the real rune-use route with an impossible cross-floor target. This is the minimal
-    // action that produces a server-observed refusal while proving charges and vitals unchanged.
     let position = client.world_spatial().actor_position;
-    let rune = client
-        .session_mut()
-        .spell_catalog()?
-        .ok_or("C06 spell catalog absent")?
-        .entries
-        .into_iter()
-        .find_map(|entry| entry.rune_item)
-        .and_then(std::num::NonZeroU32::new)
-        .ok_or("C06 spell catalog has no rune")?;
     let invalid = oteryn_protocol_oteryn::world_object::UseIntent {
-        target: oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(rune),
+        target: oteryn_protocol_oteryn::world_object::UseTarget::Item(rune),
         use_with: None,
         use_with_map_item: None,
         use_with_position: Some(actor_spell::SpellTargetPosition {
@@ -40,7 +55,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     };
     let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&invalid)
         .map_err(|error| format!("C06 refusal encode: {error:?}"))?;
-    let _reply = client.session_mut().world_context_use(&payload).await?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
+    verify_refusal(reply.status, &reply.payload)?;
     client.service_liveness(Duration::from_millis(20)).await?;
     if client.inventory() != Some(&before_inventory) || client.actor_vitals() != Some(&before_vitals)
     {
@@ -72,4 +88,22 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, encode_use_result};
+
+    #[test]
+    fn rune_probe_requires_a_target_illegal_refusal() -> TestResult {
+        let verify = |disposition| {
+            let payload = encode_use_result(disposition).map_err(|error| format!("{error:?}"))?;
+            verify_refusal(CommandStatus::Accepted, &payload)
+        };
+        assert!(verify(UseDisposition::Committed).is_err());
+        assert!(verify(UseDisposition::NothingToUse).is_err());
+        assert!(verify(UseDisposition::TargetIllegal).is_ok());
+        Ok(())
+    }
 }

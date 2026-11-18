@@ -9,31 +9,24 @@ use oteryn_protocol_oteryn::world_object::{self, WorldObjectOverlayEntry};
 #[test]
 fn server_key_door_overlay_replays_into_client_store() -> Result<(), BoxError> {
     block_on(async {
-        let (payload, metadata, placement, state) =
-            if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-                let root = std::path::Path::new(&root);
-                let payload = std::fs::read(root.join("m06-overlay.bin"))?;
-                let placement = std::fs::read(root.join("m06-placement.bin"))?;
-                let expected = std::fs::read_to_string(root.join("m06-expected.txt"))?;
-                let mut lines = expected.lines();
-                let metadata = lines.next().ok_or("M06 missing metadata")?.to_owned();
-                let state = lines.next().ok_or("M06 missing state")?.as_bytes().to_vec();
-                (payload, metadata, placement, state)
-            } else {
-                let entry = WorldObjectOverlayEntry {
-                    content_generation: CONTENT_GENERATION,
-                    placement: b"m06:key-door".to_vec(),
-                    state: b"oteryn:reference.state.open".to_vec(),
-                    revision: 3,
-                };
-                (
-                    world_object::encode_world_object_overlay_delta(&entry)
-                        .map_err(|error| format!("{error:?}"))?,
-                    "42 2 3 3".into(),
-                    entry.placement,
-                    entry.state,
-                )
+        if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
+            super::e2e_m08::replay("m06-key-unlocked").await?;
+        }
+        let (payload, metadata, placement, state) = {
+            let entry = WorldObjectOverlayEntry {
+                content_generation: CONTENT_GENERATION,
+                placement: b"m06:key-door".to_vec(),
+                state: b"oteryn:reference.state.open".to_vec(),
+                revision: 3,
             };
+            (
+                world_object::encode_world_object_overlay_delta(&entry)
+                    .map_err(|error| format!("{error:?}"))?,
+                "42 2 3 3".to_owned(),
+                entry.placement,
+                entry.state,
+            )
+        };
         let numbers = metadata
             .split_whitespace()
             .map(str::parse::<u64>)

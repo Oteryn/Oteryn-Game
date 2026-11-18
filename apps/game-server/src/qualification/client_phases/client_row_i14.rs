@@ -5,6 +5,10 @@
 use super::*;
 use oteryn_dev_client::SessionEvent;
 
+fn consumption_matches(before: u64, after: u64, command: u64, delta: u64) -> bool {
+    delta > command && before.checked_sub(1) == Some(after)
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if let Err(error) = verdict::observe(capture(clients)).await {
         evidence(&format!("SEAM_EVIDENCE e2e_all scenario=I14.client status=FAIL evidence={error}"));
@@ -24,18 +28,9 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("I14 full journey left no server-issued meat")?;
     client.take_events();
     let reply = client.use_item(handle).await?;
-    if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+    if reply.status != CommandStatus::Accepted || reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
         return Err(format!("I14 replay action reply={:?}", reply.disposition).into());
     }
-    let delta = client
-        .take_events()
-        .into_iter()
-        .find_map(|event| match event {
-            SessionEvent::Inventory(delta) => Some(delta),
-            _ => None,
-        })
-        .ok_or("I14 committed food use sent no inventory delta")?;
-    let after = client.inventory().ok_or("I14 inventory absent after use")?;
     let visible = |inventory: &oteryn_protocol_oteryn::item_view::CharacterInventory| {
         inventory
             .entries
@@ -44,6 +39,23 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             .map(|entry| u64::from(entry.count.get()))
             .sum::<u64>()
     };
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let count_before = visible(&before);
+    let delta = loop {
+        if let Some(delta) = client.take_events().into_iter().find_map(|event| match event {
+            SessionEvent::Inventory(delta) if consumption_matches(
+                count_before, visible(&delta.value), reply.result_server_sequence, delta.server_sequence,
+            ) => Some(delta),
+            _ => None,
+        }) {
+            break delta;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("I14 committed food use sent no matching one-meat inventory debit".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    };
+    let after = &delta.value;
     let expected = format!(
         "{} {} {} {}\n",
         delta.server_sequence,
@@ -83,4 +95,17 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         visible(after)
     ));
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn food_consumption_requires_fresh_one_unit_debit() {
+        assert!(!consumption_matches(2, 2, 5, 6));
+        assert!(!consumption_matches(2, 1, 5, 4));
+        assert!(!consumption_matches(2, 0, 5, 6));
+        assert!(consumption_matches(2, 1, 5, 6));
+    }
 }

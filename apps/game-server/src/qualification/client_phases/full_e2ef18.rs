@@ -2,6 +2,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{
+    actor_spell_catalog::SpellCatalogEntry,
     attack::AttackIntentDisposition,
     cyclopedia_character::{self as character, CharacterTab, GeneralStats},
     skill_progress::{self, SkillProgressSnapshot},
@@ -76,6 +77,20 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) -> TestResult {
     let released = release_row_characters(clients).await;
     row.finish(verdict::release_affects_verdict(&result, &released));
     released
+}
+
+pub(super) async fn client_progression(clients: &SeamClients<'_>) -> TestResult {
+    let mut row = Row::new();
+    verdict::indexed_timeout(Duration::from_secs(600), journey(&mut row, clients)).await??;
+    // The journey checks level and vital maxima before persistence. The full
+    // action also requires a capacity field the client protocol does not expose.
+    if !ACTIONS.iter().copied()
+        .filter(|&action| action != "level-and-maxima")
+        .all(|action| row.passed.contains(action))
+    {
+        return Err("C14 client progression actions incomplete".into());
+    }
+    Ok(())
 }
 
 async fn stats(client: &mut DevClientSession) -> TestResult<GeneralStats> {
@@ -331,6 +346,45 @@ async fn ordinary_logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
+fn load_spell_book(manifest: &Path) -> TestResult<crate::spell::SpellBook> {
+    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(manifest)?;
+    let catalog = crate::spell::executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)?;
+    let selections = crate::spell::executable_catalog::compile_source_selection(
+        &input.source_selection.bytes, &input.source_selection.sha256, &catalog,
+    )?;
+    Ok(catalog.into_spell_book_with_selections(&selections)?)
+}
+
+fn automatic_candidate(book: &crate::spell::SpellBook, entry: &SpellCatalogEntry) -> bool {
+    std::num::NonZeroU32::new(entry.cast_index)
+        .and_then(|index| book.indexed(index))
+        .is_some_and(|spell| !spell.learning_required && spell.level == entry.level && spell.name == entry.name)
+}
+
+fn next_automatic_unlock(
+    baseline: &[SpellCatalogEntry], level: u32, book: &crate::spell::SpellBook,
+) -> Option<u32> {
+    baseline.iter()
+        .filter(|spell| !spell.learned && spell.level > level && automatic_candidate(book, spell))
+        .map(|spell| spell.level)
+        .min()
+}
+
+fn newly_learned<'a>(
+    before: &[SpellCatalogEntry], after: &'a [SpellCatalogEntry], level: u32, book: &crate::spell::SpellBook,
+) -> Vec<&'a str> {
+    after.iter()
+        .filter(|spell| {
+            spell.level == level && spell.learned && automatic_candidate(book, spell)
+                && before.iter().any(|baseline| {
+                    baseline.cast_index == spell.cast_index && baseline.level == spell.level
+                        && baseline.name == spell.name && !baseline.learned
+                })
+        })
+        .map(|spell| spell.name.as_str())
+        .collect()
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let (world, spawns) = qualification_world(clients)?;
     let mut client = connect_character(clients, 0xe2, 0).await?;
@@ -348,6 +402,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let baseline = progress(&mut client).await?;
     let mut capacity = carry_capacity(&mut client, baseline.stats.level).await?;
     let spells_before = learned(&mut client)?;
+    let spell_book = load_spell_book(Path::new(&required("NODE_BOOT_SPELL_MANIFEST")?))?;
+    let observed_unlock_level = next_automatic_unlock(&spells_before, baseline.stats.level, &spell_book)
+        .ok_or("step=automatic-spell-learning observed=no-upcoming-unlock need=catalog-delta")?;
     let (_, vocation) = provisioning::e2ef1::fixture_spell_facts(&mut client).await?;
     let book = native_spell_book()?;
     let eligible_at_level = |spell: &crate::spell::SpellDefinition| {
@@ -365,6 +422,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .map(|(_, spell)| spell.level)
         .min()
         .ok_or("step=automatic-spell-learning observed=no-authored-future-unlock")?;
+    if observed_unlock_level != unlock_level {
+        return Err(format!("step=automatic-spell-learning catalog level={observed_unlock_level} differs from authored level={unlock_level}").into());
+    }
     let mut expected_unlocks = Vec::new();
     for (index, spell) in book.spells.iter().enumerate() {
         if !book.inactive_aliases.contains(&index)
@@ -441,7 +501,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                     &mut client, deadline.min(tokio::time::Instant::now() + Duration::from_secs(6)),
                     expected_health, expected_mana,
                 ).await?;
-                if after.stats.level != previous.stats.level + 1
+                if previous.stats.level.checked_add(1) != Some(after.stats.level)
                     || after.vitals.max_health <= previous.vitals.max_health
                     || after.vitals.max_mana < previous.vitals.max_mana
                     || (vocation == crate::spell::Vocation::Sorcerer
@@ -464,6 +524,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step=level-and-maxima observed=timeout-420s".into());
     }
     let reached = progression;
+    if reached.stats.level != unlock_level
+        || reached.vitals.max_health <= baseline.vitals.max_health
+        || reached.vitals.max_mana < baseline.vitals.max_mana
+    {
+        return Err(format!("step=level-and-maxima observed=before-{baseline:?}/after-{reached:?} need=level+1-and-vital-maxima").into());
+    }
 
     let catalog_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(6));
     let spells_after = loop {
@@ -474,7 +540,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         if tokio::time::Instant::now() >= catalog_deadline {
             return Err(format!("step=automatic-spell-learning observed={newly_learned:?} expected={expected_unlocks:?} level={unlock_level}").into());
         }
-        if automatic_unlocks_observed(&expected_unlocks, &newly_learned) {
+        if automatic_unlocks_observed(&expected_unlocks, &newly_learned)
+            && self::newly_learned(&spells_before, &spells, unlock_level, &spell_book).len() == expected_unlocks.len()
+        {
             break spells;
         }
         client.service_liveness(Duration::from_millis(50)).await?;
@@ -570,5 +638,40 @@ mod tests {
         after = before;
         after.skills[5].progress = 1;
         assert!(!melee_progress(&before, &after));
+    }
+}
+
+
+#[cfg(test)]
+mod unlock_tests {
+    use super::*;
+
+    #[test]
+    fn qualification_r5_explicit_learning_does_not_set_the_unlock_target() -> TestResult {
+        let mut book = load_spell_book(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/spells.manifest.json"))?;
+        let active = book.spells.iter().enumerate().filter(|(offset, _)| !book.inactive_aliases.contains(offset));
+        let (explicit, explicit_level) = active.clone().filter(|(_, spell)| spell.level > 0).map(|(offset, spell)| (offset, spell.level))
+            .min_by_key(|&(_, level)| level).ok_or("test book has no active spell")?;
+        let (automatic, automatic_level) = active.filter(|(_, spell)| !spell.learning_required)
+            .map(|(offset, spell)| (offset, spell.level)).max_by_key(|&(_, level)| level)
+            .ok_or("test book has no automatic spell")?;
+        book.spells[explicit].learning_required = true;
+        assert!(explicit_level < automatic_level);
+        let entry = |offset| -> TestResult<SpellCatalogEntry> {
+            let spell: &crate::spell::SpellDefinition = &book.spells[offset];
+            Ok(SpellCatalogEntry {
+                cast_index: u32::try_from(offset + 1)?, name: spell.name.clone(), words: String::new(),
+                level: spell.level, mana: 0, mana_percent: false, soul: 0, learned: false,
+                available: false, cooldown_groups: Vec::new(), rune_item: None,
+            })
+        };
+        let baseline = [entry(explicit)?, entry(automatic)?];
+        assert_eq!(next_automatic_unlock(&baseline, 0, &book), Some(automatic_level));
+        let mut learned = baseline[1].clone();
+        learned.learned = true;
+        let after = std::slice::from_ref(&learned);
+        assert!(newly_learned(&baseline[..1], after, automatic_level, &book).is_empty());
+        assert_eq!(newly_learned(&baseline, after, automatic_level, &book), [learned.name.as_str()]);
+        Ok(())
     }
 }

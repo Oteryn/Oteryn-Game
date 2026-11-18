@@ -86,6 +86,37 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         "W05a_CHECK step=player-reset-boundary observed=registered-countdown-domain-has-no-player-command",
     );
 
+    // Capability 75 is snapshot-only. Pairing it with core STEP (type 1)
+    // deliberately probes local ownership rejection; this is no reset command
+    // and must consume neither a command id nor any server sequence.
+    let next_command = client.next_command_id();
+    let sequence = client.last_server_sequence();
+    let position = client.world_spatial().actor_position;
+    let countdown_before = client
+        .session_mut()
+        .gated_snapshot(STATE_DOMAIN_SERVER_SAVE_COUNTDOWN)
+        .cloned();
+    let refusal = client
+        .session_mut()
+        .gated_command(CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, 1, &[])
+        .await;
+    if !matches!(refusal, Err(oteryn_dev_client::SessionError::CapabilityNotSelected { capability })
+        if capability == CAPABILITY_SERVER_SAVE_COUNTDOWN_V1)
+        || client.next_command_id() != next_command
+        || client.last_server_sequence() != sequence
+        || client.world_spatial().actor_position != position
+        || client
+            .session_mut()
+            .gated_snapshot(STATE_DOMAIN_SERVER_SAVE_COUNTDOWN)
+            .cloned()
+            != countdown_before
+    {
+        return Err(format!("step=local-route-refusal observed={refusal:?}").into());
+    }
+    evidence(
+        "W05a_CHECK step=player-reset-boundary observed=local-ownership-refusal wire_submission=false command-and-sequence=unchanged countdown-and-position=unchanged",
+    );
+
     let mut notice = latest_countdown(client.take_events());
     let mut close = Ok(());
     if notice.is_none() {

@@ -431,14 +431,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             ),
         ];
         for (name, bytes) in writes {
-            if let Err(error) = std::fs::write(std::path::Path::new(&path).join(name), bytes) {
-                evidence(&format!(
-                    "M08_CAPTURE_WRITE_ERROR file={name} error={}",
-                    clean(&error.to_string())
-                ));
-            }
+            std::fs::write(std::path::Path::new(&path).join(name), bytes)?;
         }
     }
+    let mut completed = 1;
+    for (_, id, before, after) in full_row_m08::CASES.into_iter().filter(|case| *case != CASE) {
+        let reference = provisioning::item_reference(&provisioning::item_index()?, id)?;
+        let item = match inventory_item(&client, reference) {
+            Some(item) => item,
+            None => buy(&mut client, world, &metadata.npcs, id).await?,
+        };
+        let object = approach(&mut client, world, &objects, before).await?;
+        use_tool(&mut client, world, item, object, after).await?;
+        completed += 1;
+    }
+    if !client_row_c16c::actions_proven(completed == full_row_m08::CASES.len(), full_row_m08::CASES.len()) {
+        return Err("M08 did not exercise every tool".into());
+    }
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(())
 }
 

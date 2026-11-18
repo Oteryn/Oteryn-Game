@@ -313,7 +313,7 @@ impl HouseScopeAssignmentCommand {
 impl HouseScopeAssignmentRequest {
     /// Canonical command bytes retained in the receipt. The prefix (version, kind, operation
     /// key, actor length, actor) is the layout the receipt grant guard reads.
-    fn encode(&self) -> std::result::Result<Vec<u8>, AssignmentError> {
+    pub fn encode(&self) -> std::result::Result<Vec<u8>, AssignmentError> {
         let actor = self.actor_role.as_bytes();
         if ControlActor::new(&self.actor_role).ok().as_ref() != Some(&self.actor) {
             return Err(AssignmentError::InvalidInput);

@@ -6,7 +6,7 @@ use oteryn_dev_client::client_runtime::npc_shop as runtime;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
 use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::npc_service as wire;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 const GOLD_ID: u32 = 3031;
 const PLATINUM_ID: u32 = 3035;
@@ -38,7 +38,7 @@ fn encoded(client: &DevClientSession) -> TestResult<Vec<u8>> {
         .map_err(|error| format!("inventory encode: {error:?}").into())
 }
 
-fn coin_refs() -> TestResult<[std::num::NonZeroU32; 3]> {
+pub(super) fn coin_refs() -> TestResult<[std::num::NonZeroU32; 3]> {
     let index = provisioning::item_index()?;
     Ok([
         provisioning::item_reference(&index, GOLD_ID)?,
@@ -47,7 +47,7 @@ fn coin_refs() -> TestResult<[std::num::NonZeroU32; 3]> {
     ])
 }
 
-fn backpack_coins(client: &DevClientSession, refs: [std::num::NonZeroU32; 3]) -> TestResult<[u64; 3]> {
+pub(super) fn backpack_coins(client: &DevClientSession, refs: [std::num::NonZeroU32; 3]) -> TestResult<[u64; 3]> {
     let inventory = client.inventory().ok_or("step=inventory observed=snapshot-absent")?;
     let mut counts = [0; 3];
     for entry in &inventory.entries {
@@ -61,17 +61,17 @@ fn backpack_coins(client: &DevClientSession, refs: [std::num::NonZeroU32; 3]) ->
 async fn wait_coins(
     client: &mut DevClientSession,
     refs: [std::num::NonZeroU32; 3],
-    expected: [u64; 3],
+    before: [u64; 3],
     step: &'static str,
-) -> TestResult {
+) -> TestResult<[u64; 3]> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     loop {
         let observed = backpack_coins(client, refs)?;
-        if observed == expected {
-            return Ok(());
+        if exchange_matches(before, observed) {
+            return Ok(observed);
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step={step} observed=coin-delta-timeout:{observed:?} expected={expected:?}").into());
+            return Err(format!("step={step} observed=coin-delta-timeout:{observed:?} before={before:?} expected_delta=[-100,1,0]").into());
         }
         client.service_liveness(Duration::from_millis(25)).await?;
         client.take_events();
@@ -122,7 +122,7 @@ async fn approach(
     visible_npc(client, npc).ok_or_else(|| format!("step=walk-npc observed=actor-not-visible:{}", npc.key).into())
 }
 
-async fn find_exchange_npc(
+pub(super) async fn find_exchange_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
@@ -147,27 +147,39 @@ async fn find_exchange_npc(
     Err(format!("step=find-exchange-npc observed=no-live-prompt attempts={attempted:?}; need=compiled-world-reachable-banker").into())
 }
 
-async fn exchange(
-    client: &mut DevClientSession,
-    actor: EntityRef,
-    words: &[&str],
-) -> TestResult<wire::NpcConversation> {
-    let mut last = None;
-    for word in words {
-        last = Some(talk(client, actor, word).await?);
-    }
-    last.ok_or_else(|| "step=exchange observed=empty-command-sequence".into())
+async fn read_trade_window<T>(
+    read: impl Future<Output = Result<T, oteryn_dev_client::SessionError>>,
+) -> TestResult<T> {
+    tokio::time::timeout(Duration::from_secs(2), read)
+        .await
+        .map_err(|error| verdict::context("E02 earn-gold trade-window deadline".into(), error))?
+        .map_err(|error| verdict::context("E02 earn-gold trade-window read".into(), error))
 }
 
-async fn earn_gold(
+pub(super) async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
     refs: [std::num::NonZeroU32; 3],
 ) -> TestResult<[u64; 3]> {
     let mut observed = backpack_coins(client, refs)?;
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/services/trade/trade-00000-00323.json"),
+    )?)?;
+    let buyers: BTreeSet<_> = trades["records"].as_array().ok_or("E02 trade records absent")?
+        .iter().filter_map(|record| {
+            let declaration = &record["declaration"];
+            declaration["offers"].as_array()?.iter()
+                .any(|offer| offer["direction"] == "BuyFromPlayer").then_some(())?;
+            let name = declaration["identity"]["key"].as_str()?.strip_prefix("oteryn:service.trade.")?;
+            Some(format!("oteryn:npc.{name}"))
+        }).collect();
     let mut attempts = Vec::new();
     for npc in &npcs.npcs {
+        if !buyers.contains(&npc.key) {
+            continue;
+        }
         if observed[0] >= 100
             || route(world, tile(client.world_spatial().actor_position)?, |at| {
                 npc.placements.iter().any(|placement| placement.floor == at.floor
@@ -180,13 +192,9 @@ async fn earn_gold(
         let greeting = talk(client, actor, "hi").await?;
         let trade = talk(client, actor, "trade").await?;
         attempts.push(format!("{}:hi={:?}:trade={:?}", npc.key, greeting.lines, trade.lines));
-        let delta = match tokio::time::timeout(
-            Duration::from_secs(2),
+        let delta = read_trade_window(
             client.session_mut().read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1),
-        ).await {
-            Ok(Ok(delta)) => delta,
-            _ => continue,
-        };
+        ).await?;
         let window = wire::decode_npc_trade_window(&delta.payload)
             .map_err(|error| format!("step=earn-gold observed=malformed-trade-window:{error:?}"))?;
         let Some((_, revision)) = window.open else { continue };
@@ -237,12 +245,16 @@ async fn earn_gold(
 }
 
 
-fn exact_delta(before: [u64; 3], after: [u64; 3], delta: [i64; 3]) -> bool {
+pub(super) fn exact_delta(before: [u64; 3], after: [u64; 3], delta: [i64; 3]) -> bool {
     before
         .into_iter()
         .zip(after)
         .zip(delta)
         .all(|((before, after), delta)| i128::from(after) - i128::from(before) == i128::from(delta))
+}
+
+fn exchange_matches(before: [u64; 3], observed: [u64; 3]) -> bool {
+    exact_delta(before, observed, [-100, 1, 0])
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -252,14 +264,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let refs = coin_refs()?;
     let mut client = connect_world(clients, 0x33).await?;
-    let initial = earn_gold(&mut client, world, &metadata.npcs, refs).await?;
+    earn_gold(&mut client, world, &metadata.npcs, refs).await?;
     let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs).await?;
+    talk(&mut client, actor, "1").await?;
+    let initial = backpack_coins(&client, refs)?;
+    if initial[0] < 100 {
+        return Err(format!("step=gold-to-platinum observed=insufficient-gold:{initial:?}").into());
+    }
     let before_pairs = pairs(&client);
     let before_payload = encoded(&client)?;
-    let reply = exchange(&mut client, actor, &["1", "yes"]).await?;
-    let platinum = [initial[0] - 100, initial[1] + 1, initial[2]];
-    wait_coins(&mut client, refs, platinum, "gold-to-platinum").await?;
-    if !exact_delta(initial, platinum, [-100, 1, 0]) || !reply.lines.iter().any(|line| line == "Here you are.") {
+    let reply = talk(&mut client, actor, "yes").await?;
+    let platinum = wait_coins(&mut client, refs, initial, "gold-to-platinum").await?;
+    if !reply.lines.iter().any(|line| line == "Here you are.") {
         return Err(format!("step=gold-to-platinum observed=reply:{:?},coins:{platinum:?}", reply.lines).into());
     }
     let after_pairs = pairs(&client);
@@ -269,7 +285,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "e02-expected.txt",
         format!("before={before_pairs}\nafter={after_pairs}\n").as_bytes(),
     );
-    let _ = client.session_mut().logout().await;
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(format!("npc={npc_key} before={initial:?} after={platinum:?}"))
 }
 
@@ -283,5 +299,28 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E02.client status=FAIL evidence=timeout"),
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exchange_assertion_uses_observed_balances() {
+        let before = [150, 2, 0];
+        assert!(exchange_matches(before, [50, 3, 0]));
+        assert!(!exchange_matches(before, before));
+        assert!(!exchange_matches(before, [50, 3, 1]));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn trade_window_timeout_is_terminal() {
+        let result = read_trade_window(std::future::pending::<
+            Result<(), oteryn_dev_client::SessionError>,
+        >())
+        .await;
+        assert!(result.is_err());
     }
 }

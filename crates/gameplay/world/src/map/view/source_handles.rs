@@ -13,9 +13,44 @@ pub(super) fn base_handles(
     )
 }
 
+pub(super) fn base_handles_for_item(
+    pickupable: bool,
+    bound: bool,
+    contents: bool,
+    house: bool,
+    appearance: u16,
+) -> (bool, bool) {
+    // Mail Post addresses the authored mailbox through an item-view handle.
+    // Its presence remains fixed and the existing placement/definition checks own delivery.
+    if matches!(appearance, 3501 | 3508 | 23399..=23402) {
+        return (false, !house);
+    }
+    base_handles(pickupable, bound, contents, house)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fixed_mailbox_has_post_target_handle_without_move_permission() {
+        assert_eq!(
+            base_handles_for_item(false, false, false, false, 3501),
+            (false, true)
+        );
+        assert_eq!(
+            base_handles_for_item(false, false, false, false, 998),
+            (false, false)
+        );
+        assert_eq!(
+            base_handles_for_item(true, true, false, false, 23399),
+            (false, true)
+        );
+        assert_eq!(
+            base_handles_for_item(false, false, false, true, 3501),
+            (false, false)
+        );
+    }
 
     #[test]
     fn fixed_captured_source_has_an_open_handle_without_move_permission() {

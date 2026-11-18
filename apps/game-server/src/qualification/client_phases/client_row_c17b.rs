@@ -1,7 +1,7 @@
 //! Client replay capture for SCENARIO_MATRIX C17b.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::actor_spell::SpellTarget;
+use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityFields, EntityLights, WorldSpatialEntitiesSnapshot,
     encode_world_spatial_entities_delta_with_fields,
@@ -67,6 +67,13 @@ fn write_capture(name: &str, bytes: &[u8]) {
     }
 }
 
+fn validate_invisibility_cast(disposition: SpellCastDisposition) -> TestResult {
+    if disposition != SpellCastDisposition::Cast {
+        return Err(format!("C17b.client Invisibility did not cast: {disposition:?}").into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -79,7 +86,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut caster = connect_character(clients, 0xc1, 1).await?;
     let mut observer = connect_character(clients, 0xc2, 0).await?;
-    travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    with_peer(&mut observer, travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat")).await?;
     let caster_position = tile(caster.world_spatial().actor_position)?;
     let path = route(
         world,
@@ -90,7 +97,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         },
     )
     .ok_or("C17b.client observer cannot reach caster")?;
-    walk(&mut observer, world, &path).await?;
+    with_peer(&mut caster, walk(&mut observer, world, &path)).await?;
     let caster_ref = own(&caster)?;
     let entities = observer
         .world_entities()
@@ -111,10 +118,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &EntityLights::new(),
     )
     .map_err(|error| format!("C17b.client snapshot encode: {error:?}"))?;
+    let initial_position = caster.world_spatial().actor_position;
+    let initially_invisible = client_row_c17a::query(&mut caster).await?.0.conditions.iter()
+        .any(|condition| condition.icon == 9);
+    if initially_invisible {
+        return Err("C17b caster already invisible before the command".into());
+    }
     observer.take_events();
     let cast = caster
         .cast_spell(spell_index()?, SpellTarget::None, false)
         .await?;
+    validate_invisibility_cast(cast.disposition)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let removed = loop {
         observer.service_liveness(Duration::from_millis(50)).await?;
@@ -133,6 +147,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err("C17b.client visibility leave delta absent".into());
         }
     };
+    let condition = client_row_c17a::query(&mut caster).await?.0;
+    if !condition.conditions.iter().any(|condition| condition.icon == 9)
+        || caster.world_spatial().actor_position != initial_position
+        || caster.actor_vitals().is_none_or(|vitals| vitals.health == 0)
+        || own(&caster)? != caster_ref
+    {
+        return Err("C17b visibility leave was not accompanied by a living stationary caster gaining Invisibility".into());
+    }
     let delta_payload = encode_world_spatial_entities_delta_with_fields(
         &removed.value,
         fields,
@@ -162,4 +184,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         cast.result_server_sequence, removed.server_sequence
     ));
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn invisibility_requires_a_committed_cast() {
+        assert!(validate_invisibility_cast(SpellCastDisposition::Rejected).is_err());
+        assert!(validate_invisibility_cast(SpellCastDisposition::Cast).is_ok());
+    }
 }

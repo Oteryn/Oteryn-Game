@@ -332,7 +332,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if (status, posted.as_slice()) != (CommandStatus::Accepted, &[1][..]) {
         return Err(format!("post reply {status:?} {posted:?}").into());
     }
-    wait_units(&mut client, letter, before - 1).await?;
+    wait_units(&mut client, letter, before.checked_sub(1).ok_or("E09 post baseline had no letter")?).await?;
     let second = item(&client, letter)?;
     let (status, text) = mail_command(
         &mut client,
@@ -366,7 +366,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("e09-post.bin", &posted);
     capture("e09-unknown.bin", &unknown);
     capture("e09-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok("write=2 post=1 unknown=4".into())
 }
 

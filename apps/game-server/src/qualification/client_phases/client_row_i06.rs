@@ -28,6 +28,68 @@ fn identity_text(identity: &[u8; 16]) -> String {
     identity.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+fn corpse_observation(target_left: bool, same_tile: bool, appeared: bool) -> bool {
+    target_left && same_tile && appeared
+}
+
+fn retirement_observation(left: bool, stationary: bool, closed: bool) -> bool {
+    left && stationary && closed
+}
+
+pub(super) async fn kill_for_corpse(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<(
+    oteryn_dev_client::WorldSpatialEntity, WorldSpatialEntitiesDelta
+)> {
+    let position = client.world_spatial().actor_position;
+    let target = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.others().find(|entity| {
+                entity.kind == EntityKind::Creature
+                    && entity.position.floor == position.floor
+                    && entity.position.x.abs_diff(position.x).max(entity.position.y.abs_diff(position.y)) <= 1
+            })
+        })
+        .copied()
+        .ok_or("I06 adjacent rat absent")?;
+    client.take_events();
+    let mut last_target = target.position;
+    let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
+    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+        return Err(format!("I06 attack refused: {attack:?}").into());
+    }
+    let kill_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(kill_deadline, "bounded-observation");
+    let (corpse, introduced) = loop {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        let mut found = None;
+        for event in client.take_events() {
+            if let SessionEvent::WorldSpatialEntities(delta) = event
+                && delta.server_sequence > attack.result_server_sequence
+            {
+                if let Some(observed) = delta.value.update.iter().find(|entity| entity.entity == target.entity) {
+                    last_target = observed.position;
+                }
+                let mut candidates = delta.value.enter.iter().filter(|entity| corpse_observation(
+                    delta.value.leave.contains(&target.entity), entity.position == last_target, entity.kind == EntityKind::Corpse,
+                ));
+                if let Some(corpse) = candidates.next() {
+                    if candidates.next().is_some() {
+                        return Err("I06 ambiguous corpse at the attacked target's death tile".into());
+                    }
+                    found = Some((*corpse, delta.value));
+                }
+            }
+        }
+        if let Some(found) = found {
+            break found;
+        }
+        if tokio::time::Instant::now() >= kill_deadline {
+            return Err("I06 kill produced no corpse entity payload".into());
+        }
+    };
+    Ok((corpse, introduced))
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xc6).await?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -46,43 +108,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "oteryn:creature.rat",
     )
     .await?;
-    let position = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.others().find(|entity| {
-                entity.kind == EntityKind::Creature
-                    && entity.position.floor == position.floor
-                    && entity.position.x.abs_diff(position.x).max(entity.position.y.abs_diff(position.y)) <= 1
-            })
-        })
-        .copied()
-        .ok_or("I06 adjacent rat absent")?;
-    let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
-    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
-        return Err(format!("I06 attack refused: {attack:?}").into());
-    }
-    let kill_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
-    verdict::Harness::global().bounded_wait(kill_deadline, "bounded-observation");
-    let (corpse, introduced) = loop {
-        client.service_liveness(Duration::from_millis(100)).await?;
-        let mut found = None;
-        for event in client.take_events() {
-            if let SessionEvent::WorldSpatialEntities(delta) = event
-                && let Some(corpse) = delta.value.enter.iter().find(|entity| entity.kind == EntityKind::Corpse)
-            {
-                found = Some((*corpse, delta.value));
-            }
-        }
-        if let Some(found) = found {
-            break found;
-        }
-        if tokio::time::Instant::now() >= kill_deadline {
-            return Err("I06 kill produced no corpse entity payload".into());
-        }
-    };
-    let EntityDetail::Object { item_handle: Some(handle), .. } = corpse.detail else {
-        return Err("I06 corpse has no item handle".into());
+    let (corpse, introduced) = kill_for_corpse(&mut client).await?;
+    let handle = match corpse.detail {
+        EntityDetail::Object { item_handle: Some(handle), .. }
+        | EntityDetail::ObjectWithAppearance { item_handle: Some(handle), .. } => handle,
+        _ => return Err("I06 exact corpse lacks an open-container handle".into()),
     };
     let used = client.use_item(handle).await?;
     if used.status != CommandStatus::Accepted {
@@ -100,21 +130,34 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if remaining == 0 {
         return Err("I06 corpse had no remaining loot to retire".into());
     }
+    let observer_position = client.world_spatial().actor_position;
+    let mut leave = None;
     let decay_deadline = tokio::time::Instant::now() + Duration::from_secs(75);
     let retired = loop {
         client.service_liveness(Duration::from_millis(200)).await?;
-        let found = client.take_events().into_iter().find_map(|event| match event {
-            SessionEvent::WorldSpatialEntities(delta)
-                if delta.value.leave.contains(&corpse.entity) => Some(delta.value),
-            _ => None,
-        });
-        if let Some(found) = found {
-            break found;
+        for event in client.take_events() {
+            if let SessionEvent::WorldSpatialEntities(delta) = event
+                && delta.value.leave.contains(&corpse.entity)
+            {
+                leave = Some(delta.value);
+            }
+        }
+        let stationary = client.world_spatial().actor_position == observer_position;
+        if !stationary {
+            return Err("I06 observer moved during corpse retirement".into());
+        }
+        let closed = client.open_container().is_some_and(|container| container.container_handle.is_none() && container.entries.is_empty());
+        if retirement_observation(leave.is_some(), stationary, closed) {
+            break leave.take().ok_or("I06 missing retirement event")?;
         }
         if tokio::time::Instant::now() >= decay_deadline {
             return Err("I06 corpse did not retire before 75s".into());
         }
     };
+    let reopen = client.use_item(handle).await?;
+    if !matches!(reopen.disposition, oteryn_protocol_oteryn::world_object::UseDisposition::StaleState | oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse) {
+        return Err(format!("I06 retired corpse handle did not refuse reopen: {reopen:?}").into());
+    }
     capture_delta("i06-corpse.bin", &introduced);
     capture_delta("i06-decay.bin", &retired);
     capture(
@@ -134,5 +177,20 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "SEAM_EVIDENCE e2e_all scenario=I06.client status=FAIL evidence={}",
             error.to_string().replace([' ', '\n'], "_")
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn corpse_requires_attacked_target_death_and_retirement_of_open_loot() {
+        assert!(!corpse_observation(false, true, true));
+        assert!(!corpse_observation(true, false, true));
+        assert!(corpse_observation(true, true, true));
+        assert!(!retirement_observation(true, false, true));
+        assert!(!retirement_observation(true, true, false));
+        assert!(retirement_observation(true, true, true));
     }
 }

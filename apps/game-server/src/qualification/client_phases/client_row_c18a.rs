@@ -6,11 +6,14 @@ use super::*;
 use oteryn_protocol_oteryn::{actor_spell, attack};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if let Err(error) = verdict::observe(capture(clients)).await {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C18a.client status=FAIL evidence={error}"
-        ));
+    match verdict::observe(capture(clients)).await {
+        Ok(()) => evidence("e2e_all scenario=C18a.client status=PASS evidence=accepted-directional-attack-target-cast"),
+        Err(error) => evidence(&format!("e2e_all scenario=C18a.client status=FAIL evidence={error}")),
     }
+}
+
+fn aimed_cast_matches(status: CommandStatus, disposition: actor_spell::SpellCastDisposition) -> bool {
+    status == CommandStatus::Accepted && disposition == actor_spell::SpellCastDisposition::Cast
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
@@ -47,13 +50,21 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if combat.target != Some(target) {
         return Err("C18a server did not retain selected target".into());
     }
+    let catalog = client.session_mut().spell_catalog()?.ok_or("C18a served spell catalog absent")?;
+    let spell = catalog.entries.iter().find(|entry| {
+        entry.available && matches!(entry.words.as_str(), "exevo vis lux" | "exevo flam hur")
+    }).ok_or("C18a no available directional spell")?;
+    let index = std::num::NonZeroU32::new(spell.cast_index).ok_or("C18a zero spell index")?;
     let result = client
-        .cast_spell(std::num::NonZeroU32::MIN, actor_spell::SpellTarget::AttackTarget, true)
+        .cast_spell(index, actor_spell::SpellTarget::AttackTarget, true)
         .await?;
+    if !aimed_cast_matches(result.status, result.disposition) {
+        return Err(format!("C18a aim cast failed: {result:?}").into());
+    }
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         return Ok(());
     };
-    let write = || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let write = || -> TestResult {
         let root = Path::new(&root);
         std::fs::write(
             root.join("c18a-combat.bin"),
@@ -69,10 +80,17 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         )?;
         Ok(())
     };
-    if let Err(error) = write() {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C18a.client status=CAPTURE-WRITE-ERROR evidence={error}"
-        ));
+    write().map_err(|error| verdict::context(format!("C18a capture output: {error}"), error))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn aim_capture_requires_a_successful_cast() {
+        assert!(!aimed_cast_matches(CommandStatus::Rejected, actor_spell::SpellCastDisposition::Rejected));
+        assert!(!aimed_cast_matches(CommandStatus::Accepted, actor_spell::SpellCastDisposition::TargetIllegal));
+        assert!(aimed_cast_matches(CommandStatus::Accepted, actor_spell::SpellCastDisposition::Cast));
     }
-    Ok(())
 }

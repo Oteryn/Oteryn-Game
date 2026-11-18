@@ -10,11 +10,7 @@
 
 use super::*;
 
-mod journey {
-    use super::*;
-
-    pub(super) async fn run_and_capture(clients: &SeamClients<'_>) -> TestResult {
-        let mut client = super::super::connect_character(clients, 0xcb, 0).await?;
+pub(super) fn capture_inventory(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
         let snapshot = client
             .session_mut()
             .gated_snapshot(oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
@@ -26,17 +22,16 @@ mod journey {
         if inventory.main_backpack.is_some() || !inventory.entries.is_empty() {
             return Err("C20b final server-observed inventory retained backpack custody".into());
         }
-        capture(snapshot.revision, &snapshot.payload, inventory);
-        Ok(())
-    }
+        capture(snapshot.revision, &snapshot.payload, inventory)
+}
 
     fn capture(
         revision: u64,
         payload: &[u8],
         inventory: &oteryn_dev_client::CharacterInventory,
-    ) {
+    ) -> TestResult {
         let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-            return;
+            return Ok(());
         };
         let directory = std::path::Path::new(&directory);
         let expected = format!(
@@ -49,33 +44,26 @@ mod journey {
             ("c20b-inventory.bin", payload),
             ("c20b-expected.txt", expected.as_bytes()),
         ] {
-            if let Err(error) = std::fs::write(directory.join(name), bytes) {
-                evidence(&format!(
-                    "SEAM_EVIDENCE e2e_all scenario=C20b.client status=CAPTURE-WRITE-ERROR evidence=file={name};error={error}"
-                ));
-            }
+            std::fs::write(directory.join(name), bytes)?;
         }
+        Ok(())
     }
-}
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
+pub(super) async fn run_packet(prerequisite: impl Future<Output = TestResult>) {
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(
-        Duration::from_secs(480),
-        journey::run_and_capture(clients),
+        Duration::from_secs(1050),
+        verdict::observe(prerequisite),
     )
     .await
     .map_err(|_| "C20b client capture timed out".into())
     .and_then(|result| result);
+    let (status, detail) = match result {
+        Ok(()) => ("PASS", "current-run-C20b-actions-and-fresh-inventory-snapshot".to_owned()),
+        Err(error) => ("FAIL", error.to_string()),
+    };
     evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=C20b.client status={} seconds={:.3} evidence=real-C20b-actions-and-fresh-inventory-snapshot",
-        if result.is_ok() { "PASS" } else { "FAIL" },
+        "e2e_all scenario=C20b.client status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
-    if let Err(error) = result {
-        evidence(&format!("C20b client capture error={error}"));
-    }
 }

@@ -9,7 +9,13 @@
     // Keep every remaining ordinary journey before profile fixture provisioning.
     if groups.runs("f6") {
         let before = journey_verdicts();
-        full_e2ef6::run(clients, world, &metadata.spawns, &metadata.npcs).await;
+        let captures = full_e2ef6::run(clients, world, &metadata.spawns, &metadata.npcs,
+            capture_loss,
+            capture_twist,
+        ).await;
         journey_group_completed("f6", before);
+        captures
+    } else {
+        (None, None)
     }
 }

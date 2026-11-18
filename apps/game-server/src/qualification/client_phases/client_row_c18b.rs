@@ -28,6 +28,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+fn position_cast_matches(mana_before: u32, mana_after: u32, chosen_effect: bool) -> bool {
+    chosen_effect && mana_after < mana_before
+}
+
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -48,11 +52,13 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     .ok_or("C18b.client needs reachable non-PZ tile")?;
     walk(&mut client, world, &path).await?;
     let here = client.world_spatial().actor_position;
-    let target = SpellTarget::Position(SpellTargetPosition {
+    let position = SpellTargetPosition {
         x: here.x.saturating_add(1),
         y: here.y,
         floor: here.floor,
-    });
+    };
+    let target = SpellTarget::Position(position);
+    let mut refusals = Vec::new();
 
     for words in SPELLS {
         let spell = book
@@ -72,16 +78,38 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .await?;
         let index = spell_index(&book, words)?;
         let before = *client.actor_vitals().ok_or("C18b.client vitals absent")?;
+        client.take_events();
         let outcome = client.cast_spell(index, target, false).await?;
-        if outcome.disposition != SpellCastDisposition::Cast {
+        if outcome.status != CommandStatus::Accepted || outcome.disposition != SpellCastDisposition::Cast {
+            refusals.push(format!("{words}: {:?}/{:?}", outcome.status, outcome.disposition));
             continue;
         }
         let delta = outcome
             .actor_vitals_delta
             .ok_or("C18b.client cast omitted actor-vitals delta")?;
-        if delta.value.mana >= before.mana || client.actor_vitals() != Some(&delta.value) {
+        let wanted = ActorPosition { x: position.x, y: position.y, floor: position.floor };
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        let chosen_effect = loop {
+            use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationSource};
+            if client.take_events().into_iter().any(|event| matches!(
+                event,
+                oteryn_dev_client::SessionEvent::Presentation(delta)
+                    if delta.server_sequence > outcome.result_server_sequence && delta.value.iter().any(|effect| {
+                        matches!(effect.kind, PresentationEventKind::MagicEffect {
+                            position, source: PresentationSource::Own, ..
+                        } if position == wanted)
+                    })
+            )) {
+                break true;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                break false;
+            }
+            client.service_liveness(Duration::from_millis(25)).await?;
+        };
+        if !position_cast_matches(before.mana, delta.value.mana, chosen_effect) {
             return Err(format!(
-                "C18b.client cast did not debit mana in the applied vitals: {before:?} -> {:?}",
+                "C18b.client cast missing mana debit or effect at {wanted:?}: {before:?} -> {:?}, effect={chosen_effect}",
                 delta.value
             )
             .into());
@@ -119,7 +147,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         }
         return Ok(());
     }
-    Err("C18b.client no crosshair spell was cast by the real player".into())
+    Err(format!("C18b.client no crosshair spell succeeded: {refusals:?}").into())
 }
 
 fn spell_book() -> TestResult<crate::spell::SpellBook> {
@@ -173,5 +201,17 @@ fn write_capture(path: std::path::PathBuf, bytes: &[u8]) {
             path.display(),
             error
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cursor_capture_requires_effect_at_the_chosen_position() {
+        assert!(!position_cast_matches(50, 20, false));
+        assert!(!position_cast_matches(50, 50, true));
+        assert!(position_cast_matches(50, 20, true));
     }
 }
