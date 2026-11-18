@@ -2080,11 +2080,13 @@ fn judge_loot(
     match expected_loot(items, species, seed, inputs) {
         Err(error) => rows.fail("loot", "content", &error.to_string()),
         Ok(expected) if observed_loot_matches_plan(&expected, observed) => {
-            if !species.private_reward && inputs.daily_loot_rolls == 0 && inputs.loot_rate == 100 {
-                if let Err(error) = validate_authored_loot(items, &species.loot, observed) {
-                    rows.fail("loot", "content", &error.to_string());
-                    return;
-                }
+            if !species.private_reward
+                && inputs.daily_loot_rolls == 0
+                && inputs.loot_rate == 100
+                && let Err(error) = validate_authored_loot(items, &species.loot, observed)
+            {
+                rows.fail("loot", "content", &error.to_string());
+                return;
             }
             rows.pass(
                 "loot",
@@ -2907,8 +2909,6 @@ async fn recover_health(
     .await
     .map_err(|_| "sweep Character did not recover half health within 240s")?
 }
-
-/// The spawn needs free non-PZ cells next to the player: walk once to open ground.
 
 fn corpse_handle(detail: EntityDetail) -> Option<oteryn_protocol_oteryn::item_view::ItemHandle> {
     match detail {

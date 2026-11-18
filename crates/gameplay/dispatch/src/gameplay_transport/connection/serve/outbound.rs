@@ -90,6 +90,17 @@ where
                 crate::gameplay_transport::server_modal::ServerModalOutcome::LoggedOut(_)
             )
     ) {
+        let session_key = session
+            .admitted
+            .game_session_id
+            .as_bytes()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        crate::gameplay_transport::operator_event(&format!(
+            "event=terminal_command session={session_key} command_type={} command_id={} source=logout_result",
+            command.command_type, command.command_id
+        ));
         // §1.6: the release committed before this result. No command is read any more and
         // the transport closes cleanly; a failed write is no control loss either. A second
         // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
@@ -477,6 +488,17 @@ where
     cyclopedia_tracker::refresh(stream, authority, session).await?;
     native_cues::refresh(stream, authority, session).await?;
     if training_logged_out {
+        let session_key = session
+            .admitted
+            .game_session_id
+            .as_bytes()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        crate::gameplay_transport::operator_event(&format!(
+            "event=terminal_command session={session_key} command_type={} command_id={} source=training_result",
+            command.command_type, command.command_id
+        ));
         return Err(ServeEnd::LoggedOut);
     }
     if newhaven_travel_transport::emit_relocation(

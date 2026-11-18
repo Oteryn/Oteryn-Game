@@ -172,3 +172,54 @@ fn activated_outer_source_summon_rejects_inner_catalog_and_registers_once() -> T
 fn current_owner_summon_registration_failure_rolls_back_and_replays_the_refusal() -> TestResult {
     run_case(async |harness| summon_transaction::scenario(harness, false, true).await)
 }
+
+#[test]
+fn resumed_summon_uses_current_path_budget_window() -> TestResult {
+    run_case(async |harness| summon_transaction::resumed_budget(harness).await)
+}
+
+#[test]
+fn checkout_paths_keep_one_window_across_sql_wait() -> TestResult {
+    run_case(async |harness| summon_transaction::checkout_window(harness).await)
+}
+
+#[test]
+fn exhausted_checkout_retains_the_entire_think_until_next_window() -> TestResult {
+    run_case(async |harness| summon_transaction::exhausted_window(harness).await)
+}
+
+#[test]
+fn review67_composed_summon_preserves_the_queued_player_reserve() -> TestResult {
+    run_case(async |harness| summon_transaction::queued_player(harness).await)
+}
+
+#[test]
+fn review67_sql_watchdog_expires_during_replay_sql() -> TestResult {
+    run_case(async |harness| summon_transaction::blocked_replay(harness).await)
+}
+
+#[test]
+fn route_less_library_gate_omits_the_postgres_body() -> TestResult {
+    const PROBE: &str = "OTERYN_LOOP_MONSTER_ROUTELESS_PROBE";
+    if std::env::var_os(PROBE).is_some() {
+        return run_case(async |_| Err("route-less gate executed a database body".into()));
+    }
+    let output = std::process::Command::new(std::env::current_exe()?)
+        .args(["--exact", "gameplay_transport::monk_save::postgres_tests::loop_monster::route_less_library_gate_omits_the_postgres_body", "--nocapture"])
+        .env_remove("OTERYN_TEST_POSTGRES_ADMIN_URL").env(PROBE, "1").output()?;
+    assert!(output.status.success(), "the required route-less library gate must succeed");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("Loop Monster database body omitted; no PostgreSQL validation claimed"));
+    assert!(!stderr.contains("LOOP-MONSTER-PG: configured PostgreSQL"));
+    Ok(())
+}
+
+#[test]
+fn consecutive_exhausted_windows_replace_the_expired_retry_deadline() -> TestResult {
+    run_case(async |harness| summon_transaction::consecutive_windows(harness).await)
+}
+
+#[test]
+fn initial_checkout_timeout_is_not_a_replay_watchdog_proof() -> TestResult {
+    run_case(async |harness| summon_transaction::blocked_initial_checkout(harness).await)
+}

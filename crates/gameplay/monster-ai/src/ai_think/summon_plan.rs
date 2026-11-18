@@ -5,6 +5,12 @@ use super::*;
 use crate::foundation::ChannelRuntimeV1;
 
 pub trait MonsterThinkReader {
+    /// A resource refusal is retryable, unlike unavailable authoritative facts.
+    /// Readers without a shared path ledger never defer for that resource.
+    fn summon_deferred(&self) -> bool {
+        false
+    }
+
     /// Resolve only the selected target under the current Map/Item transaction. Unknown
     /// must return None, which refuses before the defence/summon clock advances.
     fn summon_facts(
@@ -339,7 +345,7 @@ impl CreatureAiState {
         let flee_health = self.current_flee_health(runtime);
         let selected = self.select_think(sequence, facts, flee_health)?;
         let summons = if self.profile.behavior().summons.is_some() && !selected.report.over_budget {
-            reader
+            let facts = reader
                 .summon_facts(
                     runtime,
                     ThinkOccurrence {
@@ -352,7 +358,11 @@ impl CreatureAiState {
                         .filter(|(target, _)| Some(*target) == selected.report.target)
                         .map(|(_, route)| route.as_slice()),
                 )
-                .await
+                .await;
+            if reader.summon_deferred() {
+                return Err(ThinkError::PathBudgetDeferred);
+            }
+            facts
         } else {
             None
         };
@@ -428,6 +438,25 @@ fn native_think_pin(runtime: &ChannelRuntimeV1) -> NativeThinkPin {
     )
 }
 impl ReservedNativeThinkBatch {
+    /// Borrow the original reservation's immutable DATA as a bounded continuation.
+    pub fn quantum(&self, offset: usize, limit: usize) -> Option<Self> {
+        let end = offset.checked_add(limit)?.min(self.entries.len());
+        let entries = self.entries.get(offset..end)?;
+        Some(Self {
+            now_us: self.now_us,
+            stamp: self.stamp,
+            pin: self.pin,
+            occurrences: entries.iter().map(|entry| entry.occurrence).collect(),
+            entries: entries
+                .iter()
+                .map(|entry| ReservedNativeThink {
+                    occurrence: entry.occurrence,
+                    sequence_before: entry.sequence_before,
+                    due_before: entry.due_before,
+                })
+                .collect(),
+        })
+    }
     pub fn occurrences(&self) -> &[ThinkOccurrence] {
         &self.occurrences
     }
@@ -637,19 +666,24 @@ impl CreatureAiTable {
                 revisions,
             };
             let sequence = reserved.occurrence.sequence;
-            if let Ok(report) = entry
+            let report = match entry
                 .state
                 .think_current(sequence, &facts, runtime, reader, route)
                 .await
             {
-                entry.sequence = sequence;
-                entry.due_us = (!report.idle)
-                    .then_some(now_us.saturating_add(CREATURE_THINK_INTERVAL_MILLIS * 1000));
-                self.record_native_attack_positions(actor, runtime);
-                consume(runtime, self, actor, &report, reader);
-                self.run_think_hook(actor, position.position(), now_us, &report);
-                reports.push((actor, report));
-            }
+                Ok(report) => report,
+                // Keep this occurrence and the rest of the quantum retryable. Earlier
+                // committed entries are fenced by their sequence on the next checkout.
+                Err(ThinkError::PathBudgetDeferred) => break,
+                Err(_) => continue,
+            };
+            entry.sequence = sequence;
+            entry.due_us = (!report.idle)
+                .then_some(now_us.saturating_add(CREATURE_THINK_INTERVAL_MILLIS * 1000));
+            self.record_native_attack_positions(actor, runtime);
+            consume(runtime, self, actor, &report, reader);
+            self.run_think_hook(actor, position.position(), now_us, &report);
+            reports.push((actor, report));
         }
         reports
     }

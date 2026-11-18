@@ -148,7 +148,18 @@ where
             }
         }
         Next::Frame(Ok(frame)) => (frame, false, tokio::time::Instant::now()),
-        Next::Frame(Err(_)) => {
+        Next::Frame(Err(error)) => {
+            let session_key = session
+                .admitted
+                .game_session_id
+                .as_bytes()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            operator_event(&format!(
+                "event=frame_read_failed session={session_key} next_command_id={} error={error}",
+                session.admitted.continuity.next_command_id
+            ));
             return Err(ServeEnd::Disconnected);
         }
         Next::Probe => {

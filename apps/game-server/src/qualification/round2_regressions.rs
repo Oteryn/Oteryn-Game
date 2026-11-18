@@ -46,13 +46,31 @@ fn committed_fixture_claims_bypass_mutation_budget() {
 #[test]
 fn spawn_uses_shared_item_owner_lane() {
     let source = include_str!("../qualification_wild_spawn.rs");
-    assert!(source.contains(r#"qualification_observation::scope_lane(scope)"#));
+    assert!(source.contains("spell_item_transaction::assert_spell_item_scope_in_transaction("));
+    assert!(source.contains("read_qualification_scope_tile_in_transaction(tx, &owned, target)"));
+    let fixture = include_str!("../node/serve/qualification_fixture.rs");
+    assert!(fixture.contains("spell_owner_commit::SpellLanePermit::of_fresh_scope("));
+    assert!(
+        fixture
+            .contains("wild_spawn::validate_placement(tx, root, authority, proof, &permit, &plan)")
+    );
 }
 
 #[test]
-fn relog_persistence_result_flows_through_release() {
-    let source = include_str!("client_phases/world.rs");
-    assert!(source.contains(r#"let persistence: TestResult = async"#));
+fn relog_persistence_result_flows_through_release() -> Result<(), &'static str> {
+    let (_, relog) = include_str!("client_phases/world.rs")
+        .split_once("let snapshot_result: TestResult =")
+        .ok_or("missing relog persistence result")?;
+    let (relog, _) = relog
+        .split_once("journey_group_completed(\"core\",")
+        .ok_or("missing core completion")?;
+    assert!(relog.contains("client.join_snapshot().game_session_id == old_session"));
+    assert!(relog.contains("client.world_spatial().actor_position != respawn"));
+    assert!(relog.contains("vitals.health != vitals.max_health"));
+    assert!(relog.contains("finish_after_terminal_release("));
+    assert!(relog.contains(".and(snapshot_result)"));
+    assert!(relog.contains("wait_character_released(clients, 1)"));
+    Ok(())
 }
 
 #[test]

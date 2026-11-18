@@ -495,6 +495,7 @@ async fn nopvp_expert(bots: &mut [Bot<'_, '_>]) -> TestResult {
         },
         expert: pvp_expert::ExpertMode::RedFist,
     };
+    let expert_sequence = bots[0].client()?.last_server_sequence();
     let reply = bots::on_bot(bots, 0, async |bot| {
         Ok(bot
             .client()?
@@ -515,13 +516,11 @@ async fn nopvp_expert(bots: &mut [Bot<'_, '_>]) -> TestResult {
         return Err(format!("expert modes status={:?};disposition={disposition:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:83", reply.status).into());
     }
     bots::wait_observation(bots, tokio::time::Instant::now() + Duration::from_secs(5), "expert fight mode update", |_, events| {
-        for event in &events[0] {
-            if let SessionEvent::ExpertFightModes(delta) = event {
-                if delta.value.expert != pvp_expert::ExpertMode::Dove {
-                    return Err(format!("no-PvP World must serve Dove;requested={requested:?};served={:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:83-92;world:tools/qualification/node_boot/run.sh:1021", delta.value).into());
+        if let Some(served) = expert_update(&events[0], expert_sequence) {
+                if served.expert != pvp_expert::ExpertMode::Dove {
+                    return Err(format!("no-PvP World must serve Dove;requested={requested:?};served={:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:83-92;world:tools/qualification/node_boot/run.sh:1021", served).into());
                 }
                 return Ok(true);
-            }
         }
         Ok(false)
     }).await
@@ -1016,6 +1015,7 @@ async fn pvp_journey(
         },
         expert: pvp_expert::ExpertMode::RedFist,
     };
+    let expert_sequence = bots[0].client()?.last_server_sequence();
     let reply = bots::on_bot(bots, 0, async |bot| {
         Ok(bot
             .client()?
@@ -1037,13 +1037,11 @@ async fn pvp_journey(
     }
     // An Open PvP World serves the requested Red Fist, not the no-PvP Dove.
     bots::wait_observation(bots, tokio::time::Instant::now() + Duration::from_secs(5), "expert fight mode update", |_, events| {
-        for event in &events[0] {
-            if let SessionEvent::ExpertFightModes(delta) = event {
-                if delta.value != mode {
-                    return Err(format!("expert modes requested={mode:?};served={:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:1", delta.value).into());
+        if let Some(served) = expert_update(&events[0], expert_sequence) {
+                if served != mode {
+                    return Err(format!("expert modes requested={mode:?};served={:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:1", served).into());
                 }
                 return Ok(true);
-            }
         }
         Ok(false)
     }).await?;

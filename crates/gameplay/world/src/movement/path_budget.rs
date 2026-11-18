@@ -27,6 +27,13 @@ impl ChannelPathBudget {
         true
     }
 
+    /// Clock for a checkout that exclusively borrows this ledger. Preserve
+    /// a later admitted window without advancing it or replenishing any work.
+    pub fn checkout_time(&self, observed: u64) -> u64 {
+        self.window
+            .map_or(observed, |window| observed.max(window * PATH_WINDOW_US))
+    }
+
     /// Declare the existing creature queue before either owner's drain. A player cannot
     /// consume work already owed to pending creatures, except its accepted reserve.
     pub fn declare_creatures(&mut self, pending: usize) {

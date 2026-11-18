@@ -395,6 +395,7 @@ fn qualification_build_resumes_at_the_matching_durable_receipts() -> TestResult 
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,

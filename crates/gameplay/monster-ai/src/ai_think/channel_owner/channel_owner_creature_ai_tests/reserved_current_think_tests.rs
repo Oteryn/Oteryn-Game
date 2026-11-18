@@ -320,3 +320,41 @@ fn srx3_cancelled_original_batch_skips_retired_actor_and_resumes_survivor() -> R
     );
     Ok(())
 }
+
+#[test]
+fn native_profile_holder_quantum_preserves_all_original_occurrences() -> Result<(), String> {
+    let mut channel = Channel::with_capacity(66);
+    for index in 0..65 {
+        channel.admit(at(110 + index, 100), 0);
+    }
+    let batch = channel
+        .table
+        .reserve_current_thinks(&mut channel.runtime, 0)
+        .ok_or("reservation")?;
+    assert_eq!(batch.occurrences().len(), 65);
+    let mut seen = std::collections::BTreeSet::new();
+    for offset in (0..65).step_by(32) {
+        let quantum = batch.quantum(offset, 32).ok_or("quantum")?;
+        assert!(
+            quantum.occurrences().len() <= 32,
+            "one holder pass must not run the whole 1024-think window"
+        );
+        assert_eq!(quantum.observed_at_us(), batch.observed_at_us());
+        for occurrence in quantum.occurrences() {
+            assert!(seen.insert((occurrence.actor.placement_identity(), occurrence.sequence)));
+        }
+        let expected = quantum.occurrences().len();
+        assert_eq!(finish(&mut channel, quantum)?.len(), expected);
+    }
+    assert_eq!(seen.len(), 65);
+    assert!(
+        finish(&mut channel, batch.quantum(0, 65).ok_or("replay data")?)?.is_empty(),
+        "a continuation cannot publish an occurrence twice"
+    );
+    let players = current_players(&channel);
+    channel.runtime.retire_owner_cycle();
+    let retired = batch.quantum(0, 32).ok_or("retired data")?;
+    assert!(!retired.current_for(&channel.runtime));
+    assert!(finish_with_players(&mut channel, retired, &players)?.is_empty());
+    Ok(())
+}

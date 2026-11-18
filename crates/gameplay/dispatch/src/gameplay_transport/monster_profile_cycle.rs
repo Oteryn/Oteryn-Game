@@ -1,6 +1,6 @@
 //! Channel composition: current Item/Map reads, one native think and synchronous summons.
 use super::{ComposedFreshAdmission, actor_spell::ChannelSpellStates, attack::ChannelAttackStates};
-use crate::ai_think::summon_plan::summon_path::NativeMonsterThinkRead;
+use crate::ai_think::summon_plan::{MonsterThinkReader, summon_path::NativeMonsterThinkRead};
 use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
 use crate::foundation::ChannelRuntimeV1;
 use crate::movement::monster_map::CurrentMonsterMap;
@@ -128,7 +128,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         #[cfg(test)]
         native_owner_turn(room, "profile_start", "entered");
-        let execution_now = now;
+        // One resource/physical execution clock for the whole exclusive checkout,
+        // including SQL waits, summons, movement, windups and chain preparation.
+        let execution_now = attack.path_budget.checkout_time(now);
         let native_pending = states.native_profile_pass.pending();
         let primal_pending = states.primal_callbacks.normal_pending();
         let _ = states
@@ -326,6 +328,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Box::pin(async move {
                 let (owner, runtime, states, attack, room, native, permit, candidates, primal_pending, native_pending, native_health_names, source_metadata) =
                     context;
+                let holder_started = std::time::Instant::now();
                 let (schedule_revisions, source_attack_abilities, needs_reference_parties) = source_metadata;
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await.inspect_err(|_| {
                     #[cfg(test)]
@@ -444,7 +447,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     objects.collision_cells()
                 };
-                let player_waiting = attack.players_waiting(now);
+                let player_waiting = attack.players_waiting(execution_now);
                 if native_pending.is_none() && primal_pending.is_none() {
                 // Carried creature requests precede player chase and fresh thinks.
                 table
@@ -469,10 +472,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 attack.drain_chase_searches(
                     runtime,
                     room,
-                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now),
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(execution_now),
                     &|at| super::attack::chase_path_tile(room.movement_cells(), doors, at),
                 );
-                let player_waiting_now = attack.players_waiting(now);
+                let player_waiting_now = attack.players_waiting(execution_now);
                 if runtime.rotten_movement_pending() {
                     #[cfg(test)]
                     native_owner_turn(room, "profile_guard", "movement_pending");
@@ -500,7 +503,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
                 }
-                let player_waiting_now = attack.players_waiting(now);
+                let player_waiting_now = attack.players_waiting(execution_now);
                 // Crystal game.cpp:7051-7053 runs source onThink before onAttacking.
                 // Reserve the existing bounded occurrences, release the table borrow,
                 // then re-read physical type/HP before their native schedules run.
@@ -624,8 +627,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 pending.finish_source(primal_due, rotten_due);
                 }
+                let ai_quantum = if pending.ai_known() { None } else { Some(pending.ai_quantum().map_err(|_| crate::durability::DurabilityError::Unavailable)?) };
                 let table = &mut states.monster_melee.creature_ai;
-                if !pending.ai_known() { for occurrence in batch.occurrences() {
+                if let Some((_, quantum)) = &ai_quantum { for occurrence in quantum.occurrences() {
                     if runtime.contains_live_creature(occurrence.actor) {
                         table.refresh_current_native_creature(runtime, native, occurrence.actor)
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
@@ -636,15 +640,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     map,
                     native,
                     &mut attack.path_budget,
-                    now,
+                    execution_now,
                     player_waiting_now,
                 );
                 let summons = &mut states.monster_summons;
                 let waves = &mut states.rotten_waves;
-                if !pending.ai_known() { table
+                if let Some((_, quantum)) = &ai_quantum { table
                     .run_reserved_current_thinks_borrowed(
                         runtime,
-                        batch,
+                        quantum,
                         &root,
                         schedule_revisions,
                         candidates,
@@ -672,8 +676,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         },
                     )
                     .await; }
-                if !batch.current_for(runtime) {
+                if !batch.current_for(runtime) || !reader.map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
+                }
+                if reader.summon_deferred() {
+                    // Budget pressure is not an authoritative schedule refusal. Retain
+                    // the quantum/cursor and retry its unconsumed Think next window.
+                    let window = crate::movement::path_budget::PATH_WINDOW_US;
+                    let retry = execution_now.saturating_add(window - execution_now % window);
+                    drop(reader);
+                    tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    return Ok((Some(retry), Vec::new(), Vec::new(), false));
+                }
+                if let Some((offset, quantum)) = &ai_quantum
+                    && !pending.finish_ai_quantum(*offset, quantum.occurrences().len())
+                        .map_err(|_| crate::durability::DurabilityError::Unavailable)? {
+                        // Read-only SQL and all channel guards are returned before the
+                        // next continuation competes with foreground input again.
+                        drop(reader);
+                        tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        states.owner_wake.notify_one();
+                        if holder_started.elapsed() >= std::time::Duration::from_secs(1) {
+                            super::operator_event(&format!("event=profile_holder_quantum elapsed_ms={} completed={} reserved={}", holder_started.elapsed().as_millis(), offset + quantum.occurrences().len(), batch.occurrences().len()));
+                        }
+                        return Ok((Some(now), Vec::new(), Vec::new(), false));
                 }
                 pending.finish_ai().map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                 let (proposals,native_actors)=if let Some(primal)=primal_pending.as_ref() {

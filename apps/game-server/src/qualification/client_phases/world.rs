@@ -6898,6 +6898,8 @@ async fn approach_spawn_target_observing(
                     |until| verdict::Harness::global().bounded_wait(until, "named-spawn-respawn"),
                 );
                 search = false;
+            } else if respawn_wait == SpawnRespawn::Wait {
+                return Err(SpawnTravelFailure::NoRoute.into());
             } else {
                 return Ok(None);
             }
@@ -6934,6 +6936,8 @@ async fn approach_spawn_target_observing(
                     |until| verdict::Harness::global().bounded_wait(until, "named-spawn-respawn"),
                 );
                 chase_steps = 0;
+            } else if respawn_wait == SpawnRespawn::Wait && target.is_some() {
+                return Err(SpawnTravelFailure::NoApproach.into());
             } else {
                 return Ok(None);
             }
@@ -8335,7 +8339,7 @@ fn qualification_spawn_and_fixture_command_have_outer_process_deadlines() -> Tes
     let args: Vec<_> = command.get_args().collect();
     assert_eq!(command.get_program(), "timeout");
     assert_eq!(
-        args[..9],
+        args[..8],
         [
             "--kill-after=2s",
             "30s",
@@ -8347,9 +8351,9 @@ fn qualification_spawn_and_fixture_command_have_outer_process_deadlines() -> Tes
             "python3",
         ]
     );
-    assert_eq!(args.len(), 11);
-    assert!(Path::new(args[9]).ends_with("tools/qualification/node_boot/provision.py"));
-    assert_eq!(args[10], "--watch-stdin");
+    assert_eq!(args.len(), 10);
+    assert!(Path::new(args[8]).ends_with("tools/qualification/node_boot/provision.py"));
+    assert_eq!(args[9], "--watch-stdin");
     let source = include_str!("world.rs");
     let spawn = source
         .split_once("async fn request_spawn(")

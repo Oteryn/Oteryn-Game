@@ -128,6 +128,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     async fn drain_monster_melee_with_permit(
         &self,
+        mut permit: crate::durability::spell_owner_commit::SpellLanePermit,
+        mut now: oteryn_simulation_determinism::SemanticTimeMicros,
+    ) {
+        loop {
+            let before = {
+                let states = self.states.spell_states.lock().await;
+                states.native_profile_pass.pending().map(|pass| {
+                    let cursor = pass.ai_cursor();
+                    (pass, cursor)
+                })
+            };
+            self.drain_monster_melee_quantum(permit, now).await;
+            let progressed = {
+                let states = self.states.spell_states.lock().await;
+                before.is_some_and(|(previous, cursor)| {
+                    states.native_profile_pass.pending().is_some_and(|current| {
+                        std::sync::Arc::ptr_eq(&previous, &current) && current.ai_cursor() > cursor
+                    })
+                })
+            };
+            if !progressed {
+                return;
+            }
+            // A checkout is a continuation of this same original owner turn,
+            // not one of the eight source-death turns. Its finite reservation
+            // cursor must advance; an unavailable owner never spins here.
+            // The previous call dropped its holder, channel guards and lane.
+            let Some(next_permit) = self.spell_lane_permit().await else {
+                return;
+            };
+            permit = next_permit;
+            let current = self.owner_now();
+            if current.get() > now.get() {
+                now = current;
+            }
+        }
+    }
+
+    async fn drain_monster_melee_quantum(
+        &self,
         permit: crate::durability::spell_owner_commit::SpellLanePermit,
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) {
@@ -660,6 +700,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         if !ran_profile || (retained_work && thought_actors.is_empty()) {
+            if !ran_profile && let Some(retry) = next_think {
+                // A resource-deferred quantum retries before the whole-Think cadence.
+                states.next_monster_ai_pass_us = if states.next_monster_ai_pass_us <= now.get() {
+                    retry
+                } else {
+                    states.next_monster_ai_pass_us.min(retry)
+                };
+            }
             if ran_profile {
                 states.next_monster_ai_pass_us = next_monster_ai_pass_us(
                     now.get(),

@@ -258,6 +258,18 @@ mod e2e_result_line_tests {
     use super::e2e_result_line;
 
     #[test]
+    fn qualification_missing_q_row_requires_the_canonical_missing_status() {
+        let canonical = "e2e_all scenario=Q03a.full status=MISSING-SERVER seconds=0 evidence=no-confirmed-descent";
+        assert_eq!(e2e_result_line(canonical), canonical);
+        assert_eq!(
+            e2e_result_line(
+                "e2e_all scenario=Q03a.full status=MISSING seconds=0 evidence=no-confirmed-descent"
+            ),
+            "e2e_all scenario=Q03a.full status=FAIL seconds=0 evidence=MISSING;no-confirmed-descent",
+        );
+    }
+
+    #[test]
     fn row_results_preserve_typed_failure_suffix_after_evidence() {
         for detail in ["", " evidence=timed out"] {
             let input = format!(

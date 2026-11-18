@@ -44,3 +44,28 @@ fn actual_expansions_are_charged_and_declared_creature_work_is_protected() {
     budget.charge(false, 1);
     assert!(budget.admits(0, false, true));
 }
+
+#[test]
+fn checkout_clock_preserves_the_current_window_and_player_reserve() {
+    let mut budget = ChannelPathBudget::default();
+    for _ in 0..48 {
+        assert!(budget.admits(50_000, false, true));
+        budget.charge(false, 1024);
+    }
+    let charged = budget.charged_work();
+    let now = budget.checkout_time(0);
+    assert_eq!(now, 50_000);
+    assert!(!budget.admits(now, false, true));
+    assert!(budget.admits(now, true, true));
+    assert_eq!(budget.charged_work(), charged);
+    assert_eq!(budget.checkout_time(100_001), 100_001);
+    assert_eq!(
+        budget.charged_work(),
+        charged,
+        "reading a future clock must not refill the ledger"
+    );
+    assert!(
+        !budget.admits(0, false, false),
+        "raw backwards admissions remain refused"
+    );
+}

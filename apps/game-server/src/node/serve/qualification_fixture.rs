@@ -431,8 +431,11 @@ async fn spawn_placed(
             proof,
             native,
             owners,
-            SpawnRequest { session, key },
-            budget,
+            SpawnRequest {
+                session,
+                key,
+                budget,
+            },
             published,
         )
         .await
@@ -478,6 +481,7 @@ async fn spawn_placed(
 struct SpawnRequest<'a> {
     session: [u8; 16],
     key: &'a str,
+    budget: SpawnBudget,
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
@@ -488,10 +492,13 @@ async fn place(
     native: &NativeGameplayState,
     owners: SpawnOwners<'_>,
     request: SpawnRequest<'_>,
-    budget: SpawnBudget,
     published: &mut Option<crate::foundation::CompanionSnapshot>,
 ) -> Result<crate::foundation::CompanionSnapshot, wild_spawn::SpawnRefusal> {
-    let SpawnRequest { session, key } = request;
+    let SpawnRequest {
+        session,
+        key,
+        budget,
+    } = request;
     let fence = wild_spawn::SpawnRefusal::Fence;
     let session = crate::foundation::GameSessionId::decode(&session)
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
@@ -561,21 +568,15 @@ async fn place(
                 holder,
                 budget,
                 published,
-                async || {
-                    Err(wild_spawn::SpawnRefusal::Fence(
-                        "spawn publication requires a fresh plan".into(),
-                    ))
-                },
+                async || Ok(None),
                 async |tx| {
                     let fresh =
                         wild_spawn::validate_placement(tx, root, authority, proof, &permit, &plan)
                             .await?;
                     let Ok(mut runtime) = owners.runtime.try_lock() else {
-                        return Err(wild_spawn::SpawnRefusal::Fence(
-                            "spawn runtime busy; retry fresh plan".into(),
-                        ));
+                        return Ok(None);
                     };
-                    if tokio::time::Instant::now() >= deadline {
+                    if tokio::time::Instant::now() >= budget.work_deadline {
                         return Err(wild_spawn::SpawnRefusal::Deadline);
                     }
                     let tiles = publication_candidates(fresh, eligible.clone());
@@ -591,26 +592,13 @@ async fn place(
                 },
             )
             .await;
+            if result.is_err() {
+                root.request_ready();
+            }
             if let Some(creature) = published.clone() {
-                if result.is_err() {
-                    root.request_ready();
-                }
                 return Ok(Some(creature));
             }
-            match result {
-                Err(wild_spawn::SpawnRefusal::Fence(error))
-                    if error == "spawn runtime busy; retry fresh plan" =>
-                {
-                    Ok(None)
-                }
-                Err(error) => {
-                    root.request_ready();
-                    Err(error)
-                }
-                Ok(()) => Err(wild_spawn::SpawnRefusal::Fence(
-                    "spawn returned without publication".into(),
-                )),
-            }
+            result.map(|()| None)
         },
         || wild_spawn::SpawnRefusal::Deadline,
     )
@@ -767,7 +755,7 @@ async fn retry_spawn_collisions<T>(
     budget: SpawnBudget,
     published: &mut Option<T>,
     mut reacquire: impl AsyncFnMut() -> Result<
-        sqlx::pool::PoolConnection<sqlx::Postgres>,
+        Option<sqlx::pool::PoolConnection<sqlx::Postgres>>,
         wild_spawn::SpawnRefusal,
     >,
     mut attempt: impl AsyncFnMut(
@@ -779,7 +767,10 @@ async fn retry_spawn_collisions<T>(
         if published.is_some() {
             return Ok(());
         }
-        holder = reacquire().await?;
+        let Some(next) = reacquire().await? else {
+            return Ok(());
+        };
+        holder = next;
     }
 }
 
@@ -1609,7 +1600,19 @@ async fn prepare_items(
             async || root.read_item_use_inventory(authority, proof, fence).await,
         )
         .await
-        .map_err(|error| format!("qualification inventory: {error:?}"))
+        .map_err(|error| {
+            Box::new(FixtureStepFailure {
+                stage: "inventory_read",
+                reason: if matches!(
+                    error,
+                    crate::durability::item_use::ItemUseError::Unavailable(_)
+                ) {
+                    "fixture_read_unavailable"
+                } else {
+                    "inventory_refused"
+                },
+            }) as Box<dyn std::error::Error>
+        })
     };
     let mut inventory = read_inventory().await?;
     if inventory.backpack.is_none() {
@@ -1650,17 +1653,18 @@ async fn prepare_items(
         .item_index()
         .ok_or("qualification Item index missing")?;
     for (ordinal, &id) in items.iter().enumerate() {
-        if qualification_build::retry_holder(
-            Some(root),
-            deadline,
-            fixture_item_holder_busy,
-            async || {
-                root.qualification_fixture_item_is_claimed(authority, proof, fence, id)
-                    .await
-            },
-        )
-        .await
-        .map_err(|error| format!("qualification Item claim lookup: {error:?}"))?
+        if matches!(id, 3276 | 3003 | 3457)
+            && qualification_build::retry_holder(
+                Some(root),
+                deadline,
+                fixture_item_holder_busy,
+                async || {
+                    root.qualification_fixture_item_is_claimed(authority, proof, fence, id)
+                        .await
+                },
+            )
+            .await
+            .map_err(|error| format!("qualification Item claim lookup: {error:?}"))?
         {
             continue;
         }
@@ -1686,7 +1690,10 @@ async fn prepare_items(
             .equipment
             .iter()
             .chain(bag.entries.iter().map(|entry| &entry.item))
-            .any(|existing| existing.definition == definition && existing.quantity == 1)
+            .any(|existing| {
+                existing.definition == definition
+                    && (existing.quantity == 1 || (id == 36727 && existing.quantity >= 1))
+            })
         {
             continue;
         }
@@ -1741,7 +1748,12 @@ async fn prepare_items(
         let mut candidate = match candidate {
             Ok(candidate) => candidate,
             Err(error) if previous_fixture_item_committed(&error) => continue,
-            Err(error) => return Err(format!("qualification Item reserve: {error:?}").into()),
+            Err(error) => {
+                return Err(Box::new(FixtureStepFailure {
+                    stage: "item_reserve",
+                    reason: error.reason(),
+                }));
+            }
         };
         // A frozen, already committed reservation needs no further work unit.
         if read_fixture_item_receipt(Some(root), deadline, async || {
@@ -1749,7 +1761,10 @@ async fn prepare_items(
                 .await
         })
         .await
-        .map_err(|error| format!("qualification Item receipt: {error:?}"))?
+        .map_err(|error| FixtureStepFailure {
+            stage: "item_receipt",
+            reason: error.reason(),
+        })?
         .is_some()
         {
             continue;
@@ -1836,7 +1851,10 @@ fn finish_fixture_item(
     match result {
         Ok(RewardClaimMintOutcome::Committed(_) | RewardClaimMintOutcome::AlreadyCommitted(_))
         | Err(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)) => Ok(()),
-        Err(error) => Err(format!("qualification Item commit: {error:?}").into()),
+        Err(error) => Err(Box::new(FixtureStepFailure {
+            stage: "item_commit",
+            reason: error.reason(),
+        })),
     }
 }
 
@@ -2281,14 +2299,27 @@ mod tests {
     #[test]
     fn qualification_spawn_releases_runtime_before_durable_reads() -> Result<(), &'static str> {
         let source = control_spawn_source()?;
-        let release = source
-            .find("drop(runtime)")
-            .ok_or("missing snapshot lock release")?;
+        let prepare = source
+            .find("prepare_and_checkout(")
+            .ok_or("missing scope plan")?;
         let read = source
-            .find("read_spawn_tiles(")
-            .or_else(|| source.find("realize_creature_in_transaction("))
+            .find("wild_spawn::validate_placement(")
             .ok_or("missing durable read")?;
-        assert!(release < read);
+        assert!(prepare < read);
+        let helper = include_str!("qualification_fixture.rs")
+            .split_once("async fn prepare_and_checkout")
+            .ok_or("missing plan helper")?
+            .1
+            .split_once("struct SpawnBudget")
+            .ok_or("missing plan helper boundary")?
+            .0;
+        let release = helper
+            .find("prepare(runtime.lock().await)?;")
+            .ok_or("missing synchronous plan")?;
+        let checkout = helper
+            .find("checkout(&prepared).await?;")
+            .ok_or("missing holder checkout")?;
+        assert!(release < checkout);
         Ok(())
     }
 
@@ -2302,9 +2333,11 @@ mod tests {
             .find("retry_spawn_collisions(")
             .ok_or("missing collision transaction")?;
         let fresh = source
-            .rfind("read_spawn_tiles(")
+            .rfind("wild_spawn::validate_placement(")
             .ok_or("missing fresh collision read")?;
-        let publish = source.find("publish_spawn(").ok_or("missing publish")?;
+        let publish = source
+            .find("wild_spawn::publish_placement(")
+            .ok_or("missing publish")?;
         assert!(probe < guard && guard < fresh && fresh < publish);
         assert!(source[fresh..publish].contains(">= budget.work_deadline"));
         Ok(())
@@ -2314,7 +2347,7 @@ mod tests {
     fn qualification_spawn_watchdog_caller_contract() -> Result<(), &'static str> {
         let source = control_spawn_source()?;
         assert!(
-            source.contains("finish_spawn_holder(holder, budget, failure)"),
+            source.contains("finish_spawn_holder(holder, budget, outcome)"),
             "pool return must be observed"
         );
         assert!(
@@ -2451,7 +2484,7 @@ mod tests {
             retry_spawn_collisions(holder, late, &mut published, async || {
                 // Simulate contention for the runtime on the first attempt.
                 tokio::time::sleep(Duration::from_millis(250)).await;
-                pool.acquire().await.map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))
+                pool.acquire().await.map(Some).map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))
             }, async |tx| {
                 attempt += 1;
                 if attempt == 1 {
@@ -2576,7 +2609,7 @@ mod tests {
             .find("spawn_transaction(&mut holder, budget, true")
             .ok_or("missing committed fence probe")?;
         let publish = place
-            .find("publish_spawn(")
+            .find("wild_spawn::publish_placement(")
             .ok_or("missing runtime placement")?;
         assert!(probe < publish);
         let source = include_str!("qualification_fixture.rs");
@@ -2778,7 +2811,7 @@ mod tests {
             "one-shot placement has no source-id budget"
         );
         let after_validation = place
-            .split_once("wild_spawn::validate_placement(")
+            .rsplit_once("wild_spawn::validate_placement(")
             .ok_or("validation")?
             .1
             .split_once(".await?;")
@@ -2804,7 +2837,17 @@ mod tests {
             !publication.contains(".await"),
             "publication must have a synchronous tail"
         );
-        assert!(publication.contains("*published = Some(creature.clone())"));
+        let collision = source
+            .split_once("async fn spawn_collision<T>(")
+            .ok_or("collision receipt")?
+            .1;
+        let publish = collision
+            .find("*published = operation(tx).await?;")
+            .ok_or("missing published receipt")?;
+        let finish = collision
+            .find("finish_spawn_holder(holder, budget, result).await")
+            .ok_or("missing holder finish")?;
+        assert!(publish < finish);
         Ok(())
     }
 
