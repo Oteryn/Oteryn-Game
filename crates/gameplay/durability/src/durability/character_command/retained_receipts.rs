@@ -4,7 +4,7 @@ use crate::native_admission_source::character_commands::RetainedCreateReceipt;
 
 impl DurabilityRoot {
     /// Read the next committed create receipt under current recovery and node fences.
-    /// Keep the operation identity when validation fails so the publisher can durably stop that row.
+    /// Keep the operation identity when validation fails so the publisher can skip the row locally.
     pub async fn next_retained_create_receipt(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

@@ -1038,6 +1038,42 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
     }
 }
 
+const RETAINED_CREATE_RETRY_LIMIT: usize = 1024;
+
+/// Offer the immutable receipt. Returns whether this operation needs another offer.
+async fn publish_retained_create_receipt<S: CommandSource, D: Decider>(
+    source: &mut S,
+    decider: &mut D,
+    operation_id: &str,
+    body: &str,
+    event: fn(&str),
+) -> bool {
+    let published = source
+        .exchange(Operation::PublishCharacterCommandReceiptV1, body)
+        .await
+        .and_then(|raw| decode_receipt_response(&raw).map_err(|_| Failure::InvalidResponse));
+    match published {
+        Ok(()) => false,
+        Err(failure @ (Failure::NotFound | Failure::Conflict)) => {
+            let stop_failed = decider
+                .stop_retained_create_receipt(operation_id)
+                .await
+                .is_err();
+            let alarm = if stop_failed {
+                "receipt_stop_write_failed"
+            } else {
+                "receipt_refused"
+            };
+            (event)(&format!(
+                "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt={} alarm={alarm}",
+                failure.label()
+            ));
+            stop_failed
+        }
+        Err(_) => true,
+    }
+}
+
 /// Independent private-feed cadence: an unavailable/slow pending-intent page
 /// cannot starve closure receipt replay, projections or freshness heartbeats.
 /// Each publisher retains one bounded exchange at a time under the CC identity.
@@ -1049,57 +1085,75 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
 ) {
     let mut backoff = POLL;
     let mut create_cursor: Option<String> = None;
-    let mut pending_create_stop: Option<String> = None;
+    // Remember only the IDs of invalid rows encountered by this process's scan.
+    let mut invalid_creates = BTreeSet::new();
+    let mut create_retries: BTreeMap<String, Option<String>> = BTreeMap::new();
     loop {
-        if pending_create_stop.is_none() {
-            match decider
+        let mut retry_slots = RETAINED_CREATE_RETRY_LIMIT - create_retries.len();
+        for (operation_id, queued) in &mut create_retries {
+            if let Some(body) = queued.as_deref()
+                && !publish_retained_create_receipt(
+                    &mut source,
+                    &mut decider,
+                    operation_id,
+                    body,
+                    event,
+                )
+                .await
+            {
+                // Keep the key until this poll's scan finishes to avoid a duplicate offer.
+                *queued = None;
+                retry_slots += 1;
+            }
+        }
+
+        // Give the next row a chance in this poll when the first row is skipped or deferred.
+        for _ in 0..2 {
+            let RetainedCreateReceipt { operation_id, body } = match decider
                 .next_retained_create_receipt(create_cursor.as_deref())
                 .await
             {
-                Ok(Some(RetainedCreateReceipt { operation_id, body })) => {
-                    let stop_reason = match body
-                        .as_deref()
-                        .and_then(|body| std::str::from_utf8(body).ok())
-                    {
-                        Some(body) => {
-                            let published = source
-                                .exchange(Operation::PublishCharacterCommandReceiptV1, body)
-                                .await
-                                .and_then(|raw| {
-                                    decode_receipt_response(&raw)
-                                        .map_err(|_| Failure::InvalidResponse)
-                                });
-                            match published {
-                                Err(failure @ (Failure::NotFound | Failure::Conflict)) => {
-                                    Some(failure.label())
-                                }
-                                _ => None,
-                            }
-                        }
-                        None => Some("invalid_stored_state"),
-                    };
-                    if let Some(reason) = stop_reason {
-                        (event)(&format!(
-                            "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt={reason} alarm=receipt_refused"
-                        ));
-                        pending_create_stop = Some(operation_id);
-                    } else {
-                        // Retry an unknown acceptance on the next pass, after later rows.
-                        create_cursor = Some(operation_id);
-                    }
+                Ok(Some(receipt)) => receipt,
+                Ok(None) => {
+                    create_cursor = None;
+                    break;
                 }
-                Ok(None) => create_cursor = None,
-                Err(_) => {}
+                Err(_) => break,
+            };
+            create_cursor = Some(operation_id.clone());
+            if invalid_creates.contains(&operation_id) || create_retries.contains_key(&operation_id)
+            {
+                continue;
+            }
+
+            let Some(body) = body.and_then(|bytes| String::from_utf8(bytes).ok()) else {
+                (event)(
+                    "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt=invalid_stored_state alarm=invalid_retained_receipt",
+                );
+                invalid_creates.insert(operation_id);
+                continue;
+            };
+            if !publish_retained_create_receipt(
+                &mut source,
+                &mut decider,
+                &operation_id,
+                &body,
+                event,
+            )
+            .await
+            {
+                break;
+            }
+            if retry_slots == 0 {
+                (event)(
+                    "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter alarm=retained_create_retry_limit",
+                );
+            } else {
+                create_retries.insert(operation_id, Some(body));
+                retry_slots -= 1;
             }
         }
-        if let Some(operation_id) = pending_create_stop.as_deref()
-            && decider
-                .stop_retained_create_receipt(operation_id)
-                .await
-                .is_ok()
-        {
-            create_cursor = pending_create_stop.take();
-        }
+        create_retries.retain(|_, body| body.is_some());
 
         let mut delay = POLL;
         if let Some(publication) = decider.next_closure_publication().await {
