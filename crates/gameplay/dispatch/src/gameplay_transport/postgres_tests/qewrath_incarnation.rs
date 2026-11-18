@@ -164,20 +164,18 @@ pub(super) async fn exercise(
     let time = owner.owner_now();
     let now = time.get() / 1000;
     let health = runtime.companion_snapshot(target).map_err(debug)?.health;
-    runtime
-        .borrow_exact_actor_commit_at(now)
-        .commit_damage_for_bound_attacker(
-            target,
-            actor,
-            CommandRef::new(session, CommandId::new(9901).map_err(debug)?),
-            0,
-            OwnerDamageCommand {
-                target: CREATURE.as_bytes(),
-                occurrence: session.as_bytes(),
-                binding: b"qewrath-incarnation",
-                damage: health,
-            },
+    let decoy = runtime
+        .admit_encounter_actor(
+            CREATURE,
+            health,
+            super::quest_world_callbacks::local(Position {
+                x: SPAWN.x + 1,
+                ..SPAWN
+            }),
         )
+        .map_err(debug)?;
+    runtime
+        .install_creature_policy(decoy, CREATURE)
         .map_err(debug)?;
     let queue = kill_reward::KillSettlementQueue::default();
     let sink = KillSink {
@@ -187,23 +185,45 @@ pub(super) async fn exercise(
         rewards: owner.reward_table(),
         charms: None,
     };
-    for _ in 0..2 {
-        kill_reward::record_creature_kill_with_portals(
-            &mut runtime,
-            sink,
-            target,
-            crate::combat::CapturedRewardPrincipal {
-                character: lease.character_id(),
-                lease_generation: lease.generation(),
-                session,
+    let principal = crate::combat::CapturedRewardPrincipal {
+        character: lease.character_id(),
+        lease_generation: lease.generation(),
+        session,
+        actor,
+    };
+    // Crystal 201189f8 creaturescripts_bosses_kill.lua:20–34 restores the
+    // source statue. The dispatch owner binds the restoration to its exact spawn.
+    for (dying, command, expected_appearance, revision) in
+        [(decoy, 9901, 10797, 1), (target, 9902, 11427, 2)]
+    {
+        runtime
+            .borrow_exact_actor_commit_at(now)
+            .commit_damage_for_bound_attacker(
+                dying,
                 actor,
-            },
-            now,
-            Some(time),
-            kill_reward::portal_context(Some(map)),
-        );
+                CommandRef::new(session, CommandId::new(command).map_err(debug)?),
+                0,
+                OwnerDamageCommand {
+                    target: CREATURE.as_bytes(),
+                    occurrence: session.as_bytes(),
+                    binding: b"qewrath-incarnation",
+                    damage: health,
+                },
+            )
+            .map_err(debug)?;
+        for _ in 0..2 {
+            kill_reward::record_creature_kill_with_portals(
+                &mut runtime,
+                sink,
+                dying,
+                principal,
+                now,
+                Some(time),
+                kill_reward::portal_context(Some(map)),
+            );
+        }
+        assert_eq!(appearance(), Some(expected_appearance));
+        assert_eq!(map.facts.object_revision(key), revision);
     }
-    assert_eq!(appearance(), Some(11427));
-    assert_eq!(map.facts.object_revision(key), 2);
     Ok(())
 }
