@@ -344,16 +344,6 @@ mod tests {
     /// The ring is process-global: the tests that fill it or read it back take turns.
     static RING: Mutex<()> = Mutex::new(());
 
-    fn temp(name: &str) -> PathBuf {
-        let directory = std::env::temp_dir().join(format!(
-            "oteryn-crash-{name}-{}-{:?}",
-            std::process::id(),
-            std::thread::current().id()
-        ));
-        let _ = fs::remove_dir_all(&directory);
-        directory
-    }
-
     #[test]
     fn utc_calendar_matches_known_instants() {
         let at = |seconds: u64| Utc::at(UNIX_EPOCH + Duration::from_millis(seconds));
@@ -386,7 +376,8 @@ mod tests {
     #[test]
     fn a_crash_file_is_redacted_and_carries_message_context_backtrace_and_log() -> TestResult {
         let _ring = lock(&RING);
-        let directory = temp("crash");
+        let fixture = tempfile::tempdir()?;
+        let directory = fixture.path().join("crash");
         record_log_line(LineLevel::Error, "before the crash");
         set_crash_context(CrashContext {
             lifecycle: "playing".into(),
@@ -426,13 +417,13 @@ mod tests {
             use std::os::unix::fs::PermissionsExt;
             assert_eq!(fs::metadata(&path)?.permissions().mode() & 0o777, 0o600);
         }
-        fs::remove_dir_all(directory)?;
         Ok(())
     }
 
     #[test]
     fn a_new_crash_file_is_reported_once_on_the_next_start() -> TestResult {
-        let directory = temp("seen");
+        let fixture = tempfile::tempdir()?;
+        let directory = fixture.path().join("seen");
         assert_eq!(take_unseen_crash(&directory)?, None);
         let crash = Crash {
             message: "m",
@@ -448,7 +439,6 @@ mod tests {
         assert_ne!(second, again, "same instant gets its own file");
         assert_eq!(take_unseen_crash(&directory)?, Some(again));
         assert_eq!(take_unseen_crash(&directory)?, None);
-        fs::remove_dir_all(directory)?;
         Ok(())
     }
 }

@@ -73,6 +73,7 @@ oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets"
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
 oteryn-session = { version = "=0.1.0", path = "../../crates/session", features = ["test-support"] }
 rcgen.workspace = true
+tempfile = "3.27"
 tokio-rustls.workspace = true
 winit = { workspace = true, features = ["x11"] }
 

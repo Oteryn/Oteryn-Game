@@ -242,15 +242,10 @@ fn screenshot_alias_manual_capture_uses_the_effective_absolute_directory()
 #[test]
 fn screenshot_alias_pixel_writer_rejects_relative_folders() -> Result<(), Box<dyn std::error::Error>>
 {
-    let cwd = std::env::current_dir()?;
-    let fixture = crate::play::screenshot::TestDir::new_in(&cwd)?;
-    let folder = fixture
-        .join("captures")
-        .strip_prefix(&cwd)?
-        .to_string_lossy()
-        .into_owned();
-    let result = Pixels::new(1, 1, vec![0, 0, 0, 255])?.save(&folder);
-    assert!(result.is_err());
-    assert!(!std::path::Path::new(&folder).exists());
-    Ok(())
+    crate::play::screenshot::with_relative_capture_path(|folder, _| {
+        let result = Pixels::new(1, 1, vec![0, 0, 0, 255])?.save(folder);
+        assert!(result.is_err_and(|error| error.kind() == std::io::ErrorKind::InvalidInput));
+        assert!(!std::path::Path::new(folder).exists());
+        Ok(())
+    })
 }

@@ -9,13 +9,8 @@ use oteryn_session::{
 #[test]
 fn live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_binding()
 -> Result<(), Box<dyn std::error::Error>> {
-    let root = std::env::temp_dir().join(format!(
-        "oteryn-map-caller-{}-{}",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos()
-    ));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("oteryn-map-caller");
     let snapshot = |x| {
         let position = ActorPosition {
             x,
@@ -86,14 +81,14 @@ fn live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_bin
     );
     assert!(lock(&play.minimap).binding.is_none());
     drop(play);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
 #[test]
 fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
 -> Result<(), Box<dyn std::error::Error>> {
-    let root = std::env::temp_dir().join(format!("minimap-editor-session-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("minimap-editor-session");
     let world = "11111111-1111-4111-8111-111111111111";
     let mut play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
     {
@@ -150,7 +145,6 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
     );
     drop(play);
     drop(restored);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 

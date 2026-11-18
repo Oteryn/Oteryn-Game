@@ -85,8 +85,8 @@ fn battle_profession_and_guild_filters_query_real_metadata_and_attack_the_filter
     assert!(
         matches!(commands.try_recv()?,crate::combat_input::PlayCommand::Battle(crate::combat_input::CombatCommand::Attack(entity)) if entity==knight.entity)
     );
-    let path =
-        std::env::temp_dir().join(format!("battle-metadata-prefs-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("battle-metadata-prefs.json");
     let mut store = PreferenceStore::defaults(path.clone());
     store.apply(prefs.clone())?;
     assert_eq!(

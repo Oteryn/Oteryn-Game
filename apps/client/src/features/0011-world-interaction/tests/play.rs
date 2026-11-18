@@ -347,12 +347,14 @@ fn control_click_cases(cases: &[(bool, bool, bool)]) -> Result<(), Box<dyn std::
     use oteryn_input_actions::Modifier;
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     if std::env::var_os(crate::map::ASSET_DIR_ENV).as_deref() != Some(root.as_os_str()) {
-        let status = std::process::Command::new(std::env::current_exe()?)
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let output = std::process::Command::new(std::env::current_exe()?)
+            .env("TMPDIR", fixture.path())
             .env(crate::map::ASSET_DIR_ENV, &root)
             .arg(std::thread::current().name().ok_or("test thread")?)
             .args(["--exact", "--nocapture"])
-            .status()?;
-        assert!(status.success(), "ground interaction subprocess");
+            .output()?;
+        crate::play::screenshot::assert_one_test_passed(&output);
         return Ok(());
     }
     let store = AssetStore::open_pinned(

@@ -159,7 +159,8 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
     );
 
     // Save a named build and read it back from disk.
-    let path = std::env::temp_dir().join(format!("oteryn-n02-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("oteryn-n02.json");
     let code = format!(
         "OW1:{}",
         captured

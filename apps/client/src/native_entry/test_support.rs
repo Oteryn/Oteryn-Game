@@ -29,6 +29,7 @@ pub(super) struct Stack {
     requests: Arc<Mutex<Vec<String>>>,
     pub(super) admissions: Arc<AtomicUsize>,
     pub(super) root_path: PathBuf,
+    _fixture: tempfile::TempDir,
     pub(super) game_port: u16,
 }
 
@@ -70,12 +71,8 @@ impl Stack {
         let servers = ClientRuntime::new()?;
         let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
         let root = generated.cert.der().clone();
-        static STACKS: AtomicUsize = AtomicUsize::new(0);
-        let root_path = std::env::temp_dir().join(format!(
-            "oteryn-n4-root-{}-{}.der",
-            std::process::id(),
-            STACKS.fetch_add(1, Ordering::SeqCst)
-        ));
+        let fixture = tempfile::tempdir()?;
+        let root_path = fixture.path().join("root.der");
         std::fs::write(&root_path, root.as_ref())?;
         let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
         let mut tls = rustls::ServerConfig::builder_with_provider(Arc::new(
@@ -145,6 +142,7 @@ impl Stack {
             requests,
             admissions,
             root_path,
+            _fixture: fixture,
             game_port,
         })
     }
@@ -197,7 +195,6 @@ impl Stack {
     }
 
     pub(super) fn finish(self) {
-        let _ = std::fs::remove_file(&self.root_path);
         self.servers.shutdown(Duration::from_millis(100));
     }
 }

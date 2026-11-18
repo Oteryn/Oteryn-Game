@@ -52,7 +52,8 @@ fn magical_archive_assignments_persist_and_resolve_current_server_indices()
     assert!(link.archive_assign(0, 11));
     assert!(link.archive_assign(0, oteryn_client_runtime::spell::ACTION_BAR_SLOTS - 1));
     assert!(!link.archive_assign(0, oteryn_client_runtime::spell::ACTION_BAR_SLOTS));
-    let path = std::env::temp_dir().join(format!("archive-bindings-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("archive-bindings.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.sync_archive_bindings(&link);
     let saved = settings.preferences.archive_bindings.clone();

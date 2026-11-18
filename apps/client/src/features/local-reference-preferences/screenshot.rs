@@ -215,4 +215,6 @@ impl SettingsState {
 #[path = "screenshot_fixture.rs"]
 mod fixture;
 #[cfg(test)]
-pub(crate) use fixture::TestDir;
+pub(crate) use fixture::{TestDir, assert_one_test_passed, with_relative_capture_path};
+#[cfg(all(test, bevy_shell, unix))]
+pub(crate) use fixture::one_test_passed;

@@ -125,32 +125,27 @@ mod audit_tests {
     #[test]
     fn screenshot_alias_frame_writer_rejects_relative_folders()
     -> Result<(), Box<dyn std::error::Error>> {
-        let cwd = std::env::current_dir()?;
-        let fixture = crate::play::screenshot::TestDir::new_in(&cwd)?;
-        let folder = fixture
-            .join("captures")
-            .strip_prefix(&cwd)?
-            .to_string_lossy()
-            .into_owned();
-        let preferences = ScreenshotPreferences {
-            folder: folder.clone(),
-            ..Default::default()
-        };
-        let frame = Frame {
-            width: 1,
-            height: 1,
-            bgra: &[0, 0, 0, 255],
-            game: Rect {
-                x: 0,
-                y: 0,
+        crate::play::screenshot::with_relative_capture_path(|folder, fixture| {
+            let preferences = ScreenshotPreferences {
+                folder: folder.to_owned(),
+                ..Default::default()
+            };
+            let frame = Frame {
                 width: 1,
                 height: 1,
-            },
-        };
-        let result =
-            preferences.save_frame(&mut CaptureController::default(), fixture.path(), frame);
-        assert!(result.is_err());
-        assert!(!Path::new(&folder).exists());
-        Ok(())
+                bgra: &[0, 0, 0, 255],
+                game: Rect {
+                    x: 0,
+                    y: 0,
+                    width: 1,
+                    height: 1,
+                },
+            };
+            let result =
+                preferences.save_frame(&mut CaptureController::default(), fixture, frame);
+            assert!(result.is_err_and(|error| error.kind() == io::ErrorKind::InvalidInput));
+            assert!(!Path::new(folder).exists());
+            Ok(())
+        })
     }
 }

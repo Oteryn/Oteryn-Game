@@ -128,8 +128,8 @@ mod tests {
 
     #[test]
     fn hotkey_sets_add_select_and_chat_mode_apply_and_route_keys() -> TestResult {
-        let path =
-            std::env::temp_dir().join(format!("bevy-options-sets-{}.json", std::process::id()));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("bevy-options-sets.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::GeneralHotkeys, Some(path.clone()))?;
             app.world_mut()
@@ -171,7 +171,6 @@ mod tests {
             );
             Ok(())
         })();
-        let _ = std::fs::remove_file(&path);
         result
     }
 }

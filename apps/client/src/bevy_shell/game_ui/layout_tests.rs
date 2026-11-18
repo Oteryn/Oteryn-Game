@@ -266,7 +266,8 @@ fn game_shell_exposes_only_the_console_handle_and_the_widget_resize_edges()
 
 #[test]
 fn window_geometry_survives_restart_and_rejects_bad_bounds() -> TestResult {
-    let path = std::env::temp_dir().join(format!("cg-gamewin-layout-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("cg-gamewin-layout.json");
     let mut layout = WindowLayout::load(&path)?;
     layout.record("Spell catalogue", [40, 80, 680, 760])?;
     assert!(layout.record("bad", [0, 0, 0, 760]).is_err());
@@ -280,8 +281,8 @@ fn window_geometry_survives_restart_and_rejects_bad_bounds() -> TestResult {
 
 #[test]
 fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
-    let path = std::env::temp_dir().join(format!("o033-bevy-layout-{}.json", std::process::id()));
-    let _ = std::fs::remove_file(&path);
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("o033-bevy-layout.json");
     let mut app = app_with(LayoutStore::load(Some(path.clone())));
     for (entity, splitter) in handles(&mut app) {
         geometry(&mut app, splitter);
@@ -354,7 +355,8 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
 
 #[test]
 fn failed_layout_save_retries_after_directory_recovers() -> TestResult {
-    let dir = std::env::temp_dir().join(format!("layout-retry-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let dir = fixture.path().join("layout-retry");
     std::fs::write(&dir, [])?;
 
     let path = dir.join("layout.json");
@@ -367,6 +369,5 @@ fn failed_layout_save_retries_after_directory_recovers() -> TestResult {
         .advance_by(std::time::Duration::from_secs(1));
     app.update();
     assert!(WindowLayout::load(&path)?.bounds("console").is_some());
-    std::fs::remove_dir_all(dir)?;
     Ok(())
 }

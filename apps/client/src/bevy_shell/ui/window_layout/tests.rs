@@ -1966,17 +1966,10 @@ fn concurrent_first_bosstiary_resizes_merge_each_axis() -> TestResult {
 #[test]
 fn delayed_close_fixture_preserves_previous_process_directory() -> TestResult {
     let fixture = crate::play::screenshot::TestDir::new()?;
-    let child = std::process::Command::new("sh")
-        .args([
-            "-c",
-            r#"
-            mkdir "$TMPDIR/oteryn-layout-close-released-after-delay-$$" || exit 1
-            printf untouched > "$TMPDIR/oteryn-layout-close-released-after-delay-$$/sentinel" || exit 1
-            exec "$@"
-            "#,
-            "sh",
-        ])
-        .arg(std::env::current_exe()?)
+    let occupied = fixture.join("previous-close-run");
+    std::fs::create_dir(&occupied)?;
+    std::fs::write(occupied.join("sentinel"), b"untouched")?;
+    let child = std::process::Command::new(std::env::current_exe()?)
         .args([
             "--exact",
             "bevy_shell::ui::window_layout::tests::window_close_saves_pending_move_when_next_frame_is_past_deadline",
@@ -1989,10 +1982,6 @@ fn delayed_close_fixture_preserves_previous_process_directory() -> TestResult {
         std::fs::read(entries[0].path().join("sentinel"))?,
         b"untouched"
     );
-    assert!(
-        child.status.success(),
-        "{}",
-        String::from_utf8_lossy(&child.stdout)
-    );
+    crate::play::screenshot::assert_one_test_passed(&child);
     Ok(())
 }

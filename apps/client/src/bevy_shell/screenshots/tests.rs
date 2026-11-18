@@ -1,5 +1,7 @@
 use super::*;
 use crate::play::screenshot::TestDir;
+#[cfg(unix)]
+use crate::play::screenshot::{assert_one_test_passed, one_test_passed};
 use bevy::{
     asset::RenderAssetUsages,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
@@ -263,7 +265,7 @@ fn f12_without_config_home_saves_capture() -> TestResult {
     {
         let fixture = TestDir::new()?;
         let root = fixture.path().to_path_buf();
-        let status = std::process::Command::new("sh")
+        let output = std::process::Command::new("sh")
             .args(["-c", r#"umask 022; exec "$@""#, "sh"])
             .arg(std::env::current_exe()?)
             .args([
@@ -276,8 +278,8 @@ fn f12_without_config_home_saves_capture() -> TestResult {
             .env_remove("HOME")
             .env_remove("LOCALAPPDATA")
             .env_remove("XDG_CONFIG_HOME")
-            .status();
-        assert!(status?.success());
+            .output()?;
+        assert_one_test_passed(&output);
         return Ok(());
     }
     let root = child_root()?;
@@ -312,7 +314,7 @@ fn death_with_backlog_uses_a_private_fallback() -> TestResult {
     }
     let fixture = TestDir::new()?;
     let root = fixture.path().to_path_buf();
-    let status = std::process::Command::new("sh")
+    let output = std::process::Command::new("sh")
         .args(["-c", r#"umask 022; exec "$@""#, "sh"])
         .arg(std::env::current_exe()?)
         .args([
@@ -325,8 +327,8 @@ fn death_with_backlog_uses_a_private_fallback() -> TestResult {
         .env_remove("HOME")
         .env_remove("LOCALAPPDATA")
         .env_remove("XDG_CONFIG_HOME")
-        .status()?;
-    assert!(status.success());
+        .output()?;
+    assert_one_test_passed(&output);
     let mut pending = vec![root.clone()];
     let mut captures = 0;
     while let Some(directory) = pending.pop() {
@@ -361,7 +363,7 @@ fn inherited_f12_marker_preserves_existing_captures() -> TestResult {
     std::fs::set_permissions(&screenshots, std::fs::Permissions::from_mode(0o700))?;
     let existing = screenshots.join("existing.bmp");
     std::fs::write(&existing, b"existing capture")?;
-    let status = std::process::Command::new(std::env::current_exe()?)
+    let output = std::process::Command::new(std::env::current_exe()?)
         .args([
             "--exact",
             "bevy_shell::screenshots::tests::f12_without_config_home_saves_capture",
@@ -371,9 +373,9 @@ fn inherited_f12_marker_preserves_existing_captures() -> TestResult {
         .env("TMPDIR", &root)
         .env_remove("LOCALAPPDATA")
         .env_remove("XDG_CONFIG_HOME")
-        .status();
+        .output();
     let preserved = std::fs::read(&existing);
-    assert!(status?.success());
+    assert_one_test_passed(&output?);
     assert_eq!(preserved?, b"existing capture");
     Ok(())
 }
@@ -408,11 +410,7 @@ fn inherited_capture_destination_marker_runs_the_matrix() -> TestResult {
     assert_eq!(entries, 1, "matrix runner wrote to the inherited home");
     assert_eq!(preserved?, b"existing capture");
     let output = output?;
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stdout)
-    );
+    assert_one_test_passed(&output);
     Ok(())
 }
 
@@ -427,8 +425,8 @@ fn manual_and_death_captures_share_private_destinations() -> TestResult {
         .flat_map(|mask| [(mask, false, false), (mask, true, false)])
         .chain([(4, false, true)]);
     for (mask, explicit, legacy) in cases {
-        let case = root.join(format!("{mask}-{explicit}-{legacy}"));
-        std::fs::create_dir(&case)?;
+        let case_fixture = tempfile::tempdir_in(&root)?;
+        let case = case_fixture.path();
         let shared = case.join("LOCALAPPDATA/Oteryn/screenshots");
         if legacy {
             std::fs::create_dir_all(&shared)?;
@@ -454,8 +452,9 @@ fn manual_and_death_captures_share_private_destinations() -> TestResult {
                     CAPTURE_DEFAULT
                 },
             ])
-            .current_dir(&case)
-            .env("TMPDIR", &case);
+            .current_dir(case)
+            .env("TMPDIR", case)
+            .env(CAPTURE_ROOT, case);
         for (bit, name) in ["HOME", "XDG_CONFIG_HOME", "LOCALAPPDATA"]
             .into_iter()
             .enumerate()
@@ -466,8 +465,15 @@ fn manual_and_death_captures_share_private_destinations() -> TestResult {
                 child.env(name, case.join(name));
             }
         }
-        if !child.status()?.success() {
-            failures.push((mask, explicit, legacy));
+        let output = child.output()?;
+        if !one_test_passed(&output) {
+            failures.push((
+                mask,
+                explicit,
+                legacy,
+                String::from_utf8_lossy(&output.stdout).into_owned(),
+                String::from_utf8_lossy(&output.stderr).into_owned(),
+            ));
         }
         if legacy {
             assert_eq!(shared.metadata()?.permissions().mode() & 0o777, 0o755);
@@ -486,12 +492,41 @@ fn manual_and_death_captures_share_private_destinations() -> TestResult {
 }
 
 #[cfg(unix)]
+const CAPTURE_ROOT: &str = "OTERYN_TEST_CAPTURE_ROOT";
+#[cfg(unix)]
 const CAPTURE_DEFAULT: &str = "oteryn-test-capture-default";
 #[cfg(unix)]
 const CAPTURE_EXPLICIT: &str = "oteryn-test-capture-explicit";
 #[cfg(unix)]
 const CAPTURE_DESTINATION_TEST: &str =
     "bevy_shell::screenshots::tests::capture_destination_matrix_case";
+
+#[cfg(unix)]
+#[test]
+fn direct_capture_destination_case_preserves_existing_chosen_directory() -> TestResult {
+    let fixture = TestDir::new()?;
+    let chosen = fixture.join("chosen");
+    std::fs::create_dir(&chosen)?;
+    let sentinel = chosen.join("existing.bmp");
+    std::fs::write(&sentinel, b"existing capture")?;
+    let output = std::process::Command::new(std::env::current_exe()?)
+        .args([
+            "--exact",
+            CAPTURE_DESTINATION_TEST,
+            "--skip",
+            CAPTURE_EXPLICIT,
+        ])
+        .current_dir(fixture.path())
+        .env("TMPDIR", fixture.path())
+        .env_remove("HOME")
+        .env_remove("XDG_CONFIG_HOME")
+        .env_remove("LOCALAPPDATA")
+        .output()?;
+    assert_eq!(std::fs::read_dir(chosen)?.count(), 1);
+    assert_eq!(std::fs::read(sentinel)?, b"existing capture");
+    assert_one_test_passed(&output);
+    Ok(())
+}
 
 #[cfg(unix)]
 #[test]
@@ -505,17 +540,23 @@ fn capture_destination_matrix_case() -> TestResult {
         return Ok(());
     }
     let root = child_root()?;
+    if !explicit && std::env::var_os(CAPTURE_ROOT).as_deref() != Some(root.as_os_str()) {
+        return Err("Default capture case requires a parent fixture".into());
+    }
+    let explicit_fixture = if explicit {
+        Some(TestDir::new()?)
+    } else {
+        None
+    };
     for name in ["HOME", "XDG_CONFIG_HOME", "LOCALAPPDATA"] {
         if let Some(path) = std::env::var_os(name) {
             assert_eq!(Path::new(&path), root.join(name));
         }
     }
-    let chosen = root.join("chosen");
-    let destination = if explicit {
-        chosen.as_path()
-    } else {
-        Path::new("")
-    };
+    let chosen = explicit_fixture
+        .as_ref()
+        .map(|fixture| fixture.join("chosen"));
+    let destination = chosen.as_deref().unwrap_or_else(|| Path::new(""));
     let mut manual = app(destination, false)?;
     capture(&mut manual)?;
     let status = &manual.world().non_send::<HostOwner>().status;
@@ -526,7 +567,7 @@ fn capture_destination_matrix_case() -> TestResult {
     );
     let folder = path.parent().ok_or("capture directory")?;
     if explicit {
-        assert_eq!(folder, chosen);
+        assert_eq!(folder, destination);
     } else if let Some(config) = crate::play::PreferenceStore::path() {
         assert_eq!(folder, config.with_file_name("screenshots"));
     } else {
@@ -718,24 +759,16 @@ fn inherited_matrix_fixture_preserves_a_previous_process_directory() -> TestResu
     } else {
         ".config"
     };
-    let output = std::process::Command::new("sh")
-        .args([
-            "-c",
-            r#"
-            occupied="$TMPDIR/oteryn-matrix-marker-$$"
-            mkdir -p "$occupied/$CONFIG/Oteryn/screenshots" || exit 1
-            printf unrelated > "$occupied/$CONFIG/Oteryn/screenshots/existing.bmp" || exit 1
-            exec "$@"
-        "#,
-            "sh",
-        ])
-        .arg(std::env::current_exe()?)
+    let occupied = root.join("previous-matrix-run");
+    let screenshots = occupied.join(config).join("Oteryn/screenshots");
+    std::fs::create_dir_all(&screenshots)?;
+    std::fs::write(screenshots.join("existing.bmp"), b"unrelated")?;
+    let output = std::process::Command::new(std::env::current_exe()?)
         .args([
             "--exact",
             "bevy_shell::screenshots::tests::inherited_capture_destination_marker_runs_the_matrix",
         ])
         .env("TMPDIR", &root)
-        .env("CONFIG", config)
         .output()?;
     let entries = std::fs::read_dir(&root)?.collect::<Result<Vec<_>, _>>()?;
     let preserved = entries
@@ -749,12 +782,7 @@ fn inherited_matrix_fixture_preserves_a_previous_process_directory() -> TestResu
             )
         })
         .transpose();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stdout)
-    );
-    assert!(String::from_utf8_lossy(&output.stdout).contains("running 1 test"));
+    assert_one_test_passed(&output);
     assert_eq!(entries.len(), 1);
     assert_eq!(preserved?.as_deref(), Some(b"unrelated".as_slice()));
     Ok(())
@@ -770,17 +798,14 @@ fn fallback_captures_from_two_processes_use_distinct_directories() -> TestResult
         let output = std::process::Command::new(std::env::current_exe()?)
             .args(["--exact", CAPTURE_DESTINATION_TEST])
             .args(["--skip", CAPTURE_DEFAULT])
+            .env(CAPTURE_ROOT, &root)
             .current_dir(&root)
             .env("TMPDIR", &root)
             .env_remove("HOME")
             .env_remove("XDG_CONFIG_HOME")
             .env_remove("LOCALAPPDATA")
             .output()?;
-        assert!(
-            output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&output.stdout)
-        );
+        assert_one_test_passed(&output);
     }
     let folders = std::fs::read_dir(&root)?.collect::<Result<Vec<_>, _>>()?;
     assert_eq!(folders.len(), 2);
@@ -964,14 +989,11 @@ fn inherited_audit_staging_fixture_is_untouched() -> TestResult {
     std::fs::write(&existing, b"existing PNG")?;
     let child = std::process::Command::new(std::env::current_exe()?)
         .args(["--exact", AUDIT_COLLISION_TEST])
+        .env("TMPDIR", fixture.path())
         .env("OTERYN_TEST_AUDIT_STAGING_FIXTURE", fixture.path())
         .output()?;
     assert_eq!(std::fs::read(existing)?, b"existing PNG");
-    assert!(
-        child.status.success(),
-        "{}",
-        String::from_utf8_lossy(&child.stdout)
-    );
+    assert_one_test_passed(&child);
     Ok(())
 }
 
@@ -1020,6 +1042,7 @@ os.execv(sys.argv[1], sys.argv[1:])
         .arg(std::env::current_exe()?)
         .args(["--exact", CAPTURE_DESTINATION_TEST])
         .args(["--skip", CAPTURE_DEFAULT])
+        .env(CAPTURE_ROOT, &root)
         .current_dir(&root)
         .env("LOCALAPPDATA", root.join("LOCALAPPDATA"))
         .env("TMPDIR", &root)
@@ -1029,12 +1052,7 @@ os.execv(sys.argv[1], sys.argv[1:])
     let entries = std::fs::read_dir(&root)?.count();
     let legacy_mode = legacy.metadata()?.permissions().mode() & 0o777;
     let output = output?;
-    assert!(
-        output.status.success(),
-        "{}\n{}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
+    assert_one_test_passed(&output);
     assert_eq!(
         entries, 2,
         "expected the legacy tree and the private fallback"
@@ -1049,26 +1067,17 @@ fn crop_fixture_preserves_previous_process_directory() -> TestResult {
     let fixture = TestDir::new()?;
     let template =
         Pixels::new(2, 1, vec![0; 8])?.save(fixture.path().to_str().ok_or("fixture path")?)?;
-    let child_root = fixture.join("child");
-    std::fs::create_dir(&child_root)?;
-    let child = std::process::Command::new("sh")
-        .args([
-            "-c",
-            r#"
-            mkdir "$TMPDIR/gap60-crop-$$" || exit 1
-            cp "$1" "$TMPDIR/gap60-crop-$$/file" || exit 1
-            shift
-            exec "$@"
-            "#,
-            "sh",
-        ])
-        .arg(&template)
-        .arg(std::env::current_exe()?)
+    let child_fixture = tempfile::tempdir_in(fixture.path())?;
+    let child_root = child_fixture.path();
+    let occupied = child_root.join("previous-crop-run");
+    std::fs::create_dir(&occupied)?;
+    std::fs::copy(&template, occupied.join("file"))?;
+    let child = std::process::Command::new(std::env::current_exe()?)
         .args([
             "--exact",
             "bevy_shell::screenshots::tests::game_only_crops_rendered_pixels_and_write_errors_reach_player",
         ])
-        .env("TMPDIR", &child_root)
+        .env("TMPDIR", child_root)
         .output()?;
     let entries = std::fs::read_dir(child_root)?.collect::<Result<Vec<_>, _>>()?;
     assert_eq!(entries.len(), 1);
@@ -1076,10 +1085,6 @@ fn crop_fixture_preserves_previous_process_directory() -> TestResult {
         std::fs::read(entries[0].path().join("file"))?,
         std::fs::read(template)?
     );
-    assert!(
-        child.status.success(),
-        "{}",
-        String::from_utf8_lossy(&child.stdout)
-    );
+    assert_one_test_passed(&child);
     Ok(())
 }

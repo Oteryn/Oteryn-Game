@@ -138,7 +138,8 @@ mod management_tests {
     -> Result<(), Box<dyn std::error::Error>> {
         let (link, _commands, _outbox) = crate::play::play_channel();
         let mut m = lock(&link.mailbox);
-        let path = std::env::temp_dir().join(format!("oteryn-gap38-{}.json", std::process::id()));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("oteryn-gap38.json");
         m.wheel.points[14] = 7;
         m.wheel.preset_fields[0] = "Hunting".into();
         submit_at(&mut m, 0, "", &path);

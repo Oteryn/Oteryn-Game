@@ -203,8 +203,8 @@ mod tests {
 
     #[test]
     fn rebinding_an_action_applies_saves_and_routes_the_new_chord() -> TestResult {
-        let path =
-            std::env::temp_dir().join(format!("bevy-options-keys-{}.json", std::process::id()));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("bevy-options-keys.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::GeneralHotkeys, Some(path.clone()))?;
             let field = app
@@ -273,16 +273,13 @@ mod tests {
             );
             Ok(())
         })();
-        let _ = std::fs::remove_file(&path);
         result
     }
 
     #[test]
     fn extra_action_bar_slots_default_and_secondary_use_their_own_storage() -> TestResult {
-        let path = std::env::temp_dir().join(format!(
-            "bevy-options-keys-slots-{}.json",
-            std::process::id()
-        ));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("bevy-options-keys-slots.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::GeneralHotkeys, Some(path.clone()))?;
             let field = app
@@ -331,7 +328,6 @@ mod tests {
             }
             Ok(())
         })();
-        let _ = std::fs::remove_file(&path);
         result
     }
 

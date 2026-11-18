@@ -60,8 +60,8 @@ mod tests {
 
     #[test]
     fn language_choice_applies_and_saves_the_client_language() -> TestResult {
-        let path =
-            std::env::temp_dir().join(format!("bevy-options-language-{}.json", std::process::id()));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("bevy-options-language.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::Interface, Some(path.clone()))?;
             let button = app
@@ -81,7 +81,6 @@ mod tests {
             assert_eq!(stored.language(), Language::De);
             Ok(())
         })();
-        let _ = std::fs::remove_file(&path);
         result
     }
 }

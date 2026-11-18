@@ -195,8 +195,8 @@ fn stash_sort_is_saved_and_restored_in_a_new_session() -> Result<(), Error> {
             let runtime = oteryn_client_runtime::ClientRuntime::new()?;
             runtime.block_on(async {
                 use crate::play::SettingsState;
-                let path = std::env::temp_dir()
-                    .join(format!("oteryn-stash-sort-{}.json", std::process::id()));
+                let fixture = tempfile::tempdir()?;
+                let path = fixture.path().join("oteryn-stash-sort.json");
                 let mut settings = SettingsState::new(Some(path.clone()));
                 let (link, incoming, outbox) = play_channel();
                 settings.sync_stash_sort(&link);

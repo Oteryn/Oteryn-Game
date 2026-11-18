@@ -151,10 +151,8 @@ mod tests {
 
     #[test]
     fn condition_matrix_hides_each_column_applies_and_reaches_the_status_row() -> TestResult {
-        let path = std::env::temp_dir().join(format!(
-            "bevy-options-conditions-{}.json",
-            std::process::id()
-        ));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("bevy-options-conditions.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::Hud, Some(path.clone()))?;
             let poison = icon_key(1);
@@ -185,16 +183,13 @@ mod tests {
             assert_eq!(link.condition_status_panel().hidden, [1]);
             Ok(())
         })();
-        let _ = std::fs::remove_file(&path);
         result
     }
 
     #[test]
     fn condition_rows_move_apply_and_reach_the_status_order() -> TestResult {
-        let path = std::env::temp_dir().join(format!(
-            "bevy-options-condition-order-{}.json",
-            std::process::id()
-        ));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("bevy-options-condition-order.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::Hud, Some(path.clone()))?;
             let button = app
@@ -219,7 +214,6 @@ mod tests {
             assert_eq!(link.condition_status_panel().order[..2], [2, 1]);
             Ok(())
         })();
-        let _ = std::fs::remove_file(&path);
         result
     }
 }

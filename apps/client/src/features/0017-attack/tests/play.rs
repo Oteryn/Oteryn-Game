@@ -119,7 +119,8 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
         link.sync_battle_lists(&mut preferences.battle_lists, 0)
             .is_none()
     );
-    let path = std::env::temp_dir().join(format!("clientgap-battle-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("clientgap-battle.json");
     let mut store = PreferenceStore::defaults(path.clone());
     store.apply(preferences.clone())?;
     assert_eq!(
@@ -245,7 +246,8 @@ fn active_named_battle_list_survives_character_switches() -> Result<(), Box<dyn 
 {
     use crate::play::feature_0017_attack::view::BattleListPreferences;
     use crate::play::{PreferenceStore, SettingsState};
-    let root = std::env::temp_dir().join(format!("active-battle-list-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("active-battle-list");
     let base = root.join("preferences.json");
     let mut settings = SettingsState::new(Some(base.clone()));
     settings.select_character(Some([15; 16]));
@@ -273,7 +275,6 @@ fn active_named_battle_list_survives_character_switches() -> Result<(), Box<dyn 
     assert_eq!(link.active_battle_list(), 1);
     assert!(!link.battle_select_list(2));
     assert_eq!(link.active_battle_list(), 1);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 

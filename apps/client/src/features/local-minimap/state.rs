@@ -524,10 +524,8 @@ mod quest_mark_tests {
     #[test]
     fn personal_quest_marks_are_not_editable_or_saved_in_world_only_cache()
     -> Result<(), Box<dyn std::error::Error>> {
-        let directory = std::env::temp_dir().join(format!(
-            "questpc5-personal-map-privacy-{}",
-            std::process::id()
-        ));
+        let fixture = tempfile::tempdir()?;
+        let directory = fixture.path().join("questpc5-personal-map-privacy");
         let mut map = Minimap::default();
         map.root = Some(directory.clone());
         map.bind_world("11111111-1111-4111-8111-111111111111");
@@ -573,7 +571,6 @@ mod quest_mark_tests {
         );
         map.bind_world("22222222-2222-4222-8222-222222222222");
         assert!(map.quest_marks.0.is_empty());
-        std::fs::remove_dir_all(directory)?;
         Ok(())
     }
     #[test]

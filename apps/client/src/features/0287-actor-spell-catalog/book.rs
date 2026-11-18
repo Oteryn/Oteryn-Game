@@ -293,8 +293,8 @@ mod tests {
                 .text(0)
                 .contains("previous confirmed filters")
         );
-        let path =
-            std::env::temp_dir().join(format!("spellbook-preferences-{}.json", std::process::id()));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("spellbook-preferences.json");
         let mut settings = crate::play::SettingsState::new(Some(path.clone()));
         settings.sync_spellbook_filter(&link);
         assert_eq!(settings.preferences.spellbook_filter, filter);

@@ -472,6 +472,7 @@ fn modal_and_support_handoffs_recover_before_servicing_destination() -> Result<(
                     serve_calls: Arc::clone(&serve_calls),
                     queries: Arc::clone(&queries),
                 };
+                let fixture = tempfile::tempdir().map_err(|e| e.to_string())?;
                 if !modal {
                     assert!(
                         link.commands
@@ -481,7 +482,7 @@ fn modal_and_support_handoffs_recover_before_servicing_destination() -> Result<(
                                     kind: 1,
                                     payload: Vec::new(),
                                 },
-                                std::path::PathBuf::from("unused-handoff-delivery"),
+                                fixture.path().join("handoff-delivery"),
                             ))
                             .is_ok()
                     );

@@ -226,8 +226,8 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                 {
                     let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
                     assert!(mailbox.wheel.set_points(14, 50));
-                    let path = std::env::temp_dir()
-                        .join(format!("oteryn-wheel-play-{}.json", std::process::id()));
+                    let fixture = tempfile::tempdir()?;
+                    let path = fixture.path().join("oteryn-wheel-play.json");
                     mailbox.wheel.preset_fields[0] = "Hunting".into();
                     super::super::feature_0148_wheel_allocation::view::presets::submit(
                         &mut mailbox,

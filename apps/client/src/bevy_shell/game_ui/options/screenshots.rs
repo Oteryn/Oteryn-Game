@@ -96,7 +96,8 @@ mod tests {
     #[test]
     fn destination_uses_draft_cancel_and_persisted_apply() -> Result<(), Box<dyn std::error::Error>>
     {
-        let root = std::env::temp_dir().join(format!("gap60-settings-{}", std::process::id()));
+        let fixture = tempfile::tempdir()?;
+        let root = fixture.path().join("gap60-settings");
         let path = root.join("preferences.json");
         let folder = root.join("captures").to_string_lossy().into_owned();
         let mut app = super::super::tests::app(Page::Screenshots, Some(path.clone()))?;
@@ -134,7 +135,6 @@ mod tests {
                 .directory,
             folder
         );
-        std::fs::remove_dir_all(root)?;
         Ok(())
     }
 }

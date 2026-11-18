@@ -109,7 +109,8 @@ fn item_hotkeys_persist_per_character_and_negotiate_smart_sources()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::feature_0179_hotkey_equip::view::supported_capabilities;
     use crate::play::{PreferenceStore, SettingsState};
-    let root = std::env::temp_dir().join(format!("item-hotkeys-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("item-hotkeys");
     std::fs::create_dir_all(&root)?;
     let base = root.join("preferences.json");
     let mut settings = SettingsState::new(Some(base.clone()));
@@ -149,7 +150,6 @@ fn item_hotkeys_persist_per_character_and_negotiate_smart_sources()
         capabilities.len() + 1,
         oteryn_session::CLIENT_SUPPORTED_CAPABILITIES.len()
     );
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -166,7 +166,8 @@ fn t041_object_selector_and_smart_option_persist() -> Result<(), Box<dyn std::er
     );
     assert!(!link.hotkey_equip_assign(4, 999));
     link.set_smart_equip(false);
-    let path = std::env::temp_dir().join(format!("t041-item-hotkeys-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("t041-item-hotkeys.json");
     let mut settings = crate::play::SettingsState::new(Some(path.clone()));
     settings.sync_item_hotkeys(&link);
     let saved = crate::play::SettingsState::new(Some(path.clone()));

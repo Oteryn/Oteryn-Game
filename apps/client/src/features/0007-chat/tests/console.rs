@@ -65,12 +65,8 @@ fn console_controls_preserve_tab_filters_and_temporary_mode_reaches_session_once
 
 #[test]
 fn channel_log_control_saves_appends_replaces_and_reports_io_errors() -> Result<(), Error> {
-    static LOGS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let path = std::env::temp_dir().join(format!(
-        "oteryn-chat-log-{}-{}.txt",
-        std::process::id(),
-        LOGS.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-    ));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("oteryn-chat-log.txt");
     let (link, _, outbox) = play_channel();
     outbox.chat_initialize(true);
     crate::play::mailbox::lock(&outbox.0).chat.lines = vec![ChatLine::Private {

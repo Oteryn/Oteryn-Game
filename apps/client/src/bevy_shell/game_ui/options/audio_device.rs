@@ -66,8 +66,8 @@ mod tests {
 
     #[test]
     fn device_choice_applies_saves_and_reaches_the_audio_preferences() -> TestResult {
-        let path =
-            std::env::temp_dir().join(format!("bevy-options-device-{}.json", std::process::id()));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("bevy-options-device.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::Sound, Some(path.clone()))?;
             assert_eq!(choices("Headset").first().map(String::as_str), Some(""));
@@ -97,7 +97,6 @@ mod tests {
             );
             Ok(())
         })();
-        let _ = std::fs::remove_file(&path);
         result
     }
 }

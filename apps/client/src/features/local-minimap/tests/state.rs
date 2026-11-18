@@ -2,7 +2,8 @@ use super::*;
 #[test]
 fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
 -> Result<(), Box<dyn std::error::Error>> {
-    let root = std::env::temp_dir().join(format!("minimap-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("minimap");
     let mut map = Minimap::default();
     map.root = Some(root.clone());
     map.bind_world("11111111-1111-4111-8111-111111111111");
@@ -50,7 +51,6 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     assert_ne!(restored.binding, binding);
     drop(restored);
     drop(map);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 #[test]
@@ -158,7 +158,8 @@ fn t076_floor_and_zoom_controls_stop_following_and_recentre_on_the_player() {
 #[test]
 fn version_one_palette_survives_rejoin_save_and_transfer() -> Result<(), Box<dyn std::error::Error>>
 {
-    let root = std::env::temp_dir().join(format!("minimap-palette-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("minimap-palette");
     let mut map = Minimap::default();
     map.root = Some(root.clone());
     map.bind_world("11111111-1111-4111-8111-111111111111");
@@ -186,6 +187,5 @@ fn version_one_palette_survives_rejoin_save_and_transfer() -> Result<(), Box<dyn
             .collect::<Vec<_>>(),
         ["Home", "Gate"]
     );
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }

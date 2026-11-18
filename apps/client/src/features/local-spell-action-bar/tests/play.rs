@@ -331,7 +331,8 @@ fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices
         commands.try_recv().is_err(),
         "passive assignments must never cast"
     );
-    let path = std::env::temp_dir().join(format!("mixed-bars-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("mixed-bars.json");
     let mut settings = crate::play::SettingsState::new(Some(path.clone()));
     settings.sync_bar_actions(&link);
     let saved = crate::play::SettingsState::new(Some(path.clone()));

@@ -407,14 +407,16 @@ mod tests {
         // The crash ring is process-wide and other tests can evict this warning.
         const CHILD: &str = "OTERYN_TEST_LOG_CONTENTION";
         if std::env::var_os(CHILD).is_none() {
-            let status = std::process::Command::new(std::env::current_exe()?)
+            let fixture = crate::play::screenshot::TestDir::new()?;
+            let output = std::process::Command::new(std::env::current_exe()?)
+                .env("TMPDIR", fixture.path())
                 .args([
                     "--exact",
                     "bevy_shell::diagnostics::logging::tests::two_clients_share_the_daily_budget",
                 ])
                 .env(CHILD, "1")
-                .status()?;
-            assert!(status.success());
+                .output()?;
+            crate::play::screenshot::assert_one_test_passed(&output);
             return Ok(());
         }
         let fixture = crate::play::screenshot::TestDir::new()?;

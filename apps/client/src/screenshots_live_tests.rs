@@ -97,7 +97,8 @@ fn screenshot_settings_survive_restart_and_save_full_and_game_only_frames()
         play::{ScreenshotPreferences, SettingsState},
         screenshots::{Frame, Rect},
     };
-    let root = std::env::temp_dir().join(format!("screenshot-settings-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("screenshot-settings");
     std::fs::create_dir_all(&root)?;
     let settings_path = root.join("settings.json");
     let directory = root.join("chosen");
@@ -158,7 +159,6 @@ fn screenshot_settings_survive_restart_and_save_full_and_game_only_frames()
     assert!(full.save_frame(&mut capture, &root, frame()).is_err());
     assert!(capture.pending());
     assert_eq!(std::fs::read(blocked)?, b"preserve");
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -168,7 +168,8 @@ fn screenshot_backlog_saves_preceding_frames_on_confirmed_death_and_persists_pol
     use crate::play::SettingsState;
     use crate::screenshots::{CaptureBacklog, Frame, Rect};
     use std::time::{Duration, Instant};
-    let root = std::env::temp_dir().join(format!("screenshot-backlog-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("screenshot-backlog");
     std::fs::create_dir_all(&root)?;
     let settings_path = root.join("settings.json");
     let mut settings = SettingsState::new(Some(settings_path.clone()));
@@ -287,6 +288,5 @@ fn screenshot_backlog_saves_preceding_frames_on_confirmed_death_and_persists_pol
     invalid.screenshots.backlog_seconds = 11;
     settings.apply(invalid);
     assert_eq!(settings.preferences, preferences);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }

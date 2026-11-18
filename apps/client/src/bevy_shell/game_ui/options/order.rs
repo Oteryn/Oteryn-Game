@@ -77,10 +77,8 @@ mod tests {
 
     #[test]
     fn skill_rows_move_apply_and_reach_the_skills_window_order() -> TestResult {
-        let path = std::env::temp_dir().join(format!(
-            "bevy-options-skill-order-{}.json",
-            std::process::id()
-        ));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("bevy-options-skill-order.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::Hud, Some(path.clone()))?;
             let button = app
@@ -108,7 +106,6 @@ mod tests {
             );
             Ok(())
         })();
-        let _ = std::fs::remove_file(&path);
         result
     }
 }

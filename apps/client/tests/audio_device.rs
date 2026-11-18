@@ -10,8 +10,8 @@ fn requested_audio_device_is_exact_and_never_silently_falls_back() {
 #[test]
 fn missing_device_choice_survives_preference_reload() -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client::play::{PreferenceStore, ReferencePreferences};
-    let path =
-        std::env::temp_dir().join(format!("oteryn-device-choice-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("oteryn-device-choice.json");
     let preferences = ReferencePreferences {
         audio_device: "Disconnected headphones".into(),
         ..ReferencePreferences::default()
