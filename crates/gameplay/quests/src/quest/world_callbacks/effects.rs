@@ -787,10 +787,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }) {
         return false;
     }
+    // Crystal 201189f8 movements_necromancer_servant.lua:9-11 reads mission
+    // prerequisites but changes no quest storage on the spawning step.
+    let guarded_spawn_step = callback.trigger == Trigger::StepIn
+        && callback.operation_count() == 0
+        && callback.storage.iter().all(|guard| guard.preserve);
     if effects.creature_spawn.as_ref().is_some_and(|spawn| {
         callback.actor_kind != ActorKind::Player
             || !matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
-            || !callback.requires_world_admission
+            || (!callback.requires_world_admission && !guarded_spawn_step)
             || callback.selector.native.is_none()
             || !callback.has_state()
             || callback.is_read_only()

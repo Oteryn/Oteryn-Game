@@ -38,7 +38,10 @@ fn dormitory_step_spawns_the_servant_and_its_death_keeps_the_fragment_in_the_cor
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-servant", move || servant(admin))
+    super::kill_reward_e2e::scenario_thread::run("gravedigger-servant", move || {
+        servant(admin.clone(), false)?;
+        servant(admin, true)
+    })
 }
 
 #[test]
@@ -264,7 +267,7 @@ fn dormitory_gate(admin: String, entered: i64) -> TestResult {
     )
 }
 
-fn servant(admin: String) -> TestResult {
+fn servant(admin: String, completed: bool) -> TestResult {
     let pad = Position {
         x: 33015,
         y: 32438,
@@ -280,7 +283,7 @@ fn servant(admin: String) -> TestResult {
         "key": "oteryn:quest-callback/fixture/gravedigger-servant-step",
         "quest": QUEST, "trigger": "step_in",
         "selector": { "appearance": 19147, "native": { "position": pad, "appearance": 19147, "ordinal": 0 } },
-        "requires_world_admission": true, "reversible": false, "passages": [], "offerings": [],
+        "requires_world_admission": false, "reversible": false, "passages": [], "offerings": [],
         "storage": [
             { "track": MISSION_56, "minimum": 1, "maximum": 1, "set": 1, "preserve": true },
             { "track": MISSION_57, "minimum": 0, "maximum": 0, "set": 0, "preserve": true }
@@ -295,8 +298,8 @@ fn servant(admin: String) -> TestResult {
         "gravedigger_servant",
         world,
         callback,
-        tracks([(MISSION_56, 1), (MISSION_57, 0)]),
-        async |owner, mut admitted, h, _| {
+        tracks([(MISSION_56, 1), (MISSION_57, i64::from(completed))]),
+        async move |owner, mut admitted, h, _| {
             step_east(owner, &mut admitted).await?;
             let servant = {
                 let runtime = owner.runtime.lock().await;
@@ -308,6 +311,10 @@ fn servant(admin: String) -> TestResult {
                         runtime.matches_live_creature_identity(*actor, SERVANT.as_bytes())
                     })
                     .collect::<Vec<_>>();
+                if completed {
+                    assert!(matches.is_empty(), "completed mission must suppress the summon");
+                    return Ok(());
+                }
                 let [servant] = matches.as_slice() else {
                     return Err("one living Necromancer Servant".into());
                 };
