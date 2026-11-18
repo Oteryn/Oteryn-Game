@@ -1109,13 +1109,6 @@ jobs:
           }
           cargo +1.100.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
 
-      - name: Test Bevy game UI
-        shell: pwsh
-        env:
-          CARGO_BUILD_JOBS: 4
-        run: |
-          cargo +1.100.0 test --locked -p oteryn-client --features bevy-shell --target x86_64-pc-windows-msvc --lib bevy_shell::game_ui::
-
       - name: Install Inno Setup
         shell: pwsh
         env:

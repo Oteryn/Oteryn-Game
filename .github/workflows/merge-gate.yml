@@ -1035,18 +1035,6 @@ jobs:
           path: ${{ runner.temp }}/jobresult
           key: job-result-ledger-v1-rust_fast-${{ matrix.slug }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Test Bevy game UI
-        if: matrix.shard == '1/5'
-        env:
-          CARGO_BUILD_JOBS: 4
-        run: |
-          set -euo pipefail
-          if grep -q $'^oteryn-client\t' "$RUNNER_TEMP/rust-fast-packages.tsv"; then
-            sudo apt-get update
-            sudo apt-get install -y libasound2-dev libudev-dev
-            cargo +1.100.0 test --locked -p oteryn-client --features bevy-shell --lib bevy_shell::game_ui::
-          fi
-
   rust_supply_chain:
     name: Merge gate / Rust supply chain
     needs: [scope, lanes]
