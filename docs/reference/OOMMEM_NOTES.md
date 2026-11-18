@@ -126,7 +126,8 @@ then measure each target and run the affected PostgreSQL cases.
 
 The proposed patch selects the targets after they exist and updates the
 merge-authority workflow pin and command assertion. It passes
-`git apply --check` against the pinned build tree. The corresponding
+`git apply --check` against the pinned build tree. The revised YAML parses
+and the five modified run steps pass `bash -n`. The corresponding
 command assertions in the repository validators also require approved
 updates. Test
 durations keyed by current binary ID need the new IDs to retain the
