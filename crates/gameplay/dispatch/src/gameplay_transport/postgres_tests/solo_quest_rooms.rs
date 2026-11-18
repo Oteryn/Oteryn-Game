@@ -189,6 +189,9 @@ async fn exercise(admin: String, room: Room) -> TestResult {
     };
     let entered_at = 1_000_000u64;
     set_time(entered_at);
+    if !room.wanted {
+        h.root.set_test_quest_clock(1_800_000_000).map_err(debug)?;
+    }
     let result = wire(
         &owner,
         &mut admitted,
@@ -414,6 +417,7 @@ async fn exercise(admin: String, room: Room) -> TestResult {
         }
         // Crystal movements_teleportTo.lua:103-128 removes the surviving
         // scorpion before an exhausted challenger is sent back outside.
+        h.root.advance_test_quest_clock(72_001).map_err(debug)?;
         for command in 5..=9 {
             set_time(due + (command + 1) * 2_000_000);
             step(&owner, &mut admitted, command, StepDirection::South).await?;
@@ -439,6 +443,27 @@ async fn exercise(admin: String, room: Room) -> TestResult {
                 .any(|actor| runtime.matches_live_creature_identity(actor, room.boss.as_bytes())),
             "reset on an exhausted STEP does not spawn the next scorpion"
         );
+        drop(runtime);
+
+        h.root.advance_test_quest_clock(1).map_err(debug)?;
+        set_time(due + 22_000_000);
+        step(&owner, &mut admitted, 10, StepDirection::South).await?;
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position(),
+            local(room.landing)
+        );
+        assert!(
+            runtime
+                .current_live_creature_census()
+                .map_err(debug)?
+                .into_iter()
+                .any(|actor| runtime.matches_live_creature_identity(actor, room.boss.as_bytes())),
+            "the first eligible second admits the challenger and spawns a scorpion"
+        );
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
@@ -446,7 +471,7 @@ async fn exercise(admin: String, room: Room) -> TestResult {
     .bind(KEY)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(receipts, 2);
+    assert_eq!(receipts, if room.wanted { 2 } else { 3 });
     drop(owner);
     drop(authority);
     drop(seal);

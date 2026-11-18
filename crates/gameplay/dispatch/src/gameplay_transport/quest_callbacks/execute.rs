@@ -948,6 +948,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         if durable && callback.effects.encounter.is_some() {
+            // Defiances can reset a vacant room during preflight. Require
+            // the Character owner before publishing that source effect.
+            if fence.is_none() || slot.is_none() || self.quest_catalogue.is_none() {
+                return UseDisposition::Rejected;
+            }
             let preflight = self.execute_quest_encounter(
                 runtime,
                 states,
