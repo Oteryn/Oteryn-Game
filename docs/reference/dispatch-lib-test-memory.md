@@ -1,10 +1,12 @@
 # Dispatch library test build memory
 
-The dispatch lib-test crate hits the 16 GiB memory limit during rustc
-codegen. A package-only test profile builds and links all 4,339 tests
-at 15.58 GiB with one Cargo job. Both two-job trials exhausted the
-budget. The serial workflow proposal applies the measured job limit
-to the CI archive and library steps that still use Cargo defaults.
+The dispatch lib-test crate reaches about 14.3 GiB before LLVM starts
+and hits the 16 GiB memory limit during codegen. A package-only test
+profile builds and links all 4,339 tests at 15.58 GiB with one Cargo job.
+That leaves about 0.42 GiB for other processes under a 16 GiB cap. The
+two-job profile trial still exhausted the budget. The serial workflow
+proposal applies the measured job limit to the CI archive and library
+steps that still use Cargo defaults.
 Splitting the generated PostgreSQL mount offers more headroom. Its
 two scratch executables cover the complete test registry and peak at
 14.52 GiB per process.
@@ -291,6 +293,8 @@ process measurements establish the reproduced OOM.
 
 | Check | Result |
 | --- | --- |
+| Resubmission formatting, locked offline metadata and `git diff --check` | Passed |
+| Baseline-to-delivery test sources and lockfile | Identical in dispatch and game-server, with 4,238 dispatch test attributes, 29 direct lifted mounts and 735 generated PostgreSQL roots |
 | Dispatch formatting and locked workspace metadata | Passed before the environment rule took effect |
 | `cargo check -p oteryn-gameplay-dispatch --locked` | Passed with one Cargo job in the dev profile |
 | Dispatch lib build and inventory, one Cargo job | Passed, 4,339 tests and 4,341 output lines |
