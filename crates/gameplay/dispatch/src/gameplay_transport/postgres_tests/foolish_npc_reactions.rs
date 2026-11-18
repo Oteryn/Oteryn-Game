@@ -2,7 +2,10 @@
 use super::quest_world_callbacks::{self, tool_fixture};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
-use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::{
+    connection::{FreshAdmissionAuthority, UseCommand},
+    item_view::ItemKey,
+};
 use oteryn_gameplay_quests::quest::{
     authored_bindings::{Bindings, BoundQuest, Stage, Track, Trigger},
     reward_callbacks::RewardCallback,
@@ -10,8 +13,10 @@ use oteryn_gameplay_quests::quest::{
 };
 use oteryn_protocol_oteryn::{
     npc_service::{NpcIntentDisposition, NpcTalkIntent},
+    world_object::{UseDisposition, UseIntent, UseTarget},
     world_spatial_entities::EntityRef,
 };
+use std::{num::NonZeroU64, sync::atomic::Ordering};
 
 const QUEST: &str = "oteryn:quest.what_a_foolish_quest";
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline";
@@ -22,6 +27,7 @@ const KAZZAN_NPC: &str = "oteryn:npc.kazzan";
 const WYDA_NPC: &str = "oteryn:npc.wyda";
 const ORC_NPC: &str = "oteryn:npc.the_orc_king";
 const COOKIE: &str = "oteryn:item.tibia.i130";
+const DISGUISE: &str = "oteryn:item.tibia.i144";
 const SCREAM: &str = "WAAAAAHHH!!!";
 const COOKIE_PROMPT: &str = "Offer the cookie to Wyda?";
 
@@ -208,42 +214,72 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
             let ordinary = talk(owner, admitted, fence, entity, 1, "hi").await?;
             assert!(ordinary.lines.iter().all(|line| line != SCREAM));
             if npc == KAZZAN_NPC {
-                let member = owner
-                    .active_generation
-                    .and_then(|g| g.native_gameplay())
-                    .and_then(|native| native.spell_appearances())
-                    .and_then(|book| book.for_look_type(65))
-                    .ok_or("mummy appearance")?;
-                // Crystal 201189f8 action_disguise.lua:1-3 sets a ten-second look.
-                // The owner's frozen clock advances two seconds per command below.
-                for (farewell, greeting, active) in [(2, 8, false), (9, 10, true)] {
+                // Crystal 201189f8 action_disguise.lua:1-13 sets a ten-second look
+                // through ordinary USE of a carried, reusable disguise.
+                let rule = serde_json::from_value(serde_json::json!({
+                    "key": "quest.fixture.mummy-disguise",
+                    "item": DISGUISE,
+                    "use_text": "Mummy disguise applied.",
+                    "restore_text": "",
+                    "use_effect": 0,
+                    "speech_type": 36,
+                    "appearance": 65,
+                    "timed_look_ms": 10000,
+                    "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/what_a_foolish_quest/action_disguise.lua:1-13"]
+                }))?;
+                owner.states.fixture_item_disguises.set(vec![rule])
+                    .map_err(|_| "disguise fixture already installed")?;
+                quest_world_callbacks::input_item(
+                    owner,
+                    fence.item_fence(),
+                    &Offering {
+                        position: at,
+                        item: DISGUISE.into(),
+                        count: 1,
+                    },
+                    82,
+                    true,
+                ).await?;
+                let item: Vec<u8> = sqlx::query_scalar(
+                    "SELECT uuid_send(item_instance_id) FROM game_item_instances
+                     WHERE definition_production_key=$1 AND lifecycle=1",
+                ).bind(DISGUISE).fetch_one(&h.pool).await?;
+                let item: [u8; 16] = item.try_into().map_err(|_| "disguise item UUID")?;
+
+                for (farewell, use_id, greeting, active) in [(2, 3, 9, false), (10, 11, 12, true)] {
                     talk(owner, admitted, fence, entity, farewell, "bye").await?;
-                    {
-                        let runtime = owner.runtime.lock().await;
-                        let mut states = owner.states.spell_states.lock().await;
-                        let state = states
-                            .get_mut(
-                                &runtime,
-                                admitted.runtime_actor.ok_or("actor")?,
-                                admitted.game_session_id,
-                            )
-                            .ok_or("player state")?;
-                        crate::spell::actor_conditions::apply_appearance(
-                            state,
-                            member.selection(),
-                            member.look_type(),
-                            10_000,
-                            owner.owner_now().get() / 1000,
-                        )
-                        .map_err(debug)?;
-                        state.advance_batch_revision().map_err(debug)?;
-                    }
+                    owner.states.test_owner_time.store(use_id * 2_000_000 + 1, Ordering::Relaxed);
+                    let used = owner.use_quest_tool(
+                        admitted.runtime_actor.ok_or("actor")?,
+                        UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: use_id,
+                            item_fence: Some(fence.item_fence()),
+                        },
+                        UseIntent {
+                            target: UseTarget::Item(NonZeroU64::MIN),
+                            use_with: None,
+                            use_with_map_item: None,
+                            use_with_position: None,
+                        },
+                        Some(ItemKey::Instance(item)),
+                        None,
+                    ).await.map_err(|()| "disguise USE unavailable")?.ok_or("disguise USE outcome")?;
+                    assert_eq!(used.disposition, UseDisposition::Committed);
                     let greeted = talk(owner, admitted, fence, entity, greeting, "hi").await?;
                     assert_eq!(greeted.lines.iter().any(|line| line == SCREAM), active);
                     if active {
                         assert_eq!(greeted.lines, [SCREAM]);
                     }
                 }
+                let retained: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_item_container_entries
+                     WHERE item_instance_id=encode($1,'hex')::uuid
+                       AND character_id=encode($2,'hex')::uuid",
+                ).bind(item.as_slice())
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(retained, 1, "the disguise remains in the Character's backpack");
             } else if npc == WYDA_NPC {
                 let offer = talk(owner, admitted, fence, entity, 2, "cookie").await?;
                 assert_eq!(offer.lines, [COOKIE_PROMPT]);

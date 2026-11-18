@@ -489,13 +489,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let source = item.item_instance_id;
-        if let Some(rules) =
-            oteryn_gameplay_quests::quest::item_disguises::rules().filter(|rules| {
-                rules
-                    .iter()
-                    .any(|rule| rule.item == item.definition.production_key)
-            })
-        {
+        let disguise_rules = oteryn_gameplay_quests::quest::item_disguises::rules();
+        #[cfg(test)]
+        let disguise_rules = self
+            .states
+            .fixture_item_disguises
+            .get()
+            .map(Vec::as_slice)
+            .or(disguise_rules);
+        if let Some(rules) = disguise_rules.filter(|rules| {
+            rules
+                .iter()
+                .any(|rule| rule.item == item.definition.production_key)
+        }) {
             // This source is retained. No quest transition, value grant or receipt is
             // invented for an action that only changes the live appearance conflict.
             if intent.use_with.is_some()

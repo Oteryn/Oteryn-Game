@@ -45,6 +45,9 @@ pub struct ChannelSessionStates {
     pub command_ingress: super::session_ingress::SessionCommands,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub fence_holders: FenceHolders,
+    #[cfg(test)]
+    pub(super) fixture_item_disguises:
+        std::sync::OnceLock<Vec<oteryn_gameplay_quests::quest::item_disguises::Rule>>,
     /// IDLEKICK: operator thresholds, shared by every connection served by this owner.
     pub gameplay_idle_policy: super::connection::GameplayIdlePolicy,
     /// RAIDS-GLOBAL: copies of the idle owner's facts, removed with the session.
