@@ -29,6 +29,7 @@ const FOUNTAIN_TRANSFORM: &str = "qengine-rewards-qonce-fountain-transform";
 const ANNUAL: &str = "qengine-rewards-qonce-annual";
 const FULL_BACKPACK: &str = "qengine-rewards-qonce-full-backpack";
 const HOARD: &str = "qengine-rewards-qonce-hoard";
+const HOARD_GEMS: &str = "qengine-rewards-qonce-hoard-gems";
 const STEP: &str = "qengine-rewards-qonce-step";
 const SOCKET_WINDOW: &str = "qengine-rewards-qonce-socket-window";
 const SOCKET_REPEAT: &str = "qengine-rewards-qonce-socket-repeat";
@@ -187,6 +188,13 @@ fn hoard_bundle_resets_eligibility_and_awards_tenth_claim_achievement_postgres()
 }
 
 #[test]
+fn hoard_gem_bundle_commits_all_three_gems_with_the_claim_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(HOARD_GEMS)
+}
+
+#[test]
 fn interrupted_well_use_recovers_committed_heal_without_second_credit_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
@@ -267,6 +275,45 @@ async fn assert_hoard_delivery(
         line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == &message
     )).count();
     assert_eq!(feedback, 1);
+    Ok(())
+}
+
+async fn claim_hoard_gems(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    before: &[(u16, i64)],
+    choices: &[(&str, &[(u16, u16)])],
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{decode_use_result, encode_use_intent};
+
+    let payload = encode_use_intent(&claim_target(owner)?).map_err(debug)?;
+    let reply = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?;
+    assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+    assert_hoard_delivery(owner, admitted, h, before, choices).await?;
+    assert_eq!(receipts(h).await?, 1);
+    assert_eq!(track_value(h, LEDGER).await?, 0);
+    assert_eq!(achievements(h, HOARD_ACHIEVEMENT).await?, 1);
+
+    // Crystal actions_treasure.lua:5-8,23-27 places all three items on one claim.
+    let items: Vec<(String, i64, bool)> = sqlx::query_as(
+        "SELECT i.definition_production_key, i.quantity, \
+                i.xmin=m.created_xact_id::xid AND e.xmin=m.created_xact_id::xid \
+         FROM game_reward_claim_mint_receipts m \
+         JOIN game_character_quest_receipts q ON q.character_id=m.character_id \
+           AND q.cause_id=m.game_session_id AND q.cause_ordinal=m.command_id \
+           AND q.created_xact_id=m.created_xact_id \
+         JOIN LATERAL ( \
+           SELECT m.item_instance_id \
+           UNION ALL SELECT (entry->>'item_instance_id')::uuid \
+           FROM jsonb_array_elements(m.additional_plan) AS extra(entry) \
+         ) AS chosen ON true \
+         JOIN game_item_instances i ON i.item_instance_id=chosen.item_instance_id \
+         JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id \
+           AND e.parent_item_instance_id=m.destination_parent_item_instance_id \
+         WHERE q.transition_key=$1 ORDER BY i.definition_production_key",
+    ).bind(CLAIM).fetch_all(&h.pool).await?;
+    assert_eq!(items, [3029, 3030, 3032].map(|id| (format!("oteryn:item.tibia.i{id}"), 1, true)));
     Ok(())
 }
 
@@ -1000,6 +1047,12 @@ pub(super) async fn exercise(
     if is_socket_scenario(name) {
         return Box::pin(socket_window(owner, admitted, h, name)).await;
     }
+    let hoard_rewards = match name {
+        HOARD => HOARD_REWARDS.as_slice(),
+        HOARD_GEMS => &HOARD_REWARDS[1..2],
+        _ => &[],
+    };
+    let hoard = !hoard_rewards.is_empty();
 
     // The source tile is installed by the common dispatch fixture. Build the binding
     // independently so its guards and effects come entirely from this scenario.
@@ -1068,8 +1121,8 @@ pub(super) async fn exercise(
             callback["storage"] = json!([storage(CHOICE, 0, choices, 0), feathers]);
             effects["eligibility"] = json!({"track":FEATHERS,"message":ANNUAL_INELIGIBLE});
         }
-    } else if name == HOARD {
-        let choices = i64::try_from(HOARD_REWARDS.len())?;
+    } else if hoard {
+        let choices = i64::try_from(hoard_rewards.len())?;
         tracks.extend([
             track(LEDGER, HOARD_GOAL - 1, 0, HOARD_GOAL), track(COUNT, 9, 0, i64::MAX),
             track(CHOICE, 0, 0, choices), track(HUNT_GATE, 0, 0, 0),
@@ -1082,7 +1135,7 @@ pub(super) async fn exercise(
         effects = json!({"reset":{"kind":"progress","track":LEDGER,"minimum":HOARD_GOAL},
             "selection_track":CHOICE,
             "milestone":{"track":COUNT,"count":10,"achievement":HOARD_ACHIEVEMENT},
-            "rewards":HOARD_REWARDS.iter().map(|&(description, items)| hoard_reward(description, items)).collect::<Vec<_>>()});
+            "rewards":hoard_rewards.iter().map(|&(description, items)| hoard_reward(description, items)).collect::<Vec<_>>()});
     } else {
         assert!(well || name == STEP);
         tracks.push(track(LEDGER, 0, 0, 1));
@@ -1111,7 +1164,7 @@ pub(super) async fn exercise(
     let mut stages = vec![json!({
         "key":"claim","completes":false,"trigger":{"kind":trigger,"callback":callback}
     })];
-    if name == HOARD {
+    if hoard {
         stages.push(json!({
             "key":"kill-dragon","completes":false,"trigger":{"kind":"kill","counter":{
                 "key":HUNT_KILL,"creature":DRAGON,"track":LEDGER,
@@ -1141,7 +1194,7 @@ pub(super) async fn exercise(
         "tracks":tracks,
         "stages":stages
     }]});
-    if name == HOARD {
+    if hoard {
         let mut invalid = binding.clone();
         invalid["quests"][0]["stages"][0]["trigger"]["callback"]["storage"][1]["maximum"] = json!(8);
         assert!(Bindings::parse(&serde_json::to_vec(&invalid)?).is_err());
@@ -1258,7 +1311,7 @@ pub(super) async fn exercise(
         super::qengine_voucher_stories::mint(owner, admitted, LIONS_HEART, 1, &mut ordinal).await?;
         tame_noble_lion(owner, admitted, h).await?;
     }
-    if name == HOARD {
+    if hoard {
         owner.active_generation.and_then(|generation| generation.native_gameplay())
             .ok_or("native creature policies")?
             .install_companion_policies(&mut *owner.runtime.lock().await).map_err(debug)?;
@@ -1268,7 +1321,10 @@ pub(super) async fn exercise(
         super::qengine_kill_stories::death(owner, admitted, DRAGON, 88_001).await?;
         assert_eq!(track_value(h, LEDGER).await?, HOARD_GOAL, "the death opens the hoard");
     }
-    let hoard_before = if name == HOARD { hoard_inventory(h).await? } else { Vec::new() };
+    let hoard_before = if hoard { hoard_inventory(h).await? } else { Vec::new() };
+    if name == HOARD_GEMS {
+        return Box::pin(claim_hoard_gems(owner, admitted, h, &hoard_before, hoard_rewards)).await;
+    }
     let before = super::qengine_voucher_stories::quantity(h, 3031).await?;
     if name == ANNUAL {
         assert_eq!(use_claim(owner, *admitted, 20).await?, UseDisposition::Rejected);
@@ -1295,8 +1351,8 @@ pub(super) async fn exercise(
     let committed = outcomes.into_iter().filter(|outcome| *outcome == UseDisposition::Committed).count();
     assert_eq!(committed, 1);
     assert_eq!(receipts(h).await?, 1);
-    if name == HOARD {
-        assert_hoard_delivery(owner, admitted, h, &hoard_before, &HOARD_REWARDS).await?;
+    if hoard {
+        assert_hoard_delivery(owner, admitted, h, &hoard_before, hoard_rewards).await?;
     } else {
         assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, before + 2);
     }
@@ -1344,7 +1400,7 @@ pub(super) async fn exercise(
         assert_eq!(track_value(h, COUNT).await?, 11);
         assert_eq!(achievements(h, HOARD_ACHIEVEMENT).await?, 1);
         assert_eq!(receipts(h).await?, 2);
-        assert_hoard_delivery(owner, admitted, h, &next_inventory, &HOARD_REWARDS).await?;
+        assert_hoard_delivery(owner, admitted, h, &next_inventory, hoard_rewards).await?;
     }
     if name == DAILY {
         assert_eq!(track_value(h, CHOICE).await?, 2);
