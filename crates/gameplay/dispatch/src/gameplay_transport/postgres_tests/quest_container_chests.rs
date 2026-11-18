@@ -604,7 +604,7 @@ fn scenario_case(
             deps.initialize(&owner).await;
             let before =
                 forgemaster::use_chest(&mut owner, &admitted, deps.actor, 1, &target).await?;
-            assert_ne!(before, UseDisposition::Committed);
+            assert_eq!(before, UseDisposition::Rejected);
             assert_eq!(forgemaster::claim_count(&harness).await?, 0);
             forgemaster::allow_access(&owner, &admitted).await?;
             assert_eq!(
@@ -612,9 +612,9 @@ fn scenario_case(
                 UseDisposition::Committed
             );
             let alternate = target_at(chest.0 - 2)?;
-            assert_ne!(
+            assert_eq!(
                 forgemaster::use_chest(&mut owner, &admitted, deps.actor, 3, &alternate).await?,
-                UseDisposition::Committed
+                UseDisposition::Rejected
             );
             assert_eq!(forgemaster::claim_count(&harness).await?, 1);
             let bag = harness
