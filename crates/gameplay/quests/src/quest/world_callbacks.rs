@@ -760,6 +760,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
     ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/stag-corpses.json"
+    ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
@@ -1430,6 +1433,21 @@ fn extend_callbacks(
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     let published = published_markers::keys()?;
     super::ice_islands_seals::catalogue::declare(&mut tracks, callbacks)?;
+    if let Some(corpse) = callbacks
+        .iter()
+        .find(|callback| matches!(callback.native_rule, Some(NativeRule::StagCorpse { .. })))
+    {
+        let key = super::native_rules::STAG_CORPSES;
+        if !tracks.iter().any(|track| track.key == key) {
+            tracks.push(QuestTrack {
+                key: key.into(),
+                quest: corpse.quest.clone(),
+                initial: -1,
+                min: -1,
+                max: 7,
+            });
+        }
+    }
     for callback in callbacks.iter().filter(|c| c.requires_durable_commit()) {
         for storage in &callback.storage {
             let maximum = if storage.increment {

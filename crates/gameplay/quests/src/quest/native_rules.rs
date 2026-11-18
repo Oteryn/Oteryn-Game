@@ -20,12 +20,21 @@ pub enum NativeRule {
     IceSealPaint { seal: u16 },
     SoulWarRemorse,
     SoulWarEnergy,
+    StagCorpse { index: u8 },
 }
+
+pub const STAG_QUEST: &str = "oteryn:quest.the_order_of_the_stag_quest";
+pub const STAG_STAGE: &str =
+    "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline";
+pub const STAG_CORPSES: &str =
+    "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/corpses";
+pub const STAG_CORPSE_POSITIONS: [(u16, u16); 3] = [(33858, 32117), (33870, 32113), (33869, 32134)];
 
 impl NativeRule {
     pub const fn quest(self) -> &'static str {
         match self {
             Self::LionTrial { .. } => super::lions_rock::QUEST,
+            Self::StagCorpse { .. } => STAG_QUEST,
             Self::BarbarianMead => barbarian_mead::QUEST,
             Self::CultsSymbol { .. } => cults_of_tibia::QUEST,
             Self::UnnaturalDance { .. } => unnatural_selection::QUEST,
@@ -37,6 +46,7 @@ impl NativeRule {
     pub fn tracks(self) -> Vec<&'static str> {
         match self {
             Self::BarbarianMead => barbarian_mead::NATIVE_TRACKS.to_vec(),
+            Self::StagCorpse { .. } => vec![STAG_STAGE, STAG_CORPSES],
             Self::LionTrial { trial: 0 } => super::lions_rock::TRACKS[0].to_vec(),
             Self::LionTrial { trial: 1 } => super::lions_rock::TRACKS[1].to_vec(),
             Self::LionTrial { .. } => super::lions_rock::TRACKS[2].to_vec(),
@@ -64,6 +74,7 @@ impl NativeRule {
                 out.extend_from_slice(&seal.to_be_bytes());
             }
             Self::SoulWarRemorse => out.push(6),
+            Self::StagCorpse { index } => out.extend_from_slice(&[7, index]),
             Self::SoulWarEnergy => out.push(4),
         }
     }
@@ -71,6 +82,7 @@ impl NativeRule {
     const fn valid_id(self) -> bool {
         match self {
             Self::BarbarianMead => true,
+            Self::StagCorpse { index } => index < 3,
             Self::LionTrial { trial } => trial < 3,
             Self::CultsSymbol { symbol } => symbol < cults_of_tibia::SYMBOL_COUNT,
             Self::UnnaturalDance { tile } => tile >= 1 && tile <= 9,
@@ -116,6 +128,15 @@ impl NativeRule {
         }
         let read = |key: &str| values.get(key).copied().ok_or(QuestRefusal::NotSupported);
         let next = match self {
+            Self::StagCorpse { index } => {
+                let stage = read(STAG_STAGE)?;
+                let mask = read(STAG_CORPSES)?.max(0);
+                let bit = 1 << index;
+                if stage != 8 || mask > 7 || mask & bit != 0 {
+                    return Err(QuestRefusal::StageMismatch);
+                }
+                vec![stage, mask | bit]
+            }
             Self::LionTrial { .. } => {
                 super::lions_rock::apply(read(tracks[0])?, read(tracks[1])?)?.to_vec()
             }

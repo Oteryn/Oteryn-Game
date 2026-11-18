@@ -12,6 +12,20 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
             return crate::quest::ice_islands_seals::callbacks::admitted(callback, seal);
         }
         NativeRule::LionTrial { .. } => return false,
+        NativeRule::StagCorpse { index } => {
+            let Some(&(x, y)) =
+                crate::quest::native_rules::STAG_CORPSE_POSITIONS.get(usize::from(index))
+            else {
+                return false;
+            };
+            (
+                Trigger::Use,
+                (x, y, -5),
+                None,
+                &[(8, 8), (-1, 7)],
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:",
+            )
+        }
         NativeRule::BarbarianMead => (
             Trigger::Use,
             (32201, 31154, -7),
@@ -67,7 +81,11 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && callback.selector.action == action
         && callback.selector.ordinal.is_none()
         && callback.selector.unique.is_none()
-        && callback.selector.appearance.is_none()
+        && callback.selector.appearance
+            == match rule {
+                NativeRule::StagCorpse { .. } => Some(52741),
+                _ => None,
+            }
         && callback.storage.len() == rule.tracks().len()
         && rule
             .tracks()
@@ -99,7 +117,21 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && callback.passages.is_empty()
         && callback.teleport.is_none()
         && callback.facing.is_none()
-        && callback.effects.is_empty()
+        && match rule {
+            NativeRule::StagCorpse { .. } => {
+                let mut effects = super::CallbackEffectSet::default();
+                effects.magic = Some(super::effects::MagicEffect {
+                    position: Position {
+                        x: position.0,
+                        y: position.1,
+                        floor: position.2,
+                    },
+                    effect: 7,
+                });
+                callback.effects == effects
+            }
+            _ => callback.effects.is_empty(),
+        }
         && !callback.completes
         && !callback.premium_required
         && callback.minimum_level.is_none()
@@ -112,7 +144,6 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && !callback.return_on_failure
         && callback.failure_message.is_none()
         && callback.success_message.is_none()
-        && callback.effects == Default::default()
 }
 
 impl Callback {
@@ -154,6 +185,20 @@ impl Callback {
                     Some("Krunus should be pleased.")
                 } else {
                     None
+                }
+            }
+            Some(NativeRule::StagCorpse { .. }) => {
+                let mask = changes
+                    .iter()
+                    .find(|change| change.track == crate::quest::native_rules::STAG_CORPSES)?
+                    .after;
+                match mask.count_ones() {
+                    1 => Some("You set fire to the corpse. (1/3)"),
+                    2 => Some("You set fire to the corpse. (2/3)"),
+                    3 => Some(
+                        "You have set fire to all three corpses. Return to Eldoran the Ambitious.",
+                    ),
+                    _ => None,
                 }
             }
             Some(NativeRule::IceSealPaint { .. }) => None,
