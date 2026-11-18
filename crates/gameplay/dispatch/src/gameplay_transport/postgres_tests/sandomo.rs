@@ -35,7 +35,7 @@ fn scenario() -> TestResult {
         reset();
         let h = Harness::create_with_admission_seed(admin, "sandomo", true, false).await?;
         eprintln!("POSTGRES_STARTED sandomo");
-        prepare_current_session(&h).await?;
+        let fresh = prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -191,6 +191,23 @@ fn scenario() -> TestResult {
             .bind(character.as_slice()).bind(id(238).as_slice()).bind(id(42).as_slice()).bind(id(245).as_slice())
             .execute(&mut *tx).await?;
         tx.commit().await?;
+        h.root
+            .initialize_admission_equipment(
+                &authority,
+                &h.node,
+                &fence.item_fence(),
+                pin.identity().server_artifact_digest(),
+                fresh.operation(),
+            )
+            .await
+            .map_err(debug)?;
+        dependencies.initialize(&owner).await;
+        dependencies
+            .runtime
+            .lock()
+            .await
+            .assert_actor_spell_unreserved(dependencies.actor)
+            .map_err(debug)?;
         owner.refresh_quest_session(session, true).await;
         for (command_id, message, expected) in [
             (1, "hi", ""),
