@@ -287,6 +287,22 @@ fn chamber(two_players: bool) -> TestResult {
                         .is_some()
                 );
                 owner.states.test_owner_time.store(
+                    owner.owner_now().get() + 1_000_000,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
+                owner.drain_quest_encounter_deadlines().await;
+                assert_eq!(
+                    owner
+                        .runtime
+                        .lock()
+                        .await
+                        .current_live_creature_census()
+                        .map_err(debug)?
+                        .len(),
+                    1,
+                    "all four switches must summon the Lord before ejection"
+                );
+                owner.states.test_owner_time.store(
                     owner.owner_now().get() + 601_000_001,
                     std::sync::atomic::Ordering::Relaxed,
                 );
