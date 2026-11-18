@@ -113,8 +113,9 @@ mod w01_prepare_death_native_tests;
 
 pub mod house_custody;
 
-#[path = "carrier/encounter_access.rs"]
+#[path = "carrier/arbaziloth.rs"]
 pub mod arbaziloth;
+#[path = "carrier/encounter_access.rs"]
 pub mod encounter_access;
 
 mod elemental_boss_spawns;

@@ -73,8 +73,11 @@ impl ChannelRuntimeV1 {
         self.owner_fence()?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         self.carrier.assert_slot_spell_unreserved(index)?;
-        let Slot::CreatureOccupied { target_identity, spell_combat, .. } =
-            &mut self.carrier.slots[index]
+        let Slot::CreatureOccupied {
+            target_identity,
+            spell_combat,
+            ..
+        } = &mut self.carrier.slots[index]
         else {
             return Err(CarrierError::NotCreature);
         };
@@ -90,9 +93,11 @@ impl ChannelRuntimeV1 {
     pub fn arbaziloth_shields(&self, actor: ExactActorRef) -> Option<ShieldSequence> {
         let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
         match &self.carrier.slots[index] {
-            Slot::CreatureOccupied { health, spell_combat, .. } if *health > 0 => {
-                spell_combat.arbaziloth_shields
-            }
+            Slot::CreatureOccupied {
+                health,
+                spell_combat,
+                ..
+            } if *health > 0 => spell_combat.arbaziloth_shields,
             _ => None,
         }
     }
@@ -101,9 +106,11 @@ impl ChannelRuntimeV1 {
         let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
         self.carrier.assert_slot_spell_unreserved(index).ok()?;
         match &mut self.carrier.slots[index] {
-            Slot::CreatureOccupied { health, spell_combat, .. } if *health > 0 => {
-                spell_combat.arbaziloth_shields.as_mut()
-            }
+            Slot::CreatureOccupied {
+                health,
+                spell_combat,
+                ..
+            } if *health > 0 => spell_combat.arbaziloth_shields.as_mut(),
             _ => None,
         }
     }
