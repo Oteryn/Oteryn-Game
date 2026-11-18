@@ -28,6 +28,7 @@ pub(super) struct ActivePhase {
     cells: crate::content::NativeEntryMovementCells,
     timed_room: Option<TimedRoom>,
     victory_exit_us: Option<u64>,
+    scoped_deaths: Vec<ExactActorRef>,
 }
 
 #[derive(Debug)]
@@ -81,6 +82,16 @@ impl Fight {
             Self::EarlOsam(fight) => fight.contains(actor),
             Self::Sirs(fight) => fight.contains(actor),
             Self::Zelos(fight) => fight.contains(actor),
+        }
+    }
+
+    fn owns_scoped_credit(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(_) => false,
+            Self::DukeKrule(fight) => fight.contains(actor),
+            Self::EarlOsam(fight) => fight.contains(actor),
+            Self::Sirs(fight) => fight.contains(actor),
+            Self::Zelos(fight) => fight.contains_terminal(actor),
         }
     }
 
@@ -278,8 +289,11 @@ impl Registry {
             if phase.fight.timeout_participants(now).is_some() {
                 continue;
             }
-            if phase.fight.projected_death(runtime, actor).is_err() {
+            let Ok(is_new_death) = phase.fight.projected_death(runtime, actor) else {
                 continue;
+            };
+            if is_new_death && phase.fight.owns_scoped_credit(actor) {
+                phase.scoped_deaths.push(actor);
             }
             if phase.timed_room.is_some() {
                 if phase
@@ -323,6 +337,21 @@ impl Registry {
             return;
         };
         let target = entry.target;
+        if let Some(phase) = active
+            .iter()
+            .find(|phase| phase.fight.owns_scoped_credit(target))
+        {
+            if !phase.scoped_deaths.contains(&target)
+                && let Some(frozen) = &mut entry.grizzly
+            {
+                use crate::durability::quest_state::native_kills::NativeDeathSource;
+                std::sync::Arc::make_mut(frozen).native.retain(|recipient| {
+                    !matches!(recipient.death.source, NativeDeathSource::Encounter(_))
+                });
+            }
+            return;
+        }
+
         if let Some(phase) = active
             .iter_mut()
             .find(|p| matches!(p.fight, Fight::Cults(_)) && p.fight.contains_terminal(target))
@@ -478,6 +507,7 @@ pub(super) fn bind(
             cells,
             timed_room: Some(room),
             victory_exit_us: None,
+            scoped_deaths: Vec::new(),
         });
     }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
@@ -537,6 +567,7 @@ pub(super) fn bind(
         cells,
         timed_room: None,
         victory_exit_us: None,
+        scoped_deaths: Vec::new(),
     })
 }
 
