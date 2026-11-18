@@ -681,12 +681,20 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 owner.drain_kill_rewards(session).await,
                 DrainOutcome::Deferred
             );
-            let counts: (i64,i64) = sqlx::query_as(
-                "SELECT (SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage'), (SELECT count(*) FROM game_party_kill_xp_receipts)"
+            let attempted: i64 =
+                sqlx::query_scalar("SELECT last_value FROM overlordcr_second_receipt")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(
+                attempted, 2,
+                "the injected failure reached the second recipient"
+            );
+            let counts: (i64,i64,i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage'), (SELECT count(*) FROM game_party_kill_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-transition/elemental-spheres/%')"
             ).fetch_one(&h.pool).await?;
             assert_eq!(
                 counts,
-                (0, 0),
+                (0, 0, 0),
                 "a second-recipient failure rolls back every flag and the durable death"
             );
             for statement in [
