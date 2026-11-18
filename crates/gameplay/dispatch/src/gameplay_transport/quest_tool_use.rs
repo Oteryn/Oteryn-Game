@@ -290,22 +290,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let doors = route_map.map(|map| crate::map::floor::BundleDoors(&map.facts));
-        let arrival = if let (Some(route), Some(doors)) = (route, doors.as_ref()) {
+        let arrival = if let Some(route) = route {
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
             let before = runtime.read_actor_position(actor).map_err(|_| ())?;
-            let states = self.states.spell_states.lock().await;
-            let blocked = super::pvp_live::pz_blocked(
-                &states,
-                actor,
-                command.game_session_id,
-                self.owner_now(),
-            );
+            // Crystal 6-mind-travel.lua:25 invokes Creature:teleportTo.
+            // Its present-tile proof allows existing occupants at either landing.
             let proofs = route
                 .destinations
                 .iter()
                 .map(|destination| {
-                    crate::map::floor::prepare_quest_callback_teleport_facing(
+                    crate::map::floor::prepare_carried_quest_relocation(
                         runtime,
                         self.movement_cells(),
                         actor,
@@ -316,9 +310,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             y: i32::from(destination.y),
                             floor: -i16::from(destination.floor),
                         },
-                        blocked,
-                        doors,
-                        None,
                     )
                 })
                 .collect::<Result<Vec<_>, _>>();

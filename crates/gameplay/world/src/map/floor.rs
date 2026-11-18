@@ -55,7 +55,9 @@ pub use quest_callback::{
 };
 pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
 pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
-pub use scripted_teleport::prepare_scripted_quest_teleport_facing;
+pub use scripted_teleport::{
+    prepare_carried_quest_relocation, prepare_scripted_quest_teleport_facing,
+};
 use std::collections::{BTreeMap, BTreeSet};
 use {
     crate::foundation::{
