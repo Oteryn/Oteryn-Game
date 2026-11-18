@@ -63,7 +63,7 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let source = NpcRuleCatalog::runtime()
+        let source = NpcRuleCatalog::runtime_for(catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .admitted_for_npc(npc, catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?

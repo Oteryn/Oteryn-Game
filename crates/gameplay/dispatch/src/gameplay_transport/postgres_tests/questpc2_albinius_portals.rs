@@ -43,12 +43,12 @@ fn questpc2_albinius_portals_combined_source_ifs_commit_all_four_offerings() -> 
     super::qengine_rewards::scenario("questpc2-albinius-portals-combined")
 }
 
-async fn carried(h: &Harness, item: &str) -> TestResult<i64> {
+pub(super) async fn carried(h: &Harness, item: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.definition_production_key=$2 AND i.lifecycle=1")
         .bind(id(41).as_slice()).bind(item).fetch_one(&h.pool).await?)
 }
 
-async fn give(
+pub(super) async fn give(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     item: &str,

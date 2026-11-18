@@ -336,13 +336,13 @@ fn npc_false(value: &bool) -> bool {
     !*value
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRuleProgram {
     pub document: NpcRuleDocument,
     pub digest: [u8; 32],
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcRuleCatalog {
     programs: Vec<NpcRuleProgram>,
 }
@@ -412,6 +412,57 @@ pub struct NpcRulePlan {
 }
 
 impl NpcRuleCatalog {
+    /// Use the source snapshot admitted by the caller's definition catalogue.
+    pub fn runtime_for(catalogue: &super::QuestStateCatalogue) -> Result<&Self, NpcRuleError> {
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(source) = catalogue.npc_fixture.as_deref() {
+            return Ok(source);
+        }
+        let _ = catalogue;
+        Self::runtime()
+    }
+
+    /// Mount a validated source fixture over already-declared tracks. The normal
+    /// digest marker and all live Character/NPC fences still apply.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn attach_fixture(
+        self,
+        catalogue: &super::QuestStateCatalogue,
+    ) -> Result<super::QuestStateCatalogue, String> {
+        let [program] = self.programs.as_slice() else {
+            return Err("expected one fixture NPC program".into());
+        };
+        if program.document.tracks.iter().any(|track| {
+            catalogue.track(&track.key).is_none_or(|native| {
+                native.quest != track.quest || track.min < native.min || track.max > native.max
+            })
+        }) {
+            return Err("fixture NPC program requires bounded native tracks".into());
+        }
+        let mut updated = catalogue
+            .with_fixture_transition(super::QuestTransition {
+                key: admission::binding_key(program),
+                quest: program.document.quest.clone(),
+                effects: vec![super::QuestEffect {
+                    track: program
+                        .document
+                        .tracks
+                        .first()
+                        .ok_or("fixture NPC track")?
+                        .key
+                        .clone(),
+                    from: super::QuestComparison::Any,
+                    effect: super::QuestEffectKind::Computed,
+                }],
+                completes: false,
+                experience: None,
+                world_change: None,
+            })
+            .map_err(|error| format!("{error:?}"))?;
+        updated.npc_fixture = Some(std::sync::Arc::new(self));
+        Ok(updated)
+    }
+
     /// Resolve only programmes explicitly bound into this catalogue for this NPC.
     pub fn admitted_for_npc(
         &self,

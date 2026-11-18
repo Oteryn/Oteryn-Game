@@ -339,6 +339,7 @@ fn scenario_case(
                 | "questpc2-albinius-four-tomes"
                 | "questpc2-albinius-five-tomes"
                 | "questpc2-albinius-combined"
+                | super::super::albinius_ice_portal::CASE
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
                 | super::super::quest_definition_predecessors::CASE
@@ -3105,6 +3106,8 @@ fn scenario_case(
                 &authority,
             )
             .await?;
+        } else if name == super::super::albinius_ice_portal::CASE {
+            Box::pin(super::super::albinius_ice_portal::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name.starts_with("questpc2-albinius-portals-") {
             super::super::questpc2_albinius_portals::exercise(
                 &mut owner,
