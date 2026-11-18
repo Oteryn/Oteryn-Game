@@ -288,6 +288,8 @@ pub(super) fn lower_embedded_quest_state(
     lowered.catalogue =
         super::wrath_sleeping_dragon::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::wrath_zumtah::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::grizzly_adams::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::rotten_blood::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;

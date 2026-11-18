@@ -72,6 +72,7 @@ mod stag_beaks;
 mod threatened_dreams;
 mod viola;
 mod wrath_sleeping_dragon;
+mod wrath_zumtah;
 #[path = "yeo.rs"]
 mod yeo;
 pub(super) use premium_purchase::resume_npc_talk;
@@ -1007,6 +1008,11 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return wrath_sleeping_dragon::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = wrath_zumtah::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = planegazer_finale::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

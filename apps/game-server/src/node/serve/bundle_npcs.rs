@@ -411,6 +411,9 @@ impl LoadedNpcCatalogue {
                     .map(|reward| reward.npc.as_str()),
             )
             .chain(std::iter::once("oteryn:npc.viola"))
+            .chain(std::iter::once(
+                oteryn_gameplay_quests::quest::wrath_zumtah::NPC,
+            ))
             .chain(authored_npcs.iter().map(String::as_str))
             .collect::<BTreeSet<_>>()
             .into_iter()

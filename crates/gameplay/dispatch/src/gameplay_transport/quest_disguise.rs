@@ -9,27 +9,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return false;
         };
-        let creature = self.states.quest_sessions.lock().ok().and_then(|sessions| {
+        let appearance = self.states.quest_sessions.lock().ok().and_then(|sessions| {
             sessions
                 .get(&session)
                 .and_then(|entry| entry.copy.as_ref())
                 .and_then(|copy| copy.read_tracks(self.quest_catalogue.as_deref()?))
                 .and_then(|tracks| {
+                    use oteryn_gameplay_quests::quest::wrath_zumtah;
+                    if tracks.get(wrath_zumtah::RELEASE) == Some(&1) {
+                        return Some(wrath_zumtah::LOOK_TYPE);
+                    }
                     oteryn_gameplay_quests::quest::world_callbacks::active_disguise(&tracks)
                         .ok()
                         .flatten()
-                        .map(|rule| rule.creature.clone())
+                        .and_then(|rule| {
+                            native.policies().policies().iter().find(|policy| {
+                                policy.definition_key == rule.creature
+                                    && policy.definition_revision == "definition-r1"
+                            })
+                        })
+                        .and_then(|policy| policy.outfit_appearance())
                 })
-        });
-        let look = creature.as_ref().and_then(|key| {
-            native
-                .policies()
-                .policies()
-                .iter()
-                .find(|policy| {
-                    policy.definition_key == *key && policy.definition_revision == "definition-r1"
-                })
-                .and_then(|policy| policy.outfit_appearance())
         });
         let runtime = self.runtime.lock().await;
         let Some(actor) = runtime.positioned_actor_census().ok().and_then(|actors| {
@@ -55,7 +55,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match crate::spell::actor_conditions::stage_quest_disguise(
             current,
-            look,
+            appearance,
             self.owner_now().get() / 1000,
         ) {
             Ok(Some(next)) => {

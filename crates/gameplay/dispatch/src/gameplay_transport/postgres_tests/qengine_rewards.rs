@@ -999,6 +999,9 @@ pub(super) async fn exercise(
     if name == super::wrathm1_relay::NAME {
         return Box::pin(super::wrathm1_relay::exercise(owner, admitted)).await;
     }
+    if name == super::wrathm1_zumtah::NAME {
+        return Box::pin(super::wrathm1_zumtah::exercise(owner, admitted, h)).await;
+    }
     if name.starts_with("qengine-rewards-qworld-phase-") {
         return Box::pin(super::qworld_phase_steps::exercise(
             owner, admitted, h, authority, name,
