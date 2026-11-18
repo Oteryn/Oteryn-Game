@@ -167,6 +167,7 @@ async fn exercise(h: &fixture::Harness, case: Case) -> TestResult {
             .current_session_at(session)
             .await?;
     let scene = make_world(native, world, channel, case)?;
+    let start = scene.start();
     let cells = scene
         .movement_cells(pin.qualified_room().movement_cells())
         .map_err(debug)?;
@@ -177,12 +178,12 @@ async fn exercise(h: &fixture::Harness, case: Case) -> TestResult {
             scene.frame_binding_digest(world),
             scene.map_revision_digest(),
             oteryn_gameplay_content::content::NativeEntryStart {
-                x: i32::from(start.0),
-                y: i32::from(start.1),
-                floor: 7,
+                x: i32::from(start.x),
+                y: i32::from(start.y),
+                floor: -i16::from(start.floor),
             },
         )
-        .ok_or("qualified native seal scene")?;
+        .ok_or("qualified area damage scene")?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
@@ -232,7 +233,7 @@ async fn exercise(h: &fixture::Harness, case: Case) -> TestResult {
         .read_actor_position(actor)
         .map_err(debug)?
         .position();
-    assert_eq!((at.x, at.y, at.floor), (start.x, start.y, 7));
+    assert_eq!((at.x, at.y, at.floor), (start.x, start.y, start.floor));
     let runtime = Mutex::new(runtime);
     let content =
         oteryn_gameplay_world::world_runtime::ReferenceContentGeneration::from_content(room.door())

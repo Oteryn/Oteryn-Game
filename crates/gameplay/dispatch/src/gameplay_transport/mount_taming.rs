@@ -122,9 +122,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        if let Some(result) = self
-            .use_demon_oak_axe(actor, command, map, &resolved, intent, source)
-            .await
+        if let Some(result) =
+            Box::pin(self.use_demon_oak_axe(actor, command, map, &resolved, intent, source)).await
         {
             return Ok(Some(result));
         }
