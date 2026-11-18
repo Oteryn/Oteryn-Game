@@ -161,12 +161,26 @@ async fn exercise_desert_view(
     h: &Harness,
 ) -> TestResult {
     super::qengine_outfit_stories::seed_quest_prerequisites(
-        h, owner, admitted, &[(MISSION02.into(), 5)], 126,
-    ).await?;
+        h,
+        owner,
+        admitted,
+        &[(MISSION02.into(), 5)],
+        126,
+    )
+    .await?;
     let origin = super::quest_world_callbacks::local(desert(33152, 32843));
-    owner.runtime.lock().await
-        .initialize_pinned_test_position(admitted.runtime_actor.ok_or("sightseeing actor")?, origin)
+    let placed = owner
+        .runtime
+        .lock()
+        .await
+        .place_admitted_respawn(
+            admitted.runtime_actor.ok_or("sightseeing actor")?,
+            admitted.game_session_id,
+            Some(origin),
+            |position| position == origin,
+        )
         .map_err(debug)?;
+    assert_eq!(placed.position(), origin);
 
     // Same x coordinate as the last alias, but still inside the perimeter.
     step(owner, admitted, StepDirection::South).await?;
