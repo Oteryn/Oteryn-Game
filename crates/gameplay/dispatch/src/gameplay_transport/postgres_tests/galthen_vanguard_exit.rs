@@ -2,7 +2,10 @@
 use super::TestResult;
 use super::fixture::{Harness, debug};
 use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1};
-use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
+use crate::gameplay_transport::{
+    ComposedFreshAdmission,
+    connection::{AdmittedSession, UseCommand},
+};
 use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{
     COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, decode_use_result,
@@ -63,28 +66,21 @@ pub(super) async fn exercise(
         None
     };
     let actor = admitted.runtime_actor.ok_or("current Instance actor")?;
-    let target = exit_target(view)?;
-    let command = admitted.continuity.next_command_id;
-    let (_, reply, barrier, _) = super::guild_wire::exchange_capture(
-        view,
-        &mut admitted,
-        command,
-        COMMAND_TYPE_USE_INTENT,
-        |_| {
-            encode_use_intent(&target)
-                .map_err(debug)
-                .map_err(Into::into)
-        },
-        false,
-        &mut Vec::new(),
-    )
-    .await?;
-    assert_eq!(
-        decode_use_result(&reply).map_err(debug)?,
-        UseDisposition::TooFar
-    );
-    assert!(barrier.is_none());
-    assert_eq!(admitted.runtime_actor, Some(actor));
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: admitted.continuity.next_command_id,
+        item_fence: admitted.item_fence,
+    };
+    let before = view.runtime.lock().await.read_actor_position(actor)?;
+    // The transport walks on TooFar and retries. Check the owner's reach gate
+    // before driving the adjacent USE over the wire below.
+    let outcome = view.use_world_object(actor, command, exit_target(view)?).await;
+    assert_eq!(outcome.disposition, UseDisposition::TooFar);
+    assert_eq!(view.runtime.lock().await.read_actor_position(actor)?, before);
+    let returns: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_runtime_returns")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(returns, 0);
     exercise_exit(h, origin, view, &mut admitted).await?;
     if let Some(mut peer) = peer {
         let returns: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_runtime_returns")
