@@ -19,10 +19,87 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         callback: &Callback,
         close: bool,
+        key: u64,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
         if let Some(target) = &callback.effects.target_transform {
             return super::source_transforms::prepare(map, target).map(Some);
+        }
+        if let Some(cycle) = &callback.effects.item_layout_cycle {
+            let step = cycle
+                .source_appearances
+                .iter()
+                .position(|appearance| *appearance == after.appearance_id)
+                .ok_or(UseDisposition::NothingToUse)?;
+            let next = cycle.source_appearances[(step + 1) % cycle.source_appearances.len()];
+            *after = map
+                .facts
+                .quest_callback_replacement(key, next)
+                .ok_or(UseDisposition::Rejected)?;
+            let positions = cycle
+                .positions
+                .iter()
+                .copied()
+                .map(tile)
+                .collect::<Vec<_>>();
+            if positions.iter().any(|position| {
+                map.facts.house_tile(*position)
+                    || map
+                        .overlay
+                        .base()
+                        .tile(position.x, position.y, position.floor)
+                        .is_none()
+            }) {
+                return Err(UseDisposition::Rejected);
+            }
+            let create = positions
+                .get(step)
+                .map(|position| {
+                    map.facts
+                        .movement_item_facts(cycle.appearance)
+                        .filter(|entry| !entry.pickupable)
+                        .map(|entry| (*position, entry))
+                        .ok_or(UseDisposition::Rejected)
+                })
+                .transpose()?;
+            let mut native_removals = Vec::new();
+            for &position in &positions {
+                let base = map
+                    .overlay
+                    .base()
+                    .tile(position.x, position.y, position.floor)
+                    .ok_or(UseDisposition::Rejected)?;
+                for (ordinal, (id, _)) in base
+                    .ids()
+                    .iter()
+                    .zip(base.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .enumerate()
+                {
+                    let ordinal = u8::try_from(ordinal).map_err(|_| UseDisposition::Rejected)?;
+                    let key = placement_key(position, ordinal).ok_or(UseDisposition::Rejected)?;
+                    if !map.facts.base_hidden(key)
+                        && map
+                            .facts
+                            .base_entry(position, ordinal, *id)
+                            .is_some_and(|entry| {
+                                cycle.clear_appearances.contains(&entry.appearance_id)
+                                    && !entry.pickupable
+                            })
+                    {
+                        native_removals.push(crate::map::facts::QuestSceneMutation::Remove {
+                            key,
+                            revision: map.facts.object_revision(key),
+                        });
+                    }
+                }
+            }
+            return Ok(Some(QuestCallbackProjection::ItemLayout {
+                positions,
+                clear_appearances: cycle.clear_appearances.clone(),
+                native_removals,
+                create,
+            }));
         }
         if let Some(presence) = &callback.effects.item_presence {
             let pos = tile(presence.position);

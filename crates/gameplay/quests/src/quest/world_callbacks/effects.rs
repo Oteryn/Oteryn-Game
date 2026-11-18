@@ -51,6 +51,9 @@ pub struct CallbackEffects {
     /// Match the exact creature entering this source tile and remove it from the room.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub monster_step: Option<MonsterStepEffect>,
+    /// A shared StepIn switch sets one scene item in its own layout and advances the source.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_layout_cycle: Option<ItemLayoutCycle>,
     /// Presence of Channel-created scene items at every authored layout cell.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub generated_item_requirements: Vec<ItemPresence>,
@@ -112,6 +115,53 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+}
+
+/// Crystal 201189f8, ferumbras_ascension/movements_flower_puzzle.lua:114-151.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ItemLayoutCycle {
+    pub source_appearances: Vec<u16>,
+    pub positions: Vec<Position>,
+    pub appearance: u16,
+    pub clear_appearances: Vec<u16>,
+}
+
+impl ItemLayoutCycle {
+    fn valid(&self, callback: &Callback) -> bool {
+        callback.trigger == Trigger::StepIn
+            && callback.actor_kind == ActorKind::Player
+            && !callback.has_state()
+            && callback.lever.is_none()
+            && callback.passages.is_empty()
+            && callback.teleport.is_none()
+            && callback.effects.transform.is_none()
+            && callback.effects.reset_after_ms.is_none()
+            && callback.effects.target_transform.is_none()
+            && callback.effects.item_presence.is_none()
+            && (1..=7).contains(&self.positions.len())
+            && self.source_appearances.len() == self.positions.len() + 1
+            && self
+                .source_appearances
+                .iter()
+                .all(|appearance| *appearance != 0)
+            && self
+                .source_appearances
+                .iter()
+                .collect::<BTreeSet<_>>()
+                .len()
+                == self.source_appearances.len()
+            && (1..=8).contains(&self.clear_appearances.len())
+            && !self.clear_appearances.contains(&0)
+            && self.clear_appearances.contains(&self.appearance)
+            && callback.selector.position.is_some_and(|source| {
+                self.positions.iter().collect::<BTreeSet<_>>().len() == self.positions.len()
+                    && self.positions.iter().all(|position| {
+                        position.floor == source.floor
+                            && !callback.selector.matches_position(*position)
+                    })
+            })
+    }
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -839,6 +889,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
     // Crystal 201189f8, ferumbras_ascension/actions_flower_puzzle_lever.lua:1-11,30-37.
+    if effects
+        .item_layout_cycle
+        .as_ref()
+        .is_some_and(|cycle| !cycle.valid(callback))
+    {
+        return false;
+    }
     let generated = &effects.generated_item_requirements;
     if !generated.is_empty()
         && (callback.trigger != Trigger::Use
@@ -1057,6 +1114,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         .is_some_and(|scene| super::scene::is_encounter_reset(callback, scene));
     let operations = usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
+        + usize::from(effects.item_layout_cycle.is_some())
         + usize::from(effects.encounter.is_some())
         + usize::from(effects.scene.is_some() && !resets_scene)
         + usize::from(effects.reward_door.is_some())

@@ -227,16 +227,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             after = replacement;
         }
-        let mut projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
-            Ok(projection) => projection,
-            Err(result) => {
-                #[cfg(test)]
-                if callback.effects.scene.is_some() {
-                    eprintln!("QUEST_SCENE_REFUSED projection close={close} result={result:?}");
+        let mut projection =
+            match self.prepare_quest_projection(map, callback, close, key, &mut after) {
+                Ok(projection) => projection,
+                Err(result) => {
+                    #[cfg(test)]
+                    if callback.effects.scene.is_some() {
+                        eprintln!("QUEST_SCENE_REFUSED projection close={close} result={result:?}");
+                    }
+                    return result;
                 }
-                return result;
-            }
-        };
+            };
         // Both lifecycle deadlines belong to this operation, even when preparing
         // its remote object read set takes time.
         let lifecycle_now = self.owner_now().get();

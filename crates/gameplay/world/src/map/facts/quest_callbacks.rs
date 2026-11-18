@@ -120,6 +120,12 @@ pub enum QuestCallbackProjection {
         mutations: Vec<QuestSceneMutation>,
         remove_self: bool,
     },
+    ItemLayout {
+        positions: Vec<TilePos>,
+        clear_appearances: Vec<u16>,
+        native_removals: Vec<QuestSceneMutation>,
+        create: Option<(TilePos, EntryFacts)>,
+    },
     ItemCycle {
         position: TilePos,
         remove: Option<u64>,
@@ -456,6 +462,43 @@ impl CallbackStates {
                 remove_self,
             } => {
                 if !project_scene(self, owner, mutations, *remove_self) {
+                    return false;
+                }
+            }
+            QuestCallbackProjection::ItemLayout {
+                positions,
+                clear_appearances,
+                native_removals,
+                create,
+            } => {
+                if !project_scene(self, owner, native_removals, false) {
+                    return false;
+                }
+                for position in positions {
+                    if let Some(entries) = self.movement_items.get_mut(position) {
+                        entries.retain(|entry| {
+                            entry.facts.pickupable
+                                || !clear_appearances.contains(&entry.facts.appearance_id)
+                                || !matches!(entry.source, view::EntrySource::Added(id)
+                                    if !self.presences.values().any(|(_, protected)| *protected == id))
+                        });
+                        if entries.is_empty() {
+                            self.movement_items.remove(position);
+                        }
+                    }
+                }
+                if let Some((position, facts)) = create
+                    && !project_scene(
+                        self,
+                        owner,
+                        &[QuestSceneMutation::Create {
+                            position: *position,
+                            facts: *facts,
+                            passable: true,
+                        }],
+                        false,
+                    )
+                {
                     return false;
                 }
             }
@@ -1631,6 +1674,9 @@ impl BundleFacts {
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)
             }
+            Some(QuestCallbackProjection::ItemLayout {
+                native_removals, ..
+            }) => native_removals.len().saturating_add(2),
             _ => usize::from(projection.is_some()) * 8,
         };
         if states
@@ -1674,6 +1720,9 @@ impl BundleFacts {
                         }
                     })
                 }
+                QuestCallbackProjection::ItemLayout { positions, .. } => positions
+                    .iter()
+                    .any(|position| states.position_reserved(*position)),
                 QuestCallbackProjection::TimedTransform { .. } => false,
             })
             || expected == u64::MAX
