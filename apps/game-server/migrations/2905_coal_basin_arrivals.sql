@@ -102,6 +102,21 @@ BEGIN
             WHERE a.character_id=r.recipient AND a.occurrence_id=r.move_transaction_id
                 AND a.world_id=world AND c.world_id=world AND a.source_coal_basin
                 AND (a.tile_x,a.tile_y,a.tile_floor)=(r.destination_x,r.destination_y,r.destination_floor)
+                AND EXISTS (SELECT 1 FROM game_character_quest_tracks t
+                    WHERE t.character_id=r.recipient AND t.quest_key='oteryn:quest.the_ancient_tombs_quest'
+                      AND t.track_key='oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start'
+                      AND t.value=1)
+                AND (r.source_uid NOT IN (9035,9036) OR EXISTS (
+                    SELECT 1 FROM game_character_quest_tracks t
+                    WHERE t.character_id=r.recipient AND t.quest_key='oteryn:quest.the_ancient_tombs_quest'
+                      AND t.value>0 AND CASE r.source_uid
+                          WHEN 9035 THEN t.track_key IN (
+                              'oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diphtrahs_treasure',
+                              'oteryn:quest-track/ancient-tombs/diprath-treasure')
+                          WHEN 9036 THEN t.track_key='oteryn:quest-progress/quest/u7_4/the_ancient_tombs/mahrdis_treasure'
+                          ELSE false
+                      END
+                ))
         ))
         OR r.quest_changed IS DISTINCT FROM EXISTS (
             SELECT 1 FROM game_character_quest_receipts q WHERE q.character_id=r.recipient
