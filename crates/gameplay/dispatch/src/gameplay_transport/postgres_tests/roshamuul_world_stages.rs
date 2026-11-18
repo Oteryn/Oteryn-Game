@@ -25,6 +25,14 @@ fn roshamuul_world_stage_raid_refuses_execution_postgres() -> TestResult {
             let key = ProductionKey::new("raid:roshamuul.gaz_haragoth")?;
             let source = catalogue.get(&key).ok_or("pinned Crystal raid")?;
             assert!(!source.active);
+            assert!(crate::gameplay_transport::kill_reward::world_change_credits(
+                "oteryn:creature.gaz_haragoth",
+                crate::foundation::MovementLocalPosition {
+                    x: 33538,
+                    y: 32381,
+                    floor: 12,
+                },
+            ).is_empty());
             let deadline = source.variants.iter()
                 .flat_map(|variant| &variant.waves)
                 .map(|wave| i64::from(wave.delay_ms))

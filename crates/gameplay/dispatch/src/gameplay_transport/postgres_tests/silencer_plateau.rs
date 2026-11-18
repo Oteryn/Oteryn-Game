@@ -40,7 +40,7 @@ fn silencer_plateau_carried_use_starts_waves_and_refuses_cooldown_postgres() -> 
             .await?;
             let evidence = super::house_transfer::RecoverySource::start(&h).await?;
             super::house_transfer::prepare_owned_session(&h).await?;
-            super::item_look::seed_main_backpack(&h, &[(CHAMBER_KEY, 1), (CHAMBER_KEY, 1)]).await?;
+            super::item_look::seed_main_backpack(&h, &[(CHAMBER_KEY, 1), (CHAMBER_KEY, 1), (CHAMBER_KEY, 1)]).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -86,7 +86,10 @@ fn silencer_plateau_carried_use_starts_waves_and_refuses_cooldown_postgres() -> 
                 .await?;
             let actor = admitted.runtime_actor.ok_or("actual World player")?;
             let session = admitted.game_session_id;
-            let command_id = (1..=64)
+            let failed_draw = (1..=64)
+                .find(|id| successful_use(bundle_digest, *session.as_bytes(), *id) == Ok(false))
+                .ok_or("fixture command with unsuccessful chamber draw")?;
+            let command_id = (failed_draw + 1..=128)
                 .find(|id| successful_use(bundle_digest, *session.as_bytes(), *id) == Ok(true))
                 .ok_or("fixture command with successful chamber draw")?;
             let command = |command_id| UseCommand {
@@ -94,13 +97,19 @@ fn silencer_plateau_carried_use_starts_waves_and_refuses_cooldown_postgres() -> 
                 command_id,
                 item_fence: admitted.item_fence,
             };
-            let used = owner.use_backpack_item(actor, command(command_id), ItemKey::Instance(id(71))).await;
+            let cracked = owner.use_backpack_item(actor, command(failed_draw), ItemKey::Instance(id(71))).await;
+            assert_eq!(cracked.disposition, UseDisposition::Committed);
+            let failed_receipts: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_silencer_chamber_uses WHERE firing_id IS NULL",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(failed_receipts, 1);
+            let used = owner.use_backpack_item(actor, command(command_id), ItemKey::Instance(id(72))).await;
             assert_eq!(used.disposition, UseDisposition::Committed);
             let (firing, at, until): (Vec<u8>, i64, i64) = sqlx::query_as(
                 "SELECT decode(replace(firing_id::text,'-',''),'hex'),fired_at_ms,deadline_ms FROM game_world_raid_firings WHERE raid_key=$1",
             ).bind(RAID_KEY).fetch_one(&h.pool).await?;
             assert_eq!(until - at, i64::from(COOLDOWN_MS));
-            let blocked = owner.use_backpack_item(actor, command(command_id + 1), ItemKey::Instance(id(72))).await;
+            let blocked = owner.use_backpack_item(actor, command(command_id + 1), ItemKey::Instance(id(73))).await;
             assert_eq!(blocked.disposition, UseDisposition::Exhausted);
             let quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1")
                 .bind(CHAMBER_KEY).fetch_one(&h.pool).await?;
@@ -108,12 +117,28 @@ fn silencer_plateau_carried_use_starts_waves_and_refuses_cooldown_postgres() -> 
 
             let firing = firing.try_into().map_err(|_| "firing UUID length")?;
             let key = crate::content::ProductionKey::new(RAID_KEY)?;
+            let catalogue = RaidCatalogue::embedded()?;
             let mut progress = RaidEffectProgress::default();
-            owner.drive_raid_firing(firing, &key, &RaidCatalogue::embedded()?, bundle_digest, at + 60_000, &mut progress)
-                .await.map_err(|_| "first plateau wave")?;
-            let planned: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_raid_creatures WHERE wave=0")
-                .fetch_one(&h.pool).await?;
-            assert!((8..=15).contains(&planned));
+            for (wave, elapsed, count) in [
+                (0_i16, 60_000_i64, 8..=15),
+                (1, 120_000, 11..=18),
+                (2, 180_000, 8..=15),
+                (3, 240_000, 3..=8),
+            ] {
+                owner.drive_raid_firing(firing, &key, &catalogue, bundle_digest, at + elapsed, &mut progress)
+                    .await.map_err(|_| "plateau wave")?;
+                let planned: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_raid_creatures WHERE wave=$1")
+                    .bind(wave).fetch_one(&h.pool).await?;
+                assert!(count.contains(&planned));
+            }
+            let running = h.root.query_raid_schedule(owner.channel_id).await?;
+            assert!(running.running);
+            assert!(running.active_creatures > 0);
+            owner.drive_raid_firing(firing, &key, &catalogue, bundle_digest, until, &mut progress)
+                .await.map_err(|_| "plateau cleanup")?;
+            let finished = h.root.query_raid_schedule(owner.channel_id).await?;
+            assert!(!finished.running);
+            assert_eq!(finished.active_creatures, 0);
 
             drop(owner);
             drop(authority);
