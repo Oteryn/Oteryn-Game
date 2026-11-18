@@ -187,3 +187,23 @@ fn checkout_paths_keep_one_window_across_sql_wait() -> TestResult {
 fn exhausted_checkout_retains_the_entire_think_until_next_window() -> TestResult {
     run_case(async |harness| summon_transaction::exhausted_window(harness).await)
 }
+
+#[test]
+fn review67_composed_summon_preserves_the_queued_player_reserve() -> TestResult {
+    run_case(async |harness| summon_transaction::queued_player(harness).await)
+}
+
+#[test]
+fn review67_sql_watchdog_expires_during_replay_sql() -> TestResult {
+    run_case(async |harness| summon_transaction::blocked_replay(harness).await)
+}
+
+#[test]
+fn review67_unconfigured_postgres_is_a_failure_before_the_case_body() -> TestResult {
+    let output = std::process::Command::new(std::env::current_exe()?)
+        .args(["--exact", "gameplay_transport::monk_save::postgres_tests::loop_monster::checkout_paths_keep_one_window_across_sql_wait", "--nocapture"])
+        .env_remove("OTERYN_TEST_POSTGRES_ADMIN_URL").output()?;
+    assert!(!output.status.success(), "an unconfigured PostgreSQL case must not be counted as passed");
+    assert!(String::from_utf8_lossy(&output.stdout).contains("1 failed"));
+    Ok(())
+}

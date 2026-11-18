@@ -6,27 +6,21 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(super) fn run_case(
     body: impl AsyncFnOnce(&Harness) -> TestResult + Send + 'static,
 ) -> TestResult {
-    let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
-        eprintln!(
-            "SKIP LOOP-MONSTER-PG: PostgreSQL is not configured; no PostgreSQL pass is claimed"
-        );
-        return Ok(());
-    };
+    let admin = crate::bestiary_postgres_harness::configured_admin()
+        .ok_or("Loop Monster requires configured OTERYN_TEST_POSTGRES_ADMIN_URL; no case was executed")?;
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
             let rt = crate::bestiary_postgres_harness::runtime()
                 .map_err(|error| format!("{error:?}"))?;
-            let harness = rt
-                .block_on(Harness::create_with_admission_seed(
-                    admin,
-                    "loop_monster",
-                    false,
-                    false,
-                ))
-                .map_err(|error| format!("{error:?}"))?;
+            let harness = rt.block_on(async {
+                tokio::time::timeout(std::time::Duration::from_secs(30),
+                    Harness::create_with_admission_seed(admin, "loop_monster", false, false))
+                    .await.map_err(|_| "Loop Monster setup watchdog expired")?
+            }).map_err(|error| format!("{error:?}"))?;
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 rt.block_on(async {
+                    tokio::time::timeout(std::time::Duration::from_secs(30), async {
                     let version: String = sqlx::query_scalar("SHOW server_version_num")
                         .fetch_one(&harness.pool)
                         .await?;
@@ -39,16 +33,13 @@ pub(super) fn run_case(
                         "LOOP-MONSTER-PG: configured PostgreSQL server_version_num={version}"
                     );
                     body(&harness).await
+                    }).await.map_err(|_| "Loop Monster case watchdog expired")?
                 })
             }));
-            let cleanup = rt.block_on(harness.cleanup());
             match result {
-                Ok(result) => {
-                    cleanup.map_err(|error| format!("{error:?}"))?;
-                    result.map_err(|error| format!("{error:?}"))
-                }
+                Ok(result) => rt.block_on(finish_case(result, harness.cleanup())).map_err(|error| format!("{error:?}")),
                 Err(panic) => {
-                    let _cleanup = cleanup;
+                    let _cleanup = rt.block_on(finish_case(Ok(()), harness.cleanup()));
                     std::panic::resume_unwind(panic)
                 }
             }
@@ -56,6 +47,34 @@ pub(super) fn run_case(
         .join()
         .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
         .map_err(Into::into)
+}
+
+async fn finish_case(result: TestResult, cleanup: impl std::future::Future<Output = TestResult>) -> TestResult {
+    let cleanup = tokio::time::timeout(std::time::Duration::from_secs(1), cleanup).await
+        .map_err(|_| "Loop Monster cleanup watchdog expired".into()).and_then(|result| result);
+    match result {
+        Err(error) => {
+            if let Err(cleanup) = cleanup {
+                eprintln!("LOOP-MONSTER-PG cleanup failed after case failure: {cleanup}");
+            }
+            Err(error)
+        }
+        Ok(()) => cleanup,
+    }
+}
+
+#[test]
+fn review67_cleanup_watchdog_preserves_the_body_error() -> TestResult {
+    crate::bestiary_postgres_harness::runtime()?.block_on(async {
+        let outcome = tokio::time::timeout(std::time::Duration::from_millis(1500),
+            finish_case(Err("original SQL-wait watchdog expired".into()), async {
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                Ok(())
+            })).await;
+        let result = outcome.map_err(|_| "cleanup hid the scenario timeout")?;
+        assert_eq!(result.err().ok_or("lost body timeout")?.to_string(), "original SQL-wait watchdog expired");
+        Ok(())
+    })
 }
 
 pub(super) fn cell(x: i32) -> MovementLocalPosition {

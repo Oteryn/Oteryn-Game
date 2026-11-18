@@ -9,22 +9,42 @@ pub(super) async fn scenario(
     replay_only: bool,
     missing_child: bool,
 ) -> TestResult {
-    scenario_with_resume(harness, replay_only, missing_child, false, false, false).await
+    scenario_with_resume(harness, replay_only, missing_child, Resume::None).await
 }
 
 pub(super) async fn resumed_budget(harness: &Harness) -> TestResult {
-    scenario_with_resume(harness, false, false, true, false, false).await
+    scenario_with_resume(harness, false, false, Resume::CurrentBudget).await
 }
 
 pub(super) async fn checkout_window(harness: &Harness) -> TestResult {
-    scenario_with_resume(harness, false, false, true, true, false).await
+    scenario_with_resume(harness, false, false, Resume::SqlWindow).await
 }
 
 pub(super) async fn exhausted_window(harness: &Harness) -> TestResult {
-    scenario_with_resume(harness, false, false, true, true, true).await
+    scenario_with_resume(harness, false, false, Resume::Exhausted).await
 }
 
-async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_child: bool, resumed: bool, sql_window: bool, exhausted: bool) -> TestResult {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Resume { None, CurrentBudget, SqlWindow, Exhausted, QueuedPlayer, BlockedReplay }
+
+pub(super) async fn queued_player(harness: &Harness) -> TestResult {
+    scenario_with_resume(harness, false, false, Resume::QueuedPlayer).await
+}
+
+pub(super) async fn blocked_replay(harness: &Harness) -> TestResult {
+    let result = tokio::time::timeout(std::time::Duration::from_secs(30),
+        scenario_with_resume(harness, false, false, Resume::BlockedReplay)).await;
+    let result = result.map_err(|_| "scenario watchdog did not bound replay SQL")?;
+    assert!(result.is_err(), "the deliberately blocked replay must time out");
+    assert!(result.err().ok_or("timeout error")?.to_string().contains("SQL-wait watchdog expired"));
+    Ok(())
+}
+
+async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_child: bool, resume: Resume) -> TestResult {
+    let resumed = resume != Resume::None;
+    let sql_window = matches!(resume, Resume::SqlWindow | Resume::Exhausted | Resume::QueuedPlayer | Resume::BlockedReplay);
+    let exhausted = resume == Resume::Exhausted;
+    let queued = resume == Resume::QueuedPlayer;
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -77,10 +97,13 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
         // A real player path admission advances the shared ledger between owner turns.
         assert!(owner.states.attack.lock().await.path_budget.admits(50_000, true, false));
     }
+    let work = async {
     if sql_window {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(1);
-        tokio::time::timeout_at(deadline, async {
             let execution = owner.owner_now();
+            if queued {
+                queue_player_at_reserve(&deps, &owner, rat, execution).await?;
+                owner.states.spell_states.lock().await.next_monster_ai_pass_us = execution.get().saturating_add(1_000_000);
+            }
             if exhausted {
                 let mut attack = owner.states.attack.lock().await;
                 while attack.path_budget.admits(execution.get(), false, false) {
@@ -109,7 +132,7 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
             let (_, released) = super::super::fixture::join_two(owner.drain_monster_melee_at(execution), release).await;
             released?;
             assert!(owner.owner_now().get() / 50_000 > execution.get() / 50_000);
-            if exhausted {
+            if exhausted || queued {
                 let states = owner.states.spell_states.lock().await;
                 let report = states.monster_melee.creature_ai.last_report_for_test(rat);
                 assert!(report.is_none(), "exhausted path work must not consume any combat schedule: {report:?}");
@@ -117,14 +140,21 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
                 assert_eq!(states.native_profile_pass.pending().ok_or("lost original reservation")?.ai_cursor(), 0);
                 assert!(states.next_monster_ai_pass_us <= execution.get().saturating_add(50_000), "retry at the path window, not the next whole Think cadence");
                 drop(states);
+                if queued {
+                    let runtime = deps.runtime.lock().await;
+                    let mut attack = owner.states.attack.lock().await;
+                    let objects = deps.door.lock().await;
+                    assert!(attack.chase_search_waiting(deps.actor, deps.admitted.game_session_id));
+                    attack.drain_chase_searches(&runtime, &deps.room, owner.owner_now(),
+                        &|at| crate::gameplay_transport::attack::chase_path_tile(deps.room.movement_cells(), objects.collision_cells(), at));
+                    assert!(!attack.chase_search_waiting(deps.actor, deps.admitted.game_session_id), "the real chase drain must use the reserved player work");
+                }
                 assert_eq!(deps.runtime.lock().await.native_summon_count(rat, None), 0);
                 owner.drain_monster_melee_at(owner.owner_now()).await;
             } else {
                 assert!(owner.states.attack.lock().await.path_budget.admits(execution.get(), false, false),
                     "summon SQL must not advance the ledger beyond movement and physical timer preparation in the same checkout");
             }
-            Ok::<(), Box<dyn std::error::Error>>(())
-        }).await.map_err(|_| "SQL-wait watchdog expired during acquisition, query, rollback or drain")??;
     } else {
         owner.drain_monster_melee().await;
     }
@@ -151,6 +181,14 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
     );
     assert_eq!(first_report.proposals[0].range_tiles, 7);
     assert_eq!(first_report.summon_proposals.len(), 1);
+    // Keep the actual replay scope lock held until the scenario watchdog cancels it.
+    let _replay_blocker = if resume == Resume::BlockedReplay {
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
+            .bind(deps.admitted.world_id.as_bytes().as_slice()).bind(deps.admitted.channel_id.as_bytes().as_slice())
+            .execute(&mut *tx).await?;
+        Some(tx)
+    } else { None };
     check_scope_replay(
         harness,
         &deps,
@@ -233,6 +271,13 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
     );
     super::item_scope::assert_unknown_mint(harness, &deps, &owner).await?;
     Ok(())
+    };
+    if sql_window {
+        tokio::time::timeout(std::time::Duration::from_secs(1), work).await
+            .map_err(|_| "SQL-wait watchdog expired during acquisition, query, rollback, replay or drain")?
+    } else {
+        work.await
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -395,5 +440,37 @@ async fn check_scope_replay(
     }
     drop(reader);
     tx.rollback().await?;
+    Ok(())
+}
+
+async fn queue_player_at_reserve(
+    deps: &Dependencies,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    rat: ExactActorRef,
+    execution: oteryn_simulation_determinism::SemanticTimeMicros,
+) -> TestResult {
+    use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightModes};
+    let mut runtime = deps.runtime.lock().await;
+    crate::movement::relocate::relocate_creature(&mut runtime, rat, deps.room.movement_cells(),
+        &std::collections::BTreeSet::new(), cell(4)).map_err(debug)?;
+    let row = runtime.visible_entities().creatures.into_iter().find(|row| row.actor == rat).ok_or("rat")?;
+    let mut attack = owner.states.attack.lock().await;
+    let session = deps.admitted.game_session_id;
+    let queued_at = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(execution.get() - 50_000);
+    assert!(attack.set_modes(&runtime, deps.actor, session, FightModes { chase: ChaseMode::Chase, ..FightModes::DEFAULT }));
+    assert_eq!(attack.set_target(&runtime, Some(&deps.room), deps.actor, session, queued_at,
+        Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef { identity: rat.placement_identity(), generation: row.generation }), 31), AttackIntentDisposition::Ok);
+    while attack.path_budget.admits(queued_at.get(), false, false) {
+        attack.path_budget.charge(false, crate::movement::path_search::PATH_SEARCH_WORK);
+    }
+    assert_eq!(attack.chase_decision(&runtime, &deps.room, deps.actor, session, queued_at, |_| true), None);
+    assert!(attack.chase_search_waiting(deps.actor, session), "queue the real player chase under budget pressure");
+    let waiting = attack.players_waiting(execution.get());
+    assert!(waiting);
+    assert!(!attack.players_waiting(0), "the original Think clock cannot see this later chase");
+    while attack.path_budget.admits(execution.get(), false, waiting) {
+        attack.path_budget.charge(false, crate::movement::path_search::PATH_SEARCH_WORK);
+    }
+    assert!(attack.path_budget.admits(execution.get(), false, false), "only the player's reserve prevents this summon search");
     Ok(())
 }
