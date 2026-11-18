@@ -1865,7 +1865,11 @@ fn scenario_case(
                     deps.actor,
                     admitted.game_session_id,
                     crate::spell::cast::CharacterCastFacts {
-                        vocation: crate::spell::Vocation::Monk,
+                        vocation: if areadmg_pits {
+                            crate::spell::Vocation::ExaltedMonk
+                        } else {
+                            crate::spell::Vocation::Monk
+                        },
                         max_health: 10_000,
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
