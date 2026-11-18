@@ -494,8 +494,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Crystal enchanting.lua:47-57 only accepts a gem while the machine
         // is off. A deposit must also respect an unpublished toggle of this half.
         let reserved_target = projection_target.or_else(|| {
-            (callback.effects.transform_requires_current || callback.effects.tool_vocation.is_some())
-                .then_some(key)
+            (callback.effects.transform_requires_current
+                || callback.effects.tool_vocation.is_some())
+            .then_some(key)
         });
         if let Some(target) = reserved_target
             && !self
