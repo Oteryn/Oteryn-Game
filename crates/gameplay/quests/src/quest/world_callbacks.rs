@@ -914,6 +914,11 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.operations().map(|s| &s.track).collect();
         let alias_positions: BTreeSet<_> = selector.position_aliases.iter().copied().collect();
+        let wave_run = callback
+            .effects
+            .encounter
+            .as_ref()
+            .and_then(|room| room.wave_run.as_ref());
         if !completed_quests::valid(callback)
             || (callback.key == super::dreamer_fire_bug::IGNITE
                 && !super::dreamer_fire_bug::callbacks().contains(callback))
@@ -1115,8 +1120,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             })
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
-                    || callback.teleport.is_none()
-                    || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
+                    || (callback.teleport.is_none() && wave_run.is_none())
+                    || (callback.trigger == Trigger::StepIn && !callback.return_on_failure
+                        && !wave_run.is_some_and(|run| run.stay_at_stations))
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()
                     || !callback.offerings.is_empty()

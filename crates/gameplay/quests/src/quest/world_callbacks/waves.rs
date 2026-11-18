@@ -97,6 +97,7 @@ pub(super) fn valid(callback: &Callback, room: &Encounter, run: &WaveRun) -> boo
     let valid_credit =
         |key: &str| key.starts_with(CREDIT_PREFIX) && crate::quest::valid_quest_key(key);
     matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
+        && callback.teleport.is_none()
         && (!run.allow_unstaged_activator || callback.trigger == Trigger::Use)
         && run.member_guard.as_ref().is_none_or(|guard| {
             callback.trigger == Trigger::Use && !callback.has_state()
