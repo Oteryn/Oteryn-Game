@@ -275,21 +275,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        // Crystal action_drume.lua:77-82 clears the vacated arena on entry.
+        // Crystal action_drume.lua:84-89 clears every monster in the vacated arena.
         let retiring = if battlefield {
-            census
+            let mut retiring = census
                 .iter()
                 .filter_map(|(actor, position, session)| {
                     (session.is_none()
                         && room_contains(encounter, position.position())
-                        && runtime.contains_live_creature(*actor)
-                        && !runtime
-                            .encounter_parts()
-                            .0
-                            .encounter_is_native_summon(*actor))
+                        && runtime.contains_live_creature(*actor))
                     .then_some(*actor)
                 })
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>();
+            // A master's removal also removes its children. Retire children
+            // first when both appear in the room census.
+            retiring.sort_by_key(|actor| runtime.native_summon_master(*actor).is_none());
+            retiring
         } else {
             Vec::new()
         };

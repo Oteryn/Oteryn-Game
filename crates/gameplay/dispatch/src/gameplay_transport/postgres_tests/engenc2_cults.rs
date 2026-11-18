@@ -425,6 +425,16 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                     );
                 }
                 if reenter {
+                    let (outside_master, outside_master_summon) = super::drume_battlefield::summon(
+                        &owner,
+                        MovementLocalPosition { x: 102, y: 102, floor: 7 },
+                        MovementLocalPosition { x: 117, y: 117, floor: 7 },
+                    ).await?;
+                    let (inside_master, inside_summon) = super::drume_battlefield::summon(
+                        &owner,
+                        MovementLocalPosition { x: 119, y: 117, floor: 7 },
+                        MovementLocalPosition { x: 120, y: 117, floor: 7 },
+                    ).await?;
                     super::drume_battlefield::return_to_staging(
                         &owner,
                         (deps.actor, admitted.game_session_id),
@@ -484,6 +494,11 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                         &original.ok_or("vacated skirmish")?,
                     )
                     .await?;
+                    let runtime = owner.runtime.lock().await;
+                    assert!(runtime.contains_live_creature(outside_master));
+                    for actor in [outside_master_summon, inside_master, inside_summon] {
+                        assert!(!runtime.contains_live_creature(actor));
+                    }
                 } else {
                     super::drume_battlefield::exercise(&owner, &admitted, (second_actor, second_session), spawn_boss)
                         .await?;
