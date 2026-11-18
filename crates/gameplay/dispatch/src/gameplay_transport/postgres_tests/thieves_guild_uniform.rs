@@ -1,8 +1,8 @@
 //! Crystal 201189f8 data-global/npc/chantalle.lua:82-88, through NPC dialogue.
 use super::fixture::{Harness, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
-use oteryn_gameplay_quests::quest::{QuestStateCatalogue, npc_rules::NpcRuleCatalog};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, npc_rules::NpcRuleCatalog};
 
 pub(super) const NAME: &str = "thieves-guild-uniform";
 const NPC: &str = "oteryn:npc.chantalle";
@@ -11,15 +11,26 @@ const MISSION: &str = "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/
 const RANK: &str = "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank";
 const HAT: &str = "oteryn:item.tibia.i3576";
 const KEY: &str = "oteryn:item.tibia.i7934";
-const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chantalle.lua:82-88";
+const SOURCE: &str =
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chantalle.lua:82-88";
 const REPLY: &str = "Oh my! You look so great in your uniform! You archpostmen are not only daring but also handsome. Here take it, that's the key you wanted. Just promise to visit me now and then!";
 
 #[test]
 fn fishnapping_grants_key_only_with_the_equipped_officer_hat_rank_and_sex() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
-        super::quest_world_callbacks::scenario(NAME, Position { x: 33294, y: 31677, floor: -15 }, false)
+        super::quest_world_callbacks::scenario(
+            NAME,
+            Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
+            false,
+        )
     })
 }
 
@@ -31,12 +42,21 @@ pub(super) async fn exercise(
     use serde_json::json;
     let postman = "oteryn:quest.the_postman_missions_quest";
     let catalogue = QuestStateCatalogue::new(
-        owner.quest_catalogue.as_ref().ok_or("catalogue")?.content_revision(),
+        owner
+            .quest_catalogue
+            .as_ref()
+            .ok_or("catalogue")?
+            .content_revision(),
         vec![oteryn_gameplay_quests::quest::QuestTrack {
-            key: RANK.into(), quest: postman.into(), initial: 5, min: -1, max: 5
+            key: RANK.into(),
+            quest: postman.into(),
+            initial: 5,
+            min: -1,
+            max: 5,
         }],
         vec![],
-    ).map_err(super::fixture::debug)?;
+    )
+    .map_err(super::fixture::debug)?;
     let program = json!({
         "schema": 1,
         "quest": QUEST,
@@ -55,14 +75,20 @@ pub(super) async fn exercise(
         }]
     }).to_string();
     owner.quest_catalogue = Some(std::sync::Arc::new(
-        NpcRuleCatalog::from_json_documents(&[&program])?.bind_fixture(catalogue)?
+        NpcRuleCatalog::from_json_documents(&[&program])?.bind_fixture(catalogue)?,
     ));
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     let character = id(41);
     let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("UPDATE game_character_roots SET sex=2 WHERE character_id=encode($1,'hex')::uuid")
-        .bind(character.as_slice()).execute(&mut *tx).await?;
+        .bind(character.as_slice())
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING")
         .bind(character.as_slice()).execute(&mut *tx).await?;
     let hat = id(113);
@@ -77,7 +103,9 @@ pub(super) async fn exercise(
     assert_eq!(key_count(h).await?, 0);
 
     let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
         .bind(character.as_slice()).bind(id(42).as_slice()).bind(hat.as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;

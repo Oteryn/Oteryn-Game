@@ -8,22 +8,34 @@ use oteryn_protocol_oteryn::world_spatial::{StepDirection, encode_step_intent};
 const FIRST: &str = "banshee-hidden-flame";
 const THIRD: &str = "banshee-demonrage-warlocks";
 const QUEST: &str = "oteryn:quest.the_queen_of_the_banshees_quest";
-const ENTRY: Position = Position { x: 32210, y: 31839, floor: -15 };
-const FIRST_EXIT: Position = Position { x: 32266, y: 31849, floor: -15 };
+const ENTRY: Position = Position {
+    x: 32210,
+    y: 31839,
+    floor: -15,
+};
+const FIRST_EXIT: Position = Position {
+    x: 32266,
+    y: 31849,
+    floor: -15,
+};
 const GHOST: &str = "oteryn:creature.ghost";
 const SKELETON: &str = "oteryn:creature.demon_skeleton";
 const WARLOCK: &str = "oteryn:creature.warlock";
 
 #[test]
 fn banshee_hidden_flame_spawns_the_ambush_once_and_teleports() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     run(FIRST)
 }
 
 #[test]
 fn banshee_demonrage_spawns_two_warlocks_only_on_first_step() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     run(THIRD)
 }
@@ -44,7 +56,11 @@ fn document(name: &str) -> serde_json::Value {
     let (tracks, monsters, source) = if first {
         (
             vec!["first_seal", "first_seal_door"],
-            vec![(GHOST, 32276, 31902, -13), (GHOST, 32274, 31902, -13), (SKELETON, 32276, 31904, -13)],
+            vec![
+                (GHOST, 32276, 31902, -13),
+                (GHOST, 32274, 31902, -13),
+                (SKELETON, 32276, 31904, -13),
+            ],
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_flame.lua:3-25",
         )
     } else {
@@ -58,9 +74,14 @@ fn document(name: &str) -> serde_json::Value {
         "track": format!("oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/{track}"),
         "minimum":-1, "maximum":if index == 0 { 0 } else { 1 }, "set":1
     })).collect();
-    let ambush: Vec<_> = monsters.iter().map(|(creature,x,y,floor)| json!({
-        "creature":creature,"position":{"x":x,"y":y,"floor":floor}
-    })).collect();
+    let ambush: Vec<_> = monsters
+        .iter()
+        .map(|(creature, x, y, floor)| {
+            json!({
+                "creature":creature,"position":{"x":x,"y":y,"floor":floor}
+            })
+        })
+        .collect();
     json!({"schema":1,"callbacks":[{
         "key":format!("oteryn:quest-callback/{name}"),"quest":QUEST,
         "trigger":"step_in","selector":{"position":ENTRY,"appearance":100},
@@ -71,7 +92,9 @@ fn document(name: &str) -> serde_json::Value {
 }
 
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
-    Ok(serde_json::from_value(document(name)["callbacks"][0].clone())?)
+    Ok(serde_json::from_value(
+        document(name)["callbacks"][0].clone(),
+    )?)
 }
 
 pub(super) async fn exercise(
@@ -86,25 +109,47 @@ pub(super) async fn exercise(
     for storage in &callback.storage {
         tracks.push(catalogue.track(&storage.track).cloned().unwrap_or(
             oteryn_gameplay_quests::quest::QuestTrack {
-                key: storage.track.clone(), quest: QUEST.into(), initial: -1, min: -1, max: 1,
+                key: storage.track.clone(),
+                quest: QUEST.into(),
+                initial: -1,
+                min: -1,
+                max: 1,
             },
         ));
     }
     let fixture = oteryn_gameplay_quests::quest::QuestStateCatalogue::new(
-        catalogue.content_revision(), tracks, vec![],
-    ).map_err(debug)?;
+        catalogue.content_revision(),
+        tracks,
+        vec![],
+    )
+    .map_err(debug)?;
     owner.quest_catalogue = Some(std::sync::Arc::new(world_callbacks::fixture_catalogue(
-        fixture, &document(name).to_string(),
+        fixture,
+        &document(name).to_string(),
     )?));
-    owner.states.quest_callbacks.fixture.set(vec![callback.clone()])
+    owner
+        .states
+        .quest_callbacks
+        .fixture
+        .set(vec![callback.clone()])
         .map_err(|_| "callback fixture already installed")?;
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
-    let native = owner.active_generation.and_then(|g| g.native_gameplay()).ok_or("native")?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let origin = {
         let mut runtime = owner.runtime.lock().await;
-        runtime.install_companion_policies(native.policies().clone()).map_err(debug)?;
-        runtime.read_actor_position(actor).map_err(debug)?.position()
+        runtime
+            .install_companion_policies(native.policies().clone())
+            .map_err(debug)?;
+        runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position()
     };
     let step = encode_step_intent(StepDirection::East);
     wire(owner, admitted, 1, 1, step.clone()).await?;
@@ -115,27 +160,53 @@ pub(super) async fn exercise(
         let spawned = runtime.current_live_creature_census().map_err(debug)?;
         assert_eq!(spawned.len(), callback.effects.ambush.len());
         for monster in &callback.effects.ambush {
-            assert!(spawned.iter().any(|candidate| runtime.read_actor_position(*candidate)
-                .is_ok_and(|position| position.position() == local(monster.position))));
+            assert!(spawned.iter().any(|candidate| {
+                runtime
+                    .read_actor_position(*candidate)
+                    .is_ok_and(|position| position.position() == local(monster.position))
+            }));
         }
         let map = owner.bundle_map().ok_or("map")?;
         let doors = crate::map::floor::BundleDoors(map.facts.doors());
         let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
-            &runtime, owner.movement_cells(), actor, admitted.game_session_id, landed,
-            origin, false, &doors, None,
-        ).map_err(debug)?;
+            &runtime,
+            owner.movement_cells(),
+            actor,
+            admitted.game_session_id,
+            landed,
+            origin,
+            false,
+            &doors,
+            None,
+        )
+        .map_err(debug)?;
         runtime.commit_source_step(proof).map_err(debug)?;
         spawned
     };
-    owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
     wire(owner, admitted, 2, 1, step).await?;
     let runtime = owner.runtime.lock().await;
-    assert_eq!(runtime.current_live_creature_census().map_err(debug)?, spawned);
-    assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(),
-        if name == FIRST { origin } else { local(ENTRY) });
+    assert_eq!(
+        runtime.current_live_creature_census().map_err(debug)?,
+        spawned
+    );
+    assert_eq!(
+        runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        if name == FIRST { origin } else { local(ENTRY) }
+    );
     drop(runtime);
-    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1")
-        .bind(&callback.key).fetch_one(&h.pool).await?;
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(&callback.key)
+    .fetch_one(&h.pool)
+    .await?;
     assert_eq!(receipts, 1);
     Ok(())
 }
