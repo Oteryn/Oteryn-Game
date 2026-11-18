@@ -27,6 +27,7 @@ fn engenc_personal_encounter_pending_requires_original_command_and_physical_fenc
         participants: Vec::new(),
         flame: None,
         flame_effect_sent: false,
+        cooldown_lever: None,
         projection_target: None,
         window_source: None,
         selected_tool: None,

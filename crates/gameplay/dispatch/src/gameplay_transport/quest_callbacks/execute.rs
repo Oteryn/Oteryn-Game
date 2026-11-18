@@ -647,6 +647,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ingress_settled: false,
                     participants: Vec::new(),
                     flame_effect_sent: false,
+                    cooldown_lever: None,
                     projection_target: None,
                     window_source: None,
                     selected_tool: None,
@@ -741,6 +742,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let source_flame =
             oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key).is_some();
         if !callback.is_read_only()
+            && !self.owns_pending_cooldown_lever(
+                actor,
+                session,
+                expected,
+                callback,
+                key,
+                expected_revision,
+                cause,
+            )
             && !map.facts.quest_callback_capacity(
                 key,
                 if source_flame {
@@ -797,6 +807,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ingress_settled: false,
                     participants: Vec::new(),
                     flame_effect_sent: false,
+                    cooldown_lever: None,
                     projection_target: None,
                     window_source: None,
                     selected_tool: None,
@@ -1102,6 +1113,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ingress_settled: false,
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
                     flame_effect_sent: false,
+                    cooldown_lever: None,
                     projection_target: None,
                     window_source: None,
                     selected_tool: None,

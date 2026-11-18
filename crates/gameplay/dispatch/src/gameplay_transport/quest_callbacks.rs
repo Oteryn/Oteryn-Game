@@ -74,6 +74,8 @@ struct Pending {
     projection_target: Option<u64>,
     window_source: Option<ExactActorRef>,
     flame_effect_sent: bool,
+    cooldown_lever:
+        Option<std::sync::Arc<std::sync::Mutex<crate::map::facts::QuestEncounterLever>>>,
     /// The exact carried tool bound into the durable World context, if any.
     selected_tool: Option<([u8; 16], Vec<u8>)>,
 }
@@ -1608,6 +1610,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         projection_target: None,
                         window_source: None,
                         flame_effect_sent: false,
+                        cooldown_lever: None,
                         selected_tool: None,
                     });
                     pending.origin = Some(origin);

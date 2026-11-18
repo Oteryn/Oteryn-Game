@@ -70,6 +70,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn owns_pending_cooldown_lever(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        expected: MovementPositionSnapshot,
+        callback: &Callback,
+        key: u64,
+        revision: u64,
+        cause: QuestCause,
+    ) -> bool {
+        self.states
+            .quest_callbacks
+            .records
+            .lock()
+            .is_ok_and(|records| {
+                records.get(&session).is_some_and(|record| {
+                    record.cooldown_lever.is_some()
+                        && pending_encounter_matches(
+                            record,
+                            actor,
+                            session,
+                            expected,
+                            &callback.key,
+                            key,
+                            revision,
+                            cause,
+                        )
+                })
+            })
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "one owner turn binds party, native carrier, map and exact lever revision"
@@ -491,11 +523,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return UseDisposition::Rejected;
         };
-        let Some(lever) = map
-            .facts
-            .reserve_quest_encounter_lever(key, expected_revision, after)
-        else {
-            return UseDisposition::Rejected;
+        let lever = if let Some(held) = original
+            .as_ref()
+            .and_then(|record| record.cooldown_lever.as_ref())
+        {
+            std::sync::Arc::clone(held)
+        } else {
+            let Some(lever) =
+                map.facts
+                    .reserve_quest_encounter_lever(key, expected_revision, after)
+            else {
+                return UseDisposition::Rejected;
+            };
+            std::sync::Arc::new(std::sync::Mutex::new(lever))
         };
         if let Some(cooldown) = cooldown {
             // Reserve the original command before its first possible durable write.
@@ -520,6 +560,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection_target: None,
                     window_source: None,
                     flame_effect_sent: false,
+                    cooldown_lever: Some(std::sync::Arc::clone(&lever)),
                     selected_tool: None,
                 });
             }
@@ -600,7 +641,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let Ok((snapshots, (phase, actors, roster, prepared_outcome))) =
-            admission.publish(|| lever.publish())
+            admission.publish(|| lever.lock().is_ok_and(|mut lever| lever.publish()))
         else {
             return UseDisposition::Rejected;
         };

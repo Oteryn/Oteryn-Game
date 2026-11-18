@@ -12,7 +12,7 @@ pub struct QuestEncounterLever {
 }
 
 impl QuestEncounterLever {
-    pub fn publish(mut self) -> bool {
+    pub fn publish(&mut self) -> bool {
         let Some(key) = self.key else {
             return false;
         };

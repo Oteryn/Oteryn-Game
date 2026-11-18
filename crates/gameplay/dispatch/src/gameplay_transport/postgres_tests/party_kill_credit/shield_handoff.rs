@@ -184,6 +184,7 @@ pub(super) async fn exercise(
             assert!(owner.has_pending_quest_callback(member.session));
         }
         assert_eq!(map.facts.object_revision(key), revision_before_entry);
+        assert!(!map.facts.quest_callback_capacity(key, revision_before_entry, 0));
         assert!(owner.runtime.lock().await.visible_entities().creatures.is_empty());
         let committed_before_recovery = party_cooldowns(pool).await?;
         assert_eq!(committed_before_recovery.len(), 2);
