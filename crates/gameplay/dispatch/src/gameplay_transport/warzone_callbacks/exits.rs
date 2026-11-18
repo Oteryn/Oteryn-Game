@@ -42,7 +42,7 @@ impl WarzoneExit {
     }
 
     fn open(self, map: &BundleMap, due: u64) -> bool {
-        let Ok(tile) = compose_tile(&map.overlay, &map.facts, self.trigger) else {
+        let Ok(Some(tile)) = compose_tile(&map.overlay, &map.facts, self.trigger) else {
             return false;
         };
         let mut portals = tile.entries.iter().filter_map(|entry| {
