@@ -188,9 +188,11 @@ pub(super) async fn run(scheduler: RaidScheduler<'_, '_, '_>, stop: &Cancellatio
     };
     let mut next_check = 0_i64;
     loop {
-        let now_ms = i64::try_from(oteryn_error_codes::unix_ms()).unwrap_or(i64::MAX);
+        let now_ms = crate::world_clock::now_utc_ms().and_then(|now| i64::try_from(now).ok());
         world_changes::observe(&scheduler, generation).await;
-        if now_ms >= next_check {
+        if let Some(now_ms) = now_ms
+            && now_ms >= next_check
+        {
             {
                 let runtime = scheduler.runtime.lock().await;
                 if runtime.binding().scope_generation() != generation
