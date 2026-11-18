@@ -667,7 +667,7 @@ fn scenario_case(
     } else if name == super::super::rookie_guard_fortress_room::NAME {
         super::super::rookie_guard_fortress_room::world(&callback)?
     } else if name == super::super::rookie_guard_web_grease::NAME {
-        world_with_objects(&callback, trigger, &[(super::super::rookie_guard_web_grease::WEB, 100)], &[])?
+        super::super::rookie_guard_web_grease::world(&callback)?
     } else if name == super::super::rookie_guard_wolf_return::NAME {
         world_with_objects(&callback, trigger, &[(super::super::rookie_guard_wolf_return::EXIT, 100)], &[])?
     } else if name == super::super::banshee_queen_kiss::NAME {
@@ -1568,6 +1568,7 @@ fn scenario_case(
             } else if monk {
                 4
             } else if callback.effects.encounter.is_some()
+                || callback.effects.creature_capture.is_some()
                 || callback.effects.distraction.is_some()
                 || !callback.effects.ambush.is_empty()
             {
