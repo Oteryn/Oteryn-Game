@@ -24,8 +24,8 @@ fn scrying_ball_use_consumes_mirror_and_restores_exact_shared_object_after_sixty
 fn scenario(admin: String) -> TestResult {
     // See Crystal 201189f8 data-global/scripts/quests/to_blind_the_enemy_quest/mirror.lua:10-21.
     let trigger = Position {
-        x: 32588,
-        y: 31644,
+        x: 32592,
+        y: 31645,
         floor: -2,
     };
     let decoy = Position {
@@ -38,8 +38,8 @@ fn scenario(admin: String) -> TestResult {
         "quest": QUEST,
         "trigger": "use",
         "selector": {
-            "position": trigger, "action": 4001, "appearance": 132,
-            "native": { "position": trigger, "appearance": 132, "ordinal": 1 }
+            "appearance": 132,
+            "native": { "position": trigger, "appearance": 132, "ordinal": 2 }
         },
         "requires_world_admission": true,
         "reversible": false,
@@ -70,14 +70,14 @@ fn scenario(admin: String) -> TestResult {
         async |owner, admitted, h, fence| {
             use super::quest_world_callbacks::tool_fixture::{placement, use_tool};
             let map = owner.bundle_map().ok_or("bundle map")?;
-            let (key, _) = placement(map, trigger, 1)?;
+            let (key, _) = placement(map, trigger, 2)?;
             let (decoy_key, _) = placement(map, decoy, 1)?;
             let clock = owner.freeze_owner_clock_for_test();
             owner
                 .states
                 .test_owner_time
                 .store(2_000_000, std::sync::atomic::Ordering::Relaxed);
-            let (_, result) = use_tool(owner, admitted, fence, MIRROR, trigger, 1).await?;
+            let (_, result) = use_tool(owner, admitted, fence, MIRROR, trigger, 2).await?;
             assert_eq!(result, UseDisposition::Committed);
             assert!(map.facts.base_hidden(key));
             assert!(!map.facts.base_hidden(decoy_key));

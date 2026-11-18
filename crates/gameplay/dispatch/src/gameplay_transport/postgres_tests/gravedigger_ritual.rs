@@ -37,7 +37,7 @@ fn scenario(admin: String) -> TestResult {
     let callback: Callback = serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-callback/fixture/right-rite",
         "quest": QUEST, "trigger": "use",
-        "selector": { "appearance": 3134, "native": { "position": altar, "appearance": 3134, "ordinal": 1 } },
+        "selector": { "appearance": 3134, "native": { "position": altar, "appearance": 3134, "ordinal": 4 } },
         "requires_world_admission": true,
         "reversible": false, "passages": [], "return_on_failure": false,
         "storage": [
@@ -51,7 +51,7 @@ fn scenario(admin: String) -> TestResult {
         "effects": { "direct_item_use": true, "creature_spawn": { "creature": CHICKEN, "position": altar } },
         "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_sacrifice.lua:3-17"]
     }))?;
-    let world = quest_world_callbacks::world(&callback, altar)?;
+    let world = quest_world_callbacks::world_with_cells(&callback, altar, &[])?;
     let tracks = [(MISSION_74, 1), (MISSION_75, 0)].map(|(key, initial)| QuestTrack {
         key: key.into(),
         quest: QUEST.into(),

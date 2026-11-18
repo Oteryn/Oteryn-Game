@@ -38,7 +38,7 @@ fn scenario(admin: String) -> TestResult {
     let callback: Callback = serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-callback/fixture/foolish-cat-basket",
         "quest": QUEST, "trigger": "use",
-        "selector": {"appearance": 122, "native": {"position": basket, "appearance": 122, "ordinal": 1}},
+        "selector": {"appearance": 122, "native": {"position": basket, "appearance": 122, "ordinal": 2}},
         "requires_world_admission": true, "reversible": false, "passages": [],
         "offerings": [], "return_on_failure": false,
         "storage": [
@@ -80,7 +80,7 @@ fn scenario(admin: String) -> TestResult {
                 .test_owner_time
                 .store(2_000_000, Ordering::Relaxed);
             let map = owner.bundle_map().ok_or("basket map")?;
-            let (_, target) = tool_fixture::placement(map, basket, 1)?;
+            let (_, target) = tool_fixture::placement(map, basket, 2)?;
             let outcome = owner
                 .use_object(
                     admitted.runtime_actor.ok_or("actor")?,

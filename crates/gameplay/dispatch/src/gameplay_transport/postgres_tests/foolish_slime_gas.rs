@@ -47,9 +47,9 @@ fn scenario(admin: String) -> TestResult {
     // The source lifetime is data/items/items.xml:4356-4360.
     let sample_callback: RewardCallback = serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-reward/fixture/slime-gas", "quest": QUEST, "npc": "oteryn:npc.bozo",
-        "keywords": ["sample"], "topic": 0, "next_topic": 0,
+        "keywords": ["sample"], "topic": 0, "next_topic": 0, "repeatable": true,
         "carried_item": FLASK, "creature_target": SLIME, "corpse_target": { "appearance": 2127, "maximum_age_ms": 2000 },
-        "storage": [{ "track": QUESTLINE, "minimum": 3, "maximum": 3, "set": 3, "preserve": true }],
+        "storage": [],
         "take": [{ "item": FLASK, "count": 1 }], "give": { "item": FILLED, "count": 1 },
         "reply": ["This mission stinks ... and now you do as well!"],
         "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_exterminator_flask.lua:2,23-39"]

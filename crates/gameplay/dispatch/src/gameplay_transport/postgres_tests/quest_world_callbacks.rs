@@ -276,7 +276,11 @@ pub(super) fn world_with_objects(
         callback,
         trigger,
         callback.selector.appearance.unwrap_or(100),
-        1,
+        callback
+            .selector
+            .native
+            .as_ref()
+            .map_or(1, |native| native.ordinal),
         objects,
         appearances,
         None,
