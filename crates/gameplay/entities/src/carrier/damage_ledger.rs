@@ -1237,7 +1237,6 @@ impl ChannelActorCarrier {
                     },
                     position: existing.position,
                     death_at_ms: existing.death_at_ms,
-                    portal: existing.portal.clone(),
                 },
             });
         }
@@ -1270,7 +1269,6 @@ impl ChannelActorCarrier {
                 },
                 position,
                 death_at_ms,
-                portal: None,
             },
         })
     }
@@ -1411,6 +1409,8 @@ impl ChannelActorCarrier {
             let evicted = self.corpse_projections.remove(index).occurrence.actor.0;
             self.death_reward_occurrences
                 .retain(|reward| reward.actor != evicted);
+            self.corpse_portal_bindings
+                .retain(|portal| portal.actor.0 != evicted);
         }
         self.corpse_projections.push(projected);
     }

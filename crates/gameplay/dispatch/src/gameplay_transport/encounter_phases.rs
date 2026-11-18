@@ -14,8 +14,8 @@ mod terminal_transfer;
 
 #[derive(Debug)]
 enum Fight {
-    Cults(CultsEncounter),
-    Replacements(replacements::Replacements),
+    Cults(Box<CultsEncounter>),
+    Replacements(Box<replacements::Replacements>),
 }
 
 impl Fight {
@@ -230,20 +230,23 @@ pub(super) fn bind(
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
     if let Some(plan) = &encounter.death_phases {
-        if plan.terminal_transfer.is_some_and(|transfer| {
-            !placement(
-                &cells,
-                runtime,
-                super::quest_callbacks::local(transfer.destination),
-            )
-        }) {
+        let blocked =
+            |destination| !placement(&cells, runtime, super::quest_callbacks::local(destination));
+        if plan
+            .terminal_transfer
+            .is_some_and(|transfer| blocked(transfer.destination))
+            || plan
+                .corpse_portal
+                .as_ref()
+                .is_some_and(|portal| blocked(portal.destination))
+        {
             return Err(CarrierError::PlanConflict);
         }
         return Ok(ActivePhase {
             key,
-            fight: Fight::Replacements(replacements::Replacements::bind(
+            fight: Fight::Replacements(Box::new(replacements::Replacements::bind(
                 runtime, encounter, plan, actors, players,
-            )?),
+            )?)),
             room: encounter.clone(),
             participants: players.to_vec(),
             credits,
@@ -300,9 +303,9 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: Fight::Cults(CultsEncounter::bind(
+        fight: Fight::Cults(Box::new(CultsEncounter::bind(
             runtime, players, pillars, stops, centre,
-        )?),
+        )?)),
         room: encounter.clone(),
         participants: players.to_vec(),
         credits,

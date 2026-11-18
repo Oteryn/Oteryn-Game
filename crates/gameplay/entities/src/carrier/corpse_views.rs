@@ -31,6 +31,15 @@ pub(super) struct CorpseItemBinding {
     item: RuntimeCorpseItem,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct CorpsePortalBinding {
+    pub(super) actor: ExactActorRef,
+    position: MovementLocalPosition,
+    context: PreProductionPositionContext,
+    item_key: String,
+    destination: MovementLocalPosition,
+}
+
 impl ChannelActorCarrier {
     pub(super) fn bind_corpse_item_inner(
         &mut self,
@@ -123,17 +132,27 @@ impl ChannelRuntimeV1 {
         let projection = self
             .carrier
             .corpse_projections
-            .iter_mut()
+            .iter()
             .find(|projection| projection.occurrence.actor == actor)
             .ok_or(CarrierError::CommittedLethalUnavailable)?;
-        if let Some((existing_item, existing_destination)) = &projection.portal {
-            return if existing_item == item_key && *existing_destination == destination {
+        let portals = &mut self.carrier.corpse_portal_bindings;
+        if let Some(portal) = portals.iter().find(|portal| portal.actor == actor) {
+            return if portal.item_key == item_key && portal.destination == destination {
                 Ok(())
             } else {
                 Err(CarrierError::CorpseProjectionConflict)
             };
         }
-        projection.portal = Some((item_key.to_owned(), destination));
+        portals
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        portals.push(CorpsePortalBinding {
+            actor,
+            context: projection.position.context,
+            position: projection.position(),
+            item_key: item_key.to_owned(),
+            destination,
+        });
         Ok(())
     }
 
@@ -143,27 +162,25 @@ impl ChannelRuntimeV1 {
     ) -> Option<(ExactActorRef, MovementLocalPosition)> {
         self.owner_fence().ok()?;
         self.carrier
-            .corpse_projections
+            .corpse_portal_bindings
             .iter()
             .rev()
-            .find_map(|projection| {
-                let (item_key, destination) = projection.portal.as_ref()?;
-                if projection.position.context != self.pinned_position_context()
-                    || projection.position() != at
-                    || at == *destination
+            .find_map(|portal| {
+                if portal.context != self.pinned_position_context()
+                    || portal.position != at
+                    || at == portal.destination
                 {
                     return None;
                 }
-                let actor = projection.occurrence.actor;
                 self.carrier
                     .corpse_item_bindings
                     .iter()
                     .any(|binding| {
-                        binding.actor == actor
-                            && binding.minted_item.production_key == *item_key
-                            && binding.item.production_key == *item_key
+                        binding.actor == portal.actor
+                            && binding.minted_item.production_key == portal.item_key
+                            && binding.item.production_key == portal.item_key
                     })
-                    .then_some((actor, *destination))
+                    .then_some((portal.actor, portal.destination))
             })
     }
 

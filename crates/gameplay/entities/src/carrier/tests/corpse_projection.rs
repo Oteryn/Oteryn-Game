@@ -46,7 +46,6 @@ fn evicting_a_corpse_projection_evicts_its_reward_occurrence() {
     };
     let projection = |local: u32| RuntimeCorpseProjection {
         death_at_ms: None,
-        portal: None,
         occurrence: CreatureDeathOccurrenceRef {
             actor: ExactActorRef(actor(local)),
             commit_binding: Box::new([]),
