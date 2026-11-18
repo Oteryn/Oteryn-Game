@@ -1205,6 +1205,9 @@ def build(
         import last_creep_arena
 
         last_creep_arena.overlay_outputs(out, ROOT)
+        import qh_jimmy_stub
+
+        qh_jimmy_stub.overlay_outputs(out, ROOT)
     import m01c_key_doors
 
     m01c_key_doors.overlay_outputs(
@@ -1261,9 +1264,11 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     authored = summary.get("source", {}).get("last_creep_native", {})
     from engclaim_placements import donor_delta as engclaim_delta
     from npcfix2_shared_sources import donor_delta as shared_source_delta
+    from qh_jimmy_stub import donor_delta as jimmy_stub_delta
     from qready1_clock_landmarks import donor_delta
 
     authored_clock_items = donor_delta(summary)
+    jimmy_stub = jimmy_stub_delta(summary)
 
     def count(row: dict, key: str) -> int:
         return row.get(key, 0)
@@ -1279,6 +1284,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         - count(rework, "replaced_items_added")
         - count(drafted, "items_added")
         - count(authored, "items_added")
+        - jimmy_stub["items"]
         - count(drafted, "replaced_items_added")
         + count(replace, "items_removed")
         + count(rework, "replaced_items_removed")
@@ -1287,7 +1293,8 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         - count(fill, "tiles_added")
         - count(rework, "tiles_added")
         - count(drafted, "tiles_added")
-        - count(authored, "tiles_added"),
+        - count(authored, "tiles_added")
+        - jimmy_stub["tiles"],
     }
 
 

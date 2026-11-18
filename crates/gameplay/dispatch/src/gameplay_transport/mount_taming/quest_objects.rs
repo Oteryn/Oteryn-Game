@@ -1,13 +1,25 @@
 //! Closed carried-tool callbacks routed through the existing World receipt owner.
-use oteryn_gameplay_quests::quest::{targuna_ram, world_callbacks::Callback};
+use oteryn_gameplay_quests::quest::{
+    targuna_ram,
+    world_callbacks::{Callback, ItemOnTarget},
+};
+
+/// Authored Top of the City pick-on-dirt step; the pick is the fenced selected tool.
+pub(crate) const TOP_OF_THE_CITY_DIG: &str = "oteryn:quest-callback/authored-top-of-the-city-dig";
 
 pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.item_on_target.is_some()
         && (callback.key == targuna_ram::KEY
+            || callback.key == TOP_OF_THE_CITY_DIG
             || matches!(
                 callback.native_rule,
                 Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
             ))
+}
+
+/// The fenced inventory entry is the required tool only by its exact production key.
+pub(crate) fn is_required_tool(required: &ItemOnTarget, production_key: &str) -> bool {
+    production_key == required.item
 }
 
 /// Select only the wire subject observed in the fenced inventory snapshot.
@@ -65,6 +77,55 @@ mod tests {
         unrelated.native_rule = None;
         assert!(!accepts(&unrelated));
         unrelated.key = "oteryn:quest-callback/unrelated".into();
+        assert!(!accepts(&unrelated));
+        Ok(())
+    }
+    #[test]
+    fn authored_top_of_the_city_dig_reaches_the_carried_tool_owner() -> Result<(), String> {
+        let bindings =
+            oteryn_gameplay_quests::quest::authored_bindings::Bindings::parse(include_bytes!(
+                "../../../../../../content/quests/authored-bindings/top_of_the_city_quest.json"
+            ))?;
+        let dig = bindings
+            .world_callbacks()
+            .find(|callback| callback.key == TOP_OF_THE_CITY_DIG)
+            .ok_or("Top of the City dig callback")?;
+        let tool = dig
+            .item_on_target
+            .as_ref()
+            .ok_or("dig requires a carried tool")?;
+        assert_eq!(
+            tool.item, "oteryn:item.tibia.i3456",
+            "the pick is the selected tool"
+        );
+        assert!(
+            accepts(dig),
+            "pick-on-dirt must reach the fenced tool owner"
+        );
+        assert!(tool.selected_instance);
+        assert!(is_required_tool(tool, "oteryn:item.tibia.i3456"));
+        assert!(
+            !is_required_tool(tool, "oteryn:item.tibia.i3457"),
+            "a shovel is the wrong tool"
+        );
+        let fenced_without_pick = ["oteryn:item.tibia.i3457", "oteryn:item.tibia.i3003"];
+        assert!(
+            !fenced_without_pick
+                .iter()
+                .any(|key| is_required_tool(tool, key)),
+            "a fenced inventory without the pick selects nothing"
+        );
+        let others: Vec<_> = bindings
+            .world_callbacks()
+            .filter(|callback| callback.key != TOP_OF_THE_CITY_DIG)
+            .collect();
+        assert!(!others.is_empty());
+        assert!(others.iter().all(|callback| !accepts(callback)));
+        let mut bare_use = dig.clone();
+        bare_use.item_on_target = None;
+        assert!(!accepts(&bare_use), "a bare USE is not a carried-tool use");
+        let mut unrelated = dig.clone();
+        unrelated.key = "oteryn:quest-callback/authored-top-of-the-city-crate".into();
         assert!(!accepts(&unrelated));
         Ok(())
     }

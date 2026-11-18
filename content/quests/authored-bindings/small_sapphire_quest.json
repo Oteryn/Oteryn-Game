@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.authored.small_sapphire_quest",
+      "recipe_sha256": "0af86ea7b006b1145efd26c465cfb6be615d3e51cb2cca4de9970e49c058f09d",
+      "sources": [
+        "oteryn-authored:chosen-recipe:small-sapphire:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=77573&oldid=846043",
+        "https://tibia.fandom.com/index.php?curid=77574&oldid=749163",
+        "https://tibia.fandom.com/index.php?curid=77571&oldid=1116983 Women Seduced (Book): booktype Map (Brown), itemid 2822",
+        "https://tibia.fandom.com/index.php?curid=77572&oldid=1116984 Travel Expenses (Book): booktype Document (Certificate), itemid 637",
+        "Native map: chest appearance 2472 at 32962,32429,7 (wiki mapper 128.194/126.174 is the adjacent tile)."
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/authored/small-sapphire/chest",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "chest",
+          "completes": true,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-small-sapphire-chest",
+              "quest": "oteryn:quest.authored.small_sapphire_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32962,
+                  "y": 32429,
+                  "floor": -7
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2472,
+                "ordinal": 1
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/small-sapphire/chest",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "premium_required": true,
+              "completes": true,
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i2853",
+                  "count": 1,
+                  "contents": [
+                    {
+                      "item": "oteryn:item.tibia.i3029",
+                      "count": 1
+                    },
+                    {
+                      "item": "oteryn:item.tibia.i3031",
+                      "count": 50
+                    },
+                    {
+                      "item": "oteryn:item.tibia.i2822",
+                      "count": 1
+                    },
+                    {
+                      "item": "oteryn:item.tibia.i637",
+                      "count": 1
+                    }
+                  ]
+                }
+              },
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/34/definition/recipe:sha256:0af86ea7b006b1145efd26c465cfb6be615d3e51cb2cca4de9970e49c058f09d",
+                "https://tibia.fandom.com/index.php?curid=77574&oldid=749163"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
