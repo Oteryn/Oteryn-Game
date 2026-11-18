@@ -800,6 +800,12 @@ mod tests {
             "rotten-blood/prepare-ichgahal",
             "rotten-blood/prepare-murcion",
             "rotten-blood/prepare-vemiath",
+            "rottin-repair-42501",
+            "rottin-repair-42502",
+            "rottin-repair-42503",
+            "rottin-repair-42504",
+            "rottin-repair-42505",
+            "rottin-repair-42506",
             "srv7-reliable-ram",
             "uneasy-alliance-crystal",
             "worldchg-m31/fire_from_the_earth/volcano",
@@ -816,7 +822,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 69);
+        assert_eq!(expected.len() - before_qmech_native, 75);
         assert_eq!(
             callbacks
                 .into_iter()
