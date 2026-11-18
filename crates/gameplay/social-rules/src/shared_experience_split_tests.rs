@@ -78,7 +78,7 @@ fn shared_experience_vocation_bonus_ceiling_and_summon_deduction() {
         let expected = pool / denominator + i128::from(pool % denominator != 0);
         assert_eq!(split(&members, 101), Ok(Some(expected as i64)));
     }
-    assert_eq!(split(&[member(1), member(2)], 19), Ok(Some(12)));
+    assert_eq!(split(&[member(1), member(2)], 19), Ok(Some(10)));
     assert_eq!(
         shared_experience_share(
             true,
@@ -99,7 +99,7 @@ fn shared_experience_vocation_bonus_ceiling_and_summon_deduction() {
 fn shared_experience_bound_and_wide_integer_oracle() {
     let members: Vec<_> = (1..=50).map(member).collect();
     for xp in [0, 1, 19, 20, 101, i64::MAX - 1, i64::MAX] {
-        let pool = i128::from(xp) * 120;
+        let pool = i128::from(xp) * if xp < 20 { 100 } else { 120 };
         assert_eq!(
             split(&members, xp),
             Ok(Some((pool / 5000 + i128::from(pool % 5000 != 0)) as i64))
@@ -190,8 +190,9 @@ fn w14_crystal_shared_experience_parity() {
         assert_eq!(split(&members, 1000), Ok(Some(oteryn)), "{vocations}");
         assert_eq!(crystal == oteryn, vocations == 1 || vocations == 4);
     }
-    // Crystal also applies the same-vocation multiplier below 20 XP.
-    assert_eq!(split(&[member(1), member(2)], 19), Ok(Some(12)));
+    // DIFF: no bonus when the creature is worth fewer than 20 xp (official Tibia
+    // manual, Shared Experience); Crystal applies 1.20 to any amount (ceil(19 * 1.2 / 2) = 12).
+    assert_eq!(split(&[member(1), member(2)], 19), Ok(Some(10)));
 }
 
 #[test]
@@ -235,15 +236,17 @@ fn shared_experience_preserves_full_scope_identity_when_uuid_bytes_match() {
 }
 
 #[test]
-fn low_xp_includes_bonus_for_every_vocation_count() {
-    for (count, share) in [(1, 23), (2, 13), (3, 11), (4, 10), (5, 8)] {
-        let members: Vec<_> = (1..=count)
-            .map(|id| {
-                let mut m = member(id);
-                m.vocation = id;
-                m
-            })
-            .collect();
-        assert_eq!(split(&members, 19), Ok(Some(share)), "{count} vocations");
-    }
+fn a_member_on_another_channel_of_the_world_gets_no_share_and_does_not_dilute_it() {
+    // chsw (owner 2026-11-17): the Party survives a Channel switch, but shared experience still
+    // needs the same Channel. A member on another Channel neither shares nor divides the pool.
+    let mut members = [member(1), member(2), member(3)];
+    members[2].channel = [2; 16];
+    let here = shared_experience_share(true, [1; 16], [1; 16], false, &members, pool(101, 0));
+    assert_eq!(here, split(&members[..2], 101));
+    assert_eq!(here, Ok(Some(61)));
+    // On the other Channel the leader is absent, so nobody there shares.
+    assert_eq!(
+        shared_experience_share(true, [1; 16], [2; 16], false, &members, pool(101, 0)),
+        Ok(None)
+    );
 }
