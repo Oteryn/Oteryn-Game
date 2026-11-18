@@ -232,7 +232,7 @@ fn scenario(vote_case: Option<VoteScenario>, check_self_harvest: bool) -> TestRe
                 ),
                 (VOTES.into(), "oteryn:quest.oramond_quest", votes),
             ] {
-                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,GREATEST(2, character_revision) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).bind(track).bind(quest).bind(value).execute(&mut *seed).await?;
             }
             seed.commit().await?;
