@@ -43,6 +43,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(UseDisposition::NotPossible);
         }
         if let Some([min, max]) = party.vacant_room {
+            if self
+                .states
+                .quest_callbacks
+                .timed
+                .lock()
+                .map_or(true, |pending| {
+                    pending.iter().any(|encounter| encounter.occupies(min, max))
+                })
+            {
+                return Err(UseDisposition::Occupied);
+            }
             let (min, max) = (local(min), local(max));
             if census.iter().any(|(_, snapshot, session)| {
                 let at = snapshot.position();

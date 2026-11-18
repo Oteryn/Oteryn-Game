@@ -16,6 +16,7 @@ pub(super) struct TimedEncounter {
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     spawn_at: u64,
     reset_at: u64,
+    warn_at: Option<u64>,
     attempted_spawn: bool,
     spawned: Vec<ExactActorRef>,
     switches: Vec<(u64, u64, EntryFacts)>,
@@ -26,9 +27,19 @@ impl TimedEncounter {
         self.key
     }
 
+    pub(super) fn occupies(&self, min: Position, max: Position) -> bool {
+        self.switches.len() == 4
+            && self
+                .callback
+                .effects
+                .encounter
+                .as_ref()
+                .is_some_and(|encounter| encounter.room_min == min && encounter.room_max == max)
+    }
+
     pub(super) fn next_due_us(&self) -> u64 {
         if self.attempted_spawn {
-            self.reset_at
+            self.warn_at.unwrap_or(self.reset_at)
         } else {
             self.spawn_at
         }
@@ -187,6 +198,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if memo.switches.len() == 4 {
                 memo.spawn_at = spawn_at;
                 memo.reset_at = reset_at;
+                memo.warn_at = Some(now + (reset_at - now) / 2);
                 memo.participants = participants;
                 states.owner_wake.notify_one();
             }
@@ -234,6 +246,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 u64::MAX
             },
+            warn_at: None,
             attempted_spawn: false,
             spawned: Vec::new(),
             switches,
@@ -287,6 +300,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
+            if now < memo.reset_at && memo.warn_at.is_some_and(|warning| now >= warning) {
+                memo.warn_at = None;
+                for &(actor, session) in &memo.participants {
+                    if runtime
+                        .read_actor_position(actor)
+                        .ok()
+                        .and_then(|at| native(at.position()))
+                        .is_some_and(|at| in_room(encounter, at))
+                    {
+                        self.states.chat.push_quest_feedback(
+                            session,
+                            "You have 5 minutes from now on until you get teleported out.",
+                        );
+                    }
+                }
+                index += 1;
+                continue;
+            }
             let Ok(census) = runtime.current_live_creature_census() else {
                 index += 1;
                 continue;
@@ -317,10 +348,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let Some(position) = native(before.position()) else {
                             continue;
                         };
-                        if position.floor != encounter.room_min.floor
-                            || !(encounter.room_min.x..=encounter.room_max.x).contains(&position.x)
-                            || !(encounter.room_min.y..=encounter.room_max.y).contains(&position.y)
-                        {
+                        if !in_room(encounter, position) {
                             continue;
                         }
                         let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
@@ -478,4 +506,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Death/despawn and source cleanup release only their source-owned ladder.
         super::monsters::settle_authored_monster_puzzles(&runtime, map);
     }
+}
+
+fn in_room(encounter: &world_callbacks::Encounter, at: TilePos) -> bool {
+    at.floor == encounter.room_min.floor
+        && (encounter.room_min.x..=encounter.room_max.x).contains(&at.x)
+        && (encounter.room_min.y..=encounter.room_max.y).contains(&at.y)
 }
