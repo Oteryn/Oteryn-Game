@@ -492,11 +492,12 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                     );
                     assert!(elapsed <= bound, "foreground logout exceeded {bound:?}");
                     assert_eq!(logout?, LogoutReply::Result(LogoutResult::Accepted));
-                    let (_, _, complete) = profile?;
+                    let (due, _, complete) = profile?;
                     assert!(
                         !complete,
                         "logout must get the holder before the profile cycle completes"
                     );
+                    assert_eq!(due, Some(start), "the remaining census stays due");
                 }
                 ProfileRegression::DueCycle => {
                     // Each synthetic viewer position represents interest in its
@@ -523,6 +524,7 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                     let started = std::time::Instant::now();
                     let mut seen = std::collections::BTreeSet::new();
                     let mut turns = 0;
+                    let mut committed = 0;
                     // The existing 1,024-think window is still enforced. The
                     // second window drains the rest of this same due cohort.
                     for now in [
@@ -549,18 +551,17 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                                 )
                                 .await
                                 .map_err(debug)?;
-                            if turns == 1 {
-                                let table = &states.monster_melee.creature_ai;
-                                let committed = actors
-                                    .iter()
-                                    .filter(|&&actor| table.last_report_for_test(actor).is_some())
-                                    .count();
-                                assert!(
-                                    (1..crate::ai_think::CREATUREAI0_THINKS_PER_WINDOW)
-                                        .contains(&committed),
-                                    "the first checkout committed {committed} thinks",
-                                );
-                            }
+                            let table = &states.monster_melee.creature_ai;
+                            let total = actors
+                                .iter()
+                                .filter(|&&actor| table.last_report_for_test(actor).is_some())
+                                .count();
+                            let newly_committed = total - committed;
+                            assert!(
+                                newly_committed <= 128 && (turns != 1 || newly_committed > 0),
+                                "checkout {turns} committed {newly_committed} thinks"
+                            );
+                            committed = total;
                             for actor in thought {
                                 assert!(seen.insert(actor.placement_identity()), "duplicate think");
                             }
