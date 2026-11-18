@@ -1,5 +1,7 @@
 //! Exact custody for the coherent pinned Corym NPC programme.
 use super::NpcRuleDocument;
+use crate::quest::{NpcDefinitionPredecessor, QuestStateCatalogue};
+use std::collections::BTreeMap;
 pub(super) const PROGRAM: &str = "oteryn:quest-npc-program.hidden_threats";
 pub(super) const QUEST: &str = "oteryn:quest.tibia_tales";
 const REVISION: &str = "04b83b512114bfd888000d6e1433ed8ecaec7c5b";
@@ -88,6 +90,24 @@ pub(super) fn custody(document: &NpcRuleDocument) -> bool {
                 .count()
                 == 1
         })
+}
+
+// The exact Tibia Tales definition issued by the qcx65 base catalogue.
+// Hidden Threats changes two NPC rules without changing any track defaults.
+pub(super) fn register_predecessor(active: &mut QuestStateCatalogue) {
+    const BASE_DEFINITION: [u8; 32] = [
+        0x8d, 0x75, 0x51, 0x7e, 0x41, 0x35, 0x9a, 0x25, 0xab, 0xea, 0x65, 0x3c, 0x8f, 0xd4, 0x4f,
+        0xa5, 0xb4, 0xd2, 0x76, 0x8c, 0x14, 0x70, 0xd9, 0xac, 0xaa, 0x94, 0x42, 0xb7, 0x3f, 0x54,
+        0x30, 0x65,
+    ];
+    active
+        .predecessors
+        .entry(QUEST.into())
+        .or_default()
+        .push(NpcDefinitionPredecessor {
+            hash: BASE_DEFINITION,
+            defaults: BTreeMap::new(),
+        });
 }
 
 #[cfg(test)]

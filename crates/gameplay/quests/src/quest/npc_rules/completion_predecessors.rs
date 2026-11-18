@@ -60,6 +60,7 @@ pub(super) fn register(
                 });
         }
     }
+    super::hidden_threats::register_predecessor(active);
     Ok(())
 }
 

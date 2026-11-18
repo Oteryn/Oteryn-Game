@@ -406,7 +406,8 @@
       "npc": "oteryn:npc.corym_servant",
       "trigger": "say",
       "keywords": [
-        "decreasing resources"
+        "decreasing resources",
+        "decreased resources"
       ],
       "guards": [],
       "reply": [
@@ -1088,7 +1089,7 @@
         },
         {
           "kind": "give_item",
-          "item": "oteryn:item.tibia.i3029",
+          "item": "oteryn:item.tibia.i3033",
           "count": 1
         }
       ],
