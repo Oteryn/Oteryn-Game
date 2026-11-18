@@ -51,7 +51,7 @@ fn source_item_exchanges_are_atomic_and_refuse_with_the_donor_line() -> Result<(
             "oteryn:npc.wyda",
             "blood herb",
             "oteryn:item.tibia.i3734",
-            "oteryn:item.tibia.i3454",
+            "oteryn:item.tibia.i3211",
             "No, you don't have any...",
             false,
         ),

@@ -70,6 +70,8 @@ IDS |= {2973}
 IDS |= {22082}
 # M44: source flower harvest and the two remaining native pagoda offerings.
 IDS |= {21389, 21466}
+# Wyda hands out the source witchesbroom as a plain carried reward.
+IDS |= {3211}
 IDS |= questl2_ready.ITEMS
 # Already present in main f5b584ef1's native provider; the existing cohort
 # cardinality includes these six shells, even when a source fact is refined.
