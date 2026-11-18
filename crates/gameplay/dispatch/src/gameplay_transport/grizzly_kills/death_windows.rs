@@ -22,6 +22,7 @@ pub(in crate::gameplay_transport) struct DeathWindows {
 #[derive(Debug)]
 struct Exit {
     rule: DeathWindow,
+    quest: String,
     count: u8,
     due: u64,
     last: Option<ExactActorRef>,
@@ -67,6 +68,7 @@ impl DeathWindows {
                     .entry(callback.key.clone())
                     .or_insert_with(|| Exit {
                         rule: rule.clone(),
+                        quest: callback.quest.clone(),
                         count: 0,
                         due: 0,
                         last: None,
@@ -94,13 +96,20 @@ impl DeathWindows {
             return false;
         }
         let owner = runtime.borrow_combat_death();
-        let Ok((_, point)) = owner.projected_death(target) else {
+        let Ok((death, point)) = owner.projected_death(target) else {
             return false;
         };
         let Ok(when) = owner.projected_death_at_ms(target) else {
             return false;
         };
         let when = when.unwrap_or(projection_ms);
+        let reset_evidence =
+            super::party_credit::position(point).map(|position| delayed_reset::DeathEvidence {
+                actor: target,
+                key: death,
+                position,
+                at_ms: when,
+            });
         self.seen
             .retain(|actor| runtime.retains_corpse_projection(*actor));
         self.seen.push(target);
@@ -117,8 +126,15 @@ impl DeathWindows {
             if map.is_some()
                 && self.resets.len() < 256
                 && let Some(rule) = &exit.rule.delayed_reset
-                && let Some(reset) =
-                    delayed_reset::PendingReset::capture(runtime, target, key, rule, when)
+                && let Some(evidence) = reset_evidence
+                && let Some(reset) = delayed_reset::PendingReset::capture(
+                    runtime,
+                    evidence,
+                    key,
+                    &exit.quest,
+                    creature,
+                    rule,
+                )
             {
                 self.resets.push(reset);
                 projected = true;
@@ -170,13 +186,32 @@ impl DeathWindows {
             return;
         }
         let mut remaining = 16;
-        self.resets.retain(|reset| {
+        self.resets.retain_mut(|reset| {
             if reset.due_ms > now_ms || remaining == 0 {
                 return true;
             }
             remaining -= 1;
-            reset.apply_if_live(runtime, map)
+            reset.advance_if_live(runtime, map)
         });
+    }
+
+    pub(in crate::gameplay_transport) fn ready_character_resets(
+        &self,
+    ) -> Vec<delayed_reset::ReadyReset> {
+        self.resets
+            .iter()
+            .flat_map(delayed_reset::PendingReset::ready)
+            .take(16)
+            .collect()
+    }
+
+    pub(in crate::gameplay_transport) fn acknowledge_character_reset(
+        &mut self,
+        job: &delayed_reset::ReadyReset,
+    ) {
+        for reset in &mut self.resets {
+            reset.acknowledge(job);
+        }
     }
 
     pub(in crate::gameplay_transport) fn open_source(

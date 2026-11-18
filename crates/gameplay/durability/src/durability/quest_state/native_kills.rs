@@ -51,8 +51,10 @@ impl NativeQuestDeath {
     pub fn delayed_reset_cause(death: crate::foundation::CreatureDeathOccurrenceKey) -> Result<QuestCause> {
         let digest = Sha256::new().chain_update(b"oteryn:quest:delayed-death-reset/v1")
             .chain_update(death.native_bytes()).finalize();
-        ExperienceRewardOccurrence::from_bytes(digest[..16].try_into().expect("SHA-256 prefix"))
-            .map(QuestCause::CreatureDeath)
+        let mut bytes: [u8; 16] = digest[..16].try_into().expect("SHA-256 prefix");
+        bytes[6] = (bytes[6] & 0x0f) | 0x70;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        ExperienceRewardOccurrence::from_bytes(bytes).map(QuestCause::CreatureDeath)
     }
 
     pub(super) fn evaluation_time(&self, catalogue: &QuestStateCatalogue, now: i64) -> i64 {

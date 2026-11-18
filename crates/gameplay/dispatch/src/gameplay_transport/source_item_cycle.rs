@@ -113,8 +113,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Rotten slots retain cyclic pre/AI/post order across resumed sweeps;
             // monster melee runs with the AI phase, between them.
             // No whole-population grant is introduced.
-            let start = self.background_start("source-cycle", 15);
-            for index in (start..15).chain(0..start) {
+            let start = self.background_start("source-cycle", 16);
+            for index in (start..16).chain(0..start) {
                 self.background_turn("source-cycle", index + 1, async {
                     match index {
                         0 => {
@@ -207,7 +207,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     .await;
                             }
                         }
-                        _ => {
+                        14 => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(
@@ -215,6 +215,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     )
                                     .await;
                             }
+                        }
+                        _ => {
+                            self.root
+                                .with_background_operation(
+                                    self.drain_quest_death_character_resets(),
+                                )
+                                .await;
                         }
                     }
                 })
@@ -236,6 +243,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cache
                 .death_windows
                 .drain_map_resets(runtime, self.owner_now().get() / 1_000);
+        }
+    }
+
+    pub(super) async fn drain_quest_death_character_resets(&self) {
+        let queue = self.states.attack.lock().await.kills().clone();
+        let ready = {
+            let Ok(cache) = queue.1.lock() else {
+                return;
+            };
+            cache.death_windows.ready_character_resets()
+        };
+        for job in ready {
+            if job.settle(self).await
+                && let Ok(mut cache) = queue.1.lock()
+            {
+                cache.death_windows.acknowledge_character_reset(&job);
+            }
         }
     }
 
