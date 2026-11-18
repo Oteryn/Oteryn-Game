@@ -680,7 +680,12 @@ impl NpcTalkBook {
                         .cloned()
                         .collect(),
                 )
-            } else if crate::content::npc_catalogue::healing::profile(&reference.key).is_some() {
+            } else if crate::content::npc_catalogue::healing::profile(&reference.key).is_some_and(
+                |profile| {
+                    profile
+                        != crate::content::npc_catalogue::healing::HealingProfile::QuestEmergency
+                },
+            ) {
                 (
                     format!(
                         "Greetings, I am {}. Ask me for healing if you are injured.",

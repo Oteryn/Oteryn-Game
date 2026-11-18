@@ -137,6 +137,9 @@ pub struct NpcConversations {
         std::sync::OnceLock<Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>>,
     #[cfg(test)]
     fixture_offer_rows: std::sync::OnceLock<Vec<reward_callbacks::Offer>>,
+    #[cfg(test)]
+    pub(super) fixture_healers:
+        std::sync::OnceLock<crate::content::npc_catalogue::healing::Catalogue>,
 }
 
 #[cfg(test)]
