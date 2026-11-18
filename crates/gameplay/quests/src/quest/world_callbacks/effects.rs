@@ -1158,9 +1158,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
+    let source_projection = effects.item_layout_cycle.is_some()
+        || effects.encounter.as_ref().is_some_and(|encounter| {
+            encounter.shared_staging
+                && callback.trigger == Trigger::Use
+                && callback.selector.position.is_some()
+                && callback.actor_kind == ActorKind::Player
+                && !callback.has_personal_state()
+        });
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
+                && !source_projection
                 && !super::personal_trial::admitted(callback)
                 && (!lever
                     || (effects.scene.is_none()
