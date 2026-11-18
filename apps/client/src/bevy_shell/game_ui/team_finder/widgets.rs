@@ -1,9 +1,8 @@
 use super::*;
 use bevy::{
     input_focus::tab_navigation::{TabGroup, TabIndex},
-    picking::events::PointerState,
     text::TextCursorStyle,
-    ui::{InteractionDisabled, Pressed},
+    ui::{InteractionDisabled, ScrollPosition},
     ui_widgets::{ScrollArea, TextInput},
 };
 use oteryn_client_ui::team_finder::{MemberStatus, TeamFinderResult};
@@ -72,6 +71,7 @@ struct Page {
     list: Entity,
     status: Entity,
     rows: Vec<Button>,
+    listing_handles: Vec<u64>,
     feedback: Entity,
     buttons: [Button; 8],
 }
@@ -150,6 +150,7 @@ pub(super) fn build(
         status,
         feedback,
         rows: Vec::new(),
+        listing_handles: Vec::new(),
         buttons: [
             join_switch,
             search,
@@ -193,6 +194,7 @@ pub(super) fn build(
         status,
         feedback,
         rows: Vec::new(),
+        listing_handles: Vec::new(),
         buttons: [
             join_tab, refresh, next, invite, accept, decline, publish, withdraw,
         ],
@@ -277,17 +279,27 @@ impl Page {
         key: Key,
         panel: &Panel,
         tab: Tab,
-        reset: bool,
     ) {
         let visible = Tab::for_panel(panel) == tab;
         visibility(commands, self.entity, visible);
-        if reset {
-            for button in self.buttons.iter().chain(&self.rows) {
-                commands.entity(button.entity).remove::<Pressed>();
-            }
-        }
         if !visible {
             return;
+        }
+
+        // A pending refresh temporarily clears the result. Compare completed pages.
+        if let Some(result) = &panel.result {
+            let handles: Vec<_> = match result {
+                TeamFinderResult::Browse { listings, .. } => {
+                    listings.iter().map(|row| row.leader_handle).collect()
+                }
+                TeamFinderResult::Applicants { members, .. } => {
+                    members.iter().map(|row| row.handle).collect()
+                }
+            };
+            if self.listing_handles != handles {
+                commands.entity(self.list).insert(ScrollPosition::default());
+                self.listing_handles = handles;
+            }
         }
 
         let names = panel.visible_names();
@@ -353,8 +365,6 @@ impl Widgets {
         skins: &Skins,
         key: Key,
         snapshot: &Snapshot,
-        reset: bool,
-        pointers: Option<&PointerState>,
     ) {
         let (_, panel, leader) = snapshot;
         let title = if panel.applicants {
@@ -376,10 +386,9 @@ impl Widgets {
                         .insert(Text::new(title));
                 }
             });
-        self.join
-            .project(commands, skins, key, panel, Tab::Join, reset);
+        self.join.project(commands, skins, key, panel, Tab::Join);
         self.manage
-            .project(commands, skins, key, panel, Tab::Manage, reset);
+            .project(commands, skins, key, panel, Tab::Manage);
 
         let ready = panel.selected && panel.pending.is_none();
         if panel.applicants {
@@ -510,16 +519,6 @@ impl Widgets {
             .entity(self.leader_feedback)
             .insert(Text::new(leader.feedback.clone()));
 
-        // Close keeps its live press across replies. Picking can clear a canceled
-        // pointer even when its Cancel event never reaches the original button.
-        if !pointers.is_some_and(|pointers| {
-            pointers
-                .pointer_buttons
-                .values()
-                .any(|state| state.pressing.contains_key(&self.close.entity))
-        }) {
-            commands.entity(self.close.entity).remove::<Pressed>();
-        }
         self.close
             .project(commands, key, Kind::Close, tr!("Close"), true);
     }

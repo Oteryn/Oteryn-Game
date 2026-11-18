@@ -14,8 +14,12 @@ use crate::play::feature_0232_team_finder_members::input::{
     TeamControl as Kind, listing_from_fields,
 };
 use bevy::{
-    input_focus::InputFocus, picking::events::PointerState, prelude::*, text::EditableText,
-    ui::InteractionDisabled, ui_widgets::Activate,
+    input_focus::InputFocus,
+    picking::events::PointerState,
+    prelude::*,
+    text::EditableText,
+    ui::{InteractionDisabled, Pressed, UiSystems},
+    ui_widgets::Activate,
 };
 use oteryn_client_ui::{
     localization::{Language, translate},
@@ -51,7 +55,6 @@ struct State {
     key: Key,
     /// The listing editor values used to detect changes to the local draft.
     shown: [String; widgets::LISTING_FIELDS],
-    listing_sync: [bool; widgets::LISTING_FIELDS],
     /// The leader's unpublished listing edits, kept across tabs until a reply confirms them.
     draft: Option<[String; widgets::LISTING_FIELDS]>,
 }
@@ -68,23 +71,46 @@ struct Submission {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (keyboard, project, widgets::captions).chain())
+        .add_systems(
+            Update,
+            (release_ended_pointer_presses, keyboard, project, widgets::captions).chain(),
+        )
+        .add_systems(
+            PostUpdate,
+            sync_listing_editors
+                .after(bevy::text::EditableTextSystems)
+                .before(UiSystems::PostLayout),
+        )
         // Wait for text edits and the modal guard's end-of-frame snapshot.
         .add_systems(Last, finish_edit);
 }
 
+// Picking may cancel a pointer without delivering Cancel to the original button.
+fn release_ended_pointer_presses(
+    mut commands: Commands,
+    pointers: Option<Res<PointerState>>,
+    pressed: Query<Entity, (With<Control>, With<Pressed>)>,
+) {
+    let Some(pointers) = pointers else {
+        return;
+    };
+    for entity in &pressed {
+        if !pointers
+            .pointer_buttons
+            .values()
+            .any(|button| button.pressing.contains_key(&entity))
+        {
+            commands.entity(entity).remove::<Pressed>();
+        }
+    }
+}
+
 // The dialog and its editors live for the session's entire open window.
-#[allow(clippy::too_many_arguments)] // Projection reads the session, focus, and live widget state.
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
     mut state: ResMut<State>,
-    mut focus: ResMut<InputFocus>,
-    parents: Query<&ChildOf>,
-    tabs: Query<&widgets::Tab>,
-    mut editors: Query<(Entity, &Field, &mut EditableText)>,
-    pointers: Option<Res<PointerState>>,
 ) {
     let panel = owner
         .play
@@ -96,17 +122,7 @@ fn project(
     let same_session = state.snapshot.is_some()
         && snapshot.is_some()
         && state.key.generation == owner.generation();
-    let submission_finished = state.submission.is_some()
-        && snapshot
-            .as_ref()
-            .is_some_and(|(_, _, leader)| !leader.pending);
-    let listing_settled = state.listing_sync.contains(&true)
-        && editors.iter().any(|(entity, field, text)| {
-            matches!(field, Field::Listing(index) if state.listing_sync[*index]
-                && focus.get() != Some(entity) && !editing(text))
-        });
-    let changed = state.snapshot != snapshot;
-    if !changed && !submission_finished && !listing_settled {
+    if state.snapshot == snapshot {
         return;
     }
     let same_view =
@@ -124,43 +140,12 @@ fn project(
     state.key = key;
     if !same_view {
         state.pending_editor_action = None;
-        if let Some(root) = state.root
-            && let Some(entity) = focus.get()
-            && (!same_session && entity == root
-                || parents
-                    .iter_ancestors(entity)
-                    .any(|parent| !same_session && parent == root || tabs.contains(parent)))
-        {
-            focus.clear();
-        }
     } else if let Some(action) = &mut state.pending_editor_action {
         // Keep the original mailbox binding when the control's revision advances.
         action.control.key = key;
     }
 
-    if same_session {
-        let mut typed = state.shown.clone();
-        for (_, field, text) in &editors {
-            if let Field::Listing(index) = *field {
-                typed[index] = text.value().to_string();
-            }
-        }
-        if typed != state.shown {
-            state.draft = Some(typed);
-        }
-        if let Some((_, _, after)) = &snapshot
-            && !after.pending
-            && let Some(submission) = state.submission.take()
-            // The mailbox stores the reply caption in the language active at receipt.
-            && Language::ALL.into_iter().any(|language| {
-                after.feedback == translate(language, "Advertisement confirmed")
-            })
-            && after.confirmed == submission.listing
-            && state.draft.as_ref() == Some(&submission.fields)
-        {
-            state.draft = None;
-        }
-    } else {
+    if !same_session {
         if let Some(root) = state.root.take() {
             commands.entity(root).despawn();
         }
@@ -169,34 +154,14 @@ fn project(
         state.submission = None;
     }
 
-    state.listing_sync.fill(false);
     if let Some(snapshot @ (_, panel, leader)) = &snapshot {
-        let mut listing = state
-            .draft
-            .clone()
-            .unwrap_or_else(|| widgets::listing_values(leader.confirmed));
-        if same_session {
-            for (entity, field, mut text) in &mut editors {
-                let Field::Listing(index) = *field else {
-                    continue;
-                };
-                if text.value() == listing[index].as_str() {
-                    continue;
-                }
-                if focus.get() == Some(entity) || editing(&text) {
-                    listing[index] = text.value().to_string();
-                    state.listing_sync[index] = true;
-                } else {
-                    text.editor_mut().set_text(&listing[index]);
-                    text.queue_edit(bevy::text::TextEdit::TextEnd(false));
-                }
-            }
-        } else {
+        if !same_session {
             let level = panel
                 .filter
                 .level
                 .map(|level| level.to_string())
                 .unwrap_or_default();
+            let listing = widgets::listing_values(leader.confirmed);
             let (root, widgets) = widgets::build(
                 &mut commands,
                 &skins,
@@ -205,20 +170,70 @@ fn project(
             );
             state.root = Some(root);
             state.widgets = Some(widgets);
+            state.shown = listing;
         }
-        state.shown = listing;
         if let Some(widgets) = &mut state.widgets {
-            widgets.project(
-                &mut commands,
-                &skins,
-                key,
-                snapshot,
-                changed,
-                pointers.as_deref(),
-            );
+            widgets.project(&mut commands, &skins, key, snapshot);
         }
     }
     state.snapshot = snapshot;
+}
+
+fn sync_listing_editors(
+    mut state: ResMut<State>,
+    focus: Res<InputFocus>,
+    mut editors: Query<(Entity, &Field, &mut EditableText)>,
+) {
+    let Some((_, _, leader)) = &state.snapshot else {
+        return;
+    };
+    let confirmed = leader.confirmed;
+    let pending = leader.pending;
+    // The mailbox stores the reply caption in the language active at receipt.
+    let accepted = state.submission.is_some()
+        && !pending
+        && Language::ALL
+            .into_iter()
+            .any(|language| leader.feedback == translate(language, "Advertisement confirmed"));
+
+    let mut draft = None;
+    for (_, field, text) in &editors {
+        if let Field::Listing(index) = *field
+            && text.value() != state.shown[index].as_str()
+        {
+            draft.get_or_insert_with(|| state.shown.clone())[index] = text.value().to_string();
+        }
+    }
+    if let Some(draft) = draft {
+        state.shown.clone_from(&draft);
+        state.draft = Some(draft);
+    }
+    if !pending
+        && let Some(submission) = state.submission.take()
+        && accepted
+        && confirmed == submission.listing
+        && state.draft.as_ref() == Some(&submission.fields)
+    {
+        state.draft = None;
+    }
+
+    // The latest confirmation remains pending for each editor until its input has settled.
+    let listing = state
+        .draft
+        .clone()
+        .unwrap_or_else(|| widgets::listing_values(confirmed));
+    for (entity, field, mut text) in &mut editors {
+        if let Field::Listing(index) = *field
+            && text.value() != listing[index].as_str()
+            && focus.get() != Some(entity)
+            && !text.is_composing()
+            && text.pending_paste.is_none()
+            && text.pending_edits.is_empty()
+        {
+            text.editor_mut().set_text(&listing[index]);
+            state.shown[index].clone_from(&listing[index]);
+        }
+    }
 }
 
 fn perform(

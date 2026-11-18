@@ -48,6 +48,7 @@ fn fixture_with_layout(selected: bool, layout: bool) -> Result<Fixture> {
                 bevy::picking::input::PointerInputPlugin,
                 bevy::picking::InteractionPlugin,
                 bevy::ui_widgets::ButtonPlugin,
+                bevy::ui_widgets::ScrollAreaPlugin,
                 bevy::ui_widgets::TextInputPlugin,
                 oteryn_client_ui_bevy::GlobalUiPlugin,
             ));
@@ -472,7 +473,10 @@ fn applicants_page(listing: Option<LeaderListing>) -> TeamFinderResult {
 }
 /// Opens Manage Team through its tab and answers the applicants query with `listing`.
 fn manage_team(listing: Option<LeaderListing>) -> Result<Fixture> {
-    let (mut app, mut rx, outbox) = fixture(true)?;
+    manage_team_with_layout(listing, false)
+}
+fn manage_team_with_layout(listing: Option<LeaderListing>, layout: bool) -> Result<Fixture> {
+    let (mut app, mut rx, outbox) = fixture_with_layout(true, layout)?;
     outbox.bevy_team_leader_selected(true);
     app.update();
     click(&mut app, Kind::Applicants(false))?;
@@ -1135,7 +1139,7 @@ fn regression_pending_browse_projects_after_touch_cancel() -> Result {
             .iter(app.world())
             .any(|id| *id == PointerId::Touch(1))
     );
-    assert!(app.world().get::<bevy::ui::Pressed>(close).is_some());
+    assert!(app.world().get::<bevy::ui::Pressed>(close).is_none());
     complete_browse(&outbox)?;
     app.update();
     assert_browse_projected(&mut app);
@@ -1290,5 +1294,231 @@ fn regression_pending_browse_projects_after_window_focus_loss() -> Result {
     complete_browse(&outbox)?;
     app.update();
     assert_browse_projected(&mut app);
+    Ok(())
+}
+
+#[test]
+fn regression_touch_cancel_after_browse_reply_releases_close() -> Result {
+    use bevy::input::touch::TouchPhase;
+
+    let (mut app, _, outbox) = pending_browse()?;
+    let close = close_button(&mut app)?;
+    let position = super::super::pointer_layout::center(&app, close)?;
+    touch(&mut app, TouchPhase::Started, position)?;
+    assert!(app.world().get::<bevy::ui::Pressed>(close).is_some());
+    complete_browse(&outbox)?;
+    app.update();
+    assert_browse_projected(&mut app);
+    assert!(app.world().get::<bevy::ui::Pressed>(close).is_some());
+    touch(&mut app, TouchPhase::Canceled, position)?;
+    for _ in 0..4 {
+        app.update();
+    }
+    assert!(app.world().resource::<State>().root.is_some());
+    assert!(app.world().get::<bevy::ui::Pressed>(close).is_none());
+    let images = app
+        .world()
+        .get::<oteryn_client_ui_bevy::ButtonImages>(close)
+        .ok_or("close images")?;
+    assert_eq!(
+        app.world()
+            .get::<ImageNode>(close)
+            .ok_or("close image")?
+            .image,
+        images.up
+    );
+    Ok(())
+}
+
+#[test]
+fn regression_publish_press_survives_applicants_refresh() -> Result {
+    let listing = Some(advertised(10));
+    let (mut app, mut rx, outbox) = manage_team_with_layout(listing, true)?;
+    click(&mut app, Kind::Applicants(false))?;
+    assert_eq!(command(&mut rx)?.command_type, 444);
+    app.update();
+    let publish = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| matches!(control.kind, Kind::Publish(_)).then_some(entity))
+        .ok_or("Publish listing")?;
+    let location = press_button(&mut app, publish)?;
+    reply(
+        &outbox,
+        encode_result(&applicants_page(listing)).map_err(|error| format!("{error:?}"))?,
+    );
+    app.update();
+    assert!(app.world().get::<InteractionDisabled>(publish).is_none());
+    release_button(&mut app, location);
+    assert_eq!(command(&mut rx)?.command_type, 390);
+    assert!(rx.try_recv().is_err());
+    Ok(())
+}
+
+#[derive(Resource, Default)]
+struct CopySelection(Option<Option<String>>);
+
+// Observe the selection at Bevy's clipboard boundary without a desktop clipboard.
+fn record_copy_selection(
+    mut copied: ResMut<CopySelection>,
+    editors: Query<(&Field, &EditableText)>,
+) {
+    for (field, text) in &editors {
+        if *field == Field::Listing(0) && text.pending_edits.contains(&bevy::text::TextEdit::Copy) {
+            copied.0 = Some(text.editor().selected_text().map(str::to_owned));
+        }
+    }
+}
+
+#[test]
+fn regression_copy_and_tab_use_selection_before_listing_reply_sync() -> Result {
+    use bevy::{
+        input::{
+            ButtonState,
+            keyboard::{Key, KeyboardInput},
+        },
+        text::TextEdit,
+    };
+
+    let (mut app, mut rx, outbox) = manage_team_with_layout(Some(advertised(10)), true)?;
+    app.init_resource::<CopySelection>().add_systems(
+        PostUpdate,
+        record_copy_selection.before(bevy::text::EditableTextSystems),
+    );
+    click(&mut app, Kind::Applicants(false))?;
+    command(&mut rx)?;
+    app.update();
+    let editor = listing_editor(&mut app)?;
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(editor, bevy::input_focus::FocusCause::Pressed);
+    app.world_mut()
+        .get_mut::<EditableText>(editor)
+        .ok_or("level editor")?
+        .queue_edit(TextEdit::SelectAll);
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("level editor")?
+            .editor()
+            .selected_text(),
+        Some("10")
+    );
+    reply(
+        &outbox,
+        encode_result(&applicants_page(Some(advertised(20))))
+            .map_err(|error| format!("{error:?}"))?,
+    );
+    let window = primary_window(&mut app)?;
+    for (key_code, logical_key) in [(KeyCode::Copy, Key::Copy), (KeyCode::Tab, Key::Tab)] {
+        app.world_mut().write_message(KeyboardInput {
+            key_code,
+            logical_key,
+            state: ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window,
+        });
+    }
+    app.update();
+    assert_ne!(app.world().resource::<InputFocus>().get(), Some(editor));
+    assert_eq!(
+        app.world().resource::<CopySelection>().0,
+        Some(Some("10".into()))
+    );
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("level editor")?
+            .value(),
+        "20"
+    );
+    Ok(())
+}
+
+#[test]
+fn regression_next_page_resets_scroll_after_same_page_refresh() -> Result {
+    use bevy::{
+        camera::RenderTarget,
+        input::{mouse::MouseScrollUnit, touch::TouchPhase},
+        picking::pointer::{Location, PointerAction, PointerId, PointerInput},
+        ui::ScrollPosition,
+        ui_widgets::ScrollArea,
+    };
+
+    let (mut app, mut rx, outbox) = pending_browse()?;
+    let browse_page = |first| TeamFinderResult::Browse {
+        listings: (first..first + 100)
+            .map(|leader_handle| BrowseListing {
+                leader_handle,
+                name: format!("Team {leader_handle}"),
+                listing: advertised(10),
+                occupied_slots: 1,
+                status: MemberStatus::None,
+            })
+            .collect(),
+        next: Some(first + 99),
+    };
+    let encode = |first| encode_result(&browse_page(first)).map_err(|error| format!("{error:?}"));
+    reply(&outbox, encode(1)?);
+    app.update();
+    let list = app
+        .world_mut()
+        .query_filtered::<(Entity, &ComputedNode), With<ScrollArea>>()
+        .iter(app.world())
+        .find_map(|(entity, node)| (node.size().y > 0.).then_some(entity))
+        .ok_or("visible team list")?;
+    let window = primary_window(&mut app)?;
+    let location = Location {
+        target: RenderTarget::default()
+            .normalize(Some(window))
+            .ok_or("window target")?,
+        position: super::super::pointer_layout::center(&app, list)?,
+    };
+    for action in [
+        PointerAction::Move { delta: Vec2::ZERO },
+        PointerAction::Scroll {
+            unit: MouseScrollUnit::Pixel,
+            x: 0.,
+            y: -500.,
+            phase: TouchPhase::Moved,
+        },
+    ] {
+        app.world_mut().write_message(PointerInput::new(
+            PointerId::Mouse,
+            location.clone(),
+            action,
+        ));
+    }
+    app.update();
+    let offset = |app: &App| app.world().get::<ScrollPosition>(list).map(|value| value.y);
+    assert_eq!(offset(&app), Some(500.));
+    click(&mut app, Kind::Browse(false))?;
+    command(&mut rx)?;
+    app.update();
+    reply(&outbox, encode(1)?);
+    app.update();
+    assert_eq!(offset(&app), Some(500.));
+    let next = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.kind == Kind::Browse(true)).then_some(entity))
+        .ok_or("Next page")?;
+    let location = press_button(&mut app, next)?;
+    release_button(&mut app, location);
+    let query = command(&mut rx)?;
+    assert_eq!(
+        decode_query(&query.payload).map_err(|error| format!("{error:?}"))?,
+        TeamFinderQuery::Browse { after: Some(100) }
+    );
+    app.update();
+    reply(&outbox, encode(101)?);
+    app.update();
+    assert!(shown(&mut app, "> Team 101"));
+    assert_eq!(offset(&app), Some(0.));
     Ok(())
 }
