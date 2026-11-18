@@ -165,7 +165,7 @@ pub(super) async fn admit_party_member(
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
-    partner: ExactActorRef,
+    partner: &AdmittedSession,
 ) -> TestResult {
     let find = |runtime: &crate::foundation::ChannelRuntimeV1, name: &str| {
         runtime
@@ -178,6 +178,8 @@ pub(super) async fn exercise(
             .map_err(debug)
     };
     let player = admitted.runtime_actor.ok_or("admitted player")?;
+    let partner_session = partner.game_session_id;
+    let partner = partner.runtime_actor.ok_or("second admitted player")?;
     let nargol = {
         let runtime = owner.runtime.lock().await;
         for member in [player, partner] {
@@ -302,8 +304,10 @@ pub(super) async fn exercise(
     super::engenc2_cults::kill(owner, admitted, magnor, KNIGHTS[0], 103).await?;
     tick_at(owner, now + 31_000_000).await;
     let shard_key = "oteryn:creature.shard_of_magnor";
-    let shard = {
-        let runtime = owner.runtime.lock().await;
+    let party = [(player, admitted.game_session_id), (partner, partner_session)];
+    let starting_health = 10_000;
+    let (shard, burst_count) = {
+        let mut runtime = owner.runtime.lock().await;
         let shards: Vec<_> = runtime
             .current_live_creature_census()
             .map_err(debug)?
@@ -311,7 +315,35 @@ pub(super) async fn exercise(
             .filter(|&actor| runtime.matches_live_creature_identity(actor, shard_key.as_bytes()))
             .collect();
         assert_eq!(shards.len(), 4, "Magnor splits into four linked shards");
-        shards[0]
+        let player_at = runtime.read_actor_position(player).map_err(debug)?.position();
+        assert_eq!(runtime.read_actor_position(partner).map_err(debug)?.position(), player_at);
+        let shard = shards[0];
+        let original = runtime.read_actor_position(shard).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(
+                shard,
+                original,
+                MovementLocalPosition { x: player_at.x + 1, ..player_at },
+            )
+            .map_err(debug)?;
+        let mut burst_count = 0;
+        for shard in shards {
+            let at = runtime.read_actor_position(shard).map_err(debug)?.position();
+            if at.floor == player_at.floor
+                && at.x.abs_diff(player_at.x) <= 2
+                && at.y.abs_diff(player_at.y) <= 2
+            {
+                burst_count += 1;
+            }
+        }
+        assert!(burst_count > 0, "the party must be in burst range");
+        let mut states = owner.states.spell_states.lock().await;
+        for (member, session) in party {
+            states.get_mut(&runtime, member, session).ok_or("party spell state")?
+                .set_health_for_test(starting_health);
+        }
+        (shard, burst_count)
     };
     super::engenc2_cults::kill(owner, admitted, shard, shard_key, 104).await?;
     tick_at(owner, now + 32_000_000).await;
@@ -321,6 +353,15 @@ pub(super) async fn exercise(
             find(&runtime, shard_key)?.is_none(),
             "one hit kills the linked shards"
         );
+        let states = owner.states.spell_states.lock().await;
+        for (member, session) in party {
+            let health = states.get(&runtime, member, session).ok_or("party spell state")?.vitals().health;
+            let damage = starting_health - health;
+            assert!(
+                (1800 * burst_count..=2200 * burst_count).contains(&damage),
+                "{burst_count} nearby shards should deal life drain to {member:?}, observed {damage}"
+            );
+        }
     }
     tick_at(owner, now + 24 * 60 * 1_000_000).await;
     let runtime = owner.runtime.lock().await;

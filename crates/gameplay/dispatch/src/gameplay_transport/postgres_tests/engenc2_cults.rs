@@ -430,9 +430,7 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                     return super::gravedg_zelos::exercise(
                         &owner,
                         &admitted,
-                        second
-                            .and_then(|p| p.runtime_actor)
-                            .ok_or("second admitted player")?,
+                        second.as_ref().ok_or("second admitted player")?,
                     )
                     .await;
                 }
