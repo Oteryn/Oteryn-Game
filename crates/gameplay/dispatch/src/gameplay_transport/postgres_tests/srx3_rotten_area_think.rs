@@ -9,6 +9,10 @@ fn srx3_rotten_area_native_reserved_think_publishes_canonical_icon_and_kv_postgr
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
+    run_area_think_case(false)
+}
+
+pub(super) fn run_area_think_case(check_charge_interval: bool) -> TestResult {
     let started = std::time::Instant::now();
     let result = super::kill_reward_e2e::scenario_thread::run("srx3-rotten-area-native", || {
         run(async |admin| {
@@ -136,6 +140,9 @@ fn srx3_rotten_area_native_reserved_think_publishes_canonical_icon_and_kv_postgr
                     "native source timestamp must be durable: {track}"
                 );
             }
+            if check_charge_interval {
+                assert_global_charge_interval(&h, &mut owner, character, player).await?;
+            }
             drop(owner);
             drop(authority);
             drop(seal);
@@ -147,4 +154,51 @@ fn srx3_rotten_area_native_reserved_think_publishes_canonical_icon_and_kv_postgr
         started.elapsed()
     );
     result
+}
+
+async fn assert_global_charge_interval(
+    h: &Harness,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    character: crate::foundation::CharacterId,
+    player: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use oteryn_gameplay_quests::quest::rotten_blood::area_icons::TRACKS;
+    use std::time::Duration;
+
+    let read_clock = || {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT value FROM game_character_quest_tracks
+             WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(character.as_bytes().as_slice())
+        .bind(TRACKS[1])
+        .fetch_one(&h.pool)
+    };
+    let first = read_clock().await?;
+    let deadline = std::time::Instant::now() + Duration::from_secs(25);
+    let second = loop {
+        owner.clock_origin -= Duration::from_secs(1);
+        owner.drain_monster_melee().await;
+        let current = read_clock().await?;
+        if current > first {
+            break current;
+        }
+        if std::time::Instant::now() >= deadline {
+            return Err("no second Rotten Charge within 25 seconds of the first".into());
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    };
+    // Rotten Blood Quest/Spoiler, curid 102953, oldid 1107075, Rotten Charges.
+    assert_eq!(second - first, 20);
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(
+        runtime
+            .rotten_blood_keyed_icons(player)
+            .map_err(debug)?
+            .into_iter()
+            .flatten()
+            .find(|icon| icon.0 == "rotten-area"),
+        Some(("rotten-area", 0, 17, 2))
+    );
+    Ok(())
 }
