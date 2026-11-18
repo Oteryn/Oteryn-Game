@@ -236,7 +236,7 @@ pub(super) async fn exercise(
 }
 
 async fn exercise_ice(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -264,6 +264,8 @@ async fn exercise_ice(
     .bind(CONTACTMAN)
     .execute(&h.pool)
     .await?;
+
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
 
     let offer = talk(owner, admitted, npc, 35304, "ice portal").await?;
     assert!(offer.iter().any(|line| line.contains("50 fish")), "{offer:?}");
