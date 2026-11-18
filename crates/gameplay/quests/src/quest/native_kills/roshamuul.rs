@@ -28,19 +28,26 @@ pub(super) const COUNTERS: &[Counter] = &[
     },
 ];
 
-pub(super) fn extend_tracks(tracks: &mut Vec<QuestTrack>) {
-    tracks.push(QuestTrack {
-        key: GATE.into(),
-        quest: sandomo::QUEST.into(),
-        initial: 0,
-        min: 0,
-        max: 0,
-    });
-    tracks.extend(COUNTERS.iter().map(|counter| QuestTrack {
-        key: counter.track.into(),
-        quest: counter.quest.into(),
-        initial: 0,
-        min: 0,
-        max: counter.maximum,
-    }));
+pub(super) fn extend_tracks(tracks: &mut Vec<QuestTrack>) -> Result<(), String> {
+    for (key, maximum) in std::iter::once((GATE, 0)).chain(
+        COUNTERS
+            .iter()
+            .map(|counter| (counter.track, counter.maximum)),
+    ) {
+        let track = QuestTrack {
+            key: key.into(),
+            quest: sandomo::QUEST.into(),
+            initial: 0,
+            min: 0,
+            max: maximum,
+        };
+        if let Some(existing) = tracks.iter().find(|existing| existing.key == key) {
+            if existing != &track {
+                return Err(format!("Roshamuul counter track conflict: {key}"));
+            }
+        } else {
+            tracks.push(track);
+        }
+    }
+    Ok(())
 }

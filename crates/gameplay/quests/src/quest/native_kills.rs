@@ -302,7 +302,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     }
     let mut tracks: Vec<_> = tracks.into_values().collect();
     qworld::extend_tracks(&mut tracks)?;
-    roshamuul::extend_tracks(&mut tracks);
+    roshamuul::extend_tracks(&mut tracks)?;
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for counter in registered_counters()? {
         let exact = counter.transition();
