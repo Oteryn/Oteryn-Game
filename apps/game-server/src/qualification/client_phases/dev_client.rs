@@ -70,7 +70,7 @@ pub(super) async fn dev_client<'a>(
         deadline: Duration::from_secs(20),
     })
     .await
-    .map_err(|error| format!("dev client join: {error}"))?;
+    .map_err(|error| client_world::verdict::context(format!("dev client join: {error}"), error))?;
     let dev_client_snapshot = dev_client.join_snapshot().clone();
 
     if dev_client_snapshot.world_spatial.content_generation != dev_client_content_generation
@@ -228,60 +228,104 @@ pub(super) async fn dev_client<'a>(
         door_revision + 1,
         door_revision + 2,
     ));
-    client_guild::guild(&mut dev_client).await?;
-    client_party::party(&mut dev_client).await?;
-    client_vip::vip(&mut dev_client).await?;
-    client_player_trade::player_trade(&mut dev_client).await?;
-    client_imbue::imbue(&mut dev_client).await?;
-    client_npc_shop::npc_shop(&mut dev_client).await?;
-    client_stash::stash(&mut dev_client).await?;
-    client_market::market(&mut dev_client).await?;
-    client_task_board::task_board(&mut dev_client).await?;
-    client_prey::prey(&mut dev_client).await?;
-    client_hireling::hireling(&mut dev_client).await?;
-    client_browse_field::browse_field(&mut dev_client).await?;
-    client_daily_boost::daily_boost(&mut dev_client).await?;
-    client_depot_search::depot_search(&mut dev_client).await?;
-    client_hotkey_equip::hotkey_equip(&mut dev_client).await?;
-    client_item_forge::item_forge(&mut dev_client).await?;
-    client_store::store(&mut dev_client).await?;
-    client_hunt::hunt(&mut dev_client).await?;
-    client_death::death(&mut dev_client, clients).await?;
+    let mut feature_result = Ok(());
+    feature_result = feature_result.and(client_guild::guild(&mut dev_client).await);
+    feature_result = feature_result.and(client_party::party(&mut dev_client).await);
+    feature_result = feature_result.and(client_vip::vip(&mut dev_client).await);
+    feature_result = feature_result.and(client_player_trade::player_trade(&mut dev_client).await);
+    feature_result = feature_result.and(client_imbue::imbue(&mut dev_client).await);
+    feature_result = feature_result.and(client_npc_shop::npc_shop(&mut dev_client).await);
+    feature_result = feature_result.and(client_stash::stash(&mut dev_client).await);
+    feature_result = feature_result.and(client_market::market(&mut dev_client, clients).await);
+    feature_result = feature_result.and(client_task_board::task_board(&mut dev_client).await);
+    feature_result = feature_result.and(client_prey::prey(&mut dev_client).await);
+    feature_result = feature_result.and(client_hireling::hireling(&mut dev_client).await);
+    feature_result = feature_result.and(client_browse_field::browse_field(&mut dev_client).await);
+    feature_result = feature_result.and(client_daily_boost::daily_boost(&mut dev_client).await);
+    feature_result = feature_result.and(client_depot_search::depot_search(&mut dev_client).await);
+    feature_result = feature_result.and(client_hotkey_equip::hotkey_equip(&mut dev_client).await);
+    feature_result = feature_result.and(client_item_forge::item_forge(&mut dev_client).await);
+    feature_result = feature_result.and(client_store::store(&mut dev_client).await);
+    feature_result = feature_result.and(client_hunt::hunt(&mut dev_client).await);
+    feature_result = feature_result.and(client_death::death(&mut dev_client, clients).await);
     let before = dev_client.world_spatial().actor_position;
     let after = before
         .x
         .checked_sub(1)
         .map(|x| ActorPosition { x, ..before });
-    dev_client = client_disconnect_resume::recover(dev_client, clients, after).await?;
-
-    // Dropped here, closing the TLS stream the same silent way the join-only stage did.
-    drop(dev_client);
     let dev_client_session = *dev_client_snapshot.game_session_id.as_bytes();
+    complete_dev_client_continuity(
+        feature_result,
+        client_disconnect_resume::recover(dev_client, clients, after),
+        |resumed| wait_dev_client_release(url, dev_client_session, resumed),
+    )
+    .await
+}
+
+async fn complete_dev_client_continuity<T>(
+    features: TestResult,
+    recovery: impl Future<Output = TestResult<T>>,
+    release: impl AsyncFnOnce(bool) -> TestResult,
+) -> TestResult {
+    let recovery = recovery.await.map(drop);
+    let resumed = recovery.is_ok();
+    if let Err(error) = &recovery {
+        evidence(&format!("dev_client recovery=failed error={error}"));
+    }
+    let released = release(resumed).await;
+    if let Err(error) = &released {
+        evidence(&format!("dev_client release=failed error={error}"));
+    }
+    features.and(recovery).and(released)
+}
+
+#[tokio::test]
+async fn poisoned_recovery_preserves_feature_failure_and_waits() {
+    let waited = std::cell::Cell::new(false);
+    let result = complete_dev_client_continuity(
+        Err("feature protocol error".into()),
+        async { Err::<(), _>("session poisoned".into()) },
+        async |resumed| {
+            assert!(!resumed);
+            waited.set(true);
+            Ok(())
+        },
+    )
+    .await;
+    assert!(waited.get());
+    assert_eq!(
+        result.err().map(|error| error.to_string()).as_deref(),
+        Some("feature protocol error")
+    );
+}
+
+async fn wait_dev_client_release(url: &str, session: [u8; 16], resumed: bool) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-    loop {
-        if let Some((1, epoch, grace)) = session_loss_row(url, dev_client_session).await? {
-            if epoch != "2" || !(58..=62).contains(&grace) {
+    let epoch = loop {
+        let row = session_loss_row(url, session, deadline).await?;
+        if !resumed && terminal_after_grace(row.clone())? {
+            return Ok(());
+        }
+        if let Some((1, epoch, grace, _)) = row {
+            if (epoch != "2" && (resumed || epoch != "1")) || !(58..=62).contains(&grace) {
                 return Err(format!("dev_client loss epoch={epoch} grace={grace}").into());
             }
-            break;
+            break epoch;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("dev_client session never became reconnectable".into());
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
-    }
+    };
     let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
-    while !matches!(
-        session_loss_row(url, dev_client_session).await?,
-        Some((3, _, _))
-    ) {
+    while !terminal_after_grace_for_epoch(session_loss_row(url, session, deadline).await?, &epoch)?
+    {
         if tokio::time::Instant::now() >= deadline {
             return Err("dev_client session was not released after grace".into());
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
     evidence("dev_client released=terminal admissions=4");
-
     Ok(())
 }
 

@@ -1018,6 +1018,8 @@ use oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast;
 #[cfg(test)]
 mod qualification;
 mod qualification_spell_character;
+#[cfg(any(test, feature = "qualification-spawn"))]
+mod qualification_wild_spawn;
 #[cfg(test)]
 mod quest_catalogue_boot_tests;
 
@@ -1031,3 +1033,5 @@ mod bundle_spawn_owner_tests;
 mod lifted_tests_auto {
     include!(concat!(env!("OUT_DIR"), "/lifted_tests_auto_mounts.rs"));
 }
+
+pub(crate) const QUALIFICATION_MAP_SAMPLES_PER_KIND: u8 = 5;

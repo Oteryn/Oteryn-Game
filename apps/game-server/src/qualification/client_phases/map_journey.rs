@@ -52,17 +52,38 @@ pub(super) async fn run(
         -i16::from(start.floor),
         ["PASS", "FAIL"][index]
     ));
-    let mut failures = 0;
-    for (kind, [pass, fail, skipped]) in totals {
-        failures += fail;
+    for (kind, [pass, fail, skipped]) in &totals {
         evidence(&format!(
             "MAP_SUMMARY kind={kind} pass={pass} fail={fail} skipped={skipped}"
         ));
     }
-    if failures != 0 {
-        return Err(format!("map journey: {failures} failed checks").into());
+    map_coverage(&totals)
+}
+
+fn map_coverage(totals: &BTreeMap<&str, [usize; 3]>) -> TestResult {
+    let failures: usize = totals.values().map(|counts| counts[1]).sum();
+    let skipped: usize = totals.values().map(|counts| counts[2]).sum();
+    if failures != 0 || skipped != 0 || !totals.keys().any(|kind| *kind != "return") {
+        return Err(format!(
+            "map journey coverage incomplete: failed={failures} unproven={skipped}"
+        )
+        .into());
     }
     Ok(())
+}
+
+#[test]
+fn sampled_map_checks_cannot_all_be_unproven() {
+    let totals = BTreeMap::from([("return", [1, 0, 0]), ("stairs", [0, 0, 3])]);
+    assert!(map_coverage(&totals).is_err());
+    assert!(map_coverage(&BTreeMap::from([("return", [1, 0, 0])])).is_err());
+    assert!(
+        map_coverage(&BTreeMap::from([
+            ("stairs", [3, 0, 0]),
+            ("return", [1, 0, 0])
+        ]))
+        .is_ok()
+    );
 }
 
 async fn check(
@@ -130,8 +151,7 @@ async fn check(
         return Err("map approach did not end at predicted position".into());
     }
     if sample.kind == "pz_border" {
-        client_spell_journey::protection_zone_probe(client, model.tiles[at].protection_zone)
-            .await?;
+        compare_protection_zone(client, model.tiles[at].protection_zone).await?;
     }
     if blocked {
         let before = client.world_spatial().actor_position;
@@ -233,20 +253,35 @@ async fn check(
         } else {
             oteryn_dev_client::EntityKind::Creature
         };
+        let key = sample
+            .content
+            .as_deref()
+            .ok_or("actor sample has no authored key")?;
+        let expected = if sample.kind == "npc" {
+            npc_display_name(key)?
+        } else {
+            creature_display_name(key)?
+        };
         if !client.world_entities().is_some_and(|entities| {
             entities.iter().any(|entity| {
                 entity.kind == kind
+                    && entity
+                        .display_name
+                        .as_ref()
+                        .and_then(|name| name.as_str().ok())
+                        .is_some_and(|name| name.eq_ignore_ascii_case(&expected))
                     && tile(entity.position).is_ok_and(|at| {
                         at.floor == target.floor
                             && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3
                     })
             })
         }) {
-            return Err("expected spawn has no visible actor within three tiles".into());
+            return Err(format!(
+                "expected {key} ({expected}) has no visible actor within three tiles"
+            )
+            .into());
         }
-        // VIS-2 actors have appearance_ref, not a content definition id. Do not claim
-        // that a different creature near the spawn proves the requested identity.
-        return Ok(Some("VIS-2_actor_has_no_content_id_identity_unverifiable"));
+        return Ok(None);
     }
     if sample.kind == "ladder" && landing.is_none_or(|landed| landed.floor == at.floor) {
         return Ok(Some(
@@ -265,10 +300,23 @@ async fn check(
     }
     client.take_events();
     if sample.kind == "pz_border" {
-        client_spell_journey::protection_zone_probe(client, model.tiles[expected].protection_zone)
-            .await?;
+        compare_protection_zone(client, model.tiles[expected].protection_zone).await?;
     }
     Ok(None)
+}
+
+async fn compare_protection_zone(
+    client: &mut oteryn_dev_client::DevClientSession,
+    inside: bool,
+) -> TestResult {
+    use client_spell_journey::ProtectionProbe;
+    let (words, target) = client_spell_journey::fixture_protection_spell()?;
+    let comparison = if inside {
+        ProtectionProbe::Inside
+    } else {
+        ProtectionProbe::Outside
+    };
+    client_spell_journey::protection_zone_probe(client, comparison, words, target).await
 }
 
 #[cfg(test)]

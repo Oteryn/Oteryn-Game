@@ -1638,6 +1638,43 @@ pub(super) fn encode_lifecycle(evidence: &AdmissionClaimLifecycleEvidenceV1) -> 
     encode_envelope(&writer.bytes, super::MAX_FRESH_OPERATION_BYTES)
 }
 
+/// Read the loss epoch from a historical terminal-release receipt for this session.
+#[cfg(feature = "test-support")]
+pub fn qualification_release_epoch(encoded: &str, session: [u8; 16]) -> Result<Option<u64>> {
+    let bytes = decode_envelope(encoded, super::MAX_FRESH_OPERATION_BYTES)?;
+    let mut reader = Reader::new(&bytes);
+    if reader.tag()? != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    reader.text()?; // Account
+    if reader.bytes::<16>()? != session {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    reader.take(3 * 16)?; // Initial Character, World and Channel
+    if reader.bytes::<16>()? != session {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    reader.take(3 * 8 + 16)?; // Initial generations and transport
+    if reader.tag()? != 2 {
+        return Ok(None);
+    }
+    reader.u64()?; // Current connection generation
+    if reader.boolean()? {
+        reader.take(16)?;
+    }
+    reader.take(16 + 8)?; // Character lease
+    if reader.boolean()? {
+        reader.take(2 * 16)?;
+    }
+    read_scope(&mut reader)?;
+    reader.u64()?; // Scope generation
+    if reader.boolean()? {
+        Ok(Some(reader.u64()?))
+    } else {
+        Ok(None)
+    }
+}
+
 fn lifecycle_key(evidence: &AdmissionClaimLifecycleEvidenceV1) -> Vec<u8> {
     let mut key = b"claim-lifecycle-v1".to_vec();
     key.extend_from_slice(
@@ -2906,6 +2943,8 @@ impl FreshAdmissionStore {
             let spent: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_recovery_grant_consumptions WHERE recovery_grant_nonce = $1)")
                 .bind(credential.grant_nonce.as_slice()).fetch_one(&mut *tx).await?;
             if spent {
+                #[cfg(any(test, feature = "test-support"))]
+                qualification_replay::record(*session_id.as_bytes(), epoch.get());
                 return Ok(CompleteReconnectOutcomeV1::Rejected);
             }
             let reserved = sqlx::query("INSERT INTO game_durability_transport_ref_reservations (transport_ref, game_session_id, reconnect_attempt_ref, reservation_owner) VALUES ($1, encode($2,'hex')::uuid, $3, 1) ON CONFLICT (transport_ref) DO NOTHING")
@@ -3252,4 +3291,50 @@ mod resource_preflight_tests {
                 Ok(())
             })
     }
+}
+
+
+// This process-local observation is enabled only by the disposable qualification
+// owner. It carries no credential bytes and does not change the wire refusal.
+#[cfg(any(test, feature = "test-support"))]
+pub mod qualification_replay {
+    use std::{collections::BTreeMap, sync::{Mutex, OnceLock}};
+
+    type ReplayEpochs = BTreeMap<[u8; 16], u64>;
+    static SPENT: OnceLock<Mutex<ReplayEpochs>> = OnceLock::new();
+
+    pub fn enable() {
+        SPENT.get_or_init(Default::default);
+    }
+
+    pub(super) fn record(session: [u8; 16], epoch: u64) {
+        if let Some(spent) = SPENT.get()
+            && let Ok(mut spent) = spent.lock()
+            && (spent.len() < 128 || spent.contains_key(&session))
+        {
+            spent.insert(session, epoch);
+        }
+    }
+
+    pub fn take(session: [u8; 16], epoch: u64) -> bool {
+        if let Some(spent) = SPENT.get()
+            && let Ok(mut spent) = spent.lock()
+            && spent.get(&session) == Some(&epoch)
+        {
+            spent.remove(&session);
+            return true;
+        }
+        false
+    }
+    #[test]
+    fn qualification_recovery_observation_requires_exact_epoch_and_is_single_use() {
+        enable();
+        let session = [39; 16];
+        assert!(!take(session, 2));
+        record(session, 2);
+        assert!(!take(session, 1));
+        assert!(take(session, 2));
+        assert!(!take(session, 2));
+    }
+
 }

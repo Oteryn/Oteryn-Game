@@ -258,6 +258,7 @@ const NEXT: u8 = 1 << 7;
 /// The session's handle table (§4.1): a slot per live key, found by key and by handle.
 #[derive(Debug, Clone, Default)]
 pub struct ItemHandleTable {
+    qualification_key: Option<super::qualification_observation::ObservationKey>,
     last: u64,
     /// The slots of each view, without repeats, in the order the keys were first given.
     views: [Vec<u32>; 5],
@@ -345,19 +346,26 @@ impl ItemHandleTable {
     }
 
     /// The keys of `view` in key order.
-    fn keys_of(&self, view: View) -> Vec<ItemKey> {
-        let mut keys: Vec<ItemKey> = self.views[view as usize]
-            .iter()
-            .map(|slot| self.slots[*slot as usize].key)
-            .collect();
-        keys.sort_unstable();
-        keys
+    pub(super) fn observe_qualification(
+        &mut self,
+        key: Option<super::qualification_observation::ObservationKey>,
+    ) {
+        self.qualification_key = key;
+        self.publish_qualification();
+    }
+
+    fn publish_qualification(&self) {
+        if let Some(key) = self.qualification_key {
+            key.publish(self);
+        }
     }
 
     /// Makes `keys` the content of `view`: an item new to every view gets the next handle, in the
     /// given order, and one that left every view is dropped. Over the bound nothing changes.
     pub fn replace(&mut self, view: View, keys: &[ItemKey]) -> Result<(), ItemViewError> {
-        self.replace_undoable(view, keys).map(drop)
+        self.replace_undoable(view, keys)?;
+        self.publish_qualification();
+        Ok(())
     }
 
     /// [`Self::replace`] that also returns what [`Self::rollback`] needs to take it back.
@@ -677,7 +685,9 @@ impl SessionItemView {
         encode: impl FnOnce(&ItemHandleTable) -> Result<T, ItemViewError>,
     ) -> Result<T, ItemViewError> {
         let undo = self.table.replace_undoable(View::Map, keys)?;
-        encode(&self.table).inspect_err(|_| self.table.rollback(undo))
+        encode(&self.table)
+            .inspect(|_| self.table.publish_qualification())
+            .inspect_err(|_| self.table.rollback(undo))
     }
 
     /// The domain 14 snapshot of a new connection: no view open, above any revision the session
@@ -716,6 +726,7 @@ impl SessionItemView {
                 return Err(error);
             }
         };
+        self.table.publish_qualification();
         Ok(ItemViewDelta {
             domain_id: STATE_DOMAIN_CONTAINER_VIEWS,
             from,
@@ -723,6 +734,13 @@ impl SessionItemView {
             delta_type: DELTA_TYPE_CONTAINER_VIEWS_V1,
             payload,
         })
+    }
+
+    pub(super) fn observe_qualification(
+        &mut self,
+        key: Option<super::qualification_observation::ObservationKey>,
+    ) {
+        self.table.observe_qualification(key);
     }
 
     pub const fn table(&self) -> &ItemHandleTable {
@@ -927,40 +945,35 @@ impl SessionItemView {
             .chain(inventory.equipment.iter().map(|(_, item)| item))
             .map(|item| item.key)
             .collect();
-        let previous = self.table.keys_of(View::Inventory);
-        self.table.replace(View::Inventory, &keys)?;
-        let entry = |item: &ViewItem| self.entry(item);
-        let view = CharacterInventory {
-            main_backpack: inventory.main_backpack.as_ref().map(entry).transpose()?,
-            entries: inventory
-                .entries
-                .iter()
-                .map(entry)
-                .collect::<Result<_, _>>()?,
-            equipment: inventory
-                .equipment
-                .iter()
-                .map(|(slot, item)| {
-                    Ok(EquippedItem {
-                        slot: *slot,
-                        item: entry(item)?,
+        let undo = self.table.replace_undoable(View::Inventory, &keys)?;
+        let encoded = (|| {
+            let entry = |item: &ViewItem| self.entry(item);
+            let view = CharacterInventory {
+                main_backpack: inventory.main_backpack.as_ref().map(entry).transpose()?,
+                entries: inventory
+                    .entries
+                    .iter()
+                    .map(entry)
+                    .collect::<Result<_, _>>()?,
+                equipment: inventory
+                    .equipment
+                    .iter()
+                    .map(|(slot, item)| {
+                        Ok(EquippedItem {
+                            slot: *slot,
+                            item: entry(item)?,
+                        })
                     })
-                })
-                .collect::<Result<_, _>>()?,
-        };
-        // Without capability 12 a view with equipment does not encode and is never shown.
-        match encode_character_inventory_with_appearances(&view, self.equip_drop, self.appearances)
-        {
-            Ok(payload) => {
-                self.inventory = inventory;
-                Ok(payload)
-            }
-            Err(_) => {
-                // An unencodable view is never shown: the previous one stays.
-                let _ = self.table.replace(View::Inventory, &previous);
-                Err(ItemViewError::Encode)
-            }
-        }
+                    .collect::<Result<_, _>>()?,
+            };
+            // Without capability 12 a view with equipment does not encode and is never shown.
+            encode_character_inventory_with_appearances(&view, self.equip_drop, self.appearances)
+                .map_err(|_| ItemViewError::Encode)
+        })()
+        .inspect_err(|_| self.table.rollback(undo))?;
+        self.inventory = inventory;
+        self.table.publish_qualification();
+        Ok(encoded)
     }
 
     fn set_container(
@@ -973,26 +986,23 @@ impl SessionItemView {
             .map(|open| open.key)
             .chain(entries.iter().map(|item| item.key))
             .collect();
-        let previous = self.table.keys_of(View::Container);
-        self.table.replace(View::Container, &keys)?;
-        let view = OpenContainer {
-            container_handle: open.and_then(|open| self.table.handle(&open.key)),
-            entries: entries
-                .iter()
-                .map(|item| self.entry(item))
-                .collect::<Result<_, _>>()?,
-        };
-        match encode_open_container_with_appearances(&view, self.appearances) {
-            Ok(payload) => {
-                self.open = open;
-                self.open_entries = entries;
-                Ok(payload)
-            }
-            Err(_) => {
-                let _ = self.table.replace(View::Container, &previous);
-                Err(ItemViewError::Encode)
-            }
-        }
+        let undo = self.table.replace_undoable(View::Container, &keys)?;
+        let encoded = (|| {
+            let view = OpenContainer {
+                container_handle: open.and_then(|open| self.table.handle(&open.key)),
+                entries: entries
+                    .iter()
+                    .map(|item| self.entry(item))
+                    .collect::<Result<_, _>>()?,
+            };
+            encode_open_container_with_appearances(&view, self.appearances)
+                .map_err(|_| ItemViewError::Encode)
+        })()
+        .inspect_err(|_| self.table.rollback(undo))?;
+        self.open = open;
+        self.open_entries = entries;
+        self.table.publish_qualification();
+        Ok(encoded)
     }
 
     fn entry(&self, item: &ViewItem) -> Result<ItemEntry, ItemViewError> {

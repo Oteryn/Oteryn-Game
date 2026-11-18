@@ -41,7 +41,7 @@ CLIENT_PHASES = Path("apps/game-server/src/qualification/client_phases")
 
 SETS = ("reference", "pr", "full", "custom")
 # Rows the default batch (`e2e_row_batch.rs`) runs on one machine today.
-PR_ROW_BATCHES = ((0, 5), (5, 5), (10, 5))
+PR_ROW_BATCHES = ((1, 5), (6, 5), (11, 5))
 # The last batch is open-ended so rows added after planning still run.
 OPEN_END = 1_000_000
 MAX_SHARDS = 64

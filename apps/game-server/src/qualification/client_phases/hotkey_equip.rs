@@ -57,6 +57,10 @@ pub(super) async fn hotkey_equip(
     };
     let command =
         client_ui::hotkey_equip::control_request(&mut panel).ok_or("hotkey equip request")?;
+    let before = client
+        .inventory()
+        .cloned()
+        .ok_or("hotkey equip missing prior inventory")?;
     let response = client_runtime::raw_feature::send(
         client.session_mut(),
         &client_runtime::raw_feature::FeatureCommand {
@@ -105,12 +109,10 @@ pub(super) async fn hotkey_equip(
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        if let Some(equipped) = client.inventory().and_then(|inventory| {
-            inventory
-                .equipment
-                .iter()
-                .find(|equipped| equipped.item.item_definition_ref.get() == definition)
-        }) {
+        if let Some(equipped) = client
+            .inventory()
+            .and_then(|inventory| moved_to_equipment(&before, inventory, definition, None, None))
+        {
             evidence(&format!(
                 "mechanic=hotkey_equip state=equipped definition={definition} slot={:?}",
                 equipped.slot
@@ -123,6 +125,74 @@ pub(super) async fn hotkey_equip(
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
+    Ok(())
+}
+
+use oteryn_protocol_oteryn::item_view::{
+    CharacterInventory, EquipmentSlot, EquippedItem, ItemHandle,
+};
+
+pub(super) fn moved_to_equipment<'a>(
+    before: &CharacterInventory,
+    after: &'a CharacterInventory,
+    definition: u32,
+    source: Option<ItemHandle>,
+    slot: Option<EquipmentSlot>,
+) -> Option<&'a EquippedItem> {
+    after.equipment.iter().find(|entry| {
+        let moved = entry.item;
+        moved.item_definition_ref.get() == definition
+            && slot.is_none_or(|slot| slot == entry.slot)
+            && source.is_none_or(|source| source == moved.handle)
+            && before.entries.contains(&moved)
+            && !after
+                .entries
+                .iter()
+                .any(|entry| entry.handle == moved.handle)
+    })
+}
+
+#[test]
+fn equipment_proof_requires_the_carried_handle_in_its_new_slot() -> TestResult {
+    use oteryn_protocol_oteryn::item_view::ItemEntry;
+    let item = ItemEntry {
+        appearance_id: 4,
+        handle: std::num::NonZeroU64::MIN,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    };
+    let worn = ItemEntry {
+        handle: std::num::NonZeroU64::new(2).ok_or("equipped handle")?,
+        ..item
+    };
+    let before = CharacterInventory {
+        entries: vec![item],
+        equipment: vec![EquippedItem {
+            slot: EquipmentSlot::Head,
+            item: worn,
+        }],
+        ..Default::default()
+    };
+    assert!(moved_to_equipment(&before, &before, 1, Some(item.handle), None).is_none());
+    let after = CharacterInventory {
+        entries: vec![worn],
+        equipment: vec![EquippedItem {
+            slot: EquipmentSlot::Head,
+            item,
+        }],
+        ..Default::default()
+    };
+    assert!(
+        moved_to_equipment(
+            &before,
+            &after,
+            1,
+            Some(item.handle),
+            Some(EquipmentSlot::Head)
+        )
+        .is_some()
+    );
     Ok(())
 }
 

@@ -28,17 +28,29 @@ pub(super) async fn stash(client: &mut oteryn_dev_client::DevClientSession) -> T
         );
         return Ok(());
     };
-    let before: u64 = panel.rows.iter().map(|row| u64::from(row.quantity)).sum();
+    let index = client_world::provisioning::item_index()?;
+    let (key, revision) = index
+        .definition_at(item.item_definition_ref)
+        .ok_or("stash item definition is not pinned")?;
+    let quantity = |rows: &[ui::stash::StashRow]| {
+        rows.iter()
+            .filter(|row| row.definition_key == key && row.definition_revision == revision)
+            .map(|row| u64::from(row.quantity))
+            .sum::<u64>()
+    };
+    let before = quantity(&panel.rows);
     panel.carried = vec![item];
     let command = ui::request(&mut panel, ui::Intent::Stow(item.handle)).ok_or("stash stow")?;
     let reply = stash::send(client.session_mut(), &command).await?;
     ui::apply_result(&mut panel, &reply);
     if reply.reply.outcome != ui::stash::StashOutcome::Committed {
-        evidence(&format!(
-            "mechanic=stash skipped=stow_refused_{:?}_definition_{} source=crates/gameplay/durability/src/durability/character_stash.rs:279",
-            reply.reply.outcome, item.item_definition_ref
-        ));
-        return Ok(());
+        return client_imbue::mutation_verdict(
+            false,
+            format!(
+                "mechanic=stash status=FAIL refused=stow_refused_{:?}_definition_{} source=crates/gameplay/durability/src/durability/character_stash.rs:279",
+                reply.reply.outcome, item.item_definition_ref
+            ),
+        );
     }
     if reply.reply.stowed_quantity != item.count.get() {
         return Err("stash stow receipt quantity mismatch".into());
@@ -48,7 +60,7 @@ pub(super) async fn stash(client: &mut oteryn_dev_client::DevClientSession) -> T
         &mut panel,
         &stash::send(client.session_mut(), &command).await?,
     );
-    let after: u64 = panel.rows.iter().map(|row| u64::from(row.quantity)).sum();
+    let after = quantity(&panel.rows);
     if after != before + u64::from(item.count.get())
         || client.inventory().is_none_or(|inventory| {
             inventory

@@ -4,7 +4,13 @@ use super::*;
 #[path = "provision.rs"]
 mod original;
 
-pub(super) fn item_index() -> TestResult<crate::content::item_ref::ItemDefinitionIndex> {
+pub(super) async fn e2ef1_logout_for_return(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult {
+    e2ef1::logout(client).await
+}
+pub(in crate::qualification) fn item_index()
+-> TestResult<crate::content::item_ref::ItemDefinitionIndex> {
     original::item_index()
 }
 pub(super) fn item_reference(
@@ -12,6 +18,15 @@ pub(super) fn item_reference(
     id: u32,
 ) -> TestResult<std::num::NonZeroU32> {
     original::item_reference(index, id)
+}
+/// The fixture provisioning alone, without the E2EF1 movement journey; for
+/// groups (creature sweep) that provision a character more than once.
+pub(super) async fn provision_fixture(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    original::provision(client, clients, index).await
 }
 pub(super) async fn provision(
     mut client: oteryn_dev_client::DevClientSession,
@@ -110,6 +125,7 @@ mod e2ef1 {
     struct Checks {
         row: &'static str,
         passed: BTreeSet<&'static str>,
+        missing: BTreeMap<&'static str, &'static str>,
     }
     impl Checks {
         fn pass(&mut self, case: &'static str, detail: impl std::fmt::Debug) {
@@ -119,16 +135,35 @@ mod e2ef1 {
             ));
             self.passed.insert(case);
         }
+        fn missing(&mut self, case: &'static str, source: &'static str, reason: &str) {
+            evidence(&format!(
+                "E2EF1_MISSING row={} case={case} source={source} reason={reason}",
+                self.row
+            ));
+            self.missing.insert(case, source);
+        }
         fn complete(&self, required: &[&str]) -> bool {
             required.iter().all(|case| self.passed.contains(case))
         }
     }
+
+    #[derive(Debug)]
+    struct MissingAuthoredTarget(String);
+    impl std::fmt::Display for MissingAuthoredTarget {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str(&self.0)
+        }
+    }
+    impl std::error::Error for MissingAuthoredTarget {}
+    const WORLD_TARGET_SOURCE: &str = "tools/qualification/node_boot/run.sh:461";
+    const SPELL_TARGET_SOURCE: &str = "content/abilities/definitions/player-spells.json:1";
 
     #[derive(Clone, Copy, Debug)]
     struct Object {
         at: TilePos,
         ordinal: u8,
         appearance: u16,
+        action: Option<u16>,
     }
     fn position(at: TilePos, basis: spatial_basis::Basis) -> ActorPosition {
         basis.position(at)
@@ -169,6 +204,7 @@ mod e2ef1 {
                                 oteryn_world_bundle::Error::Limit("movement ordinal".into())
                             })?,
                             appearance,
+                            action: item.attrs.action,
                         });
                     }
                 }
@@ -222,22 +258,54 @@ mod e2ef1 {
         }
         Ok(())
     }
+    fn retry_target_gate(status: CommandStatus, payload: &[u8], stationary: bool) -> bool {
+        status == CommandStatus::Rejected && payload.is_empty() && stationary
+    }
+
     async fn target_command(client: &mut DevClientSession, payload: &[u8]) -> TestResult {
         use oteryn_protocol_oteryn::target_move::*;
-        // Decode our native wire command too; no ad-hoc server-side operation.
         decode_target_move_intent(payload).map_err(|e| format!("target intent: {e:?}"))?;
-        let result = client
-            .session_mut()
-            .gated_command(
-                CAPABILITY_TARGET_MOVE_V1,
-                COMMAND_TYPE_TARGET_MOVE_INTENT,
-                payload,
+        let before = client.world_spatial().actor_position;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        loop {
+            if client.world_spatial().actor_position != before {
+                return Err("target retry origin displaced".into());
+            }
+
+            let result = tokio::time::timeout_at(
+                deadline,
+                client.session_mut().gated_command(
+                    CAPABILITY_TARGET_MOVE_V1,
+                    COMMAND_TYPE_TARGET_MOVE_INTENT,
+                    payload,
+                ),
             )
-            .await?;
-        if result.status != CommandStatus::Accepted || result.payload != [8, 1] {
-            return Err(format!("target command: {result:?}").into());
+            .await
+            .map_err(|_| "command retry deadline expired")??;
+            if tokio::time::Instant::now() >= deadline {
+                return Err("command retry deadline expired".into());
+            }
+            if result.status == CommandStatus::Accepted && result.payload == [8, 1] {
+                return Ok(());
+            }
+            if !retry_target_gate(
+                result.status,
+                &result.payload,
+                client.world_spatial().actor_position == before,
+            ) || tokio::time::Instant::now() >= deadline
+            {
+                return Err(format!("target command: {result:?}").into());
+            }
+            // serve/command.rs refuses before dispatch when its input permit or
+            // current transfer guard is unavailable; the empty result ran no Turn.
+            evidence(&format!(
+                "E2EF1_TARGET retry=unavailable-input command_id={}",
+                result.command_id
+            ));
+            tokio::time::timeout_at(deadline, pump(client))
+                .await
+                .map_err(|_| "command retry deadline expired")??;
         }
-        Ok(())
     }
     async fn autowalk(client: &mut DevClientSession, at: TilePos) -> TestResult {
         let basis = spatial_basis::current(client)?;
@@ -259,6 +327,38 @@ mod e2ef1 {
             .copied()
             .ok_or_else(|| "own entity missing".into())
     }
+    fn candidate_goals(candidates: &[Object], range: u16) -> TestResult<BTreeMap<TilePos, Object>> {
+        let radius = i16::try_from(range)?;
+        let mut goals = BTreeMap::new();
+        for object in candidates {
+            for dx in -radius..=radius {
+                for dy in -radius..=radius {
+                    if dx.unsigned_abs().max(dy.unsigned_abs()) != range
+                        || (range == 1 && dx != 0 && dy != 0)
+                    {
+                        continue;
+                    }
+                    let Some((x, y)) = object
+                        .at
+                        .x
+                        .checked_add_signed(dx)
+                        .zip(object.at.y.checked_add_signed(dy))
+                    else {
+                        continue;
+                    };
+                    goals
+                        .entry(TilePos {
+                            x,
+                            y,
+                            floor: object.at.floor,
+                        })
+                        .or_insert(*object);
+                }
+            }
+        }
+        Ok(goals)
+    }
+
     async fn approach(
         client: &mut DevClientSession,
         world: &BundleWorld,
@@ -267,19 +367,35 @@ mod e2ef1 {
         range: u16,
     ) -> TestResult<Object> {
         let from = tile(client.world_spatial().actor_position)?;
-        for &object in objects
+        let mut candidates: Vec<_> = objects.iter().copied().filter(|o| wanted(*o)).collect();
+        candidates.sort_by_key(|object| (distance(from, object.at), object.at, object.ordinal));
+        let candidate_count = candidates.len();
+        let within_old_budget = candidates
             .iter()
-            .filter(|object| wanted(**object) && distance(from, object.at) <= 160)
-        {
-            if let Some(path) = route(world, from, |at| {
-                distance(at, object.at) == range
-                    && (range != 1 || at.x == object.at.x || at.y == object.at.y)
-            }) {
-                walk(client, world, &path).await?;
-                return Ok(object);
-            }
+            .filter(|o| distance(from, o.at) <= 160)
+            .count();
+        evidence(&format!(
+            "E2EF1_APPROACH from={from:?} candidates={candidate_count} within_160={within_old_budget} nearest={:?}",
+            candidates.first()
+        ));
+        if candidates.is_empty() {
+            return Err(MissingAuthoredTarget(format!(
+                "no exact authored target: from={from:?} candidates=0 within_160=0 searched=0"
+            ))
+            .into());
         }
-        Err("no reachable exact authored target within town budget".into())
+        let goals = candidate_goals(&candidates, range)?;
+        let path = reach_route(client, world, from, |at| goals.contains_key(&at)).await?;
+        match path {
+            Ok(path) => {
+                let start = tile(client.world_spatial().actor_position)?;
+                let landing = path.iter().try_fold(start, |at, direction| destination(world, at, *direction)).ok_or("approach landing absent")?;
+                let object = goals.get(&landing).copied().ok_or("approach candidate absent")?;
+                walk(client, world, &path).await?;
+                Ok(object)
+            }
+            Err(failure) => Err(MissingAuthoredTarget(format!("no reachable exact authored target: from={from:?} candidates={candidate_count} within_160={within_old_budget} {failure}")).into()),
+        }
     }
 
     async fn m01(
@@ -341,8 +457,12 @@ mod e2ef1 {
         checks.pass("stop", client.world_spatial());
         let at = client.world_spatial().actor_position;
         for direction in DIRS {
-            target_command(client, &[26, 2, 8, direction as u8]).await?;
-            until_with_peer(client, peer, |c| own(c).is_ok_and(|e| matches!(e.detail, EntityDetail::Actor { direction: seen, .. } if seen == direction))).await?;
+            let payload = oteryn_protocol_oteryn::target_move::encode_target_move_intent(
+                oteryn_protocol_oteryn::target_move::TargetMoveIntent::Turn(direction),
+            )
+            .map_err(|error| format!("turn intent: {error:?}"))?;
+            target_command(client, &payload).await?;
+            until_with_peer(client, peer, |c| own(c).is_ok_and(|e| matches!(e.detail, EntityDetail::Actor { direction: seen, .. } | EntityDetail::ActorWithIcons { direction: seen, .. } if seen == direction))).await?;
             if client.world_spatial().actor_position != at {
                 return Err("turn changed position".into());
             }
@@ -410,6 +530,9 @@ mod e2ef1 {
     ) -> TestResult {
         let used = far_use(client, world, objects, checks, revisions).await;
         if let Err(error) = &used {
+            if error.is::<MissingAuthoredTarget>() {
+                checks.missing("far-use-retry", WORLD_TARGET_SOURCE, &error.to_string());
+            }
             evidence(&format!(
                 "E2EF1_GAP row=M02 case=far-use-retry error={error}"
             ));
@@ -429,12 +552,12 @@ mod e2ef1 {
         checks: &mut Checks,
         revisions: &mut BTreeMap<(TilePos, u8), u64>,
     ) -> TestResult {
-        // 1638/1639 is a plain door family (not a key, level or quest door).
+        // Plain door orientations from map/door_registry.rs (not key, level or quest doors).
         let object = approach(
             client,
             world,
             objects,
-            |o| o.appearance == 1638 && world.facts().doors().at(o.at),
+            |o| retry_door(o.appearance, o.action) && world.facts().doors().at(o.at),
             3,
         )
         .await?;
@@ -461,45 +584,239 @@ mod e2ef1 {
         revisions.insert((object.at, object.ordinal), revision + 2);
         Ok(())
     }
+    fn dropped_handle_matches(
+        origin: oteryn_protocol_oteryn::world_map::MapOrigin,
+        prior: &BTreeSet<oteryn_dev_client::ItemHandle>,
+    ) -> bool {
+        matches!(origin, oteryn_protocol_oteryn::world_map::MapOrigin::Handle(handle) if !prior.contains(&handle))
+    }
+    fn item_quantity(
+        entries: &[oteryn_dev_client::ItemEntry],
+        item: &oteryn_dev_client::ItemEntry,
+    ) -> u64 {
+        entries
+            .iter()
+            .filter(|entry| {
+                entry.item_definition_ref == item.item_definition_ref
+                    && entry.sub_type == item.sub_type
+            })
+            .map(|entry| u64::from(entry.count.get()))
+            .sum()
+    }
+
+    fn map_drop_matches(map: ActorPosition, actor: ActorPosition) -> TestResult<bool> {
+        Ok(map.x == actor.x && map.y == actor.y && map.floor == i16::from(tile(actor)?.floor))
+    }
+    fn ground_drop_position(
+        at: ActorPosition,
+    ) -> TestResult<oteryn_protocol_oteryn::item_view::WorldTilePosition> {
+        Ok(oteryn_protocol_oteryn::item_view::WorldTilePosition {
+            x: at.x,
+            y: at.y,
+            floor: i16::from(tile(at)?.floor),
+        })
+    }
+
+    async fn guarded_move(
+        client: &mut DevClientSession,
+        request: oteryn_dev_client::client_runtime::inventory::MoveRequest,
+    ) -> TestResult<oteryn_dev_client::client_runtime::inventory::MoveResponse> {
+        use oteryn_protocol_oteryn::item_view as wire;
+        if request.count.is_some() {
+            return Err("guarded MOVE requires whole-stack request".into());
+        }
+        let caps = client.selected_capabilities();
+        let selection = wire::ItemMoveSelection {
+            equip_drop: caps.contains(&12),
+            container_tree: caps.contains(&14),
+            world_interaction: caps.contains(&11),
+        };
+        let payload = wire::encode_item_move_intent_for(
+            &wire::ItemMoveIntent {
+                source: request.source,
+                destination: request.destination,
+            },
+            selection,
+        )
+        .map_err(|e| format!("MOVE encode: {e:?}"))?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        loop {
+            let result = tokio::time::timeout_at(
+                deadline,
+                client.session_mut().gated_command(4, 9, &payload),
+            )
+            .await
+            .map_err(|_| "MOVE command deadline")??;
+            if tokio::time::Instant::now() >= deadline {
+                return Err("MOVE command deadline".into());
+            }
+            if retry_target_gate(result.status, &result.payload, true) {
+                pump(client).await?;
+                continue;
+            }
+            if result.status != CommandStatus::Accepted {
+                return Err(format!("MOVE gate refused: {result:?}").into());
+            }
+            let (body, detail) = if client.selected_capabilities().contains(&66) {
+                oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&result.payload)
+                    .map_err(|e| format!("MOVE detail: {e:?}"))?
+            } else {
+                (result.payload.as_slice(), None)
+            };
+            let outcome = wire::decode_item_move_result_for(body, selection)
+                .map_err(|e| format!("MOVE outcome: {e:?}"))?;
+            if outcome == wire::ItemMoveOutcome::Moved && detail.is_some() {
+                return Err("successful MOVE carried refusal detail".into());
+            }
+            return Ok(oteryn_dev_client::client_runtime::inventory::MoveResponse {
+                outcome,
+                detail,
+            });
+        }
+    }
+
+    async fn drop_lane(
+        client: &mut DevClientSession,
+        position: oteryn_protocol_oteryn::item_view::WorldTilePosition,
+    ) -> TestResult<Vec<oteryn_dev_client::ItemEntry>> {
+        use oteryn_protocol_oteryn::{browse_field as browse, container_tree as containers};
+        let payload =
+            browse::encode_browse_field_intent(&browse::BrowseFieldIntent::Open { position })
+                .map_err(|e| format!("drop lane query: {e:?}"))?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        let result = loop {
+            if ground_drop_position(client.world_spatial().actor_position)? != position {
+                return Err("drop lane origin displaced".into());
+            }
+            let result = tokio::time::timeout_at(
+                deadline,
+                client.session_mut().gated_command(
+                    browse::CAPABILITY_BROWSE_FIELD_V1,
+                    browse::COMMAND_TYPE_BROWSE_FIELD_INTENT,
+                    &payload,
+                ),
+            )
+            .await
+            .map_err(|_| "drop lane command deadline")??;
+            if tokio::time::Instant::now() >= deadline {
+                return Err("drop lane command deadline".into());
+            }
+            if retry_target_gate(result.status, &result.payload, true) {
+                tokio::time::timeout_at(deadline, pump(client))
+                    .await
+                    .map_err(|_| "drop lane command deadline")??;
+                continue;
+            }
+            break result;
+        };
+        if result.status != CommandStatus::Accepted
+            || containers::decode_container_view_result(&result.payload)
+                .map_err(|e| format!("drop lane result: {e:?}"))?
+                != containers::ContainerViewOutcome::Opened
+        {
+            return Err(format!("drop lane refused: {result:?}").into());
+        }
+
+        loop {
+            for event in client.take_events() {
+                if let oteryn_dev_client::SessionEvent::ContainerViews(update) = event
+                    && update.server_sequence > result.server_sequence
+                {
+                    for view in update.value.views {
+                        if let Some(page) = view.browse
+                            && page.position == position
+                        {
+                            if page.index != 0 || usize::from(page.total) != view.entries.len() {
+                                return Err("drop lane needs a complete native page".into());
+                            }
+                            return Ok(view.entries);
+                        }
+                    }
+                }
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err("drop lane observation deadline".into());
+            }
+            tokio::time::timeout_at(deadline, client.service_liveness(Duration::from_millis(25)))
+                .await
+                .map_err(|_| "drop lane observation deadline")??;
+        }
+    }
+
     async fn far_move(
         client: &mut DevClientSession,
         world: &BundleWorld,
         checks: &mut Checks,
     ) -> TestResult {
-        use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
-        use oteryn_protocol_oteryn::item_view::WorldTilePosition;
+        use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+        use oteryn_dev_client::{ItemMoveDestination, ItemMoveOutcome};
+        let ground = client.world_spatial().actor_position;
+        let native_ground = ground_drop_position(ground)?;
+        let baseline = drop_lane(client, native_ground).await?;
         let item = client
             .inventory()
-            .and_then(|i| i.entries.first())
+            .and_then(|i| {
+                i.entries.iter().find(|entry| {
+                    !baseline
+                        .iter()
+                        .any(|ground| ground.item_definition_ref == entry.item_definition_ref)
+                })
+            })
             .copied()
             .ok_or(
                 "FAIL: no ordinarily acquired backpack item for far MOVE; no fixture mint allowed",
             )?;
-        let ground = client.world_spatial().actor_position;
-        let dropped = client
-            .move_item(&ItemMoveIntent {
+        let quantity = |c: &DevClientSession| -> u64 {
+            c.inventory()
+                .map_or(0, |inventory| item_quantity(&inventory.entries, &item))
+        };
+        let before_quantity = quantity(client);
+        if baseline
+            .iter()
+            .any(|entry| entry.item_definition_ref == item.item_definition_ref)
+        {
+            return Err(
+                "far MOVE requires a drop lane without another instance of this definition".into(),
+            );
+        }
+        let prior_handles: BTreeSet<_> = baseline.iter().map(|entry| entry.handle).collect();
+        client.take_events();
+
+        let dropped = guarded_move(
+            client,
+            MoveRequest {
                 source: item.handle,
-                destination: ItemMoveDestination::Ground(WorldTilePosition {
-                    x: ground.x,
-                    y: ground.y,
-                    floor: ground.floor,
-                }),
-            })
-            .await?;
+                count: None,
+                destination: ItemMoveDestination::Ground(native_ground),
+            },
+        )
+        .await?;
         if dropped.outcome != ItemMoveOutcome::Moved {
             return Err(format!("far MOVE setup drop: {dropped:?}").into());
         }
+        let drop_sequence = client.last_server_sequence();
         // Map-capable clients receive Ground handles in WORLD_MAP, not as actors.
         let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
         let handle = loop {
-            let mut found = None;
+            let mut found = BTreeSet::new();
             for event in client.take_events() {
-                if let oteryn_dev_client::SessionEvent::WorldMap(delta) = event {
-                    for tile in delta
-                        .value
-                        .tiles
+                {
+                    let tiles = match event {
+                        oteryn_dev_client::SessionEvent::WorldMap(delta)
+                            if delta.server_sequence > drop_sequence =>
+                        {
+                            delta.value.tiles
+                        }
+                        oteryn_dev_client::SessionEvent::WorldMapSnapshot(snapshot)
+                            if snapshot.server_sequence > drop_sequence =>
+                        {
+                            snapshot.value.tiles
+                        }
+                        _ => continue,
+                    };
+                    for tile in tiles
                         .iter()
-                        .filter(|tile| tile.position == ground)
+                        .filter(|tile| map_drop_matches(tile.position, ground).unwrap_or(false))
                     {
                         for entry in &tile.items {
                             if entry.definition
@@ -508,48 +825,193 @@ mod e2ef1 {
                                 )
                                 && let oteryn_protocol_oteryn::world_map::MapOrigin::Handle(handle) =
                                     entry.origin
+                                && dropped_handle_matches(entry.origin, &prior_handles)
+                                && entry.count == item.count.get()
                             {
-                                found = Some(handle);
+                                found.insert(handle);
                             }
                         }
                     }
                 }
             }
-            if let Some(handle) = found {
-                break handle;
+            if found.len() > 1 {
+                return Err("ambiguous post-drop native handles".into());
+            }
+            if let Some(handle) = found.first() {
+                break *handle;
             }
             if tokio::time::Instant::now() >= deadline {
                 return Err("dropped item did not publish a live native map handle".into());
             }
             client.service_liveness(Duration::from_millis(25)).await?;
         };
-        let from = tile(ground)?;
-        let path =
-            route(world, from, |at| distance(at, from) == 3).ok_or("far MOVE retreat route")?;
-        walk(client, world, &path).await?;
-        let before = client.world_spatial().actor_position;
-        let moved = client
-            .move_item(&ItemMoveIntent {
-                source: handle,
-                destination: ItemMoveDestination::MainBackpack,
-            })
+        let result: TestResult = async {
+            let from = tile(ground)?;
+            let actual = tile(client.world_spatial().actor_position)?;
+            let path = route(world, actual, |at| distance(at, from) == 3)
+                .ok_or("far MOVE retreat route")?;
+            walk(client, world, &path).await?;
+            let before = client.world_spatial().actor_position;
+            let moved = guarded_move(
+                client,
+                MoveRequest {
+                    source: handle,
+                    count: None,
+                    destination: ItemMoveDestination::MainBackpack,
+                },
+            )
             .await?;
-        if moved.outcome != ItemMoveOutcome::Moved
-            || client.world_spatial().actor_position == before
-            || distance(tile(client.world_spatial().actor_position)?, from) > 1
-        {
-            return Err(format!("far MOVE did not walk and retry: {moved:?}").into());
+            if moved.outcome != ItemMoveOutcome::Moved
+                || client.world_spatial().actor_position == before
+                || distance(tile(client.world_spatial().actor_position)?, from) > 1
+            {
+                return Err(format!("far MOVE did not walk and retry: {moved:?}").into());
+            }
+            until(client, |c| quantity(c) == before_quantity).await?;
+            checks.pass("far-move-retry", (ground, client.world_spatial()));
+            Ok(())
         }
-        until(client, |c| {
-            c.inventory().is_some_and(|i| {
-                i.entries.iter().any(|e| {
-                    e.item_definition_ref == item.item_definition_ref && e.count == item.count
-                })
+        .await;
+        if let Err(error) = &result {
+            evidence(&format!("E2EF1_MOVE_RECOVERY original_error={error}"));
+            let restored = |c: &DevClientSession| quantity(c) == before_quantity;
+            if !restored(client) {
+                let drop = tile(ground)?;
+                let from = tile(client.world_spatial().actor_position)?;
+                let path = reach_route(client, world, from, |at| distance(at, drop) <= 1)
+                    .await?
+                    .map_err(|failure| format!("dropped item recovery route: {failure}"))?;
+                walk(client, world, &path).await?;
+                let recovery = guarded_move(
+                    client,
+                    MoveRequest {
+                        source: handle,
+                        count: None,
+                        destination: ItemMoveDestination::MainBackpack,
+                    },
+                )
+                .await?;
+                if recovery.outcome != ItemMoveOutcome::Moved {
+                    return Err(format!("dropped item recovery refused: {recovery:?}").into());
+                }
+                until(client, restored).await?;
+            }
+        }
+        result
+    }
+
+    fn floor_exhaust_spell<'a>(
+        book: &'a crate::spell::SpellBook,
+        level: u32,
+        vocation: crate::spell::Vocation,
+        mana: u32,
+        max_mana: u32,
+        eligibility: (
+            Option<&[oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry]>,
+            bool,
+            bool,
+        ),
+    ) -> Option<(std::num::NonZeroU32, &'a crate::spell::SpellDefinition)> {
+        (1..=book.source_len())
+            .filter_map(|i| {
+                let index = std::num::NonZeroU32::new(u32::try_from(i).ok()?)?;
+                Some((index, book.indexed(index)?))
             })
-        })
-        .await?;
-        checks.pass("far-move-retry", (ground, client.world_spatial()));
-        Ok(())
+            .filter(|(index, spell)| {
+                spell.aggressive
+                    && eligibility.0.map_or_else(
+                        || {
+                            spell.level <= level
+                                && spell.vocations.contains(&vocation)
+                                && !spell.premium
+                                && !spell.learning_required
+                        },
+                        |entries| {
+                            entries
+                                .iter()
+                                .any(|entry| entry.cast_index == index.get() && entry.available)
+                        },
+                    )
+                    && match spell.mana {
+                        crate::spell::ManaCost::Fixed(cost) => cost <= mana,
+                        crate::spell::ManaCost::PercentOfMaximum(percent) => {
+                            u64::from(max_mana) * u64::from(percent) / 100 <= u64::from(mana)
+                        }
+                    }
+                    && (!spell.needs_target || spell.target_or_direction)
+                    && (!spell.needs_weapon || eligibility.1)
+                    && (!spell.needs_shield || eligibility.2)
+                    && matches!(
+                        spell.carrier,
+                        crate::spell::Carrier::Instant {
+                            takes_parameter: false,
+                            ..
+                        }
+                    )
+                    && matches!(
+                        spell.execution,
+                        crate::spell::Execution::Effects(_)
+                            | crate::spell::Execution::AbilityVariants(_)
+                    )
+            })
+            .min_by_key(|(_, spell)| (spell.level, spell.cooldown_micros))
+    }
+
+    async fn fixture_spell_facts(
+        client: &mut DevClientSession,
+    ) -> TestResult<(u32, crate::spell::Vocation)> {
+        use oteryn_protocol_oteryn::cyclopedia_character as wire;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        let result = loop {
+            let result = tokio::time::timeout_at(
+                deadline,
+                client.session_mut().gated_command(
+                    wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+                    388,
+                    &[wire::CharacterTab::GeneralStats as u8, 0, 0, 1],
+                ),
+            )
+            .await
+            .map_err(|_| "command retry deadline expired")??;
+            if tokio::time::Instant::now() >= deadline {
+                return Err("command retry deadline expired".into());
+            }
+            if result.status == CommandStatus::Accepted {
+                break result;
+            }
+            if !retry_target_gate(result.status, &result.payload, true)
+                || tokio::time::Instant::now() >= deadline
+            {
+                return Err(format!("fixture GeneralStats refused: {result:?}").into());
+            }
+            tokio::time::timeout_at(deadline, pump(client))
+                .await
+                .map_err(|_| "command retry deadline expired")??;
+        };
+        let vocation_id =
+            general_stats::validate(&result.payload, general_stats::selected(client))?
+                .ok_or("fixture vocation absent from negotiated GeneralStats")?;
+        let level = u32::from_le_bytes(result.payload[9..13].try_into()?);
+        let key = [
+            "none",
+            "druid",
+            "elder_druid",
+            "sorcerer",
+            "master_sorcerer",
+            "knight",
+            "elite_knight",
+            "paladin",
+            "royal_paladin",
+            "monk",
+            "exalted_monk",
+        ]
+        .into_iter()
+        .find(|key| wire::vocation_id(key) == Some(vocation_id))
+        .ok_or("fixture vocation id unknown")?;
+        Ok((
+            level,
+            crate::spell::Vocation::from_key(key).ok_or("fixture vocation unknown")?,
+        ))
     }
 
     async fn m03(
@@ -560,26 +1022,75 @@ mod e2ef1 {
     ) -> TestResult {
         use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
         let book = native_spell_book()?;
-        let spell = book
-            .spoken("exevo flam hur")
-            .ok_or("aggressive spell content absent: flame wave")?
-            .spell;
-        if !spell.aggressive {
-            return Err("flame wave is not aggressive".into());
+        let (level, vocation) = fixture_spell_facts(client).await?;
+        let catalog = client
+            .session_mut()
+            .spell_catalog()?
+            .ok_or("floor exhaust native catalog absent")?;
+        let input = native_input()?;
+        let profiles: crate::content::native_gameplay::ItemProfilesDocument =
+            serde_json::from_slice(
+                &input
+                    .item_profiles
+                    .as_ref()
+                    .ok_or("native item profiles absent")?
+                    .bytes,
+            )?;
+        let index = item_index()?;
+        let mut gear = (false, false);
+        if let Some(inventory) = client.inventory() {
+            for equipped in &inventory.equipment {
+                use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+                if !matches!(
+                    equipped.slot,
+                    EquipmentSlot::LeftHand | EquipmentSlot::RightHand
+                ) {
+                    continue;
+                }
+                let Some((key, revision)) = index.definition_at(equipped.item.item_definition_ref)
+                else {
+                    continue;
+                };
+                let Some(record) = profiles.records.iter().find(|record| {
+                    record.production_definition.production_key == key
+                        && record.production_definition.revision_ref == revision
+                }) else {
+                    continue;
+                };
+                use crate::content::{ReferenceItemField as F, ReferenceWeaponType as W};
+                if let F::Known(weapon) = &record.semantics.weapon {
+                    gear.0 |= matches!(
+                        weapon.weapon_type,
+                        F::Known(W::Club | W::Sword | W::Axe | W::Fist)
+                    );
+                    gear.1 |= matches!(weapon.weapon_type, F::Known(W::Shield));
+                }
+            }
         }
-        let index = (1..=book.source_len())
-            .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
-            .find(|i| book.indexed(*i).is_some_and(|s| s.key == spell.key))
-            .ok_or("flame wave source index")?;
-        let cooldown = Duration::from_micros(
-            spell
-                .groups
-                .iter()
-                .map(|g| g.cooldown_micros)
-                .chain([spell.cooldown_micros])
-                .max()
-                .unwrap_or(0),
+        let pools = client.actor_vitals().ok_or("floor exhaust pools absent")?;
+        let selected = floor_exhaust_spell(
+            book,
+            level,
+            vocation,
+            pools.mana,
+            pools.max_mana,
+            (Some(&catalog.entries), gear.0, gear.1),
         );
+        let cooldown = selected.map_or(Duration::ZERO, |(_, spell)| {
+            Duration::from_micros(
+                spell
+                    .groups
+                    .iter()
+                    .map(|group| group.cooldown_micros)
+                    .chain([spell.cooldown_micros])
+                    .max()
+                    .unwrap_or(0),
+            )
+        });
+        if selected.is_none() {
+            checks.missing("aggressive-exhaust", SPELL_TARGET_SOURCE,
+                &format!("no executable untargeted aggressive spell for observed fixture level={level} vocation={vocation:?}; no fixture promotion permitted"));
+        }
         let mut ready = tokio::time::Instant::now();
         let mut exhausted = 0;
         for teleport in [false, true] {
@@ -603,6 +1114,9 @@ mod e2ef1 {
                     if tile(client.world_spatial().actor_position)?.floor == from.floor { return Err("stairs did not change floor".into()); }
                     checks.pass("stairs", client.world_spatial());
                 }
+                let Some((index, _)) = selected else {
+                    return Err("MISSING aggressive-exhaust: observed fixture has no eligible spell; source=content/abilities/definitions/player-spells.json:1".into());
+                };
                 let changed = std::time::Instant::now();
                 let before = client.actor_vitals().copied().ok_or("floor exhaust vitals")?;
                 let result = client.cast_spell(index, SpellTarget::None, false).await?;
@@ -623,6 +1137,9 @@ mod e2ef1 {
                 Ok(())
             }.await;
             if let Err(error) = result {
+                if teleport && error.is::<MissingAuthoredTarget>() {
+                    checks.missing("teleport", WORLD_TARGET_SOURCE, &error.to_string());
+                }
                 evidence(&format!(
                     "E2EF1_GAP row=M03 teleport={teleport} error={error}"
                 ));
@@ -686,18 +1203,11 @@ mod e2ef1 {
                 "E2EF1_GAP row=M04 case=push-creature error={error}"
             ));
         }
-        // Leave the rat spawn before the row's logout waits out the in-fight lock:
-        // left there, the live rats kill this core Character, which then respawns
-        // at the home temple beyond the core's town route budget.
-        let left: TestResult = async {
-            let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-                at == TOWN
-            })
-            .ok_or("push-creature return route")?;
-            walk(client, world, &back).await
-        }
-        .await;
-        player.and(creature).and(left)
+        // Leave the lethal encounter for the nearest authored protection zone.
+        // The row's later origin return still enforces its fixture-town requirement.
+        let left = return_to_protection_zone(client, world).await.map(|_| ());
+        left?;
+        player.and(creature)
     }
     async fn player_push(
         client: &mut DevClientSession,
@@ -772,7 +1282,9 @@ mod e2ef1 {
     ) -> TestResult {
         let basis = spatial_basis::current(client)?;
         let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
-        travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat")
+            .await
+            .inspect_err(|error| evidence(&format!("E2EF1_PUSH phase=approach error={error}")))?;
         let here = tile(client.world_spatial().actor_position)?;
         let creature = client
             .world_entities()
@@ -790,7 +1302,13 @@ mod e2ef1 {
             .filter_map(|d| destination(world, from, d))
             .find(|at| *at != here && distance(*at, from) == 1)
             .ok_or("creature push lane")?;
-        if push(client, creature.entity, landing).await? != 1 {
+        evidence(&format!(
+            "E2EF1_PUSH phase=command command_type=98 from={from:?} to={landing:?} entity={:?}",
+            creature.entity
+        ));
+        if push(client, creature.entity, landing).await.inspect_err(|error| {
+            evidence(&format!("E2EF1_PUSH phase=command error={error} visibility_codec=domain:1,type:2 source=crates/session/src/domain_dispatch.rs:160"));
+        })? != 1 {
             return Err("live creature push did not move".into());
         }
         until(client, |c| {
@@ -800,7 +1318,10 @@ mod e2ef1 {
                     .is_some_and(|e| e.position == position(landing, basis))
             })
         })
-        .await?;
+        .await.inspect_err(|error| {
+            evidence(&format!("E2EF1_PUSH phase=observe error={error} visibility_codec=domain:1,type:2 source=crates/session/src/domain_dispatch.rs:160"));
+        })?;
+        evidence("E2EF1_PUSH phase=observed");
         checks.pass("push-creature", (creature.entity, from, landing));
         Ok(())
     }
@@ -1075,10 +1596,10 @@ mod e2ef1 {
     ) -> TestResult<DevClientSession> {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let objects = objects(&bytes)?;
-        let origin = tile(client.world_spatial().actor_position)?;
         let mut failed = false;
         let mut revisions = BTreeMap::new();
         for (ordinal, (row, required)) in ROWS.iter().enumerate() {
+            let origin = tile(client.world_spatial().actor_position)?;
             let started = std::time::Instant::now();
             verdicts.current = Some(row);
             let mut checks = Checks {
@@ -1150,7 +1671,28 @@ mod e2ef1 {
             if durable && required.contains(&"relogin") {
                 checks.pass("relogin", saved);
             }
-            let passed = result.is_ok() && durable && checks.complete(required);
+            let mut recovered = false;
+            let restored: TestResult = async {
+            let from = tile(client.world_spatial().actor_position)?;
+            let back = match reach_route(&mut client, world, from, |at| at == origin).await? {
+                Ok(back) => back,
+                Err(failure) => {
+                    let at = return_to_protection_zone(&mut client, world).await?;
+                    let detail = home_temple_return(at, failure);
+                    evidence(&detail);
+                    // A reachable safe return is not a lost session. The next row
+                    // starts its own lifecycle at this observed position; its real
+                    // setup commands must establish their own prerequisites.
+                    evidence(&format!(
+                        "E2EF1_ROW_RETURN row={row} status=FAIL next_origin={at:?} evidence={detail}"
+                    ));
+                    recovered = true;
+                    return Err(detail.into());
+                }
+            };
+            walk(&mut client, world, &back).await
+            }.await;
+            let passed = result.is_ok() && restored.is_ok() && durable && checks.complete(required);
             failed |= !passed;
             let gaps: Vec<_> = required
                 .iter()
@@ -1164,13 +1706,17 @@ mod e2ef1 {
             let suffix = if passed {
                 String::new()
             } else {
-                let cause = match &result {
+                let cause = match verdict::release_affects_verdict(&result, &restored) {
                     Err(error) => verdict::classify(error.as_ref()),
                     Ok(()) => verdict::Cause::Assertion,
                 };
                 cause.suffix(&format!(
                     "{row}/{}",
-                    gaps.first().copied().unwrap_or("durable")
+                    gaps.first().copied().unwrap_or(if restored.is_err() {
+                        "return"
+                    } else {
+                        "durable"
+                    })
                 ))
             };
             evidence(&format!(
@@ -1178,11 +1724,9 @@ mod e2ef1 {
                 if passed { "PASS" } else { "FAIL" },
                 started.elapsed().as_secs_f64()
             ));
-            let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-                at == origin
-            })
-            .ok_or("movement full row has no return route")?;
-            walk(&mut client, world, &back).await?;
+            if !recovered {
+                restored?;
+            }
         }
         if failed {
             evidence("E2EF1_INCOMPLETE full_row_failures_reported_to_e2e_all");
@@ -1193,6 +1737,199 @@ mod e2ef1 {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn qualification_floor_exhaust_spell_fits_pristine_sorcerer() -> TestResult {
+            std::thread::Builder::new()
+                .stack_size(64 << 20)
+                .spawn(|| -> Result<(), String> {
+                    let book = native_spell_book().map_err(|error| error.to_string())?;
+                    let spell = book
+                        .spoken("exevo infir flam hur")
+                        .ok_or("floor exhaust spell missing")?
+                        .spell;
+                    assert!(spell.aggressive);
+                    assert_eq!(spell.level, 1);
+                    assert!(!spell.premium && !spell.learning_required && !spell.needs_target);
+                    assert!(spell.vocations.contains(&crate::spell::Vocation::Sorcerer));
+                    assert_eq!(spell.soul, 0);
+                    Ok(())
+                })?
+                .join()
+                .map_err(|_| "floor exhaust content test thread failed")??;
+            Ok(())
+        }
+
+        #[test]
+        fn qualification_map_handle_position_uses_native_floor() -> TestResult {
+            let actor = ActorPosition {
+                x: 32315,
+                y: 32209,
+                floor: 8,
+            };
+            let native = ActorPosition { floor: -8, ..actor };
+            assert!(map_drop_matches(native, actor)?);
+            Ok(())
+        }
+
+        #[test]
+        fn qualification_ground_drop_uses_native_bundle_floor() -> TestResult {
+            let at = ActorPosition {
+                x: 32369,
+                y: 32238,
+                floor: 7,
+            };
+            let drop = ground_drop_position(at)?;
+            assert_eq!(drop.floor, -7);
+            Ok(())
+        }
+
+        #[test]
+        fn qualification_target_gate_retries_only_empty_stationary_refusals() {
+            assert!(retry_target_gate(CommandStatus::Rejected, &[], true));
+            assert!(!retry_target_gate(CommandStatus::Rejected, &[8, 3], true));
+            assert!(!retry_target_gate(CommandStatus::Rejected, &[], false));
+            assert!(!retry_target_gate(CommandStatus::Accepted, &[], true));
+        }
+
+        #[test]
+        fn qualification_authority_one_goal_set_covers_all_candidates() -> TestResult {
+            let first = Object {
+                at: TOWN,
+                ordinal: 0,
+                appearance: 2177,
+                action: None,
+            };
+            let second = Object {
+                at: TilePos {
+                    x: TOWN.x + 10,
+                    ..TOWN
+                },
+                ..first
+            };
+            let goals = candidate_goals(&[first, second], 1)?;
+            assert_eq!(goals.len(), 8);
+            assert!(!goals.contains_key(&TOWN));
+            assert!(goals.values().any(|object| object.at == second.at));
+            Ok(())
+        }
+
+        #[test]
+        fn qualification_authority_drop_keeps_instance_identity() -> TestResult {
+            use oteryn_protocol_oteryn::world_map::MapOrigin;
+            let expected = std::num::NonZeroU64::MIN;
+            let other = std::num::NonZeroU64::new(2).ok_or("distinct handle")?;
+            assert!(!dropped_handle_matches(
+                MapOrigin::Handle(other),
+                &BTreeSet::from([other])
+            ));
+            assert!(dropped_handle_matches(
+                MapOrigin::Handle(expected),
+                &BTreeSet::from([other])
+            ));
+            Ok(())
+        }
+        #[test]
+        fn qualification_authority_quantity_survives_merge() -> TestResult {
+            let two = oteryn_dev_client::ItemEntry {
+                appearance_id: 0,
+                handle: std::num::NonZeroU64::MIN,
+                item_definition_ref: std::num::NonZeroU32::MIN,
+                count: std::num::NonZeroU32::new(2).ok_or("quantity")?,
+                sub_type: 0,
+            };
+            let five = oteryn_dev_client::ItemEntry {
+                count: std::num::NonZeroU32::new(5).ok_or("quantity")?,
+                ..two
+            };
+            let merged = oteryn_dev_client::ItemEntry {
+                count: std::num::NonZeroU32::new(7).ok_or("quantity")?,
+                ..two
+            };
+            assert_eq!(item_quantity(&[two, five], &two), 7);
+            assert_eq!(item_quantity(&[merged], &two), 7);
+            assert_eq!(
+                item_quantity(
+                    &[oteryn_dev_client::ItemEntry {
+                        sub_type: 1,
+                        ..merged
+                    }],
+                    &two
+                ),
+                0
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn qualification_authority_affordable_facing_spell() -> TestResult {
+            std::thread::Builder::new()
+                .stack_size(64 << 20)
+                .spawn(|| -> Result<(), String> {
+                    let book = native_spell_book().map_err(|e| e.to_string())?;
+                    let (_, spell) = floor_exhaust_spell(
+                        book,
+                        8,
+                        crate::spell::Vocation::Sorcerer,
+                        6,
+                        100,
+                        (None, false, false),
+                    )
+                    .ok_or("no affordable spell")?;
+                    assert!(matches!(spell.mana, crate::spell::ManaCost::Fixed(cost) if cost <= 6));
+                    Ok(())
+                })?
+                .join()
+                .map_err(|_| "affordable spell test panicked")??;
+            Ok(())
+        }
+
+        #[test]
+        fn qualification_floor_exhaust_uses_observed_vocation() -> TestResult {
+            std::thread::Builder::new()
+                .stack_size(64 << 20)
+                .spawn(|| -> Result<(), String> {
+                    let book = native_spell_book().map_err(|error| error.to_string())?;
+                    assert!(
+                        floor_exhaust_spell(
+                            book,
+                            8,
+                            crate::spell::Vocation::None,
+                            u32::MAX,
+                            u32::MAX,
+                            (None, false, false)
+                        )
+                        .is_none()
+                    );
+                    let (_, spell) = floor_exhaust_spell(
+                        book,
+                        8,
+                        crate::spell::Vocation::Sorcerer,
+                        u32::MAX,
+                        u32::MAX,
+                        (None, false, false),
+                    )
+                    .ok_or("sorcerer novice spell absent")?;
+                    assert_eq!(spell.level, 1);
+                    assert!(spell.vocations.contains(&crate::spell::Vocation::Sorcerer));
+                    Ok(())
+                })?
+                .join()
+                .map_err(|_| "spell eligibility test thread failed")??;
+            Ok(())
+        }
+
+        #[test]
+        fn missing_authored_target_never_completes_a_row() {
+            let mut checks = Checks::default();
+            checks.missing(
+                "teleport",
+                WORLD_TARGET_SOURCE,
+                "unreachable authored target",
+            );
+            assert!(!checks.complete(&["teleport"]));
+            assert_eq!(checks.missing.get("teleport"), Some(&WORLD_TARGET_SOURCE));
+        }
+
         #[test]
         fn full_rows_require_every_named_action() {
             for (_, required) in ROWS {

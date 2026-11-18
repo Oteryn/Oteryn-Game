@@ -233,6 +233,16 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
 /// `connect_and_join`'s full join, but keeps the admitted connection: see
 /// `oteryn_session::Session` for the sequence, revision and liveness discipline it carries.
 pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSession, DevClientError> {
+    let material = request.admission_material;
+    connect_session_with_admission(request, || Ok(material.to_vec())).await
+}
+
+/// Prepare TCP/TLS before minting short-lived admission material. Failed transports
+/// do not consume a grant's lifetime; the factory is called once after negotiation.
+pub async fn connect_session_with_admission(
+    request: JoinRequest<'_>,
+    material: impl FnOnce() -> Result<Vec<u8>, DevClientError>,
+) -> Result<DevClientSession, DevClientError> {
     let started = Instant::now();
     let stream = oteryn_session_tcp::connect(TcpConnect {
         address: request.address,
@@ -242,13 +252,14 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
     })
     .await
     .map_err(|error| contextualize_transport(error, started))?;
+    let material = material()?;
     let session = Session::admit(
         stream,
         Admission {
             appearance_items: None,
             schema_revision: request.schema_revision,
             character_id: request.character_id,
-            admission_material: request.admission_material,
+            admission_material: &material,
             client_build_id: request.client_build_id,
             supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
             deadline: request.deadline,

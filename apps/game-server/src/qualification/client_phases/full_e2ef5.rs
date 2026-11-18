@@ -21,10 +21,14 @@ const ILLUSION_ACTIONS: &[&str] = &[
 struct Row(verdict::Row);
 impl Row {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
-        Self(verdict::Row::new("E2EF5", id, required).evidence(
-            "observed-all-required-actions",
-            "required-actions-unproven-see-E2EF5_GAP",
-        ))
+        Self(
+            verdict::Row::new("E2EF5", id, required)
+                .evidence(
+                    "observed-all-required-actions",
+                    "required-actions-unproven-see-E2EF5_GAP",
+                )
+                .fail_detail(),
+        )
     }
     fn pass(&mut self, action: &'static str, sequence: u64) {
         // A zero sequence cannot identify an observed server frame.
@@ -66,26 +70,15 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
     ] {
         let mut row = Row::new(id, actions);
         let watch = row.0.watch();
-        let result: TestResult = async {
-            let _row = watch.enter();
-            let mut client = connect_world(clients, tag).await?;
-            let mut completed = false;
-            let deadline =
+        let deadline =
                 format!("{id} native journey exceeded {limit}s; remaining actions unproven");
-            let result = watch
-                .bound(Duration::from_secs(limit), deadline, async {
+        let result: TestResult = watch.bound(Duration::from_secs(limit), deadline, async {
+            let mut client = connect_world(clients, tag).await?;
                     let result = if id == "C17a" {
                         haste(&mut row, &mut client, clients, world).await
                     } else {
                         illusion(&mut row, &mut client, clients).await
                     };
-                    completed = true;
-                    result
-                })
-                .await;
-            if !completed {
-                return result;
-            }
             // Only a completed exchange can be followed by cleanup. A timeout
             // returns above and drops this connection with its uncertain reply/frame.
             // Restore the entry tile even after a failed movement/cast assertion.
@@ -96,15 +89,13 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
                 .ok_or("E2EF5 return route unavailable")?;
                 walk(&mut client, world, &back).await?;
                 logout(&mut client).await
-            }
-            .await;
+            }.await;
             if let Err(error) = &cleanup {
                 evidence(&format!("E2EF5_GAP {id} cleanup: {error}"));
             }
             result?;
             cleanup
-        }
-        .await;
+        }).await;
         row.finish(result);
     }
     rune_rows(clients, world).await;
@@ -935,26 +926,16 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
     ] {
         let mut row = Row::new(id, actions);
         let watch = row.0.watch();
-        let result: TestResult = async {
-            let _row = watch.enter();
+        let deadline = format!("{id} 240s journey deadline; remaining actions unproven");
+        let result: TestResult = watch.bound(Duration::from_secs(240), deadline, async {
             let mut client = connect_world(clients, tag).await?;
             let mut peer_cancelled = false;
-            let mut completed = false;
-            let deadline = format!("{id} 240s journey deadline; remaining actions unproven");
-            let result = watch
-                .bound(Duration::from_secs(240), deadline, async {
                     let result = if id == "C16b" {
                         paralyze(&mut row, &mut client, clients, world, &mut peer_cancelled).await
                     } else {
                         barriers(&mut row, &mut client, clients, world).await
                     };
-                    completed = true;
-                    result
-                })
-                .await;
-            if !completed || peer_cancelled {
-                return result;
-            }
+            if peer_cancelled { return result; }
             // Also close this admission on prerequisite failures and assertion errors.
             let cleanup = rune_cleanup(&mut client, world).await;
             if let Err(error) = &cleanup {
@@ -962,8 +943,7 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
             }
             result?;
             cleanup
-        }
-        .await;
+        }).await;
         row.finish(result);
     }
 }
@@ -1773,34 +1753,23 @@ async fn combat_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
     ] {
         let mut row = Row::new(id, actions);
         let watch = row.0.watch();
-        let result: TestResult = async {
-            let _row = watch.enter();
+        let deadline = format!("{id} 240s journey deadline; required actions unproven");
+        let result: TestResult = watch.bound(Duration::from_secs(240), deadline, async {
             let mut client = connect_character(clients, tag, usize::from(id != "C17d")).await?;
             let mut peer_cancelled = false;
-            let mut completed = false;
-            let deadline = format!("{id} 240s journey deadline; required actions unproven");
-            let result = watch
-                .bound(Duration::from_secs(240), deadline, async {
                     let result = if id == "C18a" {
                         directional_aim(&mut row, &mut client, clients, world).await
                     } else {
                         challenge(&mut row, &mut client, clients, world, &mut peer_cancelled).await
                     };
-                    completed = true;
-                    result
-                })
-                .await;
-            if !completed || peer_cancelled {
-                return result;
-            }
+            if peer_cancelled { return result; }
             let cleanup = rune_cleanup(&mut client, world).await;
             if let Err(error) = &cleanup {
                 evidence(&format!("E2EF5_GAP {id} cleanup: {error}"));
             }
             result?;
             cleanup
-        }
-        .await;
+        }).await;
         row.finish(result);
     }
 }
@@ -2851,34 +2820,22 @@ async fn companion_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
     ] {
         let mut row = Row::new(id, actions);
         let watch = row.0.watch();
-        let result: TestResult = async {
-            let _row = watch.enter();
-            let mut client = connect_world(clients, tag).await?;
-            let mut completed = false;
-            let deadline =
+        let deadline =
                 format!("{id}: 600s companion journey deadline; required actions unproven");
-            let result = watch
-                .bound(Duration::from_secs(600), deadline, async {
+        let result: TestResult = watch.bound(Duration::from_secs(600), deadline, async {
+            let mut client = connect_world(clients, tag).await?;
                     let result = if id == "C13" {
                         summons(&mut row, &mut client, clients, world).await
                     } else {
                         acquired_companions(&mut row, &mut client, clients, world).await
                     };
-                    completed = true;
-                    result
-                })
-                .await;
-            if !completed {
-                return result;
-            }
             let cleanup = rune_cleanup(&mut client, world).await;
             if let Err(error) = &cleanup {
                 evidence(&format!("E2EF5_GAP {id} cleanup: {error}"));
             }
             result?;
             cleanup
-        }
-        .await;
+        }).await;
         row.finish(result);
     }
 }
@@ -4057,32 +4014,20 @@ const TILE_ITEM_ACTIONS: &[&str] = &[
 async fn tile_item_row(clients: &SeamClients<'_>, world: &BundleWorld) {
     let mut row = Row::new("C16d", TILE_ITEM_ACTIONS);
     let watch = row.0.watch();
-    let result: TestResult = async {
-        let _row = watch.enter();
-        let mut client = connect_world(clients, 0xe0).await?;
-        let mut completed = false;
-        let result = watch
-            .bound(
-                Duration::from_secs(400),
-                "C16d 400s journey deadline; required actions unproven",
-                async {
-                    let result = tile_items(&mut row, &mut client, clients, world).await;
-                    completed = true;
-                    result
-                },
-            )
-            .await;
-        if !completed {
-            return result;
-        }
-        let cleanup = rune_cleanup(&mut client, world).await;
-        if let Err(error) = &cleanup {
-            evidence(&format!("E2EF5_GAP C16d cleanup: {error}"));
-        }
-        result?;
-        cleanup
-    }
-    .await;
+    let result = watch.bound(
+        Duration::from_secs(400),
+        "C16d 400s journey deadline; required actions unproven",
+        async {
+            let mut client = connect_world(clients, 0xe0).await?;
+            let result = tile_items(&mut row, &mut client, clients, world).await;
+            let cleanup = rune_cleanup(&mut client, world).await;
+            if let Err(error) = &cleanup {
+                evidence(&format!("E2EF5_GAP C16d cleanup: {error}"));
+            }
+            result?;
+            cleanup
+        },
+    ).await;
     row.finish(result);
 }
 

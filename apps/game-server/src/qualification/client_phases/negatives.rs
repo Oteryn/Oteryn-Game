@@ -36,14 +36,13 @@ pub(super) async fn transport<'a>(
         &characters[0],
         &sign_grant(&grant.borrowed(), now_seconds()?),
     ));
-    for (label, profile, raw) in [
+    for (label, profile) in [
         (
             "tls12_exact_alpn",
             ClientProfile {
                 tls12: true,
                 alpn: Some(b"oteryn-game/1"),
             },
-            valid_frame.clone(),
         ),
         (
             "wrong_alpn",
@@ -51,7 +50,6 @@ pub(super) async fn transport<'a>(
                 tls12: false,
                 alpn: Some(b"wrong"),
             },
-            valid_frame.clone(),
         ),
         (
             "missing_alpn",
@@ -59,26 +57,61 @@ pub(super) async fn transport<'a>(
                 tls12: false,
                 alpn: None,
             },
-            valid_frame.clone(),
         ),
     ] {
-        let reply = exchange(address, &connector(certificate, &profile)?, &raw).await?;
-        if !matches!(reply, Reply::TlsRefused | Reply::Closed) {
-            return Err(format!("{label} reached the frame layer: {reply:?}").into());
-        }
+        let bad_profile = connector(certificate, &profile)?;
+        tokio::time::timeout(Duration::from_secs(20), async {
+            let tcp = TcpStream::connect(address).await?;
+            match bad_profile
+                .connect(ServerName::try_from("localhost")?, tcp)
+                .await
+            {
+                Err(error) => {
+                    let alert = error
+                        .get_ref()
+                        .and_then(|source| source.downcast_ref::<rustls::Error>());
+                    if matches!(
+                        alert,
+                        Some(rustls::Error::AlertReceived(
+                            rustls::AlertDescription::ProtocolVersion
+                                | rustls::AlertDescription::NoApplicationProtocol
+                        ))
+                    ) {
+                        Ok(())
+                    } else {
+                        Err(error.into())
+                    }
+                }
+                Ok(mut stream) => {
+                    // An absent ALPN offer can finish TLS. The node must close
+                    // that profile before it waits for a Foundation frame.
+                    let mut output = Vec::new();
+                    if stream.get_ref().1.alpn_protocol().is_some()
+                        || read_exchange_chunk(&mut stream, &mut output).await?
+                    {
+                        return Err(format!("{label} was not refused before framing").into());
+                    }
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                }
+            }
+        })
+        .await??;
     }
     let mut plaintext = TcpStream::connect(address).await?;
-    plaintext.write_all(&valid_frame).await?;
-    let mut output = Vec::new();
-    let _ = tokio::time::timeout(Duration::from_secs(20), plaintext.read_to_end(&mut output)).await;
-    // The TLS layer may answer with an alert record (content type 0x15);
-    // nothing else, and never a Foundation frame, may come back.
-    if output
-        .first()
-        .is_some_and(|content_type| *content_type != 0x15)
-    {
-        return Err(format!("plaintext received a non-alert reply: {output:02x?}").into());
-    }
+    tokio::time::timeout(Duration::from_secs(20), async {
+        plaintext.write_all(&valid_frame).await?;
+        plaintext.shutdown().await?;
+        let mut output = Vec::new();
+        while read_exchange_chunk(&mut plaintext, &mut output).await? {}
+        if !output.is_empty() && !matches!(output.as_slice(), [0x15, 0x03, 0x01..=0x03, 0, 2, 2, _])
+        {
+            return Err(
+                format!("plaintext received an invalid TLS rejection: {output:02x?}").into(),
+            );
+        }
+        Ok::<(), Box<dyn std::error::Error>>(())
+    })
+    .await??;
     if committed_admissions(url).await? != 0 {
         return Err("a transport negative committed an admission".into());
     }
@@ -132,18 +165,19 @@ pub(super) async fn admission_negatives(
         (
             "client_command_before_admission",
             framed(&envelope(7, 0, &[])),
-            None,
+            Some(FoundationProtocolError::MalformedEnvelope),
         ),
         ("oversized_frame", 1_048_577u32.to_be_bytes().to_vec(), None),
         ("truncated_frame", vec![0, 0, 0, 9, 1, 2], None),
     ] {
-        let reply = exchange(address, exact, &raw).await?;
+        let (reply, _) =
+            exchange_with_write_end(address, exact, &raw, label == "truncated_frame").await?;
         if let Some(error) = error {
             if reply != Reply::Frames(vec![encode_protocol_error(error, 0)?]) {
                 return Err(format!("{label}: {reply:?}").into());
             }
-        } else if accepted_session(&reply).is_some() {
-            return Err(format!("{label} was admitted").into());
+        } else if reply != Reply::Closed {
+            return Err(format!("{label} did not close without frames: {reply:?}").into());
         }
     }
     if committed_admissions(url).await? != 0 {

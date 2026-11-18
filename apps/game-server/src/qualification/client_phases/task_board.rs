@@ -25,11 +25,13 @@ pub(super) async fn task_board(client: &mut oteryn_dev_client::DevClientSession)
         } else {
             "weekly_owner_refused_start"
         };
-        evidence(&format!(
-            "mechanic=task_board skipped={reason} refusal={} source=crates/gameplay/quests/src/quest/task_board_full.rs:620",
-            reply.refusal
-        ));
-        return Ok(());
+        return client_imbue::mutation_verdict(
+            false,
+            format!(
+                "mechanic=task_board status=FAIL refused={reason} refusal={} source=crates/gameplay/quests/src/quest/task_board_full.rs:620",
+                reply.refusal
+            ),
+        );
     }
     ui::apply_weekly(&mut panel, reply);
     let request = ui::weekly_request(&mut panel, None).ok_or("weekly current query")?;

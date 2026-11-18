@@ -170,6 +170,7 @@ mod public_kill_statistics;
 mod pvp_death;
 mod pvp_expert;
 mod pvp_live;
+pub mod qualification_observation;
 mod quest_admission;
 mod quest_batch3_c;
 mod quest_callbacks;
@@ -407,6 +408,8 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 /// #414 Character authority, and this GameNode's #415 incarnation holding the
 /// served Channel.
 pub struct GameplaySeamOwners<'a, 'f, 's> {
+    /// An explicit Channel lane when a qualification fixture shares this listener.
+    pub spell_lane: Option<crate::durability::spell_owner_commit::SpellLane>,
     /// Validated once by the composition root before serving.
     pub platform_enforcement_enabled: bool,
     pub cast: Option<cast::CastRuntimeConfig>,

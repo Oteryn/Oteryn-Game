@@ -1,4 +1,19 @@
 use super::*;
+pub(super) fn mutation_verdict(accepted: bool, detail: impl Into<String>) -> TestResult {
+    if !accepted {
+        let detail = detail.into();
+        evidence(&detail);
+        return Err(detail.into());
+    }
+    Ok(())
+}
+
+#[test]
+fn refused_required_mutation_is_a_failure() {
+    assert!(mutation_verdict(false, "mechanic=imbue status=FAIL outcome=RevisionChanged").is_err());
+    assert!(mutation_verdict(true, "committed").is_ok());
+}
+
 pub(super) async fn imbue(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
     use oteryn_dev_client::{client_runtime::imbue, client_ui::imbue as ui};
     if !client.selected_capabilities().contains(&68) {
@@ -58,11 +73,13 @@ pub(super) async fn imbue(client: &mut oteryn_dev_client::DevClientSession) -> T
     if result != ui::imbuement::ImbuementResult::Ok {
         let recipe = oteryn_gameplay_items::imbuement::imbuement_recipe(offer.family, offer.tier)
             .ok_or("imbue recipe")?;
-        evidence(&format!(
-            "mechanic=imbue skipped=apply_refused_{result:?} recipe={} materials={:?} gold={} source=crates/gameplay/dispatch/src/gameplay_transport/imbuement.rs:600",
-            recipe.key, recipe.materials, recipe.apply_gold
-        ));
-        return Ok(());
+        return mutation_verdict(
+            false,
+            format!(
+                "mechanic=imbue status=FAIL refused=apply_refused_{result:?} recipe={} materials={:?} gold={} source=crates/gameplay/dispatch/src/gameplay_transport/imbuement.rs:600",
+                recipe.key, recipe.materials, recipe.apply_gold
+            ),
+        );
     }
     let command = ui::request(&mut panel, ui::Intent::Refresh).ok_or("imbue verify")?;
     ui::apply_result(

@@ -15,6 +15,8 @@ pub(super) struct Serving<'a, 'f, 's> {
     pub(super) generation: u64,
     pub(super) signalled: &'a CancellationToken,
     pub(super) timed_npcs: bundle_npcs::TimedNpcSpawns,
+    /// The room the qualification `spawn` command places creatures in.
+    pub(super) spawn_room: &'a crate::content::QualifiedNativeEntryRoom,
 }
 
 pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootError> {
@@ -32,6 +34,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         generation,
         signalled,
         timed_npcs,
+        spawn_room,
     } = serving;
     let root = owners.root;
     let authority = owners.character;
@@ -67,6 +70,11 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             .as_ref()
             .and_then(|bundle| bundle.digest_bytes()),
     };
+    if config.qualification_fixture {
+        crate::gameplay_transport::qualification_observation::enable();
+        #[cfg(any(test, feature = "qualification-spawn"))]
+        crate::durability::fresh_admission::qualification_replay::enable();
+    }
     let loops_stop = CancellationToken::new();
     let reset_watch = world_reset::ResetWatch::default();
     // Box each long-lived family before the supervisor retains it. Inline loop
@@ -89,6 +97,10 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         &material.intents,
         config,
         native,
+        Some(super::qualification_fixture::SpawnOwners {
+            runtime,
+            room: spawn_room,
+        }),
         shutdown,
     ));
     let mut expiry = Box::pin(both(

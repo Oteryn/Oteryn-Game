@@ -69,12 +69,30 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: 0,
     };
-    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(&mut row, clients))).await;
+    // Earning the purchases is real rat hunting; its budget (sized from the catalogue prices)
+    // joins the 420 s the rest of the row needs.
+    let earning = full_gold::allowance(needed_gold().unwrap_or_default());
+    let result = verdict::indexed_timeout(
+        earning + Duration::from_secs(420),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!("timeout-after-step-{}", row.step).into()),
     };
     row.finish(result);
+}
+
+/// Gold the four purchases cost at the dearest catalogue seller: the row's own need.
+fn needed_gold() -> TestResult<u64> {
+    let mut total = 0u64;
+    for (id, quantity) in [(BOW, 1), (ARROW, 10), (WAND, 1), (ROD, 1)] {
+        total = total
+            .checked_add(full_gold::price(id, quantity)?)
+            .ok_or("purchase-total-overflow")?;
+    }
+    Ok(total)
 }
 
 fn reference(id: u32) -> TestResult<NonZeroU32> {
@@ -126,46 +144,6 @@ async fn wait_count(
         }
         client.service_liveness(Duration::from_millis(25)).await?;
     }
-}
-
-async fn earn_gold(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
-    needed: u64,
-) -> TestResult {
-    let gold = [
-        (reference(3031)?, 1),
-        (reference(3035)?, 100),
-        (reference(3043)?, 10_000),
-    ];
-    let value = |client: &DevClientSession| -> TestResult<u64> {
-        Ok(client
-            .inventory()
-            .ok_or("gold-inventory-absent")?
-            .entries
-            .iter()
-            .map(|e| {
-                gold.iter()
-                    .find(|(k, _)| *k == e.item_definition_ref)
-                    .map_or(0, |(_, v)| u64::from(e.count.get()) * v)
-            })
-            .sum())
-    };
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while value(client)? < needed {
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "gold-combat-budget:observed={}:needed={needed}",
-                value(client)?
-            )
-            .into());
-        }
-        travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(client).await?;
-    }
-    Ok(())
 }
 
 async fn buy(
@@ -421,7 +399,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xc2).await?;
-    earn_gold(&mut client, world, &metadata.spawns, 1430).await?;
+    full_gold::earn(&mut client, world, &metadata.spawns, "C02", needed_gold()?).await?;
     let mut purchase_sequences = Vec::new();
     for (id, n) in [(BOW, 1), (ARROW, 10), (WAND, 1), (ROD, 1)] {
         purchase_sequences.push(buy(&mut client, world, &metadata.npcs, id, n).await?);

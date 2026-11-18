@@ -25,6 +25,18 @@ class ReportTests(unittest.TestCase):
                 with self.subTest(path=path.name, row=row, scenario=scenario):
                     self.assertTrue(row in full or (row in client and scenario == "client"))
 
+    def test_creature_verdicts_are_reported_and_fail_the_summary(self):
+        found = results(
+            "SEAM_EVIDENCE e2e_all scenario=CS.cave-rat.full status=FAIL seconds=5 cause=no-progress root=CS.cave-rat.full/hunt\n"
+            "SEAM_EVIDENCE e2e_all scenario=CS.cave-rat.kill status=FAIL seconds=2 evidence=no-damage cause=assertion root=CS.cave-rat.kill"
+        )
+        output, complete = summary([], found)
+        self.assertIn("CS.cave-rat.full | FAIL", output)
+        self.assertIn("CS.cave-rat.kill | FAIL", output)
+        self.assertFalse(complete)
+        with self.assertRaises(ValueError):
+            results("SEAM_EVIDENCE e2e_all scenario=CS.cave-rat.kill status=FAIL seconds=2")
+
     def test_supplemental_journeys_and_bounded_captures_are_registered(self):
         extra, clients = supplemental_rows(
             (Path(__file__).with_name("supplemental_rows.json")).read_text()

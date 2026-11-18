@@ -35,11 +35,13 @@ pub(super) async fn prey(client: &mut oteryn_dev_client::DevClientSession) -> Te
         .map_err(|error| format!("prey reroll reply: {error:?}"))?;
     let applied = ui::apply_result(&mut panel, &reply);
     if result.status != 0 {
-        evidence(&format!(
-            "mechanic=prey skipped=list_reroll_refused_status_{} source=crates/gameplay/durability/src/durability/prey/command.rs:227",
-            result.status
-        ));
-        return Ok(());
+        return client_imbue::mutation_verdict(
+            false,
+            format!(
+                "mechanic=prey status=FAIL refused=list_reroll_refused_status_{} source=crates/gameplay/durability/src/durability/prey/command.rs:227",
+                result.status
+            ),
+        );
     }
     let after = panel.slot(before.slot).ok_or("prey reroll lost slot")?;
     if !applied || after.creatures.is_empty() || after.free_reroll_at <= before.free_reroll_at {

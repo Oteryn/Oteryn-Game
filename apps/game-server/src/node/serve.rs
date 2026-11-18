@@ -102,7 +102,9 @@ const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
-const CONTROL_REQUEST_BYTES: usize = 64;
+/// The longest valid control line: `spawn <36-byte session> <key of at most 128 bytes>\n`
+/// (172 bytes); `qualify` and operation ids are shorter. A longer line is refused unread.
+const CONTROL_REQUEST_BYTES: usize = 6 + 36 + 1 + 128 + 1;
 const CONTROL_DEADLINE: Duration = Duration::from_secs(30);
 const MAX_GAMEPLAY_KEY_BYTES: usize = 16 * 1024;
 
@@ -2914,6 +2916,7 @@ async fn control_loop(
     intents: &ProducerDescriptor,
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    spawn: Option<qualification_fixture::SpawnOwners<'_>>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -2946,6 +2949,22 @@ async fn control_loop(
                     )
                     .await
                     .to_owned(),
+                    "character_bootstrap",
+                ),
+                #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"recovery-replay ") => (
+                    qualification_fixture::recovery_replay(config.qualification_fixture, &request),
+                    "character_bootstrap",
+                ),
+                Some(request) if request.starts_with(b"item-instance ") => (
+                    qualification_fixture::item_instance(config.qualification_fixture, &request),
+                    "character_bootstrap",
+                ),
+                Some(request) if request.starts_with(b"spawn ") => (
+                    qualification_fixture::spawn(
+                        root, authority, proof, config, native, spawn, &request,
+                    )
+                    .await,
                     "character_bootstrap",
                 ),
                 Some(request) if parse_operation_id(&request).is_some() => {
@@ -3893,6 +3912,7 @@ async fn boot_and_serve(
         config.store_purchases.as_str()
     );
     let owners = GameplaySeamOwners {
+        spell_lane: None,
         platform_enforcement_enabled: enforcement_clients.is_some(),
         cast,
         activity_templates: &activity_templates,
@@ -3971,6 +3991,7 @@ async fn boot_and_serve(
         generation,
         signalled,
         timed_npcs,
+        spawn_room: combat_room.as_ref().unwrap_or(&qualified_room),
     }));
     first(serving, enforcement_owner)
         .await

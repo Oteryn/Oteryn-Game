@@ -32,8 +32,7 @@ pub(super) async fn daily_boost(
     }
     let boost = panel.boost.clone().ok_or("daily boost not decoded")?;
     let repeated = client_runtime::raw_feature::send(client.session_mut(), &command).await?;
-    client_ui::daily_boost::apply_result(&mut panel, &repeated);
-    if panel.boost.as_ref() != Some(&boost) {
+    if !repeated_boost_is_stable(&mut panel, &repeated) {
         return Err("daily choice changed within the same server-save epoch".into());
     }
     evidence(&format!(
@@ -48,8 +47,8 @@ pub(super) async fn daily_boost(
         let query =
             client_runtime::daily_reward::send(client.session_mut(), &DailyRewardCommand::Query)
                 .await?;
-        let wall = match query.reply {
-            Some(DailyRewardReply::Wall(wall)) => wall,
+        let wall = match (query.status, query.reply) {
+            (CommandStatus::Accepted, Some(DailyRewardReply::Wall(wall))) => wall,
             _ => return Err("daily reward wall was not decoded".into()),
         };
         if wall.claim_enabled {
@@ -58,8 +57,24 @@ pub(super) async fn daily_boost(
                 &DailyRewardCommand::Claim,
             )
             .await?;
-            if !matches!(claim.reply, Some(DailyRewardReply::Result(_))) {
-                return Err("daily reward claim result was not decoded".into());
+            if claim.status != CommandStatus::Accepted
+                || !matches!(claim.reply, Some(DailyRewardReply::Result(result))
+                    if result.disposition == 1 && result.transaction_id.is_some())
+            {
+                return Err(format!("enabled daily reward claim did not commit: {claim:?}").into());
+            }
+            let refreshed = client_runtime::daily_reward::send(
+                client.session_mut(),
+                &DailyRewardCommand::Query,
+            )
+            .await?;
+            if refreshed.status != CommandStatus::Accepted
+                || !matches!(refreshed.reply, Some(DailyRewardReply::Wall(wall))
+                    if wall.claimed && !wall.claim_enabled)
+            {
+                return Err(
+                    format!("daily reward wall did not reflect the claim: {refreshed:?}").into(),
+                );
             }
         }
         evidence("mechanic=daily_boost reward=query_and_conditional_claim transport=tls");
@@ -67,4 +82,35 @@ pub(super) async fn daily_boost(
         evidence("mechanic=daily_boost reward=unavailable capability=182_not_selected");
     }
     Ok(())
+}
+
+fn repeated_boost_is_stable(
+    panel: &mut oteryn_dev_client::client_ui::daily_boost::DailyBoostPanel,
+    reply: &oteryn_dev_client::client_runtime::raw_feature::GatedCommandResult,
+) -> bool {
+    let before = panel.boost.clone();
+    oteryn_dev_client::client_ui::daily_boost::apply_result(panel, reply);
+    reply.status == CommandStatus::Accepted && panel.boost.is_some() && panel.boost == before
+}
+
+#[test]
+fn refused_repeat_daily_boost_query_cannot_use_cached_view() {
+    use oteryn_dev_client::client_runtime::{
+        cui3::daily_boost::DailyBoostView, raw_feature::GatedCommandResult,
+    };
+    let mut panel = oteryn_dev_client::client_ui::daily_boost::DailyBoostPanel {
+        boost: Some(DailyBoostView {
+            reset_epoch: 1,
+            creature_key: "rat".into(),
+            boss_key: "boss".into(),
+        }),
+        ..Default::default()
+    };
+    let reply = GatedCommandResult {
+        command_id: 2,
+        status: CommandStatus::Rejected,
+        server_sequence: 2,
+        payload: Vec::new(),
+    };
+    assert!(!repeated_boost_is_stable(&mut panel, &reply));
 }

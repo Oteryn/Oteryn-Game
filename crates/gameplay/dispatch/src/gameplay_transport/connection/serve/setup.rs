@@ -1,8 +1,10 @@
 //! Prepare and transmit the join snapshot, then initialize the live connection state.
 
 use super::*;
+use crate::gameplay_transport::qualification_observation::SessionView;
 
 struct LiveSetup {
+    item_observation: SessionView,
     integrity: integrity::Integrity,
     initial: snapshot::InitialSnapshot,
     items: snapshot::ItemSnapshot,
@@ -224,6 +226,10 @@ where
     let Ok(snapshot) = snapshot else {
         return Err(ServeEnd::Disconnected.into());
     };
+    let item_observation = SessionView::new(*admitted.game_session_id.as_bytes(), generation);
+    if let Some(view) = &mut items.item_view {
+        view.observe_qualification(item_observation.key());
+    }
     record_join_progress("snapshot_write", admitted.first_entry);
     for frame in &snapshot {
         if write_frame(stream, frame).await.is_err() {
@@ -259,6 +265,7 @@ where
         generation,
         revision,
         LiveSetup {
+            item_observation,
             integrity,
             initial,
             items,
@@ -289,6 +296,7 @@ async fn live<A: FreshAdmissionAuthority>(
     setup: LiveSetup,
 ) -> Result<ServeState, ServeEnd> {
     let LiveSetup {
+        item_observation,
         integrity,
         initial,
         items,
@@ -465,6 +473,7 @@ async fn live<A: FreshAdmissionAuthority>(
         .unwrap_or(0);
     record_join_progress("live_ready", admitted.first_entry);
     Ok(ServeState {
+        _qualification_item_observation: item_observation,
         input_after_refresh: false,
         next_periodic_refresh: 0,
         activity_ack: None,

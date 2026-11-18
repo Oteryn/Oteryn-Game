@@ -3,6 +3,14 @@ use super::*;
 pub(super) async fn death(
     client: &mut oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
+) -> TestResult {
+    death_by(client, clients, None).await
+}
+
+pub(super) async fn death_by(
+    client: &mut oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    expected_killer: Option<&str>,
 ) -> TestResult<()> {
     if !client
         .selected_capabilities()
@@ -48,6 +56,15 @@ pub(super) async fn death(
                         .into(),
                 );
             }
+            if let Some(expected) = expected_killer {
+                let observed = killing_creature(clients.url, &receipt.0).await?;
+                if observed.as_deref() != Some(expected) {
+                    return Err(format!(
+                        "death receipt names {observed:?}; required killer {expected}"
+                    )
+                    .into());
+                }
+            }
             evidence(&format!(
                 "mechanic=death state=damaged_then_respawned receipt={} character_revision={} health_before={before} health_after={} position={:?}",
                 receipt.0,
@@ -67,9 +84,22 @@ pub(super) async fn death(
 }
 
 async fn latest_receipt(clients: &SeamClients<'_>) -> TestResult<Option<(String, String, String)>> {
+    within_database_deadline(tokio::time::Instant::now() + Duration::from_secs(20), async {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let receipt = sqlx::query_as("SELECT death_occurrence_id::text, original_character_revision::text, committed_character_revision::text FROM game_character_death_receipts WHERE character_id = encode($1, 'hex')::uuid AND death_world_id = encode($2, 'hex')::uuid AND death_channel_id = encode($3, 'hex')::uuid ORDER BY committed_at DESC, death_occurrence_id DESC LIMIT 1")
         .bind(clients.characters[1].as_slice()).bind(clients.world.as_slice()).bind(clients.channel.as_slice()).fetch_optional(&mut database).await?;
     database.close().await?;
     Ok(receipt)
+    }).await
+}
+
+async fn killing_creature(url: &str, death: &str) -> TestResult<Option<String>> {
+    within_database_deadline(tokio::time::Instant::now() + Duration::from_secs(20), async {
+        let mut database = sqlx::PgConnection::connect(url).await?;
+        let killer = sqlx::query_scalar(
+            "SELECT creature_key FROM game_public_death_killers WHERE death_occurrence_id=$1::uuid AND ordinal=0 AND kind='creature'",
+        ).bind(death).fetch_optional(&mut database).await?;
+        database.close().await?;
+        Ok(killer)
+    }).await
 }

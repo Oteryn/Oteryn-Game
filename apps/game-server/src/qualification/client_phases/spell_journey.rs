@@ -38,10 +38,9 @@ pub(super) async fn spell_journey(
                         });
                     }
                     Err(error) => {
-                        let reason = error.to_string();
-                        checks.record("C04", "words-mana", Err(reason.clone().into()));
-                        checks.record("C04", "spell-cooldown", Err(reason.clone().into()));
-                        checks.record("C04", "group-cooldown", Err(reason.into()));
+                        for case in ["words-mana", "spell-cooldown", "group-cooldown"] {
+                            checks.record_failure("C04", case, error.as_ref());
+                        }
                     }
                 }
             } else {
@@ -60,7 +59,7 @@ pub(super) async fn spell_journey(
     checks.finish()
 }
 
-async fn say(
+pub(super) async fn say(
     client: &mut DevClientSession,
     words: &str,
 ) -> TestResult<oteryn_dev_client::ChatOutcome> {
@@ -137,15 +136,36 @@ fn spell_index(book: &crate::spell::SpellBook, words: &str) -> TestResult<std::n
         .ok_or_else(|| format!("{words} has no canonical spell index").into())
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(super) enum ProtectionProbe {
+    Inside,
+    Outside,
+}
+
+pub(super) fn fixture_protection_spell() -> TestResult<(&'static str, SpellTarget)> {
+    let profile = env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".to_owned());
+    fixture_protection_spell_for(&profile)
+}
+
+fn fixture_protection_spell_for(profile: &str) -> TestResult<(&'static str, SpellTarget)> {
+    let (words, targeted) =
+        protection_probe_words(profile).ok_or("unknown fixture spell profile")?;
+    Ok((
+        if targeted { "adori dis min vis" } else { words },
+        SpellTarget::None,
+    ))
+}
+
 pub(super) async fn protection_zone_probe(
     client: &mut DevClientSession,
-    inside: bool,
+    comparison: ProtectionProbe,
+    words: &str,
+    target: SpellTarget,
 ) -> TestResult {
     let book = client_world::native_spell_book()?;
-    let words = "exevo vis lux";
     let spell = book
         .spoken(words)
-        .ok_or("energy beam missing from book")?
+        .ok_or("fixture comparison spell missing from book")?
         .spell;
     if !spell.aggressive {
         return Err("PZ probe must use an aggressive spell".into());
@@ -157,8 +177,8 @@ pub(super) async fn protection_zone_probe(
             .actor_vitals()
             .copied()
             .ok_or("PZ probe has no vitals")?;
-        let outcome = client.cast_spell(index, SpellTarget::None, false).await?;
-        if !inside && outcome.disposition == SpellCastDisposition::CoolingDown {
+        let outcome = client.cast_spell(index, target, false).await?;
+        if outcome.disposition == SpellCastDisposition::CoolingDown {
             if tokio::time::Instant::now() >= deadline {
                 return Err("outside-PZ comparison remained on cooldown".into());
             }
@@ -166,22 +186,28 @@ pub(super) async fn protection_zone_probe(
             client.take_events();
             continue;
         }
-        let matched = outcome.status == CommandStatus::Accepted
-            && if inside {
-                outcome.disposition == SpellCastDisposition::Rejected
-                    && outcome.actor_vitals_delta.is_none()
-                    && client.actor_vitals().copied() == Some(before)
-            } else {
-                outcome.disposition == SpellCastDisposition::Cast
+        let resource_free =
+            outcome.actor_vitals_delta.is_none() && client.actor_vitals().copied() == Some(before);
+        let matched = match comparison {
+            ProtectionProbe::Inside => {
+                outcome.status == CommandStatus::Rejected
+                    && outcome.disposition == SpellCastDisposition::Rejected
+                    && resource_free
+            }
+            ProtectionProbe::Outside => {
+                outcome.status == CommandStatus::Accepted
+                    && outcome.disposition == SpellCastDisposition::Cast
                     && outcome.actor_vitals_delta.is_some()
                     && client
                         .actor_vitals()
                         .is_some_and(|after| after.mana < before.mana)
-            };
+            }
+        };
         if !matched {
-            return Err(
-                format!("PZ aggressive cast comparison inside={inside}: {outcome:?}").into(),
-            );
+            return Err(format!(
+                "PZ aggressive cast comparison comparison={comparison:?}: {outcome:?}"
+            )
+            .into());
         }
         return Ok(());
     }
@@ -201,6 +227,11 @@ mod tests {
             "utana vid",
             "exori vis",
             "exevo vis lux",
+            "exevo infir frigo hur",
+            "exori infir min",
+            "exori infir con",
+            "exori pug",
+            "adori dis min vis",
         ] {
             let index = spell_index(book, words)?;
             assert_eq!(
@@ -210,4 +241,51 @@ mod tests {
         }
         Ok(())
     }
+}
+
+pub(super) fn protection_probe_words(profile: &str) -> Option<(&'static str, bool)> {
+    match profile {
+        "sorcerer" => Some(("exevo vis lux", false)),
+        "druid" => Some(("exevo infir frigo hur", false)),
+        "knight" | "explorer" => Some(("exori infir min", false)),
+        "paladin" => Some(("exori infir con", true)),
+        "monk" => Some(("exori pug", true)),
+        _ => None,
+    }
+}
+#[test]
+fn pz_probe_selects_the_fixture_vocations_aggressive_spell() {
+    assert_eq!(
+        protection_probe_words("sorcerer"),
+        Some(("exevo vis lux", false))
+    );
+    assert_eq!(
+        protection_probe_words("druid"),
+        Some(("exevo infir frigo hur", false))
+    );
+    assert_eq!(
+        protection_probe_words("explorer"),
+        Some(("exori infir min", false))
+    );
+    assert_eq!(
+        protection_probe_words("knight"),
+        Some(("exori infir min", false))
+    );
+    assert_eq!(
+        protection_probe_words("paladin"),
+        Some(("exori infir con", true))
+    );
+    assert_eq!(protection_probe_words("monk"), Some(("exori pug", true)));
+    assert_eq!(protection_probe_words("unknown"), None);
+}
+
+#[test]
+fn pz_comparison_uses_the_same_targetless_cast_for_both_sides() -> TestResult {
+    for profile in ["monk", "paladin"] {
+        assert_eq!(
+            fixture_protection_spell_for(profile)?,
+            ("adori dis min vis", SpellTarget::None)
+        );
+    }
+    Ok(())
 }

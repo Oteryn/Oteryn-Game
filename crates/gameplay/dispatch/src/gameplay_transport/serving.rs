@@ -128,9 +128,9 @@ pub async fn serve_gameplay(
                 .premium_coordinator
                 .map_or_else(Default::default, |reads| reads.consumer()),
         ),
-        spell_lane: crate::durability::spell_owner_commit::SpellLane::new(
-            owners.world_id,
-            owners.channel_id,
+        spell_lane: listener_spell_lane(
+            crate::foundation::RuntimeScopeRefV1::channel(owners.world_id, owners.channel_id),
+            owners.spell_lane,
         ),
         store: owners
             .store
@@ -352,3 +352,30 @@ pub async fn serve_gameplay(
 #[cfg(test)]
 #[path = "serving/kill_statistics_shutdown_tests.rs"]
 mod kill_statistics_shutdown_tests;
+
+fn listener_spell_lane(
+    scope: crate::foundation::RuntimeScopeRefV1,
+    supplied: Option<crate::durability::spell_owner_commit::SpellLane>,
+) -> crate::durability::spell_owner_commit::SpellLane {
+    supplied.unwrap_or_else(|| super::qualification_observation::scope_lane(scope))
+}
+
+#[tokio::test]
+async fn listener_and_fixture_share_the_lane_from_first_admission()
+-> Result<(), Box<dyn std::error::Error>> {
+    let id = [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
+    let world = crate::foundation::WorldId::decode(&id).map_err(|_| "world id")?;
+    let channel = crate::foundation::ChannelId::decode(&id).map_err(|_| "channel id")?;
+    let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+    let fixture = crate::durability::spell_owner_commit::SpellLane::for_scope(scope);
+    let listener = listener_spell_lane(scope, Some(fixture.clone()));
+    let permit = fixture.acquire().await.map_err(|_| "fixture lane")?;
+    assert!(
+        tokio::time::timeout(std::time::Duration::from_millis(20), listener.acquire())
+            .await
+            .is_err()
+    );
+    drop(permit);
+    assert!(listener.acquire().await.is_ok());
+    Ok(())
+}

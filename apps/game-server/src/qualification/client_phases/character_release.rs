@@ -2,7 +2,7 @@
 // Fresh admission must observe the owning server's terminal release, including
 // control-loss detection and grace; qualification never edits session state.
 // The first timeout per fixture is the root; later waits on it fail at once.
-async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
+pub(super) async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
     let harness = verdict::Harness::global();
     harness.fixture_gate(index)?;
     wait_fixture_released(clients, index)

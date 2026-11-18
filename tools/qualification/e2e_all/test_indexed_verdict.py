@@ -41,13 +41,25 @@ class IndexedVerdictTests(unittest.TestCase):
     def test_every_indexed_dispatch_enters_its_scenario_watch(self):
         source = (PHASES / 'world.rs').read_text()
         calls = set(re.findall(r'((?:full|client)_row_\w+)::run_packet', source))
-        wrapped = dict(re.findall(
-            r'verdict::indexed\(\s*"([A-Z]\d\d[a-z]?\.(?:full|client))",\s*async \{\s*((?:full|client)_row_\w+)::run_packet', source
+        wrapped = list(re.finditer(
+            r'verdict::indexed\(\s*"([A-Z]\d\d[a-z]?\.(?:full|client))",\s*async \{\s*((?:full|client)_row_\w+)::run_packet',
+            source,
         ))
-        self.assertEqual(calls, set(wrapped.values()))
-        for scenario, module in wrapped.items():
+        self.assertEqual(calls, {match[2] for match in wrapped})
+        chest_ids = re.findall(r'chest\("(Q0[13][a-z])",', (PHASES / 'full_row_q01.rs').read_text())
+        self.assertEqual(len(chest_ids), 16)
+        dispatched_chests = []
+        for match in wrapped:
+            scenario, module = match.groups()
             kind, _, row = module.partition('_row_')
-            self.assertEqual(scenario, row[0].upper() + row[1:] + '.' + kind)
+            expected = row[0].upper() + row[1:]
+            if module == 'full_row_q01':
+                index = re.match(r'\(clients, &full_row_q01::CHESTS\[(\d+)\]\)', source[match.end():])
+                self.assertIsNotNone(index)
+                expected = chest_ids[int(index[1])]
+                dispatched_chests.append(expected)
+            self.assertEqual(scenario, expected + '.' + kind)
+        self.assertCountEqual(dispatched_chests, chest_ids)
 
     def test_row_timeouts_observe_typed_errors_before_reporter_formatting(self):
         for path in PHASES.glob('*_row_*.rs'):

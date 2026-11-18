@@ -327,7 +327,7 @@ impl<'a> MapModel<'a> {
             if !approachable.is_empty() {
                 group = approachable;
             }
-            let count = group.len().min(5);
+            let count = group.len().min(usize::from(crate::QUALIFICATION_MAP_SAMPLES_PER_KIND));
             for at in 0..count {
                 state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
                 let chosen = at + (state % (group.len() - at) as u64) as usize;

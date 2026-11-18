@@ -22,6 +22,9 @@ diagnostics = [
 ]
 # Disposable node-boot builds only; absent from production binaries.
 qualification-clock = ["oteryn-gameplay-dispatch/qualification-clock", "oteryn-gameplay-world/qualification-clock"]
+# Disposable node-boot builds only: the root-only `spawn` control command reaches the
+# test-support owners that place a creature (`qualification_wild_spawn`); absent from production.
+qualification-spawn = ["oteryn-gameplay-durability/test-support", "oteryn-gameplay-entities/test-support"]
 # Recognized by the remaining path-loaded integration fixtures.
 test-support = ["oteryn-gameplay-entities/test-support"]
 
@@ -79,7 +82,7 @@ tracing-subscriber = { workspace = true, optional = true }
 
 [dev-dependencies]
 # Standalone server tests must not rely on another package enabling these features.
-tokio = { workspace = true, features = ["test-util", "macros"] }
+tokio = { workspace = true, features = ["test-util", "macros", "process"] }
 oteryn-gameplay-content-promotion = { version = "=0.1.0", path = "../../crates/gameplay/content-promotion" }
 reqwest.workspace = true
 oteryn-gameplay-dispatch = { version = "=0.1.0", path = "../../crates/gameplay/dispatch", features = ["test-support"] }

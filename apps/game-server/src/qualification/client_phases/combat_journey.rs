@@ -1,7 +1,7 @@
 //! Combat observations against the bundle spawn approached by the World journey.
 //! Missing qualification setup is a failure, never a missing-content skip.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind};
+use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 
 /// Keep all verdicts, including prerequisite failures, until the phase ends.
@@ -17,17 +17,25 @@ impl Checks {
     }
 
     pub(super) fn record(&mut self, row: &'static str, case: &str, result: TestResult) {
-        let (status, reason, index) = match result {
-            Ok(()) => ("PASS", "observed_in_protocol".to_owned(), 0),
-            Err(error) => {
-                let cause = super::client_world::verdict::classify(error.as_ref())
-                    .suffix(&format!("{row}/{case}"));
-                let reason = error.to_string().replace(['\n', '\r'], " ");
-                ("FAIL", format!("{reason}{cause}"), 1)
+        match result {
+            Ok(()) => {
+                self.rows.entry(row).or_default()[0] += 1;
+                println!("COMBAT_CHECK {row} {case} PASS observed_in_protocol");
             }
-        };
-        self.rows.entry(row).or_default()[index] += 1;
-        println!("COMBAT_CHECK {row} {case} {status} {reason}");
+            Err(error) => self.record_failure(row, case, error.as_ref()),
+        }
+    }
+
+    pub(super) fn record_failure(
+        &mut self,
+        row: &'static str,
+        case: &str,
+        error: &(dyn std::error::Error + 'static),
+    ) {
+        let cause = super::client_world::verdict::classify(error).suffix(&format!("{row}/{case}"));
+        let reason = error.to_string().replace(['\n', '\r'], " ");
+        self.rows.entry(row).or_default()[1] += 1;
+        println!("COMBAT_CHECK {row} {case} FAIL {reason}{cause}");
     }
 
     pub(super) fn finish(self) -> TestResult {
@@ -44,7 +52,12 @@ impl Checks {
     }
 }
 
-pub(super) async fn combat_journey(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn combat_journey(
+    client: &mut DevClientSession,
+    world: &crate::map::boot::BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    url: &str,
+) -> TestResult {
     let mut checks = Checks::default();
     for (name, fight_mode) in [
         ("offensive", FightMode::Offensive),
@@ -52,9 +65,14 @@ pub(super) async fn combat_journey(client: &mut DevClientSession) -> TestResult 
         ("defensive", FightMode::Defensive),
     ] {
         for (chase_name, chase) in [("stand", ChaseMode::Stand), ("chase", ChaseMode::Chase)] {
-            checks.record(
-                "C01",
-                &format!("{name}-{chase_name}"),
+            let result = async {
+                let wanted = client_world::travel_to_spawn_target(
+                    client,
+                    world,
+                    spawns,
+                    "oteryn:creature.rat",
+                )
+                .await?;
                 melee_damage(
                     client,
                     FightModes {
@@ -62,15 +80,24 @@ pub(super) async fn combat_journey(client: &mut DevClientSession) -> TestResult 
                         chase,
                         secure: true,
                     },
+                    wanted,
+                    url,
                 )
-                .await,
-            );
+                .await
+            }
+            .await;
+            checks.record("C01", &format!("{name}-{chase_name}"), result);
         }
     }
     checks.finish()
 }
 
-async fn melee_damage(client: &mut DevClientSession, modes: FightModes) -> TestResult {
+async fn melee_damage(
+    client: &mut DevClientSession,
+    modes: FightModes,
+    wanted: oteryn_dev_client::EntityRef,
+    url: &str,
+) -> TestResult {
     use oteryn_protocol_oteryn::item_view::EquipmentSlot;
     if client.inventory().is_none_or(|inventory| {
         !inventory.equipment.iter().any(|entry| {
@@ -92,6 +119,7 @@ async fn melee_damage(client: &mut DevClientSession, modes: FightModes) -> TestR
         .and_then(|entities| {
             entities.iter().find(|entity| {
                 entity.kind == EntityKind::Creature
+                    && entity.entity == wanted
                     && entity.position.floor == here.floor
                     && entity
                         .position
@@ -103,39 +131,7 @@ async fn melee_damage(client: &mut DevClientSession, modes: FightModes) -> TestR
         })
         .copied()
         .ok_or("bundle spawn has no adjacent live monster")?;
-    let EntityDetail::Actor {
-        health_percent: before,
-        ..
-    } = target.detail
-    else {
-        return Err("monster has no protocol health".into());
-    };
-    let outcome = client
-        .session_mut()
-        .attack_target(Some(&target.entity))
-        .await?;
-    if outcome.disposition != AttackIntentDisposition::Ok {
-        return Err(format!("attack refused: {outcome:?}").into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    let observed = loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        let damage = client.take_events().iter().any(|event| {
-            matches!(event, oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta)
-                if delta.value.update.iter().any(|entry| entry.entity == target.entity
-                    && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } if health_percent < before)))
-        });
-        if damage {
-            break true;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            break false;
-        }
-    };
-    let stopped = client.session_mut().attack_target(None).await?;
-    if stopped.disposition != AttackIntentDisposition::Ok || !observed {
-        return Err("attack did not lower monster HP or failed to stop".into());
-    }
+    client_hunt::kill(client, target, url, Duration::from_secs(60)).await?;
     if client
         .session_mut()
         .combat_state()
