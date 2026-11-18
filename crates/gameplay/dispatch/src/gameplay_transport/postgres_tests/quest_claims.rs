@@ -231,10 +231,25 @@ async fn socket_window(
     h: &Harness,
     name: &str,
 ) -> TestResult {
+    use crate::gameplay_transport::{capabilities::SelectedCapabilities, connection::FreshAdmissionAuthority};
     use crate::map::overlay::TilePos;
     use oteryn_gameplay_quests::quest::world_callbacks::Offering;
+    use oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1;
     use std::sync::atomic::Ordering;
 
+    let offered = owner.offered_capabilities();
+    let mut pending = vec![CAPABILITY_WORLD_INTERACTION_V1];
+    let mut supported = std::collections::BTreeSet::new();
+    while let Some(id) = pending.pop() {
+        if supported.insert(id) {
+            let capability = offered.iter().find(|capability| capability.id == id)
+                .ok_or("socket use capability offer")?;
+            pending.extend_from_slice(capability.requires);
+        }
+    }
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        offered, &supported.into_iter().collect::<Vec<_>>(),
+    ).ok_or("socket use capability negotiation")?;
     let repeat = name == SOCKET_REPEAT;
     let catchup = name == SOCKET_CATCHUP;
     let mut stages = Vec::new();
@@ -464,9 +479,14 @@ async fn use_socket(
                 use_with_map_item: Some(MapUseTarget::Object(target)), use_with: None,
                 use_with_position: None}).map_err(debug)
         }, false, &mut Vec::new()).await?;
-    assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+    let disposition = decode_use_result(&reply).map_err(debug)?;
+    assert_eq!(status, if disposition == UseDisposition::Rejected {
+        oteryn_protocol_oteryn::CommandStatus::Rejected
+    } else {
+        oteryn_protocol_oteryn::CommandStatus::Accepted
+    });
     assert!(scope.is_none());
-    decode_use_result(&reply).map_err(|error| debug(error).into())
+    Ok(disposition)
 }
 
 async fn contend_for_daily_claim(
