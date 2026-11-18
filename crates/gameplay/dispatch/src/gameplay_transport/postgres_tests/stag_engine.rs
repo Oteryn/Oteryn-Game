@@ -322,15 +322,26 @@ pub(super) async fn exercise_cathedral(
             .next_movement_decay_time(),
         Some(due)
     );
+    let evidence = super::house_transfer::RecoverySource::start(h).await?;
+    let resident_session =
+        super::activity_deadline_paging::admit_member(h, &evidence.evidence, 1).await?;
+    let resident = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime
+            .reserve_fresh_session(resident_session)
+            .map_err(debug)?;
+        let resident = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(resident, local(cathedral::WARLOCK_SPAWN))
+            .map_err(debug)?;
+        resident
+    };
     assert_eq!(
         use_fixed(owner, admitted, cathedral::SOURCE, 0).await?,
         UseDisposition::Committed
     );
-    let evidence = super::house_transfer::RecoverySource::start(h).await?;
-    let resident_session =
-        super::activity_deadline_paging::admit_member(h, &evidence.evidence, 1).await?;
     let arrival = local(cathedral::DESTINATION);
-    let resident = {
+    {
         let map = owner.bundle_map().ok_or("map")?;
         let mut runtime = owner.runtime.lock().await;
         let expected = runtime.read_actor_position(actor).map_err(debug)?;
@@ -352,15 +363,27 @@ pub(super) async fn exercise_cathedral(
             .map_err(debug)?;
 
         // Another admitted player is still on the shared landing when the step arrives.
-        let reservation = runtime
-            .reserve_fresh_session(resident_session)
-            .map_err(debug)?;
-        let resident = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        let tile = |pos: Position| TilePos {
+            x: pos.x,
+            y: pos.y,
+            floor: pos.floor,
+        };
+        let onto_landing = crate::map::floor::prepare_quest_portal_teleport(
+            &runtime,
+            owner.movement_cells(),
+            resident,
+            resident_session,
+            runtime.read_actor_position(resident).map_err(debug)?,
+            tile(cathedral::SOURCE),
+            tile(cathedral::DESTINATION),
+            false,
+            &doors,
+        )
+        .map_err(debug)?;
         runtime
-            .initialize_pinned_test_position(resident, arrival)
+            .commit_source_step(onto_landing)
             .map_err(debug)?;
-        resident
-    };
+    }
     pace(owner)?;
     wire(
         owner,

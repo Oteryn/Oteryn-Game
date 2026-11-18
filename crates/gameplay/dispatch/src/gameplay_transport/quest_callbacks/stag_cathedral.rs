@@ -131,14 +131,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tile(source::WARLOCK_SPAWN),
                 false,
             )
-            || runtime
-                .positioned_melee_census()
-                .ok()?
-                .iter()
-                .any(|(_, at, _)| at.position() == spawn)
         {
             return None;
         }
+        // Crystal bounac_cathedral.lua:92-98 forces the spawn even on an occupied tile.
         runtime
             .commit_quest_encounter_entry(
                 vec![proof],
