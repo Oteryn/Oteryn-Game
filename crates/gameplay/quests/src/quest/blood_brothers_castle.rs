@@ -30,7 +30,7 @@ pub const SYMBOLS: [Position; 4] = [
     },
 ];
 
-const DESTINATIONS: [Position; 4] = [
+pub const DESTINATIONS: [Position; 4] = [
     Position {
         x: 32951,
         y: 31479,

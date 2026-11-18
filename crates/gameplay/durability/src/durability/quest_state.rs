@@ -63,6 +63,7 @@ use crate::domain::progression::FiniteProgressionPolicy;
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::{CommandId, CommandRef, GameSessionId, RuntimeScopeRefV1};
 
+mod blood_brothers_castle;
 mod counter_alias;
 mod map_marks;
 pub use map_marks::{PersonalQuestMapMark, QuestMapMarksSnapshot};
@@ -173,7 +174,9 @@ impl QuestCause {
             "server_timer" if ordinal == 0 => {
                 Self::ServerTimer(server_timer::QuestTimerOccurrence::from_bytes(id)?)
             }
-            "native_hit" if ordinal == 0 => Self::NativeHit(native_hits::QuestHitOccurrence::from_bytes(id)?),
+            "native_hit" if ordinal == 0 => {
+                Self::NativeHit(native_hits::QuestHitOccurrence::from_bytes(id)?)
+            }
             "command" => Self::Command(command()?),
             "use" => Self::Use(command()?),
             "step" => Self::Step(command()?),
@@ -328,7 +331,10 @@ impl QuestStateCopy {
     #[must_use]
     pub fn has_save_event_scope(&self) -> bool {
         !self.save_restart_defaults.is_empty()
-            || self.states.keys().any(|quest| oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest).is_some())
+            || self.states.keys().any(|quest| {
+                oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest)
+                    .is_some()
+            })
     }
 
     /// A journal observer must reload scoped facts after a World save or an
@@ -352,7 +358,8 @@ impl QuestStateCopy {
     /// the copy to observe a new cycle or newly committed mission progress.
     #[must_use]
     pub fn counter_quest_progress(&self, quest: &str) -> Option<&CounterQuestProgress> {
-        let helper = oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest).unwrap_or(quest);
+        let helper = oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest)
+            .unwrap_or(quest);
         self.counter_quests.get(helper)
     }
 
@@ -366,18 +373,28 @@ impl QuestStateCopy {
     /// Project non-legacy initial values without manufacturing durable storage.
     /// The copy bound is checked before changing the read view.
     fn project_declared_initials(&mut self, catalogue: &QuestStateCatalogue) -> bool {
-        let missing: Vec<_> = catalogue.declared_tracks()
+        let missing: Vec<_> = catalogue
+            .declared_tracks()
             .filter(|track| !self.tracks.contains_key(&track.key))
             .filter_map(|track| {
                 // Read-compatible source activation keeps the predecessor's
                 // absent-row meaning, just as the locked writer does.
-                let initial = self.states.get(&track.quest)
-                    .and_then(|state| oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
-                        catalogue, &track.quest, &state.definition_hash))
+                let initial = self
+                    .states
+                    .get(&track.quest)
+                    .and_then(|state| {
+                        oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                            catalogue,
+                            &track.quest,
+                            &state.definition_hash,
+                        )
+                    })
                     .and_then(|defaults| defaults.get(&track.key))
-                    .copied().unwrap_or(track.initial);
+                    .copied()
+                    .unwrap_or(track.initial);
                 (initial != -1).then_some((track.key.clone(), initial))
-            }).collect();
+            })
+            .collect();
         if self.tracks.len().saturating_add(missing.len()) > QUESTSTATE0_RL_08_TRACKS {
             return false;
         }
@@ -389,7 +406,11 @@ impl QuestStateCopy {
     }
 
     fn durable_track(&self, key: &str) -> Option<&i64> {
-        if self.projected_initials.contains(key) { None } else { self.tracks.get(key) }
+        if self.projected_initials.contains(key) {
+            None
+        } else {
+            self.tracks.get(key)
+        }
     }
 
     /// Global quest-door storage semantics: absent storage reads as `-1`; any
@@ -426,9 +447,7 @@ impl QuestStateCopy {
             .iter()
             .find(|binding| binding.action == action)
             .and_then(|binding| self.durable_track(&binding.track))
-            .or_else(|| {
-                self.durable_track(&format!("oteryn:quest-progress/storage/{action}"))
-            })
+            .or_else(|| self.durable_track(&format!("oteryn:quest-progress/storage/{action}")))
             .is_some_and(|value| *value != -1)
     }
     /// Stored track values with supported read projections (including the Monk shrine count).
@@ -442,7 +461,8 @@ impl QuestStateCopy {
     /// rows to the session's stored progress projection.
     pub fn read_tracks(&self, catalogue: &QuestStateCatalogue) -> Option<BTreeMap<String, i64>> {
         let mut view = self.clone();
-        view.project_declared_initials(catalogue).then_some(view.tracks)
+        view.project_declared_initials(catalogue)
+            .then_some(view.tracks)
     }
 
     #[must_use]
@@ -609,7 +629,10 @@ pub async fn admit_character_quest_state(
     if let Some(catalogue) = catalogue
         && copy.read_tracks(catalogue).is_none()
     {
-        return QuestAdmission { copy: None, retry: false };
+        return QuestAdmission {
+            copy: None,
+            retry: false,
+        };
     }
     match request_pending_obligations(
         sequencer, root, authority, node, fence, catalogue, &mut copy,
@@ -712,7 +735,20 @@ pub(super) fn report_refused_experience(
 ) {
     match outcome {
         Ok(_) | Err(CharacterProgressionError::Unavailable(_)) => {}
-        Err(error) => { oteryn_error_codes::emit("oteryn-game-server", &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "quest_experience_refused").field("reason", oteryn_error_codes::FieldValue::Owned(error.to_string()))); },
+        Err(error) => {
+            oteryn_error_codes::emit(
+                "oteryn-game-server",
+                &oteryn_error_codes::Line::new(
+                    oteryn_error_codes::Level::Warn,
+                    "durability",
+                    "quest_experience_refused",
+                )
+                .field(
+                    "reason",
+                    oteryn_error_codes::FieldValue::Owned(error.to_string()),
+                ),
+            );
+        }
     }
 }
 
@@ -725,32 +761,32 @@ pub mod encounter_deaths;
 pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;
-pub mod native_doors;
 pub mod kill_objectives;
-mod persist;
-mod planegazer_finale;
+pub mod native_doors;
+pub(crate) mod native_events;
+pub mod native_hit_capture;
+pub mod native_hits;
 pub mod native_kills;
 pub(crate) mod native_observation;
 mod native_prerequisites;
-pub mod native_hits;
-pub mod native_hit_capture;
-pub(crate) mod native_events;
+mod persist;
+mod planegazer_finale;
 pub mod rotten_area;
 pub mod rotten_blood;
 pub mod rotten_blood_access;
 pub mod rotten_essence;
 pub mod rotten_flame;
 pub mod soul_war;
-pub mod source_deaths;
 pub mod soul_war_source;
+pub mod source_deaths;
 mod storage;
 mod task_board_use;
 mod terrain_use;
 pub use terrain_use::TerrainUseObservation;
-mod world_change_journal_rewards;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests;
+mod world_change_journal_rewards;
 #[path = "quest_state/wrath_sleeping_dragon.rs"]
 mod wrath_sleeping_dragon;
 
