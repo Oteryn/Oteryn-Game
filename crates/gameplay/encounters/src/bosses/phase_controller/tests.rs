@@ -557,7 +557,10 @@ fn arbaziloth_replacement_retries_refused_placement() {
         &[(player, session)]
     );
     runtime.remove_encounter_actor(enraged).unwrap();
-    assert!(!encounter.is_current(&runtime));
+    assert!(
+        encounter.is_current(&runtime),
+        "projected corpse retains the victory"
+    );
     let actors = runtime
         .commit_quest_creature_spawn(&[
             (boss_key, 100, position),
@@ -571,7 +574,14 @@ fn arbaziloth_replacement_retries_refused_placement() {
             ),
         ])
         .unwrap();
-    arbaziloth::ArbazilothEncounter::bind(&mut runtime, &[(player, session)], actors[0], actors[1])
-        .unwrap();
+    let next = arbaziloth::ArbazilothEncounter::bind(
+        &mut runtime,
+        &[(player, session)],
+        actors[0],
+        actors[1],
+    )
+    .unwrap();
     assert!(!runtime.arbaziloth_doomforge_open());
+    runtime.remove_encounter_actor(actors[0]).unwrap();
+    assert!(!next.is_current(&runtime));
 }
