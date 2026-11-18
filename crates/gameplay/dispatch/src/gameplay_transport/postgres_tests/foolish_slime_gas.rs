@@ -20,6 +20,7 @@ const FLASK: &str = "oteryn:item.tibia.i135";
 const FILLED: &str = "oteryn:item.tibia.i107";
 const GAS: &str = "oteryn:item.tibia.i2127";
 const SLIME: &str = "oteryn:creature.slime";
+const SAMPLE_AGE_MS: i32 = 2000;
 
 #[test]
 fn only_the_original_slime_poison_gas_inside_two_seconds_fills_the_selected_flask() -> TestResult {
@@ -48,7 +49,7 @@ fn scenario(admin: String) -> TestResult {
     let sample_callback: RewardCallback = serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-reward/fixture/slime-gas", "quest": QUEST, "npc": "oteryn:npc.bozo",
         "keywords": ["sample"], "topic": 0, "next_topic": 0, "repeatable": true,
-        "carried_item": FLASK, "creature_target": SLIME, "corpse_target": { "appearance": 2127, "maximum_age_ms": 2000 },
+        "carried_item": FLASK, "creature_target": SLIME, "corpse_target": { "appearance": 2127, "maximum_age_ms": SAMPLE_AGE_MS },
         "storage": [],
         "take": [{ "item": FLASK, "count": 1 }], "give": { "item": FILLED, "count": 1 },
         "reply": ["This mission stinks ... and now you do as well!"],
@@ -108,7 +109,7 @@ fn scenario(admin: String) -> TestResult {
                 return Err("one two-second Slime gas".into());
             };
             assert!(!owner.runtime.lock().await.contains_live_creature(dead));
-            tokio::time::sleep(Duration::from_millis(2050)).await;
+            wait_until_sample_is_stale(h, old).await?;
             let stale = sample(owner, admitted, flask, old.as_slice(), 41).await?;
             assert_ne!(stale, UseDisposition::Committed);
             kill_slime(owner, &admitted, at, 42).await?;
@@ -127,7 +128,12 @@ fn scenario(admin: String) -> TestResult {
             let used: (Vec<u8>, Vec<u8>, i32) = sqlx::query_as(
             "SELECT uuid_send(corpse_item),uuid_send(source_item),maximum_age_ms FROM game_quest_corpse_samples",
         ).fetch_one(&h.pool).await?;
-            assert_eq!(used, (gas.clone(), flask.to_vec(), 2000));
+            assert_eq!(used, (gas.clone(), flask.to_vec(), SAMPLE_AGE_MS));
+            let still_on_ground: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations
+                  WHERE item_instance_id=encode($1,'hex')::uuid)",
+            ).bind(gas).fetch_one(&h.pool).await?;
+            assert!(still_on_ground, "sampling the field must leave the original gas in place");
             let materials: Vec<(String, i64)> = sqlx::query_as("SELECT definition_production_key, quantity FROM game_item_instances WHERE definition_production_key IN ($1,$2) AND lifecycle=1")
             .bind(FLASK).bind(FILLED).fetch_all(&h.pool).await?;
             assert_eq!(materials, [(FILLED.into(), 1)]);
@@ -168,6 +174,28 @@ async fn gas_rows(h: &super::fixture::Harness) -> TestResult<Vec<(Vec<u8>, i64)>
     Ok(sqlx::query_as("SELECT uuid_send(i.item_instance_id), game_corpse_retirement_deadline(i.item_instance_id)-r.materialized_at \
         FROM game_item_instances i JOIN game_item_mint_receipts r USING(item_instance_id) WHERE i.definition_production_key=$1 AND i.lifecycle=1")
         .bind(GAS).fetch_all(&h.pool).await?)
+}
+
+async fn wait_until_sample_is_stale(h: &super::fixture::Harness, item: &[u8]) -> TestResult {
+    // Freshness is measured from the recorded death, using the database clock.
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let stale: bool = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint - occurred_at >= $2
+                 FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid",
+            )
+            .bind(item)
+            .bind(i64::from(SAMPLE_AGE_MS))
+            .fetch_one(&h.pool)
+            .await?;
+            if stale {
+                return Ok::<_, sqlx::Error>(());
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await??;
+    Ok(())
 }
 
 async fn sample(
