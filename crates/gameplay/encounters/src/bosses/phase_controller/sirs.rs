@@ -210,7 +210,7 @@ impl SirsEncounter {
             runtime.content_pin().server_artifact_digest(),
             &[(
                 lower.actor,
-                lower.state.policy.definition_key,
+                lower.state.policy.definition_key.clone(),
                 u64::try_from(lower.maximum_health).map_err(|_| CarrierError::PlanConflict)?,
                 18_000,
             )],

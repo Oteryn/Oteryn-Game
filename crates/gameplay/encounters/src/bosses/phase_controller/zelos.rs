@@ -10,6 +10,7 @@ const MAGNOR: usize = 0;
 const NARGOL: usize = 1;
 const REWAR: usize = 2;
 const RED: usize = 3;
+const FIRST_SHARD: usize = 4;
 const MASS: usize = 8;
 const KING: usize = 9;
 const KNIGHTS: u64 = (1 << KING) - 1;
@@ -180,6 +181,22 @@ impl ZelosEncounter {
         if self.contains_terminal(actor) && !self.king_gate_released {
             return Err(CarrierError::PlanConflict);
         }
+        if self.phase.actors[FIRST_SHARD..MASS].contains(&Some(actor)) {
+            for shard in self.phase.actors[FIRST_SHARD..MASS]
+                .iter()
+                .copied()
+                .flatten()
+            {
+                if shard != actor {
+                    project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), shard)?;
+                }
+            }
+            for role in FIRST_SHARD..MASS {
+                let shard = self.phase.actors[role].ok_or(CarrierError::PlanConflict)?;
+                self.phase.projected_death(runtime, shard)?;
+            }
+            return Ok(true);
+        }
         self.phase.projected_death(runtime, actor)
     }
 
@@ -318,25 +335,17 @@ impl ZelosEncounter {
             let Some(role) = self.phase.pending().next().map(|(role, _)| role) else {
                 break;
             };
-            let at = match role {
-                4..=7 => {
-                    let (dx, dy) = [(1, 0), (0, 1), (-1, 0), (0, -1)][role - 4];
-                    MovementLocalPosition {
-                        x: self.magnor_at.x + dx,
-                        y: self.magnor_at.y + dy,
-                        ..self.magnor_at
+            match role {
+                FIRST_SHARD => self.spawn_shards(runtime, &place)?,
+                MASS => {
+                    if !runtime.native_summon_cell_free(self.nargol_at) {
+                        return Err(CarrierError::PlanConflict);
                     }
+                    self.phase
+                        .spawn_role(runtime, role, self.nargol_at, None, None, &place)?;
+                    self.mass_due_us = Some(now.saturating_add(REGENERATION_US));
                 }
-                MASS => self.nargol_at,
                 _ => return Err(CarrierError::PlanConflict),
-            };
-            if !runtime.native_summon_cell_free(at) {
-                return Err(CarrierError::PlanConflict);
-            }
-            self.phase
-                .spawn_role(runtime, role, at, None, None, &place)?;
-            if role == MASS {
-                self.mass_due_us = Some(now.saturating_add(REGENERATION_US));
             }
         }
         if self.ritual_broken() && !self.king_gate_released {
@@ -352,6 +361,50 @@ impl ZelosEncounter {
             }
         }
         Ok(true)
+    }
+
+    fn spawn_shards(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        place: &impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+    ) -> Result<(), CarrierError> {
+        let key = ROLES[FIRST_SHARD].creature;
+        let health = runtime.companion_policy(key)?.maximum_health;
+        let spawns = [(1, 0), (0, 1), (-1, 0), (0, -1)].map(|(dx, dy)| {
+            (
+                key,
+                health,
+                MovementLocalPosition {
+                    x: self.magnor_at.x + dx,
+                    y: self.magnor_at.y + dy,
+                    ..self.magnor_at
+                },
+            )
+        });
+        if spawns
+            .iter()
+            .any(|&(_, _, at)| !place(runtime, at) || !runtime.native_summon_cell_free(at))
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let before = runtime.encounter_parts().0.clone();
+        let mut projected = self.phase.clone();
+        let result = (|| {
+            let spawned: [ExactActorRef; 4] = runtime
+                .commit_quest_creature_spawn(&spawns)?
+                .try_into()
+                .map_err(|_| CarrierError::PlanConflict)?;
+            for (i, actor) in spawned.into_iter().enumerate() {
+                projected.attach(runtime, FIRST_SHARD + i, actor)?;
+            }
+            super::gates::link_health(runtime, spawned, key)
+        })();
+        if result.is_err() {
+            *runtime.encounter_parts_mut().0 = before;
+        } else {
+            self.phase = projected;
+        }
+        result
     }
 
     pub fn north_gate_open(

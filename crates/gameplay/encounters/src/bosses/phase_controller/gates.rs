@@ -6,10 +6,12 @@ use oteryn_gameplay_entities::carrier::{ChannelActorCarrier, NamespaceContinuity
 use oteryn_gameplay_entities::*;
 
 const MAX_PROTECTED_ACTORS: usize = 1024;
+const MAX_LINKED_GROUPS: usize = 64;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 struct DamageGates {
     actors: Vec<(ExactActorRef, u8)>,
+    linked: Vec<([ExactActorRef; 4], &'static str)>,
 }
 
 /// A source stop form cannot be killed while the shared phase owner is preparing
@@ -74,6 +76,42 @@ fn set_damage_divisor(
     })
 }
 
+pub(super) fn link_health(
+    runtime: &mut ChannelRuntimeV1,
+    actors: [ExactActorRef; 4],
+    key: &'static str,
+) -> Result<(), CarrierError> {
+    runtime.owner_fence()?;
+    for (i, &actor) in actors.iter().enumerate() {
+        if !runtime.matches_live_creature_identity(actor, key.as_bytes())
+            || actors[..i].contains(&actor)
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+    }
+    runtime.with_encounter_hooks::<DamageGates, _, CarrierError>(|runtime, gates| {
+        gates.linked.retain(|(group, _)| {
+            group
+                .iter()
+                .any(|&actor| runtime.contains_live_creature(actor))
+        });
+        if gates.linked.len() >= MAX_LINKED_GROUPS
+            || gates
+                .linked
+                .iter()
+                .any(|(group, _)| group.iter().any(|actor| actors.contains(actor)))
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        gates
+            .linked
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        gates.linked.push((actors, key));
+        Ok(())
+    })
+}
+
 impl EncounterHooks for DamageGates {
     fn clone_hooks(&self) -> Box<dyn EncounterHooks> {
         Box::new(self.clone())
@@ -89,6 +127,7 @@ impl EncounterHooks for DamageGates {
     }
     fn contains(&self, actor: ExactActorRef) -> bool {
         self.actors.iter().any(|(saved, _)| *saved == actor)
+            || self.linked.iter().any(|(group, _)| group.contains(&actor))
     }
     #[allow(
         clippy::too_many_arguments,
@@ -106,6 +145,38 @@ impl EncounterHooks for DamageGates {
         max_sub_ordinal: Option<u16>,
         now_ms: Option<u64>,
     ) -> Option<Result<OwnerDamageResult, CarrierError>> {
+        if let Some((group, key)) = self
+            .linked
+            .iter()
+            .find(|(group, _)| group.contains(&ExactActorRef(actor)))
+        {
+            return Some((|| {
+                if command.target != key.as_bytes() {
+                    return Err(CarrierError::CreatureTargetMismatch);
+                }
+                let index = group
+                    .iter()
+                    .position(|&member| member == ExactActorRef(actor))
+                    .ok_or(CarrierError::CreatureTargetMismatch)?;
+                let results = carrier.commit_encounter_damage_batch(
+                    continuity,
+                    *group,
+                    [key.as_bytes(); 4],
+                    command,
+                    attacker,
+                    fail,
+                    max_sub_ordinal,
+                    now_ms,
+                    |_, _, results| {
+                        if results.iter().any(|result| result != &results[0]) {
+                            return Err(CarrierError::PlanConflict);
+                        }
+                        Ok(())
+                    },
+                )?;
+                Ok(results[index])
+            })());
+        }
         let (_, divisor) = self
             .actors
             .iter()
@@ -127,24 +198,55 @@ impl EncounterHooks for DamageGates {
     fn projected_death(&mut self, _: ExactActorRef, _: CreatureDeathOccurrenceKey) {}
     fn expand_heals(
         &self,
-        _: &ChannelRuntimeV1,
+        runtime: &ChannelRuntimeV1,
         requests: &[(ExactActorRef, String, u64, u64)],
     ) -> Result<EncounterHealProjection, CarrierError> {
         if requests.len() > 64 {
             return Err(CarrierError::AllocationFailed);
         }
-        if requests
-            .iter()
-            .enumerate()
-            .any(|(i, (actor, _, maximum, draw))| {
-                *maximum == 0
-                    || *maximum > i64::MAX as u64
-                    || *draw > i64::MAX as u64
-                    || requests[..i].iter().any(|other| other.0 == *actor)
-            })
-        {
-            return Err(CarrierError::PlanConflict);
+        let mut expanded = Vec::new();
+        let mut map = Vec::with_capacity(requests.len());
+        for (i, (actor, key, maximum, draw)) in requests.iter().enumerate() {
+            if *maximum == 0
+                || *maximum > i64::MAX as u64
+                || *draw > i64::MAX as u64
+                || requests[..i].iter().any(|other| other.0 == *actor)
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            if let Some((group, registered)) =
+                self.linked.iter().find(|(group, _)| group.contains(actor))
+            {
+                if key.as_str() != *registered
+                    || group.iter().any(|&member| {
+                        !runtime.matches_live_creature_identity(member, key.as_bytes())
+                    })
+                {
+                    return Err(CarrierError::CreatureTargetMismatch);
+                }
+                if !expanded
+                    .iter()
+                    .any(|(saved, _, _, _)| group.contains(saved))
+                {
+                    expanded.extend(
+                        group
+                            .iter()
+                            .map(|&member| (member, key.clone(), *maximum, *draw)),
+                    );
+                }
+            } else {
+                expanded.push((*actor, key.clone(), *maximum, *draw));
+            }
+            if expanded.len() > 64 {
+                return Err(CarrierError::AllocationFailed);
+            }
+            map.push(
+                expanded
+                    .iter()
+                    .position(|(saved, _, _, _)| saved == actor)
+                    .ok_or(CarrierError::PlanConflict)?,
+            );
         }
-        Ok((requests.to_vec(), (0..requests.len()).collect()))
+        Ok((expanded, map))
     }
 }

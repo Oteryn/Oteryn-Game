@@ -148,7 +148,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let grave_danger = matches!(
             encounter.phase,
-            Some(EncounterPhase::GraveDangerSirs { .. } | EncounterPhase::GraveDangerZelos { .. })
+            Some(
+                EncounterPhase::GraveDangerEarlOsam { .. }
+                    | EncounterPhase::GraveDangerSirs { .. }
+                    | EncounterPhase::GraveDangerZelos { .. }
+            )
         );
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();

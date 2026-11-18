@@ -115,3 +115,69 @@ async fn hit(
         ).map_err(debug)?;
     Ok(())
 }
+
+#[test]
+fn gravedg_lich_knights_two_players_osam_channel_and_timeout_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::engenc2_cults::phase_scenario(super::engenc2_cults::PhaseScenario::EarlOsam)
+}
+
+const EARL: &str = "oteryn:creature.earl_osam";
+const CHANNELLING: &str = "oteryn:creature.channeling_earl_osam";
+const SPHERE: &str = "oteryn:creature.magical_sphere";
+
+pub(super) fn configure_osam(callback: &mut Callback) -> TestResult {
+    callback.key = "oteryn:quest-callback/grave-danger/earl-osam".into();
+    callback.storage.clear();
+    let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+    encounter.phase = Some(EncounterPhase::GraveDangerEarlOsam {
+        exit: at(103, 100),
+        centre: at(116, 116),
+    });
+    encounter.minimum_level = 1;
+    encounter.monsters.truncate(1);
+    let monster = encounter.monsters.first_mut().ok_or("Earl Osam")?;
+    monster.creature = EARL.into();
+    monster.position = at(118, 116);
+    Ok(())
+}
+
+pub(super) async fn exercise_osam(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    partner: ExactActorRef,
+) -> TestResult {
+    let player = admitted.runtime_actor.ok_or("admitted player")?;
+    let earl = {
+        let runtime = owner.runtime.lock().await;
+        runtime.current_live_creature_census().map_err(debug)?.into_iter()
+            .find(|&actor| runtime.matches_live_creature_identity(actor, EARL.as_bytes()))
+            .ok_or("Earl admitted through USE")?
+    };
+    hit(owner, admitted, earl, EARL, 101).await?;
+    let now = owner.owner_now().get();
+    super::gravedg_zelos::tick_at(owner, now).await;
+    super::gravedg_zelos::tick_at(owner, now + 100_000).await;
+    assert_position(owner, earl, 116, 116).await?;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(runtime.matches_live_creature_identity(earl, CHANNELLING.as_bytes()));
+        assert!(runtime.encounter_hooks().is_some_and(|hooks| hooks.contains(earl)));
+        let spheres = runtime.current_live_creature_census().map_err(debug)?.into_iter()
+            .filter(|&actor| runtime.matches_live_creature_identity(actor, SPHERE.as_bytes()))
+            .count();
+        assert_eq!(spheres, 4);
+    }
+    super::gravedg_zelos::tick_at(owner, now + 20 * 60 * 1_000_000).await;
+    for actor in [player, partner] {
+        assert_position(owner, actor, 103, 100).await?;
+    }
+    let runtime = owner.runtime.lock().await;
+    assert!(!runtime.contains_live_creature(earl));
+    assert!(!runtime.current_live_creature_census().map_err(debug)?.into_iter()
+        .any(|actor| runtime.matches_live_creature_identity(actor, SPHERE.as_bytes())));
+    Ok(())
+}

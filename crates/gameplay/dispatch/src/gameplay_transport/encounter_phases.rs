@@ -5,8 +5,11 @@ use crate::foundation::{
     MovementPositionSnapshot,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
-use oteryn_gameplay_encounters::bosses::phase_controller::sirs::SirsEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::zelos::ZelosEncounter;
+use oteryn_gameplay_encounters::bosses::phase_controller::{
+    earl_osam::{self, EarlOsamEncounter},
+    sirs::SirsEncounter,
+};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
@@ -42,6 +45,7 @@ impl TimedRoom {
 #[derive(Debug)]
 enum Fight {
     Cults(CultsEncounter),
+    EarlOsam(EarlOsamEncounter),
     Sirs(SirsEncounter),
     Zelos(ZelosEncounter),
 }
@@ -50,6 +54,7 @@ impl Fight {
     fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
         match self {
             Self::Cults(fight) => fight.is_current(runtime),
+            Self::EarlOsam(fight) => fight.is_current(runtime),
             Self::Sirs(fight) => fight.is_current(runtime),
             Self::Zelos(fight) => fight.is_current(runtime),
         }
@@ -58,6 +63,7 @@ impl Fight {
     fn contains(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains(actor),
+            Self::EarlOsam(fight) => fight.contains(actor),
             Self::Sirs(fight) => fight.contains(actor),
             Self::Zelos(fight) => fight.contains(actor),
         }
@@ -66,7 +72,7 @@ impl Fight {
     fn contains_terminal(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains_terminal(actor),
-            Self::Sirs(_) => false,
+            Self::EarlOsam(_) | Self::Sirs(_) => false,
             Self::Zelos(fight) => fight.contains_terminal(actor),
         }
     }
@@ -77,6 +83,7 @@ impl Fight {
     ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
         match self {
             Self::Cults(fight) => fight.victors(runtime),
+            Self::EarlOsam(fight) => fight.victors(runtime),
             Self::Sirs(fight) => fight.victors(runtime),
             Self::Zelos(fight) => fight.victors(runtime),
         }
@@ -89,6 +96,7 @@ impl Fight {
     ) -> Result<bool, CarrierError> {
         match self {
             Self::Cults(fight) => fight.projected_death(runtime, actor),
+            Self::EarlOsam(fight) => fight.projected_death(runtime, actor),
             Self::Sirs(fight) => fight.projected_death(runtime, actor),
             Self::Zelos(fight) => fight.projected_death(runtime, actor),
         }
@@ -97,6 +105,7 @@ impl Fight {
     fn timeout_participants(&self, now: u64) -> Option<&[(ExactActorRef, GameSessionId)]> {
         match self {
             Self::Cults(_) => None,
+            Self::EarlOsam(fight) => fight.timeout_participants(now),
             Self::Sirs(fight) => fight.timeout_participants(now),
             Self::Zelos(fight) => fight.timeout_participants(now),
         }
@@ -108,22 +117,25 @@ impl Fight {
         now: Option<u64>,
         cells: &crate::content::NativeEntryMovementCells,
     ) -> Result<bool, CarrierError> {
+        let at = |runtime: &ChannelRuntimeV1, at| placement(cells, runtime, at);
+        let relocate = |runtime: &mut ChannelRuntimeV1, actor, at| {
+            let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+                cells.index()
+            else {
+                return Err(CarrierError::PlanConflict);
+            };
+            let doors = crate::map::floor::BundleDoors(&index.map().facts);
+            crate::movement::relocate::relocate_creature(runtime, actor, cells, &doors, at)
+                .map(|_| ())
+        };
         match self {
-            Self::Cults(fight) => fight
-                .advance(runtime, |runtime, at| placement(cells, runtime, at))
-                .map(|_| true),
+            Self::Cults(fight) => fight.advance(runtime, at).map(|_| true),
+            Self::EarlOsam(fight) => match now {
+                Some(now) => fight.advance(runtime, now, at, relocate),
+                None => Ok(true),
+            },
             Self::Sirs(fight) => match now {
-                Some(now) => fight.advance(runtime, now, |runtime, actor, at| {
-                    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
-                        index,
-                    ) = cells.index()
-                    else {
-                        return Err(CarrierError::PlanConflict);
-                    };
-                    let doors = crate::map::floor::BundleDoors(&index.map().facts);
-                    crate::movement::relocate::relocate_creature(runtime, actor, cells, &doors, at)
-                        .map(|_| ())
-                }),
+                Some(now) => fight.advance(runtime, now, relocate),
                 None => Ok(true),
             },
             Self::Zelos(fight) => match now {
@@ -148,6 +160,7 @@ impl Registry {
             .ok()?
             .iter()
             .filter_map(|phase| match &phase.fight {
+                Fight::EarlOsam(fight) => Some(fight.next_due_us()),
                 Fight::Sirs(fight) => Some(fight.next_due_us()),
                 Fight::Zelos(fight) => Some(fight.next_due_us()),
                 Fight::Cults(_) => None,
@@ -312,6 +325,24 @@ pub(super) fn bind(
         max: local(encounter.room_max),
     };
     let timed = match encounter.phase {
+        Some(EncounterPhase::GraveDangerEarlOsam { exit, centre }) => {
+            let room = make_room(exit, None);
+            let centre = local(centre);
+            if room.contains(room.exit)
+                || !placement(&cells, runtime, room.exit)
+                || !std::iter::once(centre)
+                    .chain(earl_osam::sphere_positions(centre))
+                    .all(|at| room.contains(at) && placement(&cells, runtime, at))
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            Some((
+                Fight::EarlOsam(EarlOsamEncounter::bind(
+                    runtime, players, actors, centre, now,
+                )?),
+                room,
+            ))
+        }
         Some(EncounterPhase::GraveDangerSirs { exit, fight }) => {
             let room = make_room(exit, None);
             let fight = fight.map(local);
