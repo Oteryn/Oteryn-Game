@@ -1,6 +1,8 @@
 //! Crystal 201189f8, dangerous_depth/creaturescripts_snail_slime_kill.lua.
 use super::ComposedFreshAdmission;
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, RuntimeScopeRefV1};
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, RuntimeScopeRefV1,
+};
 
 const COUNT: &str = "oteryn:creature.the_count_of_the_core";
 const SLIME: &str = "oteryn:creature.snail_slime";
@@ -63,7 +65,6 @@ pub(super) fn tick(owner: &ComposedFreshAdmission<'_, '_, '_>, runtime: &mut Cha
     }
 }
 
-
 pub(super) fn is_slime(key: &str) -> bool {
     key == SLIME
 }
@@ -109,7 +110,12 @@ pub(super) fn slime_death(
         }
         let (Ok(maximum), Ok(draw)) = (
             u64::try_from(snapshot.maximum_health),
-            deterministic_decision_u64(&root, occurrence, "warzone-slime-death-heal", ordinal as u64),
+            deterministic_decision_u64(
+                &root,
+                occurrence,
+                "warzone-slime-death-heal",
+                ordinal as u64,
+            ),
         ) else {
             continue;
         };
