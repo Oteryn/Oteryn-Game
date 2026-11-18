@@ -114,6 +114,10 @@ pub(super) fn prepare(
             let meets_level = |minimum: Option<u32>| {
                 minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
             };
+            let meets_callback_level = |callback: &reward_callbacks::RewardCallback| {
+                (callback.minimum_level.is_none() && callback.maximum_level.is_none())
+                    || inventory.is_some_and(|facts| callback.permits_level(i64::from(facts.level)))
+            };
             let mut refusal = |lines: &[String]| {
                 refused = !lines.is_empty();
                 (!lines.is_empty()).then(|| Choice {
@@ -158,7 +162,7 @@ pub(super) fn prepare(
                     if selected.next().is_some() {
                         return None;
                     }
-                    if !meets_level(callback.minimum_level)
+                    if !meets_callback_level(callback)
                         && let Some(choice) = refusal(&callback.failure_reply)
                     {
                         return Some(choice);
@@ -242,7 +246,7 @@ pub(super) fn prepare(
             if matching.next().is_some() {
                 return None;
             }
-            if (!meets_level(callback.minimum_level)
+            if (!meets_callback_level(callback)
                 || !callback
                     .inventory
                     .iter()

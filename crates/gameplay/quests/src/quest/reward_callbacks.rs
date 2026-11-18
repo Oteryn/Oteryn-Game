@@ -284,6 +284,9 @@ pub struct RewardCallback {
     pub requires_premium: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
+    /// Inclusive upper bound, checked again against locked progression before payment.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub maximum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_completed_quests: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -322,6 +325,9 @@ pub struct RewardCallback {
     pub achievement_progress: Vec<AchievementProgress>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<i64>,
+    /// Alternative to a fixed XP amount: factor times the current player level.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub experience_per_level: Option<i64>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub magic_effects: Vec<super::npc_magic::Cue>,
     pub reply: Vec<String>,
@@ -331,6 +337,27 @@ pub struct RewardCallback {
 }
 
 impl RewardCallback {
+    pub fn permits_level(&self, level: i64) -> bool {
+        self.minimum_level
+            .is_none_or(|minimum| level >= i64::from(minimum))
+            && self
+                .maximum_level
+                .is_none_or(|maximum| level <= i64::from(maximum))
+    }
+
+    /// Resolve only from the authoritative level; overflow refuses the whole reward.
+    pub fn experience_at_level(&self, level: i64) -> Result<Option<i64>, &'static str> {
+        match (self.experience, self.experience_per_level) {
+            (None, Some(factor)) if factor > 0 => factor
+                .checked_mul(level)
+                .filter(|amount| (1..=super::QUESTGATE0_RL_05).contains(amount))
+                .map(Some)
+                .ok_or("level-scaled experience out of bounds"),
+            (amount, None) => Ok(amount),
+            _ => Err("invalid level-scaled experience"),
+        }
+    }
+
     /// Syntax-only reset shape. Current save authority is resolved by the writer;
     /// the catalogue separately validates owned tracks and their initial values.
     pub(crate) fn is_save_restart_only(&self) -> bool {
@@ -422,7 +449,9 @@ impl RewardCallback {
         temporal_payment::guarded(self)
             || (self.repeatable
                 && (!self.take.is_empty() || self.fee.is_some())
-                && (self.give.is_some() || self.experience.is_some()))
+                && (self.give.is_some()
+                    || self.experience.is_some()
+                    || self.experience_per_level.is_some()))
             || (!self.take.is_empty() && self.give.is_some())
             || self.cosmetic_targets().any(|target| {
                 (target.addons == 0
@@ -734,7 +763,13 @@ fn validate_document_with_capacity(
         }
     }
     for c in &document.callbacks {
-        if c.requirements.as_ref().is_some_and(|r| !r.valid())
+        if c.maximum_level == Some(0)
+            || c.minimum_level
+                .zip(c.maximum_level)
+                .is_some_and(|(minimum, maximum)| minimum > maximum)
+            || c.experience_per_level
+                .is_some_and(|factor| factor <= 0 || c.experience.is_some())
+            || c.requirements.as_ref().is_some_and(|r| !r.valid())
             || c.give.as_ref().is_some_and(|g| !g.valid())
         {
             return Err(format!("invalid lane reward extension {}", c.key));
@@ -853,7 +888,10 @@ fn validate_document_with_capacity(
                 .any(|key| !slug(key, "oteryn:reward-claim.", b"._/:-", 128))
             || (c.repeatable
                 && (!((c.fee.is_some() && c.give.is_some())
-                    || (!c.take.is_empty() && (c.give.is_some() || c.experience.is_some())))
+                    || (!c.take.is_empty()
+                        && (c.give.is_some()
+                            || c.experience.is_some()
+                            || c.experience_per_level.is_some())))
                     || c.outfit.is_some()
                     || !c.outfits.is_empty()
                     || c.achievement.is_some()
@@ -1041,7 +1079,9 @@ fn validate_document_with_capacity(
                 .is_some_and(|amount| !(1..=100_000_000).contains(&amount))
             || (c.repeatable
                 && ((c.take.is_empty() && c.fee.is_none())
-                    || (c.give.is_none() && c.experience.is_none())
+                    || (c.give.is_none()
+                        && c.experience.is_none()
+                        && c.experience_per_level.is_none())
                     || c.cosmetic_targets().next().is_some()
                     || c.achievement.is_some()
                     || !c.achievement_progress.is_empty()))
@@ -1092,7 +1132,9 @@ fn validate_document_with_capacity(
 // changes the owning unfinished quest pin; speech/citations are not reward terms.
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
-    if callback.minimum_level.is_none()
+    if callback.maximum_level.is_none()
+        && callback.experience_per_level.is_none()
+        && callback.minimum_level.is_none()
         && callback.inventory.is_empty()
         && callback.world_claim.is_none()
         && callback.peer_requires.is_none()
@@ -2155,6 +2197,21 @@ mod tests {
                     "source scopes must bind the active definition"
                 );
                 legacy
+            } else if key == "oteryn:quest.the_spirit_will_get_you_quest" {
+                // Preserve the published baseline, and separately prove that the
+                // new formula changes the active quest's admission/value pin.
+                let mut callback = load()?
+                    .into_iter()
+                    .find(|callback| callback.key == "oteryn:quest-reward/l6-spirit-confession")
+                    .ok_or("Spirit reward")?;
+                assert_eq!(callback.experience_per_level, Some(50));
+                callback.experience_per_level = None;
+                let catalogue = lowered.catalogue();
+                let mut transitions = catalogue.transitions.clone();
+                transitions.insert(callback.key.clone(), primary_transition(&callback)?);
+                let legacy = super::super::definition_hash(key, &catalogue.tracks, &transitions);
+                assert_ne!(hash, legacy, "scaled XP must bind the active definition");
+                legacy
             } else {
                 hash
             };
@@ -3153,6 +3210,67 @@ mod outfit_reward_predecessor_tests {
             );
             assert_eq!(invalid, unchanged, "case {case}");
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod level_reward_tests {
+    use super::*;
+
+    fn decode(field: &str, value: i64) -> Result<RewardCallback, Box<dyn std::error::Error>> {
+        let callback = load()?.into_iter().next().ok_or("callback")?;
+        let mut row = serde_json::to_value(callback)?;
+        row[field] = value.into();
+        Ok(serde_json::from_value(row)?)
+    }
+
+    #[test]
+    fn reward_level_terms_are_validated_and_bound() -> Result<(), Box<dyn std::error::Error>> {
+        let mut callback = decode("maximum_level", 24)?;
+        let bound = gated_binding(&callback)?.ok_or("level binding")?;
+        callback.maximum_level = Some(23);
+        assert_ne!(gated_binding(&callback)?, Some(bound));
+        callback.minimum_level = Some(25);
+        assert!(validate_callbacks(std::slice::from_ref(&callback)).is_err());
+        callback.minimum_level = None;
+        callback.maximum_level = None;
+        callback.experience = None;
+        callback.experience_per_level = Some(50);
+        validate_callbacks(std::slice::from_ref(&callback))?;
+        let bound = gated_binding(&callback)?.ok_or("formula binding")?;
+        callback.experience_per_level = Some(51);
+        assert_ne!(gated_binding(&callback)?, Some(bound));
+        for factor in [0, -1] {
+            callback.experience_per_level = Some(factor);
+            assert!(validate_callbacks(std::slice::from_ref(&callback)).is_err());
+        }
+        callback.experience_per_level = Some(50);
+        callback.experience = Some(1);
+        assert!(validate_callbacks(std::slice::from_ref(&callback)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn reward_callback_maximum_level_schema() -> Result<(), Box<dyn std::error::Error>> {
+        let callback = decode("maximum_level", 24)?;
+        assert!(!callback.permits_level(25));
+        assert!(callback.permits_level(24));
+        assert!(callback.permits_level(20));
+        assert_eq!(serde_json::to_value(callback)?["maximum_level"], 24);
+        Ok(())
+    }
+
+    #[test]
+    fn reward_callback_level_scaled_experience_schema() -> Result<(), Box<dyn std::error::Error>> {
+        let mut callback = decode("experience_per_level", 50)?;
+        callback.experience = None;
+        assert_eq!(callback.experience_at_level(20)?, Some(1000));
+        assert_eq!(callback.experience_at_level(40)?, Some(2000));
+        callback.experience_per_level = Some(i64::MAX);
+        assert!(callback.experience_at_level(2).is_err());
+        callback.experience_per_level = Some(50);
+        assert_eq!(serde_json::to_value(callback)?["experience_per_level"], 50);
         Ok(())
     }
 }

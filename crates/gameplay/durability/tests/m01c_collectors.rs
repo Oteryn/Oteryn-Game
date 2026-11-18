@@ -87,6 +87,14 @@ async fn pilgrimage(h: &f::Harness) -> f::TestResult {
         oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
     );
     eprintln!("M01C_COLLECTOR POSTGRES_CONNECTED version={version}");
+    // The source cash reward is only available below level 25.
+    let mut setup = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *setup)
+        .await?;
+    sqlx::query("UPDATE game_character_progression_state SET level=24 WHERE character_id=encode($1,'hex')::uuid")
+        .bind(f::id(f::CHARACTER).as_slice()).execute(&mut *setup).await?;
+    setup.commit().await?;
     let (controller, _) =
         oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
             f::scope()?.world_id(),

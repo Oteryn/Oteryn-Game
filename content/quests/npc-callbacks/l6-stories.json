@@ -41,7 +41,8 @@
       "outfit": null,
       "achievement": null,
       "sources": [
-        "content/quests/authoring/spirit-wills.md"
+        "content/quests/authoring/spirit-wills.md",
+        "lane qc TibiaWiki report: https://tibia.fandom.com/wiki/The_Spirit_Will_Get_You (current global Tibia; API HTTP 402, revision unavailable); Cranky Lizard Crone, Souleater Mountains; 50 XP times player level"
       ],
       "key": "oteryn:quest-reward/l6-spirit-confession",
       "keywords": [
@@ -85,7 +86,8 @@
       "completes": true,
       "reply": [
         "You found all three wills. Their words have faded, but the memories remain. I hid these papers because I could not face the people I had failed. Keep the wills; you have heard my confession."
-      ]
+      ],
+      "experience_per_level": 50
     },
     {
       "key": "oteryn:quest-reward/l6-paradox-oldrak",

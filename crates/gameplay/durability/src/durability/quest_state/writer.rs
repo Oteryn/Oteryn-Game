@@ -1376,8 +1376,8 @@ impl DurabilityRoot {
                     };
                     // Reused from PC3 add7faf92: authoritative locked progression,
                     // after historical receipt lookup and before any fresh write.
-                    if let Some(minimum)=reward_callback.as_ref().and_then(|c|c.minimum_level)
-                        && state.try_get::<i64,_>("level")? < i64::from(minimum) {
+                    if let Some(callback) = &reward_callback
+                        && !callback.permits_level(state.try_get("level")?) {
                         tx.rollback().await?;
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
@@ -1748,8 +1748,18 @@ impl DurabilityRoot {
                     // inserts and consumption of this Character's XP obligations. Count them
                     // before any write; FOR UPDATE here would require the UPDATE privilege
                     // intentionally absent from the runtime role. At RL-10 refuse whole.
+                    let callback_experience = match reward_callback.as_ref().filter(|callback| callback.experience_per_level.is_some()) {
+                        Some(callback) => match callback.experience_at_level(state.try_get("level")?) {
+                            Ok(amount) => amount,
+                            Err(_) => {
+                                tx.rollback().await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                        },
+                        None => transition.experience,
+                    };
                     let reward_experience = grizzly_plan.as_ref()
-                        .map_or(transition.experience, |plan| plan.experience);
+                        .map_or(callback_experience, |plan| plan.experience);
                     let xp_full = match (refusal, reward_experience) {
                         (None, Some(_)) => {
                             let pending = sqlx::query(

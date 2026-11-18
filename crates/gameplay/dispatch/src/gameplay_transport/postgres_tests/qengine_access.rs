@@ -831,6 +831,8 @@ async fn wardrobe(
         capture_creature: false,
         self_target: None,
         minimum_level: None,
+        maximum_level: None,
+        experience_per_level: None,
         requires_addons: vec![],
         forbids_outfits: vec![],
         key: callback.key.clone(),
