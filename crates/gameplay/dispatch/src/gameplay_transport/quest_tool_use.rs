@@ -263,34 +263,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         // Crystal 201189f8 spike_tasks/actions_thermometer.lua:13-31.
         // Keep the actor at the sampled location through the gated hand-in.
-        let hotspot = if let Some(hotspot) = &callback.server_save_hotspot {
-            let runtime = &creature_runtime.as_ref().ok_or(())?.runtime;
-            runtime
-                .player_control_facts(actor, command.game_session_id)
-                .map_err(|_| ())?;
-            let position = runtime
-                .read_actor_position(actor)
-                .map_err(|_| ())?
-                .position();
-            let position = [position.x, position.y, i32::from(position.floor)];
-            if !hotspot.contains(
-                &callback.key,
-                self.world_id.as_bytes(),
-                self.reset_epoch,
-                position,
-            ) {
-                self.states
-                    .chat
-                    .push_quest_feedback(command.game_session_id, &hotspot.cold_reply);
-                return Ok(Some(outcome(UseDisposition::Committed)));
-            }
-            Some((self.reset_epoch, position))
-        } else {
-            None
-        };
+        let location =
+            if callback.server_save_hotspot.is_some() || callback.carried_tracker.is_some() {
+                let runtime = &creature_runtime.as_ref().ok_or(())?.runtime;
+                runtime
+                    .player_control_facts(actor, command.game_session_id)
+                    .map_err(|_| ())?;
+                let position = runtime
+                    .read_actor_position(actor)
+                    .map_err(|_| ())?
+                    .position();
+                let position = [position.x, position.y, i32::from(position.floor)];
+                let world = self.world_id.as_bytes();
+                let feedback = if let Some(spec) = &callback.server_save_hotspot {
+                    (!spec.contains(&callback.key, world, self.reset_epoch, position))
+                        .then(|| spec.cold_reply.clone())
+                } else if let Some(tracker) = &callback.carried_tracker {
+                    let target = tracker.target(
+                        &callback.key,
+                        world,
+                        fence.character_id.as_bytes(),
+                        self.reset_epoch,
+                    );
+                    (!tracker.reached(position, target)).then(|| tracker.heading(position, target))
+                } else {
+                    None
+                };
+                if let Some(feedback) = feedback {
+                    self.states
+                        .chat
+                        .push_quest_feedback(command.game_session_id, &feedback);
+                    return Ok(Some(outcome(UseDisposition::Committed)));
+                }
+                Some((self.reset_epoch, position))
+            } else {
+                None
+            };
         let use_ = QuestCarriedUse {
             recipe_target: None,
-            hotspot,
+            location,
             source,
             intent: encoded,
         };
@@ -330,7 +341,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?;
         if let Some(turn) = &mut creature_runtime {
             if let (QuestTransitionOutcome::Committed(_), Some(spec), Some((_, [x, y, floor]))) =
-                (&result, &callback.server_save_hotspot, hotspot)
+                (&result, &callback.server_save_hotspot, location)
             {
                 if let (Some(map), Ok(x), Ok(y), Ok(floor)) = (
                     self.bundle_map(),
@@ -343,6 +354,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         u16::from(spec.hot_effect),
                     );
                 }
+            }
+            if matches!(result, QuestTransitionOutcome::Committed(_)) && location.is_some() {
                 for line in &callback.reply {
                     self.states
                         .chat

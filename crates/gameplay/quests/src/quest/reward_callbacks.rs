@@ -37,6 +37,8 @@ pub use inventory::InventoryRequirement;
 #[cfg(test)]
 mod inventory_tests;
 mod temporal_payment;
+mod tracker;
+pub use tracker::CarriedTracker;
 #[cfg(test)]
 mod temporal_payment_tests;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
@@ -249,6 +251,8 @@ pub struct RewardCallback {
     pub carried_item: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub server_save_hotspot: Option<ServerSaveHotspot>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_tracker: Option<CarriedTracker>,
     /// Explicit selected-instance exchange; legacy tools retain their no-grant contract.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub carried_exchange: bool,
@@ -395,9 +399,10 @@ impl RewardCallback {
             }
             (None, Some(_)) => false,
             (Some(source), None) => {
-                matches!(self.take.as_slice(), [input]
+                (self.carried_tracker.is_some() && self.take.is_empty() && self.give.is_none())
+                    || matches!(self.take.as_slice(), [input]
                 if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
-                    && (self.give.is_none() || self.creature_target.is_some())
+                        && (self.give.is_none() || self.creature_target.is_some())
             }
             (None, None) => true,
         }
@@ -908,6 +913,9 @@ fn validate_document_with_capacity(
             || c.server_save_hotspot
                 .as_ref()
                 .is_some_and(|hotspot| !hotspot.valid_for(c))
+            || c.carried_tracker
+                .as_ref()
+                .is_some_and(|tracker| !tracker.valid(c))
             || if c.carried_exchange {
                 !c.valid_carried_use()
                     || !carried_bounds::valid(c)
@@ -1114,6 +1122,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && !temporal_payment::guarded(callback)
         && callback.self_target.is_none()
         && callback.server_save_hotspot.is_none()
+        && callback.carried_tracker.is_none()
         && !callback
             .key
             .starts_with("oteryn:quest-reward/worldchg-m31/")

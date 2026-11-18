@@ -172,7 +172,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let use_ = QuestCarriedUse {
             source,
             recipe_target: Some(target),
-            hotspot: None,
+            location: None,
             intent: encoded,
         };
         let result = self

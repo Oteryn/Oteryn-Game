@@ -822,6 +822,7 @@ async fn wardrobe(
         magic_effects: vec![],
         carried_item: None,
         server_save_hotspot: None,
+        carried_tracker: None,
         carried_exchange: false,
         requires_completed_quests: vec![],
         carried_target: None,

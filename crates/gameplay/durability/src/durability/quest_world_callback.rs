@@ -305,6 +305,7 @@ pub(super) async fn consume_reward_inputs(
         .chain(&callback.present)
         .map(|i| i.item.as_str())
         .collect();
+    keys.extend(callback.carried_item.as_deref());
     keys.extend(callback.inventory.iter().map(|rule| rule.item.as_str()));
     keys.sort_unstable();
     keys.dedup();

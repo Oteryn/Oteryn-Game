@@ -2473,6 +2473,8 @@ fn scenario_case(
                 name.ends_with("-fault"),
             ))
             .await?;
+        } else if name == super::super::qespike_tracker::NAME {
+            Box::pin(super::super::qespike_tracker::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qespike_hotspot::NAME {
             Box::pin(super::super::qespike_hotspot::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qespike_geomantic_step::NAME {

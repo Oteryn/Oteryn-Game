@@ -128,7 +128,7 @@ async fn exercise(h: &f::Harness, respawn: bool) -> f::TestResult {
         maximum: 2,
     };
     let carried = super::super::QuestCarriedUse { recipe_target: None,
-        hotspot: None,
+        location: None,
         source: f::id(95),
         intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(

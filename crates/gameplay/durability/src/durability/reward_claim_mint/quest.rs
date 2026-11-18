@@ -82,7 +82,7 @@ pub struct QuestCarriedUse {
     pub recipe_target: Option<[u8; 16]>,
     /// Current carrier position held by dispatch through the reward transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub hotspot: Option<(u64, [i32; 3])>,
+    pub location: Option<(u64, [i32; 3])>,
     pub intent: Vec<u8>,
 }
 
@@ -145,27 +145,31 @@ pub(crate) async fn apply(
     {
         return Ok(false);
     }
-    match (
-        &callback.server_save_hotspot,
-        admission.carried_use.and_then(|use_| use_.hotspot),
-    ) {
-        (None, None) => {}
-        (Some(hotspot), Some((epoch, position))) => {
-            let world = fence.runtime_scope.world_id();
-            let reset: String = sqlx::query_scalar(
-                "SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active
-                    WHERE world_id=encode($1,'hex')::uuid FOR SHARE),0)::text",
-            )
-            .bind(world.as_bytes().as_slice())
-            .fetch_one(&mut **tx)
-            .await?;
-            if reset != epoch.to_string()
-                || !hotspot.contains(&callback.key, world.as_bytes(), epoch, position)
-            {
-                return Ok(false);
-            }
+    let location = admission.carried_use.and_then(|use_| use_.location);
+    if (callback.server_save_hotspot.is_some() || callback.carried_tracker.is_some())
+        != location.is_some()
+    {
+        return Ok(false);
+    }
+    if let Some((epoch, position)) = location {
+        let world = fence.runtime_scope.world_id();
+        let reset: String = sqlx::query_scalar(
+            "SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active
+                WHERE world_id=encode($1,'hex')::uuid FOR SHARE),0)::text",
+        )
+        .bind(world.as_bytes().as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
+        if reset != epoch.to_string()
+            || callback.server_save_hotspot.as_ref().is_some_and(|hotspot|
+                !hotspot.contains(&callback.key, world.as_bytes(), epoch, position))
+            || callback.carried_tracker.as_ref().is_some_and(|tracker| {
+                let target = tracker.target(&callback.key, world.as_bytes(), fence.character_id.as_bytes(), epoch);
+                !tracker.reached(position, target)
+            })
+        {
+            return Ok(false);
         }
-        _ => return Ok(false),
     }
     match (
         callback.creature_target.is_some() || callback.self_target.is_some(),
@@ -520,8 +524,16 @@ pub(crate) async fn apply(
             .await?
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
+    let mut plan = oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if callback.carried_tracker.is_some() && callback.take.is_empty() {
+        // A reusable detector leaves no consumption row. Keep the exact
+        // command observation on its ordinary reward receipt for replay.
+        plan["carried_observation"] = serde_json::to_value(admission.carried_use)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+    }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
     if callback.corpse_target.is_some() {
         let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
             return Ok(false);

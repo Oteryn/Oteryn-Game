@@ -32,14 +32,7 @@ impl ServerSaveHotspot {
             && !self.cold_reply.is_empty()
             && self.cold_reply.chars().count() <= 255
             && !self.cold_reply.chars().any(char::is_control)
-            && callback.carried_item.is_some()
-            && !callback.carried_exchange
-            && callback.carried_target.is_none()
-            && callback.creature_target.is_none()
-            && callback.corpse_target.is_none()
-            && callback.self_target.is_none()
-            && callback.peer_requires.is_none()
-            && !callback.storage.is_empty()
+            && bare_tool(callback)
     }
 
     pub fn contains(&self, key: &str, world: &[u8; 16], epoch: u64, position: [i32; 3]) -> bool {
@@ -55,4 +48,15 @@ impl ServerSaveHotspot {
         };
         self.areas[index].contains(position)
     }
+}
+
+pub(super) fn bare_tool(callback: &RewardCallback) -> bool {
+    callback.carried_item.is_some()
+        && !callback.carried_exchange
+        && callback.carried_target.is_none()
+        && callback.creature_target.is_none()
+        && callback.corpse_target.is_none()
+        && callback.self_target.is_none()
+        && callback.peer_requires.is_none()
+        && !callback.storage.is_empty()
 }
