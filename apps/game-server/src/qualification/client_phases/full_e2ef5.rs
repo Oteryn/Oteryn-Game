@@ -47,7 +47,7 @@ pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[
     .to_string();
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
-    let project = required("WP5_PROJECT")?;
+    let project = required("NODE_BOOT_PLATFORM_COMPOSE_PROJECT")?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = c17_output({

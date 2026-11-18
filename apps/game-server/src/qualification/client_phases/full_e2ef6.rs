@@ -155,7 +155,7 @@ pub(super) async fn run(
     npcs: &oteryn_world_bundle::npc::Table,
     export_loss: bool,
     export_twist: bool,
-) -> (ClientEvidence, ClientEvidence) {
+) -> TestResult<(ClientEvidence, ClientEvidence)> {
     use verdict::Need::Row as After;
     // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
     let mut temple =
@@ -280,8 +280,16 @@ pub(super) async fn run(
             resting_bonuses(&mut resting, clients, world, spawns),
         )
         .await;
+    let admission_failure = result
+        .as_ref()
+        .err()
+        .filter(|error| error.is::<P10AdmissionFailure>())
+        .map(ToString::to_string);
     finish_resting_row(resting, result);
-    (saved_loss, twist)
+    if let Some(error) = admission_failure {
+        return Err(error.into());
+    }
+    Ok((saved_loss, twist))
 }
 
 // P10 owns its connection and never borrows the fixture-provisioned character.
@@ -349,63 +357,37 @@ fn daily_save_needed(wall: oteryn_protocol_oteryn::daily_reward::DailyRewardWall
     wall.claimed && !wall.claim_enabled
 }
 
-// Only the disposable node-boot database uses this in-place calendar advance.
-// Keep native epoch, event binding, active pointer, and trigger-derived daily
-// history in sync. Physical resets remain the responsibility of the reset owner.
-async fn next_daily_save(_client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
-    use sqlx::{Connection as _, PgConnection};
-    required("NODE_BOOT_CONTROL_SOCKET")?;
-    tokio::time::timeout(Duration::from_secs(10), async {
-        let mut connection = PgConnection::connect(clients.url).await?;
-        let mut tx = connection.begin().await?;
-        // Take the same job-table lock that fences physical reset publication.
-        sqlx::query("LOCK TABLE game_world_reset_jobs IN SHARE ROW EXCLUSIVE MODE")
-            .execute(&mut *tx).await?;
-        let world = clients.world.as_slice();
-        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:world-reset:' || (encode($1,'hex')::uuid)::text,0))")
-            .bind(world).execute(&mut *tx).await?;
-        let next: Option<String> = sqlx::query_scalar(QUALIFICATION_DAILY_EPOCH)
-            .bind(world).bind(clients.characters[1].as_slice())
-            .fetch_optional(&mut *tx).await?;
-        let next = next.ok_or("P10 cannot advance an unclaimed or non-fixture World epoch")?;
-        let advanced = sqlx::query(
-            "UPDATE game_world_reset_active SET reset_epoch=$2::text::numeric
-             WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric-1",
-        ).bind(world).bind(&next).execute(&mut *tx).await?;
-        let (published, last): (String, String) = sqlx::query_as(
+// The live listener owns its activated reset epoch. A daily-reward test must
+// only observe publication, including the history row produced by that owner.
+async fn next_daily_save(clients: &SeamClients<'_>) -> TestResult {
+    use sqlx::Connection as _;
+    let epochs = tokio::time::timeout(Duration::from_secs(10), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        sqlx::query_as::<_, (String, Option<String>)>(
             "SELECT h.reset_epoch::text, d.last_claim_epoch::text
              FROM game_world_reset_active a
              JOIN game_world_reset_history h ON h.world_id=a.world_id AND h.reset_epoch=a.reset_epoch+1
              JOIN game_character_daily_rewards d ON d.world_id=a.world_id
              WHERE a.world_id=encode($1,'hex')::uuid AND d.character_id=encode($2,'hex')::uuid",
-        ).bind(world).bind(clients.characters[1].as_slice()).fetch_one(&mut *tx).await?;
-        if advanced.rows_affected()!=1 || !consecutive_published_save(Some(published.parse()?), Some(last.parse()?)) {
-            return Err("P10 fixture did not publish exactly the next owner-backed window".into());
-        }
-        crate::durability::world_event::record_qualification_reset(
-            &mut tx, WorldId::decode(&clients.world)?, next.parse()?,
-        ).await.map_err(|error| format!("P10 native World reset decisions: {error:?}"))?;
-        tx.commit().await?;
-        Ok(())
-    }).await?
+        )
+        .bind(clients.world.as_slice())
+        .bind(clients.characters[1].as_slice())
+        .fetch_optional(&mut connection)
+        .await
+    })
+    .await??;
+    if let Some((published, Some(last))) = epochs
+        && consecutive_published_save(Some(published.parse()?), Some(last.parse()?))
+    {
+        return Ok(());
+    }
+    Err(verdict::HarnessError::boxed(
+        verdict::Cause::Precondition {
+            name: "owner-published-daily-save".into(),
+        },
+        "P10 cannot prove another daily claim until the World owner publishes the next save",
+    ))
 }
-
-const QUALIFICATION_DAILY_EPOCH: &str =
-    "WITH next AS (
-         INSERT INTO game_world_reset_epochs
-         SELECT e.world_id,e.reset_epoch+1,e.target_digest,e.map_revision,e.server_digest,
-                e.client_digest,e.frame_digest,e.calendar,e.calendar_revision,clock_timestamp(),e.reset_month
-         FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch)
-         JOIN game_character_daily_rewards d ON d.world_id=a.world_id
-         WHERE a.world_id=encode($1,'hex')::uuid AND d.character_id=encode($2,'hex')::uuid
-           AND d.last_claim_epoch=a.reset_epoch+1
-           AND EXISTS (SELECT 1 FROM game_spell_field_world_policies p
-                       WHERE p.world_id=a.world_id AND p.decision_identity='node-boot-qualification')
-           AND NOT EXISTS (SELECT 1 FROM game_world_reset_jobs j
-                           WHERE j.world_id=a.world_id AND j.reset_epoch=a.reset_epoch)
-         RETURNING world_id,reset_epoch
-     )
-     SELECT reset_epoch::text FROM next";
 
 fn consecutive_published_save(current: Option<u64>, last: Option<u64>) -> bool {
     last.and_then(|last| last.checked_add(1))
@@ -716,7 +698,7 @@ async fn resting_deficits(
         return Err("P10 stamina prerequisite blocked: real rat hunt produced no earned XP".into());
     }
     resting_walk(client, world, outside).await?;
-    relog(client, clients, 0xf3).await?; // Clears the unrelated kill-triggered soul window.
+    p10_relog(client, clients).await?; // Clears the unrelated kill-triggered soul window.
     let stamina = resting_stamina(&tab(client, 1).await?, general_stats::selected(client))?;
     if stamina >= 2520 {
         return Err(format!("P10 stamina deficit blocked after earned kill and fresh admission: observed={stamina}, need <2520").into());
@@ -778,11 +760,11 @@ async fn resting_bonuses(
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult<Option<&'static str>> {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
-    let mut client = connect_world(clients, 0xf2).await?;
+    let mut client = p10_connect(clients, 0xf2).await?;
     let result: TestResult<Option<&'static str>> = async {
         let mut initial = daily_wall(&mut client).await?;
         if daily_save_needed(initial) {
-            next_daily_save(&mut client, clients).await?;
+            next_daily_save(clients).await?;
             let fresh = daily_wall(&mut client).await?;
             if fresh.claimed || fresh.streak != initial.streak {
                 return Err(format!("P10 restart did not retain streak into a fresh window: {initial:?}->{fresh:?}").into());
@@ -826,7 +808,7 @@ async fn resting_bonuses(
             return Err("P10 duplicate claim changed daily state or item custody".into());
         }
         row.pass("duplicate-claim-refused", claimed);
-        relog(&mut client, clients, 0xf3).await?;
+        p10_relog(&mut client, clients).await?;
         if daily_wall(&mut client).await? != claimed || daily_custody(&mut client, clients).await? != reward_after || custody(client.inventory().ok_or("P10 saved reward custody missing")?) != awarded {
             return Err("P10 daily claim/streak/custody did not persist through fresh admission".into());
         }
@@ -835,7 +817,7 @@ async fn resting_bonuses(
             if !daily_save_needed(claimed) {
                 return Err(format!("P10 prior claim is not settled: {claimed:?}").into());
             }
-            next_daily_save(&mut client, clients).await?;
+            next_daily_save(clients).await?;
             let fresh = daily_wall(&mut client).await?;
             if fresh.claimed || fresh.claim_enabled || fresh.streak != claimed.streak {
                 return Err(format!("P10 next daily window failed to retain streak: {claimed:?}->{fresh:?}").into());
@@ -853,7 +835,7 @@ async fn resting_bonuses(
             {
                 return Err(format!("P10 next daily claim did not advance exact streak/reward: {fresh:?}->{after:?}").into());
             }
-            relog(&mut client, clients, 0xf3).await?;
+            p10_relog(&mut client, clients).await?;
             if daily_wall(&mut client).await? != after
                 || daily_custody(&mut client, clients).await? != reward_after
             {
@@ -942,7 +924,7 @@ async fn resting_bonuses(
         }
         row.pass("resting-double-health-mana", previous);
         row.pass("resting-soul-and-stamina", (soul_before, previous.soul, stamina_before, stamina_after));
-        relog(&mut client, clients, 0xf3).await?;
+        p10_relog(&mut client, clients).await?;
         if daily_wall(&mut client).await? != claimed || resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))? != stamina_after
             || client.actor_vitals().is_none_or(|v| v.soul != previous.soul || v.health < previous.health || v.mana < previous.mana) {
             return Err("P10 earned bonuses/streak did not persist through fresh admission".into());
@@ -1095,6 +1077,37 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
     }
+}
+
+#[derive(Debug)]
+struct P10AdmissionFailure(Box<dyn std::error::Error>);
+
+impl std::fmt::Display for P10AdmissionFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "P10 fresh admission failed: {}", self.0)
+    }
+}
+
+impl std::error::Error for P10AdmissionFailure {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self.0.as_ref())
+    }
+}
+
+async fn p10_connect(clients: &SeamClients<'_>, tag: u8) -> TestResult<DevClientSession> {
+    Ok(connect_world(clients, tag)
+        .await
+        .map_err(P10AdmissionFailure)?)
+}
+
+async fn p10_relog(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    let previous = client.join_snapshot().game_session_id;
+    logout(client).await?;
+    *client = p10_connect(clients, 0xf3).await?;
+    if client.join_snapshot().game_session_id == previous {
+        return Err("fresh admission reused the preceding GameSession".into());
+    }
+    Ok(())
 }
 
 async fn relog(client: &mut DevClientSession, clients: &SeamClients<'_>, tag: u8) -> TestResult {
@@ -3559,4 +3572,18 @@ fn qualification_daily_epoch_has_native_event_and_change_decisions() -> TestResu
         sqlx::query(sqlx::AssertSqlSafe(format!("DROP DATABASE {name} WITH (FORCE)"))).execute(&mut admin).await?;
         result
     })
+}
+
+#[test]
+fn qualification_p10_cannot_publish_a_live_world_epoch() -> TestResult {
+    let (_, helper) = include_str!("full_e2ef6.rs")
+        .split_once("async fn next_daily_save(")
+        .ok_or("missing live P10 helper")?;
+    let (helper, _) = helper
+        .split_once("fn consecutive_published_save(")
+        .ok_or("missing P10 helper boundary")?;
+    assert!(!helper.contains("UPDATE game_world_reset_active"));
+    assert!(!helper.contains("INSERT INTO game_world_reset_epochs"));
+    assert!(!helper.contains("record_qualification_reset"));
+    Ok(())
 }

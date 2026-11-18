@@ -370,6 +370,7 @@ class SeamPassThroughTests(unittest.TestCase):
                 NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
                 node_log={temp}/node.log; EXTRA_WORLD_ACCOUNTS=(party-one sweep-one)
                 BASE=/srv/x; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
+                WP5_PROJECT=test-project; COMPOSE_OWNER=test-owner
                 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; PACKET_ACCOUNT_ID=p; SECOND_PACKET_ACCOUNT_ID=q
                 FRESH_KEY_ID=f; FRESH_SEED_HEX=s; RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t; MAP_REVISION=m
             '''
@@ -392,6 +393,7 @@ class SeamPassThroughTests(unittest.TestCase):
                 NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
                 node_log={temp}/node.log; EXTRA_WORLD_ACCOUNTS=(party-one sweep-one)
                 BASE=/srv/x; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
+                WP5_PROJECT=test-project; COMPOSE_OWNER=test-owner
                 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; PACKET_ACCOUNT_ID=p; SECOND_PACKET_ACCOUNT_ID=q
                 FRESH_KEY_ID=f; FRESH_SEED_HEX=s; RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t; MAP_REVISION=m
             '''
@@ -431,6 +433,7 @@ printf '%s\n' '{"target_directory":"/cargo/shared output"}'
                 NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=0; NODE_GAMEPLAY_ENV=()
                 NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
                 BASE=/srv/x; WP5_PKI=/x; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
+                WP5_PROJECT=test-project; COMPOSE_OWNER=test-owner
                 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; FRESH_KEY_ID=f; FRESH_SEED_HEX=s
                 RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
                 sleep() { :; }
@@ -450,6 +453,7 @@ printf '%s\n' '{"target_directory":"/cargo/shared output"}'
                 sleep() {{ :; }}
                 NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=0; NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
                 BASE=/srv/x; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
+                WP5_PROJECT=test-project; COMPOSE_OWNER=test-owner
                 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; FRESH_KEY_ID=f; FRESH_SEED_HEX=s
                 RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
                 NODE_BOOT_E2E_ONLY=f6,core; NODE_BOOT_NO_PROGRESS_S=75
@@ -1934,3 +1938,12 @@ printf 'pvp %s\n' "${PVP_ACCOUNT_IDS[@]}"''',
     assert set(world).isdisjoint(pvp)
     assert any(line.startswith(f'platform_seed=synthetic_accounts={len(world)} ')
                for line in lines)
+
+
+def test_fresh_character_receives_the_platform_compose_project():
+    source = (HERE / "../../../apps/game-server/src/qualification/client_phases/full_e2ef5.rs").read_text()
+    project = re.search(r'docker compose --project-name "([^"]+)"', RUN_TEXT)
+    assert project is not None
+    assert f'NODE_BOOT_PLATFORM_COMPOSE_PROJECT="{project[1]}"' in RUN_TEXT
+    assert 'let project = required("NODE_BOOT_PLATFORM_COMPOSE_PROJECT")?' in source
+    assert re.search(r'"--project",\s*&project,\s*"--fresh-character"', source)

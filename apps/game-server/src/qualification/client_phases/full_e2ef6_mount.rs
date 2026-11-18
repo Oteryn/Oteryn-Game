@@ -12,7 +12,7 @@
         let captures = full_e2ef6::run(clients, world, &metadata.spawns, &metadata.npcs,
             capture_loss,
             capture_twist,
-        ).await;
+        ).await?;
         journey_group_completed("f6", before);
         captures
     } else {

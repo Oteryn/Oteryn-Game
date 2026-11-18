@@ -2022,6 +2022,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
   NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
+  NODE_BOOT_PLATFORM_COMPOSE_PROJECT="$WP5_PROJECT-$COMPOSE_OWNER" \
   NODE_BOOT_CONTROL_SOCKET="$BASE/run/control.sock" \
   NODE_BOOT_NODE_LOG="${node_log:-}" \
   NODE_BOOT_ADDRESS="127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}" \

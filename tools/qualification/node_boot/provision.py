@@ -442,7 +442,7 @@ def watch_parent_stdin():
     operation; a request already delivered remains subject to native reconciliation.
     """
     def stopped():
-        sys.stdin.buffer.read(1)
+        os.read(0, 1)
         with WRITER_LOCK:
             PARENT_CANCELLED.set()
             writer = REMOTE_WRITER

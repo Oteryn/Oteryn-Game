@@ -737,3 +737,18 @@ class C17BootstrapTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_fresh_character_discovery_failure_exits_without_stdin_abort(tmp_path):
+    docker = tmp_path / "docker"
+    docker.write_text("#!/bin/sh\nexit 0\n")
+    docker.chmod(0o755)
+    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}")
+    with subprocess.Popen(
+        [sys.executable, provision.__file__, "--socket", "unused.sock",
+         "--project", "test-project-owner", "--watch-parent-stdin", "--fresh-character", "{}"],
+        stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env=env,
+    ) as child:
+        assert child.stderr is not None
+        assert child.wait(timeout=10) == 1
+        assert b"qualification requires one Platform container; found=0" in child.stderr.read()
