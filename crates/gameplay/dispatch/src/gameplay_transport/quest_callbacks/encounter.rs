@@ -357,6 +357,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let (Some(phases), Some(phase)) = (&mut phases, phase) {
             phases.push(phase);
+            states.owner_wake.notify_one();
         }
         drop(phases);
         if let Some(reservation) = reservation

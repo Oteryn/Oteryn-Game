@@ -28,6 +28,17 @@ pub(super) fn halve(
     set_damage_divisor(runtime, &[actor], 2)
 }
 
+pub(super) fn unprotect(
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+) -> Result<(), CarrierError> {
+    runtime.owner_fence()?;
+    runtime.with_encounter_hooks::<DamageGates, _, CarrierError>(|_, gates| {
+        gates.actors.retain(|(saved, _)| *saved != actor);
+        Ok(())
+    })
+}
+
 fn set_damage_divisor(
     runtime: &mut ChannelRuntimeV1,
     actors: &[ExactActorRef],

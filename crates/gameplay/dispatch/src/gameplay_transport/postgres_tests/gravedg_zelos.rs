@@ -103,25 +103,27 @@ pub(super) async fn exercise(
         find(&runtime, KNIGHTS[1])?.ok_or("Nargol spawned by native USE")?
     };
     super::engenc2_cults::kill(owner, admitted, nargol, KNIGHTS[1], 101).await?;
-    let mut runtime = owner.runtime.lock().await;
-    let mut states = owner.states.spell_states.lock().await;
     let now = owner.owner_now().get();
-    crate::gameplay_transport::encounter_phases::tick(&mut runtime, &mut states, now);
+    tick_at(owner, now).await;
     let mass = "oteryn:creature.regenerating_mass";
-    assert!(find(&runtime, mass)?.is_some(), "mass replaces Nargol");
-    crate::gameplay_transport::encounter_phases::tick(&mut runtime, &mut states, now + 29_999_999);
-    assert!(find(&runtime, mass)?.is_some(), "mass survives until the deadline");
-    crate::gameplay_transport::encounter_phases::tick(&mut runtime, &mut states, now + 30_000_000);
-    assert!(find(&runtime, mass)?.is_none(), "mass expires at 30 seconds");
-    assert_ne!(
-        find(&runtime, KNIGHTS[1])?.ok_or("regenerated Nargol")?,
-        nargol
-    );
-    assert!(find(&runtime, "oteryn:creature.king_zelos")?.is_none());
-
-    crate::gameplay_transport::encounter_phases::tick(
-        &mut runtime, &mut states, now + 24 * 60 * 1_000_000,
-    );
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(find(&runtime, mass)?.is_some(), "mass replaces Nargol");
+    }
+    tick_at(owner, now + 29_999_999).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(find(&runtime, mass)?.is_some(), "mass survives until the deadline");
+    }
+    tick_at(owner, now + 30_000_000).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(find(&runtime, mass)?.is_none(), "mass expires at 30 seconds");
+        assert_ne!(find(&runtime, KNIGHTS[1])?.ok_or("regenerated Nargol")?, nargol);
+        assert!(find(&runtime, "oteryn:creature.king_zelos")?.is_none());
+    }
+    tick_at(owner, now + 24 * 60 * 1_000_000).await;
+    let runtime = owner.runtime.lock().await;
     for knight in KNIGHTS {
         assert!(find(&runtime, knight)?.is_none(), "timeout cleans up {knight}");
     }
@@ -130,6 +132,12 @@ pub(super) async fn exercise(
         assert_eq!((exit.x, exit.y, exit.floor), (103, 100, 7));
     }
     Ok(())
+}
+
+async fn tick_at(owner: &ComposedFreshAdmission<'_, '_, '_>, now: u64) {
+    use std::sync::atomic::Ordering;
+    owner.states.test_owner_time.store(now + 1, Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
 }
 
 /// A single-sector qualified room shared by native phase lever tests.

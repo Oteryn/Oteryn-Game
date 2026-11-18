@@ -107,6 +107,18 @@ pub(super) struct Registry {
 }
 
 impl Registry {
+    pub(super) fn next_due_us(&self) -> Option<u64> {
+        self.active
+            .lock()
+            .ok()?
+            .iter()
+            .filter_map(|phase| match &phase.fight {
+                Fight::Zelos(fight) => Some(fight.next_due_us()),
+                Fight::Cults(_) => None,
+            })
+            .min()
+    }
+
     pub(super) fn reserve<'a>(
         &'a self,
         runtime: &mut ChannelRuntimeV1,
@@ -146,12 +158,19 @@ impl Registry {
         &self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        now: u64,
     ) {
         let Ok(mut active) = self.active.lock() else {
             return;
         };
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
-            if phase.fight.projected_death(runtime, actor).is_ok() {
+            if matches!(&phase.fight, Fight::Zelos(zelos) if zelos.timeout_participants(now).is_some())
+            {
+                continue;
+            }
+            if phase.fight.projected_death(runtime, actor).is_ok()
+                && matches!(phase.fight, Fight::Cults(_))
+            {
                 let ActivePhase { fight, cells, .. } = phase;
                 let _ = fight.advance(runtime, None, |runtime, at| placement(cells, runtime, at));
             }
@@ -355,6 +374,23 @@ fn placement(
 }
 
 pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStates, now: u64) {
+    tick_phase_kind(runtime, states, now, false);
+}
+
+pub(super) fn tick_deadlines(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    now: u64,
+) {
+    tick_phase_kind(runtime, states, now, true);
+}
+
+fn tick_phase_kind(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    now: u64,
+    timed: bool,
+) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
@@ -368,6 +404,9 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStat
             timeout,
             ..
         } = phase;
+        if timed != matches!(fight, Fight::Zelos(_)) {
+            return true;
+        }
         if let (Fight::Zelos(fight), Some(timeout)) = (&*fight, timeout.as_ref())
             && let Some(participants) = fight.timeout_participants(now)
             && !evacuate(runtime, cells, timeout, participants, &mut exits)
