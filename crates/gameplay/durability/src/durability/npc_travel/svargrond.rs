@@ -74,7 +74,8 @@ pub fn route(npc: &str, keyword: &str, payment: Payment) -> Option<TravelRoute> 
 }
 
 pub fn pays_ring(route: &TravelRoute) -> bool {
-    route.service == BUDDEL_SERVICE && route.route.key.strip_suffix("-ring") == Some(route.keyword.as_str())
+    route.service == BUDDEL_SERVICE
+        && route.route.key.strip_suffix("-ring") == Some(route.keyword.as_str())
 }
 
 async fn track(
@@ -93,10 +94,12 @@ pub(super) async fn permitted(
     route: &TravelRoute,
 ) -> Result<bool, DurabilityError> {
     if route.service == ISKAN_SERVICE {
-        return Ok(self::route(ISKAN, &route.keyword, Payment::Fare).as_ref() == Some(route)
-            && track(tx, fence, BARBARIAN).await? >= 8
-            && track(tx, fence, ICE_ISLANDS).await? >= 3
-            && track(tx, fence, HUSKY_KILL).await? < 1);
+        return Ok(
+            self::route(ISKAN, &route.keyword, Payment::Fare).as_ref() == Some(route)
+                && track(tx, fence, BARBARIAN).await? >= 8
+                && track(tx, fence, ICE_ISLANDS).await? >= 3
+                && track(tx, fence, HUSKY_KILL).await? < 1,
+        );
     }
     if route.service != BUDDEL_SERVICE {
         return Ok(true);
@@ -112,9 +115,7 @@ pub(super) async fn permitted(
         return Ok(false);
     };
     let to = &route.route.destination;
-    if payment != Payment::Ring
-        && DESTINATIONS.iter().any(|&(_, x, y)| (x, y) == (to.x, to.y))
-    {
+    if payment != Payment::Ring && DESTINATIONS.iter().any(|&(_, x, y)| (x, y) == (to.x, to.y)) {
         expected.route.destination.x = to.x;
         expected.route.destination.y = to.y;
     }
