@@ -72,9 +72,9 @@ pub fn active_for(catalogue: &QuestStateCatalogue, tracks: &BTreeMap<String, i64
                 };
                 let observed_gate = tracks.get(&counter.gate).copied().unwrap_or(gate.initial);
                 let observed_count = tracks.get(&counter.track).copied().unwrap_or(count.initial);
-                if observed_gate == counter.gate_value
-                    && (counter.minimum..counter.maximum).contains(&observed_count)
-                {
+                let count_active = (counter.minimum..counter.maximum).contains(&observed_count)
+                    || (counter.cooldown_track.is_some() && observed_count == counter.maximum);
+                if observed_gate == counter.gate_value && count_active {
                     active.push(counter.key.clone());
                 }
             }

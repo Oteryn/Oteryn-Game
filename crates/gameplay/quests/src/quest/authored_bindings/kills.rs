@@ -47,6 +47,9 @@ pub struct KillCounter {
     /// Exact native encounter callback; absent for ordinary party hunts.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub encounter_source: Option<String>,
+    /// Last credited defeat, set by the quest receipt transaction's clock.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cooldown_track: Option<String>,
 }
 
 impl KillCounter {
@@ -72,6 +75,17 @@ impl KillCounter {
         {
             return Err("authored kill identity/owner/bounds".into());
         }
+        if self.cooldown_track.as_ref().is_some_and(|key| {
+            self.encounter_source.is_none()
+                || self.advance_gate_to.is_some()
+                || key == &self.track
+                || key == &self.gate
+                || !quest.tracks.iter().any(|track| {
+                    &track.key == key && track.initial == 0 && track.maximum == i64::MAX
+                })
+        }) {
+            return Err("authored kill cooldown track".into());
+        }
         if let Some(source) = &self.encounter_source {
             let encounter = quest
                 .stages
@@ -94,6 +108,7 @@ impl KillCounter {
                 counts.clone().any(|count| count == 1) && counts.all(|count| count <= 1)
             } else {
                 self.minimum == 0
+                    && self.cooldown_track.is_none()
                     && (1..=8).contains(&encounter.monsters.len())
                     && i64::try_from(matching(&encounter.monsters)) == Ok(self.maximum)
             };
@@ -109,6 +124,20 @@ impl KillCounter {
     }
 
     pub(super) fn effects(&self) -> Vec<QuestEffect> {
+        if let Some(cooldown) = &self.cooldown_track {
+            return vec![
+                QuestEffect {
+                    track: self.track.clone(),
+                    from: QuestComparison::Between(self.minimum, self.maximum),
+                    effect: QuestEffectKind::IncrementCapped(self.maximum),
+                },
+                QuestEffect {
+                    track: cooldown.clone(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::SetNow,
+                },
+            ];
+        }
         if self.encounter_source.is_some() && self.advance_gate_to.is_none() {
             // The source/epoch owner checks the gate without rewriting its revision
             // for every death queued from the same admission.
@@ -166,6 +195,67 @@ mod tests {
 
     fn binding() -> Result<super::super::Bindings, String> {
         super::super::Bindings::parse(include_bytes!("fixtures/kill.json"))
+    }
+
+    #[test]
+    fn rotating_boss_defeat_refreshes_cooldown_after_progress_cap() -> Result<(), String> {
+        use crate::quest::{QuestTrack, QuestTransition};
+        let bindings = binding()?;
+        let quest = &bindings.quests[0];
+        let super::super::Trigger::Kill { counter } = &quest.stages[1].trigger else {
+            return Err("kill stage".into());
+        };
+        let mut counter = counter.as_ref().clone();
+        let cooldown = "oteryn:quest-progress/authored-kills/last-defeat".to_owned();
+        counter.cooldown_track = Some(cooldown.clone());
+        counter.advance_gate_to = None;
+        let transition = QuestTransition {
+            key: counter.key.clone(),
+            quest: quest.quest.clone(),
+            effects: counter.effects(),
+            completes: false,
+            experience: None,
+            world_change: None,
+        };
+        let catalogue = QuestStateCatalogue::new(
+            "kill-fixture",
+            vec![
+                QuestTrack {
+                    key: counter.track.clone(),
+                    quest: quest.quest.clone(),
+                    initial: 0,
+                    min: 0,
+                    max: counter.maximum,
+                },
+                QuestTrack {
+                    key: cooldown.clone(),
+                    quest: quest.quest.clone(),
+                    initial: 0,
+                    min: 0,
+                    max: i64::MAX,
+                },
+            ],
+            vec![transition.clone()],
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let state = BTreeMap::from([
+            (counter.track.clone(), counter.maximum),
+            (cooldown.clone(), 100),
+        ]);
+        let changes = catalogue
+            .evaluate(&transition, &state, 80_000)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(
+            changes
+                .iter()
+                .any(|change| change.track == cooldown && change.after == 80_000)
+        );
+        assert!(
+            changes
+                .iter()
+                .any(|change| { change.track == counter.track && change.after == counter.maximum })
+        );
+        Ok(())
     }
 
     #[test]

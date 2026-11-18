@@ -242,6 +242,8 @@ pub enum QuestEffectKind {
     },
     /// Checked `i64` addition.
     Add(i64),
+    /// Increment a bounded counter while preserving its terminal value.
+    IncrementCapped(i64),
     /// Checked addition, then a floor; used by source counters with an unset sentinel.
     AddAtLeast {
         delta: i64,
@@ -301,6 +303,10 @@ impl QuestEffectKind {
                 out.push(6);
                 out.extend_from_slice(&equals.to_be_bytes());
                 out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::IncrementCapped(maximum) => {
+                out.push(14);
+                out.extend_from_slice(&maximum.to_be_bytes());
             }
             Self::AddAtLeast { delta, minimum } => {
                 // Main owns tag12 for its published bound transaction clock.
@@ -544,6 +550,9 @@ impl QuestStateCatalogue {
                         usize::from(other_effect) < transition.effects.len()
                             && usize::from(other_effect) != index
                             && (track.min..=track.max).contains(&value)
+                    }
+                    QuestEffectKind::IncrementCapped(maximum) => {
+                        (track.min..=track.max).contains(&maximum)
                     }
                     QuestEffectKind::AddAtLeast { minimum, .. } => {
                         (track.min..=track.max).contains(&minimum)
@@ -811,6 +820,9 @@ impl QuestStateCatalogue {
                     }
                     QuestEffectKind::Add(delta) | QuestEffectKind::AddWithBinding { delta, .. } => {
                         before.checked_add(delta)
+                    }
+                    QuestEffectKind::IncrementCapped(maximum) => {
+                        Some(before.saturating_add(1).min(maximum))
                     }
                     QuestEffectKind::AddAtLeast { delta, minimum } => {
                         before.checked_add(delta).map(|value| value.max(minimum))

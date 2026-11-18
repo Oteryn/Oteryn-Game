@@ -1327,8 +1327,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         match effect {
             TileEffect::None => {}
-            TileEffect::Charged => map.facts.emit_movement_effect(at, 49),
-            TileEffect::Released => map.facts.emit_movement_effect(at, 50),
+            TileEffect::Charged => {
+                map.facts.emit_movement_effect(at, 49);
+            }
+            TileEffect::Released => {
+                map.facts.emit_movement_effect(at, 50);
+            }
         }
     }
 

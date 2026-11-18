@@ -257,26 +257,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
-        if preflight {
-            return if runtime
-                .preflight_quest_encounter_entry(proofs, &monsters)
-                .is_ok()
-            {
-                UseDisposition::Committed
-            } else {
-                UseDisposition::Occupied
-            };
-        }
-        let party: Vec<_> = players
-            .iter()
-            .map(|(actor, session, _)| (*actor, *session))
-            .collect();
         use oteryn_gameplay_quests::quest::authored_bindings::Trigger as BindingTrigger;
         let scoped = self.quest_catalogue.as_deref().and_then(|catalogue| {
             let bindings = catalogue.authored_bindings()?;
             let quest =
                 bindings.quests.iter().find(|quest| {
-                    quest.stages.iter().any(|stage| matches!(
+                    quest.quest == callback.quest && quest.stages.iter().any(|stage| matches!(
                     &stage.trigger,
                     BindingTrigger::MapUse { callback: source } if source.as_ref() == callback
                 ))
@@ -288,7 +274,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     BindingTrigger::Kill { counter }
                         if counter.encounter_source.as_deref() == Some(callback.key.as_str()) =>
                     {
-                        Some(counter.creature.as_str())
+                        Some(counter.as_ref())
                     }
                     _ => None,
                 })
@@ -298,6 +284,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Some((catalogue.definition_hash(&quest.quest)?, counters))
         });
+        let party: Vec<_> = players
+            .iter()
+            .map(|(actor, session, _)| (*actor, *session))
+            .collect();
+        if encounter.weekday_monsters.is_some()
+            && let Some((_, counters)) = &scoped
+            && let Err(disposition) =
+                self.check_encounter_death_cooldowns(&party, &monsters, counters)
+        {
+            return disposition;
+        }
+        if preflight {
+            return if runtime
+                .preflight_quest_encounter_entry(proofs, &monsters)
+                .is_ok()
+            {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Occupied
+            };
+        }
         let attack = if scoped.is_some() {
             match self.states.attack.try_lock() {
                 Ok(attack) => Some(attack),
@@ -351,7 +358,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let roster = if let Some((_, counters)) = &scoped {
                     let defenders = actors.iter().copied().zip(&monsters)
                         .filter_map(|(actor, (creature, _, _))| {
-                            (encounter.weekday_monsters.is_none() || counters.contains(creature))
+                            (encounter.weekday_monsters.is_none()
+                                || counters.iter().any(|counter| counter.creature == *creature))
                                 .then_some(actor)
                         }).collect();
                     Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
@@ -416,6 +424,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         UseDisposition::Committed
+    }
+    fn check_encounter_death_cooldowns(
+        &self,
+        party: &[(ExactActorRef, GameSessionId)],
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        counters: &[&oteryn_gameplay_quests::quest::authored_bindings::kills::KillCounter],
+    ) -> Result<(), UseDisposition> {
+        let tracks: std::collections::BTreeSet<_> = counters
+            .iter()
+            .filter(|counter| {
+                monsters
+                    .iter()
+                    .any(|(creature, _, _)| *creature == counter.creature)
+            })
+            .filter_map(|counter| counter.cooldown_track.as_deref())
+            .collect();
+        if tracks.is_empty() {
+            return Ok(());
+        }
+        let now = super::super::unix_seconds().ok_or(UseDisposition::Rejected)?;
+        let sessions = self
+            .states
+            .quest_sessions
+            .lock()
+            .map_err(|_| UseDisposition::Rejected)?;
+        for (_, session) in party {
+            let copy = sessions
+                .get(session)
+                .and_then(|state| state.copy.as_ref())
+                .ok_or(UseDisposition::Rejected)?;
+            if tracks.iter().any(|track| {
+                copy.tracks()
+                    .get(*track)
+                    .is_some_and(|last| *last > 0 && now.saturating_sub(*last) < 20 * 60 * 60)
+            }) {
+                return Err(UseDisposition::NotPossible);
+            }
+        }
+        Ok(())
     }
 }
 
