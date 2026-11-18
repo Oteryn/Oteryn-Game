@@ -7,7 +7,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         clippy::too_many_lines,
         reason = "one ordinary use action keeps replay, exact corpse resolution and runtime fencing together"
     )]
-    pub(super) async fn use_skinning(
+    pub(in crate::gameplay_transport) async fn use_skinning(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
@@ -23,6 +23,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(crate::content::ActiveGeneration::native_gameplay)
         else {
             return Ok(None);
+        };
+        let source_id = |key: &str| {
+            key.strip_prefix("oteryn:item.tibia.i")
+                .and_then(|id| id.parse::<u16>().ok())
+        };
+        let hotkey = if let UseTarget::ItemByDefinition(wanted) = intent.target {
+            let Some((key, revision)) = native
+                .item_index()
+                .and_then(|index| index.definition_at(wanted))
+            else {
+                return Ok(None);
+            };
+            if !source_id(key).is_some_and(oteryn_gameplay_items::fishing::rabbit_skinning_knife) {
+                return Ok(None);
+            }
+            Some((key, revision))
+        } else {
+            None
         };
         let permit = self.spell_lane_permit().await.ok_or(())?;
         let outcome = |disposition| {
@@ -71,28 +89,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Ok(outcome(result.disposition));
         }
-        let source_id = |key: &str| {
-            key.strip_prefix("oteryn:item.tibia.i")
-                .and_then(|id| id.parse::<u16>().ok())
-        };
-        let hotkey = match (&intent.target, source) {
-            (UseTarget::Item(_), Some(ItemKey::Instance(_))) => None,
-            (UseTarget::ItemByDefinition(wanted), None) => {
-                let Some((key, revision)) = native
-                    .item_index()
-                    .and_then(|index| index.definition_at(*wanted))
-                else {
-                    return Ok(None);
-                };
-                if !source_id(key)
-                    .is_some_and(oteryn_gameplay_items::fishing::rabbit_skinning_knife)
-                {
-                    return Ok(None);
-                }
-                Some((key, revision))
-            }
-            _ => return Ok(None),
-        };
+        if hotkey.is_none() && !matches!(source, Some(ItemKey::Instance(_))) {
+            return Ok(None);
+        }
         let inventory = self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
