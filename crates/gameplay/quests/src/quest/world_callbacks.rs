@@ -18,7 +18,8 @@ pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
 pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
-pub const MAX_SELECTOR_POSITIONS: usize = 8;
+// Crystal movements_mission2_all_around_the_world.lua:18-38 registers 16 desert perimeter tiles.
+pub const MAX_SELECTOR_POSITIONS: usize = 16;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]

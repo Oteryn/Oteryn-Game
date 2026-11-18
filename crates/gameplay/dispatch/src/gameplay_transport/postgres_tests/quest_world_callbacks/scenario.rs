@@ -968,6 +968,8 @@ fn scenario_case(
         super::super::lersatio_mirrors::world(&callback)?
     } else if marziel_blood {
         super::super::marziel_blood_step::world(&callback)?
+    } else if skull_custody {
+        super::super::quest_skull_custody::world(&callback)?
     } else if worm_punisher {
         super::super::worm_punisher_progress::world(&callback)?
     } else {

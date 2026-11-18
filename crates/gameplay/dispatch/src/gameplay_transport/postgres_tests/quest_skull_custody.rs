@@ -21,6 +21,29 @@ pub(super) const FIRST_VIEW: Position = Position {
     y: 31834,
     floor: -1,
 };
+// Crystal 201189f8 movements_mission2_all_around_the_world.lua:18-38.
+const DESERT_PERIMETER: [Position; 16] = [
+    desert(33149, 32841),
+    desert(33149, 32842),
+    desert(33149, 32843),
+    desert(33149, 32844),
+    desert(33149, 32845),
+    desert(33150, 32841),
+    desert(33151, 32841),
+    desert(33152, 32841),
+    desert(33153, 32841),
+    desert(33153, 32842),
+    desert(33153, 32843),
+    desert(33153, 32844),
+    desert(33153, 32845),
+    desert(33150, 32845),
+    desert(33151, 32845),
+    desert(33152, 32845),
+];
+
+const fn desert(x: u16, y: u16) -> Position {
+    Position { x, y, floor: -2 }
+}
 
 #[test]
 fn quest_bone_pile_mints_exact_skull_and_step_requires_its_carried_custody() -> TestResult {
@@ -33,7 +56,7 @@ fn quest_bone_pile_mints_exact_skull_and_step_requires_its_carried_custody() -> 
     })
 }
 
-fn rows() -> [Value; 2] {
+fn rows() -> [Value; 3] {
     [
         json!({
             "key":"oteryn:quest-callback/fixture-skull-pile",
@@ -57,11 +80,26 @@ fn rows() -> [Value; 2] {
             "effects":{"player_speech":"You hold the skull up high. You can resist the urge to have it look through a telescope though."},
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:1-5","crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:73-96"]
         }),
+        json!({
+            "key":"oteryn:quest-callback/fixture-skull-desert-view",
+            "quest":unnatural_selection::QUEST, "trigger":"step_in",
+            "selector":{"position":DESERT_PERIMETER[0],"position_aliases":DESERT_PERIMETER[1..]},
+            "lever":null,"reversible":false,"passages":[],"teleport":null,"offerings":[],
+            "item_on_target":null,"return_on_failure":false,"failure_message":null,
+            "storage":[{"track":MISSION02,"minimum":5,"maximum":5,"set":6}],
+            "present":[{"item":SKULL,"count":1}],
+            "effects":{"player_speech":"Wow, it's hot up here. Luckily the skull can't get a sunburn any more, but you can, so you better descend again!"},
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:18-38","crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:73-96"]
+        }),
     ]
 }
 
 pub(super) fn bone_pile() -> TestResult<Callback> {
     Ok(serde_json::from_value(rows()[0].clone())?)
+}
+
+pub(super) fn world(bone_pile: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    super::quest_world_callbacks::world_with_cells(bone_pile, FIRST_VIEW, &DESERT_PERIMETER)
 }
 
 fn catalogue(base: &QuestStateCatalogue) -> TestResult<QuestStateCatalogue> {
@@ -114,6 +152,31 @@ pub(super) async fn exercise(
     step(owner, admitted, StepDirection::West).await?;
     step(owner, admitted, StepDirection::East).await?;
     assert_eq!(super::m39_bone_journey::stage(h, MISSION02).await?, Some(2));
+    exercise_desert_view(owner, admitted, h).await
+}
+
+async fn exercise_desert_view(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        h, owner, admitted, &[(MISSION02.into(), 5)], 126,
+    ).await?;
+    let origin = super::quest_world_callbacks::local(desert(33152, 32843));
+    owner.runtime.lock().await
+        .initialize_pinned_test_position(admitted.runtime_actor.ok_or("sightseeing actor")?, origin)
+        .map_err(debug)?;
+
+    // Same x coordinate as the last alias, but still inside the perimeter.
+    step(owner, admitted, StepDirection::South).await?;
+    assert_eq!(super::m39_bone_journey::stage(h, MISSION02).await?, Some(5));
+    step(owner, admitted, StepDirection::South).await?;
+    assert_eq!(super::m39_bone_journey::stage(h, MISSION02).await?, Some(6));
+    assert_eq!(super::m39_bone_journey::carried(h, 10159).await?, 1);
+    step(owner, admitted, StepDirection::North).await?;
+    step(owner, admitted, StepDirection::South).await?;
+    assert_eq!(super::m39_bone_journey::stage(h, MISSION02).await?, Some(6));
     Ok(())
 }
 
