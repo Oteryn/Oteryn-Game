@@ -348,10 +348,16 @@ pub(super) fn prepare(
     } else {
         None
     };
-    let teleport =
-        npc_program::teleport::preview_teleport(&request, &tracks, catalogue, now, &eligibility)
-            .ok()
-            .flatten();
+    let teleport = npc_program::teleport::preview_teleport(
+        &request,
+        &tracks,
+        catalogue,
+        now,
+        &eligibility,
+        inventory,
+    )
+    .ok()
+    .flatten();
     if teleport.as_ref().is_some_and(|p| {
         !matches!(
             p.source.quest.as_str(),
@@ -362,6 +368,16 @@ pub(super) fn prepare(
         && !(p.source.quest == "oteryn:quest.the_ice_islands_quest"
             && request.npc == "oteryn:npc.iskan"
             && (p.destination.x, p.destination.y, p.destination.floor) == (32325, 31049, -7))
+        // Crystal data-global/npc/buddel.lua:59-61,80-126. The ring buys the
+        // named island directly, independent of the paid route's two draws.
+        && !(p.source.quest == "oteryn:quest.the_ice_islands_quest"
+            && request.npc == "oteryn:npc.buddel"
+            && matches!((p.destination.x, p.destination.y, p.destination.floor),
+                (32225, 31381, -7) | (32462, 31174, -7) | (32333, 31227, -7) | (32021, 31294, -7))
+            && p.source.effects.iter().any(|effect| matches!(
+                effect, NpcRuleEffect::TakeItem {item, count:1, subtype:None, optional:false}
+                    if item == "oteryn:item.tibia.i3097"
+            )))
     }) {
         return Some(Step::Refused);
     }
@@ -401,6 +417,14 @@ pub(super) fn prepare(
         }
         Err(_) => return Some(Step::Refused),
     };
+    if teleport.is_none()
+        && plan
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, NpcRuleEffect::Teleport { .. }))
+    {
+        return Some(Step::Refused);
+    }
     let next = Conversation {
         context: context.clone(),
         actor,

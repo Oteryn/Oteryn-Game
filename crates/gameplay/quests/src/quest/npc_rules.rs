@@ -553,6 +553,8 @@ impl NpcRuleCatalog {
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
                         || (p.document.quest == "oteryn:quest.the_ice_islands_quest"
+                            && p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.barbarian-test-buddel"))
+                        || (p.document.quest == "oteryn:quest.the_ice_islands_quest"
                             && p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.barbarian-test-sven"))
                         || (p.document.quest == "oteryn:quest.the_ice_islands_quest"
                             && p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.ice-islands-iskan"))
@@ -783,6 +785,10 @@ fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
                 | (
                     "oteryn:quest.outfit_and_addon_quests",
                     Some("oteryn:quest-npc-program.citizen-source-sagas")
+                )
+                | (
+                    "oteryn:quest.the_ice_islands_quest",
+                    Some("oteryn:quest-npc-program.barbarian-test-buddel")
                 )
                 | (
                     "oteryn:quest.the_ice_islands_quest",

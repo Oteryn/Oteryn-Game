@@ -78,6 +78,7 @@ pub fn preview_teleport(
     catalogue: &QuestStateCatalogue,
     now: i64,
     eligibility: &NpcEligibility,
+    inventory: Option<&NpcInventorySnapshot>,
 ) -> std::result::Result<
     Option<NpcTeleportPlan>,
     oteryn_gameplay_quests::quest::npc_rules::NpcRuleError,
@@ -95,6 +96,7 @@ pub fn preview_teleport(
             player_name: None,
             appearance: (&BTreeMap::new(), 0),
         },
+        inventory,
     )
 }
 
@@ -104,18 +106,20 @@ pub(super) fn evaluate(
     tracks: &BTreeMap<String, i64>,
     now: i64,
     facts: NpcEvaluationFacts<'_>,
+    inventory: Option<&NpcInventorySnapshot>,
 ) -> std::result::Result<
     Option<NpcTeleportPlan>,
     oteryn_gameplay_quests::quest::npc_rules::NpcRuleError,
 > {
-    source.plan_storage_teleport(&NpcRuleInput {
+    let empty = NpcInventorySnapshot::default();
+    let input = NpcRuleInput {
         npc: &request.npc,
         trigger: request.trigger,
         message: &request.message,
         player_name: facts.player_name,
         topic: request.topic,
         tracks,
-        inventory: &NpcInventorySnapshot::default(),
+        inventory: inventory.unwrap_or(&empty),
         now_epoch_seconds: now,
         calendar_month: utc_calendar_month(now)?,
         level: facts.eligibility.level,
@@ -123,7 +127,12 @@ pub(super) fn evaluate(
         vocation: &facts.eligibility.vocation,
         sex: facts.appearance.1,
         outfits: facts.appearance.0,
-    })
+    };
+    if inventory.is_some() && source.item_exchange_keys(&request.npc).is_some() {
+        source.plan_carried_teleport(&input)
+    } else {
+        source.plan_storage_teleport(&input)
+    }
 }
 
 pub(super) fn response(plan: &NpcRulePlan) -> NpcProgramCommit {

@@ -66,6 +66,8 @@ impl NpcRuleCatalog {
                         grants += 1;
                         items = true;
                     }
+                    NpcRuleEffect::Teleport { .. } => {}
+                    NpcRuleEffect::MagicEffect { effect } if effect == "CONST_ME_TELEPORT" => {}
                     _ => return None,
                 }
             }

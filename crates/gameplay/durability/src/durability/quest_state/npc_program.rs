@@ -518,7 +518,7 @@ impl DurabilityRoot {
             } else { None };
             let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref(), appearance: (&outfits,sex) };
             let teleport_plan = if teleport.is_some() {
-                match teleport::evaluate(&source, &request, &effective_tracks, now, facts) {
+                match teleport::evaluate(&source, &request, &effective_tracks, now, facts, inventory.as_ref()) {
                     Ok(Some(plan)) => Some(plan),
                     _ => return Ok(Ok(refused(QuestRefusal::StageMismatch))),
                 }
@@ -535,7 +535,7 @@ impl DurabilityRoot {
                         return Ok(Ok(refused(QuestRefusal::RevisionMismatch)));
                     }
                 }
-                if plan.source.track_changes.is_empty() && !plan.source.completes {
+                if plan.source.track_changes.is_empty() && !plan.source.completes && !items::changes_items(&plan.source) {
                     teleport::insert(&mut tx, character, &request, &plan.source, admission).await?;
                     let result = teleport::response(&plan.source);
                     tx.commit(deadline).await?;
@@ -552,6 +552,11 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && (!plan.track_changes.is_empty() || plan.completes)=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            if teleport.is_none() && plan.effects.iter().any(|effect| matches!(
+                effect, oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::Teleport { .. }
+            )) {
+                return Ok(Ok(refused(QuestRefusal::StageMismatch)));
+            }
             if source.programs().iter().any(|program| {
                 program.document.quest == plan.quest && program.document.premium_required
             }) {
