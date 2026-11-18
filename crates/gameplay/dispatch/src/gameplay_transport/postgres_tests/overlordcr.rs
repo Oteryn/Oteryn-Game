@@ -9,17 +9,21 @@ fn overlordcr_all_four_overlords_credit_two_damagers_exclude_observer_and_replay
     };
     drop(admin);
     let started = std::time::Instant::now();
-    for creature in [
-        "earth_overlord",
-        "energy_overlord",
-        "fire_overlord",
-        "ice_overlord",
+    for (element, creature) in [
+        ("earth", "earth_overlord"),
+        ("energy", "energy_overlord"),
+        ("fire", "fire_overlord"),
+        ("ice", "ice_overlord"),
     ] {
         let key = format!("oteryn:creature.{creature}");
         let rule = oteryn_gameplay_quests::quest::source_deaths::rules()?
             .iter()
             .find(|rule| rule.creature == key)
             .ok_or("overlord donor rule missing")?;
+        assert_eq!(
+            rule.transition,
+            format!("oteryn:quest-transition/elemental-spheres/{element}-overlord-death")
+        );
         assert_eq!(rule.effects.len(), 1);
         assert_eq!(
             rule.effects[0].track,
@@ -50,6 +54,13 @@ fn overlordcr_non_overlord_does_not_set_flag_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
+    // Crystal lists the Lord of the Elements with an empty configuration.
+    assert!(
+        oteryn_gameplay_quests::quest::source_deaths::overlord(
+            "oteryn:creature.lord_of_the_elements"
+        )
+        .is_none()
+    );
     let started = std::time::Instant::now();
     super::srvenc_source_deaths::scenario("overlordcr_non_overlord", "goblin_leader")?;
     assert!(started.elapsed().as_secs_f64() > 0.01);
