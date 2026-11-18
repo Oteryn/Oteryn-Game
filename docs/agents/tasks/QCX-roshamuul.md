@@ -33,7 +33,7 @@ Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. Scope is `oteryn:quest.roshamuu
 
 World callback, held callback, reward-claim and NPC callback/offer catalogues have no Roshamuul quest rows to promote. The generated native state preserves the source-only quest and the completion candidate has no dispatch, NPC or reward binding. In the native placement regions covering Global mapper sectors 130–131 by 126–127, the decoded item stacks contain 58 chalk objects (20125), 19 bone piles (20179) and one cave-exit trigger (20122 at 33498, 32602, floor 8), with no action or unique IDs on those stacks. The same scan found no donor trough (20216), Fine Gravel (20133), or cave-ramp AID 55000 in those sectors. This limits what can be bound directly from the donor selectors. A world object with the same appearance alone does not establish its Global quest role.
 
-## Selected runtime correction
+## Runtime correction
 
 Register the dry mortar mixture in the existing carried-recipe owner. One gravel bucket (20053) and one chalk bucket (20054), in either order, produce one mixture bucket (20169) and one empty bucket (2873). The existing owner spends the selected carried inputs and mints both outputs in one transaction. Crystal `data-global/scripts/quests/roshamuul_quest/actions_mixture.lua:1-20` supplies the item mapping and empty-bucket behavior; Global's Delivering Mortar section confirms the mixture step. The three Roshamuul-specific native Item profiles reuse the canonical identities, pinned Canary XML and retained 15.30 appearance facts. The existing Item profile supplies the empty bucket.
 
@@ -64,3 +64,8 @@ BLOCKER Upper dream chains timed extraction, repeatable claims and single-occupa
 The generic cooking owner can check fluid subtype. The quest carried-recipe registry supports item pairs and fixed outputs without a subtype selector. A wet recipe needs admission through the shared conversion catalogue, with corresponding shared owner tests and counts.
 
 Entry-stage and journal admission; gravel/chalk gathering and caves; wet mortar, delivery and lower contribution rewards; horns, shrines, plateau raid and Sight credit; all Upper Roshamuul task grants, achievements and repeat cycles; temporary Dark Grounds access, Umbral service and First Mate.
+
+## Verification
+
+- Baseline PG via shard (pgsplit build files applied on `5692cde459b410bdfa59cea223e2dea3d46e68a0`). One case reached dispatch and failed as expected in 19.40 s. Gravel and chalk returned `NothingToUse` where the test requires `Committed`.
+- Quest-authoring checks exited 0 on the baseline, running 44 named checks, including 269 schema cases.
