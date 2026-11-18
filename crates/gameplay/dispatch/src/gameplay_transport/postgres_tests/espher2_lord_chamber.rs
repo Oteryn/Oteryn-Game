@@ -54,16 +54,9 @@ fn chamber(two_players: bool) -> TestResult {
                 )?;
             let generation = controller.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native profiles")?;
-            let world = super::source_world_crop::compiled_region(
-                world_tile(encounter.room_min),
-                TilePos {
-                    x: 33279,
-                    floor: if two_players { -10 } else { -12 },
-                    ..world_tile(encounter.room_max)
-                },
-                start,
-                native,
-            )?;
+            // The compiler loads all floors of the region. The actual USE and
+            // relocation assertions below qualify the other physical cells.
+            let world = super::source_world_crop::compiled_region(start, start, start, native)?;
             let cells = world
                 .movement_cells(activated.qualified_room().movement_cells())
                 .map_err(debug)?;
