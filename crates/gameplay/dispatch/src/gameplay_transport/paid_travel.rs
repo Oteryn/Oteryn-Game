@@ -49,7 +49,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        let (inventory_changed, npc) = {
+        let (inventory_changed, is_iskan, npc) = {
             let holds = self.states.newhaven_travel.holds.lock().ok()?;
             let held = holds.get(&command.game_session_id)?;
             if held.frozen.command.command_id().get() != command.command_id
@@ -57,7 +57,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
-            (held.inventory_changed(), held.npc)
+            (held.inventory_changed(), held.frozen.npc == ISKAN, held.npc)
         };
         let result = self
             .reconcile_newhaven_travel(actor, command.game_session_id)
@@ -68,8 +68,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         Some(match result {
             Some(true) => {
-                let mut outcome =
-                    npc_command::NpcConversations::bank_reply(&intent, "Set the sails!".into());
+                let mut outcome = npc_command::NpcConversations::bank_reply(
+                    &intent, if is_iskan { String::new() } else { "Set the sails!".into() },
+                );
                 outcome.inventory_changed = inventory_changed;
                 if let Some(conversation) = outcome.conversation.as_mut() {
                     conversation.open = None;
@@ -303,8 +304,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         match self.reconcile_newhaven_travel(actor, session).await {
             Some(true) => {
-                let mut result =
-                    npc_command::NpcConversations::bank_reply(intent, "Set the sails!".into());
+                let mut result = npc_command::NpcConversations::bank_reply(
+                    intent, if prompt.context.2 == ISKAN { String::new() } else { "Set the sails!".into() },
+                );
                 result.inventory_changed = inventory_changed;
                 if let Some(conversation) = result.conversation.as_mut() {
                     conversation.open = None;

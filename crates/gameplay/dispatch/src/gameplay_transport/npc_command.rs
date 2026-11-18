@@ -53,6 +53,7 @@ mod hero_of_bounac;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
 mod hive_shared;
+mod iskan;
 mod isle_of_evil;
 mod liquid_black;
 mod magic_effects;
@@ -713,6 +714,7 @@ pub(super) async fn npc_bank_talk(
     };
     let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let source_inventory = catalogue::inventory(admission, actor, command, &intent).await;
+    let iskan_warlord = iskan::warlord_greeting(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -907,6 +909,11 @@ pub(super) async fn npc_bank_talk(
         return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = dark_trails::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = iskan::prepare(admission, actor, command, &intent, &runtime, iskan_warlord) {
         drop(runtime);
         drop(_trade_permit);
         return quest_dialogue::apply(admission, actor, command, intent, step).await;
