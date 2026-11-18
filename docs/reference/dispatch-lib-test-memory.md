@@ -42,6 +42,7 @@ durability checks passed. The focused case used that retained cluster.
 | Dispatch lib test, debug = 0 | 2 | 16,567,508 | 398.737 | rustc SIGKILL before link |
 | Dispatch lib test, jemalloc preload | 2 | 16,529,876 | 711.561 | rustc SIGKILL before link |
 | Game-server lib test | 2 | 4,824,940 | 941.839 | Built and listed 861 tests (863 output lines) |
+| Game-server lib test with the dispatch test profile | 2 | 4,615,832 | 411.634 | Built and listed 861 tests (863 output lines) |
 | Game-server LLD replay | — | 3,328,964 | 4.970 | Linked |
 | Dispatch PG mount isolation, scratch replay | 2 | 14,623,808 | 714.308 | Linked and listed 2,455 tests (2,457 output lines) |
 | Dispatch complementary lib mount, scratch replay | 2 | 15,228,376 | 1038.778 | Linked and listed 2,102 tests (2,104 output lines) |
@@ -310,14 +311,18 @@ process measurements establish the reproduced OOM.
 | Dispatch lib build and inventory, one Cargo job | Passed, 4,339 tests and 4,341 output lines |
 | Retained offline-death retry against PostgreSQL 18.6 | Passed in 76.76 s |
 | Default and tuned dispatch lib builds, two Cargo jobs | Hit the cgroup OOM limit |
-| Clippy and game-server lib with the checked-in profile | Pending on the owner's PC |
+| Game-server lib build and inventory with the checked-in profile, two Cargo jobs | Passed, 861 tests and 863 output lines |
+| Clippy with the checked-in profile | Pending on the owner's PC |
 | Hosted archive with the serial workflow proposal | Pending |
 
-The game-server baseline listed 861 tests in 863 output lines. The PC
-can check the profile with the dispatch and game-server lib builds and
-their `--list` output at one Cargo job, then run the exact retained
-offline-death case through dispatch and Clippy for
-`oteryn-gameplay-dispatch`.
+The new game-server lib-test build peaked in game-server rustc at
+4,615,832 KiB. Its dispatch dependency reached a sampled 4,422,160 KiB.
+The executable was 806,938,768 bytes and identified LLD 23.1.5. Rustc had
+55 direct rlib inputs totaling 1,728,009,372 bytes. Its incremental cache
+retained 256 codegen objects totaling 397,703,024 bytes. These counts
+describe direct compiler inputs and cached objects. The complete linker
+input inventory in the baseline table includes transitive archives and
+linker-generated objects.
 
 ## Workflow proposal for the serial profile
 
