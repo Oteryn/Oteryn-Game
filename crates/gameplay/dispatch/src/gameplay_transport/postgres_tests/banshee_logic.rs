@@ -140,7 +140,6 @@ async fn exercise(admin: String) -> TestResult {
             "position": campfire,
             "appearance": 1998,
             "replacement": 1996,
-            "replacement_passable": true,
             "if_present": true
         }],
         "return_on_failure": false,

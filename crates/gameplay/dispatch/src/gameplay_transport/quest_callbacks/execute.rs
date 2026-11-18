@@ -335,6 +335,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut restored_trees = Vec::new();
         let mut passages = Vec::new();
         let mut replacements = Vec::new();
+        let mut scenery = Vec::new();
         for passage_definition in &callback.passages {
             let passage = passage_definition;
             let p = tile(passage.position);
@@ -378,7 +379,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let k = placement_key(p, ordinal)?;
                     let f = map.facts.base_entry(p, ordinal, *id)?;
                     (if optional_toggle {
-                        f.appearance_id == expected_appearance
+                        f.appearance_id == expected_appearance && !f.pickupable
                     } else {
                         f.appearance_id == passage.appearance
                             || passage.replacement == Some(f.appearance_id)
@@ -452,17 +453,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) else {
                     return UseDisposition::Rejected;
                 };
-                replacements.push((
-                    *passage,
-                    facts,
-                    passage_definition.replacement_passable.unwrap_or(!close),
-                ));
+                if optional_toggle {
+                    if facts.pickupable {
+                        return UseDisposition::Rejected;
+                    }
+                    scenery.push((*passage, map.facts.object_revision(*passage), Some(facts)));
+                } else {
+                    replacements.push((
+                        *passage,
+                        facts,
+                        passage_definition.replacement_passable.unwrap_or(!close),
+                    ));
+                }
             } else {
                 if tree_reset && map.facts.base_hidden(*passage) {
                     restored_trees.push(p);
                 }
                 passages.push(*passage);
             }
+        }
+        if !scenery.is_empty() {
+            if projection.is_some() {
+                return UseDisposition::Rejected;
+            }
+            projection = Some(
+                crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
+                    entries: scenery,
+                    reset: None,
+                },
+            );
         }
         projection = match super::timed_passages::prepare(
             map,

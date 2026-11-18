@@ -1082,8 +1082,11 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         && callback.effects.passages_reset_after_ms.is_none()
                         && !(callback.reversible
                             && callback.lever.is_some()
-                            && p.replacement.is_some()
-                            && p.replacement_passable == Some(true))
+                            && !callback.has_state()
+                            && callback.effects.is_empty()
+                            && p.replacement.is_some_and(|id| id != 0 && id != p.appearance)
+                            && p.create_on_close.is_none()
+                            && p.replacement_passable.is_none())
                 })
             || unique_storage.len() != callback.storage.len()
             || callback.storage.iter().filter(|s| s.add.is_some()).count() > 1
