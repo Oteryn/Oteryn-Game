@@ -1,5 +1,6 @@
 //! The pinned Spoiler (curid 91784, oldid 1097856) puts all five residents before castle entry.
-use super::fixture::{Harness, debug, id, run};
+use super::fixture::{Harness, debug, id, run, xp_request};
+use crate::durability::character_progression::ExperienceCommitOutcome;
 use super::quest_world_callbacks::{local, wire, world};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, NodeId};
@@ -77,6 +78,13 @@ async fn exercise(admin: &str, y: u16, trust: i64) -> TestResult {
     owner.movement_cells = (&cells).into();
     owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
     owner.quest_catalogue = Some(Arc::new(catalogue.clone()));
+
+    let session = deps.admitted.game_session_id;
+    let fence = owner.current_quest_fence(session).await
+        .map_err(|()| "quest fence")?.ok_or("quest fence")?;
+    let award = h.root.commit_character_experience(&authority, &h.node, fence, xp_request(91)?)
+        .await.map_err(debug)?;
+    assert!(matches!(award, ExperienceCommitOutcome::Committed(_)));
 
     // Seed quest history while the upstream resident producers are unbound.
     let mut tx = h.pool.begin().await?;
