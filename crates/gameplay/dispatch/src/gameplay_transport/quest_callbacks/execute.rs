@@ -201,6 +201,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
+        let current_read_only_gate = || {
+            read_only_gate.is_some_and(|gate| {
+                gate.actor == actor
+                    && gate.session == session
+                    && gate.callback == callback.key
+                    && runtime.read_actor_position(actor) == Ok(gate.expected)
+            })
+        };
+        if let Some(sequence) = &callback.effects.sequence_prime {
+            if !current_read_only_gate()
+                || !callback
+                    .lever
+                    .is_some_and(|pair| pair[0] == after.appearance_id)
+            {
+                return UseDisposition::NothingToUse;
+            }
+            match map.facts.prime_quest_switch_sequence(sequence) {
+                Some(true) => {}
+                Some(false) => return UseDisposition::Committed,
+                None => return UseDisposition::Exhausted,
+            }
+        }
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
@@ -214,12 +236,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::NothingToUse;
             }
             if callback.guarded_switch()
-                && read_only_gate.is_some_and(|gate| {
-                    gate.actor == actor
-                        && gate.session == session
-                        && gate.callback == callback.key
-                        && runtime.read_actor_position(actor) == Ok(gate.expected)
-                })
+                && current_read_only_gate()
                 && let Some(effect) = callback.effects.requirement_failure_magic
             {
                 map.facts.emit_movement_effect(pos, effect);

@@ -162,6 +162,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    switch_sequences: BTreeSet<String>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
@@ -540,6 +541,7 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self.switch_sequences.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -1539,6 +1541,21 @@ impl BundleFacts {
                     && p.attrs.teleport
                         == Some((destination.x, destination.y, destination.floor as u8))
             })
+    }
+
+    /// Returns whether this Channel's switch sequence was already primed.
+    pub fn prime_quest_switch_sequence(&self, key: &str) -> Option<bool> {
+        let mut states = self.callbacks.lock().ok()?;
+        if states.switch_sequences.contains(key) {
+            return Some(true);
+        }
+        if !states.has_capacity(1) {
+            return None;
+        }
+        Arc::make_mut(&mut states)
+            .switch_sequences
+            .insert(key.into());
+        Some(false)
     }
 
     /// Reserve no durable inputs unless the bounded local projection can be installed.

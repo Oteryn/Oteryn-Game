@@ -99,6 +99,9 @@ pub struct CallbackEffects {
     /// Cue emitted at a guarded switch when the shared readset does not match.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requirement_failure_magic: Option<u16>,
+    /// This sequence's first eligible press primes the shared circuit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sequence_prime: Option<String>,
     /// A pressure tile restores the listed passage objects after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub passages_close_after_ms: Option<u32>,

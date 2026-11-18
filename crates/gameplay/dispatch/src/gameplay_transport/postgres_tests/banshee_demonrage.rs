@@ -145,6 +145,7 @@ fn bindings() -> TestResult<Bindings> {
             "world_requirements":requirements,
             "storage":[{"track":THIRD,"minimum":-1,"maximum":0,"set":0,"read_only":true}],
             "effects":{"visual_passages":last,"requirement_failure_magic":12,
+                "sequence_prime":"oteryn:switch-sequence/demonrage",
                 "magic":{"position":position(at),"effect":13}},
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-3-third_seal_lever.lua:3-39"]
         });
@@ -370,8 +371,12 @@ fn scenario() -> TestResult {
             let entered = runtime.commit_source_step(proof).map_err(debug)?;
             Ok((origin, entered))
         };
-        for attempt in 0..=5 {
-            let index = if attempt == 0 { 1 } else { attempt - 1 };
+        for attempt in 0..=6 {
+            let index = match attempt {
+                0 => 0,
+                1 => 1,
+                _ => attempt - 2,
+            };
             let at = SWITCHES[index];
             move_actor(TilePos { x: START.x, ..at }).await?;
             let (key, _) = item(at)?;
@@ -403,7 +408,10 @@ fn scenario() -> TestResult {
                 .await
                 .ok_or("switch callback")?;
             assert_eq!(outcome.disposition, UseDisposition::Committed);
-            assert_eq!(item(at)?.1, if attempt == 0 { 2773 } else { 2772 });
+            assert_eq!(item(at)?.1, if attempt < 2 { 2773 } else { 2772 });
+            if attempt == 0 {
+                assert!(map.facts.movement_effects_since(0).is_empty(), "priming emits no success or refusal cue");
+            }
         }
         for basin in BASINS {
             assert_eq!(item(basin)?.1, 2113);
