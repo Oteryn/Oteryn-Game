@@ -284,6 +284,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        let outcome = callback.effects.encounter_outcome.as_ref();
+        let retiring = if let Some(outcome) = outcome {
+            let Ok(attack) = self.states.attack.try_lock() else {
+                return UseDisposition::Rejected;
+            };
+            let Ok(capture) = attack.kills().1.lock() else {
+                return UseDisposition::Rejected;
+            };
+            capture.outcomes.retiring_reinforcements(runtime, outcome)
+        } else {
+            Vec::new()
+        };
         let mut monsters = Vec::new();
         for monster in &encounter.monsters {
             let at = local(monster.position);
@@ -300,7 +312,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tile(monster.position),
                     false,
                 )
-                || census.iter().any(|(_, pos, _)| pos.position() == at)
+                || census
+                    .iter()
+                    .any(|(actor, pos, _)| pos.position() == at && !retiring.contains(actor))
             {
                 return UseDisposition::Occupied;
             }
@@ -333,7 +347,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         if counter.encounter_source.as_deref() == Some(callback.key.as_str()))))
                 .and_then(|quest| catalogue.definition_hash(&quest.quest))
         });
-        let outcome = callback.effects.encounter_outcome.as_ref();
         let attack = if scoped_hash.is_some() || outcome.is_some() {
             match self.states.attack.try_lock() {
                 Ok(attack) => Some(attack),
@@ -399,6 +412,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             proofs,
             &monsters,
             |runtime, actors| {
+                for actor in retiring {
+                    runtime.remove_encounter_actor(actor)?;
+                }
                 let roster = if prepared.is_some() {
                     Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
                         party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),

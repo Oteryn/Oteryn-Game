@@ -57,13 +57,27 @@ impl Outcomes {
             .get(&outcome.outcome.group)
             .map_or(self.0.len() < MAX_GROUPS, |run| {
                 !runtime.contains_live_creature(run.target)
-                    && run
-                        .reinforcements
-                        .as_ref()
-                        .is_none_or(|roster| !roster.active(runtime))
             })
     }
 
+    /// Crystal 201189f8 arbaziloth_fight.lua:348-373 retires the living
+    /// remnants at the next lever. Corpse and loot ownership stays separate.
+    pub(in crate::gameplay_transport) fn retiring_reinforcements(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        outcome: &EncounterOutcome,
+    ) -> Vec<ExactActorRef> {
+        self.0
+            .get(&outcome.outcome.group)
+            .filter(|run| run.current(runtime) && !runtime.contains_live_creature(run.target))
+            .and_then(|run| run.reinforcements.as_ref())
+            .map_or_else(Vec::new, |roster| roster.living(runtime))
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the roster is bound to the same exact admission"
+    )]
     pub(in crate::gameplay_transport) fn prepare(
         runtime: &mut ChannelRuntimeV1,
         source: &str,

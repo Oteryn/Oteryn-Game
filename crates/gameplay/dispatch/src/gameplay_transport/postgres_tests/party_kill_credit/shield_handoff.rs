@@ -94,7 +94,7 @@ pub(super) async fn exercise(
     let command = |id| UseCommand { game_session_id:player.session, command_id:id, item_fence:Some(fence) };
     set_clock(1_000);
     let result = owner.use_quest_callback(player.actor, command(501), map, &WorldObjectTarget {
-        placement, expected_revision:map.facts.object_revision(key),
+        placement:placement.clone(), expected_revision:map.facts.object_revision(key),
     }).await.ok_or("lever result")?;
     assert_eq!(result.disposition, UseDisposition::Committed);
 
@@ -203,7 +203,7 @@ pub(super) async fn exercise(
     if let Some(adds) = adds {
         let mut runtime = owner.runtime.lock().await;
         owner.tick_encounter_shields(&mut runtime, after_rod + 12_000);
-        assert!(adds.into_iter().all(|add| !runtime.contains_live_creature(add)));
+        assert!(adds.into_iter().all(|add| runtime.contains_live_creature(add)));
     }
     for (member, character) in players.iter().zip([60,61]) {
         assert_eq!(enter_exit(owner, *member, portal).await?, if hard { landing } else { room });
@@ -211,6 +211,18 @@ pub(super) async fn exercise(
         let hard_wins:i64 = sqlx::query_scalar("SELECT COALESCE((SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),0)")
             .bind(id(character).as_slice()).bind(HARD_TRACK).fetch_one(pool).await?;
         assert_eq!(hard_wins, i64::from(hard));
+    }
+    if let Some(adds) = adds {
+        move_to(owner, players[0], at).await?;
+        move_to(owner, players[1], MovementLocalPosition { x: at.x + 1, y: at.y - 1, ..at }).await?;
+        let result = owner.use_quest_callback(player.actor, command(550), map, &WorldObjectTarget {
+            placement, expected_revision:map.facts.object_revision(key),
+        }).await.ok_or("second lever result")?;
+        assert_eq!(result.disposition, UseDisposition::Committed);
+        let runtime = owner.runtime.lock().await;
+        assert!(adds.into_iter().all(|add| !runtime.contains_live_creature(add)));
+        assert_eq!(runtime.positioned_melee_census().map_err(debug)?.iter()
+            .filter(|(actor, _, _)| runtime.matches_live_creature_identity(*actor, DEMON.as_bytes())).count(), 2);
     }
     Ok(())
 }

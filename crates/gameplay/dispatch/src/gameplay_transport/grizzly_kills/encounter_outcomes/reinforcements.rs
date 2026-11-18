@@ -59,10 +59,12 @@ impl Roster {
         })
     }
 
-    pub(super) fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
+    pub(super) fn living(&self, runtime: &ChannelRuntimeV1) -> Vec<ExactActorRef> {
         self.slots
             .iter()
-            .any(|slot| runtime.contains_live_creature(slot.actor))
+            .map(|slot| slot.actor)
+            .filter(|actor| runtime.contains_live_creature(*actor))
+            .collect()
     }
 
     pub(super) fn advance(
@@ -74,13 +76,6 @@ impl Roster {
     ) {
         if !runtime.contains_live_creature(terminal) {
             self.refill = None;
-            // Clear living leftovers with the encounter owner before its source
-            // may admit another party. Retained deaths still belong to loot.
-            for slot in &self.slots {
-                if runtime.contains_live_creature(slot.actor) {
-                    let _ = runtime.remove_encounter_actor(slot.actor);
-                }
-            }
             return;
         }
         if let Some((due, slots)) = &self.refill {
