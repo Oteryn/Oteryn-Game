@@ -230,6 +230,44 @@ pub(super) async fn exercise(
             .position();
         assert_eq!((position.x, position.y, position.floor), expected);
     }
+    let nargol_origin = {
+        let mut runtime = owner.runtime.lock().await;
+        let original = runtime.read_actor_position(nargol).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(
+                nargol,
+                original,
+                MovementLocalPosition {
+                    x: 110,
+                    y: 117,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        original.position()
+    };
+    for (direction, expected) in [
+        (StepDirection::West, (111, 116, 7)),
+        (StepDirection::South, (116, 117, 7)),
+    ] {
+        tick_at(owner, owner.owner_now().get() + 2_000_000).await;
+        let (step, _) = owner
+            .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
+            .await;
+        assert_eq!(step.disposition, StepDisposition::Moved);
+        let runtime = owner.runtime.lock().await;
+        let position = runtime.read_actor_position(player).map_err(debug)?.position();
+        assert_eq!((position.x, position.y, position.floor), expected, "blocked vortex landing");
+    }
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let current = runtime.read_actor_position(nargol).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(nargol, current, nargol_origin)
+            .map_err(debug)?;
+    }
     super::engenc2_cults::kill(owner, admitted, nargol, KNIGHTS[1], 101).await?;
     let now = owner.owner_now().get();
     tick_at(owner, now).await;

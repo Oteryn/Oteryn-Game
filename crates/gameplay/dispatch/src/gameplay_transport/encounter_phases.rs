@@ -44,6 +44,11 @@ struct TimedRoom {
     lever: PhaseLever,
 }
 
+enum ZelosVortex {
+    Corridor(MovementLocalPosition),
+    NorthGate(Option<MovementLocalPosition>),
+}
+
 #[derive(Debug)]
 struct PhaseLever {
     key: u64,
@@ -260,7 +265,7 @@ impl Registry {
         session: GameSessionId,
         at: MovementLocalPosition,
         now: u64,
-    ) -> Option<Option<MovementLocalPosition>> {
+    ) -> Option<ZelosVortex> {
         self.active.lock().ok()?.iter().find_map(|phase| {
             let (Fight::Zelos(zelos), Some(room)) = (&phase.fight, &phase.timed_room) else {
                 return None;
@@ -270,15 +275,15 @@ impl Registry {
                 return None;
             }
             if north_gate == at {
-                return Some(
+                return Some(ZelosVortex::NorthGate(
                     zelos
                         .north_gate_open(runtime, actor, session, now)
                         .then_some(north_arrival),
-                );
+                ));
             }
             room.corridors
                 .iter()
-                .find_map(|&(from, to)| (from == at).then_some(Some(to)))
+                .find_map(|&(from, to)| (from == at).then_some(ZelosVortex::Corridor(to)))
         })
     }
 
@@ -1274,7 +1279,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        let arrival = states.encounter_phases.zelos_vortex(
+        let vortex = states.encounter_phases.zelos_vortex(
             &runtime,
             actor,
             session,
@@ -1283,18 +1288,36 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         )?;
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::pvp_live::pz_blocked(&states, actor, session, now);
-        let destination = arrival.unwrap_or_else(|| origin.position());
-        let Ok(proof) = crate::map::floor::prepare_quest_encounter_admission(
-            &runtime,
-            self.movement_cells(),
-            actor,
-            session,
-            entered,
-            destination,
-            blocked,
-            &closed,
-            true,
-        ) else {
+        let prepare = |destination, player_stack| {
+            crate::map::floor::prepare_quest_encounter_admission(
+                &runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                destination,
+                blocked,
+                &closed,
+                player_stack,
+            )
+            .ok()
+        };
+        let (proof, locked) = match vortex {
+            ZelosVortex::Corridor(destination) => (
+                prepare(destination, true).or_else(|| {
+                    zelos::closest_vortex_landing(entered.position(), destination, |at| {
+                        prepare(at, false).is_some()
+                    })
+                    .and_then(|at| prepare(at, false))
+                }),
+                false,
+            ),
+            ZelosVortex::NorthGate(arrival) => (
+                prepare(arrival.unwrap_or_else(|| origin.position()), true),
+                arrival.is_none(),
+            ),
+        };
+        let Some(proof) = proof else {
             return Some(entered);
         };
         let Ok(landed) = runtime.commit_source_step(proof) else {
@@ -1319,7 +1342,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             underwater(map, entered.position()),
             underwater(map, landed.position()),
         );
-        if arrival.is_none() {
+        if locked {
             self.states.chat.push_quest_feedback(
                 session,
                 "The ritual of the Lich Knights still shields the king. Defeat all four of them first.",
