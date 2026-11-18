@@ -637,9 +637,10 @@ async fn prepare_peer(
     owner.admit_premium(fixture::id(120), session);
     owner.admit_progression_session(&mut peer).await;
     super::qengine_outfit_stories::earn_level_with_occurrence(owner, &peer, authority, 40, 106).await?;
-    let CastFactsLoad::Ready { facts, .. } =
-        load_character_cast_facts(&h.root, authority, fence.character_id).await
-    else { return Err("owned First Dragon peer facts unavailable".into()); };
+    let facts = match load_character_cast_facts(&h.root, authority, fence.character_id).await {
+        CastFactsLoad::Ready { facts, .. } | CastFactsLoad::NoVocation { facts, .. } => facts,
+        CastFactsLoad::Unavailable => return Err("owned First Dragon peer facts unavailable".into()),
+    };
     let runtime = owner.runtime.lock().await;
     let mut states = owner.states.spell_states.lock().await;
     assert!(states.initialize(&runtime, actor, session, facts, (0, 0), owner.owner_now()).is_some());
