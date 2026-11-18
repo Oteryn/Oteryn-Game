@@ -421,7 +421,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let k = placement_key(p, ordinal)?;
                     let f = map.facts.base_entry(p, ordinal, *id)?;
                     ((f.appearance_id == passage.appearance
-                        || (!callback.effects.retain_replaced_passages
+                        // Crystal 201189f8 actions_mission01_lights.lua:8–12
+                        // looks up only the source appearance before opening its timed window.
+                        || (!callback.effects.passages_independent_toggle
+                            && !callback.effects.retain_replaced_passages
                             && passage.replacement == Some(f.appearance_id))
                         || passage.create_on_close == Some(f.appearance_id))
                         && !map.facts.house_tile(p)

@@ -916,8 +916,8 @@ fn scenario_case(
         super::super::qewrath_herald_escape::world(&callback)?
     } else if matches!(name, super::super::qewrath_herald_sweep::NAME | super::super::qewrath_herald_sweep::FIELD_NAME) {
         super::super::qewrath_herald_sweep::world(name == super::super::qewrath_herald_sweep::FIELD_NAME)?
-    } else if name == super::super::qewrath_wall_recreation::NAME {
-        world(&super::super::qewrath_wall_recreation::fixture()?, trigger)?
+    } else if matches!(name, super::super::qewrath_wall_recreation::NAME | super::super::qewrath_wall_recreation::LAMP_NAME) {
+        super::super::qewrath_wall_recreation::world(name == super::super::qewrath_wall_recreation::LAMP_NAME, trigger)?
     } else if name == super::super::qewrath_keeper_summon::NAME {
         super::super::qewrath_keeper_summon::world()?
     } else if name == "questpc7-outfits-formal" {
@@ -2500,8 +2500,8 @@ fn scenario_case(
             Box::pin(super::super::qewrath_herald_escape::exercise(&mut owner, &mut admitted)).await?;
         } else if matches!(name, super::super::qewrath_herald_sweep::NAME | super::super::qewrath_herald_sweep::FIELD_NAME) {
             Box::pin(super::super::qewrath_herald_sweep::exercise(&mut owner, &mut admitted, &h, name == super::super::qewrath_herald_sweep::FIELD_NAME)).await?;
-        } else if name == super::super::qewrath_wall_recreation::NAME {
-            Box::pin(super::super::qewrath_wall_recreation::exercise(&mut owner, &mut admitted, &world)).await?;
+        } else if matches!(name, super::super::qewrath_wall_recreation::NAME | super::super::qewrath_wall_recreation::LAMP_NAME) {
+            Box::pin(super::super::qewrath_wall_recreation::exercise(&mut owner, &mut admitted, &world, name == super::super::qewrath_wall_recreation::LAMP_NAME)).await?;
         } else if name.starts_with("qewrath-npc-handoff-") {
             Box::pin(super::super::qewrath_npc_handoffs::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if name == "m16-marker" {
