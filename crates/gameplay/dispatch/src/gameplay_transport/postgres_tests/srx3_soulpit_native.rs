@@ -839,6 +839,16 @@ fn native_soulpit_scenario_with_entry_cue(
                                         .map_err(|_| "actual Source completion return")?;
                                     if owner.activity_runtimes.current_connection(returning_player).game_session_id
                                         != returning_player.game_session_id { break; }
+                                    // finish_switch prunes delivered connection lineage after
+                                    // the wire ACK. The canonical terminal source survives that
+                                    // projection's lifetime; the capture still requires both
+                                    // real scope commits and their exact destination payload.
+                                    match crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                                        .current_session_at(returning_player.game_session_id).await {
+                                        Ok((current, _)) if current.session_state() == crate::foundation::GameSessionState::Terminal => break,
+                                        Ok(_) | Err(crate::durability::DurabilityError::RootUnavailable) => {},
+                                        Err(error) => return Err(format!("return source state: {error:?}")),
+                                    }
                                     // try_acquire_ready coalesces demand on exhaustion.
                                     // Use the normal bounded maintenance owner, never an
                                     // extended pass/lease or a bypass of current fences.
