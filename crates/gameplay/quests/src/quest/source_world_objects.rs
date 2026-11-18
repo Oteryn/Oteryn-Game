@@ -425,3 +425,81 @@ mod tests {
         assert!(source_is_ready(&unrelated, 10187));
     }
 }
+
+/// Crystal 201189f actions_crude_lava_pump_achievements.lua:24–64.
+pub(crate) fn dangerous_depth_pumps() -> Vec<Callback> {
+    const PUMPS: [(u16, u16, &str, &str); 3] = [
+        (
+            33673,
+            32304,
+            "the_baron_from_below_achiev",
+            "buried_the_baron",
+        ),
+        (
+            33679,
+            32310,
+            "the_count_of_the_core_achiev",
+            "his_days_are_counted",
+        ),
+        (
+            33685,
+            32304,
+            "the_duke_of_the_depths_achiev",
+            "duked_it_out",
+        ),
+    ];
+    let storage = |name, value, write| Storage {
+        track: format!("oteryn:quest-progress/quest/u11_50/dangerous_depths/bosses/{name}"),
+        minimum: value,
+        maximum: value,
+        set: if write { 1 } else { value },
+        set_if: None,
+        add: None,
+        preserve: false,
+        increment: false,
+        at_least: false,
+        read_only: !write,
+    };
+    let mut callbacks = Vec::new();
+    for (index, (x, y, progress, achievement)) in PUMPS.into_iter().enumerate() {
+        let others: Vec<_> = PUMPS
+            .iter()
+            .enumerate()
+            .filter_map(|(other, pump)| (other != index).then_some(pump.2))
+            .collect();
+        for (left, right) in [(0, 0), (0, 1), (1, 0), (1, 1)] {
+            let mut callback = uneasy_crystal();
+            callback.key =
+                format!("oteryn:quest-callback/dangerous-depth-pump-{achievement}-{left}{right}");
+            callback.quest = "oteryn:quest.dangerous_depths_quest".into();
+            callback.selector = Selector {
+                position: Some(Position { x, y, floor: -15 }),
+                action: Some(57303),
+                unique: None,
+                appearance: None,
+                native: None,
+                ordinal: None,
+                position_aliases: Vec::new(),
+            };
+            callback.effects = CallbackEffectSet::default();
+            callback.requires_world_admission = true;
+            callback.storage = vec![
+                storage(progress, 0, true),
+                storage(others[0], left, false),
+                storage(others[1], right, false),
+            ];
+            callback.achievements = vec![format!("oteryn:achievement/{achievement}")];
+            if left == 1 && right == 1 {
+                callback.storage.push(storage("last_achievement", 0, true));
+                callback
+                    .achievements
+                    .push("oteryn:achievement/death_in_the_depths".into());
+            }
+            callback.sources = vec![
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_crude_lava_pump_achievements.lua:24-64".into()
+            ];
+            callbacks.push(callback);
+        }
+    }
+    callbacks
+}
