@@ -349,7 +349,24 @@ pub struct EncounterTiming {
 pub struct PartyTransfer {
     /// Run the rite only after the lever changes to this source appearance.
     pub activation_appearance: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initiator_position: Option<Position>,
     pub stations: Vec<PartyStation>,
+}
+
+impl PartyTransfer {
+    pub fn checks_station_custody(&self) -> bool {
+        self.stations
+            .iter()
+            .any(|station| !station.carried.is_empty() || station.progress.is_some())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct StationProgress {
+    pub track: String,
+    pub minimum: i64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -359,7 +376,12 @@ pub struct PartyStation {
     pub to: Position,
     /// Base vocation; promoted members retain their base eligibility.
     pub vocation: String,
-    pub offering: Position,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offering: Option<Position>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub progress: Option<StationProgress>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub carried: Vec<super::super::reward_callbacks::ItemAmount>,
 }
 
 fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
@@ -372,8 +394,14 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
             .lever
             .is_some_and(|pair| pair.contains(&party.activation_appearance))
         && callback.reversible
+        && (!party.checks_station_custody() || callback.requires_world_admission)
         && !callback.storage.is_empty()
-        && callback.offerings.len() == party.stations.len()
+        && callback.offerings.len()
+            == party
+                .stations
+                .iter()
+                .filter(|station| station.offering.is_some())
+                .count()
         && callback.item_on_target.is_none()
         && callback.minimum_level.is_none()
         && callback.experience.is_none()
@@ -388,22 +416,48 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
         && (1..=8).contains(&party.stations.len())
         && unique(party.stations.iter().map(|s| s.from).collect())
         && unique(party.stations.iter().map(|s| s.to).collect())
-        && unique(party.stations.iter().map(|s| s.offering).collect())
+        && party.initiator_position.is_none_or(|position| {
+            pos(position)
+                && party
+                    .stations
+                    .iter()
+                    .any(|station| station.from == position)
+        })
+        && unique(party.stations.iter().filter_map(|s| s.offering).collect())
         && party.stations.iter().all(|station| {
             pos(station.from)
                 && pos(station.to)
-                && pos(station.offering)
+                && (station.offering.is_some() || !station.carried.is_empty())
+                && station.carried.len() <= MAX_EFFECTS
+                && station
+                    .carried
+                    .iter()
+                    .map(|item| &item.item)
+                    .collect::<BTreeSet<_>>()
+                    .len()
+                    == station.carried.len()
+                && station.carried.iter().all(|item| {
+                    super::super::valid_quest_key(&item.item)
+                        && item.item.starts_with("oteryn:item.")
+                        && (1..=100).contains(&item.count)
+                        && item.fluid_subtype.is_none()
+                })
+                && station
+                    .progress
+                    .as_ref()
+                    .is_none_or(|progress| super::super::valid_quest_key(&progress.track))
                 && station.from != station.to
                 && matches!(
                     station.vocation.as_str(),
                     "druid" | "sorcerer" | "paladin" | "knight" | "monk"
                 )
-                && callback
-                    .offerings
-                    .iter()
-                    .filter(|o| o.position == station.offering && o.count == 1)
-                    .count()
-                    == 1
+                && station.offering.is_none_or(|offering| {
+                    pos(offering)
+                        && callback
+                            .offerings
+                            .iter()
+                            .any(|o| o.position == offering && o.count == 1)
+                })
         })
 }
 

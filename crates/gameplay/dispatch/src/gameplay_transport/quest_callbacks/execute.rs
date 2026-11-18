@@ -962,6 +962,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match self.prepare_party_transfer(runtime, states, &closed, callback, session) {
                 Ok(plan) => Some(plan),
                 Err(refusal) => {
+                    if party.checks_station_custody() {
+                        if let Some(message) = &callback.failure_message {
+                            self.states.chat.push_quest_feedback(session, message);
+                        }
+                        return refusal;
+                    }
                     // Source toggles before validating the rite. Refusal changes
                     // only that appearance; no participant or offering changes.
                     return if map.facts.apply_quest_callback(
@@ -1340,7 +1346,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     {
                         self.states.chat.push_quest_feedback(session, message);
                     }
-                    if party.is_some() {
+                    if party.is_some() && callback.effects.party_transfer.as_ref()
+                        .is_some_and(|rite| !rite.checks_station_custody()) {
                         // The source lever still flips on a missing sacrifice.
                         map.facts.apply_quest_callback(key, expected_revision, after, &[], &[], close, None);
                     }

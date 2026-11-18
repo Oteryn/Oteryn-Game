@@ -32,6 +32,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .party_transfer
             .as_ref()
             .ok_or(UseDisposition::Rejected)?;
+        // Crystal 201189f8 elemental_spheres/actions_lever.lua:35-37.
+        if party.initiator_position.is_some_and(|position| {
+            !runtime.positioned_actor_census().is_ok_and(|actors| {
+                actors.iter().any(|(_, current, session)| {
+                    *session == Some(initiator) && current.position() == local(position)
+                })
+            })
+        }) {
+            return Err(UseDisposition::Rejected);
+        }
         let census = runtime
             .positioned_melee_census()
             .map_err(|_| UseDisposition::Rejected)?;

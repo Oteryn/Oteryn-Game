@@ -575,14 +575,7 @@ pub(super) async fn consume(
     // The Character root and current session are already fenced. Lock the actual
     // carried instances before testing quantities; map objects never prove ownership.
     for evidence in &callback.present {
-        let quantities: Vec<i64> = sqlx::query_scalar(
-            "SELECT i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
-             JOIN game_item_instances i ON i.item_instance_id=c.item \
-             WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$3 \
-             ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i",
-        ).bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
-            .bind(&evidence.item).fetch_all(&mut **tx).await?;
-        if quantities.len() > 500 || quantities.iter().sum::<i64>() < i64::from(evidence.count) {
+        if !has_carried_quantity(tx, fence.item_fence(), &evidence.item, evidence.count).await? {
             return Ok(false);
         }
     }
@@ -1199,6 +1192,23 @@ pub(super) async fn consume_npc_inputs(
     Ok(true)
 }
 
+async fn has_carried_quantity(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: super::item_transfer::CurrentCharacterItemFence,
+    item: &str,
+    count: u16,
+) -> Result<bool, DurabilityError> {
+    let world = fence.runtime_scope.world_id();
+    let quantities: Vec<i64> = sqlx::query_scalar(
+            "SELECT i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
+             JOIN game_item_instances i ON i.item_instance_id=c.item \
+             WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$3 \
+             ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i",
+        ).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice())
+            .bind(item).fetch_all(&mut **tx).await?;
+    Ok(quantities.len() <= 500 && quantities.iter().sum::<i64>() >= i64::from(count))
+}
+
 /// Admission locks already serialize lifecycle writers. Read every member under
 /// its real Item fence before the first offering mutation; a copied runtime
 /// vocation or a stale connection cannot admit the rite.
@@ -1207,6 +1217,7 @@ pub(super) async fn party_is_current(
     node: &super::runtime_scope_assignment::NodeIncarnationProof,
     initiator: CurrentCharacterGameplayFence,
     callback: &Callback,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     context: &QuestWorldContext,
 ) -> Result<bool, DurabilityError> {
     use crate::foundation::{ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
@@ -1271,6 +1282,33 @@ pub(super) async fn party_is_current(
         };
         if base != station.vocation {
             return Ok(false);
+        }
+        // Crystal 201189f8 elemental_spheres/actions_lever.lua:45-65 checks
+        // each station's own carried rare item and QuestLine without spending either.
+        if let Some(progress) = &station.progress {
+            let Some(track) = catalogue
+                .track(&progress.track)
+                .filter(|track| track.quest == callback.quest)
+            else {
+                return Ok(false);
+            };
+            let carried_progress: Option<i64> = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid
+                    AND quest_key=$2 AND track_key=$3 FOR SHARE",
+            )
+            .bind(member.character.as_slice())
+            .bind(&callback.quest)
+            .bind(&progress.track)
+            .fetch_optional(&mut **tx)
+            .await?;
+            if carried_progress.unwrap_or(track.initial) < progress.minimum {
+                return Ok(false);
+            }
+        }
+        for item in &station.carried {
+            if !has_carried_quantity(tx, fence, &item.item, item.count).await? {
+                return Ok(false);
+            }
         }
     }
     Ok(true)

@@ -1351,7 +1351,7 @@ impl DurabilityRoot {
                         && !super::super::quest_world_callback::completion_claims_are_current(&mut tx, fence, callback).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(callback), Some((_, context, _))) = (&callback, &context)
-                        && !super::super::quest_world_callback::party_is_current(&mut tx, &node, fence, callback, context).await?
+                        && !super::super::quest_world_callback::party_is_current(&mut tx, &node, fence, callback, &catalogue, context).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if (reward_callback.as_ref().is_some_and(|c| c.requires_premium)
                         || callback.as_ref().and_then(|c| c.character_requirements.as_ref()).is_some_and(|requirements| requirements.premium))
