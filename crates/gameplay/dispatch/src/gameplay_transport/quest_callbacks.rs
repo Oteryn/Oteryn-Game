@@ -192,7 +192,7 @@ fn tile(p: Position) -> TilePos {
         floor: p.floor,
     }
 }
-fn local(p: Position) -> MovementLocalPosition {
+pub(super) fn local(p: Position) -> MovementLocalPosition {
     MovementLocalPosition {
         x: i32::from(p.x),
         y: i32::from(p.y),

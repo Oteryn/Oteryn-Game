@@ -351,7 +351,10 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if name == super::super::ferumbras_crystal_reset::CASE {
+    let death_replacement = matches!(name, super::super::encounter_death_replacements::EARTH | super::super::encounter_death_replacements::ESSENCE);
+    let mut callback = if death_replacement {
+        super::super::encounter_death_replacements::callback(name, trigger)?
+    } else if name == super::super::ferumbras_crystal_reset::CASE {
         super::super::ferumbras_crystal_reset::callback()?
     } else if name == super::super::first_dragon_descendant::CASE {
         super::super::first_dragon_descendant::callback()?
@@ -651,7 +654,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == super::super::ferumbras_crystal_reset::CASE {
+    let world = if death_replacement {
+        super::super::encounter_death_replacements::world(&callback, trigger, name)?
+    } else if name == super::super::ferumbras_crystal_reset::CASE {
         super::super::ferumbras_crystal_reset::world(&callback)?
     } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
@@ -1878,7 +1883,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if name == super::super::ferumbras_crystal_reset::CASE {
+        if death_replacement {
+            Box::pin(super::super::encounter_death_replacements::exercise(&mut owner, &mut admitted, callback.clone(), trigger, name)).await?;
+        } else if name == super::super::ferumbras_crystal_reset::CASE {
             Box::pin(super::super::ferumbras_crystal_reset::exercise(&mut owner, &mut admitted, &h, callback.clone())).await?;
         } else if name == super::super::first_dragon_descendant::CASE {
             Box::pin(super::super::first_dragon_descendant::exercise(&mut owner, &mut admitted, &h)).await?;
