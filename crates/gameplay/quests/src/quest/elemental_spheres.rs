@@ -137,8 +137,7 @@ pub(super) fn machine_callbacks() -> Result<Vec<Callback>, String> {
             "reversible": false,
             "passages": [{
                 "position": paired_position, "appearance": rule.paired_appearance,
-                "if_present": true, "replacement": replacement(rule.paired_appearance),
-                "replacement_passable": true
+                "if_present": true, "replacement": replacement(rule.paired_appearance)
             }],
             "effects": {"transform": replacement(rule.appearance)},
             "storage": storage,

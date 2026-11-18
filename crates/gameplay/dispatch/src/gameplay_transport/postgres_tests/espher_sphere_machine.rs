@@ -153,7 +153,8 @@ async fn exercise(h: &Harness) -> TestResult {
                 actor,
                 session,
                 crate::foundation::CharacterLease::new(
-                    fence.character_id,
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                        .map_err(debug)?,
                     fence.character_lease_generation,
                 )
                 .map_err(debug)?,
