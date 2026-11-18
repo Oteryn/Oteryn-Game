@@ -645,6 +645,8 @@ pub fn qualify(
             || doc.native_frame.origin_x != 0
             || doc.native_frame.origin_y != 0
             || doc.native_frame.floor_transform != "native_floor=source_z"
+            || !(0..=15).contains(&doc.source_bounds[4])
+            || !(0..=15).contains(&doc.source_bounds[5])
             || doc.source_entry.is_none()
             || doc.source_regions.is_empty()
             || doc.source_regions.len() > 64
@@ -770,7 +772,7 @@ pub fn qualify(
     if ids.len() != policies.len() {
         return Err(invalid());
     }
-    let project_floor = |z| if activity.is_some() { z } else { -z };
+    let project_floor = |z: i32| if activity.is_some() { z } else { -z };
     let mut cells = BTreeMap::new();
     let mut immutable_tiles = BTreeMap::new();
     let mut pending_placements = Vec::new();

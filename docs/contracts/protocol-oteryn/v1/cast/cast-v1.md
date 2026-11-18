@@ -179,7 +179,7 @@ removed server-side, before any cast bytes are queued.
 
 The production scene preserves committed interest's own-actor-first ordering:
 public handle 1 is the caster camera anchor. Its relative x/y is (16,16), with
-the native floor packed into y as above. Floor perspective uses that anchor;
+the Global floor packed into y as above. Floor perspective uses that anchor;
 map chunks never expose the caster's absolute world coordinates.
 
 ### CLCAST public camera

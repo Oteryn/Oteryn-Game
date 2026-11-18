@@ -70,10 +70,10 @@ mod tests {
         assert_eq!(zoom_in(8), 4);
         assert_eq!(zoom_in(2), 1);
         assert_eq!(zoom_in(1), 1);
-        assert_eq!(floor_up(-7), -6);
+        assert_eq!(floor_up(7), 6);
         assert_eq!(floor_up(0), 0);
-        assert_eq!(floor_down(-7), -8);
-        assert_eq!(floor_down(-15), -15);
+        assert_eq!(floor_down(7), 8);
+        assert_eq!(floor_down(15), 15);
         let mut zoom = 1;
         for _ in 0..6 {
             zoom = zoom_out(zoom);

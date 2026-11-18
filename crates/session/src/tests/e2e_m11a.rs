@@ -103,7 +103,7 @@ fn fixture() -> Result<Fixture, BoxError> {
         ActorPosition {
             x: 101,
             y: 99,
-            floor: -1,
+            floor: 1,
         },
         ActorPosition {
             x: 100,
