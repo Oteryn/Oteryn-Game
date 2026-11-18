@@ -357,6 +357,8 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let mut callback = if m03_use {
         super::super::qengine_m03_use::callback()?
+    } else if name == super::super::qespike_geomantic_step::NAME {
+        super::super::qespike_geomantic_step::callback()?
     } else if sphere_machine {
         super::super::qespike_sphere_machine::callback()?
     } else if qd_world {
@@ -2471,6 +2473,8 @@ fn scenario_case(
                 name.ends_with("-fault"),
             ))
             .await?;
+        } else if name == super::super::qespike_geomantic_step::NAME {
+            Box::pin(super::super::qespike_geomantic_step::exercise(&mut owner, &mut admitted, &h, &callback)).await?;
         } else if sphere_machine {
             Box::pin(super::super::qespike_sphere_machine::exercise(&mut owner, &mut admitted, &h, &callback)).await?;
         } else if name == super::super::qespike_arkulius::NAME {

@@ -42,6 +42,13 @@ pub struct ItemDisguiseRequirement {
     pub condition: String,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TimedOutfit {
+    pub look_type: u16,
+    pub duration_ms: u32,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
@@ -59,6 +66,9 @@ pub struct CallbackEffects {
     pub completes_quest: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requires_item_disguise: Option<ItemDisguiseRequirement>,
+    /// A temporary outfit awarded on a fenced step when no outfit is active.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timed_outfit: Option<TimedOutfit>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub restore_disguise: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -516,6 +526,21 @@ pub(super) fn valid(callback: &Callback) -> bool {
         .as_ref()
         .is_some_and(|area| !area.valid(callback))
     {
+        return false;
+    }
+    if effects.timed_outfit.is_some_and(|outfit| {
+        outfit.look_type == 0
+            || !(1..=3_600_000).contains(&outfit.duration_ms)
+            || callback.trigger != Trigger::StepIn
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !callback.has_personal_state()
+            || !callback.return_on_failure
+            || callback.failure_teleport.is_some()
+            || callback.teleport.is_some()
+            || effects.restore_disguise
+            || effects.requires_item_disguise.is_some()
+    }) {
         return false;
     }
     if effects

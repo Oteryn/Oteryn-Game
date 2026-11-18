@@ -6,6 +6,14 @@ use crate::quest::QuestStateCatalogue;
 use std::collections::BTreeMap;
 
 pub(super) fn disjoint(a: &Callback, b: &Callback) -> bool {
+    let conditional_step = a.trigger == Trigger::StepIn
+        && a.return_on_failure
+        && b.return_on_failure
+        && a.failure_teleport.is_none()
+        && b.failure_teleport.is_none()
+        && a.requires_world_admission
+        && b.requires_world_admission
+        && (a.effects.timed_outfit.is_some() || b.effects.timed_outfit.is_some());
     a.quest == b.quest
         && a.selector == b.selector
         && a.trigger == b.trigger
@@ -13,9 +21,9 @@ pub(super) fn disjoint(a: &Callback, b: &Callback) -> bool {
         && a.actor_kind == ActorKind::Player
         && b.actor_kind == ActorKind::Player
         && a.storage.iter().any(|left| {
-            left.preserve
+            (left.preserve || conditional_step)
                 && b.storage.iter().any(|right| {
-                    right.preserve
+                    (right.preserve || conditional_step)
                         && left.track == right.track
                         && (left.maximum < right.minimum || right.maximum < left.minimum)
                 })
@@ -65,20 +73,21 @@ pub fn exclusive(left: &Callback, right: &Callback) -> bool {
         && left.effects.target_transform.is_some()
         && left.effects.target_transform == right.effects.target_transform
         && left.item_on_target == right.item_on_target;
-    left.actor_kind == ActorKind::Player
-        && right.actor_kind == ActorKind::Player
-        && (source_trial || matches!(left.trigger, Trigger::StepIn | Trigger::StepOut))
-        && left.trigger == right.trigger
-        && left.selector == right.selector
-        && left.quest == right.quest
-        && left.storage.iter().any(|a| {
-            (a.preserve || source_trial)
-                && right.storage.iter().any(|b| {
-                    (b.preserve || source_trial)
-                        && a.track == b.track
-                        && (a.maximum < b.minimum || b.maximum < a.minimum)
-                })
-        })
+    disjoint(left, right)
+        || (left.actor_kind == ActorKind::Player
+            && right.actor_kind == ActorKind::Player
+            && (source_trial || matches!(left.trigger, Trigger::StepIn | Trigger::StepOut))
+            && left.trigger == right.trigger
+            && left.selector == right.selector
+            && left.quest == right.quest
+            && left.storage.iter().any(|a| {
+                (a.preserve || source_trial)
+                    && right.storage.iter().any(|b| {
+                        (b.preserve || source_trial)
+                            && a.track == b.track
+                            && (a.maximum < b.minimum || b.maximum < a.minimum)
+                    })
+            }))
 }
 
 pub fn matches(callback: &Callback, tracks: &BTreeMap<String, i64>) -> bool {

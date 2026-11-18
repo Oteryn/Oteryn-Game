@@ -1396,11 +1396,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .map(|(callback, _)| *callback)
                 .collect::<Vec<_>>();
-            let Ok(Some(chosen)) =
-                world_callbacks::select_storage_phase(&candidates, state.tracks(), catalogue)
-            else {
-                return entered;
-            };
+            let chosen =
+                match world_callbacks::select_storage_phase(&candidates, state.tracks(), catalogue)
+                {
+                    Ok(Some(chosen)) => chosen,
+                    Ok(None)
+                        if candidates.iter().all(|callback| {
+                            callback.return_on_failure && callback.failure_teleport.is_none()
+                        }) && candidates
+                            .iter()
+                            .any(|callback| callback.effects.timed_outfit.is_some()) =>
+                    {
+                        let optional_pvp =
+                            self.special_movement_policy(permit, actor, session).await;
+                        let mut runtime = self.runtime.lock().await;
+                        let mut states = self.states.spell_states.lock().await;
+                        if runtime.read_actor_position(actor) == Ok(entered) {
+                            self.refuse_quest_step(
+                                optional_pvp,
+                                &mut runtime,
+                                &mut states,
+                                actor,
+                                session,
+                                map,
+                                candidates[0],
+                                entered,
+                                origin,
+                            );
+                        }
+                        return runtime.read_actor_position(actor).unwrap_or(entered);
+                    }
+                    _ => return entered,
+                };
             selected
                 .iter()
                 .copied()

@@ -492,6 +492,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(expected) = runtime.read_actor_position(actor) else {
             return UseDisposition::Rejected;
         };
+        // Crystal 201189f8 movements_geomantic_charges.lua:13-38 rejects the
+        // entire entry while an outfit is active, including charge delivery.
+        let step_outfit = if let Some(outfit) = callback.effects.timed_outfit {
+            use crate::domain::condition::ConflictKey;
+            let now = self.owner_now().get();
+            let (Some(current), Ok(world_conditions)) = (
+                states.get(runtime, actor, session),
+                runtime.actor_conditions_at(actor, Some(session), now),
+            ) else {
+                return UseDisposition::Rejected;
+            };
+            if current
+                .owned_conditions()
+                .active_at(ConflictKey::Outfit, now)
+                .is_some()
+                || world_conditions
+                    .active_at(ConflictKey::Outfit, now)
+                    .is_some()
+            {
+                return UseDisposition::NotPossible;
+            }
+            let Ok(next) = crate::spell::actor_conditions::stage_item_costume(
+                current,
+                u32::from(outfit.look_type),
+                outfit.duration_ms,
+                now / 1000,
+            ) else {
+                return UseDisposition::Rejected;
+            };
+            Some(next)
+        } else {
+            None
+        };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         let mut destination = callback.teleport;
@@ -1568,6 +1601,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH.into(),
                     captured_name: None,
                 });
+        }
+        if let Some(next) = step_outfit {
+            if !states.commit(runtime, actor, session, next) {
+                return UseDisposition::Rejected;
+            }
+            states.owner_wake.notify_one();
         }
         if callback.effects.restore_disguise {
             let Some(current) = states.get(runtime, actor, session) else {
