@@ -72,14 +72,14 @@ mod tests {
                 .ok_or("portal transition")?;
             let clock = &portal.state_operations[0].track;
             let mut tracks = std::collections::BTreeMap::new();
-            assert!(catalogue.evaluate(transition, &tracks, 100).is_err());
+            assert!(catalogue.evaluate(transition, &tracks, 10_000).is_err());
             for state in portal.storage {
                 tracks.insert(state.track, state.minimum);
             }
-            assert!(catalogue.evaluate(transition, &tracks, 100).is_ok());
-            tracks.insert(clock.clone(), 100);
-            assert!(catalogue.evaluate(transition, &tracks, 7299).is_err());
-            assert!(catalogue.evaluate(transition, &tracks, 7300).is_ok());
+            assert!(catalogue.evaluate(transition, &tracks, 10_000).is_ok());
+            tracks.insert(clock.clone(), 10_000);
+            assert!(catalogue.evaluate(transition, &tracks, 17_199).is_err());
+            assert!(catalogue.evaluate(transition, &tracks, 17_200).is_ok());
         }
         Ok(())
     }
