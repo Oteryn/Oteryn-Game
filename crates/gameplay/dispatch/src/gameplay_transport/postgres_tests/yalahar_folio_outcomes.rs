@@ -17,10 +17,20 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 const QUEST: &str = "oteryn:quest.fixture_yalahar_folio";
+const MISSION: &str = "oteryn:quest-progress/fixture-yalahar/mission09";
 const COUNT: &str = "oteryn:quest-progress/fixture-yalahar/read-count";
 const CLOCK: &str = "oteryn:quest-progress/fixture-yalahar/headache";
 const GROUP: &str = "oteryn:quest-random-use/fixture-yalahar/folio";
 const BOOKWORM: &str = "oteryn:creature.enraged_bookworm";
+// Crystal uses a 1..=100 first roll and, for the headache, a 1..=100 second roll.
+const DONOR_OUTCOMES: [(&str, u16, Option<&str>, u16); 6] = [
+    ("headache", 1520, None, 32),
+    ("headache-bookworm", 190, Some(BOOKWORM), 32),
+    ("headache-fire-devil", 95, Some("oteryn:creature.fire_devil"), 32),
+    ("headache-war-golem", 95, Some("oteryn:creature.war_golem"), 32),
+    ("relocate", 100, None, 11),
+    ("success", 8000, None, 30),
+];
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua:7-49";
 const FOLIO: Position = Position {
     x: 32797,
@@ -43,7 +53,7 @@ fn folio_use_relocates_and_resets_success_without_starting_a_headache() -> TestR
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, false).await)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, "relocate").await)
 }
 
 #[test]
@@ -52,13 +62,23 @@ fn folio_use_starts_a_headache_and_spawns_one_active_bookworm() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, true).await)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, "headache-bookworm").await)
 }
 
-fn catalogue() -> TestResult<QuestStateCatalogue> {
-    // Equal fixture weights let both wire cases select an occurrence in a short bounded scan.
-    let routes: Vec<_> = [true, false].into_iter().map(|relocation| {
-        let suffix = if relocation { "relocate" } else { "headache" };
+#[test]
+fn folio_success_counts_the_first_read_from_a_negative_legacy_value() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, "success").await)
+}
+
+fn catalogue(initial_count: i64) -> TestResult<QuestStateCatalogue> {
+    let routes: Vec<_> = DONOR_OUTCOMES.into_iter().map(|(suffix, weight, spawn, effect)| {
+        let relocation = suffix == "relocate";
+        let success = suffix == "success";
+        let headache = !relocation && !success;
         json!({
             "key": format!("oteryn:quest-stage/fixture-yalahar/folio-{suffix}"), "completes": false,
             "trigger": {"kind": "map_use", "callback": {
@@ -66,15 +86,21 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
                 "quest": QUEST, "trigger": "use", "reversible": false,
                 "selector": {"position": FOLIO, "ordinal": 1, "appearance": 9193},
                 "effects": {"random_use": {
-                    "group": GROUP,
-                    "weight": 1, "spawn_at_user": (!relocation).then_some(BOOKWORM),
-                    "user_effect": if relocation { 11 } else { 32 }
+                    "group": GROUP, "weight": weight, "spawn_at_user": spawn, "user_effect": effect
                 }},
                 "teleport": relocation.then_some(LANDING),
-                "storage": [{"track": COUNT, "minimum": 0, "maximum": 7, "set": 0}],
+                "storage": [{"track": MISSION, "minimum": 1, "maximum": 1, "set": 1}],
+                "state_ops": [{
+                    "track": COUNT, "from": {"kind": "between", "minimum": -1, "maximum": 7},
+                    "effect": if success {
+                        json!({"kind": "add_at_least", "value": 1, "minimum": 1})
+                    } else {
+                        json!({"kind": "add_at_least", "value": -7, "minimum": 0})
+                    }
+                }],
                 "state_operations": [{
                     "track": CLOCK, "from": {"kind": "elapsed_at_least", "seconds": 60},
-                    "effect": if relocation { json!({"kind": "add", "value": 0}) } else { json!({"kind": "set_now"}) }
+                    "effect": if headache { json!({"kind": "set_now"}) } else { json!({"kind": "add", "value": 0}) }
                 }],
                 "requires_world_admission": true, "passages": [], "offerings": [], "return_on_failure": false,
                 "sources": [SOURCE]
@@ -85,7 +111,8 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
         "quest": QUEST, "recipe_sha256": Sha256::digest(SOURCE).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
         "sources": [SOURCE],
         "tracks": [
-            {"key": COUNT, "initial": 4, "minimum": 0, "maximum": 8},
+            {"key": MISSION, "initial": 1, "minimum": 1, "maximum": 2},
+            {"key": COUNT, "initial": initial_count, "minimum": -1, "maximum": 8},
             {"key": CLOCK, "initial": -1, "minimum": -1, "maximum": i64::MAX}
         ],
         "stages": routes
@@ -94,7 +121,9 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
     Ok(Bindings::parse(&serde_json::to_vec(&data)?)?.attach(&base)?)
 }
 
-async fn exercise(admin: String, expect_headache: bool) -> TestResult {
+async fn exercise(admin: String, branch: &str) -> TestResult {
+    let success = branch == "success";
+    let expect_headache = branch == "headache-bookworm";
     let h =
         Harness::create_with_admission_seed(admin, "yalahar_folio_outcomes", true, false).await?;
     prepare_current_session(&h).await?;
@@ -110,7 +139,7 @@ async fn exercise(admin: String, expect_headache: bool) -> TestResult {
         "content-1",
     )?;
     let generation = controller.active().ok_or("content generation")?;
-    let catalogue = catalogue()?;
+    let catalogue = catalogue(if success { -1 } else { 4 })?;
     let relocation = catalogue
         .authored_bindings()
         .ok_or("folio bindings")?
@@ -162,7 +191,18 @@ async fn exercise(admin: String, expect_headache: bool) -> TestResult {
     .map_err(debug)?;
     // Choose the first admitted wire occurrence for this branch. The durable
     // USE and spawn owners still select and apply the outcome themselves.
-    let command = (1u64..=128)
+    let mut first_roll = 0u64;
+    let mut wanted = None;
+    for (key, weight, _, _) in DONOR_OUTCOMES {
+        let next = first_roll + u64::from(weight);
+        if key == branch {
+            wanted = Some(first_roll..next);
+        }
+        first_roll = next;
+    }
+    assert_eq!(first_roll, 10_000);
+    let wanted = wanted.ok_or("donor folio branch")?;
+    let command = (1u64..=8_192)
         .find(|number| {
             let digest = Sha256::new()
                 .chain_update(b"oteryn:quest-random-use-v1")
@@ -172,8 +212,9 @@ async fn exercise(admin: String, expect_headache: bool) -> TestResult {
                 .chain_update(key.to_be_bytes())
                 .chain_update(GROUP.as_bytes())
                 .finalize();
-            // Headache sorts first. The second slot is the relocation.
-            (digest[7] % 2 == 0) == expect_headache
+            let mut prefix = [0; 8];
+            prefix.copy_from_slice(&digest[..8]);
+            wanted.contains(&(u64::from_be_bytes(prefix) % first_roll))
         })
         .ok_or("folio branch occurrence")?;
     admitted.continuity.next_command_id = command;
@@ -194,7 +235,7 @@ async fn exercise(admin: String, expect_headache: bool) -> TestResult {
         .read_character_quest_state(&authority, fence.character_id)
         .await
         .map_err(debug)?;
-    assert_eq!(snapshot.tracks().get(COUNT), Some(&0));
+    assert_eq!(snapshot.tracks().get(COUNT), Some(&i64::from(success)));
     if expect_headache {
         assert!(snapshot.tracks().get(CLOCK).is_some_and(|clock| *clock > 0));
     } else {
@@ -228,7 +269,7 @@ async fn exercise(admin: String, expect_headache: bool) -> TestResult {
             assert_eq!(creature.state.policy.definition_key, BOOKWORM);
             assert_eq!(creature.health, creature.maximum_health);
         } else {
-            assert_eq!(at, local(LANDING));
+            assert_eq!(at, local(if success { START } else { LANDING }));
             assert!(spawned.is_empty());
         }
     }
