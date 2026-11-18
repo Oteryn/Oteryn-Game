@@ -2,7 +2,6 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult};
 use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 

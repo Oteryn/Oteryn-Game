@@ -45,6 +45,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// One coalesced creature think pass, driven by the shared source-owner cycle.
     /// Player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
+        self.settle_zamulosh_steps().await;
         #[cfg(test)]
         let trace = NativeAiLastPhase {
             room: self.rooms().gate_monster_ai(),

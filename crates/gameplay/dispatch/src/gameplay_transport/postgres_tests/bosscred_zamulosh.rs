@@ -1,7 +1,6 @@
 //! Physical creature movement drives StepIn and credits both room players.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult};
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     world_callbacks::{Callback, Position},
     zamulosh,

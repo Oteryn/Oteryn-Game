@@ -1,7 +1,6 @@
 //! Crystal 201189f8 Inquisition forge exit. The wards share their death window.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult};
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
