@@ -125,6 +125,9 @@ pub struct CallbackEffects {
     /// Selected once by the ordinary carried tool on a live map object.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_use_draw: Option<ToolUseDraw>,
+    /// Require the selected tool user's current durable base vocation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_vocation: Option<String>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub restore_disguise: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -603,6 +606,24 @@ pub(super) fn valid(callback: &Callback) -> bool {
         .as_ref()
         .is_some_and(|draw| !draw.valid(callback))
     {
+        return false;
+    }
+    if effects.tool_vocation.as_deref().is_some_and(|vocation| {
+        !matches!(
+            vocation,
+            "sorcerer" | "druid" | "paladin" | "knight" | "monk"
+        ) || callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !callback.has_state()
+            || callback.selector.position.is_none()
+            || callback.selector.appearance.is_none()
+            || callback.selector.native.is_some()
+            || callback
+                .item_on_target
+                .as_ref()
+                .is_none_or(|tool| !tool.selected_instance)
+    }) {
         return false;
     }
     if !effects.vocation_teleports.is_empty()

@@ -252,7 +252,7 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
-    if callback.effects.transform_requires_current {
+    if callback.effects.transform_requires_current || callback.effects.tool_vocation.is_some() {
         let selector = &callback.selector;
         return !map.facts.base_hidden(key)
             && selector.position.map_or_else(
@@ -979,7 +979,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         map: &BundleMap,
         target: &WorldObjectTarget,
-        selected_tool: Option<([u8; 16], Vec<u8>)>,
+        selected_tool: Option<(&str, [u8; 16], Vec<u8>)>,
     ) -> Option<UseOutcome> {
         if let Some(outcome) = self.use_rafzane_elevator(actor, command, map, target).await {
             return Some(outcome);
@@ -1025,6 +1025,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
+                    && selected_tool.as_ref().map_or_else(
+                        || {
+                            c.item_on_target
+                                .as_ref()
+                                .is_none_or(|tool| !tool.selected_instance)
+                        },
+                        |(definition, _, _)| {
+                            c.item_on_target.as_ref().is_some_and(|tool| {
+                                tool.selected_instance && tool.item == *definition
+                            })
+                        },
+                    )
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {
@@ -1049,6 +1061,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        let selected_tool = selected_tool.map(|(_, item, intent)| (item, intent));
         if selected
             .iter()
             .any(|callback| callback.effects.tool_use_draw.is_some())

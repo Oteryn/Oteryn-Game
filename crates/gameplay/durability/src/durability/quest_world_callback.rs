@@ -573,6 +573,13 @@ pub(super) async fn consume(
     {
         return Ok(false);
     }
+    // Crystal 201189f data-global/scripts/actions/other/enchanting.lua:6-10,47-57.
+    // Every selected gem debit uses the current Character build's base vocation.
+    if let Some(vocation) = callback.effects.tool_vocation.as_deref()
+        && !has_base_vocation(tx, fence.character_id.as_bytes(), vocation).await?
+    {
+        return Ok(false);
+    }
     // The Character root and current session are already fenced. Lock the actual
     // carried instances before testing quantities; map objects never prove ownership.
     for evidence in &callback.present {
@@ -1210,6 +1217,28 @@ async fn has_carried_quantity(
     Ok(quantities.len() <= 500 && quantities.iter().sum::<i64>() >= i64::from(count))
 }
 
+async fn has_base_vocation(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: &[u8; 16],
+    required: &str,
+) -> Result<bool, DurabilityError> {
+    let vocation: Option<String> = sqlx::query_scalar(
+        "SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+    )
+    .bind(character.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let base = match vocation.as_deref() {
+        Some("druid" | "elder_druid") => "druid",
+        Some("sorcerer" | "master_sorcerer") => "sorcerer",
+        Some("paladin" | "royal_paladin") => "paladin",
+        Some("knight" | "elite_knight") => "knight",
+        Some("monk" | "exalted_monk") => "monk",
+        _ => return Ok(false),
+    };
+    Ok(base == required)
+}
+
 /// Admission locks already serialize lifecycle writers. Read every member under
 /// its real Item fence before the first offering mutation; a copied runtime
 /// vocation or a stale connection cannot admit the rite.
@@ -1267,21 +1296,7 @@ pub(super) async fn party_is_current(
         {
             return Ok(false);
         }
-        let vocation: Option<String> = sqlx::query_scalar(
-            "SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
-        )
-        .bind(member.character.as_slice())
-        .fetch_optional(&mut **tx)
-        .await?;
-        let base = match vocation.as_deref() {
-            Some("druid" | "elder_druid") => "druid",
-            Some("sorcerer" | "master_sorcerer") => "sorcerer",
-            Some("paladin" | "royal_paladin") => "paladin",
-            Some("knight" | "elite_knight") => "knight",
-            Some("monk" | "exalted_monk") => "monk",
-            _ => return Ok(false),
-        };
-        if base != station.vocation {
+        if !has_base_vocation(tx, &member.character, &station.vocation).await? {
             return Ok(false);
         }
         // Crystal 201189f8 elemental_spheres/actions_lever.lua:45-65 checks
