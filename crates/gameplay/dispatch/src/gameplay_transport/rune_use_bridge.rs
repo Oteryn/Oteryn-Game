@@ -272,7 +272,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         field_runes: bool,
     ) -> Option<UseOutcome> {
         let mut intent = intent;
-        if let Some(position) = &mut intent.use_with_position {
+        // Source targets retain their wire coordinates for replay and enter the
+        // physical frame in target(). Other Bundles retain legacy receipt binding.
+        if !self
+            .effective_rooms()
+            .gate_wire_position()
+            .is_some_and(|room| room.pinned_activity_source_room().is_some())
+            && let Some(position) = &mut intent.use_with_position
+        {
             position.floor = self.runtime_floor(position.floor);
         }
         let Ok((current, _)) =
