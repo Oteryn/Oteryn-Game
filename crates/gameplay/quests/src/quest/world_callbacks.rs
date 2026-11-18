@@ -84,6 +84,8 @@ mod ranked_toll;
 pub use ranked_toll::RankedToll;
 mod roll_reward;
 pub use roll_reward::RollReward;
+mod roll_tool;
+pub use roll_tool::{RollTool, RollToolStage};
 #[cfg(test)]
 mod scripted_teleport_tests;
 #[cfg(test)]

@@ -726,6 +726,7 @@ async fn consume_inputs(
         }
     }
     let mut inputs = Vec::new();
+    let mut rolled_plan = None;
     let solid_repair = !callback.effects.cleanup_offerings
         && callback
             .passages
@@ -760,7 +761,7 @@ async fn consume_inputs(
         .fetch_optional(&mut **tx)
         .await?;
         let Some(row) = row else { return Ok(false) };
-        let input = Input {
+        let mut input = Input {
             item: row.try_get("item")?,
             before: row.try_get("before_item")?,
             location: row.try_get("location")?,
@@ -773,6 +774,37 @@ async fn consume_inputs(
             return Ok(false);
         }
         lock_location(tx, &input).await?;
+        if let Some(roll) = &callback.effects.roll_tool {
+            let definition = input
+                .before
+                .get("definition_production_key")
+                .and_then(serde_json::Value::as_str)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            if let Some(stage) = roll.stage(definition)
+                && roll.succeeds(
+                    &callback.key,
+                    command.game_session_id().as_bytes(),
+                    command.command_id().get(),
+                    &context.actor_placement,
+                    context.movement_revision,
+                )
+            {
+                if input.quantity != 1 {
+                    return Ok(false);
+                }
+                input.replacement = Some(stage.output.clone());
+                let mut applied = callback.clone();
+                let tool = applied
+                    .item_on_target
+                    .as_mut()
+                    .ok_or(DurabilityError::InvalidStoredState)?;
+                tool.item = definition.to_owned();
+                tool.alternatives.clear();
+                tool.replacement = input.replacement.clone();
+                tool.reusable = false;
+                rolled_plan = Some(applied);
+            }
+        }
         if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
             // Crystal actions_sacrifice.lua:15-18: stage one needs a real
             // carried tear but consumes none. All other stages use the same
@@ -831,7 +863,7 @@ async fn consume_inputs(
                 ice_islands_seals::consumes_paint(seal, changes)
                     .map_err(|_| DurabilityError::InvalidStoredState)?
             }
-            _ => !required.reusable,
+            _ => !required.reusable || rolled_plan.is_some(),
         };
         if consume {
             inputs.push(input);
@@ -980,7 +1012,7 @@ async fn consume_inputs(
         .await?;
     for input in inputs {
         let proof = serde_json::to_vec(&serde_json::json!({
-            "callback": callback, "context": context,
+            "callback": rolled_plan.as_ref().unwrap_or(callback), "context": context,
             "character": fence.character_id.as_bytes(), "session": command.game_session_id().as_bytes(),
             "command": command.command_id().get(), "connection": fence.connection_generation.get(),
             "lease": fence.character_lease_generation, "scope": fence.scope_ownership_generation.get(),

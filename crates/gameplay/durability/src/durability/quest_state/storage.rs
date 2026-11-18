@@ -1,6 +1,30 @@
 use super::*;
 
 impl DurabilityRoot {
+    /// The durable selected-tool receipt owns the result used for post-commit cues.
+    pub async fn read_quest_rolled_tool(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        command: CommandRef,
+        transition: String,
+    ) -> Result<Option<String>> {
+        let recovery = authority.record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            let item = sqlx::query_scalar(
+                "SELECT before_item->>'definition_production_key' FROM game_quest_callback_consumptions
+                  WHERE character_id=encode($1,'hex')::uuid AND cause_id=encode($2,'hex')::uuid
+                    AND cause_ordinal=$3::text::numeric AND transition_key=$4 AND replacement IS NOT NULL",
+            ).bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
+                .bind(command.command_id().get().to_string()).bind(transition).fetch_optional(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(item))
+        })).await?
+    }
+
     /// The already committed world receipt owns the number of ordered offerings.
     pub async fn read_quest_offering_count(
         &self,

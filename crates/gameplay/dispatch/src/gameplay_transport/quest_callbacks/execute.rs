@@ -173,6 +173,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return UseDisposition::NothingToUse;
         }
+        if callback.effects.roll_tool.is_some()
+            && callback
+                .selector
+                .native
+                .as_ref()
+                .is_none_or(|source| source.appearance != after.appearance_id)
+        {
+            return UseDisposition::NothingToUse;
+        }
         if callback.effects.reward_door.is_some() {
             return self
                 .execute_reward_door(
@@ -1064,6 +1073,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !(close && callback.opening_only);
         let mut fresh_effects = !durable;
         let mut failed_roll = None;
+        let mut tool_rolled_successfully = false;
         let mut roll_spawn = None;
         let mut success_message = if !durable {
             callback.success_message.clone()
@@ -1398,6 +1408,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         if let Some(roll) = failed_roll {
                             success_message = Some(roll.failure_text.clone());
                         }
+                        if let Some(roll) = &callback.effects.roll_tool {
+                            let QuestCause::Use(command) = cause else { return UseDisposition::Rejected; };
+                            let Ok(source) = self.root.read_quest_rolled_tool(self.character,
+                                fence.character_id, command, callback.key.clone()).await else {
+                                return UseDisposition::Rejected;
+                            };
+                            if let Some(source) = source {
+                                let Some(stage) = roll.stage(&source) else { return UseDisposition::Rejected; };
+                                tool_rolled_successfully = true;
+                                success_message = Some(stage.text.clone());
+                            }
+                        }
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.
                         if callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
                             && committed.changes.iter().any(|change|
@@ -1688,6 +1710,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if fresh_effects && let Some(roll) = failed_roll {
             map.facts.emit_movement_effect(pos, roll.failure_effect);
+        }
+        if fresh_effects && let Some(roll) = &callback.effects.roll_tool {
+            if tool_rolled_successfully {
+                if let Some(actor_pos) = native(expected.position()) {
+                    map.facts
+                        .emit_movement_effect(actor_pos, roll.success_effect);
+                }
+            } else {
+                map.facts.emit_movement_effect(pos, roll.failure_effect);
+            }
         }
         if matches!(
             projection,

@@ -54,6 +54,8 @@ pub struct CallbackEffects {
     pub ranked_toll: Option<RankedToll>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub roll_reward: Option<RollReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub roll_tool: Option<RollTool>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -517,6 +519,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
     if effects
         .roll_reward
+        .as_ref()
+        .is_some_and(|roll| !roll.valid(callback))
+    {
+        return false;
+    }
+    if effects
+        .roll_tool
         .as_ref()
         .is_some_and(|roll| !roll.valid(callback))
     {
