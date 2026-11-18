@@ -29,6 +29,7 @@ enum Case {
     Window,
     WindowConsumed,
     Area,
+    DefeatTime,
     Summon,
     Ordered,
 }
@@ -79,6 +80,14 @@ fn higher_boss_rank_advances_once_and_later_lower_rank_cannot_regress_it() -> Te
         return Ok(());
     };
     run(admin, Case::Ordered)
+}
+
+#[test]
+fn boss_defeat_clock_is_stored_for_damagers_and_absent_for_bystander() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::DefeatTime)
 }
 
 #[test]
@@ -143,6 +152,11 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         "summon_owner": case == Case::Summon
     });
     let source = match case {
+        Case::DefeatTime => {
+            counter["record_defeat_time"] = json!(true);
+            counter["maximum"] = json!(i64::MAX);
+            "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:114-124"
+        }
         Case::All => {
             counter["gate"] = json!(TRACK);
             counter["gate_value"] = json!(0);
@@ -201,7 +215,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         "sources":[source],
         "tracks":[
             {"key":PHASE, "initial":1, "minimum":0, "maximum":1},
-            {"key":TRACK, "initial":0, "minimum":0, "maximum":5},
+            {"key":TRACK, "initial":0, "minimum":0, "maximum":if case == Case::DefeatTime { i64::MAX } else { 5 }},
             {"key":EXIT, "initial":0, "minimum":0, "maximum":1}
         ],
         "stages":stages
@@ -412,6 +426,7 @@ fn run(admin: String, case: Case) -> TestResult {
             .await?;
             assert_tracks(&h.pool, [0, 1, 0]).await?;
         }
+        let before = crate::gameplay_transport::npc_trade_command::unix_ms_now() / 1_000;
         death(
             &owner,
             &players,
@@ -426,6 +441,12 @@ fn run(admin: String, case: Case) -> TestResult {
             Case::Top => [1, 1, 0],
             Case::Time | Case::Summon => [1, 2, 0],
             Case::Ordered => [3, 3, 0],
+            Case::DefeatTime => {
+                let actual = track_value(&h.pool, 60).await?;
+                let after = crate::gameplay_transport::npc_trade_command::unix_ms_now() / 1_000;
+                assert!((before..=after).contains(&actual));
+                [actual, actual, 0]
+            }
             Case::Window | Case::WindowConsumed => {
                 return Err("timed exit requires bundle cells".into());
             }
@@ -550,16 +571,20 @@ async fn move_with_revision(
     Ok((origin, entered))
 }
 
+async fn track_value(pool: &sqlx::PgPool, character: u8) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT COALESCE((SELECT value FROM game_character_quest_tracks
+         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),0)",
+    )
+    .bind(id(character).as_slice())
+    .bind(TRACK)
+    .fetch_one(pool)
+    .await?)
+}
+
 async fn assert_tracks(pool: &sqlx::PgPool, expected: [i64; 3]) -> TestResult {
     for (index, value) in expected.into_iter().enumerate() {
-        let stored: i64 = sqlx::query_scalar(
-            "SELECT COALESCE((SELECT value FROM game_character_quest_tracks
-             WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),0)",
-        )
-        .bind(id(60 + u8::try_from(index)?).as_slice())
-        .bind(TRACK)
-        .fetch_one(pool)
-        .await?;
+        let stored = track_value(pool, 60 + u8::try_from(index)?).await?;
         assert_eq!(stored, value, "quest credit for participant {index}");
     }
     Ok(())
