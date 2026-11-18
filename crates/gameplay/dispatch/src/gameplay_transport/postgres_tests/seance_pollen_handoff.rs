@@ -26,7 +26,7 @@ fn seance_consumes_fifteen_pollen_and_credits_both_quests_at_the_same_revision()
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    pollen_case(admin, "seance_pollen_handoff", 1)
+    pollen_case(admin, "seance_pollen_handoff", 1, -1)
 }
 
 #[test]
@@ -34,10 +34,16 @@ fn barnabas_spends_self_harvested_pollen_and_awards_a_vote_outside_the_seance() 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    pollen_case(admin, "barnabas_pollen_vote", -1)
+    pollen_case(admin.clone(), "barnabas_pollen_vote", -1, -1)?;
+    pollen_case(admin, "barnabas_post_seance_vote", 2, 7)
 }
 
-fn pollen_case(admin: String, database: &'static str, initial_mission: i64) -> TestResult {
+fn pollen_case(
+    admin: String,
+    database: &'static str,
+    initial_mission: i64,
+    initial_votes: i64,
+) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -49,7 +55,7 @@ fn pollen_case(admin: String, database: &'static str, initial_mission: i64) -> T
                     false,
                 )
                 .await?;
-                let result = Box::pin(exercise(&h, initial_mission)).await;
+                let result = Box::pin(exercise(&h, initial_mission, initial_votes)).await;
                 let cleanup = h.cleanup().await;
                 result?;
                 cleanup
@@ -61,7 +67,7 @@ fn pollen_case(admin: String, database: &'static str, initial_mission: i64) -> T
     Ok(())
 }
 
-async fn exercise(h: &Harness, initial_mission: i64) -> TestResult {
+async fn exercise(h: &Harness, initial_mission: i64, initial_votes: i64) -> TestResult {
     let base = QuestStateCatalogue::new(
         "content-1",
         vec![
@@ -75,7 +81,7 @@ async fn exercise(h: &Harness, initial_mission: i64) -> TestResult {
             QuestTrack {
                 key: VOTES.into(),
                 quest: ORAMOND.into(),
-                initial: -1,
+                initial: initial_votes,
                 min: -1,
                 max: i64::MAX,
             },
@@ -153,7 +159,7 @@ async fn exercise(h: &Harness, initial_mission: i64) -> TestResult {
         assert_eq!((&*rows[1].0, rows[1].1), (POWDER, -1));
         assert_eq!(rows[0].2, rows[1].2);
         if initial_mission != 1 {
-            assert_eq!((&*rows[2].0, rows[2].1), (VOTES, 1));
+            assert_eq!((&*rows[2].0, rows[2].1), (VOTES, initial_votes.max(0) + 1));
             assert_eq!(rows[0].2, rows[2].2);
         }
         Ok(())
