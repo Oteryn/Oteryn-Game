@@ -107,6 +107,7 @@ impl super::DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
+        let root = self.clone();
         let mut context = (permit, context);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, (permit, context)| {
             Box::pin(async move {
@@ -133,7 +134,7 @@ impl super::DurabilityRoot {
                     return Ok(Ok(false));
                 }
                 if let Some(boss) = callback.boss_cooldown_requirement() {
-                    let now = super::activity_handoff::quest_activity_now_ms(&mut tx, self).await?;
+                    let now = super::activity_handoff::quest_activity_now_ms(&mut tx, &root).await?;
                     let cooldown: Option<i64> = sqlx::query_scalar(
                         "SELECT available_at FROM game_character_boss_cooldowns
                          WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 FOR SHARE",
