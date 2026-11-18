@@ -1,5 +1,5 @@
 //! Crystal 201189f8 data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:513-647.
-use super::fixture::{Harness, debug, id};
+use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{local, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{ExactActorRef, GameSessionId};
@@ -145,64 +145,31 @@ pub(super) async fn exercise(
         .ok_or("native gameplay")?;
     let player = admitted.runtime_actor.ok_or("actor")?;
     let player_session = admitted.game_session_id;
-    let peer_session = GameSessionId::decode(&id(58)).map_err(debug)?;
-    let (origin, peer) = {
+    let origin = {
         let mut runtime = owner.runtime.lock().await;
         runtime
             .install_companion_policies(native.policies().clone())
             .map_err(debug)?;
-        let reservation = runtime.reserve_fresh_session(peer_session).map_err(debug)?;
-        let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
         runtime
-            .initialize_pinned_test_position(peer, local(LANDING))
-            .map_err(debug)?;
-        (
-            runtime
-                .read_actor_position(player)
-                .map_err(debug)?
-                .position(),
-            peer,
-        )
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position()
     };
-    let east = encode_step_intent(StepDirection::East);
-    wire(owner, admitted, 1, 1, east.clone()).await?;
-    let peer_outside = local(Position {
+    let peer_approach = Position {
         x: ENTRY.x + 1,
         ..ENTRY
-    });
-    {
-        let mut runtime = owner.runtime.lock().await;
-        assert_eq!(
-            runtime
-                .read_actor_position(player)
-                .map_err(debug)?
-                .position(),
-            origin
-        );
-        assert!(
-            runtime
-                .current_live_creature_census()
-                .map_err(debug)?
-                .is_empty()
-        );
-        let current = runtime.read_actor_position(peer).map_err(debug)?;
-        let map = owner.bundle_map().ok_or("map")?;
-        let doors = crate::map::floor::BundleDoors(map.facts.doors());
-        let proof = crate::map::floor::prepare_quest_callback_teleport(
-            &runtime,
-            owner.movement_cells(),
-            peer,
-            peer_session,
-            current,
-            peer_outside,
-            false,
-            &doors,
-        )
-        .map_err(debug)?;
-        runtime.commit_source_step(proof).map_err(debug)?;
-    }
+    };
+    let peer_outside = local(peer_approach);
+    let mut second = super::scenarios::peer_at(h, owner, *admitted, peer_outside).await?;
+    let peer = second.runtime_actor.ok_or("second actor")?;
+    let peer_session = second.game_session_id;
+    owner.admit_quest_session(&second).await;
+
+    let east = encode_step_intent(StepDirection::East);
+    let west = encode_step_intent(StepDirection::West);
+    wire(owner, admitted, 1, 1, east.clone()).await?;
     advance_clock(owner, 2)?;
-    wire(owner, admitted, 2, 1, east.clone()).await?;
+    wire(owner, &mut second, 1, 1, west.clone()).await?;
     {
         let runtime = owner.runtime.lock().await;
         assert_eq!(
@@ -213,13 +180,17 @@ pub(super) async fn exercise(
             local(LANDING)
         );
         assert_eq!(
+            runtime.read_actor_position(peer).map_err(debug)?.position(),
+            peer_outside,
+            "the second player's StepIn is refused while the room is occupied"
+        );
+        assert_eq!(
             runtime.current_live_creature_census().map_err(debug)?.len(),
             1
         );
     }
-    let west = encode_step_intent(StepDirection::West);
     advance_clock(owner, 2)?;
-    wire(owner, admitted, 3, 1, west.clone()).await?;
+    wire(owner, admitted, 2, 1, west.clone()).await?;
     assert_eq!(
         owner
             .runtime
@@ -232,7 +203,7 @@ pub(super) async fn exercise(
         "the live boss blocks the treasure teleporter"
     );
     advance_clock(owner, 2)?;
-    wire(owner, admitted, 4, 1, east.clone()).await?;
+    wire(owner, admitted, 3, 1, east.clone()).await?;
     {
         let mut runtime = owner.runtime.lock().await;
         let current = runtime.read_actor_position(player).map_err(debug)?;
@@ -260,7 +231,27 @@ pub(super) async fn exercise(
         runtime.commit_source_step(proof).map_err(debug)?;
     }
     advance_clock(owner, 2)?;
-    wire(owner, admitted, 5, 1, east.clone()).await?;
+    wire(owner, &mut second, 2, 1, west.clone()).await?;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(peer).map_err(debug)?.position(),
+            local(LANDING),
+            "the second player's StepIn succeeds after the first player exits"
+        );
+        assert_eq!(runtime.current_live_creature_census().map_err(debug)?.len(), 1);
+    }
+    advance_clock(owner, 2)?;
+    wire(owner, &mut second, 3, 1, east.clone()).await?;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(runtime.read_actor_position(peer).map_err(debug)?.position(), local(ENTRY));
+        assert_eq!(runtime.read_actor_position(player).map_err(debug)?.position(), origin);
+        assert!(runtime.current_live_creature_census().map_err(debug)?.is_empty());
+    }
+    relocate(owner, peer, peer_session, peer_approach).await?;
+    advance_clock(owner, 2)?;
+    wire(owner, admitted, 4, 1, east.clone()).await?;
     advance_clock(owner, 301)?;
     owner.drain_quest_encounter_deadlines().await;
     let mut runtime = owner.runtime.lock().await;
@@ -292,7 +283,7 @@ pub(super) async fn exercise(
     runtime.commit_source_step(proof).map_err(debug)?;
     drop(runtime);
     advance_clock(owner, 2)?;
-    wire(owner, admitted, 6, 1, east).await?;
+    wire(owner, admitted, 5, 1, east).await?;
     let fence = owner.current_quest_fence(player_session).await
         .map_err(|()| "combat character fence")?.ok_or("combat character fence")?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING")
@@ -300,7 +291,7 @@ pub(super) async fn exercise(
         .execute(&h.pool).await?;
     defeat_boss(owner, admitted, player).await?;
     advance_clock(owner, 2)?;
-    wire(owner, admitted, 8, 1, west).await?;
+    wire(owner, admitted, 7, 1, west).await?;
     advance_clock(owner, 301)?;
     owner.drain_quest_encounter_deadlines().await;
     assert_eq!(
@@ -314,9 +305,11 @@ pub(super) async fn exercise(
         local(TREASURE),
         "defeat unlocks the treasure and cancels automatic ejection"
     );
-    let state: i64 =
-        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+    let state: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE track_key=$1 AND character_id=encode($2,'hex')::uuid",
+    )
             .bind(TRACK)
+            .bind(fence.character_id.as_bytes().as_slice())
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(state, 13);
@@ -351,8 +344,9 @@ async fn defeat_boss(
             &[6, 17],
         ).ok_or("combat capabilities")?;
     let payload = encode_attack_target_intent(Some(&target)).map_err(debug)?;
+    let command = admitted.continuity.next_command_id;
     assert_eq!(
-        wire(owner, admitted, 7, 11, payload).await?,
+        wire(owner, admitted, command, 11, payload).await?,
         encode_attack_intent_result(AttackIntentDisposition::Ok),
     );
     let mut defeated = false;

@@ -248,6 +248,21 @@ async fn peer(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     base: AdmittedSession,
 ) -> TestResult<AdmittedSession> {
+    peer_at(
+        h,
+        owner,
+        base,
+        MovementLocalPosition { x: 9, y: 1, floor: 7 },
+    )
+    .await
+}
+
+pub(super) async fn peer_at(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    base: AdmittedSession,
+    origin: MovementLocalPosition,
+) -> TestResult<AdmittedSession> {
     use crate::durability::guild_chat_fixture::{historical_character, sid};
     let character = crate::domain::CharacterId::from_bytes(sid(90, 1)).map_err(debug)?;
     historical_character(&h.pool, 90, character, sid(90, 2), id(42), "Scenario Peer").await?;
@@ -327,14 +342,7 @@ async fn peer(
             .map_err(debug)?;
         let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
         runtime
-            .initialize_pinned_test_position(
-                actor,
-                MovementLocalPosition {
-                    x: 9,
-                    y: 1,
-                    floor: 7,
-                },
-            )
+            .initialize_pinned_test_position(actor, origin)
             .map_err(debug)?;
         runtime
             .bind_attacker_lease(
