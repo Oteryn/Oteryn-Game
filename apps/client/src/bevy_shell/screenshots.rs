@@ -59,12 +59,23 @@ fn save_audit(image: &Image, path: &std::path::Path) -> io::Result<()> {
     let format = bevy::image::ImageFormat::Png
         .as_image_crate_format()
         .ok_or_else(|| io::Error::other("PNG support is unavailable"))?;
-    let temporary = path.with_file_name(format!(
-        ".oteryn-audit-{}-{}.tmp",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed),
-    ));
-    let mut file = create_capture_file(&temporary)?;
+    let (temporary, mut file) = loop {
+        let candidate = path.with_file_name(format!(
+            ".oteryn-audit-{}-{}.tmp",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed),
+        ));
+        match create_capture_file(&candidate) {
+            Ok(file) => break (candidate, file),
+            Err(error)
+                if error.kind() == io::ErrorKind::AlreadyExists
+                    && candidate.symlink_metadata().is_ok() =>
+            {
+                continue;
+            }
+            Err(error) => return Err(error),
+        }
+    };
     let result = image
         .into_rgb8()
         .write_to(&mut file, format)

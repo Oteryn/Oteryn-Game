@@ -748,3 +748,54 @@ fn fallback_captures_from_two_processes_use_distinct_directories() -> TestResult
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[cfg(unix)]
+#[test]
+fn audit_f12_skips_stale_staging_files_from_reused_pid() -> TestResult {
+    const FIXTURE: &str = "OTERYN_TEST_AUDIT_STAGING_FIXTURE";
+    const TEST: &str =
+        "bevy_shell::screenshots::tests::audit_f12_skips_stale_staging_files_from_reused_pid";
+    if std::env::args_os().any(|arg| arg == TEST)
+        && let Some(root) = std::env::var_os(FIXTURE)
+    {
+        let root = PathBuf::from(root);
+        let output = root.join("new-audit.json");
+        let mut app = app(&root, false)?;
+        app.insert_resource(super::super::audit::AuditOutput::new(Some(output.clone())));
+        capture(&mut app)?;
+        assert_eq!(
+            &std::fs::read(output.with_extension("png"))?[..8],
+            b"\x89PNG\r\n\x1a\n"
+        );
+        for sequence in 0..2 {
+            let stale = root.join(format!(
+                ".oteryn-audit-{}-{sequence}.tmp",
+                std::process::id()
+            ));
+            assert_eq!(std::fs::read(stale)?, b"stale");
+        }
+        assert_eq!(std::fs::read_dir(root)?.count(), 3);
+        return Ok(());
+    }
+    let root = std::env::temp_dir().join(format!("oteryn-audit-collision-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    let output = std::process::Command::new("sh")
+        .args(["-c", r#"
+            for sequence in 0 1; do
+                printf stale > "$OTERYN_TEST_AUDIT_STAGING_FIXTURE/.oteryn-audit-$$-$sequence.tmp" || exit 1
+            done
+            exec "$@"
+        "#, "sh"])
+        .arg(std::env::current_exe()?)
+        .args(["--exact", TEST])
+        .env(FIXTURE, &root)
+        .output();
+    std::fs::remove_dir_all(root)?;
+    let output = output?;
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    Ok(())
+}
