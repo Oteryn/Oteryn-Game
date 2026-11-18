@@ -80,6 +80,10 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                     "{vocation}: connection cannot build the initial spatial snapshot"
                 );
                 assert!(
+                    h.root.read_character_progression(&authority, character).await?.is_none(),
+                    "{vocation}: first entry must work before progression is initialized"
+                );
+                assert!(
                     owner.turn_actor(deps.actor, session, StepDirection::East).await,
                     "{vocation}: first turn was refused"
                 );
