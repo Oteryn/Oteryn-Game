@@ -179,7 +179,7 @@ mod tests {
     -> Result<(), AdmissionRefusal> {
         let mut portal = policy();
         portal.minimum_players = 1;
-        portal.lever_positions.truncate(1);
+        portal.lever_positions = [(1, 1, 7)].into();
         for character in [1, 2] {
             let entered = plan_window_entrant(&portal, &fact(character, 1), 100)?;
             assert_eq!(entered.participants, vec![[character; 16]]);
