@@ -24,6 +24,7 @@ fn listing_captions() -> [&'static str; LISTING_FIELDS] {
         tr!("Hunting area (hunts only)"),
     ]
 }
+#[allow(clippy::too_many_arguments)]
 pub(super) fn build(
     commands: &mut Commands,
     skins: &Skins,
@@ -32,6 +33,7 @@ pub(super) fn build(
     leader: &Leader,
     values: &[String; LISTING_FIELDS],
     search: &[String; 2],
+    retained: &RetainedWidgets,
 ) -> Entity {
     let root = commands
         .spawn((
@@ -55,6 +57,7 @@ pub(super) fn build(
     let dialog = commands
         .spawn((
             crate::bevy_shell::window_drag::DraggableDialog,
+            retained.dialog_transform,
             source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
             Node {
                 width: px(720.),
@@ -76,7 +79,9 @@ pub(super) fn build(
             tr!("Social — Manage Team"),
             skins.font.clone(),
         );
-        manage(commands, skins, key, dialog, panel, leader, values);
+        manage(
+            commands, skins, key, dialog, panel, leader, values, retained,
+        );
         return root;
     }
     source::dialog_caption(
@@ -107,7 +112,7 @@ pub(super) fn build(
         (Field::Name, search[0].clone()),
         (Field::Level, search[1].clone()),
     ] {
-        input(commands, skins, dialog, field, value);
+        input(commands, skins, dialog, field, value, retained);
     }
     let filters = row(commands, dialog);
     button(
@@ -256,18 +261,11 @@ pub(super) fn build(
         tr!("Cancel application"),
         enabled && cancel,
     );
-    button(
-        commands,
-        skins,
-        footer,
-        key,
-        Kind::Close,
-        tr!("Close"),
-        true,
-    );
+    close_button(commands, skins, footer, key, retained);
     root
 }
 /// The leader's applicants page and advertisement editor.
+#[allow(clippy::too_many_arguments)]
 fn manage(
     commands: &mut Commands,
     skins: &Skins,
@@ -276,6 +274,7 @@ fn manage(
     panel: &Panel,
     leader: &Leader,
     values: &[String; LISTING_FIELDS],
+    retained: &RetainedWidgets,
 ) {
     let ready = panel.selected && panel.pending.is_none();
     let tabs = row(commands, dialog);
@@ -381,7 +380,14 @@ fn manage(
     for (index, (caption, value)) in listing_captions().into_iter().zip(values).enumerate() {
         let line = row(commands, dialog);
         label(commands, skins, line, caption);
-        input(commands, skins, line, Field::Listing(index), value.clone());
+        input(
+            commands,
+            skins,
+            line,
+            Field::Listing(index),
+            value.clone(),
+            retained,
+        );
     }
     label(commands, skins, dialog, &leader.feedback);
     let editable = leader.selected && !leader.pending;
@@ -404,15 +410,7 @@ fn manage(
         tr!("Remove listing"),
         editable && leader.confirmed.is_some(),
     );
-    button(
-        commands,
-        skins,
-        footer,
-        key,
-        Kind::Close,
-        tr!("Close"),
-        true,
-    );
+    close_button(commands, skins, footer, key, retained);
 }
 /// The editor values for a listing, empty without one.
 pub(super) fn listing_values(listing: Option<LeaderListing>) -> [String; LISTING_FIELDS] {
@@ -436,7 +434,18 @@ pub(super) fn listing_values(listing: Option<LeaderListing>) -> [String; LISTING
         area,
     ]
 }
-fn input(commands: &mut Commands, skins: &Skins, parent: Entity, field: Field, value: String) {
+fn input(
+    commands: &mut Commands,
+    skins: &Skins,
+    parent: Entity,
+    field: Field,
+    value: String,
+    retained: &RetainedWidgets,
+) {
+    if let Some(&input) = retained.fields.get(&field) {
+        commands.entity(parent).add_child(input);
+        return;
+    }
     let mut text = EditableText::new(value);
     text.max_characters = Some(64);
     let input = commands
@@ -478,6 +487,29 @@ fn row(commands: &mut Commands, parent: Entity) -> Entity {
     commands.entity(parent).add_child(child);
     child
 }
+fn close_button(
+    commands: &mut Commands,
+    skins: &Skins,
+    parent: Entity,
+    key: Key,
+    retained: &RetainedWidgets,
+) {
+    let caption = tr!("Close");
+    if let Some((button, text)) = retained.close {
+        commands.entity(button).insert((
+            Control {
+                key,
+                kind: Kind::Close,
+            },
+            Name::new(format!("Team Finder: {caption}")),
+        ));
+        commands.entity(text).insert(Text::new(caption));
+        commands.entity(parent).add_child(button);
+    } else {
+        button(commands, skins, parent, key, Kind::Close, caption, true);
+    }
+}
+
 fn button(
     commands: &mut Commands,
     skins: &Skins,

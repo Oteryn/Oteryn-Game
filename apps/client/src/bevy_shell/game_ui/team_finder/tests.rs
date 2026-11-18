@@ -29,21 +29,23 @@ fn fixture_with_layout(selected: bool, layout: bool) -> Result<Fixture> {
     let mut app = App::new();
     if layout {
         super::super::pointer_layout::install(&mut app, UVec2::new(1200, 900));
-        app.add_message::<bevy::window::Ime>().add_plugins((
-            bevy::input::InputPlugin,
-            bevy::input_focus::InputFocusPlugin,
-            bevy::input_focus::InputDispatchPlugin,
-            bevy::input_focus::pointer_focus::PointerFocusPlugin,
-            bevy::input_focus::tab_navigation::TabNavigationPlugin,
-            bevy::mesh::MeshPlugin,
-            bevy::camera::visibility::VisibilityPlugin,
-            bevy::picking::PickingPlugin,
-            bevy::picking::InteractionPlugin,
-            bevy::ui_widgets::ButtonPlugin,
-            bevy::ui_widgets::TextInputPlugin,
-        ));
-        app.world_mut()
-            .spawn(bevy::picking::pointer::PointerId::Mouse);
+        app.add_message::<bevy::window::Ime>()
+            .add_message::<bevy::window::WindowEvent>()
+            .add_message::<bevy::window::WindowFocused>()
+            .add_plugins((
+                bevy::input::InputPlugin,
+                bevy::input_focus::InputFocusPlugin,
+                bevy::input_focus::InputDispatchPlugin,
+                bevy::input_focus::pointer_focus::PointerFocusPlugin,
+                bevy::input_focus::tab_navigation::TabNavigationPlugin,
+                bevy::mesh::MeshPlugin,
+                bevy::camera::visibility::VisibilityPlugin,
+                bevy::picking::PickingPlugin,
+                bevy::picking::input::PointerInputPlugin,
+                bevy::picking::InteractionPlugin,
+                bevy::ui_widgets::ButtonPlugin,
+                bevy::ui_widgets::TextInputPlugin,
+            ));
     } else {
         app.add_plugins((
             MinimalPlugins,
@@ -830,10 +832,7 @@ fn regression_rejected_equivalent_publish_keeps_raw_draft() -> Result {
 
 fn browsing_reply_during_preedit() -> Result<(App, Entity)> {
     use bevy::window::Ime;
-    let (mut app, mut rx, outbox) = fixture_with_layout(true, true)?;
-    click(&mut app, Kind::Browse(false))?;
-    command(&mut rx)?;
-    app.update();
+    let (mut app, _, outbox) = pending_browse()?;
     let name = app
         .world_mut()
         .query::<(Entity, &Field)>()
@@ -843,10 +842,7 @@ fn browsing_reply_during_preedit() -> Result<(App, Entity)> {
     app.world_mut()
         .resource_mut::<InputFocus>()
         .set(name, bevy::input_focus::FocusCause::Pressed);
-    reply(
-        &outbox,
-        encode_result(&page(MemberStatus::None)).map_err(|error| format!("{error:?}"))?,
-    );
+    complete_browse(&outbox)?;
     app.world_mut().write_message(Ime::Preedit {
         window: Entity::PLACEHOLDER,
         value: "り".into(),
@@ -870,6 +866,7 @@ fn regression_browse_reply_keeps_ime_commit_destination() -> Result {
 
     let (mut app, name) = browsing_reply_during_preedit()?;
     assert_idle_composition(&app, name)?;
+    assert_browse_projected(&mut app);
     app.update();
     assert_idle_composition(&app, name)?;
     app.world_mut().write_message(Ime::Commit {
@@ -985,4 +982,206 @@ fn release_close(app: &mut App, location: bevy::picking::pointer::Location) {
         PointerAction::Release(PointerButton::Primary),
     ));
     app.update();
+}
+
+fn pending_browse() -> Result<Fixture> {
+    let (mut app, mut rx, outbox) = fixture_with_layout(true, true)?;
+    click(&mut app, Kind::Browse(false))?;
+    command(&mut rx)?;
+    app.update();
+    assert!(!shown(&mut app, "First"));
+    Ok((app, rx, outbox))
+}
+
+fn complete_browse(outbox: &Outbox) -> Result {
+    reply(
+        outbox,
+        encode_result(&page(MemberStatus::None)).map_err(|error| format!("{error:?}"))?,
+    );
+    Ok(())
+}
+
+fn assert_browse_projected(app: &mut App) {
+    assert!(shown(app, "> First"), "browse reply remained unprojected");
+    assert!(
+        app.world()
+            .resource::<State>()
+            .snapshot
+            .as_ref()
+            .is_some_and(|(_, panel, _)| panel.pending.is_none())
+    );
+}
+
+fn close_button(app: &mut App) -> Result<Entity> {
+    app.world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.kind == Kind::Close).then_some(entity))
+        .ok_or_else(|| "close button".into())
+}
+
+fn primary_window(app: &mut App) -> Result<Entity> {
+    Ok(app
+        .world_mut()
+        .query_filtered::<Entity, With<bevy::window::PrimaryWindow>>()
+        .single(app.world())?)
+}
+
+#[test]
+fn regression_pending_browse_projects_during_mouse_press() -> Result {
+    let (mut app, _, outbox) = pending_browse()?;
+    // Close must remain under the pointer when the user has moved the dialog.
+    let root = app.world().resource::<State>().root.ok_or("team modal")?;
+    let mut dialogs = app.world_mut().query_filtered::<
+        (&ChildOf, &mut UiTransform),
+        With<crate::bevy_shell::window_drag::DraggableDialog>,
+    >();
+    let (_, mut transform) = dialogs
+        .iter_mut(app.world_mut())
+        .find(|(parent, _)| parent.parent() == root)
+        .ok_or("team dialog")?;
+    transform.translation = bevy::ui::Val2::px(160., 20.);
+    app.update();
+    let close = close_button(&mut app)?;
+    let location = press_close(&mut app, close)?;
+    complete_browse(&outbox)?;
+    app.update();
+    assert_browse_projected(&mut app);
+    release_close(&mut app, location);
+    assert!(app.world().resource::<State>().root.is_none());
+    Ok(())
+}
+
+fn touch(app: &mut App, phase: bevy::input::touch::TouchPhase, position: Vec2) -> Result {
+    use bevy::{input::touch::TouchInput, window::WindowEvent};
+    let event = TouchInput {
+        phase,
+        position,
+        window: primary_window(app)?,
+        force: None,
+        id: 1,
+    };
+    // Winit sends both the unified and typed messages.
+    app.world_mut()
+        .write_message(WindowEvent::TouchInput(event));
+    app.world_mut().write_message(event);
+    app.update();
+    Ok(())
+}
+
+#[test]
+fn regression_pending_browse_projects_during_touch_press() -> Result {
+    use bevy::input::touch::TouchPhase;
+    let (mut app, _, outbox) = pending_browse()?;
+    let close = close_button(&mut app)?;
+    let position = super::super::pointer_layout::center(&app, close)?;
+    touch(&mut app, TouchPhase::Started, position)?;
+    assert!(app.world().get::<bevy::ui::Pressed>(close).is_some());
+    complete_browse(&outbox)?;
+    app.update();
+    assert_browse_projected(&mut app);
+    touch(&mut app, TouchPhase::Ended, position)?;
+    assert!(app.world().resource::<State>().root.is_none());
+    Ok(())
+}
+
+#[test]
+fn regression_pending_browse_projects_after_touch_cancel() -> Result {
+    use bevy::{input::touch::TouchPhase, picking::pointer::PointerId};
+    let (mut app, _, outbox) = pending_browse()?;
+    let close = close_button(&mut app)?;
+    let position = super::super::pointer_layout::center(&app, close)?;
+    touch(&mut app, TouchPhase::Started, position)?;
+    assert!(app.world().get::<bevy::ui::Pressed>(close).is_some());
+    touch(&mut app, TouchPhase::Canceled, position)?;
+    assert!(
+        !app.world_mut()
+            .query::<&PointerId>()
+            .iter(app.world())
+            .any(|id| *id == PointerId::Touch(1))
+    );
+    assert!(app.world().get::<bevy::ui::Pressed>(close).is_some());
+    complete_browse(&outbox)?;
+    app.update();
+    assert_browse_projected(&mut app);
+    Ok(())
+}
+
+#[test]
+fn regression_pending_browse_projects_with_keyboard_edit() -> Result {
+    use bevy::input::{
+        ButtonState,
+        keyboard::{Key, KeyboardInput},
+    };
+    let (mut app, _, outbox) = pending_browse()?;
+    let name = app
+        .world_mut()
+        .query::<(Entity, &Field)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| matches!(field, Field::Name).then_some(entity))
+        .ok_or("name editor")?;
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(name, bevy::input_focus::FocusCause::Pressed);
+    let window = primary_window(&mut app)?;
+    complete_browse(&outbox)?;
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::KeyA,
+        logical_key: Key::Character("a".into()),
+        state: ButtonState::Pressed,
+        text: Some("a".into()),
+        repeat: false,
+        window,
+    });
+    app.update();
+    assert_browse_projected(&mut app);
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(name));
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(name)
+            .ok_or("name editor")?
+            .value()
+            .to_string(),
+        "a"
+    );
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::Escape,
+        logical_key: Key::Escape,
+        state: ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window,
+    });
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
+    Ok(())
+}
+
+#[test]
+fn regression_pending_browse_projects_after_window_focus_loss() -> Result {
+    use bevy::{
+        input::keyboard::KeyboardFocusLost,
+        window::{WindowEvent, WindowFocused},
+    };
+    let (mut app, _, outbox) = pending_browse()?;
+    let close = close_button(&mut app)?;
+    press_close(&mut app, close)?;
+    let window = primary_window(&mut app)?;
+    app.world_mut()
+        .get_mut::<Window>(window)
+        .ok_or("window")?
+        .focused = false;
+    let event = WindowFocused {
+        window,
+        focused: false,
+    };
+    app.world_mut()
+        .write_message(WindowEvent::WindowFocused(event.clone()));
+    app.world_mut().write_message(event);
+    app.world_mut().write_message(KeyboardFocusLost);
+    app.update();
+    complete_browse(&outbox)?;
+    app.update();
+    assert_browse_projected(&mut app);
+    Ok(())
 }
