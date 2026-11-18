@@ -213,6 +213,7 @@ async fn drink_mead(
     h: &Harness,
 ) -> TestResult {
     use crate::gameplay_transport::FreshAdmissionAuthority;
+    use oteryn_gameplay_domain::domain::condition::{ConditionType, StatusKind};
     use oteryn_gameplay_quests::quest::world_callbacks::Offering;
     use oteryn_protocol_oteryn::world_object::encode_use_item_intent;
     const VIAL: &str = "oteryn:item.tibia.i2874";
@@ -263,6 +264,19 @@ async fn drink_mead(
     *admitted = next;
     assert_eq!(disposition, UseDisposition::Committed);
     assert_eq!(h.count("game_item_fluid_states").await?, 0);
+    let actor = admitted.runtime_actor.ok_or("actor after drinking")?;
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let conditions = states
+        .get(&runtime, actor, admitted.game_session_id)
+        .ok_or("spell state after drinking")?
+        .owned_conditions();
+    let drunk = conditions
+        .get(ConditionType::Status(StatusKind::Drunk).conflict_key())
+        .ok_or("mead must apply Drunk")?;
+    // Crystal fluids.lua:1-2 fixes the duration at 60 seconds. Use the
+    // committed start time so dispatch and database latency cannot affect it.
+    assert_eq!(drunk.remaining_duration_ms(drunk.started_at()), Some(60_000));
     Ok(())
 }
 
