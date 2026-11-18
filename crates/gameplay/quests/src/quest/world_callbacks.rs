@@ -44,6 +44,7 @@ pub use character_requirements::CharacterRequirements;
 mod clear_area;
 pub use clear_area::ClearArea;
 mod clock;
+pub mod coal_basins;
 mod completed_quests;
 mod counter_initials;
 #[cfg(test)]
@@ -611,6 +612,8 @@ impl Callback {
 struct Document {
     schema: u32,
     callbacks: Vec<Callback>,
+    #[serde(default)]
+    coal_basins: Vec<coal_basins::CoalBasin>,
 }
 
 /// Shared World prerequisites for exact native source callbacks. Ordinary quest
@@ -932,6 +935,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
     if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {
         return Err("callback bounds".into());
     }
+    coal_basins::validate(&document.coal_basins)?;
     let mut keys = BTreeSet::new();
     for callback in &document.callbacks {
         let selector = &callback.selector;
