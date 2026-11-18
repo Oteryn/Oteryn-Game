@@ -426,6 +426,8 @@ fn draw(key: &BossClockKey, ordinal: u64, purpose: &str) -> Result<u64> {
 #[path = "boss_encounter/activity_assignment_tests.rs"]
 mod activity_assignment_tests;
 
+#[path = "boss_encounter/channel_admission.rs"]
+pub mod channel_admission;
 #[path = "boss_encounter/cooldown_storage.rs"]
 pub(crate) mod cooldown_storage;
 

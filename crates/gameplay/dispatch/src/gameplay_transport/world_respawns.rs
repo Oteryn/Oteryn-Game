@@ -111,7 +111,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(channel) = binding.channel_id() else {
             return Ok(true);
         };
-        let count = spawns.len() + 2;
+        let count = spawns.len() + 3;
         let start = self.background_start("boss-turn", count);
         for index in (start..count).chain(0..start) {
             if index == spawns.len() {
@@ -123,6 +123,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if index == spawns.len() + 1 {
                 checked_all &= self
                     .background_turn("boss-turn", 0, self.elemental_spawn_pass())
+                    .await?;
+                continue;
+            }
+            if index == spawns.len() + 2 {
+                checked_all &= self
+                    .background_turn("boss-turn", index + 1, self.channel_boss_timeout_pass())
                     .await?;
                 continue;
             }

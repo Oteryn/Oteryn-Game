@@ -32,6 +32,7 @@ pub struct ChannelSessionStates {
     /// Immutable Cake source geometry derived from the active bundle, never custody.
     pub(super) cake_sources: super::cake_event::SourceCache,
     pub casts: std::sync::OnceLock<super::cast::CastNode>,
+    pub(super) channel_boss_rooms: super::boss_encounter::channel_rooms::ChannelBossRooms,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
     /// P22d: settled kills of tracked creatures awaiting a domain 98 refresh. A leaf lock.

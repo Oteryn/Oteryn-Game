@@ -421,6 +421,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .step_quest_callback(&permit, actor, session, origin, snapshot)
                             .await;
                         let snapshot = self
+                            .step_channel_boss_room(&permit, actor, session, origin, snapshot)
+                            .await;
+                        let snapshot = self
                             .step_grizzly_boss(&permit, actor, session, origin, snapshot)
                             .await;
                         self.dawnport_trial_step(actor, session, snapshot).await;
