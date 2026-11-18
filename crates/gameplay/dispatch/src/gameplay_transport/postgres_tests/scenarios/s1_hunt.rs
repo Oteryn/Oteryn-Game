@@ -244,15 +244,15 @@ fn scenario() -> TestResult {
             .await?,
             1
         );
-        // Explicit numerical order: rat 5 -> daily 10 -> 5 each (below the 20 XP threshold),
-        // then personal Prey, low-level multiplier, and stamina, with one final truncation.
+        // Explicit numerical order: rat 5 -> daily 10 -> party pool/split -> each member's
+        // personal Prey, low-level multiplier, then stamina, with one final truncation.
         let leader:(i64,i16,i32) = sqlx::query_as("SELECT xp_awarded,prey_percent,stamina_minutes FROM game_party_kill_xp_members WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(leader, (14, 40, i32::from(hunted_stamina)));
+        assert_eq!(leader, (19, 40, i32::from(hunted_stamina)));
         assert_eq!(
             awards,
             [
-                (14, 40, i32::from(hunted_stamina)),
-                (10, 0, i32::from(hunted_stamina))
+                (19, 40, i32::from(hunted_stamina)),
+                (14, 0, i32::from(hunted_stamina))
             ]
         );
         assert_eq!(

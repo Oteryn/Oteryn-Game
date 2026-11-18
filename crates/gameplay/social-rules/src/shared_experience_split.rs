@@ -19,8 +19,8 @@ pub struct SharedExperienceMember<Scope = [u8; 16]> {
     pub activity: Option<SharedExperienceActivityObservation>,
 }
 
-/// The creature's worth decides the bonus threshold; damage accounting supplies the
-/// party's own pool. Summon XP has already been attributed by the consuming combat owner.
+/// Damage accounting supplies the party's own pool out of the creature's total XP.
+/// Summon XP has already been attributed by the consuming combat owner.
 #[derive(Debug, Clone, Copy)]
 pub struct SharedExperiencePool {
     pub creature_xp: i64,
@@ -116,15 +116,11 @@ pub fn shared_experience_share<Scope: Copy + Eq>(
             vocations.insert(member.vocation);
         }
     }
-    let bonus = if base_xp < 20 {
-        0
-    } else {
-        match vocations.len() {
-            0 | 1 => 20,
-            2 => 30,
-            3 => 60,
-            _ => 100,
-        }
+    let bonus = match vocations.len() {
+        0 | 1 => 20,
+        2 => 30,
+        3 => 60,
+        _ => 100,
     };
     // Keep the party bonus rational until the final equal-share rounding. A summon is
     // deducted from the boosted pool before any Character's equal share is formed.
