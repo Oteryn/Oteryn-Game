@@ -679,7 +679,7 @@ pub fn prepare_bundle_step<'a>(
     let table = table_of(cells).ok_or(MovementError::NotQualified)?;
     qualify_origin(runtime, cells, actor, session, expected, Some(direction))?;
     let (destination, starts_stairhop) = destination(
-        runtime,
+        runtime.arbaziloth_doomforge_open(),
         cells,
         table,
         expected.position(),
@@ -747,7 +747,7 @@ fn qualify_origin_control(
 }
 
 fn destination(
-    runtime: &ChannelRuntimeV1,
+    doomforge_open: bool,
     cells: &NativeEntryMovementCells,
     table: &FloorTable,
     origin: MovementLocalPosition,
@@ -756,7 +756,6 @@ fn destination(
     closed: &dyn CellBlocker,
 ) -> Result<(MovementLocalPosition, bool), MovementError> {
     let floor = i32::from(origin.floor);
-    let doomforge_open = runtime.arbaziloth_doomforge_open();
     // A closed door blocks the entered tile and every tile a floor change resolves onto
     // before any teleport on it applies (WORLD-INTERACTION-0 §6.6); `landable` guards the
     // teleport destination.
@@ -839,7 +838,7 @@ impl BundleStepProof<'_> {
             Some(self.direction),
         )?;
         let observed = destination(
-            runtime,
+            runtime.arbaziloth_doomforge_open(),
             self.cells,
             self.table,
             self.expected.position(),
