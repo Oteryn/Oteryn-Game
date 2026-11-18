@@ -375,6 +375,7 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
+    super::elemental_spheres::retain_machine_predecessor(&mut lowered.catalogue);
     restrict_runtime_scope(lowered, content_revision)
 }
 

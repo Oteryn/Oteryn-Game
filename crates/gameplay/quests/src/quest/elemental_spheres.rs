@@ -84,6 +84,24 @@ pub(super) fn machine_phases_are_disjoint(left: &Callback, right: &Callback) -> 
         })
 }
 
+pub(super) fn retain_machine_predecessor(catalogue: &mut super::QuestStateCatalogue) {
+    let mut tracks = catalogue.tracks.clone();
+    if tracks.remove(MACHINE_GEMS).is_none() {
+        return;
+    }
+    let mut transitions = catalogue.transitions.clone();
+    transitions.retain(|key, _| machine_use(key).is_none());
+    let hash = super::definition_hash(QUEST, &tracks, &transitions);
+    catalogue
+        .predecessors
+        .entry(QUEST.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: Default::default(),
+        });
+}
+
 pub fn sphere_destination(base_vocation: &str) -> Option<Position> {
     let (x, y) = match base_vocation {
         "druid" => (33331, 32076),
