@@ -24,7 +24,8 @@ class RealmTrialBindingTests(unittest.TestCase):
         self.assertEqual(set(area['creatures']), {'oteryn:creature.dragon', 'oteryn:creature.dragon_lord',
                                                 'oteryn:creature.fire_elemental'})
         self.assertEqual(trial['effects']['reset_after_ms'], 300000)
-        self.assertEqual(trial['effects']['passages_reset_after_ms'], 60000)
+        # TibiaWiki curid=61232&oldid=999253 specifies five minutes.
+        self.assertEqual(trial['effects']['passages_reset_after_ms'], 300000)
         self.assertEqual(trial['selector']['native']['appearance'], 2124)
         self.assertEqual(trial['effects']['transform'], 2773)
 

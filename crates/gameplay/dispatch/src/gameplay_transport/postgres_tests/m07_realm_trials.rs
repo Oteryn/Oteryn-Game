@@ -1,4 +1,4 @@
-//! M07 chosen Realm control: retained key, complete multi-floor census and two timers.
+//! M07 chosen Realm control: retained key, complete multi-floor census and timed restoration.
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::{Harness,debug}};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
@@ -85,14 +85,13 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
         let control=placement_key(crate::map::overlay::TilePos{x:CONTROL.x,y:CONTROL.y,floor:CONTROL.floor},1).ok_or("control key")?;
         let wall=placement_key(crate::map::overlay::TilePos{x:33075,y:32591,floor:-3},1).ok_or("wall key")?;
         let wall_due=map.facts.next_movement_decay_time().ok_or("wall reset")?;
-        assert_eq!(map.facts.expire_movement_items(wall_due-1),0);
-        assert_eq!(map.facts.expire_movement_items(wall_due),1);
-        assert_eq!(map.facts.object_revision(wall),2);
-        assert_eq!(map.facts.object_revision(control),1,"control retains its longer cooldown");
-        let control_due=map.facts.next_movement_decay_time().ok_or("control reset")?;
-        assert_eq!(control_due-wall_due,240_000_000);
-        assert_eq!(map.facts.expire_movement_items(control_due-1),0);
-        assert_eq!(map.facts.expire_movement_items(control_due),1);
+        // TibiaWiki curid=61232&oldid=999253: the wall returns after five minutes.
+        assert_eq!(callback.effects.passages_reset_after_ms, Some(300_000));
+        assert_eq!(map.facts.expire_movement_items(wall_due - 1), 0);
+        assert_eq!(map.facts.object_revision(wall), 1);
+        assert_eq!(map.facts.object_revision(control), 1);
+        assert_eq!(map.facts.expire_movement_items(wall_due), 2);
+        assert_eq!(map.facts.object_revision(wall), 2);
         assert_eq!(map.facts.object_revision(control),2);
     }
     assert_eq!(Box::pin(use_source(owner,admitted,6,CONTROL,1,2)).await?,UseDisposition::Rejected,"completed personal trial cannot reopen on shared reset");
