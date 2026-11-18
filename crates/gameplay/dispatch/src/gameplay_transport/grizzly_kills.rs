@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 mod death_windows;
-mod encounter_outcomes;
+pub(super) mod encounter_outcomes;
 mod encounters;
 mod guardians;
 pub(super) mod native_goals;

@@ -354,6 +354,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let periodic_pass = !retained_work && now.get() >= states.next_monster_ai_pass_us;
         if periodic_pass {
             super::encounter_phases::tick(&mut runtime, &states);
+            if let Some(map) = self.bundle_map()
+                && let Ok(attack) = self.states.attack.try_lock()
+                && let Ok(mut capture) = attack.kills().1.lock()
+            {
+                capture.outcomes.tick_shields(
+                    &mut runtime,
+                    map,
+                    now.get() / 1_000,
+                    self.movement_cells(),
+                );
+            }
         }
         if !periodic_pass
             && !source_due

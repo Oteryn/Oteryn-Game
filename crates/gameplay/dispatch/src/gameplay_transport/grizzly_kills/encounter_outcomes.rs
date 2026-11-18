@@ -1,8 +1,14 @@
 //! The latest admitted encounter owns its outcome until the next admission.
+mod shields;
+
 use crate::foundation::{
-    ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, GameSessionId,
+    CarrierError, ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, GameSessionId,
+    MovementLocalPosition,
 };
-use oteryn_gameplay_quests::quest::world_callbacks::{EncounterOutcome, OutcomeRequirement};
+use crate::map::boot::BundleMap;
+use oteryn_gameplay_quests::quest::world_callbacks::{
+    Encounter, EncounterMode, EncounterOutcome, OutcomeRequirement,
+};
 use std::collections::BTreeMap;
 
 const MAX_GROUPS: usize = 64;
@@ -11,12 +17,14 @@ const MAX_GROUPS: usize = 64;
 pub(in crate::gameplay_transport) struct Outcomes(BTreeMap<String, Run>);
 
 #[derive(Clone, Debug)]
-pub(super) struct Run {
+pub(in crate::gameplay_transport) struct Run {
     result: OutcomeRequirement,
     target: ExactActorRef,
     source: String,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     death: Option<CreatureDeathOccurrenceKey>,
+    room: Option<Encounter>,
+    shield: Option<shields::Fight>,
 }
 
 impl Run {
@@ -49,23 +57,91 @@ impl Outcomes {
             })
     }
 
-    pub(in crate::gameplay_transport) fn start(
-        &mut self,
+    pub(in crate::gameplay_transport) fn prepare(
+        runtime: &mut ChannelRuntimeV1,
         source: &str,
         outcome: &EncounterOutcome,
-        terminal: ExactActorRef,
+        room: &Encounter,
+        actors: &[ExactActorRef],
         party: &[(ExactActorRef, GameSessionId)],
+        map: &BundleMap,
+    ) -> Result<Run, CarrierError> {
+        let terminal = actors
+            .iter()
+            .copied()
+            .find(|actor| {
+                runtime.matches_live_creature_identity(*actor, outcome.terminal.as_bytes())
+            })
+            .ok_or(CarrierError::CreatureTargetMismatch)?;
+        let shield = if let Some(rule) = &outcome.shield_handoff {
+            let maximum_health = runtime.companion_policy(&outcome.terminal)?.maximum_health;
+            Some(shields::Fight::bind(
+                runtime,
+                terminal,
+                actors,
+                rule,
+                maximum_health,
+                map,
+            )?)
+        } else {
+            None
+        };
+        Ok(Run {
+            result: outcome.outcome.clone(),
+            target: terminal,
+            source: source.to_owned(),
+            participants: party.to_vec(),
+            death: None,
+            room: shield.is_some().then(|| room.clone()),
+            shield,
+        })
+    }
+
+    pub(in crate::gameplay_transport) fn start(&mut self, run: Run) {
+        self.0.insert(run.result.group.clone(), run);
+    }
+
+    pub(in crate::gameplay_transport) fn blocks_channel_switch(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        player: (ExactActorRef, GameSessionId),
+        position: MovementLocalPosition,
+    ) -> bool {
+        self.0.values().any(|run| {
+            run.current(runtime)
+                && run.participants.contains(&player)
+                && runtime.contains_live_creature(run.target)
+                && run.room.as_ref().is_some_and(|room| {
+                    super::super::quest_callbacks::room_contains(room, position)
+                })
+        })
+    }
+
+    pub(in crate::gameplay_transport) fn tick_shields(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        map: &BundleMap,
+        now: u64,
+        cells: &crate::content::NativeEntryMovementCells,
     ) {
-        self.0.insert(
-            outcome.outcome.group.clone(),
-            Run {
-                result: outcome.outcome.clone(),
-                target: terminal,
-                source: source.to_owned(),
-                participants: party.to_vec(),
-                death: None,
-            },
-        );
+        if runtime.owner_fence().is_err() {
+            return;
+        }
+        for run in self.0.values_mut() {
+            if !run.current(runtime) {
+                continue;
+            }
+            let Some(shield) = &mut run.shield else {
+                continue;
+            };
+            if let Some(terminal) = shield.advance(runtime, run.target, map, now, |at, runtime| {
+                super::super::encounter_phases::placement(cells, runtime, at)
+            }) {
+                run.target = terminal;
+                run.result.mode = EncounterMode::Hard;
+                run.shield = None;
+            }
+        }
     }
 
     pub(in crate::gameplay_transport) fn observe(

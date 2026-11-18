@@ -219,7 +219,7 @@ pub(super) fn bind(
     })
 }
 
-fn placement(
+pub(super) fn placement(
     cells: &crate::content::NativeEntryMovementCells,
     runtime: &ChannelRuntimeV1,
     at: MovementLocalPosition,

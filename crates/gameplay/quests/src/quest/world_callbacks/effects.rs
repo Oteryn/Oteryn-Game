@@ -1100,6 +1100,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let shared_arrival = source_party
+            || effects
+                .encounter_outcome
+                .as_ref()
+                .is_some_and(|source| source.shield_handoff.is_some());
         if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
@@ -1126,7 +1131,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
-            || (unique_to.len() != encounter.players.len() && !source_party)
+            || (unique_to.len() != encounter.players.len() && !shared_arrival)
             || unique_monsters.len() != encounter.monsters.len()
             || !unique_to.is_disjoint(&unique_monsters)
             || !pos(encounter.room_min)
