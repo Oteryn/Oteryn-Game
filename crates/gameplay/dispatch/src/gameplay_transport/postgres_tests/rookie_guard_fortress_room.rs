@@ -8,10 +8,26 @@ use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, encode_step_intent};
 
 pub(super) const NAME: &str = "rookie-guard-fortress-room";
-const ENTRY: Position = Position { x: 31954, y: 32174, floor: -10 };
-const LANDING: Position = Position { x: 31944, y: 32174, floor: -10 };
-const TIMEOUT: Position = Position { x: 31980, y: 32173, floor: -10 };
-pub(super) const EXIT_TILE: Position = Position { x: 31945, y: 32174, floor: -10 };
+const ENTRY: Position = Position {
+    x: 31954,
+    y: 32174,
+    floor: -10,
+};
+const LANDING: Position = Position {
+    x: 31944,
+    y: 32174,
+    floor: -10,
+};
+const TIMEOUT: Position = Position {
+    x: 31980,
+    y: 32173,
+    floor: -10,
+};
+pub(super) const EXIT_TILE: Position = Position {
+    x: 31945,
+    y: 32174,
+    floor: -10,
+};
 const QUEST: &str = "oteryn:quest.the_rookie_guard_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission12";
 const ENTER: &str = "oteryn:quest-callback/rookie-guard-fortress-room";
@@ -19,7 +35,9 @@ const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-glob
 
 #[test]
 fn fortress_room_rejects_a_second_player_and_retires_exact_boss_on_exit_or_timeout() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
         super::quest_world_callbacks::scenario(NAME, ENTRY, false)
@@ -60,52 +78,108 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let fixture = QuestStateCatalogue::new(
         "content-1",
-        vec![QuestTrack { key: TRACK.into(), quest: QUEST.into(), initial: 11, min: -1, max: 13 }],
+        vec![QuestTrack {
+            key: TRACK.into(),
+            quest: QUEST.into(),
+            initial: 11,
+            min: -1,
+            max: 13,
+        }],
         vec![],
-    ).map_err(debug)?;
+    )
+    .map_err(debug)?;
     let document = document();
     owner.quest_catalogue = Some(std::sync::Arc::new(world_callbacks::fixture_catalogue(
-        fixture, &document.to_string(),
+        fixture,
+        &document.to_string(),
     )?));
-    owner.states.quest_callbacks.fixture
+    owner
+        .states
+        .quest_callbacks
+        .fixture
         .set(serde_json::from_value(document["callbacks"].clone())?)
         .map_err(|_| "callback fixture already installed")?;
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
 
-    let native = owner.active_generation.and_then(|generation| generation.native_gameplay())
+    let native = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
         .ok_or("native gameplay")?;
     let player = admitted.runtime_actor.ok_or("actor")?;
     let player_session = admitted.game_session_id;
     let peer_session = GameSessionId::decode(&id(58)).map_err(debug)?;
     let (origin, peer) = {
         let mut runtime = owner.runtime.lock().await;
-        runtime.install_companion_policies(native.policies().clone()).map_err(debug)?;
+        runtime
+            .install_companion_policies(native.policies().clone())
+            .map_err(debug)?;
         let reservation = runtime.reserve_fresh_session(peer_session).map_err(debug)?;
         let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        runtime.initialize_pinned_test_position(peer, local(LANDING)).map_err(debug)?;
-        (runtime.read_actor_position(player).map_err(debug)?.position(), peer)
+        runtime
+            .initialize_pinned_test_position(peer, local(LANDING))
+            .map_err(debug)?;
+        (
+            runtime
+                .read_actor_position(player)
+                .map_err(debug)?
+                .position(),
+            peer,
+        )
     };
     let east = encode_step_intent(StepDirection::East);
     wire(owner, admitted, 1, 1, east.clone()).await?;
-    let peer_outside = local(Position { x: ENTRY.x + 1, ..ENTRY });
+    let peer_outside = local(Position {
+        x: ENTRY.x + 1,
+        ..ENTRY
+    });
     {
         let mut runtime = owner.runtime.lock().await;
-        assert_eq!(runtime.read_actor_position(player).map_err(debug)?.position(), origin);
-        assert!(runtime.current_live_creature_census().map_err(debug)?.is_empty());
+        assert_eq!(
+            runtime
+                .read_actor_position(player)
+                .map_err(debug)?
+                .position(),
+            origin
+        );
+        assert!(
+            runtime
+                .current_live_creature_census()
+                .map_err(debug)?
+                .is_empty()
+        );
         let current = runtime.read_actor_position(peer).map_err(debug)?;
         let map = owner.bundle_map().ok_or("map")?;
         let doors = crate::map::floor::BundleDoors(map.facts.doors());
         let proof = crate::map::floor::prepare_quest_callback_teleport(
-            &runtime, owner.movement_cells(), peer, peer_session, current, peer_outside, false, &doors,
-        ).map_err(debug)?;
+            &runtime,
+            owner.movement_cells(),
+            peer,
+            peer_session,
+            current,
+            peer_outside,
+            false,
+            &doors,
+        )
+        .map_err(debug)?;
         runtime.commit_source_step(proof).map_err(debug)?;
     }
     advance_clock(owner, 2)?;
     wire(owner, admitted, 2, 1, east.clone()).await?;
     {
         let runtime = owner.runtime.lock().await;
-        assert_eq!(runtime.read_actor_position(player).map_err(debug)?.position(), local(LANDING));
-        assert_eq!(runtime.current_live_creature_census().map_err(debug)?.len(), 1);
+        assert_eq!(
+            runtime
+                .read_actor_position(player)
+                .map_err(debug)?
+                .position(),
+            local(LANDING)
+        );
+        assert_eq!(
+            runtime.current_live_creature_census().map_err(debug)?.len(),
+            1
+        );
     }
     advance_clock(owner, 2)?;
     wire(owner, admitted, 3, 1, east.clone()).await?;
@@ -113,12 +187,25 @@ pub(super) async fn exercise(
         let mut runtime = owner.runtime.lock().await;
         let current = runtime.read_actor_position(player).map_err(debug)?;
         assert_eq!(current.position(), local(ENTRY));
-        assert!(runtime.current_live_creature_census().map_err(debug)?.is_empty());
+        assert!(
+            runtime
+                .current_live_creature_census()
+                .map_err(debug)?
+                .is_empty()
+        );
         let map = owner.bundle_map().ok_or("map")?;
         let doors = crate::map::floor::BundleDoors(map.facts.doors());
         let proof = crate::map::floor::prepare_quest_callback_teleport(
-            &runtime, owner.movement_cells(), player, player_session, current, origin, false, &doors,
-        ).map_err(debug)?;
+            &runtime,
+            owner.movement_cells(),
+            player,
+            player_session,
+            current,
+            origin,
+            false,
+            &doors,
+        )
+        .map_err(debug)?;
         runtime.commit_source_step(proof).map_err(debug)?;
     }
     advance_clock(owner, 2)?;
@@ -126,18 +213,37 @@ pub(super) async fn exercise(
     advance_clock(owner, 301)?;
     owner.drain_quest_encounter_deadlines().await;
     let runtime = owner.runtime.lock().await;
-    assert_eq!(runtime.read_actor_position(player).map_err(debug)?.position(), local(TIMEOUT));
-    assert_eq!(runtime.read_actor_position(peer).map_err(debug)?.position(), peer_outside);
-    assert!(runtime.current_live_creature_census().map_err(debug)?.is_empty());
+    assert_eq!(
+        runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position(),
+        local(TIMEOUT)
+    );
+    assert_eq!(
+        runtime.read_actor_position(peer).map_err(debug)?.position(),
+        peer_outside
+    );
+    assert!(
+        runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .is_empty()
+    );
     drop(runtime);
-    let state: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
-        .bind(TRACK).fetch_one(&h.pool).await?;
+    let state: i64 =
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(TRACK)
+            .fetch_one(&h.pool)
+            .await?;
     assert_eq!(state, 12);
     Ok(())
 }
 
 fn advance_clock(owner: &mut ComposedFreshAdmission<'_, '_, '_>, seconds: u64) -> TestResult {
-    owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(seconds))
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(seconds))
         .ok_or("clock underflow")?;
     Ok(())
 }
