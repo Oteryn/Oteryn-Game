@@ -317,7 +317,7 @@ pub trait FreshAdmissionAuthority {
         actor: ExactActorRef,
     ) -> impl Future<Output = Result<ChannelEntities, AdmissionRefusal>> {
         async move {
-            self.observe_named_visible_entities(actor)
+            Box::pin(self.observe_named_visible_entities(actor))
                 .await
                 .ok_or(AdmissionRefusal::Rejected)
         }

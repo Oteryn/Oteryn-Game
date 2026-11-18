@@ -206,13 +206,17 @@ impl<DB: Database> PoolConnection<DB> {
 
         async move {
             let returned = match (floating, deadline) {
-                (Some(floating), Some(deadline)) => floating.return_to_pool_until(deadline).await,
-                (Some(floating), None) => floating.return_to_pool().await.then_some(())
+                (Some(floating), Some(deadline)) => {
+                    Box::pin(floating.return_to_pool_until(deadline)).await
+                }
+                (Some(floating), None) => Box::pin(floating.return_to_pool())
+                    .await
+                    .then_some(())
                     .ok_or("unbounded_return_retired"),
                 (None, _) => Err("no_evidence"),
             };
             if returned.is_err() {
-                pool.min_connections_maintenance(None).await;
+                Box::pin(pool.min_connections_maintenance(None)).await;
             }
 
             let disposition = match (&returned, had_live) {

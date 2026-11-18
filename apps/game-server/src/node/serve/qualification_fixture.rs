@@ -64,7 +64,11 @@ pub(super) async fn prepare(
                 return "rejected";
             }
         };
-    match prepare_build(root, authority, proof, config, native, session, profile).await {
+    match Box::pin(prepare_build(
+        root, authority, proof, config, native, session, profile,
+    ))
+    .await
+    {
         Ok(()) => "qualified",
         Err(error) => {
             emit(PROCESS, &refusal_warning(&session, profile, error.as_ref()));
@@ -146,7 +150,10 @@ pub(super) async fn spawn(
     let (Some(native), Some(owners)) = (native, owners) else {
         return refuse("native_unavailable", None);
     };
-    spawn_placed(root, authority, proof, native, owners, session, key, refuse).await
+    Box::pin(spawn_placed(
+        root, authority, proof, native, owners, session, key, refuse,
+    ))
+    .await
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
@@ -212,9 +219,9 @@ async fn spawn_placed(
 ) -> String {
     let budget = SpawnBudget::new(tokio::time::Instant::now());
     let placed = spawn_with_watchdog(budget.reply_deadline, async |published| {
-        place(
+        Box::pin(place(
             root, authority, proof, native, owners, session, key, budget, published,
-        )
+        ))
         .await
     })
     .await;

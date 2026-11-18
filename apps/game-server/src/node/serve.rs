@@ -2944,24 +2944,26 @@ async fn control_loop(
                     "ops_diagnose",
                 ),
                 Some(request) if request.starts_with(b"qualify ") => (
-                    qualification_fixture::prepare(
+                    Box::pin(qualification_fixture::prepare(
                         root, authority, proof, config, native, &request,
-                    )
+                    ))
                     .await
                     .to_owned(),
                     "character_bootstrap",
                 ),
                 #[cfg(any(test, feature = "qualification-spawn"))]
                 Some(request) if request.starts_with(b"inspect-damage ") => (
-                    qualification_fixture::inspect_damage(config, spawn, &request)
-                        .await
-                        .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
+                    Box::pin(qualification_fixture::inspect_damage(
+                        config, spawn, &request,
+                    ))
+                    .await
+                    .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
                     "qualification_damage",
                 ),
                 Some(request) if request.starts_with(b"spawn ") => (
-                    qualification_fixture::spawn(
+                    Box::pin(qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,
-                    )
+                    ))
                     .await,
                     "character_bootstrap",
                 ),

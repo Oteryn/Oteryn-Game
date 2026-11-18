@@ -13,7 +13,9 @@ pub(super) async fn observe<A: FreshAdmissionAuthority>(
     actor: ExactActorRef,
     selected: SelectedCapabilities,
 ) -> Option<ChannelEntities> {
-    observe_result(authority, actor, selected).await.ok()
+    Box::pin(observe_result(authority, actor, selected))
+        .await
+        .ok()
 }
 
 pub(super) async fn observe_result<A: FreshAdmissionAuthority>(
@@ -41,8 +43,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         observer: ExactActorRef,
     ) -> Result<ChannelEntities, AdmissionRefusal> {
-        let (mut channel, sources) = self
-            .named_entity_sources(observer)
+        let (mut channel, sources) = Box::pin(self.named_entity_sources(observer))
             .await
             .ok_or(AdmissionRefusal::Rejected)?;
         // Durable reads run after dropping the runtime guard. Exhausting this shared budget is
@@ -55,7 +56,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Source::Player(session) => {
                     let name = match self.states.chat.speaker_name(session) {
                         Some(name) => name,
-                        None => self.chat_speaker_name_with_budget(session, &retry).await?.0,
+                        None => {
+                            Box::pin(self.chat_speaker_name_with_budget(session, &retry))
+                                .await?
+                                .0
+                        }
                     };
                     EntityDisplayName::new(&name).map_err(|_| AdmissionRefusal::Rejected)?
                 }

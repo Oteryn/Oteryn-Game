@@ -719,10 +719,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             // #2199: a familiar Login that did not complete restored neither the stored familiar
             // nor its cooldowns, so the entry fails closed like the other post-position owners.
-            let initialized = self
-                .initialize_familiar_login(actor, game_session_id, request, native, &access, config)
-                .await
-                .is_ok();
+            let initialized = Box::pin(self.initialize_familiar_login(
+                actor,
+                game_session_id,
+                request,
+                native,
+                &access,
+                config,
+            ))
+            .await
+            .is_ok();
             let outcome = familiar_login_first_entry(outcome, initialized);
             if outcome == FirstEntryOutcome::RefusedByChannel {
                 return (outcome, None, None);

@@ -112,9 +112,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let retry = super::AdmissionRetryBudget::for_command(self.root);
         loop {
             let mut busy = false;
-            let reply = self
-                .party_wire_attempt(admitted, command_id, command_type, payload, view, &mut busy)
-                .await;
+            let reply = Box::pin(self.party_wire_attempt(
+                admitted,
+                command_id,
+                command_type,
+                payload,
+                view,
+                &mut busy,
+            ))
+            .await;
             // The attempt owns all runtime/spell guards. They are dropped before
             // waiting; no SQL ran when holder checkout returned RootUnavailable.
             if !busy {

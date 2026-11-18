@@ -575,7 +575,7 @@ where
     A: FreshAdmissionAuthority,
 {
     let mut step = "sounds";
-    let result = visibility_inner(stream, authority, session, &mut step).await;
+    let result = Box::pin(visibility_inner(stream, authority, session, &mut step)).await;
     if result.is_err() {
         operator_event(&format!("event=visibility_refresh_refused step={step}"));
     }
@@ -666,29 +666,27 @@ where
         return Ok(());
     };
     *step = "entity_names";
-    let projection = match crate::gameplay_transport::entity_names::observe_result(
+    let projection = match Box::pin(crate::gameplay_transport::entity_names::observe_result(
         authority,
         session.actor,
         session.admitted.continuity.selected_capabilities,
-    )
+    ))
     .await
     {
         Ok(channel) => {
             *step = "appearances";
-            session
-                .appearances
-                .refresh_result(
-                    stream,
-                    authority,
-                    session.actor,
-                    &mut session.admitted,
-                    view,
-                    &channel,
-                    session.item_view.as_mut(),
-                    session.sequence,
-                    session.revision,
-                )
-                .await
+            Box::pin(session.appearances.refresh_result(
+                stream,
+                authority,
+                session.actor,
+                &mut session.admitted,
+                view,
+                &channel,
+                session.item_view.as_mut(),
+                session.sequence,
+                session.revision,
+            ))
+            .await
         }
         Err(AdmissionRefusal::Unavailable) => Err(ObservationError::HolderBusy),
         Err(_) => return Err(ServeEnd::Disconnected),

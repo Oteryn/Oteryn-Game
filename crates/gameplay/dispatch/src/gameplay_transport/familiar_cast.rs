@@ -460,11 +460,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
                 .await
                 .ok_or(())?;
-        let stored = self
-            .root
-            .read_character_familiar_state(self.character, login_fence.character_id)
-            .await
-            .map_err(|_| ())?;
+        let stored = Box::pin(
+            self.root
+                .read_character_familiar_state(self.character, login_fence.character_id),
+        )
+        .await
+        .map_err(|_| ())?;
         let nothing_to_restore =
             stored.state().familiar_definition.is_none()
                 && stored.state().saved_expiry_unix == 0
