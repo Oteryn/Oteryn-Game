@@ -2,8 +2,10 @@
 use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult,
     annihilator_route::{step, use_target},
+    fixture::debug,
     l6_shared_gate_native::relocate,
     quest_demonrage::target,
+    quest_world_callbacks::local,
 };
 use crate::map::{boot::BundleMap, overlay::TilePos, view::{MapFacts,placement_key}};
 use oteryn_gameplay_quests::quest::world_callbacks::{self,Callback,Position};
@@ -66,7 +68,7 @@ fn source_bindings() -> TestResult<Vec<Callback>> {
 }
 
 #[test]
-fn banshee_hidden_switches_have_independent_windows_and_step_close_cannot_close_a_reopening() -> TestResult {
+fn banshee_first_seal_honors_independent_windows_and_the_trapdoor_floor_route() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -126,5 +128,19 @@ pub(super) async fn exercise(
     map.facts.expire_movement_items(320_000_000);
     assert!(!map.facts.base_hidden(first));
     assert_eq!(map.facts.next_movement_decay_time(),None);
+
+    // Crystal action-1-first_seal_lever.lua:9-14 creates real ground. Item
+    // 369 carries floorchange=down in Crystal data/items/items.xml:744-747.
+    let upper = map.overlay.base().tile(TRAPDOOR.x, TRAPDOOR.y, TRAPDOOR.floor)
+        .ok_or("native Banshee trapdoor tile")?;
+    assert!(upper.ground().is_none(), "the closed tile holds only its wall");
+    owner.states.test_owner_time.store(330_000_001,Ordering::Relaxed);
+    relocate(owner, operator_actor, operator.game_session_id,
+        (TRAPDOOR_LEVER.x, TRAPDOOR_LEVER.y, 11)).await?;
+    assert_eq!(use_target(owner,operator,&target(map,TRAPDOOR_LEVER)?).await?,UseDisposition::Committed);
+    step(owner,operator,StepDirection::North).await?;
+    let position = owner.runtime.lock().await
+        .read_actor_position(operator_actor).map_err(debug)?.position();
+    assert_eq!(position, local(at(32266,31860,-12)));
     Ok(())
 }

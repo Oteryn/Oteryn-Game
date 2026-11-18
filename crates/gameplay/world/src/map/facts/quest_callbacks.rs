@@ -2119,6 +2119,7 @@ impl BundleFacts {
         let mut ordinal = 0_u8;
         let mut changed = false;
         let mut blocked = false;
+        let mut projected_ground = false;
         for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
             if depth != 0 {
                 continue;
@@ -2130,6 +2131,15 @@ impl BundleFacts {
             if let Some(passable) = states.passable.get(&key) {
                 changed = true;
                 blocked |= !passable;
+                // A callback can replace the only object on a groundless tile
+                // with actual ground. Crystal 201189f8 action-1-first_seal_lever.lua:9-14
+                // replaces Banshee wall 2129 with trapdoor ground 369.
+                projected_ground |= *passable
+                    && !states.hidden.contains(&key)
+                    && states
+                        .changed
+                        .get(&key)
+                        .is_some_and(|(_, facts)| facts.terrain_kind == Some(TerrainKind::Ground));
                 continue;
             }
             if states.hidden.contains(&key) {
@@ -2154,11 +2164,13 @@ impl BundleFacts {
                 .or_else(|| self.unique_index(id));
             blocked |= palette.is_none_or(|p| self.blocks(p));
         }
-        let ground_walkable = tile
-            .ground()
-            .and_then(|(o, _)| placement_key(pos, o))
-            .and_then(|k| states.passable.get(&k).copied())
-            .unwrap_or_else(|| tile.walkable());
+        let ground_walkable = if let Some((ordinal, _)) = tile.ground() {
+            placement_key(pos, ordinal)
+                .and_then(|key| states.passable.get(&key).copied())
+                .unwrap_or_else(|| tile.walkable())
+        } else {
+            projected_ground || tile.walkable()
+        };
         !ground_walkable || if changed { blocked } else { baseline }
     }
 }
