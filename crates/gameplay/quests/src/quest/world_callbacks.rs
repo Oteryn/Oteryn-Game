@@ -786,6 +786,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.extend(super::rotten_blood::flames::callbacks());
     native_callbacks.extend(super::source_world_objects::lions_amphora());
     native_callbacks.extend(super::source_world_objects::lions_flowers());
+    native_callbacks.push(super::wrath_keeper::poison_callback()?);
     if callbacks.len() > MAX_RUNTIME_CALLBACKS.saturating_sub(native_callbacks.len()) {
         return Err("callback bounds including native source callbacks".into());
     }

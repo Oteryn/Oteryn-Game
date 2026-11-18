@@ -129,3 +129,143 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Ok(outcome(UseDisposition::NotPossible))
     }
 }
+
+use super::actor_spell::ChannelSpellStates;
+use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+use crate::{
+    content::{CollisionClass, LogicalCell},
+    map::{boot::BundleMap, overlay::TilePos},
+};
+
+#[derive(Default)]
+pub(super) struct PoisonRound {
+    uses: u8,
+    active: Option<(ExactActorRef, u64)>,
+}
+
+pub(super) struct KeeperSpawn {
+    health: i64,
+    position: MovementLocalPosition,
+    tile: TilePos,
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Runs while holding the Channel runtime and spell-state locks.
+    pub(super) fn prepare_wrath_keeper_poison(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+        map: &BundleMap,
+        actor: ExactActorRef,
+        tool: [u8; 16],
+        session: crate::foundation::GameSessionId,
+    ) -> Result<KeeperSpawn, UseDisposition> {
+        if !self.states.player_trades.physical(session, Some(tool)) {
+            return Err(UseDisposition::Rejected);
+        }
+        let callbacks = &self.states.quest_callbacks;
+        let pending = callbacks
+            .records
+            .lock()
+            .map_err(|_| UseDisposition::Rejected)?;
+        if pending
+            .iter()
+            .any(|(other, record)| *other != session && record.callback == wrath_keeper::POISON_USE)
+        {
+            return Err(UseDisposition::Occupied);
+        }
+        drop(pending);
+        let mut round = callbacks
+            .wrath_keeper_poison
+            .lock()
+            .map_err(|_| UseDisposition::Rejected)?;
+        let now = self.owner_now().get();
+        if let Some((keeper, deadline)) = round.active {
+            if deadline > now
+                && runtime.read_actor_position(keeper).is_ok()
+                && !states.is_dead(keeper)
+            {
+                return Err(UseDisposition::Committed);
+            }
+            *round = PoisonRound::default();
+        }
+        if round.uses < 5 {
+            let position = runtime
+                .read_actor_position(actor)
+                .map_err(|_| UseDisposition::Rejected)?
+                .position();
+            let position =
+                super::quest_callbacks::native(position).ok_or(UseDisposition::Rejected)?;
+            let _ = map
+                .facts
+                .emit_movement_speech(crate::map::facts::MovementSpeech {
+                    speaker: actor,
+                    position,
+                    talk_type: 36,
+                    text: "The plant twists violently, as though it could cry out.".into(),
+                    captured_name: None,
+                });
+            round.uses += 1;
+            return Err(UseDisposition::Committed);
+        }
+        let source = wrath_keeper::SPAWN;
+        let tile = TilePos {
+            x: source.x,
+            y: source.y,
+            floor: source.floor,
+        };
+        let position = super::quest_callbacks::local(source);
+        let cells = &self.movement_cells;
+        if cells.index().lookup(
+            cells.scope(),
+            LogicalCell {
+                x: position.x,
+                y: position.y,
+                z: i32::from(position.floor),
+            },
+        ) != Ok(CollisionClass::Walkable)
+            || map
+                .facts
+                .quest_callback_blocked(map.overlay.base(), tile, false)
+            || runtime.positioned_melee_census().map_or(true, |actors| {
+                actors.iter().any(|(_, at, _)| at.position() == position)
+            })
+        {
+            return Err(UseDisposition::Occupied);
+        }
+        let policy = runtime
+            .companion_policy(wrath_keeper::CREATURE)
+            .map_err(|_| UseDisposition::Rejected)?;
+        Ok(KeeperSpawn {
+            health: policy.maximum_health,
+            position,
+            tile,
+        })
+    }
+
+    pub(super) fn publish_wrath_keeper_spawn(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        map: &BundleMap,
+        target: TilePos,
+        spawn: KeeperSpawn,
+        project: impl FnOnce() -> bool,
+    ) -> bool {
+        let Ok(mut round) = self.states.quest_callbacks.wrath_keeper_poison.lock() else {
+            return false;
+        };
+        let Some(deadline) = self.owner_now().get().checked_add(60_000_000) else {
+            return false;
+        };
+        let Ok(actors) = runtime.commit_quest_creature_spawn_with_projection(
+            &[(wrath_keeper::CREATURE, spawn.health, spawn.position)],
+            project,
+        ) else {
+            return false;
+        };
+        round.active = Some((actors[0], deadline));
+        let _ = map.facts.emit_movement_effect(target, 15);
+        let _ = map.facts.emit_movement_effect(spawn.tile, 11);
+        true
+    }
+}

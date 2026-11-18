@@ -57,11 +57,11 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::OnceLock;
 
 #[derive(Clone)]
-struct Pending {
+pub(super) struct Pending {
     actor: ExactActorRef,
     session: GameSessionId,
     expected: MovementPositionSnapshot,
-    callback: String,
+    pub(super) callback: String,
     key: u64,
     revision: u64,
     cause: QuestCause,
@@ -98,9 +98,10 @@ struct ObservedWorldCallback {
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
+    pub(super) wrath_keeper_poison: std::sync::Mutex<super::wrath_keeper::PoisonRound>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
-    records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
+    pub(super) records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,
     soul_rewards:
@@ -181,14 +182,14 @@ fn tile(p: Position) -> TilePos {
         floor: p.floor,
     }
 }
-fn local(p: Position) -> MovementLocalPosition {
+pub(super) fn local(p: Position) -> MovementLocalPosition {
     MovementLocalPosition {
         x: i32::from(p.x),
         y: i32::from(p.y),
         floor: -i16::from(p.floor),
     }
 }
-fn native(p: MovementLocalPosition) -> Option<TilePos> {
+pub(super) fn native(p: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: p.x.try_into().ok()?,
         y: p.y.try_into().ok()?,

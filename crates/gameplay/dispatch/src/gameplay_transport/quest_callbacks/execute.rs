@@ -1036,6 +1036,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return ready;
             }
         }
+        let keeper_spawn = if callback.key
+            == oteryn_gameplay_quests::quest::wrath_keeper::POISON_USE
+        {
+            let Some((tool, _)) = selected_tool else {
+                return UseDisposition::Rejected;
+            };
+            match self.prepare_wrath_keeper_poison(runtime, states, map, actor, *tool, session) {
+                Ok(spawn) => Some(spawn),
+                Err(disposition) => return disposition,
+            }
+        } else {
+            None
+        };
         if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -1488,7 +1501,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection.as_ref(),
                 )
             };
-            if let Some(proof) = scene_moves {
+            if let Some(spawn) = keeper_spawn {
+                if !self.publish_wrath_keeper_spawn(runtime, map, pos, spawn, apply_scene) {
+                    return UseDisposition::Rejected;
+                }
+            } else if let Some(proof) = scene_moves {
                 let committed = match runtime.commit_source_scene_relocations(proof, apply_scene) {
                     Ok(committed) => committed,
                     Err(error) => {

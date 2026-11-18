@@ -31,6 +31,31 @@ pub(crate) fn tail_callback() -> Result<RewardCallback, String> {
     .map_err(|error| error.to_string())
 }
 
+pub const POISON_USE: &str = "oteryn:quest-callback/wrath-keeper-poison";
+pub const SPAWN: super::world_callbacks::Position = super::world_callbacks::Position {
+    x: 33171,
+    y: 31058,
+    floor: -11,
+};
+
+pub(crate) fn poison_callback() -> Result<super::world_callbacks::Callback, String> {
+    let document = serde_json::json!({"schema": 1, "callbacks": [{
+        "key": POISON_USE, "quest": QUEST, "trigger": "use",
+        "selector": {"unique": null, "action": 8026, "position": null, "appearance": null},
+        "lever": null, "reversible": false, "requires_world_admission": true,
+        "passages": [], "teleport": null,
+        "storage": [{"track": MISSION, "minimum": 0, "maximum": i32::MAX, "set": 0, "preserve": true}],
+        "offerings": [],
+        "item_on_target": {"item": "oteryn:item.tibia.i11364", "count": 1, "selected_instance": true,
+            "replacement": null, "target_replacement": null},
+        "return_on_failure": false, "failure_message": null,
+        "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission03_the_keeper.lua:5-22"]
+    }]});
+    super::world_callbacks::parse(&document.to_string())?
+        .pop()
+        .ok_or_else(|| "missing Keeper poison callback".into())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
