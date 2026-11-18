@@ -2,11 +2,12 @@
 
 The default `run.sh` first preserves the native entry room's existing SEAM stages
 in a disposable baseline pass, then creates a fresh topology with real World
-regions `(126,125)`, `(126,126)` and `(127,127)`, on every authored floor, and
+regions `(126,125)`, `(126,126)`, `(127,127)` and `(127,128)` on every authored floor, and
 `content/spells.manifest.json` content. `compile-regions` uses the production
 compiler and its equivalence proof; the generated qualification digest is passed
 to the production loader. The committed full-world pin is unchanged. The third
-region retains the default start for ordinary home respawns. The full-world smoke
+region retains the default start for ordinary home respawns. The fourth retains
+Port Hope and the jungle trail for the Grizzly Adams row. The full-world smoke
 measured 176 seconds in the production loader before selecting this subset.
 It uses the shipped `serve` command's `[world_bundle]` composition and sets the
 Channel's existing first-entry start to Thais temple `(32369, 32238, -7)`. The pin

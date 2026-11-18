@@ -1,9 +1,8 @@
 //! W15c Killing in the Name Of (Grizzly Adams), derived from the NPC conversation owner
 //! (`gameplay_transport/npc_command/grizzly.rs`) and the quest rules (`quest/grizzly_adams/rules.rs`).
 //!
-//! 1. Take Captain Bluebear’s boat to Port Hope, then walk to Grizzly Adams. Say `hi` and
-//!    `join`; assert the server's
-//!    reply lines (the durable join) and `points`.
+//! 1. Take Captain Bluebear’s boat to Port Hope, then walk to Grizzly Adams. Say `hi`,
+//!    `join`, and `points` and assert the server replies.
 //! 2. Ask for the lowest-level task by name; assert the exact reply: a start offer (confirmed with
 //!    `yes`, then `status` must list it), or the exact level/premium refusal.
 //! 3. Log out, obtain a fresh admission, walk back and say `hi`; the durable join must answer
@@ -130,6 +129,10 @@ fn placement<'a>(
         .ok_or_else(|| format!("step=reach observed=missing-bundle-npc:{key}").into())
 }
 
+fn to_trail(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> {
+    route(world, from, |at| at == TRAIL)
+}
+
 fn near(at: TilePos, npc: &oteryn_world_bundle::npc::Npc) -> bool {
     npc.placements
         .iter()
@@ -205,6 +208,7 @@ async fn sail(
         (provisioning::item_reference(&index, 3043)?, 10_000),
     ];
     let deadline = tokio::time::Instant::now() + Duration::from_secs(240);
+    verdict::Harness::global().bounded_wait(deadline, "boat-fare");
     while carried_gold(client, &coins)? < FARE {
         if tokio::time::Instant::now() >= deadline {
             return Err("step=boat observed=fare-loot-budget-expired".into());
@@ -260,8 +264,7 @@ async fn reach(
         return actor_at(client, npc);
     }
 
-    let to_trail = |from| route(world, from, |at| at == TRAIL);
-    let path = if let Some(path) = to_trail(from) {
+    let path = if let Some(path) = to_trail(world, from) {
         path
     } else {
         sail(
@@ -271,7 +274,8 @@ async fn reach(
             &metadata.spawns,
         )
         .await?;
-        to_trail(PORT_HOPE).ok_or("step=reach observed=no-walk-route-from-port-hope-to-trail")?
+        to_trail(world, PORT_HOPE)
+            .ok_or("step=reach observed=no-walk-route-from-port-hope-to-trail")?
     };
     walk_leg(client, world, "jungle-trail", &path).await?;
     let path = route(world, TRAIL, |at| near(at, npc))
@@ -375,8 +379,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         }
     };
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| at == TRAIL)
-        .ok_or("step=replay observed=no-walk-route-back-to-trail")?;
+    let path = to_trail(world, from).ok_or("step=replay observed=no-walk-route-back-to-trail")?;
     walk_leg(&mut client, world, "return-to-trail", &path).await?;
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xe5).await?;
@@ -417,6 +420,94 @@ mod tests {
             TaskReply::Refusal
         );
         assert_eq!(classify("Welcome"), TaskReply::Other);
+    }
+
+    #[test]
+    fn port_hope_walking_legs_and_replay_are_reachable() -> TestResult {
+        use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        // Match the node boot runner's production region compilation.
+        let project =
+            source::project_regions(&root, &[(126, 125), (126, 126), (127, 127), (127, 128)])?;
+        let (registry, palette) = source::registry(&root, &project)?;
+        let identity = serde_json::from_slice(&std::fs::read(
+            root.join("content/world/pins/oteryn.identity.json"),
+        )?)?;
+        let compiled = compile::compile(
+            &compile::Input {
+                regions: &project.regions,
+                palette: &palette,
+                identity,
+                world: source::world_extent(&root)?,
+                build_class: BuildClass::NonProduction,
+                draft_areas: oteryn_world_bundle_compiler::project::draft_areas(&project.index)?,
+                families: &project.families,
+            },
+            &registry,
+        )?;
+        let metadata = oteryn_world_bundle::bundle::visit(&compiled.bytes, |_, _| Ok(()))?;
+        let mut pin: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(root.join("content/world/pins/oteryn.json"))?)?;
+        pin["digest"] = compiled
+            .digest
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+            .into();
+        let world = boot_world(
+            compiled.bytes,
+            &pin,
+            WorldId::decode(&v7(1, 2))?,
+            ChannelId::decode(&v7(1, 3))?,
+        )?;
+        let grizzly = placement(&metadata.npcs, NPC)?;
+        let captain = placement(&metadata.npcs, CAPTAIN)?;
+        let check_leg = |name, from: TilePos, path: Vec<StepDirection>| -> TestResult<TilePos> {
+            assert!(!path.is_empty(), "{name} must walk");
+            let mut at = from;
+            for &direction in &path {
+                at = destination(&world, at, direction).ok_or("leg has an invalid landing")?;
+                assert!(at.x.abs_diff(from.x) <= 160 && at.y.abs_diff(from.y) <= 160);
+            }
+            eprintln!(
+                "{name}: {from:?} -> {at:?}, {} steps, span {}x{}",
+                path.len(),
+                at.x.abs_diff(from.x),
+                at.y.abs_diff(from.y)
+            );
+            Ok(at)
+        };
+        check_leg(
+            "Thais to Captain Bluebear",
+            TOWN,
+            route(&world, TOWN, |at| near(at, captain)).ok_or("captain unreachable")?,
+        )?;
+        assert!(world.enterable(PORT_HOPE));
+        let trail = check_leg(
+            "Port Hope to jungle trail",
+            PORT_HOPE,
+            to_trail(&world, PORT_HOPE).ok_or("trail unreachable")?,
+        )?;
+        assert_eq!(trail, TRAIL);
+        assert!(route(&world, PORT_HOPE, |at| near(at, grizzly)).is_none());
+        let approach =
+            route(&world, trail, |at| near(at, grizzly)).ok_or("Grizzly Adams unreachable")?;
+        let reached = check_leg(
+            "Jungle trail to Grizzly Adams, including replay",
+            trail,
+            approach,
+        )?;
+        assert!(near(reached, grizzly));
+        assert_eq!(
+            check_leg(
+                "Grizzly Adams to replay logout tile",
+                reached,
+                to_trail(&world, reached).ok_or("logout trail unreachable")?
+            )?,
+            TRAIL
+        );
+        Ok(())
     }
 
     #[test]
