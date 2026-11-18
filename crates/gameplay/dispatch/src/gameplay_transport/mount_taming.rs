@@ -123,14 +123,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let callbacks = self.callback_content();
-        let Some(callback) = callbacks.iter().find(|callback| {
-            quest_objects::accepts(callback)
-                && super::quest_callbacks::matches(map, callback, resolved.placement_key)
-        }) else {
-            return Ok(None);
-        };
-        let Some(required) = &callback.item_on_target else {
-            return Err(());
+        let nexus = super::quest_callbacks::inquisition::is_nexus(&resolved);
+        let required = callbacks.iter().find_map(|callback| {
+            (quest_objects::accepts(callback)
+                && super::quest_callbacks::matches(map, callback, resolved.placement_key))
+                .then_some(callback.item_on_target.as_ref())
+                .flatten()
+        });
+        let item = match (nexus, required) {
+            (true, _) => super::quest_callbacks::inquisition::HOLY_WATER,
+            (_, Some(required)) => required.item.as_str(),
+            _ => return Ok(None),
         };
         let Some(fence) = command.item_fence else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
@@ -146,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| {
-                entry.item.definition.production_key == required.item
+                entry.item.definition.production_key == item
                     && quest_objects::matches_source(
                         &intent.target,
                         source,
@@ -166,6 +169,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(selected) = selected else {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));
         };
+        if nexus {
+            return Ok(self
+                .damage_shadow_nexus(actor, command, &map, target.expected_revision, &resolved)
+                .await
+                .map(outcome));
+        }
         let intent =
             oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
         Ok(self
@@ -175,7 +184,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 map,
                 target,
                 required
-                    .selected_instance
+                    .is_some_and(|required| required.selected_instance)
                     .then_some((selected.item.item_instance_id, intent)),
             )
             .await)

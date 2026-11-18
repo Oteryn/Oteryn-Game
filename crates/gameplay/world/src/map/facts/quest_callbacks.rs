@@ -74,6 +74,11 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// Apply consecutive revision-fenced decays to a single placement.
+    TimedTransformSequence {
+        first: (u64, EntryFacts),
+        second: (u64, EntryFacts),
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -362,6 +367,18 @@ impl CallbackStates {
                     if let Some(after) = after {
                         self.changed.insert(*key, (revision + 1, *after));
                     }
+                }
+            }
+            QuestCallbackProjection::TimedTransformSequence { first, second } => {
+                let current = self.changed.get(&owner).map_or(0, |(r, _)| *r);
+                if first.0 >= second.0 || current.checked_add(3).is_none() {
+                    return false;
+                }
+                for ((due, restore), revision) in [(*first, current + 1), (*second, current + 2)] {
+                    self.movement_decays.insert(
+                        (due, owner),
+                        MovementDecay { revision, restore, overlay: None },
+                    );
                 }
             }
             QuestCallbackProjection::TimedTransform { due, restore } => {
@@ -1693,7 +1710,8 @@ impl BundleFacts {
                         }
                     })
                 }
-                QuestCallbackProjection::TimedTransform { .. } => false,
+                QuestCallbackProjection::TimedTransform { .. }
+                | QuestCallbackProjection::TimedTransformSequence { .. } => false,
             })
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8

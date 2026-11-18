@@ -17,6 +17,7 @@ mod encounter;
 mod execute;
 mod goblin_elevator;
 mod ground_stack;
+pub(super) mod inquisition;
 mod mead;
 pub(super) mod monsters;
 mod party_transfer;
