@@ -109,18 +109,28 @@ pub(super) fn catalogue(
 ) -> TestResult<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>> {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
     let digest: String = digest.iter().map(|b| format!("{b:02x}")).collect();
-    let claim_storage = if shared_marker {
-        json!([{"track":CLAIMED,"minimum":0,"maximum":0,"set":1}])
-    } else {
-        json!([])
+    let claim_track = |uid| {
+        if shared_marker {
+            CLAIMED.to_owned()
+        } else {
+            format!("{CLAIMED}/{uid}")
+        }
     };
+    let mut tracks = vec![json!({"key": ACCESS, "initial": 0, "minimum": 0, "maximum": 1})];
+    if shared_marker {
+        tracks.push(json!({"key": CLAIMED, "initial": 0, "minimum": 0, "maximum": 1}));
+    } else {
+        tracks.extend(selectors().map(
+            |(_, uid)| json!({"key": claim_track(uid), "initial": 0, "minimum": 0, "maximum": 1}),
+        ));
+    }
     let mut stages: Vec<_> = selectors().zip(REWARDS).map(|((_, uid), reward)| json!({
         "key":format!("claim-{uid}"),"completes":false,"trigger":{
             "kind":"npc_dialogue","callback":{
                 "key":callback_key(uid),"quest":QUEST,"npc":"","keywords":[],"topic":0,"next_topic":0,
                 "world_claim":{"key":CLAIM,"revision":"nrwicked-r1","authority_sha256":digest},
                 "requires":[{"track":ACCESS,"minimum":1,"maximum":1}],
-                "storage":claim_storage,
+                "storage":[{"track":claim_track(uid),"minimum":0,"maximum":0,"set":1}],
                 "give":{"item":key(reward),"count":1,"contents":[]},
                 "take":[],"present":[],"outfit":null,"achievement":null,"reply":["You have found a reward."],"sources":["Crystal Forgemaster reward fixture"]
             }
@@ -140,8 +150,7 @@ pub(super) fn catalogue(
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
         "schema":1,"quests":[{
             "quest":QUEST,"recipe_sha256":"1".repeat(64),"sources":["Crystal Forgemaster reward fixture"],
-            "tracks":[{"key":ACCESS,"initial":0,"minimum":0,"maximum":1},
-                      {"key":CLAIMED,"initial":0,"minimum":0,"maximum":1}],
+            "tracks":tracks,
             "stages":stages
         }]
     }))?)?;
