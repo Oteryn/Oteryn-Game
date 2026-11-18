@@ -341,6 +341,8 @@ async fn scenario(
         }
         let key = if matches!(case, Case::EngencHits) {
             "oteryn:creature.party_skeleton"
+        } else if matches!(case, Case::CakeWorldBonus) {
+            "oteryn:creature.cave_rat"
         } else if matches!(task_board_case, Case::TaskBoardOrdered) {
             "oteryn:creature.rat"
         } else {
@@ -1621,7 +1623,9 @@ async fn scenario(
             if matches!(case, Case::Modifiers) {
                 (6, 4)
             } else if matches!(case, Case::CakeWorldBonus) {
-                (18, 8)
+                // The Cave Rat's 10 base XP gives each member a share of 7.
+                // Cake rounds the Premium share to 10 before level and stamina.
+                (30, 14)
             } else {
                 (8, 8)
             }

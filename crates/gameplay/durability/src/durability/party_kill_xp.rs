@@ -379,8 +379,17 @@ pub async fn commit_in_transaction<const N: usize>(
             modifiers.stamina_minutes = modifiers.stamina_minutes.min(i32::from(live));
         }
         let raw = member.request.amount.get();
+        // Crystal world_bonus.lua:5-9 rounds the bonus on the incoming share.
+        // Player::addExperience invokes this callback before the hunting modifiers.
+        let cake_applied = cake_bonus && member.premium;
+        let share = if cake_applied {
+            raw.checked_add(raw / 2)
+                .ok_or(CharacterProgressionError::InvalidInput)?
+        } else {
+            raw
+        };
         let amount = oteryn_gameplay_characters::hunting_experience::hunting_experience(
-            raw,
+            share,
             modifiers.prey_percent,
             modifiers.xp_boost_percent,
             modifiers.stamina_minutes,
@@ -388,15 +397,6 @@ pub async fn commit_in_transaction<const N: usize>(
             modifiers.level,
         )
         .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        // Crystal world_bonus.lua:5-9 adds half of the otherwise final gain.
-        let cake_applied = cake_bonus && member.premium;
-        let amount = if cake_applied {
-            amount
-                .checked_add(amount / 2)
-                .ok_or(CharacterProgressionError::InvalidInput)?
-        } else {
-            amount
-        };
         let mut request = member.request;
         request.amount = oteryn_simulation_determinism::ExactI64::new(amount);
         let xp = if amount > 0 {
