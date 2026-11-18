@@ -191,6 +191,25 @@ pub(super) async fn exercise(
     // Both kinds of personal credit are present, but Golden expired in this World.
     step(admitted, StepDirection::West, AT).await?;
 
+    let golden_track =
+        "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/golden_servant_counter";
+    // A saturated personal counter cannot commit another kill receipt.
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        harness,
+        owner,
+        admitted,
+        &[(golden_track.to_owned(), i64::from(i32::MAX))],
+        198,
+    )
+    .await?;
+    let golden_receipts = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_character_quest_receipts
+             WHERE transition_key='oteryn:quest-transition/forgotten-knowledge/replica-credit/golden'",
+        ).fetch_one(&harness.pool).await
+    };
+    let before = golden_receipts().await?;
+
     sqlx::query(
         "UPDATE game_forgotten_knowledge_replica_windows SET expires_at = statement_timestamp() + interval '10 minutes', kills=4
          WHERE world_id=encode($1,'hex')::uuid AND replica_kind=2",
@@ -205,6 +224,16 @@ pub(super) async fn exercise(
         220,
     )
     .await?;
+    assert_eq!(golden_receipts().await?, before);
+    let credit: (i32, i32) = sqlx::query_as(
+        "SELECT kills, cardinality(credited_deaths)
+         FROM game_forgotten_knowledge_replica_windows
+         WHERE world_id=encode($1,'hex')::uuid AND replica_kind=2",
+    )
+    .bind(admitted.world_id.as_bytes().as_slice())
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(credit, (5, 1));
     assert_eq!(
         map.facts.quest_portal_destination(
             crate::map::overlay::TilePos {
