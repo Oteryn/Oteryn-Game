@@ -43,6 +43,19 @@ async fn scenario(admin: &str) -> TestResult {
     super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 250).await?;
     let actor = admitted.runtime_actor.ok_or("Vestibule player")?;
     let session = admitted.game_session_id;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "Vestibule gameplay fence unavailable")?
+        .ok_or("Vestibule gameplay fence")?;
+    let access = |fence| async {
+        h.root
+            .read_rotten_blood_state(&authority, &h.node, fence)
+            .await
+            .map(|state| state.access_stage())
+            .map_err(debug)
+    };
+    assert_eq!(access(fence).await?, 0, "durable access starts unpaid");
     let health = || async {
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
@@ -73,6 +86,7 @@ async fn scenario(admin: &str) -> TestResult {
         }
     );
     assert_eq!(health().await?, before - before / 5);
+    assert_eq!(access(fence).await?, 0, "StepIn leaves access unpaid");
     drop(owner);
     drop(authority);
     drop(seal);
