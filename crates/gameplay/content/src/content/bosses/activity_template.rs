@@ -713,16 +713,7 @@ impl ContentActivationController {
             let trigger = exit.trigger();
             if source.is_some()
                 || !inside(trigger)
-                || index
-                    .map()
-                    .overlay
-                    .base()
-                    .tile(
-                        u16::try_from(trigger.x).map_err(|_| R::UnknownPlacement)?,
-                        u16::try_from(trigger.y).map_err(|_| R::UnknownPlacement)?,
-                        i8::try_from(-trigger.z).map_err(|_| R::UnknownPlacement)?,
-                    )
-                    .is_none()
+                || !index.base_tile_present(room.movement_cells().scope(), trigger)
             {
                 return Err(R::UnknownPlacement);
             }

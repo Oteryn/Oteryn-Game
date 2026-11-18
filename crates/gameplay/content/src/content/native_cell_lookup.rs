@@ -99,6 +99,10 @@ pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
         scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError>;
+    /// Static tile presence excludes phase-created cells and unqualified bundle ports.
+    fn base_tile_present(&self, _scope: &EngineeringStaticCellScope, _cell: LogicalCell) -> bool {
+        false
+    }
     /// Complete House-marker evidence from this exact loaded bundle scope.
     /// Older or unqualified ports provide no absence proof.
     fn house_tiles_present(
@@ -152,6 +156,10 @@ impl PartialEq for BundleCollisionIndex {
 }
 impl Eq for BundleCollisionIndex {}
 impl BundleCollisionIndex {
+    pub fn base_tile_present(&self, scope: &EngineeringStaticCellScope, cell: LogicalCell) -> bool {
+        self.0.base_tile_present(scope, cell)
+    }
+
     pub fn activity_region(
         &self,
         bounds: [i32; 6],

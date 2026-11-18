@@ -925,6 +925,15 @@ impl BundleCollisionData {
 }
 
 impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisionData {
+    fn base_tile_present(&self, scope: &EngineeringStaticCellScope, cell: LogicalCell) -> bool {
+        scope == &self.scope
+            && tile_pos(cell).is_some_and(|pos| {
+                self.activity_bounds.is_none_or(|bounds| {
+                    super::activity_footprint_contains(bounds, self.activity_exit, pos)
+                }) && self.base.tile(pos.x, pos.y, pos.floor).is_some()
+            })
+    }
+
     fn activity_region(
         &self,
         bounds: [i32; 6],
