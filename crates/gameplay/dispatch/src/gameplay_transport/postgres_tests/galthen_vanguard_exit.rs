@@ -174,11 +174,7 @@ async fn exercise_exit(
         admitted,
         command,
         COMMAND_TYPE_USE_INTENT,
-        |_| {
-            encode_use_intent(&target)
-                .map_err(debug)
-                .map_err(Into::into)
-        },
+        |_| encode_use_intent(&target).map_err(debug),
         true,
         &mut Vec::new(),
     )
