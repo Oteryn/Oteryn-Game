@@ -26,6 +26,7 @@ fn annihilator_source_route_earned_reward_exit_and_reentry() -> TestResult {
 enum Route {
     Entry,
     TimedSourceRepair,
+    BloodBrothersMirror,
     Combat,
     Complete,
     ObjectiveAtomicity,
@@ -64,9 +65,16 @@ pub(super) fn timed_source_repair() -> TestResult {
     run(Route::TimedSourceRepair)
 }
 
+pub(super) fn blood_brothers_mirror() -> TestResult {
+    run(Route::BloodBrothersMirror)
+}
+
 fn run(route: Route) -> TestResult {
-    let combat = !matches!(route, Route::Entry | Route::TimedSourceRepair);
-    let start = if matches!(
+    let mirror = route == Route::BloodBrothersMirror;
+    let combat = !mirror && !matches!(route, Route::Entry | Route::TimedSourceRepair);
+    let start = if mirror {
+        super::bbro2_lersatio_source::START
+    } else if matches!(
         route,
         Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
     ) {
@@ -116,21 +124,27 @@ fn run(route: Route) -> TestResult {
             "content-1",
         )?;
         let generation = controller.active().ok_or("active generation")?;
-        let world = source_world(
-            generation.native_gameplay().ok_or("native gameplay")?,
-            start,
-            matches!(
-                route,
-                Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
-            ),
-        )?;
+        let world = if mirror {
+            super::bbro2_lersatio_source::world(
+                generation.native_gameplay().ok_or("native gameplay")?,
+            )?
+        } else {
+            source_world(
+                generation.native_gameplay().ok_or("native gameplay")?,
+                start,
+                matches!(
+                    route,
+                    Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
+                ),
+            )?
+        };
         let now: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
                 .fetch_one(&h.pool)
                 .await?;
         let mut currents = Vec::new();
         let mut operations = Vec::new();
-        for index in 0..4_u8 {
+        for index in 0..if mirror { 2_u8 } else { 4_u8 } {
             let (current, operation) =
                 crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
                     &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
@@ -285,7 +299,11 @@ fn run(route: Route) -> TestResult {
             crate::gameplay_transport::quest_log::QuestLogLines::new(journal.content)
                 .ok_or("journal line bounds")?,
         );
-        owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
+        owner.quest_catalogue = Some(std::sync::Arc::new(if mirror {
+            super::bbro2_lersatio_source::catalogue(lowered.catalogue().content_revision())?
+        } else {
+            lowered.catalogue().clone()
+        }));
         let offered =
             crate::gameplay_transport::connection::FreshAdmissionAuthority::offered_capabilities(
                 &owner,
@@ -454,6 +472,15 @@ fn run(route: Route) -> TestResult {
             return Err("native bundle collision index".into());
         };
         let map = index.map();
+        if mirror {
+            let result =
+                super::bbro2_lersatio_source::exercise(&mut owner, &mut admitted, map).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         if matches!(
             route,
             Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
@@ -521,11 +548,18 @@ fn run(route: Route) -> TestResult {
             }
         }
         if route == Route::TimedSourceRepair {
-            let mut callback = owner.callback_content().iter().find(|callback| {
-                callback.key == "oteryn:quest-callback/annihilator-entry"
-            }).ok_or("Annihilator entrance callback")?.clone();
+            let mut callback = owner
+                .callback_content()
+                .iter()
+                .find(|callback| callback.key == "oteryn:quest-callback/annihilator-entry")
+                .ok_or("Annihilator entrance callback")?
+                .clone();
             callback.effects.reset_after_ms = Some(30_000);
-            owner.states.quest_callbacks.fixture.set(vec![callback])
+            owner
+                .states
+                .quest_callbacks
+                .fixture
+                .set(vec![callback])
                 .map_err(|_| "already installed callback fixture")?;
         }
         let lever = target(map, 33226, 31671)?;
@@ -545,9 +579,18 @@ fn run(route: Route) -> TestResult {
         drop(runtime);
         if route == Route::TimedSourceRepair {
             let key = crate::map::view::placement_key(
-                crate::map::overlay::TilePos { x: 33226, y: 31671, floor: -13 }, 1,
-            ).ok_or("source placement")?;
-            let due = map.facts.next_movement_decay_time().ok_or("source did not schedule its repair")?;
+                crate::map::overlay::TilePos {
+                    x: 33226,
+                    y: 31671,
+                    floor: -13,
+                },
+                1,
+            )
+            .ok_or("source placement")?;
+            let due = map
+                .facts
+                .next_movement_decay_time()
+                .ok_or("source did not schedule its repair")?;
             assert_eq!(map.facts.expire_movement_items(due - 1), 0);
             assert_eq!(map.facts.object_revision(key), 1);
             assert_eq!(map.facts.expire_movement_items(due), 1);
