@@ -150,6 +150,20 @@ pub(super) async fn pair(
         .inventory()
         .cloned()
         .ok_or("trade counter inventory")?;
+    let offered_instances = [
+        client_world::observed_item_instance(
+            *client.join_snapshot().game_session_id.as_bytes(),
+            item.handle,
+        )
+        .await?
+        .ok_or("offered handle is not bound to a durable Instance")?,
+        client_world::observed_item_instance(
+            *partner.join_snapshot().game_session_id.as_bytes(),
+            counter.handle,
+        )
+        .await?
+        .ok_or("counter-offer handle is not bound to a durable Instance")?,
+    ];
     let mut panel = ui::PlayerTradePanel {
         selected: true,
         ..Default::default()
@@ -239,7 +253,7 @@ pub(super) async fn pair(
             counter,
         ),
     ];
-    prove_durable_exchange(clients.url, accepts).await?;
+    prove_durable_exchange(clients.url, accepts, offered_instances).await?;
     evidence(
         "mechanic=player_trade completion=committed offered_handles=removed peer_stacks=received durable_item_custody=swapped",
     );
@@ -251,7 +265,11 @@ pub(super) async fn pair(
     Ok(())
 }
 
-async fn prove_durable_exchange(url: &str, accepts: [([u8; 16], u64, ItemEntry); 2]) -> TestResult {
+async fn prove_durable_exchange(
+    url: &str,
+    accepts: [([u8; 16], u64, ItemEntry); 2],
+    instances: [[u8; 16]; 2],
+) -> TestResult {
     let definitions = client_world::provisioning::item_index()?;
     let mut expected = Vec::new();
     for (_, _, item) in accepts {
@@ -274,13 +292,14 @@ async fn prove_durable_exchange(url: &str, accepts: [([u8; 16], u64, ItemEntry);
                AND b.game_session_id=encode($3,'hex')::uuid AND b.command_id=$4::text::numeric
                AND i.lifecycle=1
                AND ((r.source_character_id=a.character_id AND r.destination_character_id=b.character_id
-                     AND i.definition_production_key=$5 AND i.definition_revision_ref=$6 AND i.quantity=$7::bigint)
+                     AND r.item_instance_id=encode($11,'hex')::uuid AND i.definition_production_key=$5 AND i.definition_revision_ref=$6 AND i.quantity=$7::bigint)
                  OR (r.source_character_id=b.character_id AND r.destination_character_id=a.character_id
-                     AND i.definition_production_key=$8 AND i.definition_revision_ref=$9 AND i.quantity=$10::bigint))",
+                     AND r.item_instance_id=encode($12,'hex')::uuid AND i.definition_production_key=$8 AND i.definition_revision_ref=$9 AND i.quantity=$10::bigint))",
         ).bind(accepts[0].0.as_slice()).bind(accepts[0].1.to_string())
             .bind(accepts[1].0.as_slice()).bind(accepts[1].1.to_string())
             .bind(expected[0].0).bind(expected[0].1).bind(i64::from(accepts[0].2.count.get()))
             .bind(expected[1].0).bind(expected[1].1).bind(i64::from(accepts[1].2.count.get()))
+            .bind(instances[0].as_slice()).bind(instances[1].as_slice())
             .fetch_one(&mut db).await?;
         db.close().await?;
         if count != 2 {

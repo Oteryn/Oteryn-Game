@@ -1,9 +1,11 @@
 """Root-only node-boot control request; carries no proof or database credential."""
 
 import argparse
+import os
 import re
 import socket
 import time
+from threading import Thread
 import uuid
 
 
@@ -71,11 +73,36 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
     parser.add_argument("--session", required=True)
+    parser.add_argument("--watch-stdin", action="store_true")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profile", choices=PROFILES)
     group.add_argument("--spawn", metavar="CREATURE_KEY")
+    group.add_argument("--item-handle", type=int)
+    group.add_argument("--recovery-epoch", type=int)
     args = parser.parse_args()
-    if args.spawn is not None:
+    if args.watch_stdin:
+        def stop_when_parent_drops_pipe():
+            # The parent deliberately sends no bytes. EOF closes the control request
+            # even when sudo's outer process and Python have different credentials.
+            os.read(0, 1)
+            os._exit(125)
+
+        Thread(target=stop_when_parent_drops_pipe, daemon=True).start()
+    if args.recovery_epoch is not None:
+        identifier = uuid.UUID(args.session)
+        if identifier.version != 7 or str(identifier) != args.session or not 0 < args.recovery_epoch < 2**64:
+            raise ValueError("invalid recovery replay observation")
+        if _request(args.socket, f"recovery-replay {args.session} {args.recovery_epoch}\n", 64) != b"recovery-grant-consumed\n":
+            raise RuntimeError("recovery owner did not observe a spent grant")
+    elif args.item_handle is not None:
+        identifier = uuid.UUID(args.session)
+        if identifier.version != 7 or str(identifier) != args.session or not 0 < args.item_handle < 2**64:
+            raise ValueError("invalid item-instance request")
+        answer = bytes(_request(args.socket, f"item-instance {args.session} {args.item_handle}\n", 64))
+        if not re.fullmatch(rb"instance [0-9a-f-]{36}\n", answer):
+            raise RuntimeError("item handle has no live durable instance")
+        print(answer.decode("ascii").strip())
+    elif args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
     else:
         provision(args.socket, args.session, args.profile)

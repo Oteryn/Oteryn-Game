@@ -6,6 +6,46 @@ use crate::qualification_spell_character as qualification_build;
 #[cfg(any(test, feature = "qualification-spawn"))]
 use crate::qualification_wild_spawn as wild_spawn;
 
+#[cfg(any(test, feature = "qualification-spawn"))]
+pub(super) fn recovery_replay(enabled: bool, bytes: &[u8]) -> String {
+    let parsed = || {
+        let (session, epoch) = std::str::from_utf8(bytes)
+            .ok()?
+            .trim_ascii_end()
+            .strip_prefix("recovery-replay ")?
+            .split_once(' ')?;
+        Some((parse_operation_id(session.as_bytes())?, epoch.parse().ok()?))
+    };
+    if enabled
+        && let Some((session, epoch)) = parsed()
+        && crate::durability::fresh_admission::qualification_replay::take(session, epoch)
+    {
+        "recovery-grant-consumed".into()
+    } else {
+        "rejected".into()
+    }
+}
+
+pub(super) fn item_instance(enabled: bool, bytes: &[u8]) -> String {
+    let resolve = || {
+        if !enabled {
+            return None;
+        }
+        let (session, handle) = std::str::from_utf8(bytes)
+            .ok()?
+            .trim_end_matches('\n')
+            .strip_prefix("item-instance ")?
+            .split_once(' ')?;
+        let session = parse_operation_id(session.as_bytes())?;
+        let handle = handle.parse().ok()?;
+        crate::gameplay_transport::qualification_observation::instance(session, handle)
+    };
+    resolve().map_or_else(
+        || "rejected".into(),
+        |item| format!("instance {}", uuid_text(&item)),
+    )
+}
+
 fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
@@ -214,6 +254,7 @@ async fn place(
     let session = crate::foundation::GameSessionId::decode(&session)
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
     let source = wild_spawn::next_command_source()?;
+    let permit = wild_spawn::acquire_qualification_scope_lane(owners.runtime).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     let mut holder = qualification_build::retry_holder(
         Some(root),
@@ -231,6 +272,7 @@ async fn place(
     .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
     wild_spawn::realize_creature_in_transaction(
         tx,
+        permit,
         root,
         authority,
         proof,
@@ -463,7 +505,11 @@ async fn prepare_items(
             },
             source_placement: "oteryn:qualification.node-boot".into(),
             item,
-            quantity: 1,
+            quantity: if id == 3147 {
+                u32::from(crate::QUALIFICATION_MAP_SAMPLES_PER_KIND) + 1
+            } else {
+                1
+            },
             contents: Vec::new(),
             root_text: None,
             root_fluid_subtype: None,
@@ -499,6 +545,15 @@ async fn prepare_items(
             Err(error) if previous_fixture_item_committed(&error) => continue,
             Err(error) => return Err(format!("qualification Item reserve: {error:?}").into()),
         };
+        // A frozen, already committed reservation needs no further work unit.
+        if root
+            .read_committed_reward_claim_mint(authority, &candidate)
+            .await
+            .map_err(|error| format!("qualification Item receipt: {error:?}"))?
+            .is_some()
+        {
+            continue;
+        }
         root.commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
             .await
             .map_err(|error| format!("qualification Item commit: {error:?}"))?;

@@ -128,9 +128,8 @@ pub async fn serve_gameplay(
                 .premium_coordinator
                 .map_or_else(Default::default, |reads| reads.consumer()),
         ),
-        spell_lane: crate::durability::spell_owner_commit::SpellLane::new(
-            owners.world_id,
-            owners.channel_id,
+        spell_lane: super::qualification_observation::scope_lane(
+            crate::foundation::RuntimeScopeRefV1::channel(owners.world_id, owners.channel_id),
         ),
         store: owners
             .store

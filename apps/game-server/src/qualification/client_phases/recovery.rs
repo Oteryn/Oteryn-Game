@@ -105,6 +105,9 @@ pub(super) async fn resume_session(
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
+    if !recovery_grant_consumed(url, session, [0x5e; 32], 1).await? {
+        return Err("the first recovery did not durably consume the replayed nonce".into());
+    }
     let replay_token = sign_recovery(
         recovery,
         &accounts[0],
@@ -114,6 +117,11 @@ pub(super) async fn resume_session(
         now_seconds()?,
         [0x5e; 32],
     );
+    let local = clients.runtime.is_some();
+    if local {
+        crate::durability::fresh_admission::qualification_replay::enable();
+        let _ = crate::durability::fresh_admission::qualification_replay::take(session, 2);
+    }
     let replay = exchange_must_close(
         address,
         exact,
@@ -122,6 +130,14 @@ pub(super) async fn resume_session(
     .await?;
     if replay != Reply::Closed || committed_admissions(url).await? != 2 {
         return Err(format!("replayed recovery credential resumed: {replay:?}").into());
+    }
+    let consumed = if local {
+        crate::durability::fresh_admission::qualification_replay::take(session, 2)
+    } else {
+        client_world::observed_recovery_replay(session, 2).await?
+    };
+    if !consumed {
+        return Err("the recovery owner did not record a spent-grant refusal for epoch 2".into());
     }
     evidence("resume replayed_credential=refused");
 
@@ -200,9 +216,12 @@ pub(super) async fn resumed_loss_and_expiry(
     // FND-04B §6: with no resumed control, each lost session is terminally released once its
     // original grace deadline passes; the released claims let the character enter again.
     // The twice-resumed session was lost a third time (epoch 3) and expires on its own grace.
-    for (label, id) in [("closed", session), ("silent", concurrent_session)] {
+    for (label, id, epoch) in [
+        ("closed", session, "3"),
+        ("silent", concurrent_session, "1"),
+    ] {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
-        while !terminal_after_grace(session_loss_row(url, id, deadline).await?)? {
+        while !terminal_after_grace_for_epoch(session_loss_row(url, id, deadline).await?, epoch)? {
             if tokio::time::Instant::now() >= deadline {
                 return Err(format!("{label} session was not released after grace").into());
             }
@@ -215,4 +234,24 @@ pub(super) async fn resumed_loss_and_expiry(
     evidence("grace_expiry closed=terminal silent=terminal admissions=2");
 
     Ok(())
+}
+
+async fn recovery_grant_consumed(
+    url: &str,
+    session: [u8; 16],
+    nonce: [u8; 32],
+    epoch: i64,
+) -> TestResult<bool> {
+    within_database_deadline(tokio::time::Instant::now() + Duration::from_secs(20), async {
+        let mut database = sqlx::PgConnection::connect(url).await?;
+        let committed = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM game_durability_recovery_grant_consumptions c
+              JOIN game_durability_admission_lifecycle_receipts r
+                ON r.operation_key='complete-reconnect-commit-v1'::bytea || uuid_send(c.game_session_id)
+                                  || int8send($3) || c.reconnect_attempt_ref
+             WHERE c.game_session_id=encode($1,'hex')::uuid AND c.recovery_grant_nonce=$2)",
+        ).bind(session.as_slice()).bind(nonce.as_slice()).bind(epoch).fetch_one(&mut database).await?;
+        database.close().await?;
+        Ok(committed)
+    }).await
 }

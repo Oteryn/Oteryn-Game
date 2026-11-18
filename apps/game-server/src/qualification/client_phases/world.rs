@@ -2350,7 +2350,7 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
     let mut command = fixture_command();
     command.args(["--socket", &socket, "--session", &session, "--spawn", &key]);
-    let output = tokio::time::timeout(FIXTURE_COMMAND_DEADLINE, command.output())
+    let output = tokio::time::timeout(FIXTURE_COMMAND_DEADLINE, run_fixture_command(&mut command))
         .await
         .map_err(|error| error.to_string())?
         .map_err(|error| error.to_string())?;
@@ -4877,7 +4877,25 @@ pub(super) async fn journeys(
     walk(&mut client, world, &path).await?;
     client_depot_search::depot_search(&mut client).await?;
     coverage = coverage.and(client_stash::stash(&mut client).await);
-    coverage = coverage.and(client_market::market(&mut client, clients).await);
+    let market_funding: TestResult = async {
+        let required = crate::durability::market::placement_fee(1, 1)
+            .map_err(|error| format!("market fee: {error:?}"))?
+            + 1;
+        if client_market::market_bank_balance(clients).await? < required {
+            full_e2ef20::fund_market_account(&mut client, world, &metadata.npcs).await?;
+            let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+                near_locker(world, at)
+            })
+            .ok_or("market funding has no return route to the depot")?;
+            walk(&mut client, world, &path).await?;
+        }
+        if client_market::market_bank_balance(clients).await? < required {
+            return Err("core market deposit did not fund fee and escrow".into());
+        }
+        client_market::market(&mut client, clients).await
+    }
+    .await;
+    coverage = coverage.and(market_funding);
     coverage = coverage.and(shop_journey(&mut client, world, &metadata.npcs, clients).await);
     client_hotkey_equip::hotkey_equip(&mut client).await?;
     coverage = coverage.and(client_item_forge::item_forge(&mut client).await);
@@ -4936,19 +4954,25 @@ pub(super) async fn journeys(
     }
     drop(client);
     client = connect_world(clients, 0x73).await?;
-    if client.join_snapshot().game_session_id == old_session
-        || client.world_spatial().actor_position != respawn
-        || client
-            .actor_vitals()
-            .is_none_or(|vitals| vitals.health != vitals.max_health)
-    {
-        return Err("death relog did not retain the saved respawn position and full vitals".into());
-    }
-    evidence(&format!(
-        "mechanic=death state=relogged position={respawn:?} health={}",
-        client.actor_vitals().ok_or("death relog vitals")?.health
-    ));
+    let persistence: TestResult = async {
+        if client.join_snapshot().game_session_id == old_session
+            || client.world_spatial().actor_position != respawn
+            || client
+                .actor_vitals()
+                .is_none_or(|vitals| vitals.health != vitals.max_health)
+        {
+            return Err(
+                "death relog did not retain the saved respawn position and full vitals".into(),
+            );
+        }
+        evidence(&format!(
+            "mechanic=death state=relogged position={respawn:?} health={}",
+            client.actor_vitals().ok_or("death relog vitals")?.health
+        ));
 
+        Ok(())
+    }
+    .await;
     let logout_result: TestResult = async {
         let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -4958,10 +4982,39 @@ pub(super) async fn journeys(
     }.await;
     drop(client);
     finish_after_terminal_release(
-        profile_result.and(coverage).and(logout_result),
+        profile_result
+            .and(coverage)
+            .and(persistence)
+            .and(logout_result),
         wait_character_released(clients, 1),
     )
     .await
+}
+
+fn session_unexpected_eof(error: &(dyn std::error::Error + 'static)) -> bool {
+    std::iter::successors(Some(error), |cause| cause.source()).any(|cause| {
+        matches!(cause.downcast_ref::<oteryn_dev_client::SessionError>(),
+            Some(oteryn_dev_client::SessionError::Io(io)) if io.kind() == io::ErrorKind::UnexpectedEof)
+    })
+}
+
+#[test]
+fn idle_removal_recognizes_contextual_session_eof() {
+    use oteryn_dev_client::{DevClientError, SessionError};
+    let wrapped = |kind| DevClientError::Context {
+        phase: "liveness",
+        elapsed: Duration::from_secs(960),
+        last_frame: String::new(),
+        source: Box::new(DevClientError::Session(SessionError::Io(io::Error::from(
+            kind,
+        )))),
+    };
+    assert!(session_unexpected_eof(&wrapped(
+        io::ErrorKind::UnexpectedEof
+    )));
+    assert!(!session_unexpected_eof(&wrapped(
+        io::ErrorKind::ConnectionReset
+    )));
 }
 
 fn idle_removal_proven(elapsed: Duration, eof: bool, row: Option<&SessionLossRow>) -> bool {
@@ -5009,9 +5062,7 @@ async fn profile_journey(
     let client = connect_character(clients, 0x6e, 0).await?;
     let mut client = provisioning::provision(client, clients, 0).await?;
     use client_spell_journey::ProtectionProbe;
-    use oteryn_protocol_oteryn::{actor_spell::SpellTarget, attack::AttackIntentDisposition};
     let (words, target_intent) = client_spell_journey::fixture_protection_spell()?;
-    let targeted = target_intent == SpellTarget::AttackTarget;
     let pz = if world
         .base()
         .tile(TOWN.x, TOWN.y, TOWN.floor)
@@ -5029,38 +5080,16 @@ async fn profile_journey(
     };
     let map = map_journey::run(&mut client, world, &model).await;
     let combat =
-        match travel_to_spawn_target(&mut client, world, spawns, "oteryn:creature.rat").await {
-            Ok(rat) => client_combat_journey::combat_journey(&mut client, Some(rat)).await,
-            Err(error) => Err(error),
-        };
+        client_combat_journey::combat_journey(&mut client, world, spawns, clients.url).await;
     let outside: TestResult = async {
-        let rat = travel_to_spawn_target(&mut client, world, spawns, "oteryn:creature.rat").await?;
-        if !targeted {
-            return client_spell_journey::protection_zone_probe(
-                &mut client,
-                ProtectionProbe::Outside,
-                words,
-                target_intent,
-            )
-            .await;
-        }
-        let reply = client.session_mut().attack_target(Some(&rat)).await?;
-        if reply.disposition != AttackIntentDisposition::Ok {
-            return Err(format!("outside-PZ attack target refused: {reply:?}").into());
-        }
-        let cast = client_spell_journey::protection_zone_probe(
+        travel_to_spawn_target(&mut client, world, spawns, "oteryn:creature.rat").await?;
+        client_spell_journey::protection_zone_probe(
             &mut client,
             ProtectionProbe::Outside,
             words,
             target_intent,
         )
-        .await;
-        let stopped = client.session_mut().attack_target(None).await;
-        cast?;
-        if stopped?.disposition != AttackIntentDisposition::Ok {
-            return Err("outside-PZ attack cleanup refused".into());
-        }
-        Ok(())
+        .await
     }
     .await;
     let pz = pz.and(outside);
@@ -5134,12 +5163,69 @@ fn fixture_command() -> tokio::process::Command {
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let mut command = tokio::process::Command::new("sudo");
-    command.kill_on_drop(true).stdin(std::process::Stdio::null())
+    command.kill_on_drop(true).stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
         // Run the inner timeout with the same credentials as Python so its
         // signal reaches the privileged child even if the outer probe drops.
         .args(["-n", "timeout", "--kill-after=2s", "25s", "python3"])
-        .arg(script);
+        .arg(script).arg("--watch-stdin");
     command
+}
+
+async fn run_fixture_command(
+    command: &mut tokio::process::Command,
+) -> io::Result<std::process::Output> {
+    let mut child = command.spawn()?;
+    let parent_pipe = child
+        .stdin
+        .take()
+        .ok_or_else(|| io::Error::other("fixture cancellation pipe missing"))?;
+    let output = child.wait_with_output().await;
+    drop(parent_pipe);
+    output
+}
+
+pub(super) async fn observed_recovery_replay(session: [u8; 16], epoch: u64) -> TestResult<bool> {
+    let mut command = fixture_command();
+    command.args([
+        "--socket",
+        &required("NODE_BOOT_CONTROL_SOCKET")?,
+        "--session",
+        &uuid_text(&session),
+        "--recovery-epoch",
+        &epoch.to_string(),
+    ]);
+    let output =
+        tokio::time::timeout(FIXTURE_COMMAND_DEADLINE, run_fixture_command(&mut command)).await??;
+    Ok(output.status.success())
+}
+
+pub(super) async fn observed_item_instance(
+    session: [u8; 16],
+    handle: oteryn_protocol_oteryn::item_view::ItemHandle,
+) -> TestResult<Option<[u8; 16]>> {
+    let mut command = fixture_command();
+    command.args([
+        "--socket",
+        &required("NODE_BOOT_CONTROL_SOCKET")?,
+        "--session",
+        &uuid_text(&session),
+        "--item-handle",
+        &handle.to_string(),
+    ]);
+    let output =
+        tokio::time::timeout(FIXTURE_COMMAND_DEADLINE, run_fixture_command(&mut command)).await??;
+    if !output.status.success() {
+        return Ok(None);
+    }
+    let id = std::str::from_utf8(&output.stdout)?
+        .trim()
+        .strip_prefix("instance ")
+        .ok_or("invalid fixture item observation")?;
+    crate::node::uuid_bytes(id)
+        .map(Some)
+        .ok_or_else(|| "invalid observed item UUID".into())
 }
 
 async fn wait_fixture_command<T>(
@@ -5279,7 +5365,7 @@ async fn travel_to_spawn(
         .map(|_| ())
 }
 
-async fn travel_to_spawn_target(
+pub(super) async fn travel_to_spawn_target(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,

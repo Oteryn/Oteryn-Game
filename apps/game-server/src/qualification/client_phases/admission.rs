@@ -23,7 +23,8 @@ fn fresh_replay_requires_the_consumed_grant_refusal() -> TestResult {
 }
 
 fn silent_close_proven(probes: &[u64], elapsed: Duration, interval: Duration, misses: u32) -> bool {
-    probes.iter().copied().eq(1..=u64::from(misses)) && elapsed >= interval.saturating_mul(misses)
+    probes.iter().copied().eq(1..=u64::from(misses))
+        && elapsed >= interval.saturating_mul(misses.saturating_add(1))
 }
 
 #[test]
@@ -38,6 +39,12 @@ fn silent_transport_requires_unanswered_server_probes_and_elapsed_cadence() {
     assert!(!silent_close_proven(
         &[1, 2, 3],
         Duration::from_secs(10),
+        cadence,
+        3
+    ));
+    assert!(!silent_close_proven(
+        &[1, 2, 3],
+        Duration::from_secs(15),
         cadence,
         3
     ));
@@ -261,7 +268,15 @@ pub(super) async fn concurrent_and_control_loss<'a>(
                 }
             }
             let liveness = crate::gameplay_transport::IDLE_LIVENESS;
-            if !silent_close_proven(&probes, *elapsed, liveness.interval, liveness.missed_limit) {
+            if !silent_close_proven(
+                &probes,
+                elapsed.elapsed,
+                liveness.interval,
+                liveness.missed_limit,
+            ) || elapsed.after_first_probe.is_none_or(|observed| {
+                observed + Duration::from_millis(250)
+                    < liveness.interval.saturating_mul(liveness.missed_limit)
+            }) {
                 return Err(format!("server close did not follow the unanswered-probe cadence: {probes:?} elapsed={elapsed:?}").into());
             }
             concurrent.push(id);

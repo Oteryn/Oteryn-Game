@@ -144,15 +144,15 @@ pub(super) enum ProtectionProbe {
 
 pub(super) fn fixture_protection_spell() -> TestResult<(&'static str, SpellTarget)> {
     let profile = env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".to_owned());
+    fixture_protection_spell_for(&profile)
+}
+
+fn fixture_protection_spell_for(profile: &str) -> TestResult<(&'static str, SpellTarget)> {
     let (words, targeted) =
-        protection_probe_words(&profile).ok_or("unknown fixture spell profile")?;
+        protection_probe_words(profile).ok_or("unknown fixture spell profile")?;
     Ok((
-        words,
-        if targeted {
-            SpellTarget::AttackTarget
-        } else {
-            SpellTarget::None
-        },
+        if targeted { "adori dis min vis" } else { words },
+        SpellTarget::None,
     ))
 }
 
@@ -277,4 +277,15 @@ fn pz_probe_selects_the_fixture_vocations_aggressive_spell() {
     );
     assert_eq!(protection_probe_words("monk"), Some(("exori pug", true)));
     assert_eq!(protection_probe_words("unknown"), None);
+}
+
+#[test]
+fn pz_comparison_uses_the_same_targetless_cast_for_both_sides() -> TestResult {
+    for profile in ["monk", "paladin"] {
+        assert_eq!(
+            fixture_protection_spell_for(profile)?,
+            ("adori dis min vis", SpellTarget::None)
+        );
+    }
+    Ok(())
 }

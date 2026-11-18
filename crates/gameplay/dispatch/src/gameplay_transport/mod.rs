@@ -170,6 +170,7 @@ mod public_kill_statistics;
 mod pvp_death;
 mod pvp_expert;
 mod pvp_live;
+pub mod qualification_observation;
 mod quest_admission;
 mod quest_batch3_c;
 mod quest_callbacks;

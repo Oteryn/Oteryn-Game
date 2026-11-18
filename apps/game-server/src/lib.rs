@@ -1033,3 +1033,5 @@ mod bundle_spawn_owner_tests;
 mod lifted_tests_auto {
     include!(concat!(env!("OUT_DIR"), "/lifted_tests_auto_mounts.rs"));
 }
+
+pub(crate) const QUALIFICATION_MAP_SAMPLES_PER_KIND: u8 = 5;

@@ -4,6 +4,8 @@ from concurrent.futures import ThreadPoolExecutor
 import importlib.util
 from pathlib import Path
 import socket
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -41,6 +43,28 @@ class ProvisionTests(unittest.TestCase):
                         PROVISION.provision(path, SESSION, "knight")
                     finally:
                         served.result(timeout=3)
+
+    def test_closing_parent_pipe_stops_helper_with_pending_socket_reply(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "control.sock")
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+                listener.bind(path)
+                listener.listen(1)
+                listener.settimeout(2)
+                with subprocess.Popen(
+                    [sys.executable, str(Path(__file__).with_name("provision.py")),
+                     "--watch-stdin", "--socket", path, "--session", SESSION, "--profile", "knight"],
+                    stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                ) as child:
+                    try:
+                        with listener.accept()[0] as control:
+                            control.settimeout(2)
+                            self.assertIn(b"qualify", control.recv(128))
+                            child.stdin.close()
+                            self.assertEqual(child.wait(timeout=2), 125)
+                    finally:
+                        if child.poll() is None:
+                            child.kill()
 
     def test_qualified_reply_is_accepted(self):
         self.exchange(b"qualified\n")

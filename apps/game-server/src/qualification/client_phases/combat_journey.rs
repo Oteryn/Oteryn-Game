@@ -1,7 +1,7 @@
 //! Combat observations against the bundle spawn approached by the World journey.
 //! Missing qualification setup is a failure, never a missing-content skip.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind};
+use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 
 /// Keep all verdicts, including prerequisite failures, until the phase ends.
@@ -54,7 +54,9 @@ impl Checks {
 
 pub(super) async fn combat_journey(
     client: &mut DevClientSession,
-    wanted: Option<oteryn_dev_client::EntityRef>,
+    world: &crate::map::boot::BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    url: &str,
 ) -> TestResult {
     let mut checks = Checks::default();
     for (name, fight_mode) in [
@@ -63,9 +65,14 @@ pub(super) async fn combat_journey(
         ("defensive", FightMode::Defensive),
     ] {
         for (chase_name, chase) in [("stand", ChaseMode::Stand), ("chase", ChaseMode::Chase)] {
-            checks.record(
-                "C01",
-                &format!("{name}-{chase_name}"),
+            let result = async {
+                let wanted = client_world::travel_to_spawn_target(
+                    client,
+                    world,
+                    spawns,
+                    "oteryn:creature.rat",
+                )
+                .await?;
                 melee_damage(
                     client,
                     FightModes {
@@ -74,9 +81,12 @@ pub(super) async fn combat_journey(
                         secure: true,
                     },
                     wanted,
+                    url,
                 )
-                .await,
-            );
+                .await
+            }
+            .await;
+            checks.record("C01", &format!("{name}-{chase_name}"), result);
         }
     }
     checks.finish()
@@ -85,7 +95,8 @@ pub(super) async fn combat_journey(
 async fn melee_damage(
     client: &mut DevClientSession,
     modes: FightModes,
-    wanted: Option<oteryn_dev_client::EntityRef>,
+    wanted: oteryn_dev_client::EntityRef,
+    url: &str,
 ) -> TestResult {
     use oteryn_protocol_oteryn::item_view::EquipmentSlot;
     if client.inventory().is_none_or(|inventory| {
@@ -108,7 +119,7 @@ async fn melee_damage(
         .and_then(|entities| {
             entities.iter().find(|entity| {
                 entity.kind == EntityKind::Creature
-                    && wanted.is_none_or(|identity| entity.entity == identity)
+                    && entity.entity == wanted
                     && entity.position.floor == here.floor
                     && entity
                         .position
@@ -120,39 +131,7 @@ async fn melee_damage(
         })
         .copied()
         .ok_or("bundle spawn has no adjacent live monster")?;
-    let EntityDetail::Actor {
-        health_percent: before,
-        ..
-    } = target.detail
-    else {
-        return Err("monster has no protocol health".into());
-    };
-    let outcome = client
-        .session_mut()
-        .attack_target(Some(&target.entity))
-        .await?;
-    if outcome.disposition != AttackIntentDisposition::Ok {
-        return Err(format!("attack refused: {outcome:?}").into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    let observed = loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        let damage = client.take_events().iter().any(|event| {
-            matches!(event, oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta)
-                if delta.value.update.iter().any(|entry| entry.entity == target.entity
-                    && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } if health_percent < before)))
-        });
-        if damage {
-            break true;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            break false;
-        }
-    };
-    let stopped = client.session_mut().attack_target(None).await?;
-    if stopped.disposition != AttackIntentDisposition::Ok || !observed {
-        return Err("attack did not lower monster HP or failed to stop".into());
-    }
+    client_hunt::kill(client, target, url, Duration::from_secs(60)).await?;
     if client
         .session_mut()
         .combat_state()

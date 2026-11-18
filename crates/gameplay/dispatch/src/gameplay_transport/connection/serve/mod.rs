@@ -360,7 +360,15 @@ where
             }
         }
         let mut live_started = false;
+        let item_observation =
+            crate::gameplay_transport::qualification_observation::SessionView::new(
+                *session.admitted.game_session_id.as_bytes(),
+                session.admitted.continuity.connection_generation,
+            );
         loop {
+            if let Some(view) = &session.item_view {
+                item_observation.observe(view.table());
+            }
             if !authority.remember_activity_connection(session.admitted) {
                 return ServeEnd::Disconnected.finish(session.admitted);
             }

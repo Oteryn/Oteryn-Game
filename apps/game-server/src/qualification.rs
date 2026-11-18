@@ -58,6 +58,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_rustls::{TlsConnector, rustls};
 
+#[path = "qualification/round2_regressions.rs"]
+mod round2_regressions;
+
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 use crate::qualification_spell_character as spell_character;
@@ -867,11 +870,17 @@ enum Reply {
     Frames(Vec<Vec<u8>>),
 }
 
+#[derive(Debug)]
+struct ExchangeTiming {
+    elapsed: Duration,
+    after_first_probe: Option<Duration>,
+}
+
 async fn exchange(
     address: SocketAddr,
     connector: &TlsConnector,
     raw: &[u8],
-) -> TestResult<(Reply, Duration)> {
+) -> TestResult<(Reply, ExchangeTiming)> {
     exchange_with_write_end(address, connector, raw, false).await
 }
 
@@ -880,7 +889,7 @@ async fn exchange_with_write_end(
     connector: &TlsConnector,
     raw: &[u8],
     finish_write: bool,
-) -> TestResult<(Reply, Duration)> {
+) -> TestResult<(Reply, ExchangeTiming)> {
     // Allow the configured missed-probe decision plus one cadence for the remote close.
     let liveness = crate::gameplay_transport::IDLE_LIVENESS;
     let read_budget = liveness
@@ -902,8 +911,31 @@ async fn exchange_with_write_end(
     let mut output = Vec::new();
     let read_started = tokio::time::Instant::now();
     tokio::time::timeout(read_budget, async {
-        while read_exchange_chunk(&mut stream, &mut output).await? {}
-        Ok((frames(&output)?, read_started.elapsed()))
+        let mut cursor = 0;
+        let mut first_probe = None;
+        while read_exchange_chunk(&mut stream, &mut output).await? {
+            while first_probe.is_none()
+                && let Some(length) = output
+                    .get(cursor..cursor + 4)
+                    .and_then(|bytes| bytes.try_into().ok())
+                    .map(u32::from_be_bytes)
+                && let Some(body) = output.get(cursor + 4..cursor + 4 + length as usize)
+            {
+                cursor += 4 + length as usize;
+                if decode_wire_envelope(body)
+                    .is_ok_and(|frame| frame.message_type() == MessageType::LivenessProbe)
+                {
+                    first_probe = Some(tokio::time::Instant::now());
+                }
+            }
+        }
+        Ok((
+            frames(&output)?,
+            ExchangeTiming {
+                elapsed: read_started.elapsed(),
+                after_first_probe: first_probe.map(|probe| probe.elapsed()),
+            },
+        ))
     })
     .await?
 }
@@ -1449,6 +1481,7 @@ fn node_boot_spells_against_running_node() -> TestResult {
                 deadline: Duration::from_secs(20),
             })
             .await?;
+            let result: TestResult = async {
             if client.world_spatial().content_generation != room.compiled().client_digest() {
                 return Err("running node did not admit the issued spell content generation".into());
             }
@@ -1508,13 +1541,14 @@ fn node_boot_spells_against_running_node() -> TestResult {
                 book.source_len(),
                 book.source_len(),
             ));
-            let result = if !owned_vitals {
+            if !owned_vitals {
                 Err("spell execution blocked: bootstrap produced no Character-owned vocation/progression cast facts; transport refusals are not successful spell execution".into())
             } else if cast == 0 {
                 Err("no spell executed: inspect Character-owned level, vocation, resources and spell_probe dispositions".into())
             } else {
                 Ok(())
-            };
+            }
+            }.await;
             let session = client.join_snapshot().game_session_id;
             drop(client);
             finish_after_terminal_release(result, wait_spell_fixture_release(&url, session)).await
@@ -2521,9 +2555,14 @@ async fn seam_spell_clients(
             if !runtime_reader {
                 return Err("wild spawn collision proof requires actual runtime role".into());
             }
+            crate::gameplay_transport::qualification_observation::enable();
+            let permit = wild_spawn::acquire_qualification_scope_lane(live_runtime)
+                .await
+                .map_err(|error| format!("qualification spawn lane: {error:?}"))?;
             let tx = sql.begin().await?;
             let rat = wild_spawn::realize_rat_in_transaction(
                 tx,
+                permit,
                 root,
                 authority,
                 holder,
@@ -3026,9 +3065,10 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     client_recovery::resumed_loss_and_expiry(&clients, &exact, session, concurrent).await?;
     client_admission::replay_released_grant(&clients, &exact, &grant).await?;
     client_use_wire::use_wire(&clients, &exact, &mut next_grant).await?;
-    client_dev_client::dev_client(&clients, &mut next_grant).await?;
-    client_readmission::readmit_after_release(&clients, &exact, &mut next_grant).await?;
-    Ok(())
+    let features = client_dev_client::dev_client(&clients, &mut next_grant).await;
+    let readmission =
+        client_readmission::readmit_after_release(&clients, &exact, &mut next_grant).await;
+    features.and(readmission)
 }
 
 /// One exact-equality expectation of the `dev_client` stage.
@@ -3114,7 +3154,48 @@ fn qualification_final_release_failure_fails_a_successful_journey() -> TestResul
         })
 }
 
+#[test]
+fn failed_admitted_journey_still_waits_for_terminal_release() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let called = std::cell::Cell::new(false);
+            let failed: TestResult = Err("wrong persisted vitals".into());
+            let result = finish_after_terminal_release(failed, async {
+                called.set(true);
+                Ok(())
+            })
+            .await;
+            assert!(called.get());
+            assert_eq!(
+                result.err().ok_or("missing persistence error")?.to_string(),
+                "wrong persisted vitals"
+            );
+            Ok(())
+        })
+}
+
 type SessionLossRow = (i16, String, i64, Option<i64>);
+
+fn terminal_after_grace_for_epoch(row: Option<SessionLossRow>, expected: &str) -> TestResult<bool> {
+    if let Some((3, epoch, ..)) = &row
+        && epoch != expected
+    {
+        return Err(format!("terminal release recorded epoch {epoch}; expected {expected}").into());
+    }
+    terminal_after_grace(row)
+}
+
+#[test]
+fn terminal_receipt_must_belong_to_latest_loss() -> TestResult {
+    assert!(terminal_after_grace_for_epoch(Some((3, "2".into(), 60, Some(0))), "3").is_err());
+    assert!(terminal_after_grace_for_epoch(
+        Some((3, "3".into(), 60, Some(0))),
+        "3"
+    )?);
+    Ok(())
+}
 
 fn terminal_after_grace(row: Option<SessionLossRow>) -> TestResult<bool> {
     let Some((3, epoch, grace, offset)) = row else {

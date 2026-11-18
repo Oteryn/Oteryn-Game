@@ -248,7 +248,7 @@ struct CorpseProof {
     definition: u32,
     identity: [u8; 16],
     top_damage: bool,
-    earlier_same_definition: usize,
+    instance: [u8; 16],
 }
 
 async fn exact_corpse(
@@ -268,7 +268,7 @@ async fn exact_corpse(
     packed.extend_from_slice(&position.floor.to_be_bytes());
     let mut native = packed.clone();
     native[8..].copy_from_slice(&native_position(position).floor.to_be_bytes());
-    type CorpseRow = (i64, String, String, String, bool, i64);
+    type CorpseRow = (i64, String, String, String, bool, i64, Vec<u8>);
     type ScopedCorpses = (Vec<u8>, Vec<u8>, String, Vec<CorpseRow>);
     let (world, channel, generation, rows): ScopedCorpses = within_database_deadline(deadline, async {
         let mut db = sqlx::PgConnection::connect(url).await?;
@@ -278,15 +278,15 @@ async fn exact_corpse(
         ).bind(session.as_slice()).fetch_one(&mut db).await?;
         let rows = sqlx::query_as(
             "SELECT m.death_actor_local_id::bigint, m.death_actor_local_generation::text, i.definition_production_key, i.definition_revision_ref, \
-             COALESCE(m.corpse_top_damage_character_id=encode($6,'hex')::uuid,false), m.materialized_at \
+             COALESCE(m.corpse_top_damage_character_id=encode($6,'hex')::uuid,false), m.materialized_at, uuid_send(i.item_instance_id) \
              FROM game_item_mint_receipts m JOIN game_item_ground_locations g USING (item_instance_id) \
              JOIN game_item_instances i USING (item_instance_id) \
              WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid \
              AND g.runtime_scope_ownership_generation=$3::text::numeric AND i.lifecycle=1 \
              AND (g.spatial_position=$4 OR g.spatial_position=$5) \
-             AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0 AND m.materialized_at IS NOT NULL",
+             AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0 AND m.materialized_at >= $7 AND m.death_actor_local_generation=$8::text::numeric LIMIT 65",
         ).bind(&world).bind(&channel)
-          .bind(&generation).bind(packed).bind(native).bind(character).fetch_all(&mut db).await?;
+          .bind(&generation).bind(packed).bind(native).bind(character).bind(started_at).bind(target.generation.to_string()).fetch_all(&mut db).await?;
         db.close().await?;
         Ok((world, channel, generation, rows))
     }).await?;
@@ -295,8 +295,11 @@ async fn exact_corpse(
         crate::foundation::ChannelId::decode(&channel)?,
     );
     let generation = ScopeOwnershipGeneration::new(generation.parse()?)?;
+    if rows.len() > 64 {
+        return Err("corpse proof exceeded the qualification tile budget".into());
+    }
     let mut matching = None;
-    for (slot, actor_generation, key, revision, top_damage, materialized) in &rows {
+    for (slot, actor_generation, key, revision, top_damage, materialized, instance) in &rows {
         if *materialized < started_at || actor_generation.parse::<u64>()? != target.generation {
             continue;
         }
@@ -309,23 +312,6 @@ async fn exact_corpse(
         if actor.placement_identity() != target.identity {
             continue;
         }
-        let same_definition = |row: &&CorpseRow| row.2 == *key && row.3 == *revision;
-        let earlier_same_definition = rows
-            .iter()
-            .filter(same_definition)
-            .filter(|row| row.5 < started_at)
-            .count();
-        if rows
-            .iter()
-            .filter(same_definition)
-            .filter(|row| row.5 >= started_at)
-            .count()
-            != 1
-        {
-            return Err(
-                "multiple new corpses of the target's definition share its death tile".into(),
-            );
-        }
         let items = client_world::provisioning::item_index()?;
         let reference = items
             .definition_ref("Item", key, revision)
@@ -334,7 +320,7 @@ async fn exact_corpse(
             definition: reference.get(),
             identity: actor.corpse_identity(),
             top_damage: *top_damage,
-            earlier_same_definition,
+            instance: instance.as_slice().try_into()?,
         });
     }
     Ok(matching)
@@ -440,11 +426,9 @@ pub(super) async fn kill(
                 }
                 let candidates: Vec<_> = if let Some(tile) = &tile {
                     exact.as_ref().map_or_else(Vec::new, |proof| {
-                        let present_before = tile.iter().filter(|(definition, handle)| *definition == proof.definition && before.contains(handle)).count();
-                        tile.iter().copied().filter(|(definition, handle)| corpse_candidate(
-                            proof.definition == *definition, before.contains(handle),
-                            present_before != proof.earlier_same_definition,
-                        )).map(|(_, handle)| handle).collect()
+                        tile.iter().copied().filter(|(definition, handle)|
+                            corpse_candidate(proof.definition == *definition, before.contains(handle), false))
+                            .map(|(_, handle)| handle).collect()
                     })
                 } else {
                     entities.iter().filter(|entry| entry.kind == EntityKind::Corpse && entry.position == position)
@@ -454,8 +438,18 @@ pub(super) async fn kill(
                             before.contains(handle), false))
                         .map(|(_, handle)| handle).collect()
                 };
-                if observed_kill(damaged || exact.as_ref().is_some_and(|proof| proof.top_damage), left, candidates.len() == 1) {
-                    return Ok(candidates[0]);
+                if observed_kill(damaged || exact.as_ref().is_some_and(|proof| proof.top_damage), left, !candidates.is_empty()) {
+                    if tile.is_none() && candidates.len() == 1 {
+                        return Ok(candidates[0]);
+                    }
+                    if let Some(proof) = &exact {
+                        for handle in candidates {
+                            let actual = client_readmission::within_retry_budget(deadline, client_world::observed_item_instance(session, handle)).await?;
+                            if actual == Some(proof.instance) {
+                                return Ok(handle);
+                            }
+                        }
+                    }
                 }
             }
             if tokio::time::Instant::now() >= deadline {

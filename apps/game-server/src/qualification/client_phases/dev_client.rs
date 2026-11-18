@@ -228,25 +228,26 @@ pub(super) async fn dev_client<'a>(
         door_revision + 1,
         door_revision + 2,
     ));
-    client_guild::guild(&mut dev_client).await?;
-    client_party::party(&mut dev_client).await?;
-    client_vip::vip(&mut dev_client).await?;
-    client_player_trade::player_trade(&mut dev_client).await?;
-    client_imbue::imbue(&mut dev_client).await?;
-    client_npc_shop::npc_shop(&mut dev_client).await?;
-    client_stash::stash(&mut dev_client).await?;
-    client_market::market(&mut dev_client, clients).await?;
-    client_task_board::task_board(&mut dev_client).await?;
-    client_prey::prey(&mut dev_client).await?;
-    client_hireling::hireling(&mut dev_client).await?;
-    client_browse_field::browse_field(&mut dev_client).await?;
-    client_daily_boost::daily_boost(&mut dev_client).await?;
-    client_depot_search::depot_search(&mut dev_client).await?;
-    client_hotkey_equip::hotkey_equip(&mut dev_client).await?;
-    client_item_forge::item_forge(&mut dev_client).await?;
-    client_store::store(&mut dev_client).await?;
-    client_hunt::hunt(&mut dev_client).await?;
-    client_death::death(&mut dev_client, clients).await?;
+    let mut feature_result = Ok(());
+    feature_result = feature_result.and(client_guild::guild(&mut dev_client).await);
+    feature_result = feature_result.and(client_party::party(&mut dev_client).await);
+    feature_result = feature_result.and(client_vip::vip(&mut dev_client).await);
+    feature_result = feature_result.and(client_player_trade::player_trade(&mut dev_client).await);
+    feature_result = feature_result.and(client_imbue::imbue(&mut dev_client).await);
+    feature_result = feature_result.and(client_npc_shop::npc_shop(&mut dev_client).await);
+    feature_result = feature_result.and(client_stash::stash(&mut dev_client).await);
+    feature_result = feature_result.and(client_market::market(&mut dev_client, clients).await);
+    feature_result = feature_result.and(client_task_board::task_board(&mut dev_client).await);
+    feature_result = feature_result.and(client_prey::prey(&mut dev_client).await);
+    feature_result = feature_result.and(client_hireling::hireling(&mut dev_client).await);
+    feature_result = feature_result.and(client_browse_field::browse_field(&mut dev_client).await);
+    feature_result = feature_result.and(client_daily_boost::daily_boost(&mut dev_client).await);
+    feature_result = feature_result.and(client_depot_search::depot_search(&mut dev_client).await);
+    feature_result = feature_result.and(client_hotkey_equip::hotkey_equip(&mut dev_client).await);
+    feature_result = feature_result.and(client_item_forge::item_forge(&mut dev_client).await);
+    feature_result = feature_result.and(client_store::store(&mut dev_client).await);
+    feature_result = feature_result.and(client_hunt::hunt(&mut dev_client).await);
+    feature_result = feature_result.and(client_death::death(&mut dev_client, clients).await);
     let before = dev_client.world_spatial().actor_position;
     let after = before
         .x
@@ -281,7 +282,7 @@ pub(super) async fn dev_client<'a>(
     }
     evidence("dev_client released=terminal admissions=4");
 
-    Ok(())
+    feature_result
 }
 
 fn expect_initial_pushes(

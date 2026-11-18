@@ -200,11 +200,22 @@ enum Placement {
     Adjacent(GameSessionId),
 }
 
+pub(crate) async fn acquire_qualification_scope_lane(
+    runtime: &tokio::sync::Mutex<ChannelRuntimeV1>,
+) -> Result<crate::durability::spell_owner_commit::SpellLanePermit, SpawnRefusal> {
+    let scope = runtime.lock().await.binding().runtime_scope();
+    let lane = crate::gameplay_transport::qualification_observation::scope_lane(scope);
+    lane.acquire().await.map_err(|_| {
+        SpawnRefusal::Fence("qualification spawn scope lane is awaiting install".into())
+    })
+}
+
 /// The Rat of the seam harness, at its Thalom cell, unchanged.
 #[cfg(test)]
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn realize_rat_in_transaction(
     tx: sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: crate::durability::spell_owner_commit::SpellLanePermit,
     root: &DurabilityRoot,
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
@@ -214,6 +225,7 @@ pub(crate) async fn realize_rat_in_transaction(
 ) -> Result<CompanionSnapshot, String> {
     realize_in_transaction(
         tx,
+        permit,
         root,
         recovery,
         node,
@@ -232,6 +244,7 @@ pub(crate) async fn realize_rat_in_transaction(
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn realize_creature_in_transaction(
     tx: sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: crate::durability::spell_owner_commit::SpellLanePermit,
     root: &DurabilityRoot,
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
@@ -244,6 +257,7 @@ pub(crate) async fn realize_creature_in_transaction(
 ) -> Result<CompanionSnapshot, SpawnRefusal> {
     realize_in_transaction(
         tx,
+        permit,
         root,
         recovery,
         node,
@@ -260,6 +274,7 @@ pub(crate) async fn realize_creature_in_transaction(
 #[allow(clippy::too_many_arguments)]
 async fn realize_in_transaction(
     tx: sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: crate::durability::spell_owner_commit::SpellLanePermit,
     root: &DurabilityRoot,
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
@@ -335,8 +350,6 @@ async fn realize_in_transaction(
     spawn_when_verified(runtime, async {
         let mut tx = tx;
         // This tagged qualification lane owns the read-only scope and Item proof.
-        let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(scope)
-            .await.map_err(|error| fence(format!("qualification spawn scope lane: {error:?}")))?;
         let owned = crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
             &mut tx, &permit, root, recovery, node, scope, generation.get(),
         ).await.map_err(|error| fence(format!("qualification spawn scope fence: {error:?}")))?;

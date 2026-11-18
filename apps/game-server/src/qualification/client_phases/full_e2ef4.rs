@@ -1505,9 +1505,7 @@ async fn logout_idle(
                     }
                 }
                 Err(error) => {
-                    let chain = std::iter::successors(Some(&error as &(dyn std::error::Error + 'static)), |cause| cause.source());
-                    let eof = chain.filter_map(|cause| cause.downcast_ref::<io::Error>())
-                        .any(|source| source.kind() == io::ErrorKind::UnexpectedEof);
+                    let eof = session_unexpected_eof(&error);
                     let elapsed = start.elapsed();
                     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
                     let durable = while_serving(client, session_loss_row(clients.url, *silent_session.as_bytes(), deadline)).await?;

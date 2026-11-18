@@ -310,21 +310,13 @@ async fn compare_protection_zone(
     inside: bool,
 ) -> TestResult {
     use client_spell_journey::ProtectionProbe;
-    use oteryn_protocol_oteryn::actor_spell::SpellTarget;
     let (words, target) = client_spell_journey::fixture_protection_spell()?;
-    // Paladin and monk attack spells need a target. The fixture supplies a blank rune
-    // to exercise aggressive conjuration on either side of the same sampled border.
-    let words = if target == SpellTarget::AttackTarget {
-        "adori dis min vis"
-    } else {
-        words
-    };
     let comparison = if inside {
         ProtectionProbe::Inside
     } else {
         ProtectionProbe::Outside
     };
-    client_spell_journey::protection_zone_probe(client, comparison, words, SpellTarget::None).await
+    client_spell_journey::protection_zone_probe(client, comparison, words, target).await
 }
 
 #[cfg(test)]

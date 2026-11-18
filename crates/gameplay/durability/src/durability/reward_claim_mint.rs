@@ -1040,6 +1040,19 @@ impl DurabilityRoot {
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
         self.charge_reward_claim_mint_work_unit(recovery.clone(), candidate, None)
             .await?;
+        self.read_committed_reward_claim_mint(authority, candidate).await
+    }
+
+    /// Read an already committed claim under the original command and intent.
+    /// This read does not spend reservation work or retry a mutation.
+    pub async fn read_committed_reward_claim_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        candidate: &RewardClaimMintCandidate,
+    ) -> Result<Option<CommittedRewardClaimMint>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
         let command = candidate.request.command;
         let binding = candidate.intent_binding;
         self.try_issue_semantic_pass()?

@@ -116,12 +116,38 @@ pub(super) async fn market(
             "market cancellation did not remove the buy offer and refund its escrow".into(),
         );
     }
+    let cancelled: bool = within_database_deadline(
+        tokio::time::Instant::now() + Duration::from_secs(20),
+        async {
+            let mut database = sqlx::PgConnection::connect(clients.url).await?;
+            let cancelled = sqlx::query_scalar(
+                "SELECT EXISTS (
+             SELECT 1 FROM game_market_offers o WHERE o.offer_id=encode($1,'hex')::uuid
+               AND o.world_id=encode($2,'hex')::uuid AND o.account_id=$3::uuid
+               AND o.side=1 AND o.state=3 AND o.ended_at_us IS NOT NULL
+               AND o.escrow_gold=0 AND o.held_credit_gold=0
+               AND NOT EXISTS (SELECT 1 FROM game_item_market_escrow_locations e
+                               WHERE e.offer_id=o.offer_id AND e.world_id=o.world_id))",
+            )
+            .bind(offer_id.as_slice())
+            .bind(clients.world.as_slice())
+            .bind(&clients.accounts[1])
+            .fetch_one(&mut database)
+            .await?;
+            database.close().await?;
+            Ok(cancelled)
+        },
+    )
+    .await?;
+    if !cancelled {
+        return Err("market cancellation lacks a terminal zero-escrow durable offer".into());
+    }
     created?;
     evidence("mechanic=market buy_offer=committed debit=verified cancel=verified escrow=refunded");
     Ok(())
 }
 
-async fn market_bank_balance(clients: &SeamClients<'_>) -> TestResult<u64> {
+pub(super) async fn market_bank_balance(clients: &SeamClients<'_>) -> TestResult<u64> {
     within_database_deadline(tokio::time::Instant::now() + Duration::from_secs(20), async {
         let mut database = sqlx::PgConnection::connect(clients.url).await?;
         let balance: Option<i64> = sqlx::query_scalar(

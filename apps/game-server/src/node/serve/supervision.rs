@@ -70,6 +70,11 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             .as_ref()
             .and_then(|bundle| bundle.digest_bytes()),
     };
+    if config.qualification_fixture {
+        crate::gameplay_transport::qualification_observation::enable();
+        #[cfg(any(test, feature = "qualification-spawn"))]
+        crate::durability::fresh_admission::qualification_replay::enable();
+    }
     let loops_stop = CancellationToken::new();
     let reset_watch = world_reset::ResetWatch::default();
     // Box each long-lived family before the supervisor retains it. Inline loop

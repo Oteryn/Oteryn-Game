@@ -2951,6 +2951,15 @@ async fn control_loop(
                     .to_owned(),
                     "character_bootstrap",
                 ),
+                #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"recovery-replay ") => (
+                    qualification_fixture::recovery_replay(config.qualification_fixture, &request),
+                    "character_bootstrap",
+                ),
+                Some(request) if request.starts_with(b"item-instance ") => (
+                    qualification_fixture::item_instance(config.qualification_fixture, &request),
+                    "character_bootstrap",
+                ),
                 Some(request) if request.starts_with(b"spawn ") => (
                     qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,

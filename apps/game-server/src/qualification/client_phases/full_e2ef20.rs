@@ -222,6 +222,18 @@ fn optional_shop_window_propagates_a_session_failure() -> TestResult {
         })
 }
 
+pub(super) async fn fund_market_account(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult {
+    let refs = coin_refs()?;
+    earn_gold(client, world, npcs, refs).await?;
+    let (actor, _) = find_exchange_npc(client, world, npcs).await?;
+    exchange(client, actor, &["deposit all", "yes"]).await?;
+    wait_coins(client, refs, [0, 0, 0], "market funding deposit").await
+}
+
 async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,

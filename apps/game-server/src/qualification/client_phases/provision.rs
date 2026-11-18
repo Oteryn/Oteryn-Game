@@ -30,12 +30,19 @@ pub(super) async fn provision(
         "--profile",
         &profile,
     ]);
-    let status = wait_fixture_command(async { Ok(command.status().await?) }, async || {
-        client.service_liveness(Duration::from_millis(100)).await?;
-        Ok(())
-    })
+    let status = wait_fixture_command(
+        async { Ok(run_fixture_command(&mut command).await?) },
+        async || {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            Ok(())
+        },
+    )
     .await?;
-    if !status.success() {
+    if !status.status.success() {
+        evidence(&format!(
+            "fixture provisioning failed: {}",
+            String::from_utf8_lossy(&status.stderr)
+        ));
         return Err("node-boot fenced build provisioning failed".into());
     }
     let (result, logout, attempts, busy_timed_out) =
