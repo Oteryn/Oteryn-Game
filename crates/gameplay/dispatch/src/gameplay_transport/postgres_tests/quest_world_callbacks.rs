@@ -663,6 +663,8 @@ fn world_cells(
                 } else {
                     callback.selector.action
                 },
+                text: (callback.key == super::goshnar_fluid::NATIVE_KEY)
+                    .then(|| "Fixture gravestone inscription".into()),
                 ..Default::default()
             },
         });

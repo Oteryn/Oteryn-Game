@@ -954,9 +954,9 @@ pub(super) async fn exercise(
         ))
         .await;
     }
-    if matches!(name, super::goshnar_fluid::NAME | super::goshnar_fluid::OPEN_NAME) {
+    if super::goshnar_fluid::is_scenario(name) {
         return Box::pin(super::goshnar_fluid::exercise(
-            owner, admitted, h, authority, name == super::goshnar_fluid::OPEN_NAME,
+            owner, admitted, h, authority, name,
         )).await;
     }
     if name == super::haunted_ruin::NAME {

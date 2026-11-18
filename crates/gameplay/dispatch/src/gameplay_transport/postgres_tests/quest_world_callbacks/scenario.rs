@@ -113,7 +113,7 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if matches!(name, super::super::goshnar_fluid::NAME | super::super::goshnar_fluid::OPEN_NAME) {
+    let start = if super::super::goshnar_fluid::is_scenario(name) {
         super::super::goshnar_fluid::STAGING
     } else if name == "qengine-rewards-smith-story" {
         Position {
@@ -404,8 +404,8 @@ fn scenario_case(
         callback("questpc7-formal-display")?
     } else if outfit_world {
         callback(name)?
-    } else if matches!(name, super::super::goshnar_fluid::NAME | super::super::goshnar_fluid::OPEN_NAME) {
-        super::super::goshnar_fluid::callback(trigger)?
+    } else if super::super::goshnar_fluid::is_scenario(name) {
+        super::super::goshnar_fluid::callback(trigger, name == super::super::goshnar_fluid::NATIVE_NAME)?
     } else if name == super::super::haunted_ruin::NAME {
         super::super::haunted_ruin::callback(trigger)?
     } else if name == super::super::rahemos_chance::NAME {
@@ -658,7 +658,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == super::super::haunted_ruin::NAME {
+    let world = if name == super::super::goshnar_fluid::NATIVE_NAME {
+        world_ordinal(&callback, trigger, super::super::goshnar_fluid::APPEARANCE, 1)?
+    } else if name == super::super::haunted_ruin::NAME {
         world_with_objects(&callback, trigger, &[(super::super::haunted_ruin::DOOR, 7869)], &[7868])?
     } else if name == super::super::shadow_nexus::NAME {
         world_with_objects(&callback, trigger, &[], &[7926, 7927, 7928, 7929, 7930, 7931])?

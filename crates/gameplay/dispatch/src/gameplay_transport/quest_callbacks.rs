@@ -287,8 +287,15 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                         .map(|(id, _)| *id)
                 })
                 .is_some_and(|id| {
-                    map.facts
-                        .quest_callback_native_object(key, id, binding.appearance)
+                    if callback.effects.fluid_relocation.is_some() {
+                        // Crystal startup/tables/item.lua:344-349 binds the original
+                        // inscribed sign. B3 retains its text before the startup AID.
+                        map.facts
+                            .quest_callback_native_readable_object(key, id, binding.appearance)
+                    } else {
+                        map.facts
+                            .quest_callback_native_object(key, id, binding.appearance)
+                    }
                 });
         // Counterpart adapters retain a separately authoritative legacy route.
         // Native-only selectors must never become an unconstrained fallback.

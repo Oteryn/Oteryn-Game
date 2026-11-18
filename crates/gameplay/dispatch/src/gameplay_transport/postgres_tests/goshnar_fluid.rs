@@ -10,6 +10,9 @@ use std::num::NonZeroU64;
 
 pub(super) const NAME: &str = "qengine-rewards-goshnar-fluid";
 pub(super) const OPEN_NAME: &str = "qengine-rewards-goshnar-fluid-open-pvp";
+pub(super) const NATIVE_NAME: &str = "qengine-rewards-goshnar-fluid-native-sign";
+pub(super) const NATIVE_KEY: &str = "oteryn:quest-callback/goshnar-fluid-native-sign-fixture";
+pub(super) const APPEARANCE: u16 = 1982;
 const TARGET: Position = Position { x: 101, y: 100, floor: -7 };
 pub(super) const STAGING: Position = Position { y: 101, ..TARGET };
 const DESTINATION: Position = Position { x: 104, y: 100, ..TARGET };
@@ -33,18 +36,43 @@ fn goshnar_blood_use_respects_the_open_pvp_stance_of_a_landing_occupant() -> Tes
     })
 }
 
-pub(super) fn callback(position: Position) -> TestResult<Callback> {
+#[test]
+fn goshnar_blood_use_accepts_a_native_gravestone_with_an_inscription() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(NATIVE_NAME, || {
+        super::quest_world_callbacks::scenario(NATIVE_NAME, TARGET, false)
+    })
+}
+
+pub(super) fn is_scenario(name: &str) -> bool {
+    matches!(name, NAME | OPEN_NAME | NATIVE_NAME)
+}
+
+pub(super) fn callback(position: Position, native: bool) -> TestResult<Callback> {
+    let (key, selector) = if native {
+        (NATIVE_KEY, serde_json::json!({
+            "native":{"position":position,"ordinal":1,"appearance":APPEARANCE}
+        }))
+    } else {
+        ("oteryn:quest-callback/goshnar-fluid-fixture", serde_json::json!({
+            "position":position,"ordinal":1,"action":2023
+        }))
+    };
     // Crystal 201189f8 data-global/scripts/actions/other/fluids.lua:36-47,157-184.
     Ok(serde_json::from_value(serde_json::json!({
-        "key":"oteryn:quest-callback/goshnar-fluid-fixture",
+        "key":key,
         "quest":"oteryn:quest.the_pits_of_inferno_quest", "trigger":"use",
-        "selector":{"position":position,"ordinal":1,"action":2023},
+        "selector":selector,
         "reversible":false, "passages":[], "storage":[], "offerings":[], "return_on_failure":false,
         "effects":{"fluid_relocation":{
             "subtype":5,"staging_dx":0,"staging_dy":1,"destination":DESTINATION,
             "source_effect":1,"destination_effect":18,"speech":"Muahahahaha.."
         }},
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/fluids.lua:151-184"]
+        "sources":[
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/fluids.lua:151-184",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:344-349"
+        ]
     }))?)
 }
 
@@ -53,9 +81,10 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
-    open_pvp: bool,
+    name: &str,
 ) -> TestResult {
-    assert!(owner.states.quest_callbacks.fixture.set(vec![callback(TARGET)?]).is_ok());
+    let open_pvp = name == OPEN_NAME;
+    assert!(owner.states.quest_callbacks.fixture.set(vec![callback(TARGET, name == NATIVE_NAME)?]).is_ok());
     let session = admitted.game_session_id;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let fence = owner.current_quest_fence(session).await

@@ -1631,6 +1631,26 @@ impl BundleFacts {
     /// Match an exact authored counterpart only while the retained base object is bare.
     /// Sparse placements and plain palette entries share the same original appearance proof.
     pub fn quest_callback_native_object(&self, key: u64, id: u32, appearance: u16) -> bool {
+        self.quest_callback_native_placement(key, id, appearance, false)
+    }
+
+    /// A fluid target may retain a readable inscription from its original map placement.
+    pub fn quest_callback_native_readable_object(
+        &self,
+        key: u64,
+        id: u32,
+        appearance: u16,
+    ) -> bool {
+        self.quest_callback_native_placement(key, id, appearance, true)
+    }
+
+    fn quest_callback_native_placement(
+        &self,
+        key: u64,
+        id: u32,
+        appearance: u16,
+        allow_inscription: bool,
+    ) -> bool {
         let Some((pos, _)) = view::placement_of(key) else {
             return false;
         };
@@ -1640,7 +1660,22 @@ impl BundleFacts {
         let index = match self.placements.binary_search_by_key(&key, |(k, _)| *k) {
             Ok(at) => {
                 let placement = &self.placements[at].1;
-                if placement.attrs != Attrs::default() || placement.dropped {
+                let inscription_only = allow_inscription
+                    && matches!(
+                        placement.attrs,
+                        Attrs {
+                            count: None,
+                            action: None,
+                            unique: None,
+                            door: None,
+                            text: Some(_),
+                            charges: None,
+                            description: None,
+                            teleport: None,
+                            depot: None,
+                        }
+                    );
+                if placement.dropped || (placement.attrs != Attrs::default() && !inscription_only) {
                     return false;
                 }
                 placement.palette
