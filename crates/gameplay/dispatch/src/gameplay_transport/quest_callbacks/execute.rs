@@ -217,6 +217,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Occupied;
         }
         let before = after;
+        let removes_target = callback
+            .item_on_target
+            .as_ref()
+            .is_some_and(|item| item.target_remove);
+        if removes_target && map.facts.base_hidden(key) {
+            return UseDisposition::StaleState;
+        }
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
         }
@@ -243,9 +250,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
-            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                due,
-                restore: before,
+            // Crystal 201189f8 data-global/scripts/quests/to_blind_the_enemy_quest/mirror.lua:10-21.
+            projection = Some(if removes_target {
+                crate::map::facts::QuestCallbackProjection::TimedRemoval {
+                    due,
+                    restore: before,
+                }
+            } else {
+                crate::map::facts::QuestCallbackProjection::TimedTransform {
+                    due,
+                    restore: before,
+                }
             });
         }
         if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
@@ -280,11 +295,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if callback
-            .item_on_target
-            .as_ref()
-            .is_some_and(|item| item.target_remove)
-        {
+        if removes_target && callback.effects.reset_after_ms.is_none() {
             if projection.is_some() {
                 return UseDisposition::Rejected;
             }
@@ -1372,6 +1383,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
                         due,
                         ..
+                    })
+                    | Some(crate::map::facts::QuestCallbackProjection::TimedRemoval {
+                        due, ..
                     })
                     | Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
                         reset: Some((due, _)),
