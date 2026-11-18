@@ -315,7 +315,7 @@ process measurements establish the reproduced OOM.
 | Game-server lib build and inventory with the checked-in profile, two Cargo jobs | Passed, 861 tests and 863 output lines |
 | Focused dispatch and game-server unit tests | `stackable_count_boundaries` and `builds_the_bound_row` passed |
 | Release world-bundle `pin-check` | Passed for the Oteryn bundle in 96.918 s including compilation |
-| Clippy with the checked-in profile | Pending on the owner's PC |
+| Dispatch library Clippy with all features and one Cargo job | Running in the follow-up after the owner added the Clippy requirement |
 | Hosted archive with the serial workflow proposal | Pending |
 
 The new game-server lib-test build peaked in game-server rustc at
@@ -326,6 +326,11 @@ retained 256 codegen objects totaling 397,703,024 bytes. These counts
 describe direct compiler inputs and cached objects. The complete linker
 input inventory in the baseline table includes transitive archives and
 linker-generated objects.
+
+The focused lint command is
+`CARGO_BUILD_JOBS=1 cargo clippy --locked -p oteryn-gameplay-dispatch --lib --all-features -- -D warnings`.
+This checks the library, including its test-support feature. The lib-test
+target is covered by the separate build and inventory measurements above.
 
 ## Workflow proposal for the serial profile
 
