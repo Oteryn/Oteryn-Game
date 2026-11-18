@@ -1571,7 +1571,7 @@ fn elemental_spheres_exchange_can_read_eleven_item_identities() -> Result<(), Np
             {"kind":"take_item", "item":"oteryn:item.tibia.i954", "count":1}
         ]),
     );
-    rule["guards"] = serde_json::json!([940, 941, 942, 944, 945, 946, 947, 948, 949, 950].map(
+    rule["guards"] = serde_json::json!([677, 940, 941, 942, 944, 945, 946, 947, 948, 51259].map(
         |id| {
             serde_json::json!({
                 "kind":"item", "item":format!("oteryn:item.tibia.i{id}"), "op":"lt", "count":1
