@@ -790,9 +790,8 @@ fn validate_document_with_capacity(
             || (c.per_occurrence_mint
                 && (c.give.is_none()
                     || c.cosmetic_targets().next().is_some()
-                    // Weighted repeat payouts may keep the same idempotent
-                    // achievement while minting a fresh bundle per command.
-                    || (c.achievement.is_some() && c.weighted_rewards.is_empty())
+                    // The PostgreSQL occurrence receipt requires an item-only mint.
+                    || c.achievement.is_some()
                     || !c.achievement_progress.is_empty()))
             || c.experience
                 .is_some_and(|amount| !(1..=super::QUESTGATE0_RL_05).contains(&amount))
