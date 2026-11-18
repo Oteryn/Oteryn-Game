@@ -85,7 +85,9 @@ pub(super) async fn settle(
                 &recipient.death,
                 Arc::clone(catalogue),
                 &owner.premium_coordinator,
-                owner.active_generation.and_then(|generation| generation.native_gameplay()),
+                owner
+                    .active_generation
+                    .and_then(|generation| generation.native_gameplay()),
             )
             .await;
         drop(slot);

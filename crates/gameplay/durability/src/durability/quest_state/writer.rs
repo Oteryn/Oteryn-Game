@@ -1986,7 +1986,10 @@ impl DurabilityRoot {
                             _ => None,
                         };
                         let Some(content) = content.filter(|content| {
-                            super::super::character_appearance::quest_grants::outfit_compatible(content, reward)
+                            content.cosmetics().is_some_and(|cosmetics| {
+                                cosmetics.content_revision() == catalogue.content_revision()
+                                    && cosmetics.source_digest() == content.source_digest()
+                            }) && super::super::character_appearance::quest_grants::outfit_compatible(content, reward)
                         }) else {
                             tx.rollback().await?;
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));

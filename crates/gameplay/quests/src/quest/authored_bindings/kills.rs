@@ -1,8 +1,8 @@
 //! Native counter bindings use the existing death queue and its fenced quest writer.
 //! Threshold gate effects reuse questpc3 262618b3's original-snapshot operation.
 use super::BoundQuest;
-use crate::quest::{QuestComparison, QuestEffect, QuestEffectKind};
 use crate::quest::reward_callbacks::OutfitReward;
+use crate::quest::{QuestComparison, QuestEffect, QuestEffectKind};
 use serde::{Deserialize, Serialize};
 
 pub const MAX_KILL_BINDINGS: usize = 128;
@@ -113,10 +113,16 @@ impl KillCounter {
                     || self.damage_credit.is_none()
                     || reward.addons != 0
                     || reward.sex.is_some()
-                    || !reward.outfit.strip_prefix("oteryn:outfit.").is_some_and(|key| {
-                        !key.is_empty() && key.len() <= 145
-                            && key.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
-                    })
+                    || reward.outfit.len() > 160
+                    || !reward
+                        .outfit
+                        .strip_prefix("oteryn:outfit.")
+                        .is_some_and(|key| {
+                            !key.is_empty()
+                                && key.bytes().all(|b| {
+                                    b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_'
+                                })
+                        })
             })
             || self.required_outcome.as_ref().is_some_and(|required| {
                 !required.valid()

@@ -35,6 +35,7 @@ enum Case {
     Area,
     PartyArea,
     DefeatTime,
+    FirstDefeatOutfit,
     Summon,
     Ordered,
     Outcome,
@@ -127,6 +128,14 @@ fn boss_defeat_clock_is_stored_for_damagers_and_absent_for_bystander() -> TestRe
         return Ok(());
     };
     run(admin, Case::DefeatTime)
+}
+
+#[test]
+fn first_defeat_grants_the_base_outfit_once_to_each_damager() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::FirstDefeatOutfit)
 }
 
 #[test]
@@ -319,12 +328,17 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             counter["maximum"] = json!(i64::MAX);
             "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:114-124"
         }
-        Case::All => {
+        Case::All | Case::FirstDefeatOutfit => {
             counter["gate"] = json!(TRACK);
             counter["gate_value"] = json!(0);
             counter["maximum"] = json!(1);
             counter["set_to_maximum"] = json!(true);
-            "Crystal201189f the_new_frontier/creaturescripts_shard_of_corruption_kill.lua:5-10"
+            if case == Case::FirstDefeatOutfit {
+                counter["first_defeat_outfit"] = json!({"outfit":"oteryn:outfit.fiend_slayer","addons":0});
+                "Crystal 201189f8 arbaziloth_death.lua:29-41"
+            } else {
+                "Crystal201189f the_new_frontier/creaturescripts_shard_of_corruption_kill.lua:5-10"
+            }
         }
         Case::Top => {
             counter["damage_credit"]["recent_damage_ms"] = json!(60_000);
@@ -633,6 +647,14 @@ fn run(admin: String, case: Case) -> TestResult {
             return h.cleanup().await;
         }
 
+        if case == Case::FirstDefeatOutfit {
+            exercise_first_defeat_outfit(&owner, &players, at, &h.pool).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+
         if case == Case::PartyArea {
             exercise_positioned_party(&owner, &players, at, &h.pool).await?;
             drop(owner);
@@ -731,7 +753,8 @@ fn run(admin: String, case: Case) -> TestResult {
                 assert!((before..=after).contains(&actual));
                 [actual, actual, 0]
             }
-            Case::Window
+            Case::FirstDefeatOutfit
+            | Case::Window
             | Case::WindowStateless
             | Case::WindowVisual
             | Case::WindowReset
@@ -1237,6 +1260,95 @@ async fn track_value(pool: &sqlx::PgPool, character: u8) -> TestResult<i64> {
     .await?)
 }
 
+async fn exercise_first_defeat_outfit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: &[Player],
+    at: MovementLocalPosition,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    const GRANT: &str = "oteryn:outfit.fiend_slayer/quest-grant/0";
+    // Interrupt the actual quest track write after the outfit insert. The
+    // nontransactional sequence proves the writer reached that boundary.
+    sqlx::raw_sql(
+        "CREATE SEQUENCE qcredit_outfit_fault_hits;
+         GRANT USAGE, SELECT ON SEQUENCE qcredit_outfit_fault_hits TO oteryn_game_runtime;
+         CREATE FUNCTION qcredit_fail_first_defeat() RETURNS trigger LANGUAGE plpgsql AS $$
+         BEGIN
+           IF EXISTS(SELECT 1 FROM game_account_appearance_unlock_receipts
+                     WHERE granting_character_id=NEW.character_id
+                     AND unlock_key='oteryn:outfit.fiend_slayer/quest-grant/0') THEN
+               PERFORM nextval('qcredit_outfit_fault_hits');
+           END IF;
+           RETURN NULL;
+         END $$;
+         CREATE TRIGGER qcredit_fail_first_defeat BEFORE INSERT ON game_character_quest_tracks
+         FOR EACH ROW WHEN(NEW.track_key='oteryn:quest-progress/qcredit-fixture/kills')
+         EXECUTE FUNCTION qcredit_fail_first_defeat();",
+    )
+    .execute(pool)
+    .await?;
+    let position = MovementLocalPosition { x: at.x + 1, ..at };
+    let case = Case::FirstDefeatOutfit;
+    let target = spawn_credit_creature(owner, RAT, position).await?;
+    queue_actor_death(owner, players, RAT, target, case, 200).await?;
+    assert_eq!(
+        owner.drain_kill_rewards(players[0].session).await,
+        DrainOutcome::Deferred
+    );
+    let reached: bool = sqlx::query_scalar("SELECT is_called FROM qcredit_outfit_fault_hits")
+        .fetch_one(pool)
+        .await?;
+    assert!(reached, "the outfit was inserted before the injected track failure");
+    assert_tracks(pool, [0, 0, 0]).await?;
+    let grants: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key=$1",
+    )
+    .bind(GRANT)
+    .fetch_one(pool)
+    .await?;
+    assert_eq!(grants, 0);
+    sqlx::query("DROP TRIGGER qcredit_fail_first_defeat ON game_character_quest_tracks")
+        .execute(pool)
+        .await?;
+    assert_eq!(
+        owner.drain_kill_rewards(players[0].session).await,
+        DrainOutcome::Drained
+    );
+    owner
+        .runtime
+        .lock()
+        .await
+        .remove_arena_opponent(target)
+        .map_err(debug)?;
+    assert_tracks(pool, [1, 1, 0]).await?;
+    assert_first_defeat_outfits(pool).await?;
+
+    death(owner, players, RAT, position, case, 201).await?;
+    assert_tracks(pool, [1, 1, 0]).await?;
+    assert_first_defeat_outfits(pool).await
+}
+
+async fn assert_first_defeat_outfits(pool: &sqlx::PgPool) -> TestResult {
+    const GRANT: &str = "oteryn:outfit.fiend_slayer/quest-grant/0";
+    let receipts: Vec<String> = sqlx::query_scalar(
+        "SELECT granting_character_id::text FROM game_account_appearance_unlock_receipts
+         WHERE unlock_key=$1 AND source_kind='quest' ORDER BY granting_character_id",
+    )
+    .bind(GRANT)
+    .fetch_all(pool)
+    .await?;
+    let expected = [60, 61].map(|character| sqlx::types::Uuid::from_bytes(id(character)).to_string());
+    assert_eq!(receipts, expected);
+    let unlocks: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_appearance_unlocks
+         WHERE unlock_key LIKE 'oteryn:outfit.fiend_slayer/quest-grant/%'",
+    )
+    .fetch_one(pool)
+    .await?;
+    assert_eq!(unlocks, 2, "both accounts earn the base and no addon");
+    Ok(())
+}
+
 async fn assert_tracks(pool: &sqlx::PgPool, expected: [i64; 3]) -> TestResult {
     for (index, value) in expected.into_iter().enumerate() {
         let stored = track_value(pool, 60 + u8::try_from(index)?).await?;
@@ -1253,18 +1365,7 @@ async fn death(
     case: Case,
     ordinal: u64,
 ) -> TestResult {
-    let target = {
-        let mut runtime = owner.runtime.lock().await;
-        let policy = runtime.companion_policy(creature).map_err(debug)?;
-        let hp = policy.maximum_health;
-        let target = runtime
-            .admit_encounter_actor(creature, hp, at)
-            .map_err(debug)?;
-        runtime
-            .install_creature_policy(target, creature)
-            .map_err(debug)?;
-        target
-    };
+    let target = spawn_credit_creature(owner, creature, at).await?;
     settle_actor_death(owner, players, creature, target, case, ordinal).await?;
     owner
         .runtime
@@ -1275,7 +1376,41 @@ async fn death(
     Ok(())
 }
 
+async fn spawn_credit_creature(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    creature: &str,
+    at: MovementLocalPosition,
+) -> TestResult<ExactActorRef> {
+    let mut runtime = owner.runtime.lock().await;
+    let policy = runtime.companion_policy(creature).map_err(debug)?;
+    let target = runtime
+        .admit_encounter_actor(creature, policy.maximum_health, at)
+        .map_err(debug)?;
+    runtime
+        .install_creature_policy(target, creature)
+        .map_err(debug)?;
+    Ok(target)
+}
+
 async fn settle_actor_death(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: &[Player],
+    creature: &str,
+    target: ExactActorRef,
+    case: Case,
+    ordinal: u64,
+) -> TestResult {
+    queue_actor_death(owner, players, creature, target, case, ordinal).await?;
+    for player in players.iter().take(2) {
+        assert_eq!(
+            owner.drain_kill_rewards(player.session).await,
+            DrainOutcome::Drained
+        );
+    }
+    Ok(())
+}
+
+async fn queue_actor_death(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     players: &[Player],
     creature: &str,
@@ -1353,12 +1488,6 @@ async fn settle_actor_death(
                 Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now_ms * 1000)),
             );
         }
-    }
-    for player in players.iter().take(2) {
-        assert_eq!(
-            owner.drain_kill_rewards(player.session).await,
-            DrainOutcome::Drained
-        );
     }
     Ok(())
 }
