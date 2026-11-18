@@ -432,12 +432,12 @@ pub(super) async fn exercise(
         Some(unlock),
         "Fetter deaths schedule Rewar's vulnerability check"
     );
-    tick_at(owner, unlock - 2).await;
+    tick_at(owner, unlock - 1).await;
     {
         let runtime = owner.runtime.lock().await;
         assert!(find(&runtime, "oteryn:creature.rewar_the_bloody_inv")?.is_some());
     }
-    tick_at(owner, unlock - 1).await;
+    tick_at(owner, unlock).await;
     {
         let runtime = owner.runtime.lock().await;
         assert!(find(&runtime, KNIGHTS[2])?.is_some());
