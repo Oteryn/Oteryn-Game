@@ -4,6 +4,12 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
+const APPROACH: MovementLocalPosition = MovementLocalPosition {
+    x: 33828,
+    y: 32186,
+    floor: 14,
+};
+
 #[test]
 fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -12,11 +18,7 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
     super::kill_reward_e2e::scenario_thread::run("ddepths-faction", move || {
         run(async |configured_admin| {
             assert!(admin == configured_admin);
-            let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
-                x: 33829,
-                y: 32186,
-                floor: 14,
-            })?;
+            let scene = super::srx3_soul_war_world_fixture::source_world(APPROACH)?;
             let h = Harness::create_with_admission_seed(
                 configured_admin,
                 "ddepths_faction",
@@ -83,9 +85,9 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
             }
             deps.initialize(&owner).await;
             for (points, flags, x, y) in [
-                (9_i64, [1_i64, 1, 1], 33829, 32185),
-                (10, [1, 1, 0], 33829, 32185),
-                (14, [1, 1, 2], 33829, 32185),
+                (9_i64, [1_i64, 1, 1], 33828, 32185),
+                (10, [1, 1, 0], 33828, 32185),
+                (14, [1, 1, 2], 33828, 32185),
                 (15, [0, 0, 0], 33982, 32236),
                 (10, [1, 1, 1], 33982, 32236),
             ] {
@@ -123,12 +125,7 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
                 let origin = {
                     let mut runtime = owner.runtime.lock().await;
                     let current = runtime.read_actor_position(actor).map_err(debug)?;
-                    let start = MovementLocalPosition {
-                        x: 33829,
-                        y: 32186,
-                        floor: 14,
-                    };
-                    if current.position() == start {
+                    if current.position() == APPROACH {
                         current
                     } else {
                         let map = owner.bundle_map().ok_or("faction portal map")?;
@@ -139,7 +136,7 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
                             actor,
                             session,
                             current,
-                            start,
+                            APPROACH,
                             false,
                             &doors,
                         )
@@ -149,10 +146,10 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
                 };
                 owner.clock_origin = owner
                     .clock_origin
-                    .checked_sub(std::time::Duration::from_secs(1))
+                    .checked_sub(std::time::Duration::from_secs(3))
                     .ok_or("paced step clock")?;
                 let (outcome, _) = owner
-                    .ordinary_paced_step(actor, session, StepDirection::South, Some(origin), None)
+                    .ordinary_paced_step(actor, session, StepDirection::SouthEast, Some(origin), None)
                     .await;
                 assert_eq!(outcome.disposition, StepDisposition::Moved);
                 assert_eq!(
