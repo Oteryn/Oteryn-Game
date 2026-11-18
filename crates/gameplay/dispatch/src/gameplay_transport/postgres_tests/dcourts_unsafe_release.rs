@@ -165,7 +165,17 @@ async fn exercise(h: &Harness) -> TestResult {
     ));
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
+    admitted.item_fence = Some(
+        owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|()| "quest fence unavailable")?
+            .ok_or("quest fence")?
+            .item_fence(),
+    );
     owner.admit_progression_session(&mut admitted).await;
+    deps.initialize(&owner).await;
+    owner.admit_quest_session(&admitted).await;
     let step = |direction| owner.paced_step(actor, session, direction);
     assert_eq!(
         step(StepDirection::East).await.0.disposition,
@@ -258,5 +268,11 @@ async fn exercise(h: &Harness) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(bait, 1);
+    let receipts: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1")
+            .bind(QUEST)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(receipts, 0);
     Ok(())
 }
