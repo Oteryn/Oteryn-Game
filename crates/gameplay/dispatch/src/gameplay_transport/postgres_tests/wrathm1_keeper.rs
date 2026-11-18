@@ -186,6 +186,22 @@ pub(super) async fn exercise(
         "SELECT i.item_instance_id FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id)
          WHERE i.definition_production_key=$1 AND i.lifecycle=1 AND octet_length(g.corpse_ref)>0"
     ).bind(CORPSE).fetch_one(&h.pool).await?;
+    let ground_position: Vec<u8> = sqlx::query_scalar(
+        "SELECT spatial_position FROM game_item_ground_locations WHERE item_instance_id=$1",
+    )
+    .bind(corpse)
+    .fetch_one(&h.pool)
+    .await?;
+    let cell =
+        crate::durability::spell_items_abi::decode_ground_cell(&ground_position).map_err(debug)?;
+    assert_eq!(
+        (cell.x, cell.y, cell.z),
+        (
+            local(SPAWN).x,
+            local(SPAWN).y,
+            i32::from(local(SPAWN).floor)
+        )
+    );
     let identity = owner
         .runtime
         .lock()

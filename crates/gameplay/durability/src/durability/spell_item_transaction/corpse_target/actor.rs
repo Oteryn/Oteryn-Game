@@ -30,6 +30,11 @@ pub async fn read_for_actor(
     snapshot.read_in_transaction(tx, authority, target).await
 }
 
+enum CorpseFloor {
+    NativeItem,
+    CombatProjection,
+}
+
 #[derive(Debug)]
 pub(crate) struct CorpseActorSnapshot<'runtime> {
     fence: CurrentCharacterGameplayFence,
@@ -67,7 +72,10 @@ impl<'runtime> CorpseActorSnapshot<'runtime> {
         authority: &SpellItemAuthority,
         target: FreshCorpseTarget<'_>,
     ) -> Result<Option<TypedDefinitionRef>> {
-        let Some(scope) = self.read_scope(tx, authority, target.ground).await? else {
+        let Some(scope) = self
+            .read_scope(tx, authority, target.ground, CorpseFloor::NativeItem)
+            .await?
+        else {
             return Ok(None);
         };
         read_current_fresh(
@@ -90,7 +98,10 @@ impl<'runtime> CorpseActorSnapshot<'runtime> {
         item: [u8; 16],
         definition: &TypedDefinitionRef,
     ) -> Result<Option<TypedDefinitionRef>> {
-        let Some(scope) = self.read_scope(tx, authority, ground).await? else {
+        let Some(scope) = self
+            .read_scope(tx, authority, ground, CorpseFloor::CombatProjection)
+            .await?
+        else {
             return Ok(None);
         };
         super::read_selected_fresh(tx, &scope, ground, item, definition).await
@@ -101,6 +112,7 @@ impl<'runtime> CorpseActorSnapshot<'runtime> {
         tx: &mut Transaction<'_, Postgres>,
         authority: &SpellItemAuthority,
         ground: &SpellGroundTarget,
+        floor: CorpseFloor,
     ) -> Result<Option<SpellItemScopeAuthority>> {
         let fence = self.fence;
         check_transaction(tx, authority).await?;
@@ -116,8 +128,13 @@ impl<'runtime> CorpseActorSnapshot<'runtime> {
         }
         let cell = crate::durability::spell_items_abi::decode_ground_cell(&ground.spatial_position)
             .map_err(SpellItemError::Rejected)?;
-        // Native corpse custody stores -z; runtime actor positions use z.
-        if i32::from(self.position.floor) != -cell.z
+        // The native item tool path reads map floors. A live combat corpse
+        // keeps the runtime projection's floor in its original mint placement.
+        let floor = match floor {
+            CorpseFloor::NativeItem => -cell.z,
+            CorpseFloor::CombatProjection => cell.z,
+        };
+        if i32::from(self.position.floor) != floor
             || self.position.x.abs_diff(cell.x) > 1
             || self.position.y.abs_diff(cell.y) > 1
         {
