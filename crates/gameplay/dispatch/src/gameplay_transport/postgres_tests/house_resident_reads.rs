@@ -102,21 +102,33 @@ pub(super) async fn presentation_exchange(
             let motion = view.entities.iter().find(|entity| entity.identity == actor.placement_identity())
                 .and_then(|entity| entity.motion).ok_or("House resident motion")?;
             assert_eq!(motion.mount_look_type, look);
-            let direction = if mounted {
-                oteryn_protocol_oteryn::world_spatial::StepDirection::East
-            } else {
-                oteryn_protocol_oteryn::world_spatial::StepDirection::West
+            use oteryn_protocol_oteryn::world_spatial::{
+                self as spatial, StepDirection, StepDisposition,
             };
             let frame = encode_client_command(
                 admitted.continuity.connection_generation,
                 &ClientCommandValue {
                     command_id: command_id + 1,
                     command_type: 1,
-                    payload: &oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction),
+                    payload: &spatial::encode_step_intent(StepDirection::East),
                 },
             )
             .map_err(debug)?;
             crate::gameplay_transport::tcp_tls::write_frame(&mut client, &frame).await?;
+            loop {
+                let raw = super::item_look::read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&raw).map_err(debug)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let reply = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(reply.command_id, command_id + 1);
+                    assert_eq!(reply.status, CommandStatus::Accepted);
+                    assert_eq!(
+                        spatial::decode_step_result_paced(reply.payload, true).map_err(debug)?,
+                        StepDisposition::Moved
+                    );
+                    break;
+                }
+            }
             let walked = next_motion(&mut client, admitted).await?;
             assert!(walked.translation_revision > motion.translation_revision);
             assert!(walked.step_duration_ms > 0, "a House step must animate");

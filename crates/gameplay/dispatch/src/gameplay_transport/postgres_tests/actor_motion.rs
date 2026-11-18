@@ -518,6 +518,39 @@ async fn real_connection(
                 .mount_look_type,
             0
         );
+        // Exercise the first visibility tick. Later, the independent Serene
+        // cadence runs durable gameplay work that needs its writer fence.
+        let mut writer = harness.pool.begin().await?;
+        sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
+            .execute(&mut *writer)
+            .await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .set_riding(dependencies.actor, admitted.game_session_id, 140, 10)
+            .map_err(debug)?;
+        tokio::time::timeout(Duration::from_secs(1), async {
+            loop {
+                session.service_liveness(Duration::from_millis(20)).await?;
+                if session
+                    .world_entities()
+                    .and_then(|entries| entries.get(&entity))
+                    .and_then(|own| own.motion)
+                    .is_some_and(|motion| motion.mount_look_type == 140)
+                {
+                    return Ok::<_, Box<dyn std::error::Error>>(());
+                }
+            }
+        })
+        .await??;
+        writer.rollback().await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .set_riding(dependencies.actor, admitted.game_session_id, 0, 0)
+            .map_err(debug)?;
         let command = ui::mount_command(session.is_selected(502), true).ok_or("UI mount")?;
         let result = session
             .gated_command(command.capability, command.kind, &command.payload)
@@ -575,31 +608,6 @@ async fn real_connection(
             }
             session.service_liveness(Duration::from_millis(20)).await?;
         }
-        let mut writer = harness.pool.begin().await?;
-        sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
-            .execute(&mut *writer)
-            .await?;
-        owner
-            .runtime
-            .lock()
-            .await
-            .set_riding(dependencies.actor, admitted.game_session_id, 140, 10)
-            .map_err(debug)?;
-        tokio::time::timeout(Duration::from_secs(1), async {
-            loop {
-                session.service_liveness(Duration::from_millis(20)).await?;
-                if session
-                    .world_entities()
-                    .and_then(|entries| entries.get(&entity))
-                    .and_then(|own| own.motion)
-                    .is_some_and(|motion| motion.mount_look_type == 140)
-                {
-                    return Ok::<_, Box<dyn std::error::Error>>(());
-                }
-            }
-        })
-        .await??;
-        writer.rollback().await?;
         drop(session);
         Ok::<_, Box<dyn std::error::Error>>(())
     };

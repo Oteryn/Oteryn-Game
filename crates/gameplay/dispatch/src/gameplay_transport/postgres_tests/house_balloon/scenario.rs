@@ -402,7 +402,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         "the actual House handoff creates a new session"
     );
     if case == Case::ResidentMount {
-        for x in [POSITION[0], POSITION[0] + 1] {
+        for x in POSITION[0]..=POSITION[0] + 2 {
             let position: Vec<u8> = [x, POSITION[1], POSITION[2]]
                 .iter()
                 .flat_map(|v| v.to_be_bytes())

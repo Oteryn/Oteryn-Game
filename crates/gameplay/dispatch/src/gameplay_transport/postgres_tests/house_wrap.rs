@@ -462,7 +462,10 @@ async fn exchange_checked(
                         };
                         if let Some((initial, at)) = before {
                             let initial: oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity = initial;
-                            assert!(capacity.free < initial.free);
+                            match request.action {
+                                wire::Action::Wrap => assert!(capacity.free < initial.free),
+                                wire::Action::Unwrap => assert!(capacity.free > initial.free),
+                            }
                             let at: std::time::Instant = at;
                             assert!(
                                 at.elapsed() < std::time::Duration::from_secs(4),
@@ -610,11 +613,14 @@ fn wrap_bundle_with_static_decorations(
     let flags=seed.flags;
     // Clear only the fixture seed before placing actual native decorations.
     if adjacent_ground {
-        let mut adjacent = seed.clone();
-        adjacent.x += 1;
-        adjacent.house = 3437;
-        adjacent.items.truncate(1);
-        sector.tiles.push(adjacent);
+        let mut ground_tile = seed.clone();
+        ground_tile.house = 3437;
+        ground_tile.items.truncate(1);
+        for offset in [1, 2] {
+            let mut adjacent = ground_tile.clone();
+            adjacent.x += offset;
+            sector.tiles.push(adjacent);
+        }
     }
     for tile in &mut sector.tiles {
         if tile.x == 7 { tile.items.truncate(1); }
