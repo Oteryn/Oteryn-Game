@@ -239,18 +239,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         // The source room admits several players onto its common landing cell.
-        let proof = |runtime: &ChannelRuntimeV1| {
-            crate::map::floor::prepare_quest_encounter_ejection(
-                runtime,
-                self.movement_cells(),
-                actor,
-                session,
-                entered,
-                local(destination),
-                &closed,
-            )
-        };
-        let Ok(entry) = proof(runtime) else {
+        let Ok(entry) = crate::map::floor::prepare_quest_encounter_ejection(
+            runtime,
+            self.movement_cells(),
+            actor,
+            session,
+            entered,
+            local(destination),
+            &closed,
+        ) else {
             return UseDisposition::NotPossible;
         };
         let immediate = if !joining && timing.spawn_after_ms == 0 {
@@ -263,7 +260,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return UseDisposition::NotPossible;
             };
-            let Ok(preview) = proof(runtime) else {
+            let Ok(preview) = crate::map::floor::prepare_quest_encounter_ejection(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                local(destination),
+                &closed,
+            ) else {
                 return UseDisposition::NotPossible;
             };
             if runtime
