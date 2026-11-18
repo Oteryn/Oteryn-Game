@@ -78,6 +78,21 @@ pub(super) async fn check_trophy_look(
     .await?;
     tx.commit().await?;
 
+    // The wire claim also checks that the character stands in the reward room.
+    let (x, y, floor) = crate::durability::arena_match::donor::REWARD_ROOM;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let before = runtime.read_actor_position(actor).map_err(debug)?;
+        runtime
+            .relocate_arena_player(
+                actor,
+                session,
+                before,
+                crate::foundation::MovementLocalPosition { x, y, floor },
+            )
+            .map_err(debug)?;
+    }
+
     let name: String = sqlx::query_scalar(
         "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
     )
