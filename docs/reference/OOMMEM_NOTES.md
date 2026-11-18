@@ -124,9 +124,11 @@ with PostgreSQL. Before landing, compare the sorted test-name multisets
 from the full base binary and the union of the four proposed targets,
 then measure each target and run the affected PostgreSQL cases.
 
-The diff below selects the targets after they exist. The exact-command
-assertions in the merge-authority audit and repository validators also
-need to be synchronized through the protected change process. Test
+The proposed patch selects the targets after they exist and updates the
+merge-authority workflow pin and command assertion. It passes
+`git apply --check` against the pinned build tree. The corresponding
+command assertions in the repository validators also require approved
+updates. Test
 durations keyed by current binary ID need the new IDs to retain the
 existing scheduling estimates. The proposed split was too large to
 implement and verify as a package-only change. The branch contains the
@@ -149,7 +151,7 @@ investigation report only.
 +          done
 +          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked "${args[@]}" --lib "${pg_targets[@]}" \
              --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
-
+ 
 --- a/.github/workflows/merge-gate.yml
 +++ b/.github/workflows/merge-gate.yml
 @@ -1006,5 +1006,9 @@
@@ -170,7 +172,7 @@ investigation report only.
            set -euo pipefail
 -          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
 +          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3 --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
-
+ 
        - name: Record archive digests and candidate
 --- a/.github/workflows/integration-regressions.yml
 +++ b/.github/workflows/integration-regressions.yml
@@ -178,7 +180,23 @@ investigation report only.
            set -euo pipefail
            test -n "$OTERYN_TEST_POSTGRES_ADMIN_URL"
 -          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --lib \
-+          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --test dispatch-pg-1 \
++          CARGO_BUILD_JOBS=1 cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --test dispatch-pg-1 \
              'gameplay_transport::monk_save::postgres_tests::boss_activity::boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger' \
              -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/offline-death-retry-postgres.log"
+--- a/.github/workflows/merge-authority-audit.yml
++++ b/.github/workflows/merge-authority-audit.yml
+@@ -29,5 +29,5 @@
+       EXPECTED_MERGE_GROUP_GATE_BLOB: "67e38c236b1964e03f47f5180540168e39456c71"
+       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
+-      EXPECTED_MERGE_GATE_BLOB: "0f72c838a4a374f2b18da314c0b72ac74038a0f0"
++      EXPECTED_MERGE_GATE_BLOB: "62502c301f39a4ad58cffe141d0722988e948beb"
+     steps:
+       - name: Validate control-plane candidate as inert data
+@@ -296,5 +296,5 @@
+               '              archived_targets+=(--test "$name")\n',
+               '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
+-              '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
++              '          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3 --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
+               '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \\\n'
+               '            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \\\n'
 ```
