@@ -146,7 +146,15 @@ pub(super) fn prepare(
         &tracks,
     )?;
     if choice.deferred {
-        return Some(Step::Refused);
+        return Some(if context.2 == classic_talk::QUEEN {
+            Step::Reply(vec![
+                oteryn_protocol_oteryn::refusal_detail::RefusalDetail::NotPossible
+                    .reference_message()
+                    .to_owned(),
+            ])
+        } else {
+            Step::Refused
+        });
     }
     let reply = choice
         .branches

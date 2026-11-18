@@ -806,11 +806,11 @@ async fn exercise_queen(
             },
         )
         .await;
-    assert_eq!(
-        low_level.disposition,
-        oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Rejected
-    );
     assert!(!low_level.unknown);
+    assert_eq!(
+        low_level.conversation.ok_or("level refusal")?.lines,
+        ["Sorry, not possible."],
+    );
     owner.states.level_refresh.mark([fence.character_id]);
     Box::pin(owner.refresh_level_up_vitals(actor, session)).await;
     {
