@@ -175,7 +175,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         UseDisposition::Committed
     }
 
-    fn party_member_has_foreign_pending(
+    pub(super) fn party_member_has_foreign_pending(
         &self,
         member: GameSessionId,
         initiator: GameSessionId,
