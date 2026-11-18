@@ -75,18 +75,40 @@ pub fn reply(npc: &str, key: &str) -> Option<&'static [String]> {
         .map(|branch| branch.reply.as_slice())
 }
 
-/// Merge source-owned overlays using the existing QuestState reader and evaluator.
-/// An existing track must match exactly; this never widens or renames another lane's track.
+/// Declare the reset transition and its counter before World actions widen its bounds.
+pub(super) fn extend_rottin(
+    catalogue: super::QuestStateCatalogue,
+) -> Result<super::QuestStateCatalogue, String> {
+    extend_overlays(
+        catalogue,
+        &[include_str!(
+            "../../../../../content/quests/rottin-wood-starts.json"
+        )],
+    )
+}
+
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
 ) -> Result<super::QuestStateCatalogue, String> {
+    extend_overlays(
+        catalogue,
+        &[
+            include_str!("../../../../../content/quests/dawnport-starts.json"),
+            include_str!("../../../../../content/quests/troll-sabotage-starts.json"),
+        ],
+    )
+    .and_then(super::hero_of_bounac::extend)
+    .and_then(super::planegazer_finale::extend)
+}
+
+/// An existing track must match exactly when importing a source-owned overlay.
+fn extend_overlays(
+    catalogue: super::QuestStateCatalogue,
+    sources: &[&str],
+) -> Result<super::QuestStateCatalogue, String> {
     let mut tracks = catalogue.tracks.clone();
     let mut transitions = catalogue.transitions.clone();
-    for source in [
-        include_str!("../../../../../content/quests/dawnport-starts.json"),
-        include_str!("../../../../../content/quests/troll-sabotage-starts.json"),
-        include_str!("../../../../../content/quests/rottin-wood-starts.json"),
-    ] {
+    for source in sources {
         let overlay = super::loader::parse_quest_state(source, catalogue.content_revision())
             .map_err(|e| format!("{e:?}"))?;
         for (key, track) in &overlay.catalogue().tracks {
@@ -110,8 +132,6 @@ pub(super) fn extend(
         transitions.into_values().collect(),
     )
     .map_err(|e| format!("{e:?}"))
-    .and_then(super::hero_of_bounac::extend)
-    .and_then(super::planegazer_finale::extend)
 }
 
 #[cfg(test)]

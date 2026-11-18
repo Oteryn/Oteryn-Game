@@ -75,6 +75,21 @@ mod tests {
                 .iter()
                 .all(|callback| registered.contains(callback))
         );
+        let loaded = super::super::loader::load_embedded_quest_state("rottin-wall-test")
+            .map_err(|err| format!("{err:?}"))?;
+        let catalogue = loaded.catalogue();
+        assert_eq!(
+            catalogue
+                .track(super::super::classic_talk::ROTTIN_WALLCOUNT)
+                .ok_or("wall counter")?
+                .max,
+            6
+        );
+        assert!(
+            expected
+                .iter()
+                .all(|callback| catalogue.transition(&callback.key).is_some())
+        );
         Ok(())
     }
 }

@@ -267,6 +267,8 @@ pub(super) fn lower_embedded_quest_state(
         super::last_creep_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::elvenbane::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::classic_dialogue::extend_rottin(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::world_callbacks::extend(
         super::reward_callbacks::declare_tracks(lowered.catalogue).map_err(QuestLoadError::Json)?,
     )
