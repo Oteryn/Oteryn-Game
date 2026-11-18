@@ -66,10 +66,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
-            if result == UseDisposition::Committed {
+            if result.disposition == UseDisposition::Committed {
                 self.refresh_skinning_projection(fence).await;
             }
-            return Ok(outcome(result));
+            return Ok(outcome(result.disposition));
         }
         let Some(ItemKey::Instance(tool)) = source else {
             return Ok(None);
@@ -194,11 +194,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
             .ok_or(())?;
-        if result == UseDisposition::Committed {
+        if result.disposition == UseDisposition::Committed {
             self.refresh_skinning_projection(fence).await;
         }
         drop(permit);
-        Ok(outcome(result))
+        if let Some(feet) = result.rabbit_feet {
+            let message = match feet {
+                0 => "Your attempt to skin the rabbit failed. None of the rabbit's feet are in an acceptable condition to create a lucky charm.",
+                1 => "You successfully gathered a rabbit's foot in excellent condition.",
+                _ => "You successfully gathered two rabbit's feet in excellent condition.",
+            };
+            self.states.chat.push_quest_feedback(command.game_session_id, message);
+        }
+        Ok(outcome(result.disposition))
     }
 
     /// Refresh only existing corpse bindings from the complete durable owner snapshot.

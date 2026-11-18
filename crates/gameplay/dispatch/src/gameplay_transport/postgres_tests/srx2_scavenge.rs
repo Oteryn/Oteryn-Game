@@ -1016,6 +1016,9 @@ async fn exercise_rabbit(
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     actor: crate::foundation::ExactActorRef,
 ) -> TestResult {
+    use oteryn_protocol_oteryn::chat::ChatLine;
+    let session = fence.game_session_id;
+    owner.states.chat.admit(session, "Aela", owner.owner_now());
     let obsidian_knife = 71;
     let stake = 72;
     let kitchen_knife = 73;
@@ -1062,6 +1065,11 @@ async fn exercise_rabbit(
         UseDisposition::NothingToUse
     );
     assert_eq!(body().await?, "oteryn:item.tibia.i6017");
+    assert!(matches!(
+        owner.states.chat.drain(session).as_slice(),
+        [ChatLine::Private { text, .. }]
+            if text == "You have to wait a bit before you can skin this animal."
+    ));
 
     age_rabbit_fixture(h, corpse, 11_000).await?;
     owner.drain_source_item_deadlines().await;
@@ -1102,6 +1110,11 @@ async fn exercise_rabbit(
         );
     }
     assert_eq!(body().await?, "oteryn:item.tibia.i4302");
+    assert!(matches!(
+        owner.states.chat.drain(session).as_slice(),
+        [ChatLine::Private { text, .. }]
+            if text == "You successfully gathered two rabbit's feet in excellent condition."
+    ));
     let retry = UseCommand {
         command_id: command_id + 1,
         ..command
