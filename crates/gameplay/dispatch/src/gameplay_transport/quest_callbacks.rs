@@ -164,6 +164,24 @@ impl PendingCallbacks {
             .map(|pending| pending.next_due_us())
             .min()
     }
+
+    pub(super) fn next_spawn_deadline(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Option<tokio::time::Instant> {
+        let periodic = self
+            .periodic_bosses
+            .lock()
+            .ok()
+            .and_then(|schedule| schedule.next_deadline(runtime));
+        let wave = self.waves.lock().ok().and_then(|runs| {
+            runs.iter()
+                .filter(|run| run.current(runtime))
+                .filter_map(waves::ActiveWaveRun::next_deadline)
+                .min()
+        });
+        periodic.into_iter().chain(wave).min()
+    }
 }
 
 fn callbacks() -> &'static [Callback] {

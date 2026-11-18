@@ -418,6 +418,9 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
+        if !matches!(case, Case::Periodic | Case::PeriodicMissingCenter | Case::PeriodicOccupiedCenter) {
+            assert!(owner.states.quest_callbacks.periodic_boss_fixture.set(Vec::new()).is_ok());
+        }
         if matches!(case, Case::Waves | Case::Victory | Case::VictoryWithoutProgress | Case::SurvivalStep | Case::Stations | Case::UnreachableExit | Case::UnknownAchievement | Case::WorldCredit) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback, matches!(case, Case::WorldCredit))?));
         } else if matches!(case, Case::Retaliation) {
@@ -724,7 +727,9 @@ async fn retaliation_scenario(
 async fn periodic_scenario(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
     tokio::time::pause();
     owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(next_spawn_delay(owner).await, Some(Duration::from_secs(1)));
     advance(owner, 999).await;
+    assert_eq!(next_spawn_delay(owner).await, Some(Duration::from_millis(1)));
     assert!(creatures(owner).await?.is_empty());
     advance(owner, 1).await;
     let actors = creatures(owner).await?;
@@ -829,7 +834,9 @@ async fn wave_scenario(
     assert_eq!(result?, UseDisposition::Committed);
     assert_eq!(position(owner, player).await?, local(LANDING));
     assert_eq!(position(owner, peer_actor).await?, local(PEER_LANDING));
+    assert_eq!(next_spawn_delay(owner).await, Some(Duration::from_secs(1)));
     advance(owner, 999).await;
+    assert_eq!(next_spawn_delay(owner).await, Some(Duration::from_millis(1)));
     assert!(creatures(owner).await?.is_empty());
     if victory {
         advance(owner, 1).await;
@@ -845,6 +852,7 @@ async fn wave_scenario(
         // Both independent timers are due when the node next drains its
         // scheduler (Crystal action_arena.lua:80-83).
         advance(owner, 2_001).await;
+        assert_eq!(next_spawn_delay(owner).await, Some(Duration::from_secs(7)));
     }
     let active = creatures(owner).await?;
     assert_eq!(active.len(), if victory { 1 } else { 2 });
@@ -868,6 +876,7 @@ async fn wave_scenario(
     assert_eq!(position(owner, player).await?, local(exit));
     assert_eq!(position(owner, peer_actor).await?, local(exit));
     assert!(creatures(owner).await?.is_empty());
+    assert_eq!(next_spawn_delay(owner).await, None);
     tokio::time::resume();
 
     let primary = admitted
@@ -1242,6 +1251,12 @@ async fn use_room(
 async fn advance(owner: &ComposedFreshAdmission<'_, '_, '_>, millis: u64) {
     tokio::time::advance(Duration::from_millis(millis)).await;
     owner.drain_quest_encounter_deadlines().await;
+}
+
+async fn next_spawn_delay(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Duration> {
+    let runtime = owner.runtime.lock().await;
+    owner.states.quest_callbacks.next_spawn_deadline(&runtime)
+        .map(|due| due.saturating_duration_since(tokio::time::Instant::now()))
 }
 
 async fn creatures(

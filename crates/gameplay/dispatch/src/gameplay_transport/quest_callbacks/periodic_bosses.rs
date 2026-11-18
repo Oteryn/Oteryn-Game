@@ -23,6 +23,15 @@ struct Occurrence {
     live: Option<ExactActorRef>,
 }
 
+impl PeriodicBosses {
+    pub(super) fn next_deadline(&self, runtime: &ChannelRuntimeV1) -> Option<Instant> {
+        if self.scope != Some(runtime.encounter_owner_scope()) {
+            return None;
+        }
+        self.entries.iter().map(|occurrence| occurrence.next).min()
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn tick_periodic_bosses(&self, runtime: &mut ChannelRuntimeV1, map: &BundleMap) {
         #[cfg(test)]

@@ -35,7 +35,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return;
                 }
                 let now = self.owner_now().get();
-                states
+                let owner_due = states
                     .spell_timers
                     .as_ref()
                     .and_then(|timer| timer.next_due_time())
@@ -60,16 +60,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .and_then(super::npc_voice::NpcVoiceCycle::next_due_us),
                     )
                     .min()
-                    .map_or(1_000_000, |due| {
-                        // An unavailable due producer cannot cause a busy loop.
-                        // A newly committed schedule wakes this pass immediately.
-                        let remaining = due.saturating_sub(now);
-                        if remaining == 0 {
-                            50_000
-                        } else {
-                            remaining.min(1_000_000)
-                        }
-                    })
+                    .map(|due| due.saturating_sub(now));
+                // Quest waves and periodic spawns use Tokio's monotonic clock.
+                // Compare delays so the two time domains keep their own origins.
+                let spawn_due = self
+                    .states
+                    .quest_callbacks
+                    .next_spawn_deadline(&runtime)
+                    .map(|due| {
+                        let remaining = due.saturating_duration_since(tokio::time::Instant::now());
+                        u64::try_from(remaining.as_micros()).unwrap_or(u64::MAX)
+                    });
+                match owner_due.into_iter().chain(spawn_due).min() {
+                    // An unavailable due producer cannot cause a busy loop.
+                    // A newly committed schedule wakes this pass immediately.
+                    Some(0) => 50_000,
+                    Some(remaining) => remaining.min(1_000_000),
+                    None => 1_000_000,
+                }
             };
             let mut stopping = pin!(shutdown.cancelled());
             let mut delay = pin!(tokio::time::sleep(std::time::Duration::from_micros(

@@ -55,6 +55,19 @@ impl ActiveWaveRun {
         self.scope == runtime.encounter_owner_scope()
     }
 
+    pub(super) fn next_deadline(&self) -> Option<Instant> {
+        if self.exit.is_some() {
+            // A chosen exit that is blocked retries at the normal owner cadence.
+            return None;
+        }
+        let plan = self.room.wave_run.as_ref()?;
+        let next_ms = plan
+            .waves
+            .get(self.next)
+            .map_or(plan.timeout_ms, |wave| wave.at_ms.min(plan.timeout_ms));
+        Some(self.started + Duration::from_millis(next_ms.into()))
+    }
+
     pub(super) fn overlaps(&self, room: &Encounter) -> bool {
         let a = &self.room;
         a.room_min.floor == room.room_min.floor
