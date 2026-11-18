@@ -415,6 +415,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return outcome;
             }
+            if let Some(outcome) = self.use_haunted_tomb(actor, command, map, &target).await {
+                return outcome;
+            }
             if let Some(outcome) = self.use_quest_callback(actor, command, map, &target).await {
                 return outcome;
             }

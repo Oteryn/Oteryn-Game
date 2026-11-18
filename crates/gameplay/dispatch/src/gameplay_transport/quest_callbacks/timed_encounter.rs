@@ -109,7 +109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Exhausted;
         };
         // The source AID cools down even if native monster admission refuses.
-        if let Some(landing) = self.quest_step_summon_landing(runtime, map, at) {
+        if let Some(landing) = self.quest_summon_landing(runtime, map, at, false) {
             let _ =
                 runtime.commit_quest_creature_spawn(&[(summon.creature.as_str(), health, landing)]);
         }
@@ -130,12 +130,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// Crystal Map::placeCreature retries the eight neighbouring cells in random
-    /// order when the arriving player occupies the requested spawn cell.
-    fn quest_step_summon_landing(
+    /// order if the requested spawn cell is occupied or otherwise unsuitable.
+    pub(super) fn quest_summon_landing(
         &self,
         runtime: &ChannelRuntimeV1,
         map: &BundleMap,
         at: MovementLocalPosition,
+        include_origin: bool,
     ) -> Option<MovementLocalPosition> {
         let base = map.overlay.base();
         let origin = native(at)?;
@@ -147,23 +148,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let census = runtime.positioned_melee_census().ok()?;
         let cells = self.movement_cells();
-        let candidates: Vec<_> = [
-            (-1, -1),
-            (0, -1),
-            (1, -1),
-            (-1, 0),
-            (1, 0),
-            (-1, 1),
-            (0, 1),
-            (1, 1),
-        ]
-        .into_iter()
-        .filter_map(|(dx, dy)| {
-            let landing = MovementLocalPosition {
-                x: at.x.checked_add(dx)?,
-                y: at.y.checked_add(dy)?,
-                floor: at.floor,
-            };
+        let usable = |landing: MovementLocalPosition| {
             let pos = native(landing)?;
             let cell = LogicalCell {
                 x: landing.x,
@@ -179,6 +164,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .iter()
                     .any(|(_, snapshot, _)| snapshot.position() == landing))
             .then_some(landing)
+        };
+        if include_origin && usable(at).is_some() {
+            return Some(at);
+        }
+        let candidates: Vec<_> = [
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+            (-1, 0),
+            (1, 0),
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+        ]
+        .into_iter()
+        .filter_map(|(dx, dy)| {
+            usable(MovementLocalPosition {
+                x: at.x.checked_add(dx)?,
+                y: at.y.checked_add(dy)?,
+                floor: at.floor,
+            })
         })
         .collect();
         let index = draw_below(u16::try_from(candidates.len()).ok()?)?;

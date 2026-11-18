@@ -35,7 +35,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         root_fluid_subtype: None,
         root_charges_remaining: None,
         backpack_outputs: false,
-            additional_items: Vec::new(),
+        additional_items: Vec::new(),
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
@@ -62,6 +62,19 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         quest_transition: None,
         key_number: None,
     };
+    commit_prepared_source_grant(tx, node, fence, content, request)
+        .await
+        .map(|result| result.map(|_| ()))
+}
+
+pub(super) async fn commit_prepared_source_grant<C: ItemLoopContent>(
+    tx: &mut Type2Transaction<'_>,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    content: &C,
+    request: RewardClaimMintRequest,
+) -> Pass<CommittedRewardClaimMint> {
+    let command = request.command;
     if validate_request(&request).is_err() || !contents::weight_pin_matches(&request, content) {
         return Ok(Err(RewardClaimMintError::InvalidInput));
     }
@@ -140,6 +153,13 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         Ok(envelope) => envelope,
         Err(error) => return Ok(Err(error.into())),
     };
-    apply_claim(tx, &frozen, &reservation, destination, &envelope, tuple).await?;
-    Ok(Ok(()))
+    Ok(Ok(apply_claim(
+        tx,
+        &frozen,
+        &reservation,
+        destination,
+        &envelope,
+        tuple,
+    )
+    .await?))
 }

@@ -17,6 +17,7 @@ mod encounter;
 mod execute;
 mod goblin_elevator;
 mod ground_stack;
+mod haunted_tomb;
 mod mead;
 pub(super) mod monsters;
 mod party_transfer;

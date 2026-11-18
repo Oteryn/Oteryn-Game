@@ -118,20 +118,22 @@ mod additional;
 mod arena;
 mod backpack_outputs;
 pub mod boss_reward;
+mod cake;
 mod charges;
 mod claimed;
-mod cake;
 mod contents;
 pub mod falcon;
 pub(in crate::durability) mod fathers_burden;
 mod fluid;
 mod grizzly;
+mod haunted_tomb;
+pub use haunted_tomb::{HauntedTombSource, HauntedTombUse};
 mod monk;
 pub(crate) mod quest;
 mod quest_actor_conditions;
-mod quest_participants;
-pub mod quest_creature;
 mod quest_corpse;
+pub mod quest_creature;
+mod quest_participants;
 pub mod quest_peer;
 pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
 pub use quest_actor_conditions::QuestActorConditionProof;
@@ -1517,9 +1519,7 @@ fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
     mint_audit::check_content_key(&request.source_placement)?;
     validate_facts(&request.item).map_err(from_transfer_input)?;
     validate_facts(&request.backpack).map_err(from_transfer_input)?;
-    if request.quantity == 0
-        || (request.backpack_outputs && !request.additional_items.is_empty())
-    {
+    if request.quantity == 0 || (request.backpack_outputs && !request.additional_items.is_empty()) {
         return Err(RewardClaimMintError::InvalidInput);
     }
     for revision in [
@@ -2015,19 +2015,19 @@ mod tests {
             key(Some(0)),
             RewardClaimMintRequest {
                 backpack_outputs: false,
-            additional_items: Vec::new(),
+                additional_items: Vec::new(),
                 quantity: 2,
                 ..key(Some(10))
             },
             RewardClaimMintRequest {
                 backpack_outputs: false,
-            additional_items: Vec::new(),
+                additional_items: Vec::new(),
                 item: facts("fixture:b3.coin", COIN),
                 ..key(Some(10))
             },
             RewardClaimMintRequest {
                 backpack_outputs: false,
-            additional_items: Vec::new(),
+                additional_items: Vec::new(),
                 item: backpack_facts(8),
                 ..key(Some(10))
             },
