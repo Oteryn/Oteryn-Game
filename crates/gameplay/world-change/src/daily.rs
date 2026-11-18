@@ -28,8 +28,9 @@ const THAWING_PERCENT: u8 = 10;
 const THEIR_MASTERS_VOICE_PERCENT: u8 = 20;
 /// `oriental_trader.lua:3`: 33%.
 const ORIENTAL_TRADER_PERCENT: u8 = 33;
-/// `grimvale_respawn_event.lua:3`: the 13th of each month.
-const GRIMVALE_DAY: u8 = 13;
+/// TibiaWiki Grimvale Quest/Spoiler (curid 75274, oldid 1103828):
+/// from server save on the 12th until server save on the 15th.
+const GRIMVALE_MOON_DAYS: std::ops::Range<u8> = 12..15;
 /// `raids/world_changes/flower_month.lua:63`: June.
 const FLOWER_MONTH: crate::owner::SeasonalWindow = crate::owner::SeasonalWindow {
     start: (6, 1),
@@ -268,7 +269,7 @@ impl DailyWorldChanges {
             thawing,
             their_masters_voice,
             oriental_trader,
-            grimvale_full_moon: day == GRIMVALE_DAY,
+            grimvale_full_moon: GRIMVALE_MOON_DAYS.contains(&day),
             flower_month: FLOWER_MONTH.contains(month, day),
         }
     }
@@ -418,7 +419,7 @@ mod tests {
                 shared_used_sources_mask: 0,
             }
         );
-        let none = roll([u64::MAX; 9], 5, 12);
+        let none = roll([u64::MAX; 9], 5, 11);
         assert_eq!(none.fury_gates, None);
         assert_eq!(none.exit_layers(), ["fury_gates/venore"]);
         assert_eq!(
