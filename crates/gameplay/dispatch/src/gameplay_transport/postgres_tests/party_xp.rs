@@ -1654,21 +1654,27 @@ async fn scenario(
                     .ok_or("cake player state")?;
                 let effect = state.owned_conditions().get(ConflictKey::Recovery);
                 if !cake_bonus_active {
-                    assert!(effect.is_none(), "expired world window must not grant regeneration");
+                    assert!(
+                        effect.is_none(),
+                        "expired world window must not grant regeneration"
+                    );
                     continue;
                 }
-                let effect = effect.ok_or("world regeneration applies to both premium and free players")?;
+                let effect =
+                    effect.ok_or("world regeneration applies to both premium and free players")?;
+                assert_eq!(effect.definition().key(), "world.cake.regeneration");
                 let ConditionValues::SpellRegeneration {
                     sub_id: 0,
+                    duration_ms,
                     health_gain: 1,
                     mana_gain: 1,
                     health_interval_ms,
                     mana_interval_ms,
-                    ..
                 } = effect.definition().values()
                 else {
                     return Err("expected the Cake combat regeneration condition".into());
                 };
+                assert!((1..=604_800_000).contains(&duration_ms));
                 assert_eq!(effect.started_at() % 1_000, 0);
                 assert_eq!(
                     (health_interval_ms, mana_interval_ms),
@@ -1684,18 +1690,28 @@ async fn scenario(
                 (due, expected)
             };
             owner
-                .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(first_pulse - 1))
+                .tick_spell_periodic_at(
+                    actor,
+                    session,
+                    SemanticTimeMicros::from_micros(first_pulse - 1),
+                )
                 .await;
             let before = {
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
-                states.get(&runtime, actor, session).ok_or("cake player state")?.vitals()
+                states
+                    .get(&runtime, actor, session)
+                    .ok_or("cake player state")?
+                    .vitals()
             };
             let (_, after) = owner
                 .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(first_pulse))
                 .await
                 .ok_or("Cake regeneration pulse did not publish vitals")?;
-            assert_eq!((after.health - before.health, after.mana - before.mana), expected);
+            assert_eq!(
+                (after.health - before.health, after.mana - before.mana),
+                expected
+            );
         }
     }
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_kill_xp_receipts")
