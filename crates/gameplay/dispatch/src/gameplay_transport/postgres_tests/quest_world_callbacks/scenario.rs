@@ -356,6 +356,8 @@ fn scenario_case(
     let monster_step = matches!(name, super::super::zamulosh_monster_step::CASE | super::super::zamulosh_monster_step::BLOSSOM);
     let mut callback = if name == super::super::shulgrax_flower_pattern::CASE {
         super::super::shulgrax_flower_pattern::callback()?
+    } else if name == super::super::warzone_portal_cooldown::VICTORY {
+        super::super::warzone_portal_cooldown::terminal_callback()?
     } else if monster_step {
         super::super::zamulosh_monster_step::callback(name)?
     } else if name == super::super::warzone_portal_cooldown::CASE {
@@ -664,6 +666,8 @@ fn scenario_case(
     }
     let world = if name == super::super::shulgrax_flower_pattern::CASE {
         super::super::shulgrax_flower_pattern::world(&callback)?
+    } else if name == super::super::warzone_portal_cooldown::VICTORY {
+        super::super::warzone_portal_cooldown::portal_world(&callback)?
     } else if death_replacement {
         super::super::encounter_death_replacements::world(&callback, trigger, name)?
     } else if name == super::super::ferumbras_crystal_reset::CASE {
@@ -1898,6 +1902,8 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if name == super::super::shulgrax_flower_pattern::CASE {
             Box::pin(super::super::shulgrax_flower_pattern::exercise(&owner, &mut admitted, callback.clone())).await?;
+        } else if name == super::super::warzone_portal_cooldown::VICTORY {
+            Box::pin(super::super::warzone_portal_cooldown::exercise_victory(&owner, &mut admitted, callback.clone())).await?;
         } else if monster_step {
             Box::pin(super::super::zamulosh_monster_step::exercise(&owner, &h, callback.clone())).await?;
         } else if name == super::super::warzone_portal_cooldown::CASE {

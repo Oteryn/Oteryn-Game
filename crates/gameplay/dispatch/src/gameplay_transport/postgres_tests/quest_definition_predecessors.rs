@@ -18,8 +18,12 @@ fn albinius_offerings_accept_existing_tome_progress_after_definition_change() ->
     super::qengine_rewards::scenario(CASE)
 }
 
-pub(super) fn install_albinius_successor(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
-    install_successor(owner, QuestTransition {
+pub(super) fn install_albinius_successor(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult {
+    install_successor(
+        owner,
+        QuestTransition {
             quest: QUEST.into(),
             key: "oteryn:quest-transition/fixture/albinius-ice-offering".into(),
             effects: vec![QuestEffect {
@@ -30,18 +34,26 @@ pub(super) fn install_albinius_successor(owner: &mut ComposedFreshAdmission<'_, 
             completes: false,
             experience: None,
             world_change: None,
-        })
+        },
+    )
 }
 
 pub(super) fn install_successor(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     transition: QuestTransition,
 ) -> TestResult {
-    let original = owner.quest_catalogue.as_deref().ok_or("original catalogue")?;
+    let original = owner
+        .quest_catalogue
+        .as_deref()
+        .ok_or("original catalogue")?;
     let quest = transition.quest.clone();
-    let hash = original.definition_hash(&quest).ok_or("original quest hash")?;
+    let hash = original
+        .definition_hash(&quest)
+        .ok_or("original quest hash")?;
     let hash: String = hash.iter().map(|byte| format!("{byte:02x}")).collect();
-    let mut successor = original.with_fixture_transition(transition).map_err(debug)?;
+    let mut successor = original
+        .with_fixture_transition(transition)
+        .map_err(debug)?;
     let binding = serde_json::json!({
         "schema": 1,
         "predecessors": [{"quest": quest, "definition_sha256": hash}]
