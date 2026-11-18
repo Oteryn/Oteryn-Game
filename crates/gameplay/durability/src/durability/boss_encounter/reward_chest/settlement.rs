@@ -460,6 +460,7 @@ mod tests {
     #[test]
     fn boss_reward_settlement_retains_support_census_and_requires_exact_eligibility() {
         let mut value = death();
+        value.boss_key = "oteryn:creature.earth_overlord".into();
         let mut character = [3; 16];
         character[6] = 0x73;
         character[8] = 0x83;
@@ -474,7 +475,7 @@ mod tests {
             },
         });
         // Crystal 201189f data/scripts/systems/reward_chest.lua:54-69,156-165:
-        // support-only contribution earns a chest, with the exact captured tuple.
+        // The Elemental Spheres exception admits support with the exact captured tuple.
         assert!(validate_death(&value).is_none());
         let support = &value.contributors[1];
         value.chests.push(BossRewardChestPlan {
