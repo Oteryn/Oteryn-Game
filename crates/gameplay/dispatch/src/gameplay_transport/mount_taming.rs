@@ -13,7 +13,7 @@ use crate::durability::item_use::mount_taming::MountTamingRequest;
 use crate::durability::item_use::{ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::{
-    UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -77,6 +77,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(result));
         }
+        if matches!(intent.target, UseTarget::Item(_))
+            && intent.use_with.is_none()
+            && intent.use_with_map_item.is_none()
+            && intent.use_with_position.is_none()
+        {
+            return Ok(None);
+        }
         match self
             .tame(actor, command, intent, source, item_target, visible)
             .await
@@ -95,11 +102,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         source: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
-            &intent.use_with_map_item
-        else {
-            return Ok(None);
-        };
         let source = match (&intent.target, source) {
             (UseTarget::Item(_), Some(ItemKey::Instance(item))) => Some(item),
             (UseTarget::ItemByDefinition(_), None) => None,
@@ -107,6 +109,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let Some(map) = self.bundle_map() else {
             return Ok(None);
+        };
+        let callbacks = self.callback_content();
+        let direct_target;
+        let target = match &intent.use_with_map_item {
+            Some(MapUseTarget::Object(target)) => target,
+            None if intent.use_with.is_none() && intent.use_with_position.is_none() => {
+                let Some(target) = self.direct_quest_object(actor, map, callbacks).await else {
+                    return Ok(None);
+                };
+                direct_target = target;
+                &direct_target
+            }
+            _ => return Ok(None),
         };
         let view = super::world_map::MapViewSource {
             overlay: &map.overlay,
@@ -122,9 +137,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let callbacks = self.callback_content();
         let Some(callback) = callbacks.iter().find(|callback| {
             quest_objects::accepts(callback)
+                && (intent.use_with_map_item.is_some() || callback.effects.direct_item_use)
                 && super::quest_callbacks::matches(map, callback, resolved.placement_key)
         }) else {
             return Ok(None);
@@ -167,7 +182,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
             });
         let Some(selected) = selected else {
-            return Ok(Some(outcome(UseDisposition::NothingToUse)));
+            return Ok(intent
+                .use_with_map_item
+                .is_some()
+                .then(|| outcome(UseDisposition::NothingToUse)));
         };
         let intent =
             oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
@@ -182,6 +200,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .then_some((selected.item.item_instance_id, intent)),
             )
             .await)
+    }
+
+    // Crystal 201189f8 data-global/scripts/quests/the_gravedigger_of_drefia/actions_sacrifice.lua:3-17.
+    async fn direct_quest_object(
+        &self,
+        actor: ExactActorRef,
+        map: &crate::map::boot::BundleMap,
+        callbacks: &[oteryn_gameplay_quests::quest::world_callbacks::Callback],
+    ) -> Option<WorldObjectTarget> {
+        use crate::map::{
+            overlay::TilePos,
+            view::{MapFacts, placement_key},
+        };
+        use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
+        let mut direct = callbacks
+            .iter()
+            .filter(|callback| callback.effects.direct_item_use)
+            .peekable();
+        direct.peek()?;
+        let runtime = self.runtime.lock().await;
+        let snapshot = runtime.read_actor_position(actor).ok()?;
+        let at = super::quest_callbacks::native(snapshot.position())?;
+        let at = Position {
+            x: at.x,
+            y: at.y,
+            floor: at.floor,
+        };
+        let mut targets = direct.filter_map(|callback| {
+            let native = callback.selector.native.as_ref()?;
+            if !callback.reaches(at, native.position) {
+                return None;
+            }
+            let Position { x, y, floor } = native.position;
+            let key = placement_key(TilePos { x, y, floor }, native.ordinal)?;
+            super::quest_callbacks::matches(map, callback, key).then_some(key)
+        });
+        let key = targets.next()?;
+        if targets.any(|other| other != key) {
+            return None;
+        }
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        Some(WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        })
     }
 
     async fn tame(

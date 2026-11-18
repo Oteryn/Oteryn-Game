@@ -55,6 +55,9 @@ pub struct ItemDisguiseRequirement {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// A plain carried-item USE resolves the native focus in reach of the actor.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub direct_item_use: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creature_spawn: Option<CreatureSpawn>,
     /// Mint a portable item at the source tile using the retained quest USE receipt.
@@ -746,6 +749,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
             .as_ref()
             .is_some_and(|m| !pos(m.position) || m.effect == 0)
         || (callback.trigger == Trigger::StepOut && callback.return_on_failure)
+    {
+        return false;
+    }
+    if effects.direct_item_use
+        && (callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || callback.selector.native.is_none()
+            || !callback.has_state_writes()
+            || callback.reversible
+            || callback.lever.is_some()
+            || callback.item_on_target.as_ref().is_none_or(|input| {
+                !input.selected_instance
+                    || input.target_remove
+                    || input.target_replacement.is_some()
+            }))
     {
         return false;
     }

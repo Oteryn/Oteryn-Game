@@ -12,7 +12,8 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
         )
         || (tool.selected_instance
             && callback.requires_world_admission
-            && (callback.effects.creature_spawn.is_some()
+            && (callback.effects.direct_item_use
+                || callback.effects.creature_spawn.is_some()
                 || (tool.target_remove && callback.effects.reset_after_ms.is_some())))
 }
 
