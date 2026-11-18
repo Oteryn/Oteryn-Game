@@ -144,11 +144,14 @@ impl Registry {
         actor: ExactActorRef,
         session: GameSessionId,
         position: MovementLocalPosition,
+        now_us: u64,
     ) -> bool {
         self.active.lock().map_or(true, |phases| {
             phases.iter().any(|phase| {
                 phase.participants.contains(&(actor, session))
                     && super::quest_callbacks::room_contains(&phase.room, position)
+                    // Crystal 201189f8 actions_mission11_payback_time_lever.lua:23–24.
+                    && !phase.fight.expired(now_us)
                     && phase.fight.is_current(runtime)
                     && phase
                         .fight

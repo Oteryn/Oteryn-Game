@@ -136,7 +136,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(states) = self.states.spell_states.try_lock() else {
             return Some(SwitchLock::Checkpoint);
         };
-        states.encounter_phases.blocks_channel_switch(runtime, actor, session, at)
+        states
+            .encounter_phases
+            .blocks_channel_switch(runtime, actor, session, at, self.owner_now().get())
             .then_some(SwitchLock::Event)
     }
 

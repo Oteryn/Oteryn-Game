@@ -231,6 +231,16 @@ pub(super) async fn exercise(
     assert!(find(&runtime, FORMS[0]).is_some());
     let original_guard = find(&runtime, GUARD).ok_or("opening guard")?.0;
     let original_boss = find(&runtime, FORMS[0]).ok_or("opening boss")?.0;
+    assert!(
+        states.encounter_phases.blocks_channel_switch(
+            &runtime,
+            actor,
+            session,
+            super::quest_world_callbacks::local(LANDING),
+            owner.owner_now().get(),
+        ),
+        "an active Payback room locks Channel switching"
+    );
     if !timeout {
         for (index, creature) in FORMS.iter().enumerate() {
             let (target, position, _) = find(&runtime, creature).ok_or("current form")?;
@@ -294,6 +304,20 @@ pub(super) async fn exercise(
     } else {
         owner.owner_now().get()
     };
+    // Crystal 201189f8 actions_mission11_payback_time_lever.lua:17–24:
+    // room admission ends at the deadline even if the scheduler hasn't woken.
+    if timeout {
+        assert!(
+            !states.encounter_phases.blocks_channel_switch(
+                &runtime,
+                actor,
+                session,
+                super::quest_world_callbacks::local(LANDING),
+                reset_at,
+            ),
+            "expired Payback room releases Channel switching before the next tick"
+        );
+    }
     crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states, reset_at);
     assert!(runtime.contains_live_creature(original_guard));
     assert_eq!(runtime.contains_live_creature(original_boss), timeout);
@@ -306,7 +330,8 @@ pub(super) async fn exercise(
             &runtime,
             member,
             member_session,
-            at
+            at,
+            reset_at,
         ));
     }
     assert!(
