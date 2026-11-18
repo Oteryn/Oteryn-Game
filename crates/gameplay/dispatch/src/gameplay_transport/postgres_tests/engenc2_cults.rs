@@ -68,16 +68,27 @@ fn callback() -> TestResult<Callback> {
 
 #[test]
 fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult {
-    cults_scenario(false)
+    run_encounter(EncounterCase::Cults { reenter: false })
 }
 
 #[test]
 fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
-    cults_scenario(true)
+    run_encounter(EncounterCase::Cults { reenter: true })
 }
 
-fn cults_scenario(reenter: bool) -> TestResult {
-    run_encounter(reenter, false)
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum EncounterCase {
+    Cults { reenter: bool },
+    DreamScar,
+    Faceless,
+}
+
+#[test]
+fn dcourts2_faceless_steps_open_boss_damage_gate_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_encounter(EncounterCase::Faceless)
 }
 
 #[test]
@@ -85,10 +96,12 @@ fn dcourts2_dream_scar_uses_startup_roster_on_lever_use_postgres() -> TestResult
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_encounter(false, true)
+    run_encounter(EncounterCase::DreamScar)
 }
 
-fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
+fn run_encounter(case: EncounterCase) -> TestResult {
+    let dream_scar = case == EncounterCase::DreamScar;
+    let faceless = case == EncounterCase::Faceless;
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -131,12 +144,38 @@ fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
                 );
                 encounter.monsters.clear();
             }
+            if faceless {
+                callback.reversible = false;
+                let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+                encounter.phase = Some(
+                    oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::FacelessBane,
+                );
+                encounter.minimum_level = 250;
+                encounter.monsters.truncate(1);
+                encounter.monsters[0].creature = "oteryn:creature.faceless_bane".into();
+            }
             let trigger = Position {
                 x: 100,
                 y: 100,
                 floor: -7,
             };
-            let world = super::quest_world_callbacks::world(&callback, trigger)?;
+            let world = if faceless {
+                let tiles: Vec<_> = (117..=123)
+                    .map(|x| {
+                        (
+                            Position {
+                                x,
+                                y: 117,
+                                floor: -7,
+                            },
+                            23108,
+                        )
+                    })
+                    .collect();
+                super::quest_world_callbacks::world_with_action_tiles(&callback, trigger, &tiles)?
+            } else {
+                super::quest_world_callbacks::world(&callback, trigger)?
+            };
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -284,7 +323,7 @@ fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
                 )
                 .map_err(debug)?;
             owner.admit_progression_session(&mut admitted).await;
-            if dream_scar {
+            if dream_scar || faceless {
                 let runtime = owner.runtime.lock().await;
                 let mut states = owner.states.spell_states.lock().await;
                 assert!(
@@ -389,7 +428,18 @@ fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
                     "POSTGRES_CASE_COMPLETED dcourts2_dream_scar_uses_startup_roster_on_lever_use_postgres duration={:?}",
                     began.elapsed(),
                 );
-                return Ok(());
+                drop(runtime);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
+            if faceless {
+                faceless_steps(&mut owner, &admitted).await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
             }
             assert_eq!(
                 owner
@@ -505,7 +555,7 @@ fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
             let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-transition/native-kills/cults-essence'")
             .fetch_one(&h.pool).await?;
             assert_eq!(receipts, 1);
-            if reenter {
+            if case == (EncounterCase::Cults { reenter: true }) {
                 {
                     let mut runtime = owner.runtime.lock().await;
                     let expected = runtime.read_actor_position(deps.actor).map_err(debug)?;
@@ -593,6 +643,86 @@ fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
     assert!(elapsed > 0.05);
     eprintln!("ENGENC2_CULTS_PG_EXECUTED elapsed_s={elapsed:.6}");
     Ok(())
+}
+
+async fn faceless_steps(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    let player = admitted.runtime_actor.ok_or("player")?;
+    let session = admitted.game_session_id;
+    let (boss, max) = {
+        let mut runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let boss = runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .find(|actor| {
+                runtime.matches_live_creature_identity(*actor, b"oteryn:creature.faceless_bane")
+            })
+            .ok_or("Faceless Bane")?;
+        let max = runtime
+            .live_creature_health(boss)
+            .ok_or("Faceless health")?;
+        faceless_hit(
+            &mut runtime,
+            boss,
+            player,
+            session,
+            20,
+            i64::try_from(max - max / 5)?,
+        )
+        .map_err(debug)?;
+        crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states);
+        assert_eq!(runtime.live_creature_health(boss), Some(max));
+        assert!(faceless_hit(&mut runtime, boss, player, session, 21, 1).is_err());
+        (boss, max)
+    };
+
+    for _ in 0..7 {
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_millis(500))
+            .ok_or("movement clock")?;
+        let (step, _) = owner.paced_step(player, session, StepDirection::East).await;
+        assert_eq!(step.disposition, StepDisposition::Moved);
+    }
+
+    let mut runtime = owner.runtime.lock().await;
+    faceless_hit(&mut runtime, boss, player, session, 22, 1).map_err(debug)?;
+    assert_eq!(runtime.live_creature_health(boss), Some(max - 1));
+    Ok(())
+}
+
+fn faceless_hit(
+    runtime: &mut ChannelRuntimeV1,
+    boss: ExactActorRef,
+    player: ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    command: u64,
+    damage: i64,
+) -> Result<(), crate::foundation::CarrierError> {
+    runtime
+        .borrow_exact_actor_commit_at(0)
+        .commit_damage_for_bound_attacker(
+            boss,
+            player,
+            CommandRef::new(
+                session,
+                CommandId::new(command)
+                    .map_err(|_| crate::foundation::CarrierError::PlanConflict)?,
+            ),
+            0,
+            OwnerDamageCommand {
+                target: b"oteryn:creature.faceless_bane",
+                occurrence: b"dcourts2",
+                binding: b"faceless-bane-damage",
+                damage,
+            },
+        )
+        .map(|_| ())
 }
 
 async fn value(h: &Harness) -> TestResult<i64> {

@@ -331,6 +331,7 @@ fn world_with_extra(
         appearances,
         native_items,
         &[],
+        &[],
     )
 }
 
@@ -348,6 +349,25 @@ pub(super) fn world_with_cells(
         &[],
         None,
         cells,
+        &[],
+    )
+}
+
+pub(super) fn world_with_action_tiles(
+    callback: &Callback,
+    trigger: Position,
+    action_tiles: &[(Position, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_cells(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+        &[],
+        &[],
+        None,
+        &[],
+        action_tiles,
     )
 }
 
@@ -367,6 +387,7 @@ fn world_cells(
         &[(Position, u32)],
     )>,
     extra: &[Position],
+    action_tiles: &[(Position, u16)],
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -428,6 +449,7 @@ fn world_cells(
         }
     }
     let mut effect_positions = extra.to_vec();
+    effect_positions.extend(action_tiles.iter().map(|(position, _)| *position));
     if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
         effect_positions.push(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION);
         effect_positions.extend(
@@ -1098,7 +1120,13 @@ fn world_cells(
             sector::Item {
                 palette: 0,
                 depth: 0,
-                attrs: Default::default(),
+                attrs: sector::Attrs {
+                    action: action_tiles.iter().find_map(|(position, action)| {
+                        ((position.x, position.y, position.floor) == (x, y, floor))
+                            .then_some(*action)
+                    }),
+                    ..Default::default()
+                },
             },
         );
         sectors
