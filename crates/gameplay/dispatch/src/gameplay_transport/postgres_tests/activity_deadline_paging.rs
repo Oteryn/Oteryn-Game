@@ -180,14 +180,14 @@ async fn window_case(h: &Harness) -> TestResult {
     ).bind(first.handoff_id.as_slice()).fetch_all(&h.pool).await?;
     assert_eq!(cooldowns, vec![(clock + 36_000) * 1_000; 2]);
 
-    let account: String = sqlx::query_scalar(
-        "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
-    ).bind(late.initiating_character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-    evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
     sqlx::query(
         "SELECT pg_sleep(greatest(0, extract(epoch FROM admission_closes_at - clock_timestamp())))
          FROM game_activity_handoff_groups WHERE handoff_id=encode($1,'hex')::uuid"
     ).bind(first.handoff_id.as_slice()).fetch_one(&h.pool).await?;
+    let account: String = sqlx::query_scalar(
+        "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+    ).bind(late.initiating_character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
     assert!(owner.open_portal_room(&authority, &h.node, late.participants[0].source, WARZONE_BOSS).await?.is_none());
     assert_eq!(
         owner.enter_boss_admission_window(&authority, &h.node, late, window).await?,
@@ -196,6 +196,10 @@ async fn window_case(h: &Harness) -> TestResult {
 
     h.root.advance_test_quest_clock(9)?;
     for (tag, request) in [(240, &first), (241, &second)] {
+        let account: String = sqlx::query_scalar(
+            "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+        ).bind(request.initiating_character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
         let member = &request.participants[0];
         let source = item_fence_of(store.current_session_at(member.destination_game_session_id).await?.0)
             .ok_or("Instance source fence")?;
