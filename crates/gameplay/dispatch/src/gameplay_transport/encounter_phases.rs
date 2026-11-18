@@ -851,7 +851,8 @@ fn remove_count_room_remains(
     encounter_map(cells)
         .zip(remains_tile(remains.position))
         .is_some_and(|(map, tile)| {
-            map.remove_movement_item(tile, remains.placement, remains.appearance)
+            map.movement_item(remains.placement).is_none()
+                || map.remove_movement_item(tile, remains.placement, remains.appearance)
         })
 }
 
@@ -1444,6 +1445,18 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         use super::connection::UseOutcome;
         use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+        let Some(map) = self.bundle_map() else {
+            return Ok(None);
+        };
+        let Some((tile, item)) = map.facts.movement_item(placement) else {
+            return Ok(None);
+        };
+        if !map.facts.movement_items(tile).iter().any(|entry| {
+            entry.source == crate::map::view::EntrySource::Added(item)
+                && count_remains_kind(entry.facts.appearance_id).is_some()
+        }) {
+            return Ok(None);
+        }
         let Some(_permit) = self.spell_lane_permit().await else {
             return Err(());
         };
