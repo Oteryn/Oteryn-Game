@@ -937,6 +937,8 @@ fn scenario_case(
         world(&physical, trigger)?
     } else if earth_birch {
         super::super::fknow_earth::world(&callback)?
+    } else if energy_replicas {
+        super::super::fknow_energy::world(&callback)?
     } else {
         world(&callback, trigger)?
     };
@@ -2611,7 +2613,7 @@ fn scenario_case(
             super::super::questpc7_feaster::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-forgotten-story" {
             if energy_replicas {
-                super::super::fknow_energy::exercise(&owner, &admitted, &h).await?;
+                super::super::fknow_energy::exercise(&owner, &mut admitted, &h).await?;
             } else {
                 super::super::questpc7_forgotten_story::exercise(&mut owner, &mut admitted, &h)
                     .await?;
