@@ -765,7 +765,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || callback.selector.position != Some(presence.position)
                     || !callback.requires_world_admission
                     || !callback.has_personal_state()
-                    || callback.item_on_target.is_none()
+                    || callback
+                        .item_on_target
+                        .as_ref()
+                        .is_none_or(|tool| !tool.selected_instance)
                     || callback.lever.is_some()
                     || callback.reversible
                     || effects.reset_after_ms.is_some()
@@ -780,7 +783,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.actor_kind != ActorKind::Player
             || callback.trigger != Trigger::Use
             || callback.selector.position.is_none()
-            || callback.item_on_target.is_none()
+            || callback
+                .item_on_target
+                .as_ref()
+                .is_none_or(|tool| !tool.selected_instance)
             || callback.lever.is_some()
             || callback.reversible
             || callback.teleport.is_some()

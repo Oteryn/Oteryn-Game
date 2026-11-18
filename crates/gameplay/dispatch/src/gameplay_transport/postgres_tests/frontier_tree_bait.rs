@@ -44,8 +44,10 @@ pub(super) async fn exercise(
     callback.storage[0].track = TRACK.into();
     callback.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_beaver.lua:12-44".into()];
     let mut callback = serde_json::to_value(callback)?;
-    callback["item_on_target"] =
-        json!({"item":BAIT,"count":1,"replacement":null,"target_replacement":null});
+    callback["item_on_target"] = json!({
+        "item":BAIT,"count":1,"selected_instance":true,
+        "replacement":null,"target_replacement":null
+    });
     callback["effects"] = json!({"spawn_creatures":[{"creature":THIEF,"count":1}]});
     let document = json!({"schema":1,"quests":[{"quest":QUEST,
         "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
@@ -60,20 +62,6 @@ pub(super) async fn exercise(
         .await
         .map_err(|()| "fence")?
         .ok_or("fence")?;
-    use super::secret_service_dock_fire::use_target;
-    assert_eq!(
-        use_target(owner, admitted, AT).await?,
-        UseDisposition::Rejected
-    );
-    assert!(
-        owner
-            .runtime
-            .lock()
-            .await
-            .current_live_creature_census()
-            .map_err(debug)?
-            .is_empty()
-    );
     super::quest_world_callbacks::input_item(
         owner,
         fence.item_fence(),
@@ -86,8 +74,20 @@ pub(super) async fn exercise(
         true,
     )
     .await?;
+    // Clicking the tree without selecting the bait cannot steal it.
+    super::secret_service_dock_fire::assert_bare_use_refused(owner, admitted, AT).await?;
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 9843).await?, 1);
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .current_live_creature_census()
+            .map_err(debug)?
+            .is_empty()
+    );
     assert_eq!(
-        use_target(owner, admitted, AT).await?,
+        super::secret_service_dock_fire::use_selected_tool(owner, admitted, AT, BAIT).await?,
         UseDisposition::Committed
     );
     assert_eq!(super::qengine_voucher_stories::quantity(h, 9843).await?, 0);

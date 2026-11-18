@@ -6,6 +6,7 @@ use super::{
 };
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
@@ -13,7 +14,8 @@ use oteryn_gameplay_quests::quest::{
     world_callbacks::{Offering, Position},
 };
 use oteryn_protocol_oteryn::world_object::{
-    UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
+    encode_item_use_intent, encode_use_intent,
 };
 use serde_json::json;
 use std::sync::Arc;
@@ -28,6 +30,7 @@ const AT: Position = Position {
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const TRACK: &str = "oteryn:quest-progress/dock-fire-fixture/mission";
 const REARM: &str = "oteryn:quest-transition/dock-fire-fixture/rearm";
+const FIRE_BUG: &str = "oteryn:item.tibia.i5467";
 const LIFETIME_MS: u32 = 420_000;
 
 #[test]
@@ -53,7 +56,10 @@ pub(super) async fn exercise(
     callback.storage[0].set = 2;
     callback.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:144-155".into()];
     let mut callback = serde_json::to_value(callback)?;
-    callback["item_on_target"] = json!({"item":"oteryn:item.tibia.i5467","count":1,"reusable":true,"replacement":null,"target_replacement":null});
+    callback["item_on_target"] = json!({
+        "item":FIRE_BUG,"count":1,"reusable":true,"selected_instance":true,
+        "replacement":null,"target_replacement":null
+    });
     callback["effects"] =
         json!({"item_presence":{"position":AT,"appearance":2118,"lifetime_ms":LIFETIME_MS}});
     let document = json!({"schema":1,"quests":[{"quest":QUEST,
@@ -91,18 +97,20 @@ pub(super) async fn exercise(
         fence.item_fence(),
         &Offering {
             position: AT,
-            item: "oteryn:item.tibia.i5467".into(),
+            item: FIRE_BUG.into(),
             count: 1,
         },
         4600,
         true,
     )
     .await?;
+    assert_bare_use_refused(owner, admitted, AT).await?;
     let ignition = owner.owner_now().get();
     assert_eq!(
-        use_target(owner, admitted, AT).await?,
+        use_selected_tool(owner, admitted, AT, FIRE_BUG).await?,
         UseDisposition::Committed
     );
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 5467).await?, 1);
     let pos = crate::map::overlay::TilePos {
         x: AT.x,
         y: AT.y,
@@ -158,7 +166,7 @@ pub(super) async fn exercise(
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     assert_eq!(
-        use_target(owner, admitted, AT).await?,
+        use_selected_tool(owner, admitted, AT, FIRE_BUG).await?,
         UseDisposition::Occupied
     );
     let stored: i64 =
@@ -168,38 +176,90 @@ pub(super) async fn exercise(
             .await?;
     assert_eq!(stored, 1);
     let map = owner.bundle_map().ok_or("map")?;
-    assert_eq!(map.facts.expire_movement_items(due), 1);
+    assert_eq!(map.facts.next_movement_decay_time(), Some(due));
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(Duration::from_millis(u64::from(LIFETIME_MS)))
+        .ok_or("clock")?;
+    let map = owner.bundle_map().ok_or("map")?;
+    let stop = oteryn_foundation::CancellationToken::new();
+    let observe = async {
+        while !map.facts.quest_callback_presence_available(pos) {
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+        stop.cancel();
+    };
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        super::fixture::join_two(owner.run_source_owner_cycles(&stop), observe),
+    )
+    .await?;
     assert!(map.facts.movement_items(pos).is_empty());
-    assert!(map.facts.quest_callback_presence_available(pos));
-    assert_eq!(map.facts.expire_movement_items(due), 0);
+    assert_eq!(map.facts.next_movement_decay_time(), None);
     assert_eq!(
-        use_target(owner, admitted, AT).await?,
+        use_selected_tool(owner, admitted, AT, FIRE_BUG).await?,
         UseDisposition::Committed
     );
     Ok(())
 }
 
-pub(super) async fn use_target(
+pub(super) async fn assert_bare_use_refused(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     at: Position,
+) -> TestResult {
+    let target = world_target(owner, at)?;
+    let use_intent = encode_use_intent(&target).map_err(debug)?;
+    let command = admitted.continuity.next_command_id;
+    let result =
+        super::quest_world_callbacks::wire(owner, admitted, command, 2, use_intent).await?;
+    assert_ne!(decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
+    Ok(())
+}
+
+pub(super) async fn use_selected_tool(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    at: Position,
+    tool: &str,
 ) -> TestResult<UseDisposition> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(Duration::from_secs(2))
         .ok_or("clock")?;
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(), &[4, 6, 11, 15, 18],
+        )
+        .ok_or("selected tool capabilities")?;
+    let reference = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", tool, "definition-r1"))
+        .ok_or("tool definition")?;
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(world_target(owner, at)?)),
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let command = admitted.continuity.next_command_id;
+    let (next, result, _) =
+        super::item_craft::exchange(owner, *admitted, command, &payload, Some(reference)).await?;
+    *admitted = next;
+    Ok(result)
+}
+
+fn world_target(owner: &ComposedFreshAdmission<'_, '_, '_>, at: Position) -> TestResult<WorldObjectTarget> {
     let map = owner.bundle_map().ok_or("map")?;
     let key = oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, 1)
         .ok_or("source position")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    let use_intent = encode_use_intent(&WorldObjectTarget {
+    Ok(WorldObjectTarget {
         placement,
         expected_revision: map.facts.object_revision(key),
     })
-    .map_err(debug)?;
-    let command = admitted.continuity.next_command_id;
-    let result =
-        super::quest_world_callbacks::wire(owner, admitted, command, 2, use_intent).await?;
-    decode_use_result(&result).map_err(|error| format!("{error:?}").into())
 }
