@@ -55,6 +55,7 @@ fn scenario_case(
     let elemental_pin = name.starts_with("qn1-elemental-");
     let qm50 = name == "goblin-merchant-elevator-upper";
     let m03_pits = name == super::super::qengine_m03_pits::NAME;
+    let pits_shrine = name == super::super::cooldmech_shrine::NAME;
     let nomads_window = name.starts_with(super::super::qengine_m02_use::NAME);
     let m01b_explore = name.starts_with("m01b/");
     let qready_craft = name == super::super::qready1_crafting::NAME;
@@ -96,6 +97,7 @@ fn scenario_case(
         || qready_workbench
         || qready_craft
         || m03_pits
+        || pits_shrine
         || nomads_window
         || qm48
         || m01b_explore
@@ -161,6 +163,8 @@ fn scenario_case(
             y: trigger.y - 1,
             ..trigger
         }
+    } else if pits_shrine {
+        super::super::cooldmech_shrine::ORIGIN
     } else if m03_pits {
         Position {
             x: 32791,
@@ -358,7 +362,7 @@ fn scenario_case(
         super::super::qd_world::callback(name)?
     } else if engenc_asura {
         super::super::engenc_asura_dispatch::callback(name)?
-    } else if m03_pits {
+    } else if m03_pits || pits_shrine {
         callback("qm03/pits")?
     } else if nomads_window {
         callback(super::super::qengine_m02_use::NAME)?
@@ -1043,6 +1047,10 @@ fn scenario_case(
                 generation.native_gameplay().ok_or("native Asura")?,
                 name,
             )?
+        } else if pits_shrine {
+            super::super::cooldmech_shrine::world(
+                generation.native_gameplay().ok_or("Shrine native policies")?,
+            )?
         } else if m03_pits {
             super::super::qengine_m03_pits::world(
                 generation.native_gameplay().ok_or("Pits native policies")?,
@@ -1567,6 +1575,7 @@ fn scenario_case(
             || m03_use
             || engenc_asura
             || m03_pits
+            || pits_shrine
             || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
             // The Stampede binding carries its Premium admission on the quest.
             || name == super::super::m01c_stampede_entry::NAME
@@ -1893,6 +1902,10 @@ fn scenario_case(
                 name,
             ))
             .await?;
+        } else if pits_shrine {
+            Box::pin(super::super::cooldmech_shrine::exercise(
+                &mut owner, &mut admitted, &h,
+            )).await?;
         } else if m03_pits {
             Box::pin(super::super::qengine_m03_pits::exercise(
                 &mut owner,
