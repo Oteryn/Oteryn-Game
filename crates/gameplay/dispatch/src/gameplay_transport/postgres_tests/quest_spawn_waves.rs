@@ -962,6 +962,20 @@ async fn stations_scenario(
     // The exit has committed, but the scheduler has not settled its credit.
     // A normal logout must preserve the session fence needed by the writer.
     assert!(owner.logout_preflight(*admitted).await.is_ok());
+    let token = owner
+        .runtime
+        .lock()
+        .await
+        .mint_transition_fence()
+        .map_err(debug)?;
+    let mut hold = super::super::FenceHold::new(
+        admitted.game_session_id,
+        super::super::TransitionFence::Transition(token),
+    );
+    assert!(matches!(
+        owner.fence_transition(player, &mut hold, true).await,
+        super::super::FenceStep::Wait
+    ));
     assert!(matches!(
         owner.logout_session(*admitted).await,
         crate::gameplay_transport::logout::LogoutReply::Result(

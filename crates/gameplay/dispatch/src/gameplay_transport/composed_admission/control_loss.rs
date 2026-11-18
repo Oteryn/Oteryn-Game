@@ -35,6 +35,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if logout && self.no_logout_tile(&mut runtime, actor) != Some(false) {
             return FenceStep::Wait;
         }
+        // Wave egress queues credit under this same runtime lock. After this
+        // fence is installed, egress cannot obtain the bound character lease.
+        if logout && self.has_pending_wave_credit(hold.session) {
+            return FenceStep::Wait;
+        }
         if self.states.player_trades.transitioning(hold.session) {
             return FenceStep::Wait;
         }
