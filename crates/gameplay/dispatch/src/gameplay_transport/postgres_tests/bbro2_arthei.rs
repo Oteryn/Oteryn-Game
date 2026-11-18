@@ -1,5 +1,5 @@
 //! Crystal's one-use tear ritual, retained arena and native two-player exit.
-use super::annihilator_route::{position, step};
+use super::annihilator_route::{position, staged_step as step};
 use super::fixture::debug;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::content::native_gameplay::NativeGameplayState;

@@ -1,5 +1,5 @@
 //! Mirror USE, timed repair, area admission and the retained native return portal.
-use super::annihilator_route::{position, step, use_target};
+use super::annihilator_route::{position, staged_step as step, use_target};
 use super::fixture::debug;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::content::native_gameplay::NativeGameplayState;

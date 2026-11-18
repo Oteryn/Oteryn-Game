@@ -702,6 +702,29 @@ pub(super) async fn position(
     Ok((position.x, position.y, position.floor))
 }
 
+pub(super) async fn staged_step(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    member: &mut AdmittedSession,
+    direction: oteryn_protocol_oteryn::world_spatial::StepDirection,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::StepDisposition;
+
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let origin = position(owner, member).await?;
+    let outcome = crate::gameplay_transport::connection::regression_routed_step(
+        owner,
+        *member,
+        member.runtime_actor.ok_or("actor")?,
+        direction,
+    )
+    .await?;
+    assert_eq!(outcome.disposition, StepDisposition::Moved, "{direction:?} from {origin:?}");
+    Ok(())
+}
+
 pub(super) async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
