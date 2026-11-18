@@ -63,9 +63,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 key,
                                 revision: map.facts.object_revision(key),
                             });
-                            if mutations.len() > 32 {
-                                return Err(UseDisposition::Exhausted);
-                            }
                         }
                     }
                 }

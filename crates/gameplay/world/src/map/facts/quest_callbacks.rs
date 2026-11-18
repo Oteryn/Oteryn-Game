@@ -2102,7 +2102,14 @@ fn project_scene(
     edits: &[QuestSceneMutation],
     remove_self: bool,
 ) -> bool {
-    if edits.len() > 32 {
+    // Arena field sweeps are bounded by their authored rectangle and appearance set.
+    // They only remove exact placements, under the same overlay capacity check.
+    if edits.len() > 32
+        && (remove_self
+            || edits
+                .iter()
+                .any(|edit| !matches!(edit, QuestSceneMutation::Remove { .. })))
+    {
         return false;
     }
     for edit in edits {

@@ -24,10 +24,6 @@ const QUEST: &str = "oteryn:quest.targuna_quest";
 const MISSION: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/mission";
 const FIELD_CASTER: &str = "oteryn:creature.fire_elemental";
-const BAKED_FIELD: Position = Position {
-    y: 32653,
-    ..LAST_PLATE
-};
 const HERALD: &str = "oteryn:creature.herald_of_fire";
 const SUMMON: &str = "oteryn:creature.infernoid_blob";
 const LAST_PLATE: Position = Position {
@@ -44,6 +40,18 @@ const SECOND_PLATE: Position = Position {
     y: 32656,
     ..LAST_PLATE
 };
+
+// Crystal 201189f8 movements_herald_red_floors.lua:43–56 sweeps the
+// whole arena, including a room with more than 32 matching placements.
+fn baked_fields() -> impl Iterator<Item = Position> {
+    (32488..=32498).flat_map(|x| {
+        (32650..=32652).map(move |y| Position {
+            x,
+            y,
+            floor: LAST_PLATE.floor,
+        })
+    })
+}
 
 #[test]
 fn herald_last_plate_resets_the_room_monsters_and_preserves_the_herald() -> TestResult {
@@ -93,10 +101,11 @@ pub(super) fn fixture() -> TestResult<Callback> {
 pub(super) fn world(fields: bool) -> TestResult<crate::map::boot::BundleWorld> {
     let callback = fixture()?;
     if fields {
+        let objects: Vec<_> = baked_fields().map(|position| (position, 2120)).collect();
         super::quest_world_callbacks::world_with_objects(
             &callback,
             LAST_PLATE,
-            &[(BAKED_FIELD, 2120)],
+            &objects,
             &[2120],
         )
     } else {
@@ -209,23 +218,22 @@ pub(super) async fn exercise(
     h: &Harness,
     fields: bool,
 ) -> TestResult {
-    let baked_key = crate::map::view::placement_key(
-        TilePos {
-            x: BAKED_FIELD.x,
-            y: BAKED_FIELD.y,
-            floor: BAKED_FIELD.floor,
-        },
-        1,
-    )
-    .ok_or("baked field")?;
+    let baked_keys = baked_fields()
+        .map(|position| {
+            crate::map::view::placement_key(
+                TilePos {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                },
+                1,
+            )
+            .ok_or("baked field")
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let field = if fields {
-        assert!(
-            !owner
-                .bundle_map()
-                .ok_or("room map")?
-                .facts
-                .base_hidden(baked_key)
-        );
+        let facts = &owner.bundle_map().ok_or("room map")?.facts;
+        assert!(baked_keys.iter().all(|key| !facts.base_hidden(*key)));
         owner.quest_catalogue = Some(Arc::new(field_catalogue()?));
         owner
             .refresh_quest_session(admitted.game_session_id, false)
@@ -304,13 +312,8 @@ pub(super) async fn exercise(
     assert!(runtime.contains_live_creature(targets[2]));
     drop(runtime);
     if let Some(field) = field {
-        assert!(
-            owner
-                .bundle_map()
-                .ok_or("room map")?
-                .facts
-                .base_hidden(baked_key)
-        );
+        let facts = &owner.bundle_map().ok_or("room map")?.facts;
+        assert!(baked_keys.iter().all(|key| facts.base_hidden(*key)));
         let lifecycle: i16 = sqlx::query_scalar(
             "SELECT lifecycle FROM game_item_instances WHERE item_instance_id=$1",
         )
