@@ -62,9 +62,6 @@ readonly PVP_BASE="$BASE/pvp"
 node_boot_game_port="${NODE_BOOT_GAME_PORT:-17181}"
 # Port zero lets the real listener bind atomically and report its assigned port.
 PVP_GAME_PORT="${NODE_BOOT_PVP_GAME_PORT:-0}"
-if [[ -n "${NODE_BOOT_GAME_PORT+x}" && -z "${NODE_BOOT_PVP_GAME_PORT+x}" ]]; then
-  PVP_GAME_PORT=$((node_boot_game_port + 1))
-fi
 if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" ]] && (( PVP_GAME_PORT == node_boot_game_port
   || PVP_GAME_PORT == ${NODE_BOOT_PG_PORT:-15433}
   || PVP_GAME_PORT == ${NODE_BOOT_PLATFORM_PORT:-18463} )); then
@@ -1506,7 +1503,7 @@ classify_stage_rows() {
         if ($4 ~ /;$/) {
           reason = $0
           sub(/^[^;]*;[[:space:]]*/, "", reason)
-          prefixes[$1] = reason
+          signatures[$1] = reason
         }
         sub(/;$/, "", $4)
         expected[$1] = $2 " " $4
@@ -1526,13 +1523,40 @@ classify_stage_rows() {
         if ($i ~ /^evidence=/) detail = substr($i, 10)
       }
       if ((row in expected) && expected[row] == cause " " root &&
-          (!(row in prefixes) || index(detail, prefixes[row]) == 1)) print "known", row
+          detail == signatures[row]) print "known", row
       else {
         print "new", row
         if (row in expected) print "stale", row
       }
     }
   ' "$known" "$log"
+}
+
+# A scenario id alone is not a waiver. Require the recorded cause, action and
+# complete evidence, and reject a row if any of its FAIL records differs.
+matching_known_rows() { # stage log, known failure file
+  python3 - "$1" "$2" <<'PY_KNOWN_FAILURE'
+from pathlib import Path
+import re
+import sys
+known = {}
+path = Path(sys.argv[2])
+if path.exists():
+    for line in path.read_text().splitlines():
+        match = re.fullmatch(r'([A-Za-z0-9_.-]+) ([a-z-]+) at ([^; ]+)(?:; (.*))?', line)
+        if match and match[4]:
+            known[match[1]] = (match[2], match[3], match[4] or '')
+observed = {}
+with Path(sys.argv[1]).open(errors='replace') as log:
+    for line in log:
+        match = re.search(r'\be2e_all scenario=([A-Za-z0-9_.-]+) status=FAIL\b(.*)', line)
+        if match:
+            fields = dict(re.findall(r'\b(cause|root|evidence)=(\S+)', match[2]))
+            observed.setdefault(match[1], []).append(tuple(fields.get(key, '') for key in ('cause', 'root', 'evidence')))
+for row, failures in sorted(observed.items()):
+    if row in known and known[row][2] and all(failure == known[row] for failure in failures):
+        print(row)
+PY_KNOWN_FAILURE
 }
 
 stage() { # name prerequisite... -- function
@@ -1956,7 +1980,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     printf '%s\n' "$spawn_proof"
     return 1
   }
-  printf '%s\n' "$spawn_proof" >&2
+  printf '%s\n' "$spawn_proof" | sed 's/^/SPAWN_PROOF /' >&2
   grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' <<< "$spawn_proof" || {
     printf '%s\n' 'Spawn PostgreSQL proof did not execute exactly one passing test' >&2
     return 1
@@ -2004,6 +2028,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
   NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
   NODE_BOOT_CONTROL_SOCKET="$BASE/run/control.sock" \
+  NODE_BOOT_NODE_LOG="${node_log:-}" \
   NODE_BOOT_ADDRESS="127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}" \
   NODE_BOOT_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
   NODE_BOOT_DATABASE_URL="$ADMIN_URL" \

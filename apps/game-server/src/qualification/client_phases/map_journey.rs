@@ -307,7 +307,7 @@ async fn check(
         let expected = if sample.kind == "npc" {
             npc_display_name(key)?
         } else {
-            creature_display_name(key)?
+            creature_display_name(key)?.to_owned()
         };
         if !client.world_entities().is_some_and(|entities| {
             entities.iter().any(|entity| {

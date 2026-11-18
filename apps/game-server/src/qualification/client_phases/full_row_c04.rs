@@ -137,11 +137,19 @@ async fn wait_ready(
     client: &mut DevClientSession,
     spell: std::num::NonZeroU32,
 ) -> TestResult<oteryn_dev_client::CastOutcome> {
+    Ok(wait_ready_observed(client, spell).await?.1)
+}
+
+async fn wait_ready_observed(
+    client: &mut DevClientSession,
+    spell: std::num::NonZeroU32,
+) -> TestResult<(u32, oteryn_dev_client::CastOutcome)> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     loop {
+        let before = mana(client)?;
         let outcome = cast(client, spell).await?;
         if outcome.disposition != SpellCastDisposition::CoolingDown {
-            return Ok(outcome);
+            return Ok((before, outcome));
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("CAST cooldown did not expire reply={outcome:?}").into());
@@ -151,17 +159,47 @@ async fn wait_ready(
     }
 }
 
+fn same_spell_debit(
+    inside: std::num::NonZeroU32,
+    outside: std::num::NonZeroU32,
+    before: u32,
+    after: u32,
+    cost: u32,
+) -> bool {
+    inside == outside && before.checked_sub(cost) == Some(after)
+}
+
+#[cfg(test)]
+mod review_tests {
+    use super::*;
+    #[test]
+    fn review_outside_cast_must_prove_the_same_spell_and_exact_cost() -> TestResult {
+        let a = std::num::NonZeroU32::new(1).ok_or("spell index one")?;
+        let b = std::num::NonZeroU32::new(2).ok_or("spell index two")?;
+        assert!(!same_spell_debit(a, b, 100, 80, 20));
+        assert!(!same_spell_debit(a, a, 100, 99, 20));
+        assert!(same_spell_debit(a, a, 100, 80, 20));
+        Ok(())
+    }
+}
+
 async fn journey(
     row: &mut Row,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
+    characters: [[u8; 16]; 2],
+    mut client: DevClientSession,
 ) -> TestResult {
     let book = spell_book()?;
     let ordinary = index(&book, "exura")?;
     let primary_peer = index(&book, "exura gran")?;
     let aggressive = index(&book, "exevo vis lux")?;
-    let mut client = connect_world(clients, 0xc4).await?;
+    let row_clients = SeamClients {
+        characters: &characters,
+        ..*clients
+    };
+    let clients = &row_clients;
 
     let before = mana(&client)?;
     let pz = cast(&mut client, aggressive).await?;
@@ -188,12 +226,18 @@ async fn journey(
     })
     .ok_or("no player STEP route out of protection zone")?;
     walk(&mut client, world, &path).await?;
-    let before = mana(&client)?;
-    let outside = wait_ready(&mut client, ordinary).await?;
+    let (before, outside) = wait_ready_observed(&mut client, aggressive).await?;
+    let crate::spell::ManaCost::Fixed(cost) = book
+        .indexed(aggressive)
+        .ok_or("aggressive spell missing")?
+        .mana
+    else {
+        return Err("aggressive spell has no fixed mana cost".into());
+    };
     if outside.status != CommandStatus::Accepted
         || outside.disposition != SpellCastDisposition::Cast
         || outside.actor_vitals_delta.is_none()
-        || mana(&client)? >= before
+        || !same_spell_debit(aggressive, aggressive, before, mana(&client)?, cost)
     {
         return Err(format!(
             "outside CAST expected cast/vitals debit reply={outside:?} mana={before}->{}",
@@ -203,6 +247,21 @@ async fn journey(
     }
     row.pass(2, &outside);
 
+    // Start the original healing cooldown experiment independently. The PZ
+    // control above now proves the aggressive spell on both sides of the boundary.
+    let (heal_before, healing) = wait_ready_observed(&mut client, ordinary).await?;
+    let crate::spell::ManaCost::Fixed(heal_cost) =
+        book.indexed(ordinary).ok_or("ordinary spell missing")?.mana
+    else {
+        return Err("ordinary spell has no fixed cost".into());
+    };
+    if healing.status != CommandStatus::Accepted
+        || healing.disposition != SpellCastDisposition::Cast
+        || healing.actor_vitals_delta.is_none()
+        || !same_spell_debit(ordinary, ordinary, heal_before, mana(&client)?, heal_cost)
+    {
+        return Err("healing cooldown prerequisite did not cast with its exact cost".into());
+    }
     let paid = mana(&client)?;
     let retry = cast(&mut client, ordinary).await?;
     if retry.disposition != SpellCastDisposition::CoolingDown
@@ -374,6 +433,26 @@ async fn journey(
     Ok(())
 }
 
+async fn c04_phases<T, S, J, F>(setup: S, journey: F) -> TestResult
+where
+    S: std::future::Future<Output = TestResult<T>>,
+    J: std::future::Future<Output = TestResult>,
+    F: FnOnce(T) -> J,
+{
+    let harness = verdict::Harness::global();
+    harness.bounded_wait(
+        tokio::time::Instant::now() + full_e2ef5::C17_SETUP_LIMIT,
+        "c04-setup",
+    );
+    let ready = verdict::indexed_timeout(full_e2ef5::C17_SETUP_LIMIT, setup)
+        .await
+        .map_err(|_| "C04 setup deadline")??;
+    harness.bounded_wait(tokio::time::Instant::now(), "c04-journey");
+    verdict::indexed_timeout(Duration::from_secs(120), journey(ready))
+        .await
+        .map_err(|_| "C04 journey deadline")?
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
     let result: TestResult = verdict::observe(async {
@@ -386,12 +465,20 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             WorldId::decode(&clients.world)?,
             ChannelId::decode(&clients.channel)?,
         )?;
-        verdict::indexed_timeout(
-            Duration::from_secs(120),
-            journey(&mut row, clients, world, &metadata.spawns),
+        c04_phases(
+            full_e2ef5::spell_fixture(clients, "c04", 0xc4),
+            |(characters, client)| {
+                journey(
+                    &mut row,
+                    clients,
+                    world,
+                    &metadata.spawns,
+                    characters,
+                    client,
+                )
+            },
         )
         .await
-        .map_err(|_| "C04 journey deadline after real player commands")?
     })
     .await;
     row.finish(result);
@@ -400,6 +487,53 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn r3_c04_setup_and_journey_have_independent_deadlines() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                tokio::time::pause();
+                let result = c04_phases(
+                    async {
+                        tokio::time::sleep(Duration::from_secs(10)).await;
+                        Ok(())
+                    },
+                    |()| async {
+                        tokio::time::sleep(Duration::from_secs(121)).await;
+                        Ok(())
+                    },
+                )
+                .await;
+                assert!(result.is_err(), "journey borrowed unused setup allowance");
+                let result = c04_phases(
+                    async {
+                        tokio::time::sleep(full_e2ef5::C17_SETUP_LIMIT + Duration::from_secs(1))
+                            .await;
+                        Ok(())
+                    },
+                    |()| async { Ok(()) },
+                )
+                .await;
+                assert!(result.is_err(), "setup borrowed journey allowance");
+                assert!(
+                    c04_phases(
+                        async {
+                            tokio::time::sleep(Duration::from_secs(180)).await;
+                            Ok(())
+                        },
+                        |()| async {
+                            tokio::time::sleep(Duration::from_secs(119)).await;
+                            Ok(())
+                        }
+                    )
+                    .await
+                    .is_ok()
+                );
+            });
+        Ok(())
+    }
+
     #[test]
     fn evidence_tokens_are_report_safe() {
         assert_eq!(

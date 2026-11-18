@@ -480,10 +480,8 @@ async fn equip_right(client: &mut DevClientSession, definition: NonZeroU32) -> T
         .and_then(|inventory| inventory.entries.iter().find(|e| e.item_definition_ref == definition))
         .map(|e| e.handle)
         .ok_or("augment item not carried")?;
-    let moved = client
-        .move_item(&items::ItemMoveIntent { source: handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand) })
-        .await?;
-    if moved.outcome != items::ItemMoveOutcome::Moved {
+    let moved = full_gold::equip_handle(client, handle, items::EquipmentSlot::RightHand).await?;
+    if moved != items::ItemMoveOutcome::Moved {
         return Err(format!("right-hand ITEM_MOVE reply={moved:?}").into());
     }
     wait_inventory(client, "right-hand equipment", |c| equipped_right(c, definition)).await

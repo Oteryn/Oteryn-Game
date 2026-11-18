@@ -6560,6 +6560,88 @@ fn qualification_spawn_prefers_requested_species_over_nearer_creature() -> TestR
     Ok(())
 }
 
+#[derive(Debug)]
+enum SpawnTravelFailure {
+    NoAuthoredSpawn,
+    NoRoute,
+    WaitingForSpawn,
+    NoApproach,
+}
+impl std::fmt::Display for SpawnTravelFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "spawn travel: {self:?}")
+    }
+}
+impl std::error::Error for SpawnTravelFailure {}
+
+fn creature_matches(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> bool {
+    entry.kind == oteryn_dev_client::EntityKind::Creature
+        && entry
+            .display_name
+            .as_ref()
+            .is_some_and(|value| value.as_str().is_ok_and(|value| value == name))
+}
+
+pub(super) fn creature_display_name(key: &str) -> TestResult<&'static str> {
+    // Aliases of the same canonical creature are one binding. A genuinely
+    // shared name is ambiguous only for its owners, never for every creature.
+    type Names = BTreeMap<String, Option<String>>;
+    static NAMES: std::sync::OnceLock<Result<Names, String>> = std::sync::OnceLock::new();
+    let canonical = |key: &str| {
+        key.strip_prefix("canary:creature/")
+            .map_or_else(|| key.to_owned(), |key| format!("oteryn:creature.{key}"))
+    };
+    let names = NAMES
+        .get_or_init(|| {
+            let read = || -> TestResult<Names> {
+                let profiles: serde_json::Value =
+                    serde_json::from_slice(&native_input()?.creature_profiles.bytes)?;
+                let mut by_key: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+                let mut owners: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+                for row in profiles["records"]
+                    .as_array()
+                    .ok_or("creature profile records absent")?
+                {
+                    let key = canonical(
+                        row["profile"]["target"]["key"]
+                            .as_str()
+                            .ok_or("creature profile key absent")?,
+                    );
+                    if let Some(name) =
+                        row["profile"]["data"]["profile"]["details"]["display_name"].as_str()
+                    {
+                        by_key
+                            .entry(key.clone())
+                            .or_default()
+                            .insert(name.to_owned());
+                        owners.entry(name.to_owned()).or_default().insert(key);
+                    }
+                }
+                Ok(by_key
+                    .into_iter()
+                    .map(|(key, names)| {
+                        let name = if names.len() == 1 {
+                            names.into_iter().next().filter(|name| {
+                                owners.get(name).is_some_and(|owners| owners.len() == 1)
+                            })
+                        } else {
+                            None
+                        };
+                        (key, name)
+                    })
+                    .collect())
+            };
+            read().map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| error.clone())?;
+    names
+        .get(&canonical(key))
+        .ok_or_else(|| format!("source creature name absent: {key}"))?
+        .as_deref()
+        .ok_or_else(|| format!("source creature display-name binding is ambiguous: {key}").into())
+}
+
 async fn travel_to_spawn(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -6633,7 +6715,7 @@ pub(super) async fn travel_to_spawn_target(
             approach_spawn_target(client, world, spawns, creature, SpawnRespawn::Wait, None)
                 .await?
                 .map(|target| target.entity)
-                .ok_or_else(|| format!("no reachable live {creature}").into())
+                .ok_or_else(|| SpawnTravelFailure::WaitingForSpawn.into())
         },
     )
     .await
@@ -6665,7 +6747,7 @@ async fn travel_to_spawn_observed(
                 observe,
             )
             .await?
-            .ok_or_else(|| format!("no reachable live {creature}").into())
+            .ok_or_else(|| SpawnTravelFailure::WaitingForSpawn.into())
             .map(|_| ())
         },
     )
@@ -6704,7 +6786,7 @@ async fn approach_spawn_target_observing(
     probe_deadline: Option<tokio::time::Instant>,
     observe: &mut impl FnMut(&mut oteryn_dev_client::DevClientSession) -> TestResult,
 ) -> TestResult<Option<oteryn_dev_client::WorldSpatialEntity>> {
-    let (name, _) = full_gold::creature_profile(creature)?;
+    let name = creature_display_name(creature)?;
     let authored: BTreeMap<_, _> = spawns
         .sources
         .iter()
@@ -6727,7 +6809,7 @@ async fn approach_spawn_target_observing(
         })
         .collect();
     if authored.is_empty() {
-        return Ok(None);
+        return Err(SpawnTravelFailure::NoAuthoredSpawn.into());
     }
     let outside = |at| outside_protection_zone(world, at);
     let near = |at: TilePos, target: TilePos| {
@@ -7100,38 +7182,6 @@ fn npc_display_name(key: &str) -> TestResult<String> {
         .get(key)
         .cloned()
         .ok_or_else(|| format!("{key} has no authored display name").into())
-}
-
-pub(super) fn creature_display_name(key: &str) -> TestResult<String> {
-    static NAMES: std::sync::OnceLock<Result<BTreeMap<String, String>, String>> =
-        std::sync::OnceLock::new();
-    let names = NAMES
-        .get_or_init(|| {
-            let load = || -> TestResult<BTreeMap<String, String>> {
-                let bytes = &native_input()?.creature_profiles.bytes;
-                let content: serde_json::Value = serde_json::from_slice(bytes)?;
-                let records = content["records"]
-                    .as_array()
-                    .ok_or("no pinned creature profile records")?;
-                Ok(records
-                    .iter()
-                    .filter_map(|record| {
-                        let profile = &record["profile"];
-                        let key = profile["target"]["key"].as_str()?;
-                        let name =
-                            profile["data"]["profile"]["details"]["display_name"].as_str()?;
-                        Some((key.to_owned(), name.to_owned()))
-                    })
-                    .collect())
-            };
-            load().map_err(|error| error.to_string())
-        })
-        .as_ref()
-        .map_err(|error| error.clone())?;
-    names
-        .get(key)
-        .cloned()
-        .ok_or_else(|| format!("{key} has no pinned display name").into())
 }
 
 pub(crate) fn smoke() -> TestResult {
@@ -8557,4 +8607,58 @@ fn qualification_two_respawns_preserve_fare_work_budget() -> TestResult {
 #[test]
 fn qualification_spawn_budget_covers_authored_ninety_seconds() {
     assert!(spawn_observation_budget([90_000].into_iter()) > Duration::from_secs(90));
+}
+
+#[cfg(test)]
+mod review_spawn_tests {
+    use super::*;
+    #[test]
+    fn r2_spawn_names_resolve_the_real_pinned_catalogue() -> TestResult {
+        for key in ["oteryn:creature.rat", "oteryn:creature.skeleton"] {
+            assert!(!creature_display_name(key)?.is_empty());
+        }
+        assert_eq!(creature_display_name("oteryn:creature.rat")?, "Rat");
+        assert_eq!(creature_display_name("canary:creature/rat")?, "Rat");
+        for vocation in ["sorcerer", "druid", "knight", "paladin", "monk"] {
+            let key = format!("oteryn:creature.{vocation}_familiar");
+            assert!(!creature_display_name(&key)?.is_empty());
+        }
+        assert!(creature_display_name("oteryn:creature.night_harpy").is_err());
+        assert_eq!(
+            creature_display_name("oteryn:creature.skeleton")?,
+            "Skeleton"
+        );
+        Ok(())
+    }
+    #[test]
+    fn review_spawn_approach_binds_the_requested_species() -> TestResult {
+        use oteryn_protocol_oteryn::{entity_names::EntityDisplayName, world_spatial_entities::*};
+        let mut entity = WorldSpatialEntity {
+            display_name: Some(EntityDisplayName::new("Troll").map_err(|e| format!("{e:?}"))?),
+            kind: EntityKind::Creature,
+            entity: EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            position: ActorPosition {
+                x: 1,
+                y: 1,
+                floor: 7,
+            },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        assert!(
+            !creature_matches(&entity, "Rat"),
+            "neighboring troll satisfied rat travel"
+        );
+        entity.display_name = Some(EntityDisplayName::new("Rat").map_err(|e| format!("{e:?}"))?);
+        assert!(creature_matches(&entity, "Rat"));
+        entity.display_name = None;
+        assert!(!creature_matches(&entity, "Rat"));
+        Ok(())
+    }
 }

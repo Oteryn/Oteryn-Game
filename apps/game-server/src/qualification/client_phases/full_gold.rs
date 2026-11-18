@@ -409,6 +409,9 @@ pub(super) async fn earn(
     row: &str,
     needed: u64,
 ) -> TestResult<u64> {
+    let deadline =
+        tokio::time::Instant::now() + allowance(needed.saturating_sub(coin_value(client)?));
+    earning_within(deadline, async {
     let started = tokio::time::Instant::now();
     let start_gold = coin_value(client)?;
     let setup_limit = started + Duration::from_secs(SETUP_SECONDS);
@@ -481,7 +484,11 @@ pub(super) async fn earn(
                     }
                     None
                 }
-                result => result?,
+                Err(error) => match travel_failure(error.as_ref()) {
+                    TravelDecision::OtherCandidate | TravelDecision::Respawn => None,
+                    TravelDecision::Propagate => return Err(error),
+                },
+                Ok(target) => target,
             };
             if let Some(target) = travel {
                 next_species = 0;
@@ -552,6 +559,7 @@ pub(super) async fn earn(
         kills += 1;
         verdict::Harness::global().progress("gold");
     }
+    }).await
 }
 
 fn count(client: &DevClientSession, key: NonZeroU32) -> TestResult<u64> {
@@ -581,6 +589,47 @@ fn carried(client: &DevClientSession, key: NonZeroU32) -> TestResult<items::Item
         })
         .map(|entry| entry.handle)
         .ok_or_else(|| format!("carried-item-absent:{key}").into())
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum TravelDecision {
+    OtherCandidate,
+    Respawn,
+    Propagate,
+}
+fn travel_failure(error: &(dyn std::error::Error + 'static)) -> TravelDecision {
+    match error.downcast_ref::<SpawnTravelFailure>() {
+        Some(SpawnTravelFailure::WaitingForSpawn) => TravelDecision::Respawn,
+        Some(
+            SpawnTravelFailure::NoAuthoredSpawn
+            | SpawnTravelFailure::NoRoute
+            | SpawnTravelFailure::NoApproach,
+        ) => TravelDecision::OtherCandidate,
+        None => TravelDecision::Propagate,
+    }
+}
+
+async fn earning_within<T>(
+    deadline: tokio::time::Instant,
+    work: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    let result = tokio::time::timeout_at(deadline, work).await.map_err(|_| {
+        verdict::HarnessError::boxed(
+            verdict::Cause::Deadline {
+                phase: "gold-earning",
+            },
+            "gold-earning-deadline",
+        )
+    })?;
+    if tokio::time::Instant::now() >= deadline {
+        return Err(verdict::HarnessError::boxed(
+            verdict::Cause::Deadline {
+                phase: "gold-earning",
+            },
+            "gold-earning-deadline",
+        ));
+    }
+    result
 }
 
 /// Walk to the nearest catalogue seller of item `id`, TALK `hi` and `trade`, and BUY `quantity`.
@@ -706,6 +755,82 @@ pub(super) async fn buy(
     }
 }
 
+fn equip_payload(intent: &items::ItemMoveIntent, selected: &[u32]) -> TestResult<Vec<u8>> {
+    items::encode_item_move_intent_for(
+        intent,
+        items::ItemMoveSelection {
+            equip_drop: selected.contains(&12),
+            container_tree: selected.contains(&14),
+            world_interaction: selected.contains(&11),
+        },
+    )
+    .map_err(|error| format!("equipment encoding: {error:?}").into())
+}
+
+pub(super) async fn equip_handle(
+    client: &mut DevClientSession,
+    source: items::ItemHandle,
+    slot: EquipmentSlot,
+) -> TestResult<items::ItemMoveOutcome> {
+    let selected = client.session_mut().selected_capabilities().to_vec();
+    let item = client
+        .inventory()
+        .and_then(|view| view.entries.iter().find(|entry| entry.handle == source))
+        .copied()
+        .ok_or("equipment source not carried")?;
+    equip_payload(
+        &items::ItemMoveIntent {
+            source,
+            destination: items::ItemMoveDestination::Equipment(slot),
+        },
+        &selected,
+    )?;
+    let before = client.last_server_sequence();
+    client.take_events();
+    let outcome = client
+        .session_mut()
+        .move_item_counted(oteryn_dev_client::client_runtime::inventory::MoveRequest {
+            source,
+            destination: items::ItemMoveDestination::Equipment(slot),
+            count: None,
+        })
+        .await?
+        .outcome;
+    if outcome != items::ItemMoveOutcome::Moved {
+        return Ok(outcome);
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let mut fresh = false;
+    loop {
+        fresh |= client.take_events().into_iter().any(|event| matches!(event, SessionEvent::Inventory(delta) if delta.server_sequence > before));
+        if fresh
+            && client.inventory().is_some_and(|view| {
+                !view.entries.iter().any(|entry| entry.handle == source)
+                    && view
+                        .equipment
+                        .iter()
+                        .any(|entry| entry.slot == slot && entry.item == item)
+            })
+        {
+            return Ok(outcome);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("equipment exact source custody delta absent".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+}
+
+fn purchase_matches(
+    observed: u64,
+    wanted: u64,
+    gold_before: u64,
+    gold_after: u64,
+    cost: u64,
+) -> bool {
+    observed == wanted && gold_before.checked_sub(cost) == Some(gold_after)
+}
+
 /// ITEM_MOVE a carried item into an equipment slot and require the served equipment to show it.
 pub(super) async fn equip(
     client: &mut DevClientSession,
@@ -714,11 +839,8 @@ pub(super) async fn equip(
 ) -> TestResult {
     let source = carried(client, key)?;
     let before = client.inventory().cloned().ok_or("equipment prior inventory absent")?;
-    let reply = client.move_item(&items::ItemMoveIntent {
-        source,
-        destination: items::ItemMoveDestination::Equipment(slot),
-    }).await?;
-    if reply.status != CommandStatus::Accepted || reply.outcome != items::ItemMoveOutcome::Moved {
+    let reply = equip_handle(client, source, slot).await?;
+    if reply != items::ItemMoveOutcome::Moved {
         return Err(format!("equip:item={key}:slot={slot:?}:reply={reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
@@ -732,6 +854,62 @@ pub(super) async fn equip(
         client.take_events();
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod review_tests {
+    use super::*;
+    #[test]
+    fn review_equipment_uses_the_selected_equipment_codec() -> TestResult {
+        let intent = items::ItemMoveIntent {
+            source: items::ItemHandle::MIN,
+            destination: items::ItemMoveDestination::Equipment(EquipmentSlot::Armor),
+        };
+        let bytes = equip_payload(&intent, &[4, 12])?;
+        assert_eq!(
+            items::decode_item_move_intent_with_equip_drop(&bytes, true)
+                .map_err(|error| format!("decode: {error:?}"))?,
+            intent
+        );
+        assert!(equip_payload(&intent, &[4]).is_err());
+        Ok(())
+    }
+    #[test]
+    fn review_respawn_and_transport_errors_are_not_blacklisted() {
+        assert_eq!(
+            travel_failure(&SpawnTravelFailure::WaitingForSpawn),
+            TravelDecision::Respawn
+        );
+        let error =
+            std::io::Error::new(std::io::ErrorKind::ConnectionReset, "test connection reset");
+        assert_eq!(travel_failure(&error), TravelDecision::Propagate);
+    }
+    #[test]
+    fn review_successful_final_hunt_after_deadline_fails() -> TestResult {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?;
+        runtime.block_on(async {
+            tokio::time::pause();
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+            let result = earning_within(deadline, async {
+                tokio::time::advance(Duration::from_secs(2)).await;
+                Ok(1_u64)
+            })
+            .await;
+            assert!(result.is_err(), "late final gold returned success");
+        });
+        Ok(())
+    }
+    #[test]
+    fn review_item_grant_requires_the_exact_payment() {
+        assert!(
+            !purchase_matches(1, 1, 100, 100, 5),
+            "grant without payment passed"
+        );
+        assert!(purchase_matches(1, 1, 100, 95, 5));
+        assert!(!purchase_matches(1, 1, 100, 94, 5));
+    }
 }
 
 #[cfg(test)]

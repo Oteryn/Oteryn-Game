@@ -1,8 +1,7 @@
 # Node-boot e2e rows known to FAIL on main (seeded from merge-group-gate run 44089797199, main 2026-11-17).
-# One row per line: <scenario id> <cause> at <root>[; <evidence prefix>].
-# Only failures matching the recorded signature are waived (NODE_BOOT_KNOWN_FAIL).
-# A different recorded outcome is reported as NODE_BOOT_KNOWN_FAIL_STALE.
-# Never add a row to make a new failure green.
+# One row per line: <scenario id> <cause> at <root>[; <complete evidence>]. Only an exact fingerprint
+# match is waived and printed as NODE_BOOT_KNOWN_FAIL. Missing or truncated evidence fails closed. Remove a row when it passes
+# (NODE_BOOT_KNOWN_FAIL_STALE). Never add a row to make a new failure green.
 C01.full assertion at C01.full/admission
 C02.full no-progress at C02.full/walk; watch-aborted-before-verdict
 C03.full assertion at C03.full/baseline; watch-aborted-before-verdict
