@@ -7,11 +7,19 @@ pub(super) const CLAIM: &str = "oteryn:reward-claim.nrwicked-forgemaster";
 const ACCESS_CALLBACK: &str = "oteryn:quest-reward/nrwicked-forgemaster-key";
 const QUEST: &str = "oteryn:quest.no_rest_for_the_wicked_quest";
 const ACCESS: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forge_master/access_door";
+const DOOR_STAGE: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/questline";
 pub(super) const CLAIMED: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward";
 pub(super) const CHEST: (u16, u16, i8) = (34061, 32334, -14);
 const REWARDS: [u16; 11] = [
     49520, 49522, 49523, 49524, 49525, 49526, 49527, 49530, 49528, 49529, 50250,
 ];
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum AccessPolicy {
+    Verified,
+    SeparateRewardMarkers,
+    AccessFlagOnly,
+}
 
 fn key(item: u16) -> String {
     format!("oteryn:item.tibia.i{item}")
@@ -105,10 +113,11 @@ pub(super) fn claim_shard() -> String {
 
 pub(super) fn catalogue(
     digest: [u8; 32],
-    shared_marker: bool,
+    policy: AccessPolicy,
 ) -> TestResult<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>> {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
     let digest: String = digest.iter().map(|b| format!("{b:02x}")).collect();
+    let shared_marker = policy != AccessPolicy::SeparateRewardMarkers;
     let claim_track = |uid| {
         if shared_marker {
             CLAIMED.to_owned()
@@ -117,6 +126,13 @@ pub(super) fn catalogue(
         }
     };
     let mut tracks = vec![json!({"key": ACCESS, "initial": 0, "minimum": 0, "maximum": 1})];
+    let mut requirements = vec![json!({"track":ACCESS,"minimum":1,"maximum":1})];
+    let mut key_grant = vec![json!({"track":ACCESS,"minimum":0,"maximum":0,"set":1})];
+    if policy != AccessPolicy::AccessFlagOnly {
+        tracks.push(json!({"key":DOOR_STAGE,"initial":2,"minimum":0,"maximum":3}));
+        requirements.push(json!({"track":DOOR_STAGE,"minimum":3,"maximum":3}));
+        key_grant.push(json!({"track":DOOR_STAGE,"minimum":2,"maximum":2,"set":3}));
+    }
     if shared_marker {
         tracks.push(json!({"key": CLAIMED, "initial": 0, "minimum": 0, "maximum": 1}));
     } else {
@@ -129,7 +145,7 @@ pub(super) fn catalogue(
             "kind":"npc_dialogue","callback":{
                 "key":callback_key(uid),"quest":QUEST,"npc":"","keywords":[],"topic":0,"next_topic":0,
                 "world_claim":{"key":CLAIM,"revision":"nrwicked-r1","authority_sha256":digest},
-                "requires":[{"track":ACCESS,"minimum":1,"maximum":1}],
+                "requires":requirements,
                 "storage":[{"track":claim_track(uid),"minimum":0,"maximum":0,"set":1}],
                 "give":{"item":key(reward),"count":1,"contents":[]},
                 "take":[],"present":[],"outfit":null,"achievement":null,"reply":["You have found a reward."],"sources":["Crystal Forgemaster reward fixture"]
@@ -141,7 +157,7 @@ pub(super) fn catalogue(
             "kind": "npc_dialogue", "callback": {
                 "key": ACCESS_CALLBACK, "quest": QUEST, "npc": "oteryn:npc.the_forgemaster",
                 "keywords": ["key"], "topic": 0, "next_topic": 0,
-                "storage": [{"track": ACCESS, "minimum": 0, "maximum": 0, "set": 1}],
+                "storage": key_grant,
                 "give": null, "outfit": null, "achievement": null, "take": [], "present": [],
                 "reply": ["You have proven yourself worthy."], "sources": ["Crystal Forgemaster key fixture"]
             }

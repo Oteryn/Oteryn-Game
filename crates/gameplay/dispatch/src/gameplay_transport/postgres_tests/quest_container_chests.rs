@@ -29,7 +29,9 @@ enum Case {
     FullCharge,
     Full,
     Forgemaster,
-    ForgemasterChoices { shared_marker: bool },
+    ForgemasterChoices {
+        policy: forgemaster::AccessPolicy,
+    },
     Weight,
     DemonBoots,
     DemonHelmet,
@@ -73,7 +75,7 @@ fn nrwicked_forgemaster_claims_one_of_eleven_after_verified_access() -> TestResu
     drop(admin);
     execute(
         Case::ForgemasterChoices {
-            shared_marker: true,
+            policy: forgemaster::AccessPolicy::Verified,
         },
         "NRWICKED_FORGEMASTER_CHOICES",
     )
@@ -87,9 +89,23 @@ fn nrwicked_forgemaster_refuses_a_chest_without_the_shared_claim_marker() -> Tes
     drop(admin);
     execute(
         Case::ForgemasterChoices {
-            shared_marker: false,
+            policy: forgemaster::AccessPolicy::SeparateRewardMarkers,
         },
         "NRWICKED_FORGEMASTER_MISSING_MARKER",
+    )
+}
+
+#[test]
+fn nrwicked_forgemaster_refuses_access_without_the_unlocked_door_stage() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    execute(
+        Case::ForgemasterChoices {
+            policy: forgemaster::AccessPolicy::AccessFlagOnly,
+        },
+        "NRWICKED_FORGEMASTER_ACCESS_FLAG_ONLY",
     )
 }
 
@@ -599,7 +615,7 @@ fn scenario_case(
             })
         };
         let target = target_at(chest.0)?;
-        if let Case::ForgemasterChoices { shared_marker } = case {
+        if let Case::ForgemasterChoices { policy } = case {
             let digest = report
                 .served
                 .iter()
@@ -616,12 +632,12 @@ fn scenario_case(
                     .is_ok()
             );
             owner.active_generation = Some(generation);
-            owner.quest_catalogue = Some(forgemaster::catalogue(digest, shared_marker)?);
+            owner.quest_catalogue = Some(forgemaster::catalogue(digest, policy)?);
             owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
-            if shared_marker {
+            if policy == forgemaster::AccessPolicy::Verified {
                 let before =
                     forgemaster::use_chest(&mut owner, &admitted, deps.actor, 1, &target).await?;
                 assert_eq!(before, UseDisposition::Rejected);
@@ -630,7 +646,7 @@ fn scenario_case(
             forgemaster::allow_access(&owner, &admitted).await?;
             let result =
                 forgemaster::use_chest(&mut owner, &admitted, deps.actor, 2, &target).await?;
-            if !shared_marker {
+            if policy != forgemaster::AccessPolicy::Verified {
                 assert_eq!(result, UseDisposition::NotPossible);
                 assert_eq!(forgemaster::claim_count(&harness).await?, 0);
                 drop(owner);
