@@ -460,6 +460,10 @@ async fn real_connection(
                 requires: &[6],
             },
             OfferedCapability {
+                id: 64,
+                requires: &[6, 13],
+            },
+            OfferedCapability {
                 id: 286,
                 requires: &[6],
             },
@@ -468,7 +472,7 @@ async fn real_connection(
                 requires: &[6, 13, 25],
             },
         ],
-        &[6, 13, 25, 286, 502],
+        &[6, 13, 25, 64, 286, 502],
     )
     .ok_or("motion capability selection")?;
     let (mut server, stream) = tokio::io::duplex(256 * 1024);
@@ -544,6 +548,22 @@ async fn real_connection(
             }
         })
         .await??;
+        use oteryn_protocol_oteryn::{target_move, world_spatial::StepDirection};
+        let turn = target_move::encode_target_move_intent(target_move::TargetMoveIntent::Turn(
+            StepDirection::West,
+        ))
+        .map_err(debug)?;
+        let ingress = tokio::time::timeout(
+            Duration::from_secs(1),
+            session.gated_command(
+                target_move::CAPABILITY_TARGET_MOVE_V1,
+                target_move::COMMAND_TYPE_TARGET_MOVE_INTENT,
+                &turn,
+            ),
+        )
+        .await??;
+        assert_eq!(ingress.status, CommandStatus::Accepted);
+        assert_eq!(ingress.payload, [8, 1]);
         writer.rollback().await?;
         owner
             .runtime
