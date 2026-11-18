@@ -262,9 +262,10 @@ async fn serve_looks(
     admitted: AdmittedSession,
     own: EntityRef,
     rat: EntityRef,
-    goblets: Option<&crate::content::item_ref::ItemDefinitionIndex>,
+    goblets: Option<(&crate::content::item_ref::ItemDefinitionIndex, &Harness)>,
 ) -> TestResult {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let session = admitted.game_session_id;
     let serving = async {
         let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
         assert!(
@@ -275,8 +276,8 @@ async fn serve_looks(
     };
     let mut serving = std::pin::pin!(serving);
     let mut looking = std::pin::pin!(async {
-        if let Some(index) = goblets {
-            super::arena_goblet_look::client_looks(&mut client, index).await
+        if let Some((index, harness)) = goblets {
+            super::arena_goblet_look::client_looks(&mut client, index, harness, session).await
         } else {
             client_looks(&mut client, own, rat).await
         }
@@ -556,7 +557,13 @@ fn scenario_inner(inspection: Option<bool>, goblets: bool) -> TestResult {
         } else {
             tokio::time::timeout(
                 std::time::Duration::from_secs(30),
-                serve_looks(&owner, admitted, own, rat, goblets.then_some(index)),
+                serve_looks(
+                    &owner,
+                    admitted,
+                    own,
+                    rat,
+                    goblets.then_some((index, &harness)),
+                ),
             )
             .await??;
         }

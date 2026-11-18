@@ -1,14 +1,14 @@
 use super::fixture::{Harness, debug, id};
 use super::{TestResult, item_look};
 use crate::content::item_ref::ItemDefinitionIndex;
-use crate::foundation::{MessageType, decode_wire_envelope};
+use crate::foundation::{GameSessionId, MessageType, decode_wire_envelope};
 use crate::gameplay_transport::capabilities::COMMAND_TYPE_ITEM_LOOK_INTENT;
 use oteryn_protocol_oteryn::item_look::{
-    ItemLookIntent, ItemLookResult, ItemLookSelection, ItemLookTarget, decode_item_look_result_for,
-    encode_item_look_intent_for,
+    ItemLookIntent, ItemLookRefusal, ItemLookResult, ItemLookSelection, ItemLookTarget,
+    decode_item_look_result_for, encode_item_look_intent_for,
 };
 use oteryn_protocol_oteryn::item_view::{
-    STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
+    ItemHandle, STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
 };
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, decode_snapshot_chunk,
@@ -64,6 +64,8 @@ pub(super) async fn seed_goblets(harness: &Harness) -> TestResult {
 pub(super) async fn client_looks(
     client: &mut DuplexStream,
     index: &ItemDefinitionIndex,
+    harness: &Harness,
+    session: GameSessionId,
 ) -> TestResult {
     let mut entries = Vec::new();
     loop {
@@ -121,60 +123,98 @@ pub(super) async fn client_looks(
             .collect::<Vec<_>>()
     );
 
-    let selection = ItemLookSelection { extended: true };
     let mut descriptions = Vec::new();
+    let mut inscribed_handle = None;
     for (offset, entry) in entries.iter().enumerate() {
         let command_id = u64::try_from(offset)? + 1;
-        let payload = encode_item_look_intent_for(
-            ItemLookIntent {
-                target: ItemLookTarget::Item(entry.handle),
-            },
-            selection,
-        )
-        .map_err(debug)?;
-        let frame = encode_client_command(
-            1,
-            &ClientCommandValue {
-                command_id,
-                command_type: COMMAND_TYPE_ITEM_LOOK_INTENT,
-                payload: &payload,
-            },
-        )
-        .map_err(debug)?;
-        client.write_u32(u32::try_from(frame.len())?).await?;
-        client.write_all(&frame).await?;
-        loop {
-            let frame = item_look::read_frame(client).await?;
-            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
-            if envelope.message_type() != MessageType::CommandResult {
-                continue;
-            }
-            let result = decode_command_result(envelope.payload()).map_err(debug)?;
-            assert_eq!(result.command_id, command_id);
-            assert_eq!(result.status, CommandStatus::Accepted);
-            let ItemLookResult::Text(text) =
-                decode_item_look_result_for(result.payload, selection).map_err(debug)?
-            else {
-                return Err(format!("LOOK refused goblet {}", entry.item_definition_ref).into());
-            };
-            assert!(text.starts_with("You see "), "{text}");
-            let description = text
-                .lines()
-                .last()
-                .filter(|line| line.contains("Awarded to"));
-            assert_eq!(
-                text.matches("Awarded to").count(),
-                usize::from(description.is_some()),
-                "{text}"
-            );
-            descriptions.push((entry.item_definition_ref, description.map(str::to_owned)));
-            break;
+        let ItemLookResult::Text(text) = look(client, command_id, entry.handle).await? else {
+            return Err(format!("LOOK refused goblet {}", entry.item_definition_ref).into());
+        };
+        assert!(text.starts_with("You see "), "{text}");
+        let description = text
+            .lines()
+            .last()
+            .filter(|line| line.contains("Awarded to"));
+        assert_eq!(
+            text.matches("Awarded to").count(),
+            usize::from(description.is_some()),
+            "{text}"
+        );
+        if description.is_some() {
+            inscribed_handle = Some(entry.handle);
         }
+        descriptions.push((entry.item_definition_ref, description.map(str::to_owned)));
     }
     descriptions.sort_unstable();
     assert_eq!(descriptions, expected, "Crystal arena goblet descriptions");
+
+    // Supersede only the durable generation while this transport still holds its old fence.
+    let advance_generation = "UPDATE game_durability_reconnect_sessions
+        SET current_generation=current_generation+$2
+        WHERE game_session_id=encode($1,'hex')::uuid";
+    let handle = inscribed_handle.ok_or("inscribed goblet handle")?;
+    assert_eq!(
+        sqlx::query(advance_generation)
+            .bind(session.as_bytes().as_slice())
+            .bind(1_i64)
+            .execute(&harness.pool)
+            .await?
+            .rows_affected(),
+        1
+    );
+    let stale = look(client, u64::try_from(entries.len())? + 1, handle).await;
+    assert_eq!(
+        sqlx::query(advance_generation)
+            .bind(session.as_bytes().as_slice())
+            .bind(-1_i64)
+            .execute(&harness.pool)
+            .await?
+            .rows_affected(),
+        1
+    );
+    assert_eq!(
+        stale?,
+        ItemLookResult::Refused(ItemLookRefusal::NotAvailable)
+    );
     client.shutdown().await?;
     let mut remaining = Vec::new();
     client.read_to_end(&mut remaining).await?;
     Ok(())
+}
+
+async fn look(
+    client: &mut DuplexStream,
+    command_id: u64,
+    handle: ItemHandle,
+) -> TestResult<ItemLookResult> {
+    let selection = ItemLookSelection { extended: true };
+    let payload = encode_item_look_intent_for(
+        ItemLookIntent {
+            target: ItemLookTarget::Item(handle),
+        },
+        selection,
+    )
+    .map_err(debug)?;
+    let frame = encode_client_command(
+        1,
+        &ClientCommandValue {
+            command_id,
+            command_type: COMMAND_TYPE_ITEM_LOOK_INTENT,
+            payload: &payload,
+        },
+    )
+    .map_err(debug)?;
+    client.write_u32(u32::try_from(frame.len())?).await?;
+    client.write_all(&frame).await?;
+    loop {
+        let frame = item_look::read_frame(client).await?;
+        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        if envelope.message_type() != MessageType::CommandResult {
+            continue;
+        }
+        let result = decode_command_result(envelope.payload()).map_err(debug)?;
+        assert_eq!(result.command_id, command_id);
+        assert_eq!(result.status, CommandStatus::Accepted);
+        return decode_item_look_result_for(result.payload, selection).map_err(debug);
+    }
 }
