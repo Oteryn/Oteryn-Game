@@ -651,3 +651,9 @@ mod m38_stationary;
 
 #[path = "npcs/m38_zarifan.rs"]
 mod m38_zarifan;
+
+#[path = "npcs/qb_barbarian_npcs.rs"]
+mod qb_barbarian_npcs;
+
+#[path = "npcs/qb_outfit_npcs.rs"]
+mod qb_outfit_npcs;

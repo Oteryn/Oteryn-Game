@@ -35,6 +35,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.ajax",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.alesar",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Finally.",
@@ -167,6 +178,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.bron",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Take care, |PLAYERNAME|!",
+      "walkaway": "Take care!",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:192:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:193:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
+      ]
+    },
+    {
       "npc": "oteryn:npc.budrik",
       "greet": "Hiho, hiho |PLAYERNAME|. Why do you {disturb} me?",
       "farewell": "Bye, bye.",
@@ -207,6 +229,17 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cledwyn.lua:212:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cornelia",
+      "greet": "Welcome to the finest {armor} shop in the land, |PLAYERNAME|!",
+      "farewell": "Good bye. Come back soon.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cornelia.lua:93:sha256:421600da97cb55bf1b5e5fb9a54df0c7cd36f10c1b383f2b84a8bdd2f7bd89e2",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cornelia.lua:94:sha256:421600da97cb55bf1b5e5fb9a54df0c7cd36f10c1b383f2b84a8bdd2f7bd89e2",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
       ]
     },
@@ -439,6 +472,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/habdel.lua:107:sha256:0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/habdel.lua:108:sha256:0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/habdel.lua:109:sha256:0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "greet": "Oh, please come in, |PLAYERNAME|. What do you need? Have a look at my wonderful {offers} in gems and jewellery.",
+      "farewell": "Good bye.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hanna.lua:121:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hanna.lua:122:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hanna.lua:123:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
       ]
     },
     {
@@ -945,6 +989,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tom.lua:264:sha256:5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "greet": "Welcome back, knight |PLAYERNAME|!",
+      "farewell": "Don't hurt yourself with that weapon, little one.",
+      "walkaway": "Be careful on your journeys.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:104:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:240:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:239:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
       ]
     },
     {
