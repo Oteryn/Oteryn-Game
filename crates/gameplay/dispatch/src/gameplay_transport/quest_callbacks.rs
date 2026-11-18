@@ -1703,6 +1703,16 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
         if !self.callbacks.iter().any(|c| {
             oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
                 .is_some_and(|b| tile(b.position) == at)
+                || (c.guarded_ground_step()
+                    && (c.selector.matches_position(Position {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                    }) || c
+                        .selector
+                        .native
+                        .as_ref()
+                        .is_some_and(|binding| tile(binding.position) == at)))
         }) {
             return false;
         }
@@ -1710,6 +1720,7 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
             return false;
         };
         let mut selected = None;
+        let mut ambiguous = false;
         for ordinal in 0..base.depths().iter().filter(|d| **d == 0).count() {
             let Some(key) = u8::try_from(ordinal)
                 .ok()
@@ -1725,17 +1736,26 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
                 .iter()
                 .filter(|c| c.trigger == Trigger::StepIn && matches(map, c, key))
             {
-                if selected.replace((callback, key)).is_some() {
-                    return false;
+                // A guarded toll always owns arrival. Even an ambiguous
+                // StepIn configuration must never bypass it through the raw portal.
+                if callback.guarded_ground_step() {
+                    return true;
                 }
+                ambiguous |= selected.replace((callback, key)).is_some();
             }
         }
-        selected.is_some_and(|(c, key)| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(|b| {
-                map.facts
-                    .quest_callback_native_teleport(key, b.appearance, tile(b.raw_destination))
+        !ambiguous
+            && selected.is_some_and(|(c, key)| {
+                oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(
+                    |b| {
+                        map.facts.quest_callback_native_teleport(
+                            key,
+                            b.appearance,
+                            tile(b.raw_destination),
+                        )
+                    },
+                )
             })
-        })
     }
 }
 
