@@ -83,6 +83,7 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
             flame,
             vec![
                 (32243, 31892, -14, 0, 431),
+                (32245, 31892, -14, 0, 431),
                 (32250, 31892, -14, 35016, 1959),
                 (32261, 31849, -15, 0, 1959),
             ],
@@ -532,7 +533,11 @@ async fn exercise_sacrifice(
     )
     .fetch_all(&h.pool)
     .await?;
-    assert_eq!(remaining, [1], "water stays when the StepIn consumes blood");
+    assert_eq!(
+        remaining,
+        [1, 5],
+        "the StepIn leaves water on the altar and blood on the neighboring tile"
+    );
     Ok(())
 }
 
@@ -591,20 +596,21 @@ async fn pour_sacrifice_fluids(
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
         .await?;
-    for (n, fluid) in [(130_u8, 1_i16), (134, 5)] {
+    for (ordinal, (n, fluid)) in [(130_u8, 1_i16), (134, 5), (138, 5)]
+        .into_iter()
+        .enumerate()
+    {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
             .bind(id(n).as_slice()).bind(id(42).as_slice()).bind(VIAL).bind(revision).bind(id(n+1).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
-            .bind(id(n).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(backpack.as_slice()).bind(if fluid==1 { 1_i32 } else { 2 }).bind(id(n+2).as_slice()).execute(&mut *tx).await?;
+            .bind(id(n).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(backpack.as_slice()).bind(i32::try_from(ordinal + 1)?).bind(id(n+2).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid)")
             .bind(id(n).as_slice()).bind(id(42).as_slice()).bind(fluid).bind(id(n+3).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
 
     let map = owner.bundle_map().ok_or("map")?;
-    let key = oteryn_world_bundle::bundle::placement_key(-14, 32243, 31892, 1).ok_or("altar")?;
-    let mut placement = map.overlay.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
+    let bundle_digest = map.overlay.base().digest();
     let spot = MovementLocalPosition {
         x: 32244,
         y: start.y,
@@ -615,7 +621,15 @@ async fn pour_sacrifice_fluids(
         y: start.y,
         floor: start.floor,
     };
-    for (n, command_id, expected_before) in [(130, 20, vec![1]), (134, 21, vec![1, 5])] {
+    for (n, command_id, target_x, expected_before) in [
+        (130, 20, 32243, &[1][..]),
+        (134, 21, 32245, &[1, 5][..]),
+        (138, 22, 32243, &[1, 5, 5][..]),
+    ] {
+        let key = oteryn_world_bundle::bundle::placement_key(-14, target_x, 31892, 1)
+            .ok_or("offering placement")?;
+        let mut placement = bundle_digest.to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
         move_fixture(owner, admitted, spot).await?;
         owner.clock_origin = owner
             .clock_origin
@@ -631,7 +645,7 @@ async fn pour_sacrifice_fluids(
                 },
                 ItemKey::Instance(id(n)),
                 WorldObjectTarget {
-                    placement: placement.clone(),
+                    placement,
                     expected_revision: 0,
                 },
             )
@@ -645,7 +659,7 @@ async fn pour_sacrifice_fluids(
         .await?;
         assert_eq!(before, expected_before);
         move_fixture(owner, admitted, origin).await?;
-        if n == 130 {
+        if n != 138 {
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
@@ -657,7 +671,7 @@ async fn pour_sacrifice_fluids(
                 .await
                 .read_actor_position(actor)
                 .map_err(debug)?;
-            assert_eq!(at.position(), origin, "water cannot admit the player");
+            assert_eq!(at.position(), origin, "the altar still has no blood");
         }
     }
     Ok(())
