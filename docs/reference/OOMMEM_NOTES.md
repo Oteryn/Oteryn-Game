@@ -70,3 +70,12 @@ The clean two-job half-mount run built and linked. It peaked at
 control found 1,179 additions and zero missing names. The executable
 was 1,344,527,264 bytes. LLD received 241 rlibs (1,487,365,036 bytes)
 and 263 objects (1,538,117,592 bytes).
+
+## Full suite with 256 codegen units and incremental off
+
+With the full 735-mount input restored, one Cargo job, and line tables
+retained, rustc reached at least 16,500,396 KiB (15.74 GiB) before the
+cgroup killed both rustc and Cargo. Wall time was 644.269 s. The verbose
+command confirmed `-C codegen-units=256` and omitted `-C incremental`.
+No linker ran. The package override did not produce a usable binary.
+The clean half-mount link replay used 4,898,860 KiB in 9.891 s.
