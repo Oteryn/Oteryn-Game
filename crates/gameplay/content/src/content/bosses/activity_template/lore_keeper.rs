@@ -100,7 +100,8 @@ impl ActiveGeneration {
             exit_position: exit,
             exit_teleporter: None,
             minimum_players: 1,
-            minimum_level: 0,
+            // Characters start at level 1 and Crystal imposes no level gate.
+            minimum_level: 1,
             cooldown_seconds: 14 * 24 * 60 * 60,
             time_limit_seconds: 30 * 60,
             after_kill_seconds: 0,

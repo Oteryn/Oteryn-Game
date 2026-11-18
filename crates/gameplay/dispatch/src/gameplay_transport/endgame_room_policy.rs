@@ -37,7 +37,7 @@ fn matches_lore_keeper(
 ) -> bool {
     policy.minimum_players == 1
         && policy.maximum_players == 15
-        && policy.minimum_level == 0
+        && policy.minimum_level == 1
         && policy.cooldown_ms == LORE_KEEPER_COOLDOWN_MS
         && policy.time_limit_ms == LORE_KEEPER_LIMIT_MS
         && policy.lever_positions.len() == 15
@@ -68,7 +68,7 @@ mod tests {
         let mut policy = BossRoomPolicy {
             minimum_players: 1,
             maximum_players: 15,
-            minimum_level: 0,
+            minimum_level: 1,
             cooldown_ms: LORE_KEEPER_COOLDOWN_MS,
             time_limit_ms: LORE_KEEPER_LIMIT_MS,
             lever_positions: (32018..=32020)

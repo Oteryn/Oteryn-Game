@@ -210,6 +210,26 @@ fn scenario() -> TestResult {
                 .await?;
         h.root.set_test_quest_clock(clock).map_err(debug)?;
 
+        sqlx::query(
+            "INSERT INTO game_character_boss_cooldowns
+             (character_id,boss_key,available_at,admission,reset_epoch)
+             VALUES (encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,0)",
+        )
+        .bind(peer_fence.character_id.as_bytes().as_slice())
+        .bind(BOSS)
+        .bind((clock + 1) * 1000)
+        .bind(fixture::id(199).as_slice())
+        .execute(&h.pool)
+        .await?;
+        let (_, blocked, switch) =
+            super::boss_activity::exchange(&owner, &mut leader, BOSS, false).await?;
+        assert_eq!(
+            blocked,
+            BossActivityReply::Refused(wire::BossActivityRefusal::Cooldown),
+        );
+        assert!(switch.is_none());
+        h.root.advance_test_quest_clock(2).map_err(debug)?;
+
         let (_, reply, barrier) =
             super::boss_activity::exchange(&owner, &mut leader, BOSS, true).await?;
         let BossActivityReply::Accepted {
