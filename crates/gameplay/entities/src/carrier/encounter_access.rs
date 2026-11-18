@@ -240,7 +240,6 @@ impl ChannelRuntimeV1 {
         self.commit_quest_encounter_prepared(
             players,
             monsters,
-            &[],
             |positions, actors| {
                 Ok((
                     positions,
