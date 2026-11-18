@@ -1470,7 +1470,7 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
-            zarganash_linked_boss::NAME | feaster_solo_rooms::IRGIX
+            zarganash_linked_boss::NAME | faceless_bane_phase::NAME | feaster_solo_rooms::IRGIX
             | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK => Some(250),
             _ => None,
         };

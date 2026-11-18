@@ -544,7 +544,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.teleport.is_some()
             || !callback.passages.is_empty()
             || callback.lever.is_some()
-            || *effects
+            || **effects
                 != CallbackEffects {
                     release_encounter: Some(key.into()),
                     ..Default::default()
