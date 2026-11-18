@@ -167,7 +167,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         )?;
         let h =
             Harness::create_with_admission_seed(admin, "quest_spawn_waves", false, false).await?;
-        prepare_current_session(&h).await?;
+        let admission = prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -261,7 +261,15 @@ fn scenario(admin: String, case: Case) -> TestResult {
             );
         }
         let mut admitted = deps.admitted;
-        super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 100).await?;
+        super::srx3_activity_source_fixture::prepare_player_with_operation(
+            &h,
+            &owner,
+            &mut admitted,
+            100,
+            "knight",
+            admission.operation(),
+        )
+        .await?;
         match case {
             Case::Waves => wave_scenario(&h, &owner, &mut admitted, deps.actor).await?,
             Case::Periodic => periodic_scenario(&owner).await?,
@@ -458,10 +466,10 @@ async fn stage_peer(
     leader: &AdmittedSession,
 ) -> TestResult<AdmittedSession> {
     use crate::gameplay_transport::connection::{
-        ControllerBinding, FirstEntryOutcome, SessionContinuity,
+        ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority, SessionContinuity,
     };
     use crate::world_party_runtime_postgres_cases::{
-        FreshPlayerOwners, committed_fresh_player_from_source_owned,
+        FreshPlayerOwners, committed_fresh_player_with_operation,
     };
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
@@ -469,7 +477,7 @@ async fn stage_peer(
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
             .await?;
-    let (current, operation) = committed_fresh_player_from_source_owned(
+    let (current, operation) = committed_fresh_player_with_operation(
         &FreshPlayerOwners {
             root: h.root.clone(),
             node: h.node.clone(),
@@ -479,7 +487,6 @@ async fn stage_peer(
         63,
         171,
         now,
-        Some("platform-test"),
     )
     .await
     .map_err(debug)?;
