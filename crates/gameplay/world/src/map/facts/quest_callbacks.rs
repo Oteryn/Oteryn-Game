@@ -24,9 +24,10 @@ impl crate::map::floor::CellBlocker for BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        self.doors.blocks_unless(pos, |key| {
-            states.hidden.contains(&key) || states.passable.get(&key) == Some(&true)
-        })
+        states.encounter_walls.contains_key(&pos)
+            || self.doors.blocks_unless(pos, |key| {
+                states.hidden.contains(&key) || states.passable.get(&key) == Some(&true)
+            })
     }
 }
 
