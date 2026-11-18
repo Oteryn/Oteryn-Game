@@ -266,8 +266,20 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
             .await
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) =
-            crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
+        let (controller, pin) = if logout {
+            // The fixture's Character root and native training writer must use
+            // the same interpretation for the terminal logout transaction.
+            super::super::death_ml_loss_composed::production_generation_with_source(
+                world,
+                "content-1",
+                Some(include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                ))),
+            )?
+        } else {
+            crate::content::native_gameplay::test_support::activated_loop_monster(world, false)
+        };
         let active = controller.active().ok_or("active generation")?;
         let native = active.native_gameplay().ok_or("native gameplay")?;
         let count = if regression.is_some() { 2048 } else { 512 };
@@ -285,6 +297,10 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
             super::super::track(&owner, &deps)?;
             admitted.item_fence = Some(owner.current_quest_fence(admitted.game_session_id)
                 .await.map_err(debug)?.ok_or("logout item fence")?.item_fence());
+            use crate::gameplay_transport::connection::FirstEntryOutcome;
+            admitted.first_entry = FirstEntryOutcome::Positioned;
+            owner.admit_loop_training(&mut admitted).await;
+            assert_eq!(admitted.first_entry, FirstEntryOutcome::Positioned);
         }
         let permit = owner.spell_lane_permit().await.ok_or("lane")?;
         let mut runtime = deps.runtime.lock().await;
