@@ -477,6 +477,12 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                             .await
                             .map_err(debug);
                         let elapsed = batch_started.elapsed();
+                        let committed = actors
+                            .iter()
+                            .filter(|&&actor| {
+                                states.monster_melee.creature_ai.last_report_for_test(actor).is_some()
+                            })
+                            .count();
                         if matches!(result, Ok((_, _, false))) {
                             assert!(owner.root.is_ready(), "the batch returned its holder");
                             assert!(matches!(
@@ -484,7 +490,7 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                                 Err(crate::durability::DurabilityError::RootUnavailable)
                             ));
                         }
-                        (result, elapsed)
+                        (result, elapsed, committed)
                     };
                     let mut background = std::pin::pin!(background);
                     assert!(
@@ -514,9 +520,9 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                     );
                     let (logout, profile) = tokio::join!(biased; foreground, background);
                     let (logout, elapsed) = logout;
-                    let (profile, batch_elapsed) = profile;
+                    let (profile, batch_elapsed, committed) = profile;
                     eprintln!(
-                        "foreground logout elapsed_ms={} batch_ms={} reply={logout:?} profile_complete={:?}",
+                        "foreground logout elapsed_ms={} batch_ms={} thinks={committed} reply={logout:?} profile_complete={:?}",
                         elapsed.as_millis(),
                         batch_elapsed.as_millis(),
                         profile.as_ref().map(|(_, _, complete)| *complete),
@@ -529,6 +535,10 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                         "logout must get the holder before the profile cycle completes"
                     );
                     assert_eq!(due, Some(start), "the remaining census stays due");
+                    assert!(
+                        (1..=128).contains(&committed),
+                        "the first checkout must make bounded profile progress: {committed} thinks"
+                    );
                 }
                 ProfileRegression::DueCycle => {
                     let started = std::time::Instant::now();
