@@ -202,6 +202,9 @@ pub(super) fn scenario(
         } else {
             Harness::create_with_admission_seed(admin, seed, true, false).await?
         };
+        if merchant_loot {
+            super::item_look::seed_main_backpack(&h, &[]).await?;
+        }
         prepare_current_session(&h).await?;
         // The pushed player is a second durable session (character 101, session 110).
         h.seed_pvp_target().await?;

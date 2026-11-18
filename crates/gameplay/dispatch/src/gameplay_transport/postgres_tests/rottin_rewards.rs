@@ -1,6 +1,6 @@
 //! Exercise the authored reward owner through live Rottin TALK and PostgreSQL.
 use super::classic_quests::{install, talk};
-use super::fixture::{Harness, id};
+use super::fixture::Harness;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
@@ -80,31 +80,10 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    // Each charm is a separate carried item, as in the donor hand-in.
+    super::item_look::seed_main_backpack(h, &[(CHARM, 1); 7]).await?;
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
     talk(owner, admitted, npc, 1701, "hi").await?;
-
-    // Provision the exact donor objective as seven non-stackable carried items.
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    let backpack: Vec<u8> = sqlx::query_scalar(
-        "SELECT uuid_send(item_instance_id) FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid"
-    ).bind(id(41).as_slice()).fetch_one(&mut *tx).await?;
-    let ordinal: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(max(placement_ordinal),0)::bigint FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid"
-    ).bind(&backpack).fetch_one(&mut *tx).await?;
-    for offset in 1..=7_i64 {
-        let instance: String = sqlx::query_scalar(
-            "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
-             SELECT gen_random_uuid(),world_id,'Item',$2,'definition-r1',1,1,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid RETURNING item_instance_id::text"
-        ).bind(&backpack).bind(CHARM).fetch_one(&mut *tx).await?;
-        sqlx::query(
-            "INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id)
-             SELECT slots.character_id,slots.world_id,slots.item_instance_id,$2::uuid,$3::bigint,items.minted_transaction_id FROM game_item_container_slots slots JOIN game_item_instances items USING (item_instance_id,world_id) WHERE slots.item_instance_id=encode($1,'hex')::uuid"
-        ).bind(&backpack).bind(instance).bind(ordinal + offset).execute(&mut *tx).await?;
-    }
-    tx.commit().await?;
     assert_eq!(
         talk(owner, admitted, npc, 1702, "yes").await?,
         ["Good hunt."]
