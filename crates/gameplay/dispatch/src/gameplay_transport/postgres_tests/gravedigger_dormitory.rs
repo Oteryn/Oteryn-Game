@@ -17,6 +17,7 @@ const MISSION_57: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_
 const MISSION_05: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05";
 const MISSION_06: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission06";
 const MISSION_74: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission74";
+const MISSION_75: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission75";
 const SERVANT: &str = "oteryn:creature.necromancer_servant";
 const FRAGMENT: &str = "oteryn:item.tibia.i18933";
 
@@ -98,6 +99,32 @@ fn heart_and_ritual_pads_use_distinct_mission_gates_and_destinations() -> TestRe
     })
 }
 
+#[test]
+fn ritual_exit_requires_the_completed_rite_and_returns_to_omrabas() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("gravedigger-ritual-exit", move || {
+        let exit = Pad {
+            at: Position {
+                x: 33015,
+                y: 32423,
+                floor: -11,
+            },
+            ordinal: 4,
+            destination: Position {
+                x: 33018,
+                y: 32425,
+                floor: -11,
+            },
+            denied: None,
+            source: "data-global/scripts/quests/the_gravedigger_of_drefia/movements_sacrifice_teleport.lua:1-17",
+        };
+        gate_landing(admin.clone(), &exit, [(MISSION_75, 0, 1)], false)?;
+        gate_landing(admin, &exit, [(MISSION_75, 1, 1)], true)
+    })
+}
+
 struct Pad {
     at: Position,
     ordinal: u8,
@@ -112,7 +139,7 @@ fn gate_landing<const N: usize>(
     states: [(&str, i64, i64); N],
     ready: bool,
 ) -> TestResult {
-    // Crystal 201189f8 startup/tables/item.lua:620-625,652-657 supplies the pad positions.
+    // Crystal 201189f8 startup/tables/item.lua:620-625,652-663 supplies the pad positions.
     let storage: Vec<_> = states.into_iter().map(|(track, _, required)| serde_json::json!({
         "track": track, "minimum": required, "maximum": required, "set": required, "preserve": true,
     })).collect();
@@ -122,6 +149,7 @@ fn gate_landing<const N: usize>(
         "requires_world_admission": true, "reversible": false, "passages": [], "offerings": [],
         "storage": storage, "teleport": pad.destination,
         "return_on_failure": pad.denied.is_some(), "failure_teleport": pad.denied,
+        "effects": { "teleport_effect": 11 },
         "sources": [format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:{}", pad.source)]
     }))?;
     let extra_cells = pad.denied.into_iter().collect::<Vec<_>>();
