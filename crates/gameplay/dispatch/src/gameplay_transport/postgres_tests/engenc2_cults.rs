@@ -14,6 +14,11 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
 
+const SCAR_BOSS: &str = "oteryn:creature.alptramun";
+const SCAR_COUNT: &str = "oteryn:quest-progress/dcourts2/dream-scar/count";
+const SCAR_GATE: &str = "oteryn:quest-progress/dcourts2/dream-scar/entry";
+const SCAR_TIMER: &str = "oteryn:quest-progress/dcourts2/dream-scar/alptramun-timer";
+
 const COUNT: &str = "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission";
 
 fn callback() -> TestResult<Callback> {
@@ -114,7 +119,10 @@ fn run_encounter(case: EncounterCase) -> TestResult {
             prepare_current_session(&h).await?;
             let mut callback = callback()?;
             if dream_scar {
+                callback.key = "oteryn:quest-callback/dcourts2/dream-scar".into();
+                callback.quest = "oteryn:quest.the_dream_courts_quest".into();
                 callback.reversible = false;
+                callback.lever = None;
                 let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
                 let position = encounter
                     .monsters
@@ -250,12 +258,14 @@ fn run_encounter(case: EncounterCase) -> TestResult {
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
-            owner.quest_catalogue = Some(Arc::new(
+            owner.quest_catalogue = Some(Arc::new(if dream_scar {
+                dream_scar_catalogue(&callback)?
+            } else {
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?
                     .catalogue()
-                    .clone(),
-            ));
+                    .clone()
+            }));
             assert!(
                 owner
                     .states
@@ -417,18 +427,81 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                 "phase admission"
             );
             if dream_scar {
-                let runtime = owner.runtime.lock().await;
-                let spawned = runtime.current_live_creature_census().map_err(debug)?;
-                assert_eq!(spawned.len(), 1);
-                assert!(
+                let boss = {
+                    let runtime = owner.runtime.lock().await;
+                    let spawned = runtime.current_live_creature_census().map_err(debug)?;
+                    let [boss] = spawned.as_slice() else {
+                        return Err("Dream Scar spawns one boss".into());
+                    };
+                    assert!(runtime.matches_live_creature_identity(*boss, SCAR_BOSS.as_bytes()));
+                    *boss
+                };
+                kill(&owner, &admitted, boss, SCAR_BOSS, 100).await?;
+                assert_eq!(
+                    owner.drain_kill_rewards(admitted.game_session_id).await,
+                    crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+                );
+                let values: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT track_key, value FROM game_character_quest_tracks WHERE track_key=ANY($1) ORDER BY track_key LIMIT 3",
+                ).bind([SCAR_COUNT, SCAR_TIMER].as_slice()).fetch_all(&h.pool).await?;
+                assert_eq!(values.len(), 2);
+                assert_eq!(values[1], (SCAR_COUNT.into(), 0));
+                assert_eq!(values[0].0, SCAR_TIMER);
+                let now = super::super::unix_seconds().ok_or("host clock")?;
+                assert!((now - 60..=now).contains(&values[0].1));
+                {
+                    let mut runtime = owner.runtime.lock().await;
+                    let expected = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                    let closed = crate::map::floor::BundleDoors(world.facts());
+                    let proof = crate::map::floor::prepare_quest_callback_teleport(
+                        &runtime,
+                        &cells,
+                        deps.actor,
+                        admitted.game_session_id,
+                        expected,
+                        MovementLocalPosition {
+                            x: 100,
+                            y: 100,
+                            floor: 7,
+                        },
+                        false,
+                        &closed,
+                    )
+                    .map_err(debug)?;
                     runtime
-                        .matches_live_creature_identity(spawned[0], b"oteryn:creature.alptramun",)
+                        .commit_source_steps_and_project(vec![proof], || true)
+                        .map_err(debug)?;
+                }
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(1))
+                    .ok_or("reuse clock")?;
+                let outcome = owner
+                    .use_object(
+                        deps.actor,
+                        UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: 101,
+                            item_fence: admitted.item_fence,
+                        },
+                        WorldObjectTarget {
+                            placement: placement.clone(),
+                            expected_revision: crate::map::view::MapFacts::object_revision(
+                                world.facts(),
+                                key,
+                            ),
+                        },
+                    )
+                    .await;
+                assert_eq!(
+                    outcome.disposition,
+                    UseDisposition::NotPossible,
+                    "Alptramun cooldown"
                 );
                 eprintln!(
                     "POSTGRES_CASE_COMPLETED dcourts2_dream_scar_uses_startup_roster_on_lever_use_postgres duration={:?}",
                     began.elapsed(),
                 );
-                drop(runtime);
                 drop(owner);
                 drop(authority);
                 drop(seal);
@@ -643,6 +716,77 @@ fn run_encounter(case: EncounterCase) -> TestResult {
     assert!(elapsed > 0.05);
     eprintln!("ENGENC2_CULTS_PG_EXECUTED elapsed_s={elapsed:.6}");
     Ok(())
+}
+
+fn dream_scar_catalogue(
+    callback: &Callback,
+) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    use oteryn_gameplay_quests::quest::{
+        QuestStateCatalogue,
+        authored_bindings::{Bindings, BoundQuest, Stage, Track, Trigger, kills::KillCounter},
+    };
+    use sha2::Digest;
+    let hash = sha2::Sha256::digest(serde_json::to_vec(callback)?);
+    let bindings = Bindings {
+        schema: 1,
+        quests: vec![BoundQuest {
+            quest: callback.quest.clone(),
+            recipe_sha256: format!("{hash:x}"),
+            occurrence: None,
+            admission: None,
+            tracks: vec![
+                Track {
+                    key: SCAR_COUNT.into(),
+                    initial: -1,
+                    minimum: -1,
+                    maximum: 6,
+                },
+                Track {
+                    key: SCAR_GATE.into(),
+                    initial: 1,
+                    minimum: 0,
+                    maximum: 1,
+                },
+                Track {
+                    key: SCAR_TIMER.into(),
+                    initial: 0,
+                    minimum: 0,
+                    maximum: i64::MAX,
+                },
+            ],
+            stages: vec![
+                Stage {
+                    key: "lever".into(),
+                    completes: false,
+                    trigger: Trigger::MapUse {
+                        callback: Box::new(callback.clone()),
+                    },
+                },
+                Stage {
+                    key: "alptramun".into(),
+                    completes: false,
+                    trigger: Trigger::Kill {
+                        counter: Box::new(KillCounter {
+                            key: "oteryn:quest-transition/native-kills/dcourts2-alptramun".into(),
+                            creature: SCAR_BOSS.into(),
+                            track: SCAR_COUNT.into(),
+                            gate: SCAR_GATE.into(),
+                            gate_value: 1,
+                            minimum: -1,
+                            maximum: 6,
+                            advance_gate_to: None,
+                            death_area: None,
+                            world_change: None,
+                            encounter_source: Some(callback.key.clone()),
+                            cooldown_track: Some(SCAR_TIMER.into()),
+                        }),
+                    },
+                },
+            ],
+            sources: vec!["Crystal 201189f8 creaturescripts_dream_courts_death.lua:88".into()],
+        }],
+    };
+    Ok(bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("quest catalogue")?)?)
 }
 
 async fn faceless_steps(

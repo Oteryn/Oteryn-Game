@@ -224,8 +224,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut monsters = Vec::new();
         let roster = if encounter.weekday_monsters.is_some() {
-            let Some(started_at) = super::super::unix_seconds().and_then(|now| {
-                now.checked_sub(i64::try_from(self.clock_origin.elapsed().as_secs()).ok()?)
+            let startup = &self.states.quest_callbacks.encounter_startup;
+            let Some(started_at) = startup.get().copied().or_else(|| {
+                let now = super::super::unix_seconds()?;
+                let started_at =
+                    now.checked_sub(i64::try_from(self.clock_origin.elapsed().as_secs()).ok()?)?;
+                Some(*startup.get_or_init(|| started_at))
             }) else {
                 return UseDisposition::Rejected;
             };
