@@ -1965,8 +1965,8 @@ impl DurabilityRoot {
 
                         { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     }
-                    if native.as_ref().is_some_and(|death|
-                        oteryn_gameplay_quests::quest::source_deaths::is_arbaziloth_first_clear(&death.transition))
+                    if matches!(&native, Some(super::native_events::NativeQuestEvent::Death(death))
+                        if oteryn_gameplay_quests::quest::source_deaths::is_arbaziloth_first_clear(&death.transition))
                     {
                         use super::super::character_appearance::{QuestOutfitGrant, grant_quest_outfit};
                         let QuestCause::CreatureDeath(occurrence) = request.cause else {
