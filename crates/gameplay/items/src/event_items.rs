@@ -4,7 +4,8 @@
 use crate::item_craft::CookingConversion;
 use crate::novelty_items::{GroundEffect, NoveltyCue, NoveltyEffects, NoveltyKind, NoveltyPlan};
 use crate::reward_bag::{
-    event_containers::event_container_rule, reward_bag_conversion, reward_bag_draw,
+    event_containers::{event_container_rule, event_container_rules},
+    reward_bag_conversion, reward_bag_draw,
 };
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
@@ -15,6 +16,20 @@ pub fn is_event_reward(key: &str) -> bool {
 
 pub fn ground_output_at_source(key: &str) -> bool {
     event_container_rule(key).is_some_and(|rule| rule.ground_output == "source")
+}
+
+/// Crystal 201189f8 data/scripts/actions/items/glooth_bag.lua:31-33.
+/// The legacy reward-bag owner keeps its draw and receipt. The captured W19
+/// rule supplies only the carried bag's opening cue.
+pub fn glooth_bag_opening_effect(key: &str) -> Option<u16> {
+    if key != "oteryn:item.tibia.i21203" {
+        return None;
+    }
+    let cue = &event_container_rules()?
+        .iter()
+        .find(|rule| rule.item_id == 21203)?
+        .presentation;
+    (cue.origin == "item" && !cue.per_reward).then_some(cue.cue.effect_id)
 }
 
 /// Source fromPosition is a container address for carried surprise bags, so

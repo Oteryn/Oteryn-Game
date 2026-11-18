@@ -167,14 +167,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !is_reward_bag(&carried.item.definition.production_key) {
             return None;
         }
-        {
+        let opening_effect = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
             {
                 return outcome(UseDisposition::Rejected);
             }
-        }
+            oteryn_gameplay_items::event_items::glooth_bag_opening_effect(
+                &carried.item.definition.production_key,
+            )
+            .zip(
+                runtime
+                    .read_actor_position(actor)
+                    .ok()
+                    .map(|position| position.position()),
+            )
+        };
         if !self
             .states
             .player_trades
@@ -196,7 +205,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            Ok(Some(result)) => outcome(result),
+            Ok(Some(result)) => {
+                if result == UseDisposition::Committed
+                    && let Some((effect, position)) = opening_effect
+                {
+                    let runtime = self.runtime.lock().await;
+                    if runtime
+                        .player_control_facts(actor, command.game_session_id)
+                        .is_ok()
+                    {
+                        self.states
+                            .spell_states
+                            .lock()
+                            .await
+                            .sounds
+                            .record_item_effect(&runtime, actor, position, effect, false);
+                    }
+                }
+                outcome(result)
+            }
             _ => Some(None),
         }
     }
