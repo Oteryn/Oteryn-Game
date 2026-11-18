@@ -26,8 +26,18 @@ const BOOKWORM: &str = "oteryn:creature.enraged_bookworm";
 const DONOR_OUTCOMES: [(&str, u16, Option<&str>, u16); 6] = [
     ("headache", 1520, None, 32),
     ("headache-bookworm", 190, Some(BOOKWORM), 32),
-    ("headache-fire-devil", 95, Some("oteryn:creature.fire_devil"), 32),
-    ("headache-war-golem", 95, Some("oteryn:creature.war_golem"), 32),
+    (
+        "headache-fire-devil",
+        95,
+        Some("oteryn:creature.fire_devil"),
+        32,
+    ),
+    (
+        "headache-war-golem",
+        95,
+        Some("oteryn:creature.war_golem"),
+        32,
+    ),
     ("relocate", 100, None, 11),
     ("success", 8000, None, 30),
 ];
@@ -53,7 +63,9 @@ fn folio_use_relocates_and_resets_success_without_starting_a_headache() -> TestR
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, "relocate").await)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+        exercise(admin, "relocate").await
+    })
 }
 
 #[test]
@@ -62,7 +74,9 @@ fn folio_use_starts_a_headache_and_spawns_one_active_bookworm() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, "headache-bookworm").await)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+        exercise(admin, "headache-bookworm").await
+    })
 }
 
 #[test]
@@ -71,7 +85,9 @@ fn folio_success_counts_the_first_read_from_a_negative_legacy_value() -> TestRes
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, "success").await)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+        exercise(admin, "success").await
+    })
 }
 
 fn catalogue(initial_count: i64) -> TestResult<QuestStateCatalogue> {
@@ -175,6 +191,8 @@ async fn exercise(admin: String, branch: &str) -> TestResult {
         .bind(generation.identity().client_artifact_digest().as_slice())
         .bind(world.frame_binding_digest(admitted.world_id).as_slice()).execute(&h.pool).await?;
     owner.admit_quest_session(&admitted).await;
+    let quest_now = 1_800_000_000;
+    h.root.set_test_quest_clock(quest_now).map_err(debug)?;
     let map = owner.bundle_map().ok_or("map")?;
     let tile = crate::map::overlay::TilePos {
         x: FOLIO.x,
@@ -182,31 +200,35 @@ async fn exercise(admin: String, branch: &str) -> TestResult {
         floor: FOLIO.floor,
     };
     let key = crate::map::view::placement_key(tile, 1).ok_or("folio")?;
-    let mut placement = world.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    let req = encode_use_intent(&WorldObjectTarget {
-        placement,
-        expected_revision: map.facts.object_revision(key),
-    })
-    .map_err(debug)?;
-    // Choose the first admitted wire occurrence for this branch. The durable
-    // USE and spawn owners still select and apply the outcome themselves.
-    let mut first_roll = 0u64;
-    let mut wanted = None;
-    for (key, weight, _, _) in DONOR_OUTCOMES {
-        let next = first_roll + u64::from(weight);
-        if key == branch {
-            wanted = Some(first_roll..next);
+    let request = || {
+        let mut placement = world.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        encode_use_intent(&WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        })
+        .map_err(debug)
+    };
+    let req = request()?;
+    // Pick an occurrence in the authored interval. Production dispatch still
+    // selects, validates, commits and projects that interval itself.
+    let session = admitted.game_session_id;
+    let command_for = |branch: &str, start| {
+        let mut first_roll = 0u64;
+        let mut wanted = None;
+        for (key, weight, _, _) in DONOR_OUTCOMES {
+            let next = first_roll + u64::from(weight);
+            if key == branch {
+                wanted = Some(first_roll..next);
+            }
+            first_roll = next;
         }
-        first_roll = next;
-    }
-    assert_eq!(first_roll, 10_000);
-    let wanted = wanted.ok_or("donor folio branch")?;
-    let command = (1u64..=8_192)
-        .find(|number| {
+        assert_eq!(first_roll, 10_000);
+        let wanted = wanted?;
+        (start..start + 8_192).find(|number: &u64| {
             let digest = Sha256::new()
                 .chain_update(b"oteryn:quest-random-use-v1")
-                .chain_update(admitted.game_session_id.as_bytes())
+                .chain_update(session.as_bytes())
                 .chain_update(deps.actor.placement_identity())
                 .chain_update(number.to_be_bytes())
                 .chain_update(key.to_be_bytes())
@@ -216,7 +238,8 @@ async fn exercise(admin: String, branch: &str) -> TestResult {
             prefix.copy_from_slice(&digest[..8]);
             wanted.contains(&(u64::from_be_bytes(prefix) % first_roll))
         })
-        .ok_or("folio branch occurrence")?;
+    };
+    let command = command_for(branch, 1).ok_or("folio branch occurrence")?;
     admitted.continuity.next_command_id = command;
     let first = wire(
         &owner,
@@ -237,7 +260,7 @@ async fn exercise(admin: String, branch: &str) -> TestResult {
         .map_err(debug)?;
     assert_eq!(snapshot.tracks().get(COUNT), Some(&i64::from(success)));
     if expect_headache {
-        assert!(snapshot.tracks().get(CLOCK).is_some_and(|clock| *clock > 0));
+        assert_eq!(snapshot.tracks().get(CLOCK), Some(&quest_now));
     } else {
         assert_eq!(snapshot.tracks().get(CLOCK).copied().unwrap_or(-1), -1);
     }
@@ -273,12 +296,40 @@ async fn exercise(admin: String, branch: &str) -> TestResult {
             assert!(spawned.is_empty());
         }
     }
+    if expect_headache {
+        // Crystal actions_mission09.lua:20-24 permits reading at equality.
+        for (advance, disposition, count) in [
+            (59, UseDisposition::Rejected, 0),
+            (1, UseDisposition::Committed, 1),
+        ] {
+            h.root.advance_test_quest_clock(advance).map_err(debug)?;
+            let retry = command_for("success", admitted.continuity.next_command_id)
+                .ok_or("folio retry branch occurrence")?;
+            admitted.continuity.next_command_id = retry;
+            let reply = wire(
+                &owner,
+                &mut admitted,
+                retry,
+                COMMAND_TYPE_USE_INTENT,
+                request()?,
+            )
+            .await?;
+            assert_eq!(decode_use_result(&reply).map_err(debug)?, disposition);
+            let snapshot = h
+                .root
+                .read_character_quest_state(&authority, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(snapshot.tracks().get(COUNT), Some(&count));
+            assert_eq!(snapshot.tracks().get(CLOCK), Some(&quest_now));
+        }
+    }
     let receipts: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1")
             .bind(QUEST)
             .fetch_one(&h.pool)
             .await?;
-    assert_eq!(receipts, 1);
+    assert_eq!(receipts, if expect_headache { 2 } else { 1 });
     drop(owner);
     drop(authority);
     drop(seal);
