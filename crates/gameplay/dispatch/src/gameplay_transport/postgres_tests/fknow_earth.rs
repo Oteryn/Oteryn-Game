@@ -1,6 +1,7 @@
 //! Runs the timed growing-birch projection through the normal USE dispatcher.
 use super::fixture::debug;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, quest_world_callbacks};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
