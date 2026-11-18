@@ -510,7 +510,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let effects = &callback.effects;
-    if effects.offering_portal.as_ref().is_some_and(|portal| !portal.valid(callback)) {
+    if effects
+        .offering_portal
+        .as_ref()
+        .is_some_and(|portal| !portal.valid(callback))
+    {
         return false;
     }
     if effects

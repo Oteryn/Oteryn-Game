@@ -707,7 +707,7 @@ impl DurabilityRoot {
         }
         let source_death = oteryn_gameplay_quests::quest::source_deaths::rule_for(
             &catalogue, &request.transition_key,
-        );
+        ).cloned();
         let native_key = hit_key
             || request
                 .transition_key
@@ -1880,7 +1880,7 @@ impl DurabilityRoot {
 
                     // A native death reads its mission gate; it must not move that mission epoch.
                     if native.is_some() {changes.retain(|change|change.before!=change.after);}
-                    if let Some(rule) = source_death {
+                    if let Some(rule) = source_death.as_ref() {
                         super::source_deaths::apply_delivery(&mut tx, fence, &request, rule, &changes).await?;
                     }
                     if !super::rotten_blood_access::validate_access_changes(

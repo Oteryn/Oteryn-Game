@@ -238,7 +238,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         // The scene can open only after every source-ordered input committed.
-        let offering_projection = if !close && let Some(portal) = &callback.effects.offering_portal {
+        let offering_projection = if !close && let Some(portal) = &callback.effects.offering_portal
+        {
             match super::offering_portal::prepare(map, portal) {
                 Ok(projection) => projection,
                 Err(result) => return result,
@@ -434,16 +435,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let ordinal = u8::try_from(o).ok()?;
                     let k = placement_key(p, ordinal)?;
                     let f = map.facts.base_entry(p, ordinal, *id)?;
-                    let expected_offering_face = if close { passage.replacement } else { Some(passage.appearance) };
+                    let expected_offering_face = if close {
+                        passage.replacement
+                    } else {
+                        Some(passage.appearance)
+                    };
                     ((if callback.effects.offering_portal.is_some() {
                         expected_offering_face == Some(f.appearance_id)
                     } else {
                         f.appearance_id == passage.appearance
-                        || (callback.effects.portal_reset_passable.is_none()
-                            && passage.replacement == Some(f.appearance_id))
-                        || passage.create_on_close == Some(f.appearance_id)
-                    })
-                        && !map.facts.house_tile(p)
+                            || (callback.effects.portal_reset_passable.is_none()
+                                && passage.replacement == Some(f.appearance_id))
+                            || passage.create_on_close == Some(f.appearance_id)
+                    }) && !map.facts.house_tile(p)
                         && (callback.effects.portal_reset_passable.is_none() || !f.pickupable)
                         && (!passage.if_present || !map.facts.base_hidden(k)))
                     .then_some(k)

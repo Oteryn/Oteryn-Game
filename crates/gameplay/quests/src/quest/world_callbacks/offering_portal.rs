@@ -1,5 +1,5 @@
 //! Crystal 201189f dreamers_challenge_quest/actions_stone_teleport.lua:1-68.
-use super::{ActorKind, Callback, OFFERING_PORTAL_PREFIX, Position, Trigger, valid_pos};
+use super::{ActorKind, Callback, OFFERING_PORTAL_PREFIX, Position, Trigger};
 use serde::{Deserialize, Serialize};
 
 pub const FLUID_POOL: &str = "oteryn:item.tibia.i2886";
@@ -19,11 +19,11 @@ impl OfferingPortal {
         callback.key.starts_with(OFFERING_PORTAL_PREFIX)
             && callback.trigger == Trigger::Use
             && callback.actor_kind == ActorKind::Player
-            && callback.selector.native.is_some()
-            && callback.selector.position.is_some_and(|at| {
-                at != self.position && at.floor == self.position.floor
+            && callback.selector.native.as_ref().is_some_and(|source| {
+                source.position != self.position && source.position.floor == self.position.floor
             })
-            && valid_pos(self.position)
+            && self.position.x > 0 && self.position.y > 0
+            && (-15..=0).contains(&self.position.floor)
             && self.sealed > 0
             && self.opened > 0
             && self.sealed != self.opened
@@ -35,9 +35,11 @@ impl OfferingPortal {
             && callback.teleport.is_none()
             && callback.item_on_target.is_none()
             && callback.offerings.len() > 1
-            && (callback.key == STONE_KEY || callback.offerings.iter().all(|offering| {
-                offering.item != FLUID_POOL && offering.item != SACRIFICE_FIRE
-            }))
+            && (callback.key == STONE_KEY
+                || callback
+                    .offerings
+                    .iter()
+                    .all(|offering| offering.item != FLUID_POOL && offering.item != SACRIFICE_FIRE))
             && callback.offerings.iter().all(|offering| {
                 offering.position.floor == self.position.floor && offering.count == 1
             })
@@ -48,9 +50,10 @@ impl OfferingPortal {
                     && passage.replacement.is_some()
                     && passage.create_on_close.is_none()
             })
-            && *callback.effects == super::CallbackEffects {
-                offering_portal: Some(self),
-                ..Default::default()
-            }
+            && *callback.effects
+                == super::CallbackEffects {
+                    offering_portal: Some(self),
+                    ..Default::default()
+                }
     }
 }

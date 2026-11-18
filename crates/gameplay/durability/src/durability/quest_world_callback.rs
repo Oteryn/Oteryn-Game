@@ -894,7 +894,9 @@ async fn consume_inputs(
         offerings.sort_by_key(|o| o.position);
     }
     for offering in offerings {
-        if ordered_portal && offering.item == oteryn_gameplay_quests::quest::world_callbacks::FLUID_POOL {
+        if ordered_portal
+            && offering.item == oteryn_gameplay_quests::quest::world_callbacks::FLUID_POOL
+        {
             if !consume_sacrifice_splash(tx, fence, request, context, offering.position).await? {
                 break;
             }
@@ -926,7 +928,10 @@ async fn consume_inputs(
         .bind(fence.scope_ownership_generation.get().to_string())
         .bind(&offering.item)
         .bind(i64::from(offering.count))
-        .bind(ordered_portal && offering.item == oteryn_gameplay_quests::quest::world_callbacks::SACRIFICE_FIRE)
+        .bind(
+            ordered_portal
+                && offering.item == oteryn_gameplay_quests::quest::world_callbacks::SACRIFICE_FIRE,
+        )
         .fetch_optional(&mut **tx)
         .await?;
         let Some(row) = row else {
@@ -1016,16 +1021,21 @@ async fn consume_sacrifice_splash(
     context: &QuestWorldContext,
     position: Position,
 ) -> Result<bool, DurabilityError> {
-    let (super::quest_state::QuestCause::Use(command),
-        crate::foundation::RuntimeScopeRefV1::Channel {world_id, channel_id}) =
-        (request.cause, fence.runtime_scope)
+    let (
+        super::quest_state::QuestCause::Use(command),
+        crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        },
+    ) = (request.cause, fence.runtime_scope)
     else {
         return Ok(false);
     };
     let Some(bundle_hex) = context.map_revision.strip_prefix("sha256:") else {
         return Ok(false);
     };
-    let base_key = u64::from(position.x) << 32 | u64::from(position.y) << 16
+    let base_key = u64::from(position.x) << 32
+        | u64::from(position.y) << 16
         | u64::from(position.floor.unsigned_abs()) << 8;
     let consumed = sqlx::query(
         "WITH selected AS (
@@ -1043,12 +1053,17 @@ async fn consume_sacrifice_splash(
          DELETE FROM game_item_fluid_splashes
          WHERE transaction_id=(SELECT splash_transaction_id FROM receipt)",
     )
-        .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
-        .bind(bundle_hex).bind(i64::try_from(base_key).map_err(|_| DurabilityError::InvalidStoredState)?)
-        .bind(fence.character_id.as_bytes().as_slice())
-        .bind(command.game_session_id().as_bytes().as_slice())
-        .bind(command.command_id().get().to_string()).bind(&request.transition_key)
-        .execute(&mut **tx).await?.rows_affected();
+    .bind(world_id.as_bytes().as_slice())
+    .bind(channel_id.as_bytes().as_slice())
+    .bind(bundle_hex)
+    .bind(i64::try_from(base_key).map_err(|_| DurabilityError::InvalidStoredState)?)
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(command.game_session_id().as_bytes().as_slice())
+    .bind(command.command_id().get().to_string())
+    .bind(&request.transition_key)
+    .execute(&mut **tx)
+    .await?
+    .rows_affected();
     Ok(consumed == 1)
 }
 

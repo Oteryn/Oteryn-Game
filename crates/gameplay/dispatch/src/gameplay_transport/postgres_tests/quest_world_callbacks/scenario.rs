@@ -368,6 +368,8 @@ fn scenario_case(
     let color_grid = dreamers_color_grid::matches(name);
     use super::super::dreamers_knightwatch_toll;
     let knightwatch = matches!(name, dreamers_knightwatch_toll::NIGHTMARE | dreamers_knightwatch_toll::BROTHERHOOD);
+    use super::super::dreamers_stone_offerings;
+    let stone_offerings = matches!(name, dreamers_stone_offerings::PREFIX | dreamers_stone_offerings::FULL);
     use super::super::dreamers_stone_exit;
     let stone_exit = name == dreamers_stone_exit::NAME;
     use super::super::zarganash_linked_boss;
@@ -378,6 +380,8 @@ fn scenario_case(
         feaster_solo_rooms::binding(name)?
     } else if knightwatch {
         dreamers_knightwatch_toll::binding()?
+    } else if stone_offerings {
+        dreamers_stone_offerings::binding()?
     } else if board_exit {
         dreamers_board_exit::binding()?
     } else if board_portal {
@@ -696,6 +700,8 @@ fn scenario_case(
         feaster_solo_rooms::world(&callback, name)?
     } else if knightwatch {
         dreamers_knightwatch_toll::world(&callback)?
+    } else if stone_offerings {
+        dreamers_stone_offerings::world(&callback)?
     } else if board_exit {
         dreamers_board_exit::world(&callback)?
     } else if board_portal {
@@ -1753,6 +1759,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if stone_offerings {
+            owner.quest_catalogue = Some(dreamers_stone_offerings::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback,
+            )?);
+        }
         if knightwatch {
             owner.quest_catalogue = Some(dreamers_knightwatch_toll::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback, name,
@@ -2993,6 +3004,8 @@ fn scenario_case(
             Box::pin(feaster_solo_rooms::exercise(&mut owner, &mut admitted, &h, fence, name)).await?;
         } else if knightwatch {
             Box::pin(dreamers_knightwatch_toll::exercise(&owner, &mut admitted, &h, fence, &callback)).await?;
+        } else if stone_offerings {
+            Box::pin(dreamers_stone_offerings::exercise(&owner, &mut admitted, &h, fence, name == dreamers_stone_offerings::FULL)).await?;
         } else if board_exit {
             Box::pin(dreamers_board_exit::exercise(
                 &owner, &mut admitted, &h, fence, &callback,
