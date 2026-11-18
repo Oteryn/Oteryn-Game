@@ -23,7 +23,7 @@ pub(super) struct ActivePhase {
 #[derive(Debug)]
 enum Fight {
     Cults(Box<CultsEncounter>),
-    Unwelcome(UnwelcomeEncounter),
+    Unwelcome(Box<UnwelcomeEncounter>),
 }
 
 impl Fight {
@@ -218,9 +218,9 @@ pub(super) fn bind(
         };
         return Ok(ActivePhase {
             key,
-            fight: Fight::Unwelcome(UnwelcomeEncounter::bind(
+            fight: Fight::Unwelcome(Box::new(UnwelcomeEncounter::bind(
                 runtime, players, *boss, brother_at, now_us,
-            )?),
+            )?)),
             credits,
             frozen: None,
             cells,
