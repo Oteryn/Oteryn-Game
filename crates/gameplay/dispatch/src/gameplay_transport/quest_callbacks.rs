@@ -430,6 +430,7 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
             || ((selector.position.is_some()
+                || callback.effects.place_item.is_some()
                 || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE
                 || oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key)
                     .is_some())

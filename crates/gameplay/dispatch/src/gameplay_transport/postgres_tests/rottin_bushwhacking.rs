@@ -172,7 +172,7 @@ pub(super) fn catalogue(
             "key":"place-net", "completes":false,
             "trigger":{"kind":"map_use","callback":{
                 "key": EARLY_NET, "quest": quest, "trigger": "use",
-                "selector": {"position":at(3,3),"appearance":10480},
+                "selector": {"appearance":10480},
                 "reversible": false, "requires_world_admission": true,
                 "passages": [], "offerings": [], "return_on_failure": false,
                 "item_on_target": {"item":"oteryn:item.tibia.i12186","count":1,"selected_instance":true},

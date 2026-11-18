@@ -5,7 +5,7 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.item_on_target.is_some()
         && (callback.key == targuna_ram::KEY
             || callback.effects.place_item == Some(12187)
-            || rottin_wall_repair(callback)
+            || rottin_wall_repair(callback).is_some()
             || matches!(
                 callback.native_rule,
                 Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
@@ -13,14 +13,14 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
 }
 
 /// Crystal hammer.lua:64–101 uses the selected reusable hammer on a broken wall.
-fn rottin_wall_repair(callback: &Callback) -> bool {
+pub(in crate::gameplay_transport) fn rottin_wall_repair(callback: &Callback) -> Option<u16> {
     let source = callback
         .selector
         .native
         .as_ref()
         .map(|selector| selector.appearance)
-        .or(callback.selector.appearance);
-    callback.quest == "oteryn:quest.rottin_wood_and_the_married_men_quest"
+        .or(callback.selector.appearance)?;
+    (callback.quest == "oteryn:quest.rottin_wood_and_the_married_men_quest"
         && callback.requires_world_admission
         && (callback.selector.native.is_some()
             || callback.selector.position.is_some()
@@ -30,7 +30,7 @@ fn rottin_wall_repair(callback: &Callback) -> bool {
                 .is_some_and(|id| (42501..=42506).contains(&id)))
         && matches!(
             (source, callback.effects.transform),
-            (Some(12183), Some(6474)) | (Some(12184 | 12185), Some(6473))
+            (12183, Some(6474)) | (12184 | 12185, Some(6473))
         )
         && callback.effects.reset_after_ms == Some(120_000)
         && callback.item_on_target.as_ref().is_some_and(|tool| {
@@ -46,7 +46,8 @@ fn rottin_wall_repair(callback: &Callback) -> bool {
             state.track == oteryn_gameplay_quests::quest::classic_talk::ROTTIN_WALLCOUNT
                 && (state.minimum, state.maximum, state.set, state.add) == (0, 5, 6, Some(1))
                 && !state.preserve
-        })
+        }))
+    .then_some(source)
 }
 
 /// Select only the wire subject observed in the fenced inventory snapshot.

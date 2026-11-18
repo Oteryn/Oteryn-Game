@@ -87,7 +87,7 @@ pub(super) fn catalogue(handyman: bool) -> TestResult<QuestStateCatalogue> {
         "quests": [{
             "quest": QUEST, "recipe_sha256": digest, "sources": [repair_source, reward_source],
             "tracks": [
-                {"key": WALLS, "initial": 5, "minimum": 0, "maximum": 6},
+                {"key": WALLS, "initial": 4, "minimum": 0, "maximum": 6},
                 {"key": track, "initial": 1, "minimum": 0, "maximum": 2},
                 {"key": questline, "initial": quest_stage, "minimum": 0, "maximum": 6},
                 {"key": COOLDOWN, "initial": 1, "minimum": 0, "maximum": i64::MAX}
@@ -153,6 +153,29 @@ pub(super) async fn exercise(
         6474
     );
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+    assert_eq!(
+        use_quest_tool(owner, admitted, wall, 1, 1603, 71).await?,
+        UseDisposition::NothingToUse,
+        "a repaired wall cannot count again before it breaks"
+    );
+    let map = owner.bundle_map().ok_or("repair map")?;
+    assert_eq!(map.facts.expire_movement_items(due), 1);
+    assert_eq!(
+        map.facts
+            .base_entry(wall, 1, 7)
+            .ok_or("restored wall")?
+            .appearance_id,
+        12183
+    );
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(121))
+        .ok_or("wall reset clock")?;
+    assert_eq!(
+        use_quest_tool(owner, admitted, wall, 1, 1604, 71).await?,
+        UseDisposition::Committed,
+        "a wall can count again after the source reset"
+    );
     let (fixed, retained): (i64, i64) = sqlx::query_as(
         "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
                 (SELECT count(*) FROM game_quest_world_tool_reads WHERE transition_key=$2)",
@@ -161,9 +184,9 @@ pub(super) async fn exercise(
     .bind(REPAIR)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!((fixed, retained), (6, 1));
+    assert_eq!((fixed, retained), (6, 2));
     assert_eq!(
-        talk(owner, &admitted, npc, 1603, "yes").await?,
+        talk(owner, &admitted, npc, 1605, "yes").await?,
         ["You repaired the walls."]
     );
     assert_eq!(experience(h).await?, before_xp + 500);
@@ -185,14 +208,5 @@ pub(super) async fn exercise(
             "reward advances Handyman's shared cooldown clock"
         );
     }
-    let map = owner.bundle_map().ok_or("repair map")?;
-    assert_eq!(map.facts.expire_movement_items(due), 1);
-    assert_eq!(
-        map.facts
-            .base_entry(wall, 1, 7)
-            .ok_or("restored wall")?
-            .appearance_id,
-        12183
-    );
     Ok(())
 }
