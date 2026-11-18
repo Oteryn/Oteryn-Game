@@ -1,7 +1,12 @@
 //! Crystal 201189f8 data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua:1-42,
 //! actions_mission11_payback_time_lever.lua:1-48.
-use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::{debug, id}};
-use crate::foundation::{CharacterId, CharacterLease, CommandId, CommandRef, GameSessionId, OwnerDamageCommand};
+use super::{
+    AdmittedSession, ComposedFreshAdmission, TestResult,
+    fixture::{debug, id},
+};
+use crate::foundation::{
+    CharacterId, CharacterLease, CommandId, CommandRef, GameSessionId, OwnerDamageCommand,
+};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::kill_reward::{self, KillSink};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
@@ -14,8 +19,16 @@ const LEVER: Position = Position {
     y: 31404,
     floor: -9,
 };
-const TEAM_PAD: Position = Position { x: 33358, y: 31405, floor: -9 };
-const LANDING: Position = Position { x: 33359, y: 31406, floor: -10 };
+const TEAM_PAD: Position = Position {
+    x: 33358,
+    y: 31405,
+    floor: -9,
+};
+const LANDING: Position = Position {
+    x: 33359,
+    y: 31406,
+    floor: -10,
+};
 const FIGHT: Position = Position {
     x: 33365,
     y: 31407,
@@ -129,20 +142,39 @@ pub(super) async fn exercise(
     let partner_session = GameSessionId::decode(&id(51)).map_err(debug)?;
     let partner = {
         let mut runtime = owner.runtime.lock().await;
-        runtime.bind_attacker_lease(actor, session, lease).map_err(debug)?;
-        let reservation = runtime.reserve_fresh_session(partner_session).map_err(debug)?;
-        let partner = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        runtime.initialize_source_pinned_lab_player_position(
-            partner, partner_session, super::quest_world_callbacks::local(TEAM_PAD),
-        ).map_err(debug)?;
-        let partner_lease = CharacterLease::new(CharacterId::decode(&id(52)).map_err(debug)?, 1)
+        runtime
+            .bind_attacker_lease(actor, session, lease)
             .map_err(debug)?;
-        runtime.bind_attacker_lease(partner, partner_session, partner_lease).map_err(debug)?;
-        owner.states.spell_states.lock().await.initialize(
-            &runtime, partner, partner_session,
-            crate::gameplay_transport::actor_spell::tests::FACTS,
-            (0,0), owner.owner_now(),
-        ).ok_or("partner spell state")?;
+        let reservation = runtime
+            .reserve_fresh_session(partner_session)
+            .map_err(debug)?;
+        let partner = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_source_pinned_lab_player_position(
+                partner,
+                partner_session,
+                super::quest_world_callbacks::local(TEAM_PAD),
+            )
+            .map_err(debug)?;
+        let partner_lease =
+            CharacterLease::new(CharacterId::decode(&id(52)).map_err(debug)?, 1).map_err(debug)?;
+        runtime
+            .bind_attacker_lease(partner, partner_session, partner_lease)
+            .map_err(debug)?;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .initialize(
+                &runtime,
+                partner,
+                partner_session,
+                crate::gameplay_transport::actor_spell::tests::FACTS,
+                (0, 0),
+                owner.owner_now(),
+            )
+            .ok_or("partner spell state")?;
         partner
     };
     let admitted_at = owner.owner_now().get();
@@ -172,8 +204,13 @@ pub(super) async fn exercise(
         })
     };
     for member in [actor, partner] {
-        assert_eq!(runtime.read_actor_position(member).map_err(debug)?.position(),
-            super::quest_world_callbacks::local(LANDING));
+        assert_eq!(
+            runtime
+                .read_actor_position(member)
+                .map_err(debug)?
+                .position(),
+            super::quest_world_callbacks::local(LANDING)
+        );
     }
     assert!(find(&runtime, FORMS[0]).is_some());
     let original_guard = find(&runtime, GUARD).ok_or("opening guard")?.0;
@@ -245,32 +282,62 @@ pub(super) async fn exercise(
     assert!(runtime.contains_live_creature(original_guard));
     assert_eq!(runtime.contains_live_creature(original_boss), timeout);
     for (member, member_session) in [(actor, session), (partner, partner_session)] {
-        let at = runtime.read_actor_position(member).map_err(debug)?.position();
-        assert!(!states.encounter_phases.blocks_channel_switch(&runtime, member, member_session, at));
+        let at = runtime
+            .read_actor_position(member)
+            .map_err(debug)?
+            .position();
+        assert!(!states.encounter_phases.blocks_channel_switch(
+            &runtime,
+            member,
+            member_session,
+            at
+        ));
     }
-    assert!(states.encounter_phases.active.lock().map_err(|_| "phase registry")?.is_empty());
+    assert!(
+        states
+            .encounter_phases
+            .active
+            .lock()
+            .map_err(|_| "phase registry")?
+            .is_empty()
+    );
 
     // Position the two characters for a return trip. The next real USE must
     // clear the old room on the same turn as it admits the replacement roster.
     let closed = crate::map::floor::BundleDoors(&map.facts);
     for (member, member_session, pad) in [
-        (actor, session, Position { x:33357, ..LEVER }),
+        (actor, session, Position { x: 33357, ..LEVER }),
         (partner, partner_session, TEAM_PAD),
     ] {
         let expected = runtime.read_actor_position(member).map_err(debug)?;
         let teleport = crate::map::floor::prepare_quest_encounter_ejection(
-            &runtime, owner.movement_cells(), member, member_session, expected,
-            super::quest_world_callbacks::local(pad), &closed,
-        ).map_err(debug)?;
+            &runtime,
+            owner.movement_cells(),
+            member,
+            member_session,
+            expected,
+            super::quest_world_callbacks::local(pad),
+            &closed,
+        )
+        .map_err(debug)?;
         runtime.commit_source_step(teleport).map_err(debug)?;
     }
     drop(states);
     drop(runtime);
-    let restarted = owner.use_object(
-        actor,
-        UseCommand { game_session_id:session, command_id:99, item_fence:Some(fence.item_fence()) },
-        WorldObjectTarget { placement, expected_revision:1 },
-    ).await;
+    let restarted = owner
+        .use_object(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: 99,
+                item_fence: Some(fence.item_fence()),
+            },
+            WorldObjectTarget {
+                placement,
+                expected_revision: 1,
+            },
+        )
+        .await;
     assert_eq!(restarted.disposition, UseDisposition::Committed);
     let runtime = owner.runtime.lock().await;
     assert!(!runtime.contains_live_creature(original_guard));

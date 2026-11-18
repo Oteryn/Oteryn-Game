@@ -1,10 +1,13 @@
 //! Crystal 201189f8 movements_herald_red_floors.lua:31–39,59–83.
 use super::{
-    AdmittedSession, ComposedFreshAdmission, TestResult, fixture::{Harness, debug},
+    AdmittedSession, ComposedFreshAdmission, TestResult,
+    fixture::{Harness, debug},
 };
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::{Callback, Position},
+    QuestStateCatalogue,
+    authored_bindings::Bindings,
+    world_callbacks::{Callback, Position},
 };
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
@@ -17,13 +20,25 @@ use std::{sync::Arc, time::Duration};
 pub(super) const NAME: &str = "qewrath-herald-sweep";
 pub(super) const FIELD_NAME: &str = "qewrath-herald-sweep-fields";
 const QUEST: &str = "oteryn:quest.targuna_quest";
-const MISSION: &str = "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/mission";
+const MISSION: &str =
+    "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/mission";
 const FIELD_CASTER: &str = "oteryn:creature.fire_elemental";
 const HERALD: &str = "oteryn:creature.herald_of_fire";
 const SUMMON: &str = "oteryn:creature.infernoid_blob";
-const LAST_PLATE: Position = Position { x: 32496, y: 32663, floor: -15 };
-const FIRST_PLATE: Position = Position { y: 32649, ..LAST_PLATE };
-const SECOND_PLATE: Position = Position { x: 32503, y: 32656, ..LAST_PLATE };
+const LAST_PLATE: Position = Position {
+    x: 32496,
+    y: 32663,
+    floor: -15,
+};
+const FIRST_PLATE: Position = Position {
+    y: 32649,
+    ..LAST_PLATE
+};
+const SECOND_PLATE: Position = Position {
+    x: 32503,
+    y: 32656,
+    ..LAST_PLATE
+};
 
 #[test]
 fn herald_last_plate_resets_the_room_monsters_and_preserves_the_herald() -> TestResult {
@@ -81,8 +96,10 @@ fn field_catalogue() -> TestResult<QuestStateCatalogue> {
         "maximum":{"x":32504,"y":32664,"floor":-15},
         "appearances":[2118,2119,2120]
     });
-    let digest = Sha256::digest(serde_json::to_vec(&callback)?).iter()
-        .map(|byte| format!("{byte:02x}")).collect::<String>();
+    let digest = Sha256::digest(serde_json::to_vec(&callback)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     let input = json!({"schema":1,"quests":[{
         "quest":QUEST,"recipe_sha256":digest,"sources":callback["sources"],
         "tracks":[{"key":MISSION,"initial":2,"minimum":0,"maximum":5}],
@@ -100,38 +117,70 @@ async fn make_field(
     let actor = admitted.runtime_actor.ok_or("field target")?;
     let caster = {
         let mut runtime = owner.runtime.lock().await;
-        let native = owner.active_generation.and_then(|g| g.native_gameplay()).ok_or("native")?;
-        native.install_companion_policies(&mut runtime).map_err(debug)?;
-        let mut position = runtime.read_actor_position(actor).map_err(debug)?.position();
+        let native = owner
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native")?;
+        native
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        let mut position = runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
         position.y -= 2;
-        let health = runtime.companion_policy(FIELD_CASTER).map_err(debug)?.maximum_health;
-        let caster = runtime.admit_encounter_actor(FIELD_CASTER, health, position).map_err(debug)?;
-        runtime.install_creature_policy(caster, FIELD_CASTER).map_err(debug)?;
+        let health = runtime
+            .companion_policy(FIELD_CASTER)
+            .map_err(debug)?
+            .maximum_health;
+        let caster = runtime
+            .admit_encounter_actor(FIELD_CASTER, health, position)
+            .map_err(debug)?;
+        runtime
+            .install_creature_policy(caster, FIELD_CASTER)
+            .map_err(debug)?;
         let base = crate::gameplay_transport::actor_spell::tests::FACTS;
-        owner.states.spell_states.lock().await.initialize(
-            &runtime, actor, admitted.game_session_id,
-            crate::spell::cast::CharacterCastFacts {
-                max_health: base.max_health.checked_mul(128).ok_or("fixture health")?,
-                ..base
-            },
-            (0, 0), owner.owner_now(),
-        ).ok_or("player vitals")?;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .initialize(
+                &runtime,
+                actor,
+                admitted.game_session_id,
+                crate::spell::cast::CharacterCastFacts {
+                    max_health: base.max_health.checked_mul(128).ok_or("fixture health")?,
+                    ..base
+                },
+                (0, 0),
+                owner.owner_now(),
+            )
+            .ok_or("player vitals")?;
         caster
     };
     let mut field = None;
     for _ in 0..128 {
         owner.clock_origin -= Duration::from_secs(2);
         owner.drain_monster_melee().await;
-        field = sqlx::query_scalar("SELECT i.item_instance_id FROM game_item_instances i
+        field = sqlx::query_scalar(
+            "SELECT i.item_instance_id FROM game_item_instances i
             JOIN game_item_ground_locations g USING(item_instance_id,world_id)
             WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i2118'
-              AND game_quest_dynamic_field_placement(i,g) ORDER BY g.stack_ordinal LIMIT 1")
-            .fetch_optional(&h.pool).await?;
+              AND game_quest_dynamic_field_placement(i,g) ORDER BY g.stack_ordinal LIMIT 1",
+        )
+        .fetch_optional(&h.pool)
+        .await?;
         if field.is_some() {
             break;
         }
     }
-    owner.runtime.lock().await.remove_encounter_actor(caster).map_err(debug)?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .remove_encounter_actor(caster)
+        .map_err(debug)?;
     field.ok_or_else(|| "source elemental produced no current native fire field".into())
 }
 
@@ -143,40 +192,89 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let field = if fields {
         owner.quest_catalogue = Some(Arc::new(field_catalogue()?));
-        owner.refresh_quest_session(admitted.game_session_id, false).await;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
         Some(make_field(owner, admitted, h).await?)
     } else {
-        owner.states.quest_callbacks.fixture.set(vec![fixture()?]).map_err(|_| "arena fixture")?;
+        owner
+            .states
+            .quest_callbacks
+            .fixture
+            .set(vec![fixture()?])
+            .map_err(|_| "arena fixture")?;
         None
     };
     let targets = {
         let mut runtime = owner.runtime.lock().await;
-        let native = owner.active_generation.and_then(|g| g.native_gameplay()).ok_or("native")?;
-        native.install_companion_policies(&mut runtime).map_err(debug)?;
+        let native = owner
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native")?;
+        native
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
         let mut spawn = |creature: &str, position| {
             let hp = runtime.companion_policy(creature)?.maximum_health;
-            runtime.admit_encounter_actor(creature, hp, super::quest_world_callbacks::local(position))
+            runtime.admit_encounter_actor(
+                creature,
+                hp,
+                super::quest_world_callbacks::local(position),
+            )
         };
         [
-            spawn(HERALD, Position { y: 32656, ..LAST_PLATE }).map_err(debug)?,
-            spawn(SUMMON, Position { y: 32655, ..LAST_PLATE }).map_err(debug)?,
-            spawn(SUMMON, Position { x: 32509, y: 32656, ..LAST_PLATE }).map_err(debug)?,
+            spawn(
+                HERALD,
+                Position {
+                    y: 32656,
+                    ..LAST_PLATE
+                },
+            )
+            .map_err(debug)?,
+            spawn(
+                SUMMON,
+                Position {
+                    y: 32655,
+                    ..LAST_PLATE
+                },
+            )
+            .map_err(debug)?,
+            spawn(
+                SUMMON,
+                Position {
+                    x: 32509,
+                    y: 32656,
+                    ..LAST_PLATE
+                },
+            )
+            .map_err(debug)?,
         ]
     };
     let command = admitted.continuity.next_command_id;
     let reply = super::quest_world_callbacks::wire(
-        owner, admitted, command, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        owner,
+        admitted,
+        command,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
         encode_step_intent(StepDirection::East),
-    ).await?;
-    assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
+    );
     let runtime = owner.runtime.lock().await;
     assert!(runtime.contains_live_creature(targets[0]));
     assert!(!runtime.contains_live_creature(targets[1]));
     assert!(runtime.contains_live_creature(targets[2]));
     drop(runtime);
     if let Some(field) = field {
-        let lifecycle: i16 = sqlx::query_scalar("SELECT lifecycle FROM game_item_instances WHERE item_instance_id=$1")
-            .bind(field).fetch_one(&h.pool).await?;
+        let lifecycle: i16 = sqlx::query_scalar(
+            "SELECT lifecycle FROM game_item_instances WHERE item_instance_id=$1",
+        )
+        .bind(field)
+        .fetch_one(&h.pool)
+        .await?;
         assert_eq!(lifecycle, 2);
         let consumed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions
             WHERE item_instance_id=$1 AND transition_key='oteryn:quest-callback/targuna/herald-room-sweep'")

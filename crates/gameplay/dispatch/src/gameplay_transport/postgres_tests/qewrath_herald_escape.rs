@@ -1,9 +1,7 @@
 //! Crystal 201189f8 data-global/scripts/quests/targuna/creaturescripts_herald_of_fire.lua:4-7,51-59.
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
-use crate::gameplay_transport::{
-    kill_reward::{self, KillSink},
-};
+use crate::gameplay_transport::kill_reward::{self, KillSink};
 use oteryn_gameplay_quests::quest::{
     source_deaths::DeathPortal,
     world_callbacks::{Callback, Position},

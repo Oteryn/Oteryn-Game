@@ -1,9 +1,6 @@
 //! Crystal 201189f8 actions_mission10_a_message_of_freedom_sceptre.lua:8-9,20-32,
 //! data/items/items.xml:28263-28265.
-use super::{
-    AdmittedSession, ComposedFreshAdmission, TestResult,
-    fixture::Harness,
-};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::Harness};
 use crate::gameplay_transport::{
     connection::{FreshAdmissionAuthority, UseCommand},
     item_view::ItemKey,
@@ -123,9 +120,17 @@ pub(super) async fn exercise(
         use_with_map_item: Some(MapUseTarget::Item(NonZeroU64::new(2).ok_or("body handle")?)),
     };
     for (id, target, expected) in [
-        (9200, Some(ItemKey::Entity(corpse_handle)), UseDisposition::Committed),
+        (
+            9200,
+            Some(ItemKey::Entity(corpse_handle)),
+            UseDisposition::Committed,
+        ),
         (9200, None, UseDisposition::Committed),
-        (9201, Some(ItemKey::Instance(*corpse.as_bytes())), UseDisposition::Rejected),
+        (
+            9201,
+            Some(ItemKey::Instance(*corpse.as_bytes())),
+            UseDisposition::Rejected,
+        ),
     ] {
         let fence = owner
             .current_quest_fence(session)

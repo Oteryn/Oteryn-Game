@@ -1191,7 +1191,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             && intent.use_with_map_item.is_none()
             && intent.use_with_position.is_none()
         {
-            if let oteryn_protocol_oteryn::world_object::UseTarget::Item(_) = intent.target {
+            if let oteryn_protocol_oteryn::world_object::UseTarget::Item(_) = intent.target
+                && source.is_none_or(|key| matches!(key, item_view::ItemKey::Entity(_)))
+            {
                 return self
                     .use_direct_quest_corpse(actor, command, &intent, source)
                     .await;

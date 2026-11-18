@@ -32,8 +32,7 @@ const LANDING: Position = Position {
     y: 31183,
     floor: -8,
 };
-const DONOR: &str =
-    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_prison.lua:3-27";
+const DONOR: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_prison.lua:3-27";
 
 #[test]
 fn prison_release_restores_outfit_and_returns_the_crate_only_during_mission_one() -> TestResult {
