@@ -228,6 +228,9 @@ fn scenario() -> TestResult {
         let minted: i64 = sqlx::query_scalar("SELECT coalesce(sum(m.quantity),0)::bigint FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.character_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i20062'")
             .bind(character.as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(minted, 2);
+        drop(owner);
+        drop(authority);
+        drop(seal);
         h.cleanup().await
     })
 }
