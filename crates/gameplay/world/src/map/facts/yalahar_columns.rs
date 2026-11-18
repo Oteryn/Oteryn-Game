@@ -1,7 +1,17 @@
 //! Crystal items.xml 24509–24548: the fixed room's four paired ten-second decays.
 use super::*;
 
+const COLUMN_X: [u16; 4] = [32867, 32869, 32871, 32873];
+const COLUMN_Y: u16 = 31253;
+const COLUMN_FLOOR: i8 = -11;
 const PERIOD_US: u64 = 10_000_000;
+
+pub(in crate::map::facts) fn is_column(position: TilePos, appearance: u16) -> bool {
+    (9133..=9140).contains(&appearance)
+        && position.floor == COLUMN_FLOOR
+        && position.y == COLUMN_Y
+        && COLUMN_X.contains(&position.x)
+}
 
 impl BundleFacts {
     pub(super) fn arm_yalahar_columns(&self, states: &mut CallbackStates, now: u64) {
@@ -12,11 +22,11 @@ impl BundleFacts {
         let Some(due) = now.checked_add(PERIOD_US) else {
             return;
         };
-        for x in [32867, 32869, 32871, 32873] {
+        for x in COLUMN_X {
             let position = TilePos {
                 x,
-                y: 31253,
-                floor: -11,
+                y: COLUMN_Y,
+                floor: COLUMN_FLOOR,
             };
             if self.house_tile(position) {
                 continue;

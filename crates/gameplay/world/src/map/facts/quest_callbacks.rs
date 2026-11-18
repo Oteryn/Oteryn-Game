@@ -54,7 +54,7 @@ mod arena_pillars;
 pub use arena_pillars::ArenaPillarProjection;
 
 #[path = "yalahar_columns.rs"]
-mod yalahar_columns;
+pub(super) mod yalahar_columns;
 
 #[derive(Clone, Debug)]
 struct MovementDecay {

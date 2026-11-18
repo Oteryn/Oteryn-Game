@@ -647,7 +647,14 @@ impl BundleFacts {
                     .palette
                     .get(item.palette as usize)
                     .is_none_or(|entry| self.unique_index(entry.id) != Some(item.palette));
-                if placement != plain || ambiguous {
+                // Unattributed crystal columns still need an exact timer target.
+                let cycling_column = self
+                    .palette
+                    .get(item.palette as usize)
+                    .is_some_and(|entry| {
+                        quest_callbacks::yalahar_columns::is_column(pos, entry.facts.appearance_id)
+                    });
+                if placement != plain || ambiguous || cycling_column {
                     self.placements.push((key, placement));
                 }
             }
