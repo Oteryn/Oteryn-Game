@@ -64,13 +64,10 @@ pub fn validate_resolved_world(
         }
         return Ok(());
     }
-    // Rottin's exact NPC acceptance resets the same counter the hammer route increments.
     if transition
         .effects
         .iter()
         .any(|e| changes(e.effect) && protected.contains(&e.track))
-        && (world_context
-            || !super::super::classic_dialogue::owns_rottin_wall_reset(catalogue, transition))
     {
         return Err("renamed resolved World owner".into());
     }

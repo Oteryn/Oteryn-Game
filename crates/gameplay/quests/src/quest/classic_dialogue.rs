@@ -78,13 +78,13 @@ pub fn reply(npc: &str, key: &str) -> Option<&'static [String]> {
 const ROTTIN_OVERLAY: &str = include_str!("../../../../../content/quests/rottin-wood-starts.json");
 const ROTTIN_RESET: &str = "oteryn:quest-transition/classic/rottin-wood/start-disrepair";
 
-pub(super) fn owns_rottin_wall_reset(
-    catalogue: &super::QuestStateCatalogue,
-    transition: &super::QuestTransition,
-) -> bool {
-    transition.key == ROTTIN_RESET
-        && super::loader::parse_quest_state(ROTTIN_OVERLAY, catalogue.content_revision())
-            .is_ok_and(|source| source.catalogue().transition(ROTTIN_RESET) == Some(transition))
+pub(super) fn rottin_wall_reset_transition() -> Result<super::QuestTransition, String> {
+    super::loader::parse_quest_state(ROTTIN_OVERLAY, "rottin-wall-reset")
+        .map_err(|error| format!("{error:?}"))?
+        .catalogue()
+        .transition(ROTTIN_RESET)
+        .cloned()
+        .ok_or_else(|| "missing Rottin wall reset transition".into())
 }
 
 /// Declare the reset transition and its counter before World actions widen its bounds.
