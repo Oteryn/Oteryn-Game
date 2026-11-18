@@ -258,6 +258,11 @@ fn scenario_case(
             y: trigger.y + 1,
             ..trigger
         }
+    } else if name == "qengine-rewards-ddepths-pump-duke" {
+        Position {
+            x: trigger.x + 1,
+            ..trigger
+        }
     } else {
         Position {
             x: trigger.x - 1,
@@ -1265,8 +1270,14 @@ fn scenario_case(
             };
             let approach = crate::map::overlay::TilePos { x: start.x, ..at };
             super::super::source_world_crop::world(
-                approach,
-                at,
+                crate::map::overlay::TilePos {
+                    x: at.x.min(approach.x),
+                    ..at
+                },
+                crate::map::overlay::TilePos {
+                    x: at.x.max(approach.x),
+                    ..at
+                },
                 approach,
                 generation.native_gameplay().ok_or("native pump policies")?,
             )?
