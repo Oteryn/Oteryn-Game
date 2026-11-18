@@ -1448,10 +1448,16 @@ impl BundleFacts {
             return false;
         }
         if let Some(portal) = states.portals.get(&position) {
-            if portal.expires.is_none_or(|expires| expires > now) {
-                return portal.entry.is_some()
-                    && portal.destination == destination
-                    && portal.expires.is_some();
+            if portal.entry.is_none_or(|entry| entry.get() != portal.owner)
+                || portal.destination != destination
+            {
+                return false;
+            }
+            let Some(expires) = portal.expires else {
+                return false;
+            };
+            if expires > now {
+                return true;
             }
             let owner = portal.owner;
             Arc::make_mut(&mut states).remove_portals(owner);
