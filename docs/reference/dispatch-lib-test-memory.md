@@ -16,7 +16,7 @@ merge base of the delivery branch and the fetched `origin/main` at
 `3ffe8d05116b56d752944370a7c43341e0ca8bc8`. The delivery branch was
 resumed at `cc23b6d21828ea53f9f6f0e602d091c433535aa5`. Its compile inputs
 differ from the measurement base only in the dispatch test profile.
-The current resubmission resumed at
+The preceding resubmission resumed at
 `4a40b57a5f5c4d3412459f490711224e85eb11a2`. The fetched `origin/main`
 was `45135fdeecf2f448d0c300505d041c7397bf7731`, with the same measurement
 base as its merge base with the delivery branch.
@@ -38,7 +38,7 @@ The resubmission's startup verified both identity and SQL checks.
 | Dispatch lib test, dependencies cached | 1 | 16,559,372 | 392.963 | rustc SIGKILL before link |
 | Dispatch lib test with the combined package profile, dependencies cached | 1 | 16,340,144 | 1296.471 | Linked and listed 4,339 tests (4,341 output lines) |
 | Dispatch lib test with the checked-in profile, dependencies rebuilt | 1 | 16,283,852 | 939.934 | Linked and listed 4,339 tests (4,341 output lines) |
-| Current dispatch lib test with the checked-in profile, dependencies rebuilt | 1 | 16,267,684 | 1175.728 | Linked and listed 4,339 tests (4,341 output lines) |
+| Dispatch lib test at the resumed branch head, dependencies rebuilt | 1 | 16,267,684 | 1175.728 | Linked and listed 4,339 tests (4,341 output lines) |
 | Dispatch LLD replay with the combined package profile | — | 4,846,628 | 40.141 | Linked |
 | Dispatch lib test with the combined package profile, dependencies cached | 2 | 16,393,060 | 1005.117 | rustc SIGKILL with two LLVM workers |
 | Dispatch lib test with 512 units, dependencies cached | 2 | ≥16,393,384 | 647.152 | OOM counter increased before Cargo was stopped |
@@ -285,7 +285,7 @@ different amounts of work, so their elapsed times are unsuitable for
 estimating a compile speedup. The pinned base did not link, so its
 4,339 entries came from the compiler's MIR registry.
 
-The current resubmission sampled the one-job dispatch rustc before and
+The preceding resubmission sampled the one-job dispatch rustc before and
 during LLVM. It mounted 735 generated PG roots and used 48 direct rlibs
 totalling 1,163,839,310 bytes, matching the previous one-job build. The
 last sample before the LLVM coordinator reached 14,633,728 KiB. Rustc
@@ -402,7 +402,7 @@ and selected the dispatch, durability and game-server libraries. The PR
 unit shards already use one Cargo job, so the patch targets the archive
 steps and the two Merge Queue library shards.
 
-The current resubmission repeated the scratch-index application and YAML
+The preceding resubmission repeated the scratch-index application and YAML
 comparison. The four step changes only add the serial job setting. Their
 commands and job timeout values match the measurement base. The lib-test
 sources and `Cargo.lock` also match that base byte for byte.
@@ -441,6 +441,73 @@ index fd29af7b1..51e40163d 100644
 --- a/.github/workflows/pr-postgres-harness.yml
 +++ b/.github/workflows/pr-postgres-harness.yml
 @@ -334,2 +334,3 @@ jobs:
+           LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
++          CARGO_BUILD_JOBS: "1"
+           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
+```
+
+## Serial workflow patch for current main
+
+The resubmission started at `a7b0af96bd5da811c99eb403faff07e2d9ebb1bd`.
+The pinned baseline is still the merge base with
+`45135fdeecf2f448d0c300505d041c7397bf7731`, the fetched main tip. Dispatch
+and game-server sources, `Cargo.lock` and workflows are byte-identical
+between the pinned baseline and this delivery branch. The package override
+remains the only build setting changed on the branch. Test-build results
+in this report come from the preceding runs. The owner reserves new
+test builds and PostgreSQL execution for the PC and CI. Workspace formatting
+and `cargo check --locked --offline -p oteryn-gameplay-dispatch` passed
+with two Cargo jobs, incremental disabled, and dev and test debuginfo
+disabled. The package check used 3,627,048 KiB peak RSS over 161.087 s.
+
+The [Merge Queue archive on `d9733eb0`](https://github.com/Oteryn/Oteryn-Game/actions/runs/44351254339/job/134970400639)
+was still in its library archive step when it was cancelled at 55 minutes.
+That job outcome supplies timing and stage evidence. The local cgroup
+kills establish the memory failure. The [separate sharding PR](https://github.com/Oteryn/Oteryn-Game/pull/3304)
+reports lower per-process peaks on the owner's PC and is validating a
+structural fix in CI. Its test inventory and build settings differ from
+the pinned baseline here. The serial proposal below is the smaller
+mitigation and estimates 15.51 GiB peak dispatch rustc RSS with the
+package profile. It leaves roughly 0.49 GiB below the container limit
+before accounting for the other processes and still needs a hosted run.
+
+The following patch applies to `45135fdeecf2f448d0c300505d041c7397bf7731`.
+It preserves all shell commands, test selectors and timeouts. The four
+changed shell blocks pass `bash -n`, the three workflows parse as YAML,
+and the proposed audit pin matches the changed Merge Queue workflow blob.
+The pin rotation requires owner authorization.
+
+```diff
+diff --git a/.github/workflows/merge-authority-audit.yml b/.github/workflows/merge-authority-audit.yml
+--- a/.github/workflows/merge-authority-audit.yml
++++ b/.github/workflows/merge-authority-audit.yml
+@@ -28,3 +28,3 @@
+     env:
+-      EXPECTED_MERGE_GROUP_GATE_BLOB: "9d6ed27db2ed55998dae2153eaa2227c0d8c4704"
++      EXPECTED_MERGE_GROUP_GATE_BLOB: "22143c3934517dcd720623707676381375efad51"
+       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
+diff --git a/.github/workflows/merge-group-gate.yml b/.github/workflows/merge-group-gate.yml
+--- a/.github/workflows/merge-group-gate.yml
++++ b/.github/workflows/merge-group-gate.yml
+@@ -619,2 +619,4 @@
+         if: matrix.shard == 'lib-content'
++        env:
++          CARGO_BUILD_JOBS: "1"
+         run: |
+@@ -624,2 +626,4 @@
+         if: matrix.shard == 'lib-rest'
++        env:
++          CARGO_BUILD_JOBS: "1"
+         run: |
+@@ -848,2 +852,4 @@
+       - name: Archive PostgreSQL-backed library tests
++        env:
++          CARGO_BUILD_JOBS: "1"
+         run: |
+diff --git a/.github/workflows/pr-postgres-harness.yml b/.github/workflows/pr-postgres-harness.yml
+--- a/.github/workflows/pr-postgres-harness.yml
++++ b/.github/workflows/pr-postgres-harness.yml
+@@ -339,2 +339,3 @@
            LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
 +          CARGO_BUILD_JOBS: "1"
            LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
