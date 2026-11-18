@@ -23,6 +23,8 @@ const SECOND_ACCOUNT: u8 = 60;
 const SECOND_CHARACTER: u8 = 61;
 const SECOND_SESSION: u8 = 62;
 const DIGEST: [u8; 32] = [1; 32];
+const VIAL: &str = "oteryn:item.tibia.i2874";
+const SWORD: &str = "oteryn:item.tibia.i3264";
 
 fn command_of(session: u8, value: u64) -> TestResult<CommandRef> {
     Ok(CommandRef::new(
@@ -66,15 +68,16 @@ impl ItemLoopContent for Content {
         DIGEST
     }
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
-        let mut result = if definition.production_key == BACKPACK {
-            backpack_facts()
-        } else {
-            facts(
+        let mut result = match definition.production_key.as_str() {
+            BACKPACK => backpack_facts(),
+            VIAL => facts(VIAL, ItemStackClass::NonStackable),
+            SWORD => facts(SWORD, ItemStackClass::NonStackable),
+            _ => facts(
                 COIN,
                 ItemStackClass::Stackable {
                     proven_maximum: Some(100),
                 },
-            )
+            ),
         };
         if result.definition != *definition {
             return None;
@@ -463,4 +466,91 @@ fn player_trade_postgres_atomic_replay_refusals_and_restart() -> TestResult {
         drop(recovered);drop(restarted);drop(permit);drop(seal);
         h.cleanup().await
     })
+}
+
+#[test]
+fn player_trade_offer_and_receipt_preserve_nested_item_state() -> TestResult {
+    nested_trade_case(false)
+}
+
+#[test]
+fn player_trade_offer_refuses_a_bound_nested_reward() -> TestResult {
+    nested_trade_case(true)
+}
+
+fn nested_trade_case(bound: bool) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+        runtime().map_err(debug)?.block_on(async {
+            let h = Harness::create(admin, if bound { "trade_bound" } else { "trade_attributes" }).await?;
+            let result: TestResult = async {
+                seed_second_character(&h.pool).await?;
+                activate(&h).await?;
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+                let mut items = inventory(&h, &authority).await?;
+                let child = items[0];
+                let bag = h.mint(&authority, BACKPACK, 1).await?;
+                let stateful_items = if bound {
+                    None
+                } else {
+                    Some([h.mint(&authority, VIAL, 1).await?, h.mint(&authority, SWORD, 1).await?])
+                };
+                let mut seed = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
+                sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid").bind(bag.as_slice()).execute(&mut *seed).await?;
+                sqlx::query("WITH child AS (DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid RETURNING *) INSERT INTO game_item_container_entries SELECT encode($2,'hex')::uuid,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id FROM child")
+                    .bind(child.as_slice()).bind(bag.as_slice()).execute(&mut *seed).await?;
+                sqlx::query("INSERT INTO game_item_nested_entries SELECT item_instance_id,world_id,encode($2,'hex')::uuid,1,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(child.as_slice()).bind(bag.as_slice()).execute(&mut *seed).await?;
+                if bound {
+                    sqlx::query("INSERT INTO game_item_bindings SELECT item_instance_id,world_id,encode($2,'hex')::uuid,'DAILY_REWARD' FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                        .bind(child.as_slice()).bind(id(CHARACTER).as_slice()).execute(&mut *seed).await?;
+                } else if let Some([vial, sword]) = stateful_items {
+                    for (item, ordinal) in [(vial, 2i64), (sword, 3)] {
+                        sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
+                            .bind(item.as_slice()).execute(&mut *seed).await?;
+                        sqlx::query("INSERT INTO game_item_nested_entries SELECT item_instance_id,world_id,encode($2,'hex')::uuid,$3,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                            .bind(item.as_slice()).bind(bag.as_slice()).bind(ordinal).execute(&mut *seed).await?;
+                    }
+                    // Fixture state represents the durable results of the item attribute owners.
+                    sqlx::query("INSERT INTO game_item_fluid_states SELECT item_instance_id,world_id,7,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                        .bind(vial.as_slice()).execute(&mut *seed).await?;
+                    sqlx::query("INSERT INTO game_item_tiers VALUES(encode($1,'hex')::uuid,2)")
+                        .bind(sword.as_slice()).execute(&mut *seed).await?;
+                    sqlx::query("INSERT INTO game_item_imbuements SELECT item_instance_id,n,n,'fixture:imbuement','fixture-r1',1,3000,game_character_uuid_v7(),game_character_uuid_v7() FROM game_item_instances CROSS JOIN generate_series(0,1) n WHERE item_instance_id=encode($1,'hex')::uuid")
+                        .bind(sword.as_slice()).execute(&mut *seed).await?;
+                }
+                seed.commit().await?;
+
+                let offer = h.root.observe_player_trade_offer(&authority, &h.node, fences()?[0], command_of(SESSION, u64::MAX)?, bag, DIGEST).await?;
+                if bound {
+                    assert_eq!(offer, Err(Refusal::NotTradeable));
+                } else {
+                    let offer = serde_json::to_value(offer.map_err(debug)?)?;
+                    let attrs = &offer["contents"][0]["attributes"];
+                    assert_eq!(offer["contents"][1]["attributes"]["fluid"]["fluid_subtype"], 7);
+                    assert_eq!(attrs["tier"]["tier"], 2);
+                    assert_eq!(attrs["imbuements"][0]["slot"], 0);
+                    assert_eq!(attrs["imbuements"][1]["slot"], 1);
+                    items[0] = bag;
+                    let req = request(&h, &authority, items, 182).await?;
+                    let permit = SpellLanePermit::of_fresh_scope(fence()?.runtime_scope).await?;
+                    assert_eq!(h.root.exchange_player_trade(&permit, &authority, &h.node, fences()?, &CONTENT, req.clone()).await?, Ok(TradeReceipt::Committed));
+                    let receipt: serde_json::Value = sqlx::query_scalar("SELECT before_contents FROM game_player_trade_receipts WHERE side=0").fetch_one(&h.pool).await?;
+                    assert_eq!(receipt, offer["contents"]);
+                    let mut changed = req;
+                    let mut leaf = serde_json::to_value(&changed.participants[0].leaf)?;
+                    leaf["contents"][1]["attributes"]["fluid"]["fluid_subtype"] = serde_json::json!(8);
+                    changed.participants[0].leaf = serde_json::from_value(leaf)?;
+                    assert_eq!(h.root.reconcile_player_trade(&authority, changed).await?, Err(Refusal::Rejected));
+                }
+                Ok(())
+            }.await;
+            h.cleanup().await?;
+            result
+        }).map_err(debug)
+    })?.join().map_err(|_| "nested trade thread failed")?.map_err(Into::into)
 }

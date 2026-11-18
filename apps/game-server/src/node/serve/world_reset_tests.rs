@@ -21,13 +21,36 @@ fn reset_drain_exit_is_retryable_and_retains_the_observed_reset()
     Ok(())
 }
 
+struct ResetTestBuildFormula;
+
+impl crate::durability::character_build::BuildFormula for ResetTestBuildFormula {
+    fn required(&self, _: &str, _: usize, _: u16) -> Option<u64> {
+        Some(1_000_000)
+    }
+    fn digest(&self) -> [u8; 32] {
+        [1; 32]
+    }
+    fn content_revision(&self) -> &str {
+        "content-1"
+    }
+}
+
 #[test]
-fn planned_reset_observation_forces_a_complete_recent_highscore_cut()
+fn planned_reset_drains_before_a_single_post_activation_highscore_cut()
 -> crate::bestiary_postgres_harness::TestResult {
     use crate::bestiary_postgres_harness::{
-        Harness, TestResult, configured_admin, debug, runtime, scope,
+        CHARACTER, Harness, TestResult, configured_admin, context, debug, fence, id, runtime, scope,
+    };
+    use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState,
+    };
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
     };
     use crate::durability::highscore_snapshot::SnapshotCatalogues;
+    use crate::foundation::CharacterId;
+    use oteryn_simulation_determinism::{ExactI64, RoundingMode};
     use sqlx::Executor;
     let Some(admin) = configured_admin() else {
         return Ok(());
@@ -39,6 +62,20 @@ fn planned_reset_observation_forces_a_complete_recent_highscore_cut()
                 let world = scope()?.world_id();
                 let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded().map_err(debug)?;
                 let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements.clone())).map_err(debug)?;
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+                h.root.commit_character_build(
+                    &authority, &h.node, fence(1)?,
+                    BuildChangeRequest {
+                        occurrence: BuildOccurrence::from_bytes(id(60)).map_err(debug)?,
+                        cause: BuildCause::VocationChoice,
+                        before: DurableBuildState::default(),
+                        after: DurableBuildState::new("knight", (0, 0), [(10, 0); 7]).map_err(debug)?,
+                        pruned_stance: None,
+                    },
+                    &ResetTestBuildFormula,
+                ).await.map_err(debug)?;
+                h.root.await_ready().await?;
                 let first = h.root.refresh_highscore_schedule(world, catalogues.clone(), false).await.map_err(debug)?;
                 assert!(!first.snapshots.is_empty());
                 h.root.await_ready().await?;
@@ -47,25 +84,73 @@ fn planned_reset_observation_forces_a_complete_recent_highscore_cut()
                 let state = ResetWatch::default();
                 let drain = GameplayDrain::at_reset_epoch(0);
                 h.root.await_ready().await?;
-                assert!(!observe_reset(&h.root, world, &state, &drain, &achievements).await);
+                assert!(!observe_reset(&h.root, world, &state, &drain).await);
                 sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(123),'1970-01')")
                     .bind(world.as_bytes().as_slice()).bind([1u8;32].as_slice()).execute(&h.pool).await?;
                 sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,retirement_binding,target_map_revision,target_server_digest,target_client_digest,target_frame_digest,target_house_tiles,calendar_revision,phase) SELECT world_id,reset_epoch,target_digest,sha256(convert_to('oteryn:world-reset-retirement:v1','UTF8') || target_digest),map_revision,server_digest,client_digest,frame_digest,'[]'::jsonb,calendar_revision,'RETIRING' FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid")
                     .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
                 h.pool.execute("CREATE SEQUENCE reset_cut_failure; GRANT USAGE ON SEQUENCE reset_cut_failure TO oteryn_game_highscore_job; CREATE FUNCTION reset_cut_fail_once() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF nextval('reset_cut_failure')=1 THEN RAISE EXCEPTION 'transient reset cut failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER reset_cut_fail_once BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION reset_cut_fail_once()").await?;
                 h.root.await_ready().await?;
-                assert!(!observe_reset(&h.root, world, &state, &drain, &achievements).await);
-                assert!(!state.requested.load(Ordering::Acquire), "a failed cut cannot release the drain");
-                h.root.await_ready().await?;
-                assert!(observe_reset(&h.root, world, &state, &drain, &achievements).await);
+                assert!(observe_reset(&h.root, world, &state, &drain).await,
+                    "publication failure cannot prevent the reset drain");
                 assert!(state.requested.load(Ordering::Acquire));
-                let heads: Vec<(i32, i64)> = sqlx::query_as("SELECT category,current_snapshot_id FROM game_world_highscore_heads WHERE world_id=encode($1,'hex')::uuid ORDER BY category")
+                let second_watch = ResetWatch::default();
+                h.root.await_ready().await?;
+                assert!(observe_reset(&h.root, world, &second_watch, &GameplayDrain::at_reset_epoch(0)).await);
+                let attempted: bool = sqlx::query_scalar("SELECT is_called FROM reset_cut_failure").fetch_one(&h.pool).await?;
+                assert!(!attempted, "neither observer may publish while sessions can still commit");
+                h.root.await_ready().await?;
+                let award = h.root.commit_character_experience(&authority, &h.node, fence(2)?,
+                    ExperienceAwardRequest {
+                        occurrence: ExperienceRewardOccurrence::from_bytes(id(80)).map_err(debug)?,
+                        amount: ExactI64::new(5),
+                        context: context(),
+                        policy_revision: "policy-1".into(),
+                        reward_revision: "reward-1".into(),
+                        policy: FiniteProgressionPolicy {
+                            context: context(),
+                            policy_revision: "policy-1".into(),
+                            reward_revision: "reward-1".into(),
+                            death_policy_revision: "death-1".into(),
+                            declared_difference_revision: "declaration-1".into(),
+                            thresholds: [
+                                LevelThreshold { level: 50, minimum_experience: ExactI64::new(1000) },
+                                LevelThreshold { level: 51, minimum_experience: ExactI64::new(1100) },
+                            ],
+                            terminal_exclusive_experience: ExactI64::new(1200),
+                            death_loss_numerator: 1,
+                            death_loss_denominator: 10,
+                            death_loss_rounding: RoundingMode::Floor,
+                        },
+                    },
+                ).await.map_err(debug)?;
+                assert!(matches!(award, ExperienceCommitOutcome::Committed(_)));
+                // Simulate the durable reset activation transaction after all channels drain.
+                h.pool.execute("UPDATE game_world_reset_jobs SET phase='ACTIVATED' WHERE reset_epoch=0; INSERT INTO game_world_reset_epochs SELECT world_id,1,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,clock_timestamp(),reset_month FROM game_world_reset_epochs WHERE reset_epoch=0; INSERT INTO game_world_reset_active SELECT world_id,1 FROM game_world_reset_epochs WHERE reset_epoch=1 ON CONFLICT(world_id) DO UPDATE SET reset_epoch=EXCLUDED.reset_epoch").await?;
+                let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements)).map_err(debug)?;
+                h.root.await_ready().await?;
+                assert!(h.root.refresh_highscore_schedule(world, catalogues.clone(), false).await.is_err(),
+                    "the first post-activation cut must be attempted despite the recent head");
+                h.root.await_ready().await?;
+                let after = h.root.refresh_highscore_schedule(world, catalogues.clone(), false).await.map_err(debug)?;
+                assert_eq!(after.snapshots.len(), first.snapshots.len());
+                h.root.await_ready().await?;
+                let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+                other.await_ready().await?;
+                let repeated = other.refresh_highscore_schedule(world, catalogues, false).await.map_err(debug)?;
+                assert!(repeated.snapshots.is_empty(), "another node must observe the already published epoch");
+                let heads: Vec<(i32, i64, i64)> = sqlx::query_as("SELECT category,current_snapshot_id,previous_snapshot_id FROM game_world_highscore_heads WHERE world_id=encode($1,'hex')::uuid ORDER BY category")
                     .bind(world.as_bytes().as_slice()).fetch_all(&h.pool).await?;
                 assert_eq!(heads.len(), first.snapshots.len(), "every supported category is retained");
                 for snapshot in first.snapshots {
-                    let head = heads.iter().find(|(category, _)| *category == i32::from(snapshot.category)).ok_or("missing head")?;
-                    assert!(u64::try_from(head.1)? > snapshot.snapshot_id, "the reset must force every category before requesting drain");
+                    let head = heads.iter().find(|(category, _, _)| *category == i32::from(snapshot.category)).ok_or("missing head")?;
+                    assert_eq!(u64::try_from(head.2)?, snapshot.snapshot_id);
+                    assert!(u64::try_from(head.1)? > snapshot.snapshot_id, "the activated epoch must refresh every category");
                 }
+                let character = CharacterId::decode(&id(CHARACTER)).map_err(debug)?;
+                h.root.await_ready().await?;
+                let page = h.root.read_highscore_page(world, 1, None, 1, 0, character).await.map_err(debug)?;
+                assert_eq!(page.own_row.ok_or("missing post-reset rank")?.value, (1005, 0));
                 Ok(())
             }.await;
             h.cleanup().await?;

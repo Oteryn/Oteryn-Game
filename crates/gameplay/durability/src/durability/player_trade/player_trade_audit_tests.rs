@@ -41,6 +41,7 @@ fn request() -> PlayerTradeRequest {
             key:Some(json!({"item_instance_id":uuid(30+n),"key_number":65535,"minted_transaction_id":uuid(60+n),"created_xact_id":"18446744073709551615"})),
             timed:Some(json!({"item_instance_id":uuid(30+n),"charges":65535,"remaining_ms":604800000,"deadline_at":null,
                 "state_revision":"18446744073709551615"})),text:Some(json!({"sha256":"f".repeat(64)})),
+            attributes:None,
             text_revision:Some(json!({"item_instance_id":uuid(30+n),"last_revision":"18446744073709551615"})),
         }}
     });

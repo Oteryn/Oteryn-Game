@@ -1398,8 +1398,7 @@ async fn public_projections_loop(
 /// Channel of the World never publishes early. Category 10 reads the activated Achievement
 /// catalogue. Category 11 is published only with an activated per-race Charm point source; none
 /// exists yet (CHARM-6), so it is withheld and its query is `NOT_SUPPORTED`. Planned reset
-/// cuts are awaited by `world_reset::serve_watching_reset` before requesting the drain;
-/// this periodic job's channel stays open for the serve lifetime.
+/// cuts become due when the durable reset epoch activates after the drain.
 async fn highscores_loop(
     root: &DurabilityRoot,
     world: crate::foundation::WorldId,

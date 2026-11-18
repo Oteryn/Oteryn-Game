@@ -42,7 +42,7 @@ impl SearchKernel {
         }
         loop {
             if let Some((index, order)) = self.current {
-                if usize::from(order) >= NEIGHBOURS.len() {
+                if usize::from(order) >= self.bounds.directions {
                     self.current = None;
                     continue;
                 }

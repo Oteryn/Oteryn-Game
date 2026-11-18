@@ -76,10 +76,9 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    if super::super::character_progression::assert_item_only_fence(
+                    let mut tx = super::super::db::begin_observation_transaction(holder, deadline).await?;
+                    super::super::character_authority::observe_recovery_fence(&mut tx, &recovery).await?;
+                    if super::super::character_progression::observe_item_only_fence(
                         &mut tx, &fence, &node,
                     )
                     .await?
@@ -129,7 +128,7 @@ impl DurabilityRoot {
                     if page.encode().is_err() {
                         return Ok(Err(CharacterAuthorityError::Rejected));
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    tx.rollback().await?;
                     Ok(Ok(page))
                 })
             })

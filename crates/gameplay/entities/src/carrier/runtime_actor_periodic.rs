@@ -426,12 +426,6 @@ impl ChannelRuntimeV1 {
                         now_us,
                     )?;
                     current_type.state.policy = after.policy.clone();
-                    had_damage |= damage > 0;
-                    if damage > 0 {
-                        after.conditions.remove_type(
-                            oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
-                        );
-                    }
                     let healed = health_after.saturating_sub(health_before_healing);
                     let damage = if let Some(tag) = soulpit {
                         tag.incoming_health_change(damage, health_after, before.maximum_health)?
@@ -439,6 +433,12 @@ impl ChannelRuntimeV1 {
                         damage
                     };
                     let applied = damage.min(health_after).max(0);
+                    had_damage |= applied > 0;
+                    if applied > 0 {
+                        after.conditions.remove_type(
+                            oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
+                        );
+                    }
                     self.record_periodic_contributor(
                         &mut contributors_after,
                         tick,
@@ -1281,10 +1281,17 @@ mod tests {
     }
 
     #[test]
-    fn enrage_periodic_lethal_health_matches_retained_receipt() {
+    fn enrage_periodic_damage_matches_receipt_and_preserves_zero_damage_state() {
         use super::super::soulpit::{SoulpitBossState, SoulpitCreatureTag};
         use oteryn_gameplay_domain::domain::soulpit::{BossAbility, SoulpitStack};
-        for (agony, damage) in [(false, 10), (true, 10), (false, 1000), (true, 1000)] {
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        for (agony, damage) in [
+            (false, 1),
+            (false, 10),
+            (true, 10),
+            (false, 1000),
+            (true, 1000),
+        ] {
             let (mut runtime, owner, session) = owner();
             let creature = runtime
                 .create_companion(
@@ -1365,10 +1372,79 @@ mod tests {
             } else {
                 install_dot(&mut runtime, creature, damage, 1);
             }
+            let ordinal_before = if damage == 1 {
+                let Slot::CreatureOccupied {
+                    health, committed, ..
+                } = &mut runtime.carrier.slots[index]
+                else {
+                    unreachable!()
+                };
+                *health = 73;
+                let ordinal = committed.next_ordinal;
+                let invisible = ConditionDefinition::new(
+                    "test.enrage.invisible",
+                    1,
+                    ConditionValues::Invisible { duration_ms: 3000 },
+                )
+                .unwrap();
+                let now = SemanticTimeMicros::from_micros(0);
+                let plan = runtime
+                    .prepare_actor_condition(
+                        creature,
+                        None,
+                        ActorConditionTransition::Apply {
+                            definition: &invisible,
+                            source: ConditionSource {
+                                actor: creature,
+                                session: None,
+                                kind: ConditionSourceKind::SelfUse,
+                            },
+                            immunities: &[],
+                            facts: ApplicationFacts {
+                                now: 0,
+                                base_speed: 220,
+                                mana_shield_capacity: 0,
+                                target_reentry_protected: false,
+                                source_reentry_protected: false,
+                                target_is_player: false,
+                                decision_root: &GameplayDecisionRoot::from_bytes([7; 32]),
+                                occurrence: DecisionOccurrenceId::from_bytes([6; 16]),
+                            },
+                        },
+                        now,
+                    )
+                    .unwrap();
+                runtime.commit_actor_condition(&plan, now).unwrap();
+                assert!(
+                    runtime
+                        .actor_conditions(creature, None)
+                        .unwrap()
+                        .invisible_at(1_000_000)
+                );
+                Some(ordinal)
+            } else {
+                None
+            };
             let turn = runtime
                 .stage_creature_periodic_turn(creature, 1_000_000, TickFacts::default())
                 .unwrap();
             let receipt = runtime.commit_creature_periodic_turn(turn).unwrap();
+            if let Some(ordinal) = ordinal_before {
+                assert_eq!(receipt.health_after, 73);
+                assert_eq!(receipt.impacts.len(), 1);
+                assert_eq!(receipt.impacts[0].damage, 0);
+                assert!(
+                    runtime
+                        .actor_conditions(creature, None)
+                        .unwrap()
+                        .invisible_at(1_000_000)
+                );
+                let Slot::CreatureOccupied { committed, .. } = &runtime.carrier.slots[index] else {
+                    unreachable!()
+                };
+                assert_eq!(committed.next_ordinal, ordinal);
+                continue;
+            }
             if damage == 10 {
                 assert_eq!(receipt.health_after, 24, "Enrage resolves each tick once");
                 assert_eq!(receipt.impacts.iter().map(|i| i.damage).sum::<u64>(), 6);

@@ -72,19 +72,24 @@ impl FieldAttackHistory {
         in_fight_ms: u32,
     ) -> Option<bool> {
         let window_us = u64::from(in_fight_ms) * 1000;
-        if self
-            .incomplete_at_us
-            .is_some_and(|at| now_us < at || now_us - at <= window_us)
-            || self.hits.iter().any(|hit| hit.at_us > now_us)
-        {
+        if self.hits.iter().any(|hit| hit.at_us > now_us) {
             return None;
         }
-        Some(self.hits.iter().any(|hit| {
+        if self.hits.iter().any(|hit| {
             hit.source == source
                 && hit.session == session
                 && hit.lease == lease
                 && now_us - hit.at_us <= window_us
-        }))
+        }) {
+            return Some(true);
+        }
+        if self
+            .incomplete_at_us
+            .is_some_and(|at| now_us < at || now_us - at <= window_us)
+        {
+            return None;
+        }
+        Some(false)
     }
     pub fn clear_on_lifecycle(&mut self) {
         self.hits.clear();

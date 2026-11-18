@@ -288,13 +288,15 @@ impl QualifiedNativeSpellWorld {
             .ok_or(StaticCellEngineError::Absent)
     }
     pub fn contains_capture_cell(&self, cell: LogicalCell) -> bool {
-        self.captured_regions
-            .iter()
-            .any(|&[min_x, min_y, max_x, max_y, min_z, max_z]| {
-                (min_x..=max_x).contains(&cell.x)
-                    && (min_y..=max_y).contains(&cell.y)
-                    && (min_z..=max_z).contains(&cell.z)
-            })
+        self.cells.contains_key(&cell)
+            || self
+                .captured_regions
+                .iter()
+                .any(|&[min_x, min_y, max_x, max_y, min_z, max_z]| {
+                    (min_x..=max_x).contains(&cell.x)
+                        && (min_y..=max_y).contains(&cell.y)
+                        && (min_z..=max_z).contains(&cell.z)
+                })
     }
     pub fn spell_tiles(&self) -> super::QualifiedSpellTiles {
         super::QualifiedSpellTiles::from_source_world(self)
@@ -591,9 +593,6 @@ pub fn qualify(
                 if let Some(known) = &tile {
                     world.immutable_tiles.insert(cell, known.clone());
                 }
-                world
-                    .captured_regions
-                    .push([cell.x, cell.y, cell.x, cell.y, cell.z, cell.z]);
                 world.cells.insert(cell, tile);
             }
         }
@@ -993,14 +992,23 @@ pub fn qualify(
         scope,
         temple,
         cells,
-        captured_regions: vec![[
-            doc.source_bounds[0] - doc.native_frame.origin_x,
-            doc.source_bounds[1] - doc.native_frame.origin_y,
-            doc.source_bounds[2] - doc.native_frame.origin_x,
-            doc.source_bounds[3] - doc.native_frame.origin_y,
-            -doc.source_bounds[5],
-            -doc.source_bounds[4],
-        ]],
+        captured_regions: if activity.is_some() {
+            doc.source_regions
+        } else {
+            vec![doc.source_bounds]
+        }
+        .into_iter()
+        .map(|[x0, y0, x1, y1, z0, z1]| {
+            [
+                x0 - doc.native_frame.origin_x,
+                y0 - doc.native_frame.origin_y,
+                x1 - doc.native_frame.origin_x,
+                y1 - doc.native_frame.origin_y,
+                -z1,
+                -z0,
+            ]
+        })
+        .collect(),
         bindings: doc.source_identity_bindings,
         immutable_tiles,
         pending_placements,
@@ -1470,6 +1478,49 @@ mod tests {
         let mut substituted = ENDGAME_SOURCE.to_vec();
         substituted.push(b' ');
         assert!(qualify_endgame_region(&substituted, scope()).is_err());
+    }
+
+    #[test]
+    fn vemiath_spell_tiles_leave_capture_gaps_unknown() -> Result<(), ProjectError> {
+        let room = PinnedActivitySourceRoom::Vemiath;
+        let (frame, map) = source_frame(room.bytes())?;
+        let mut current = scope();
+        current.coordinate_frame =
+            crate::content::CoordinateFrameRef::new(&frame).map_err(|_| invalid())?;
+        current.map_revision = crate::content::MapRevisionRef::new(&map).map_err(|_| invalid())?;
+        let world = qualify(room.bytes(), current)?;
+        let gap = LogicalCell {
+            x: 33053,
+            y: 32330,
+            z: -15,
+        };
+        assert_eq!(
+            world.spell_tiles().lookup(world.scope(), gap),
+            Err(super::super::native_spell_tiles::SpellTileLookupError::Unknown)
+        );
+        assert!(!world.contains_capture_cell(gap));
+        Ok(())
+    }
+
+    #[test]
+    fn combined_spell_lookup_indexes_discrete_cells_without_singleton_rectangles() {
+        let bundle = serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1",
+            "channel": std::str::from_utf8(SOURCE).unwrap(),
+            "primal": std::str::from_utf8(PRIMAL_SOURCE).unwrap(),
+            "endgame": std::str::from_utf8(ENDGAME_SOURCE).unwrap(),
+        }))
+        .unwrap();
+        let world = qualify(&bundle, scope()).unwrap();
+        let tiles = world.spell_tiles();
+        let (&cell, _) = world
+            .cells
+            .iter()
+            .rev()
+            .find(|(_, tile)| tile.is_some())
+            .unwrap();
+        assert!(tiles.lookup(world.scope(), cell).is_ok());
+        assert_eq!(world.captured_regions().len(), 1);
     }
 
     #[test]

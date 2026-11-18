@@ -40,6 +40,8 @@ pub struct TradeLeaf {
     timed: Option<Value>,
     text: Option<Value>,
     text_revision: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    attributes: Option<Value>,
 }
 
 impl TradeLeaf {

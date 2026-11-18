@@ -84,6 +84,7 @@ impl MonsterThinkReader for NativeMonsterThinkRead<'_, '_, '_> {
                 from.position(),
                 to.position(),
                 false,
+                true,
                 &mut reader,
                 self.budget,
             )
