@@ -94,7 +94,7 @@ DO $$ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION game_boss_death_quest_skip_create_guard() FROM PUBLIC;
 
--- Only an incompatible definition records a terminal no-grant result.
+-- These terminal results let replay avoid re-evaluating historical quest state.
 CREATE TABLE game_boss_death_quest_skips (
     world_id UUID NOT NULL,
     death_id UUID NOT NULL,
@@ -102,7 +102,7 @@ CREATE TABLE game_boss_death_quest_skips (
     quest_key TEXT NOT NULL CHECK(quest_key='oteryn:quest.elemental_spheres_quest'),
     definition_hash BYTEA NOT NULL CHECK(octet_length(definition_hash)=32),
     request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=33),
-    reason TEXT NOT NULL CHECK(reason='incompatible_definition'),
+    reason TEXT NOT NULL CHECK(reason IN ('already_flagged','incompatible_definition')),
     created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
     PRIMARY KEY(world_id,death_id,character_id,quest_key),
     FOREIGN KEY(world_id,death_id) REFERENCES game_boss_death_settlements(world_id,death_id)

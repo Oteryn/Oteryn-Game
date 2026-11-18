@@ -1021,5 +1021,13 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             "each death settles without XP or chests"
         );
     }
+    if already_flagged {
+        let skipped: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_boss_death_quest_skips WHERE reason='already_flagged'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(skipped, 2, "the later death records one no-op per damager");
+    }
     Ok(())
 }

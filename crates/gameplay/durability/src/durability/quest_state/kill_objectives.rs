@@ -359,9 +359,15 @@ pub async fn apply_batch_in_transaction(
             )
             .is_none()
             {
-                let death = boss_death_id(source, &current)?;
-                sqlx::query("INSERT INTO game_boss_death_quest_skips(world_id,death_id,character_id,quest_key,definition_hash,request_binding,reason) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,'incompatible_definition') ON CONFLICT(world_id,death_id,character_id,quest_key) DO NOTHING")
-                    .bind(current.runtime_scope.world_id().as_bytes().as_slice()).bind(death.as_slice()).bind(current.character_id.as_bytes().as_slice()).bind(rule.quest()).bind(hash.as_slice()).bind(binding.as_slice()).execute(&mut **tx).await.map_err(DurabilityError::from)?;
+                record_overlord_skip(
+                    tx,
+                    &current,
+                    source,
+                    &hash,
+                    &binding,
+                    "incompatible_definition",
+                )
+                .await?;
                 return Ok(None);
             }
         }
@@ -449,6 +455,10 @@ pub async fn apply_batch_in_transaction(
         if !(definition.min..=definition.max).contains(&value) {
             return Err(DurabilityError::InvalidStoredState.into());
         }
+        if matches!(rule, Binding::Overlord(_)) && value == 1 {
+            record_overlord_skip(tx, &current, source, &hash, &binding, "already_flagged").await?;
+            return Ok(None);
+        }
         merged.insert(
             phase.into(),
             QuestTrackChange {
@@ -489,6 +499,28 @@ pub async fn apply_batch_in_transaction(
         .await?
         .ok_or(DurabilityError::InvalidStoredState)?;
     Ok(Some(decode_receipt(&row)?))
+}
+
+async fn record_overlord_skip(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterGameplayFence,
+    source: &NativeObjectiveDeath,
+    definition_hash: &[u8; 32],
+    binding: &[u8; 33],
+    reason: &str,
+) -> StoredResult<()> {
+    let death = boss_death_id(source, fence)?;
+    sqlx::query("INSERT INTO game_boss_death_quest_skips(world_id,death_id,character_id,quest_key,definition_hash,request_binding,reason) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'oteryn:quest.elemental_spheres_quest',$4,$5,$6)")
+        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+        .bind(death.as_slice())
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(definition_hash.as_slice())
+        .bind(binding.as_slice())
+        .bind(reason)
+        .execute(&mut **tx)
+        .await
+        .map_err(DurabilityError::from)?;
+    Ok(())
 }
 
 async fn authorize(
