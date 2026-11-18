@@ -6,7 +6,7 @@ pub(super) use backlog::ScreenshotRuntime;
 use std::{
     fs::OpenOptions,
     io::{self, BufWriter, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
 };
 
@@ -36,34 +36,16 @@ impl Pixels {
     }
 
     pub fn save(&self, folder: &str) -> io::Result<PathBuf> {
-        let default_folder = std::env::var_os("LOCALAPPDATA")
-            .map(PathBuf::from)
-            .unwrap_or_else(std::env::temp_dir)
-            .join("Oteryn/screenshots");
-        let folder = if folder.is_empty() {
-            default_folder
-                .to_str()
-                .ok_or_else(|| io::Error::other("Invalid screenshot folder"))?
-        } else {
-            folder
-        };
+        self.save_to(&screenshot_directory(folder)?)
+    }
 
-        if folder.trim().is_empty() {
-            return Err(io::Error::other(tr!("Choose a screenshot folder")));
-        }
-        if !std::path::Path::new(folder).is_absolute() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Choose an absolute screenshot folder",
-            ));
-        }
-        std::fs::create_dir_all(folder)?;
+    fn save_to(&self, folder: &Path) -> io::Result<PathBuf> {
         static SEQUENCE: AtomicU64 = AtomicU64::new(0);
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(io::Error::other)?
             .as_nanos();
-        let path = PathBuf::from(folder).join(format!(
+        let path = folder.join(format!(
             "oteryn-{stamp}-{}-{}.bmp",
             std::process::id(),
             SEQUENCE.fetch_add(1, Ordering::Relaxed)
@@ -108,6 +90,48 @@ impl Pixels {
         }
         Ok(())
     }
+}
+
+fn screenshot_directory(folder: &str) -> io::Result<PathBuf> {
+    let folder = if folder.is_empty() {
+        let local = std::env::var_os("LOCALAPPDATA");
+        #[cfg(unix)]
+        if local.is_none() {
+            return private_capture_directory();
+        }
+        local.map_or_else(std::env::temp_dir, PathBuf::from).join("Oteryn/screenshots")
+    } else if folder.trim().is_empty() {
+        return Err(io::Error::other(tr!("Choose a screenshot folder")));
+    } else {
+        PathBuf::from(folder)
+    };
+
+    if !folder.is_absolute() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Choose an absolute screenshot folder",
+        ));
+    }
+    std::fs::create_dir_all(&folder)?;
+    Ok(folder)
+}
+
+/// Create the fallback with private permissions from its first moment on a shared temp volume.
+#[cfg(unix)]
+fn private_capture_directory() -> io::Result<PathBuf> {
+    use std::{os::unix::fs::DirBuilderExt, time::{SystemTime, UNIX_EPOCH}};
+    static SEQUENCE: AtomicU64 = AtomicU64::new(0);
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(io::Error::other)?
+        .as_nanos();
+    let folder = std::env::temp_dir().join(format!(
+        "oteryn-screenshots-{}-{stamp}-{}",
+        std::process::id(),
+        SEQUENCE.fetch_add(1, Ordering::Relaxed),
+    ));
+    std::fs::DirBuilder::new().mode(0o700).create(&folder)?;
+    Ok(folder)
 }
 
 pub trait CaptureSource {

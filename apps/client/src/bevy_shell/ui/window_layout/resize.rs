@@ -104,8 +104,7 @@ pub(super) fn reshape(
     let preferred = layout.size.unwrap_or(Vec2::new(layout.width(), size.y));
     layout.resize(requested, viewport);
     let next = layout.size.unwrap_or(size);
-    let clipped_untouched_axis = side.cmpeq(Vec2::ZERO) & preferred.cmpgt(viewport);
-    layout.size = Some(Vec2::select(clipped_untouched_axis, preferred, next));
+    layout.size = Some(Vec2::select(side.cmpeq(Vec2::ZERO), preferred, next));
     Vec2::select(side.cmplt(Vec2::ZERO), position + size - next, position)
 }
 

@@ -230,11 +230,13 @@ fn every_edge_and_corner_resizes_and_keeps_the_opposite_edge() -> TestResult {
     for ((name, side, _), (label, position, size)) in SIDES.into_iter().zip(expected) {
         assert_eq!(name, label);
         let mut market = layout("market")?;
+        market.size = Some(origin.1);
         let top_left = reshape(&mut market, side, origin, drag, screen);
         assert_eq!((top_left, market.size), (position, Some(size)), "{name}");
     }
     // The minimum holds and the right edge stays put while the left edge stops.
     let mut market = layout("market")?;
+    market.size = Some(origin.1);
     let top_left = reshape(
         &mut market,
         IVec2::new(-1, 0),
@@ -1710,6 +1712,145 @@ fn held_layout_lock_does_not_block_exit_schedule() -> TestResult {
     assert_eq!(still_saved, saved);
     app.world_mut().write_message(AppExit::Success);
     app.update();
+    assert_eq!(
+        WindowLayouts::load(&path)?.0["market"].offset,
+        Vec2::new(12., 34.)
+    );
+    std::fs::remove_dir_all(path.parent().ok_or("directory")?)?;
+    Ok(())
+}
+
+#[test]
+fn bottom_grip_preserves_width_under_market_percentage_cap() -> TestResult {
+    let (mut app, path, _) = saved_market("market-cap")?;
+    WindowLayouts::default().save(&path)?;
+    stacking::ui_layout(&mut app, UVec2::new(1024, 900));
+    let screen = app
+        .world_mut()
+        .spawn((
+            Window {
+                resolution: (1024, 900).into(),
+                ..default()
+            },
+            PrimaryWindow,
+        ))
+        .id();
+    let panel = app
+        .world_mut()
+        .spawn(window(
+            "market",
+            Node {
+                max_width: percent(96.),
+                max_height: percent(94.),
+                ..default()
+            },
+        ))
+        .id();
+    app.update();
+    let width = app
+        .world()
+        .get::<ComputedNode>(panel)
+        .ok_or("panel")?
+        .size()
+        .x;
+    assert!((982. ..=984.).contains(&width), "{width}");
+    drag_grip(&mut app, panel, IVec2::Y, Vec2::new(0., 66.))?;
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    assert_eq!(
+        WindowLayouts::load(&path)?.0["market"].size,
+        Some(Vec2::new(1000., 700.))
+    );
+    app.world_mut()
+        .get_mut::<Window>(screen)
+        .ok_or("screen")?
+        .resolution
+        .set(1400., 900.);
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(panel).ok_or("panel")?.width,
+        px(1000.)
+    );
+    std::fs::remove_dir_all(path.parent().ok_or("directory")?)?;
+    Ok(())
+}
+
+#[test]
+fn concurrent_market_resizes_and_moves_merge_each_axis() -> TestResult {
+    let (mut first, path, _) = saved_market("concurrent-axes")?;
+    let (mut second, _, _) = saved_market("concurrent-axes")?;
+    WindowLayouts::default().save(&path)?;
+    for (app, side, distance, offset) in [
+        (
+            &mut first,
+            IVec2::X,
+            Vec2::new(100., 0.),
+            Vec2::new(12., 0.),
+        ),
+        (
+            &mut second,
+            IVec2::Y,
+            Vec2::new(0., 66.),
+            Vec2::new(0., 34.),
+        ),
+    ] {
+        stacking::ui_layout(app, UVec2::new(1600, 900));
+        app.world_mut().spawn((
+            Window {
+                resolution: (1600, 900).into(),
+                ..default()
+            },
+            PrimaryWindow,
+        ));
+        let panel = app.world_mut().spawn(window("market", default())).id();
+        app.update();
+        drag_grip(app, panel, side, distance)?;
+        app.update();
+        app.world_mut()
+            .get_mut::<UiTransform>(panel)
+            .ok_or("panel")?
+            .translation = Val2::px(offset.x, offset.y);
+    }
+    for app in [&mut first, &mut second] {
+        app.world_mut().write_message(AppExit::Success);
+        app.update();
+    }
+    let market = WindowLayouts::load(&path)?.0["market"];
+    assert_eq!(
+        (market.size, market.offset),
+        (Some(Vec2::new(1100., 700.)), Vec2::new(12., 34.))
+    );
+    std::fs::remove_dir_all(path.parent().ok_or("directory")?)?;
+    Ok(())
+}
+
+#[test]
+fn window_close_waits_for_pending_move_to_be_saved() -> TestResult {
+    let (mut app, path, saved) = saved_market("close-busy")?;
+    install_close(&mut app);
+    let screen = app
+        .world_mut()
+        .spawn((Window::default(), PrimaryWindow))
+        .id();
+    let panel = app.world_mut().spawn(window("market", default())).id();
+    app.update();
+    app.world_mut()
+        .get_mut::<UiTransform>(panel)
+        .ok_or("panel")?
+        .translation = Val2::px(12., 34.);
+    let lock = std::fs::File::options()
+        .read(true)
+        .write(true)
+        .open(path.with_extension("json.lock"))?;
+    lock.lock()?;
+    app.world_mut()
+        .write_message(bevy::window::WindowCloseRequested { window: screen });
+    app.update();
+    assert_eq!(app.should_exit(), None);
+    assert_eq!(WindowLayouts::load(&path)?, saved);
+    drop(lock);
+    app.update();
+    assert_eq!(app.should_exit(), Some(AppExit::Success));
     assert_eq!(
         WindowLayouts::load(&path)?.0["market"].offset,
         Vec2::new(12., 34.)

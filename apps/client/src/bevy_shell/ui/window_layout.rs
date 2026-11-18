@@ -3,6 +3,7 @@
 //! The shared module layout state registers and persists these entries; until
 //! then the entries live here and every window derives its sizes from them.
 use bevy::{
+    ecs::message::MessageCursor,
     input::mouse::AccumulatedMouseScroll,
     picking::{hover::HoverMap, pointer::PointerId},
     prelude::*,
@@ -493,6 +494,24 @@ fn load_layouts(
     loaded.layouts = Some(layouts.clone());
 }
 
+#[derive(Default)]
+struct ExitSave {
+    reader: MessageCursor<AppExit>,
+    deferred: Option<AppExit>,
+}
+
+impl ExitSave {
+    fn retain(&mut self, exits: &mut Messages<AppExit>) {
+        for exit in exits.drain() {
+            if self.deferred.is_none()
+                || (exit.is_error() && self.deferred.as_ref().is_some_and(AppExit::is_success))
+            {
+                self.deferred = Some(exit);
+            }
+        }
+    }
+}
+
 /// Observe edits after the final resize correction, including on the exit frame.
 fn persist(
     owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
@@ -500,22 +519,26 @@ fn persist(
     layouts: Res<WindowLayouts>,
     mut loaded: ResMut<SavedBaseline>,
     mut pending: Local<Option<std::time::Duration>>,
-    mut exits: MessageReader<AppExit>,
+    mut exits: ResMut<Messages<AppExit>>,
+    mut exit_save: Local<ExitSave>,
 ) {
-    let exiting = exits.read().count() > 0;
-    let Some(baseline) = loaded.layouts.as_ref() else {
-        return;
-    };
-    if !loaded.reset_pending && baseline == &*layouts {
-        *pending = None;
-        return;
+    let new_exit = exit_save.reader.read(&exits).count() > 0;
+    let exiting = new_exit || exit_save.deferred.is_some();
+    if exit_save.deferred.is_some() {
+        exit_save.retain(&mut exits);
     }
-    if layouts.is_changed() || pending.is_none() {
-        *pending = Some(time.elapsed());
-    }
-    if pending.is_some_and(|since| exiting || time.elapsed().saturating_sub(since) >= SAVE_DELAY)
+    if let Some(baseline) = loaded.layouts.as_ref()
+        && (loaded.reset_pending || baseline != &*layouts)
         && let Some(path) = owner.and_then(|owner| owner.window_layouts_path())
     {
+        if layouts.is_changed() || pending.is_none() {
+            *pending = Some(time.elapsed());
+        }
+        if !exiting
+            && pending.is_some_and(|since| time.elapsed().saturating_sub(since) < SAVE_DELAY)
+        {
+            return;
+        }
         let result = WindowLayouts::locked(&path, || {
             if loaded.reset_pending {
                 return layouts.publish(&path);
@@ -529,14 +552,21 @@ fn persist(
                     continue;
                 };
                 if layout.size != before.size {
-                    saved.size = layout.size;
+                    saved.size = match (before.size, layout.size, saved.size) {
+                        (Some(before), Some(edited), Some(latest)) => {
+                            Some(Vec2::select(edited.cmpne(before), edited, latest))
+                        }
+                        _ => layout.size,
+                    };
                 }
                 if layout.zoom != before.zoom {
                     saved.zoom = layout.zoom;
                 }
-                if layout.offset != before.offset {
-                    saved.offset = layout.offset;
-                }
+                saved.offset = Vec2::select(
+                    layout.offset.cmpne(before.offset),
+                    layout.offset,
+                    saved.offset,
+                );
             }
             latest.publish(&path)
         });
@@ -548,11 +578,23 @@ fn persist(
             }
             Err(error) => {
                 *pending = Some(time.elapsed());
-                if error.kind() != io::ErrorKind::WouldBlock {
+                if error.kind() == io::ErrorKind::WouldBlock {
+                    if exiting {
+                        // The runner checks AppExit after this schedule. Keep the request
+                        // here until a later frame can finish the save.
+                        exit_save.retain(&mut exits);
+                        return;
+                    }
+                } else {
                     leprintln!("Could not save window layout: {error}", error = error);
                 }
             }
         }
+    } else {
+        *pending = None;
+    }
+    if let Some(exit) = exit_save.deferred.take() {
+        exits.write(exit);
     }
 }
 

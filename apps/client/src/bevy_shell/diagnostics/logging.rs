@@ -429,6 +429,14 @@ mod tests {
         tracing::subscriber::with_default(test_subscriber(&writers[1], "info"), || {
             tracing::warn!("contended foreground log");
         });
+        assert!(
+            crate::crash_report::recent_log_lines(crate::crash_report::RECENT_LINES)
+                .iter()
+                .any(|line| line.contains("contended foreground log"))
+        );
+        let log = format!("client-{date}.log");
+        assert_eq!(fs::read_to_string(directory.join(&log))?, "first line\n");
+        assert_eq!(names(&directory)?, vec![log]);
         let result = writers[1].write_dated(date, "contended line\n");
         finished.send(())?;
         holder.join().map_err(|_| "lock holder panicked")??;

@@ -109,11 +109,19 @@ fn game_only_crops_rendered_pixels_and_write_errors_reach_player() -> TestResult
 fn death_event_captures_without_f12_and_deduplicates() -> TestResult {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join(format!(".audit-screenshots-auto-{}", std::process::id()));
-    let mut app = app(&root, true)?;
+    capture_death(&root, false)?;
+    assert_eq!(std::fs::read_dir(&root)?.count(), 1);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+fn capture_death(destination: &std::path::Path, backlog: bool) -> TestResult {
+    let mut app = app(destination, true)?;
     let (link, _, outbox) = crate::play::play_channel();
     {
         let mut owner = app.world_mut().non_send_mut::<HostOwner>();
         owner.settings.preferences.screenshots.on_death = true;
+        owner.settings.preferences.screenshots.backlog_frames = u8::from(backlog);
         owner.play = Some(crate::bevy_shell::owner::ActivePlay {
             link,
             view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?,
@@ -137,8 +145,19 @@ fn death_event_captures_without_f12_and_deduplicates() -> TestResult {
             .query::<&Screenshot>()
             .iter(app.world())
             .count(),
-        0
+        usize::from(backlog)
     );
+    if backlog {
+        let entity = app
+            .world_mut()
+            .query_filtered::<Entity, With<Screenshot>>()
+            .single(app.world())?;
+        app.world_mut().trigger(ScreenshotCaptured {
+            entity,
+            image: frame(),
+        });
+        app.world_mut().despawn(entity);
+    }
     outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
         oteryn_session::AppliedDelta {
             server_sequence: 2,
@@ -162,7 +181,10 @@ fn death_event_captures_without_f12_and_deduplicates() -> TestResult {
     });
     app.world_mut().despawn(entity);
     app.update();
-    assert_eq!(std::fs::read_dir(&root)?.count(), 1);
+    assert_eq!(
+        app.world().non_send::<HostOwner>().status,
+        format!("Saved {} screenshot(s)", 1 + usize::from(backlog))
+    );
     assert_eq!(
         app.world_mut()
             .query::<&Screenshot>()
@@ -170,7 +192,6 @@ fn death_event_captures_without_f12_and_deduplicates() -> TestResult {
             .count(),
         0
     );
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -178,7 +199,10 @@ fn death_event_captures_without_f12_and_deduplicates() -> TestResult {
 #[test]
 fn f12_without_config_home_saves_capture() -> TestResult {
     const CHILD: &str = "OTERYN_TEST_F12_NO_HOME";
-    if std::env::var_os(CHILD).is_none() {
+    if std::env::var_os(CHILD).is_none()
+        || crate::play::PreferenceStore::path().is_some()
+        || std::env::var_os("LOCALAPPDATA").is_some()
+    {
         let root = std::env::temp_dir().join(format!("oteryn-f12-no-home-{}", std::process::id()));
         std::fs::create_dir(&root)?;
         let status = std::process::Command::new("sh")
@@ -211,6 +235,86 @@ fn f12_without_config_home_saves_capture() -> TestResult {
     assert!(path.is_file());
     let parent = path.parent().ok_or("capture directory")?;
     assert_eq!(parent.metadata()?.permissions().mode() & 0o077, 0);
-    std::fs::remove_dir_all(parent)?;
+    assert_eq!(parent.parent(), Some(std::env::temp_dir().as_path()));
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn death_with_backlog_uses_a_private_fallback() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+    const CHILD: &str = "OTERYN_TEST_DEATH_NO_HOME";
+    if std::env::var_os(CHILD).is_some()
+        && crate::play::PreferenceStore::path().is_none()
+        && std::env::var_os("LOCALAPPDATA").is_none()
+    {
+        return capture_death(std::path::Path::new(""), true);
+    }
+    let root = std::env::temp_dir().join(format!("oteryn-death-no-home-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    let status = std::process::Command::new("sh")
+        .args(["-c", r#"umask 022; exec "$@""#, "sh"])
+        .arg(std::env::current_exe()?)
+        .args([
+            "--exact",
+            "bevy_shell::screenshots::tests::death_with_backlog_uses_a_private_fallback",
+        ])
+        .env(CHILD, "1")
+        .env("TMPDIR", &root)
+        .env_remove("HOME")
+        .env_remove("LOCALAPPDATA")
+        .env_remove("XDG_CONFIG_HOME")
+        .status()?;
+    assert!(status.success());
+    let mut pending = vec![root.clone()];
+    let mut captures = 0;
+    while let Some(directory) = pending.pop() {
+        for entry in std::fs::read_dir(&directory)? {
+            let entry = entry?;
+            if entry.file_type()?.is_dir() {
+                pending.push(entry.path());
+            } else if entry.path().extension().is_some_and(|ext| ext == "bmp") {
+                assert_eq!(directory.metadata()?.permissions().mode() & 0o077, 0);
+                assert_eq!(&std::fs::read(entry.path())?[..2], b"BM");
+                captures += 1;
+            }
+        }
+    }
+    assert_eq!(captures, 2);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn inherited_f12_marker_preserves_existing_captures() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+    let root = std::env::temp_dir().join(format!("oteryn-f12-marker-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    let config = if cfg!(target_os = "macos") {
+        root.join("Library/Application Support")
+    } else {
+        root.join(".config")
+    };
+    let screenshots = config.join("Oteryn/screenshots");
+    std::fs::create_dir_all(&screenshots)?;
+    std::fs::set_permissions(&screenshots, std::fs::Permissions::from_mode(0o700))?;
+    let existing = screenshots.join("existing.bmp");
+    std::fs::write(&existing, b"existing capture")?;
+    let status = std::process::Command::new(std::env::current_exe()?)
+        .args([
+            "--exact",
+            "bevy_shell::screenshots::tests::f12_without_config_home_saves_capture",
+        ])
+        .env("OTERYN_TEST_F12_NO_HOME", "1")
+        .env("HOME", &root)
+        .env("TMPDIR", &root)
+        .env_remove("LOCALAPPDATA")
+        .env_remove("XDG_CONFIG_HOME")
+        .status();
+    let preserved = std::fs::read(&existing);
+    std::fs::remove_dir_all(root)?;
+    assert!(status?.success());
+    assert_eq!(preserved?, b"existing capture");
     Ok(())
 }
