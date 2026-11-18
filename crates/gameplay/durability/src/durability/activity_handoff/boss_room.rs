@@ -6,7 +6,7 @@ use super::super::boss_encounter::cooldown_storage::{
 };
 use super::*;
 use oteryn_gameplay_encounter_rules::boss_room::{
-    AdmissionRefusal, BossRoomPolicy, ParticipantFact, plan_fresh_room,
+    AdmissionRefusal, BossRoomPolicy, ParticipantFact, plan_fresh_room, plan_window_entrant,
 };
 
 mod quest_entry;
@@ -137,7 +137,7 @@ impl ActivityHandoffOwner {
                             server_artifact_digest: bytes32(row.try_get("server_artifact_digest")?)?,
                         })
                     } else { origin_pin };
-                    let result = read_definition(&mut tx, &key, fence.runtime_scope.world_id(), &current.content_revision, origin_pin).await?;
+                    let result = read_definition(&mut tx, &key, fence.runtime_scope.world_id(), &current.content_revision, origin_pin, false).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(result)
                 })
@@ -312,6 +312,7 @@ async fn read_definition(
     world: crate::foundation::WorldId,
     content_revision: &str,
     origin_pin: Option<ActivityContentPin>,
+    window: bool,
 ) -> Result<Option<BossRoomDefinition>> {
     // Any production publication closes the legacy fallback for this World/boss,
     // including when the current revision/frame has no qualified publication.
@@ -354,7 +355,7 @@ async fn read_definition(
     let maximum_players = usize::try_from(row.try_get::<i16, _>("maximum_players")?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     if lever_positions.len() != entry_positions.len()
-        || entry_positions.len() < maximum_players
+        || (!window && entry_positions.len() < maximum_players)
         || !revision_valid(&template_revision)
     {
         return Ok(None);
@@ -419,6 +420,7 @@ pub(super) async fn prepare_in_transaction<
     tx: &mut Transaction<'_, Postgres>,
     r: &ActivityEnterRequest,
     now: i64,
+    window: bool,
     premium: &G,
 ) -> Result<std::result::Result<BossAdmissionPlan, ActivityRefusal>> {
     let Some(initiator) = r
@@ -474,6 +476,7 @@ pub(super) async fn prepare_in_transaction<
         initiator.source.runtime_scope.world_id(),
         &r.content_revision,
         Some(origin_pin),
+        window,
     )
     .await?
     else {
@@ -540,11 +543,13 @@ pub(super) async fn prepare_in_transaction<
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
         });
     }
-    if let Err(reason) = plan_fresh_room(
-        &definition.policy,
-        &facts,
-        u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?,
-    ) {
+    let now_ms = u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let admission = if window {
+        plan_window_entrant(&definition.policy, &facts[0], now_ms)
+    } else {
+        plan_fresh_room(&definition.policy, &facts, now_ms)
+    };
+    if let Err(reason) = admission {
         return Ok(Err(match reason {
             AdmissionRefusal::Count => ActivityRefusal::PartyCount,
             AdmissionRefusal::Level => ActivityRefusal::Level,

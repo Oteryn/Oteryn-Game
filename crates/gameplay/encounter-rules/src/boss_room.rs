@@ -45,6 +45,24 @@ pub fn plan_fresh_room(
     participants: &[ParticipantFact],
     now_ms: u64,
 ) -> Result<FreshRoomPlan, AdmissionRefusal> {
+    plan_room_entry(policy, participants, now_ms, policy.maximum_players)
+}
+
+/// A timed portal can reuse one source cell for each independent admission.
+pub fn plan_window_entrant(
+    policy: &BossRoomPolicy,
+    participant: &ParticipantFact,
+    now_ms: u64,
+) -> Result<FreshRoomPlan, AdmissionRefusal> {
+    plan_room_entry(policy, std::slice::from_ref(participant), now_ms, 1)
+}
+
+fn plan_room_entry(
+    policy: &BossRoomPolicy,
+    participants: &[ParticipantFact],
+    now_ms: u64,
+    required_source_cells: usize,
+) -> Result<FreshRoomPlan, AdmissionRefusal> {
     if policy.minimum_players == 0
         || policy.minimum_players > policy.maximum_players
         || policy.maximum_players > 15
@@ -53,7 +71,7 @@ pub fn plan_fresh_room(
         || policy.time_limit_ms == 0
         || policy.time_limit_ms > 86_400_000
         || now_ms > i64::MAX as u64
-        || policy.lever_positions.len() < policy.maximum_players
+        || policy.lever_positions.len() < required_source_cells
     {
         return Err(AdmissionRefusal::InvalidPolicy);
     }
@@ -153,6 +171,23 @@ mod tests {
         let mut first = fact(1, 1);
         first.level = 0;
         plan_fresh_room(&policy, &[first, fact(2, 2)], 100)?;
+        Ok(())
+    }
+
+    #[test]
+    fn window_reuses_one_source_cell_without_weakening_fixed_admission()
+    -> Result<(), AdmissionRefusal> {
+        let mut portal = policy();
+        portal.minimum_players = 1;
+        portal.lever_positions.truncate(1);
+        for character in [1, 2] {
+            let entered = plan_window_entrant(&portal, &fact(character, 1), 100)?;
+            assert_eq!(entered.participants, vec![[character; 16]]);
+        }
+        assert_eq!(
+            plan_fresh_room(&portal, &[fact(1, 1)], 100),
+            Err(AdmissionRefusal::InvalidPolicy)
+        );
         Ok(())
     }
 

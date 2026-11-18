@@ -180,11 +180,9 @@ async fn install_pager_room(
     let world = template.destination_scope.world_id();
     let pin = template.destination_content;
     let cell = |x, y| serde_json::json!({"x":x,"y":y,"floor":7});
-    let levers: Vec<_> = (0..capacity).map(|offset| cell(100 + offset, 101)).collect();
-    let entries: Vec<_> = (0..capacity).map(|_| cell(200, 201)).collect();
     sqlx::query("INSERT INTO game_boss_room_catalogue(boss_key,content_revision,boss_creature_key,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,lever_positions,room_template_key,reward_key,enabled,template_revision,entry_positions,exit_position,boss_position,after_kill_seconds) VALUES($1,'content-1','fixture:pager_boss',1,$7,0,$8,$9,$2,'fixture:pager_room','fixture:pager_reward',true,$3,$4,$5,$6,1)")
-        .bind(BOSS).bind(serde_json::json!(levers))
-        .bind(&template.template_revision).bind(serde_json::json!(entries))
+        .bind(BOSS).bind(serde_json::json!([cell(100,101)]))
+        .bind(&template.template_revision).bind(serde_json::json!([cell(200,201)]))
         .bind(cell(102,103)).bind(cell(201,201)).bind(capacity).bind(cooldown_seconds).bind(time_limit_seconds).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'activity-pager-fixture',$2,$3,$4,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
         .bind(world.as_bytes().as_slice()).bind(pin.server_artifact_digest.as_slice())

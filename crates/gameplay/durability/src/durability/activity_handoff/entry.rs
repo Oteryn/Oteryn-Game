@@ -353,7 +353,7 @@ pub(super) async fn enter_in_transaction<
     }
     let now = quest_activity_now_ms(tx, root).await?;
     let boss_plan = if mode.is_boss() {
-        match super::boss_room::prepare_in_transaction(tx, r, now, premium).await? {
+        match super::boss_room::prepare_in_transaction(tx, r, now, window_ms.is_some(), premium).await? {
             Ok(plan) => Some(plan),
             Err(reason) => return Ok(ActivityEnterOutcome::Refused(reason)),
         }

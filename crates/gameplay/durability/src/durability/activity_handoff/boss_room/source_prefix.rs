@@ -120,7 +120,7 @@ impl ActivityHandoffOwner {
                 server_artifact_digest:source.server_artifact_digest,
             };
             let Some(definition)=read_definition(&mut tx,&expected.boss_key,
-                initiator.source.runtime_scope.world_id(),&current.content_revision,Some(origin_pin)).await? else {return Ok(None)};
+                initiator.source.runtime_scope.world_id(),&current.content_revision,Some(origin_pin), false).await? else {return Ok(None)};
             if definition!=expected || source_kind(&definition)!=Some(kind) {return Ok(None)}
             let scope=participants[0].source.runtime_scope;
             let generation=participants[0].source.scope_ownership_generation;
