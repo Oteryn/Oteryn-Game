@@ -317,6 +317,20 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         .await
         .map_err(debug)?;
     owner.admit_progression_session(&mut admitted).await;
+    if let Some((actor, session, _, _)) = contributor {
+        let mut peer_admitted = super::AdmittedSession {
+            game_session_id: session,
+            runtime_actor: Some(actor),
+            controller: None,
+            item_fence: None,
+            ..admitted
+        };
+        owner.admit_progression_session(&mut peer_admitted).await;
+        assert!(
+            owner.progression_binding(session).is_some(),
+            "peer progression admission"
+        );
+    }
     deps.initialize(&owner).await;
     let session = admitted.game_session_id;
     if rule.top_damage_only && !seeds.is_empty() {
