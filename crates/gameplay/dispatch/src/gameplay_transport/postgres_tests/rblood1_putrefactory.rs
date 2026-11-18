@@ -7,6 +7,8 @@ use crate::map::overlay::TilePos;
 use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+// Quest definition hash from the fetched rblood1 base, with the original non-spending gate.
+const BASE_QUEST_HASH: &str = "d3b144ae3f2a23843835844329a68e21cec90ebcee965cb131185c265d5c793d";
 const COUNTER: &str =
     "oteryn:quest-progress/crystalserver/quest/u13_20/rotten_blood/putrefactory_task";
 const RESERVOIR: TilePos = TilePos {
@@ -153,6 +155,21 @@ async fn exercise(h: &Harness) -> TestResult {
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
         .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let seeded = sqlx::query(
+        "INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) \
+         SELECT character_id,'oteryn:quest/rotten-blood','content-1',decode($2,'hex'),character_revision,character_revision \
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(BASE_QUEST_HASH)
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(seeded.rows_affected(), 1);
+    tx.commit().await?;
     owner.admit_progression_session(&mut admitted).await;
     deps.initialize(&owner).await;
     owner.admit_quest_session(&admitted).await;
@@ -232,7 +249,10 @@ async fn exercise(h: &Harness) -> TestResult {
         };
 
     h.root.set_test_quest_clock(1_700_000_000)?;
-    assert_eq!(use_at(RESERVOIR, 1).await?, UseDisposition::Committed);
+    let first = use_at(RESERVOIR, 1).await?;
+    if first != UseDisposition::Committed {
+        return Err(format!("first reservoir USE returned {first:?}, expected Committed").into());
+    }
     assert_eq!(points().await?, 20);
     assert_eq!(use_at(GATE, 2).await?, UseDisposition::Rejected);
     assert_eq!(
@@ -249,7 +269,9 @@ async fn exercise(h: &Harness) -> TestResult {
         assert_eq!(points().await?, expected);
         h.root.advance_test_quest_clock(20)?;
     }
-    assert_eq!(use_at(GATE, 8).await?, UseDisposition::Committed);
+    assert_eq!(use_at(RESERVOIR, 8).await?, UseDisposition::Rejected);
+    assert_eq!(points().await?, 100);
+    assert_eq!(use_at(GATE, 9).await?, UseDisposition::Committed);
     assert_eq!(points().await?, 0);
     let at = owner
         .runtime
@@ -259,7 +281,7 @@ async fn exercise(h: &Harness) -> TestResult {
         .map_err(debug)?
         .position();
     assert_eq!(at, local(DESTINATION));
-    assert_eq!(use_at(GATE, 9).await?, UseDisposition::Rejected);
+    assert_eq!(use_at(GATE, 10).await?, UseDisposition::Rejected);
     assert_eq!(points().await?, 0);
     Ok(())
 }
