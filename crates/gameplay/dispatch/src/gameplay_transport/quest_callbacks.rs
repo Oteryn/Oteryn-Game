@@ -924,13 +924,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         map: &BundleMap,
         target: &WorldObjectTarget,
-        selected_tool: Option<([u8; 16], Vec<u8>)>,
+        carried_tool: Option<(&str, [u8; 16], Vec<u8>)>,
     ) -> Option<UseOutcome> {
-        if let Some(outcome) = self.use_rafzane_elevator(actor, command, map, target).await {
-            return Some(outcome);
-        }
-        if let Some(outcome) = self.use_soul_war_reward(actor, command, map, target).await {
-            return Some(outcome);
+        use super::mount_taming::quest_objects;
+        if carried_tool.is_none() {
+            if let Some(outcome) = self.use_rafzane_elevator(actor, command, map, target).await {
+                return Some(outcome);
+            }
+            if let Some(outcome) = self.use_soul_war_reward(actor, command, map, target).await {
+                return Some(outcome);
+            }
         }
         let source = super::world_map::MapViewSource {
             overlay: &map.overlay,
@@ -970,6 +973,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
+                    && carried_tool.as_ref().is_none_or(|(definition, _, _)| {
+                        quest_objects::accepts(c) && quest_objects::accepts_definition(c, definition)
+                    })
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {
@@ -1096,6 +1102,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             callback
         };
+        let selected_tool = carried_tool.and_then(|(_, item, intent)| {
+            callback.item_on_target.as_ref()
+                .is_some_and(|tool| tool.selected_instance)
+                .then_some((item, intent))
+        });
         if callback.requires_live_premium()
             || callback
                 .item_reward()

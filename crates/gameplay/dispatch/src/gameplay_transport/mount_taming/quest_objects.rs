@@ -1,13 +1,27 @@
-//! Closed carried-tool callbacks routed through the existing World receipt owner.
-use oteryn_gameplay_quests::quest::{targuna_ram, world_callbacks::Callback};
+//! Carried-tool callbacks routed through the existing World receipt owner.
+use oteryn_gameplay_quests::quest::world_callbacks::{ActorKind, Callback, Trigger};
 
 pub(crate) fn accepts(callback: &Callback) -> bool {
-    callback.item_on_target.is_some()
-        && (callback.key == targuna_ram::KEY
-            || matches!(
-                callback.native_rule,
-                Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
-            ))
+    callback.actor_kind == ActorKind::Player
+        && callback.trigger == Trigger::Use
+        && callback.item_on_target.as_ref().is_some_and(|tool| {
+            (tool.selected_instance && callback.requires_world_admission)
+                || matches!(
+                    callback.native_rule,
+                    Some(
+                        oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. }
+                    )
+                )
+        })
+}
+
+pub(in crate::gameplay_transport) fn accepts_definition(
+    callback: &Callback,
+    definition: &str,
+) -> bool {
+    callback.item_on_target.as_ref().is_some_and(|tool| {
+        tool.item == definition || tool.alternatives.iter().any(|item| item == definition)
+    })
 }
 
 /// Select only the wire subject observed in the fenced inventory snapshot.
@@ -31,7 +45,7 @@ pub(crate) fn matches_source(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use oteryn_gameplay_quests::quest::{native_rules::NativeRule, world_callbacks};
+    use oteryn_gameplay_quests::quest::{native_rules::NativeRule, targuna_ram, world_callbacks};
 
     #[test]
     fn registered_ice_paint_callbacks_reach_the_carried_tool_owner() -> Result<(), String> {

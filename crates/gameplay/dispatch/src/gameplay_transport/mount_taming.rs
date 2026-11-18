@@ -122,16 +122,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let callbacks = self.callback_content();
-        let Some(callback) = callbacks.iter().find(|callback| {
-            quest_objects::accepts(callback)
-                && super::quest_callbacks::matches(map, callback, resolved.placement_key)
-        }) else {
+        let candidates: Vec<_> = self
+            .callback_content()
+            .iter()
+            .filter(|callback| {
+                quest_objects::accepts(callback)
+                    && super::quest_callbacks::matches(map, callback, resolved.placement_key)
+            })
+            .collect();
+        if candidates.is_empty() {
             return Ok(None);
-        };
-        let Some(required) = &callback.item_on_target else {
-            return Err(());
-        };
+        }
         let Some(fence) = command.item_fence else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
@@ -146,8 +147,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| {
-                entry.item.definition.production_key == required.item
-                    && quest_objects::matches_source(
+                candidates.iter().any(|callback| {
+                    quest_objects::accepts_definition(callback, &entry.item.definition.production_key)
+                }) && quest_objects::matches_source(
                         &intent.target,
                         source,
                         entry.item.item_instance_id,
@@ -174,9 +176,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command,
                 map,
                 target,
-                required
-                    .selected_instance
-                    .then_some((selected.item.item_instance_id, intent)),
+                Some((
+                    selected.item.definition.production_key.as_str(),
+                    selected.item.item_instance_id,
+                    intent,
+                )),
             )
             .await)
     }
