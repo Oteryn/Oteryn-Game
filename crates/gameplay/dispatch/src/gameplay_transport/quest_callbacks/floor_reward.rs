@@ -1,8 +1,6 @@
 //! Move a source callback's minted item into the existing durable Ground owner.
 use super::*;
-use crate::content::{
-    QualifiedNativeEntryRoom, ReferenceItemField, native_gameplay::NativeGameplayState,
-};
+use crate::content::{ReferenceItemField, native_gameplay::NativeGameplayState};
 use crate::durability::{
     item_mint::GroundPlacement,
     native_map_items_abi::{
@@ -14,7 +12,7 @@ use oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount;
 
 struct CurrentQuestFloorReward<'a> {
     runtime: &'a ChannelRuntimeV1,
-    room: &'a QualifiedNativeEntryRoom,
+    map: &'a BundleMap,
     content: &'a NativeGameplayState,
     placement: NativeMapItemPlacement,
 }
@@ -23,9 +21,27 @@ impl map_initializer_seal::Sealed for CurrentQuestFloorReward<'_> {}
 
 impl NativeMapInitializationProof for CurrentQuestFloorReward<'_> {
     fn current_binding(&self) -> Result<NativeMapOwnerBinding, &'static str> {
-        crate::spell::source_map_initialization::CurrentNativeMapInitialization::qualify_current_binding(
-            self.runtime, self.room, self.content,
-        )
+        self.runtime
+            .owner_fence()
+            .map_err(|_| "quest floor reward owner")?;
+        let binding = self.runtime.binding();
+        let pin = self.runtime.content_pin();
+        if self.content.source_digest() != pin.server_artifact_digest()
+            || crate::map::overlay::map_revision(self.map.overlay.base())
+                != format!("sha256:{}", hex(&pin.map_revision_digest()))
+        {
+            return Err("quest floor reward content or map mismatch");
+        }
+        Ok(NativeMapOwnerBinding {
+            world: binding.world_id(),
+            channel: binding
+                .channel_id()
+                .ok_or("quest floor reward requires a Channel")?,
+            scope_generation: binding.scope_generation().get(),
+            content_digest: pin.server_artifact_digest(),
+            map_digest: pin.map_revision_digest(),
+            frame_digest: pin.frame_binding_digest(),
+        })
     }
 
     fn placements(&self) -> &[NativeMapItemPlacement] {
@@ -51,9 +67,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterGameplayFence,
         reward: &ItemAmount,
     ) -> bool {
-        let Some(room) = self.rooms().gate_source_map_initialization() else {
-            return false;
-        };
         let Some(content) = self
             .active_generation
             .and_then(|generation| generation.native_gameplay())
@@ -98,7 +111,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let pin = runtime.content_pin();
         let proof = CurrentQuestFloorReward {
             runtime,
-            room,
+            map,
             content,
             placement: NativeMapItemPlacement {
                 placement_key: source.clone(),

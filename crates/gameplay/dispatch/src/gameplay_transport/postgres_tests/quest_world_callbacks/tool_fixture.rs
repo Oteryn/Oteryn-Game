@@ -33,7 +33,7 @@ pub(in super::super) fn run_world(
         CurrentCharacterGameplayFence,
     ) -> TestResult,
 ) -> TestResult {
-    let trigger = callback
+    let source_position = callback
         .selector
         .native
         .as_ref()
@@ -74,7 +74,7 @@ pub(in super::super) fn run_world(
             sources: vec!["PostgreSQL dispatch fixture".into()],
         }],
     };
-    run_bound_world(admin, name, world, trigger, bindings, exercise)
+    run_bound_world(admin, name, world, source_position, bindings, exercise)
 }
 
 pub(in super::super) fn run_bound_world(
