@@ -334,7 +334,10 @@ pub(super) fn generation(
         }));
     }
     profiles.bytes = serde_json::to_vec(&document)?;
-    profiles.sha256 = format!("{:x}", Sha256::digest(&profiles.bytes));
+    profiles.sha256 = Sha256::digest(&profiles.bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     crate::content::native_gameplay::test_support::try_activate_input(world, &input)
         .map_err(|error| debug(error).into())
 }
