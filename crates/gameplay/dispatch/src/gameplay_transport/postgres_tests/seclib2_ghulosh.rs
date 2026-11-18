@@ -56,7 +56,7 @@ fn seclib2_ghulosh_party_use_transforms_respawns_book_and_exits_postgres() -> Te
                         "/../../../content/world/placements/region-z10-x127-y127.b3"
                     )),
                     region: (10, 127, 127),
-                    bounds: (32748, 32713, 32763, 32729),
+                    bounds: (32748, 32713, 32764, 32730),
                     start: (32757, 32727),
                     expected: vec![ExpectedTile {
                         position: (32755,32729),
