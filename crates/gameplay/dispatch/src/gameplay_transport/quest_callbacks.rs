@@ -36,7 +36,7 @@ mod scene_items;
 mod shared_gate;
 mod soul_war_reward;
 mod source_transforms;
-mod step_damage;
+pub(super) mod step_damage;
 mod timed_encounter;
 mod timed_passages;
 pub(super) mod use_chance;
@@ -1276,7 +1276,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// acquiring the quest revision slot, then compare the movement snapshot on re-entry.
     pub(super) async fn step_quest_callback(
         &self,
-        permit: &SpellLanePermit,
+        permit: &mut SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         origin: MovementPositionSnapshot,
@@ -1305,7 +1305,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     )]
     async fn step_quest_trigger(
         &self,
-        permit: &SpellLanePermit,
+        permit: &mut SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         origin: MovementPositionSnapshot,
@@ -1434,8 +1434,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let (callback, key) = &selected_pair;
         if let Some(damage) = callback.effects.vocation_step_damage {
-            self.apply_vocation_step_damage(actor, session, entered, map, callback, *key, damage)
-                .await;
+            self.apply_vocation_step_damage(
+                permit, actor, session, entered, map, callback, *key, damage,
+            )
+            .await;
             return entered;
         }
         if let Some(gate) = &callback.effects.boss_cooldown

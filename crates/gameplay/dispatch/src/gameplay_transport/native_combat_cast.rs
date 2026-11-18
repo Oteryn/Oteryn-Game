@@ -206,6 +206,7 @@ pub enum UnresolvedSpellCommit {
     Enchanting(Box<super::super::item_craft::enchanting::PendingEnchanting>),
     PlayerField(Box<super::player_field::PendingPlayerField>),
     FieldRemoval(Box<super::super::field_removal::PendingFieldRemoval>),
+    QuestStepDamage(Box<super::super::quest_callbacks::step_damage::PendingStepDamage>),
     Ranged(Box<super::super::attack::ranged::PendingShot>),
     ConditionPotion(Box<super::super::item_use::condition_potions::PendingConditionPotion>),
     Pvp(Box<super::super::pvp_live::PendingPvpHit>),
@@ -375,6 +376,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             UnresolvedSpellCommit::FieldRemoval(removal) => {
                 drop(states);
                 self.resolve_field_removal(&mut permit, *removal).await;
+                return permit;
+            }
+            UnresolvedSpellCommit::QuestStepDamage(pending) => {
+                drop(states);
+                self.resolve_quest_step_damage(&mut permit, *pending).await;
                 return permit;
             }
             UnresolvedSpellCommit::Ranged(attempt) => {

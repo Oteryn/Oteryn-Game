@@ -98,7 +98,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         pos: crate::map::overlay::TilePos,
         target: crate::map::floor::LadderTarget,
     ) -> Option<UseOutcome> {
-        let Some(_permit) = self.spell_lane_permit().await else {
+        let Some(mut permit) = self.spell_lane_permit().await else {
             return Some(UseOutcome::rejected());
         };
         if !self.refresh_pvp_locks(actor, command.game_session_id).await {
@@ -170,7 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(states);
         drop(runtime);
         if let Some(entered) = entered {
-            self.step_quest_callback(&_permit, actor, session, expected, entered)
+            self.step_quest_callback(&mut permit, actor, session, expected, entered)
                 .await;
         }
         Some(UseOutcome {

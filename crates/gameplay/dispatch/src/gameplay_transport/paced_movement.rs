@@ -418,7 +418,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .soulpit_lobby_step(&permit, actor, session, snapshot)
                             .await;
                         let snapshot = self
-                            .step_quest_callback(&permit, actor, session, origin, snapshot)
+                            .step_quest_callback(&mut permit, actor, session, origin, snapshot)
                             .await;
                         let snapshot = self
                             .step_grizzly_boss(&permit, actor, session, origin, snapshot)
