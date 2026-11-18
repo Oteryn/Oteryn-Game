@@ -78,6 +78,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     )?;
     let generation = controller.active().ok_or("generation")?;
     let native = generation.native_gameplay().ok_or("native policies")?;
+    let without_rewards = crate::content::creature_reward::CreatureRewardTable::default();
+    let rewards = if mode == "overlordcr_rowless" {
+        &without_rewards
+    } else {
+        native.reward_table()
+    };
     let position = rule
         .room
         .map_or([100, 100, -7], |[x, y, _, _, z]| [x, y, z]);
@@ -655,7 +661,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                         prey: None,
                         activity: &[],
                         queue: &queue,
-                        rewards: native.reward_table(),
+                        rewards,
                         charms: None,
                     },
                     target,
@@ -949,6 +955,14 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             xp, 0,
             "the existing top-damager departure XP refusal is preserved"
         );
+    }
+    if mode == "overlordcr_rowless" {
+        let counts: (i64, i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_boss_death_settlements), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_boss_reward_chests)",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(counts, (1, 0, 0), "the death settles quest credit alone");
     }
     Ok(())
 }
