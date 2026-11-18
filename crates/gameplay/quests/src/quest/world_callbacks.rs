@@ -82,10 +82,10 @@ mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
 pub use effects::{
-    CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
-    EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
-    MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion,
-    RewardDoor, StepDamage, StepDamageKind, StepDamageVocation, TargetTransform,
+    BossCooldownGate, CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster,
+    EncounterPhase, EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement,
+    ItemPresence, MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair,
+    QuestCompletion, RewardDoor, StepDamage, StepDamageKind, StepDamageVocation, TargetTransform,
     VocationStepDamage,
 };
 pub use ground_stack::{

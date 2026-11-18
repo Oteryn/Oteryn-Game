@@ -139,6 +139,9 @@ pub struct CallbackEffects {
     pub encounter: Option<Encounter>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub vocation_step_damage: Option<VocationStepDamage>,
+    /// Reads the named Character cooldown written by boss admission.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boss_cooldown: Option<BossCooldownGate>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -178,6 +181,13 @@ impl From<&str> for QuestCompletion {
     fn from(quest: &str) -> Self {
         Self::Child(quest.to_owned())
     }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct BossCooldownGate {
+    pub boss: String,
+    pub name: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -462,6 +472,34 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && [damage.matching, damage.other]
                 .iter()
                 .all(|hit| hit.amount > 0 && hit.effect > 0);
+    }
+    if let Some(gate) = &effects.boss_cooldown {
+        return callback.trigger == Trigger::StepIn
+            && callback.actor_kind == ActorKind::Player
+            && callback.selector.position.is_some()
+            && callback.selector.ordinal == Some(0)
+            && callback.teleport.is_some()
+            && callback.return_on_failure
+            && callback.failure_teleport.is_none()
+            && callback.failure_message.is_none()
+            && !callback.requires_durable_commit()
+            && !callback.reversible
+            && callback.lever.is_none()
+            && callback.passages.is_empty()
+            && callback.remote_teleport.is_none()
+            && effects.legacy.is_empty()
+            && effects.shared
+                == (CallbackEffects {
+                    boss_cooldown: Some(gate.clone()),
+                    teleport_effect: effects.teleport_effect,
+                    ..CallbackEffects::default()
+                })
+            && (gate.boss.starts_with("oteryn:boss.")
+                || gate.boss.starts_with("oteryn:creature."))
+            && super::super::valid_quest_key(&gate.boss)
+            && !gate.name.is_empty()
+            && gate.name.len() <= 96
+            && !gate.name.chars().any(char::is_control);
     }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();

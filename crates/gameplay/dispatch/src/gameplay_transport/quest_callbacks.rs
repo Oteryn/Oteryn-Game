@@ -9,6 +9,7 @@ mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
+mod cooldown_step;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod dreamer_carrot;
@@ -1426,6 +1427,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             return entered;
         }
+        if let Some(gate) = &callback.effects.boss_cooldown
+            && let Some(message) = self.boss_cooldown_step_refusal(permit, session, gate).await
+        {
+            let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+            let mut runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            if runtime.read_actor_position(actor) == Ok(entered) && matches(map, callback, *key) {
+                self.refuse_quest_step(
+                    optional_pvp,
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    entered,
+                    origin,
+                );
+                self.states.chat.push_quest_feedback(session, &message);
+            }
+            return runtime.read_actor_position(actor).unwrap_or(entered);
+        }
         if callback.requires_live_premium() {
             let _ = self.session_premium_gate(session).await;
         }
@@ -1565,7 +1588,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match tokio::time::timeout(std::time::Duration::from_secs(10), operation).await {
             Ok(snapshot) => snapshot,
-            Err(_) if callback.is_read_only() => {
+            Err(_) if callback.is_read_only() || callback.effects.boss_cooldown.is_some() => {
                 // This path cannot have a durable commit to reconcile. A cancelled
                 // read returns to the step origin rather than reserving a write.
                 let optional_pvp = self.special_movement_policy(permit, actor, session).await;

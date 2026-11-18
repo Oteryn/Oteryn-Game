@@ -431,6 +431,7 @@ pub(crate) mod cooldown_storage;
 
 #[path = "boss_encounter/cooldown_list.rs"]
 mod cooldown_list;
+mod cooldown_step;
 mod elemental_arrival;
 pub(super) use elemental_arrival::{ElementalClockSource, claim_elemental_clock};
 mod world_spawns;

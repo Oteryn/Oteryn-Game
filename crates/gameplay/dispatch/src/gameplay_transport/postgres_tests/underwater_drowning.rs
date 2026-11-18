@@ -21,7 +21,7 @@ const DROME_DRUNK_KEY: &str = "drome.drunk";
 fn fixm10_swimming_and_map_traps_postgres() -> TestResult {
     on_thread(|| {
         scenario(None, false)?;
-        scenario_in_world(None, false, false, false)
+        scenario_in_world(None, false, false, None)
     })
 }
 
@@ -309,18 +309,24 @@ async fn install(
 }
 
 fn scenario(callback: Option<(u16, u16, bool)>, portals: bool) -> TestResult {
-    scenario_in_world(callback, portals, true, false)
+    scenario_in_world(callback, portals, true, None)
 }
 
-pub(super) fn five_ways_scenario() -> TestResult {
-    scenario_in_world(None, false, true, true)
+#[derive(Clone, Copy)]
+pub(super) enum QuestStepCase {
+    BossCooldown,
+    FiveWays,
+}
+
+pub(super) fn quest_step_scenario(case: QuestStepCase) -> TestResult {
+    scenario_in_world(None, false, true, Some(case))
 }
 
 fn scenario_in_world(
     callback: Option<(u16, u16, bool)>,
     portals: bool,
     optional: bool,
-    five_ways: bool,
+    quest_step: Option<QuestStepCase>,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let result = run(async |admin| {
@@ -341,7 +347,7 @@ fn scenario_in_world(
         let active = controller.active().ok_or("active")?;
         // Activated content digests (custody reads pin them), the test row's map binding.
         let channel = Dependencies::new()?.admitted.channel_id;
-        let (bytes, pins) = underwater_row(portals, five_ways)?;
+        let (bytes, pins) = underwater_row(portals, matches!(quest_step, Some(QuestStepCase::FiveWays)))?;
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let map = boot(
             &bytes,
@@ -424,8 +430,13 @@ fn scenario_in_world(
             .bind(id(42).as_slice()).bind(if optional { 1_i16 } else { 2_i16 }).execute(&h.pool).await?;
         let (actor, session) = (deps.actor, deps.admitted.game_session_id);
         let mover = (deps.admitted, actor, session);
-        if five_ways {
-            return super::five_ways_damage::exercise(&mut owner, mover).await;
+        if let Some(case) = quest_step {
+            return match case {
+                QuestStepCase::BossCooldown => {
+                    super::essence_cooldown::exercise(&mut owner, mover, &h).await
+                }
+                QuestStepCase::FiveWays => super::five_ways_damage::exercise(&mut owner, mover).await,
+            };
         }
         if portals {
             install(&owner, actor, session, false).await?;

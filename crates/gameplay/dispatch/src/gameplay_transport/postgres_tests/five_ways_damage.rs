@@ -1,4 +1,4 @@
-use super::underwater_drowning::{five_ways_scenario, health, step};
+use super::underwater_drowning::{QuestStepCase, health, quest_step_scenario, step};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use crate::content::{ReferenceRationalPercent, ReferenceResistanceKind, spell_data::Vocation};
 use crate::foundation::{ExactActorRef, GameSessionId};
@@ -11,7 +11,7 @@ fn five_ways_step_in_uses_base_vocation_and_final_field_element_protection() -> 
     drop(admin);
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| five_ways_scenario().map_err(|error| error.to_string()))?
+        .spawn(|| quest_step_scenario(QuestStepCase::FiveWays).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Five Ways PostgreSQL fixture panicked")?
         .map_err(Into::into)
