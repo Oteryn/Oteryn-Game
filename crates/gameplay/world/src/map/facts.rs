@@ -53,7 +53,7 @@ mod world_change_phases;
 pub use feroxa_map_phases::{FeroxaPhaseTile, prepare_feroxa_phase};
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::{
-    ArenaPillarProjection, ElementalArrivalReservation, PresenceWindow, QuestCallbackProjection,
+    ArenaPillarProjection, ElementalArrivalReservation, PresenceProgressSource, PresenceWindow, QuestCallbackProjection,
     QuestMapItemMove, QuestSceneMutation, QuestTimedPassage, RafzaneElevator,
 };
 

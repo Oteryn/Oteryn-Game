@@ -124,6 +124,7 @@ pub(super) fn prepare_window(
         player,
         count: window.count,
         effect: window.effect,
+        progress: None,
     })
 }
 

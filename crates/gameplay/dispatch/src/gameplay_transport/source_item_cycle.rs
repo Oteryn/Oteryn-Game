@@ -6,6 +6,52 @@ use std::pin::pin;
 use std::task::Poll;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn drain_paid_presence_opening(&self) {
+        use crate::durability::character_progression::CharacterProgressionError;
+        use crate::durability::quest_state::QuestTransitionOutcome;
+
+        let (Some(map), Some(catalogue)) = (self.bundle_map(), self.quest_catalogue.as_ref()) else {
+            return;
+        };
+        let Some(opening) = map.facts.next_presence_opening() else {
+            return;
+        };
+        let source = &opening.source;
+        let session = source.command.game_session_id();
+        let Ok(fence) = self.current_quest_fence(session).await else {
+            return;
+        };
+        let Some(fence) = fence else {
+            map.facts.finish_presence_opening(&opening, false);
+            return;
+        };
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let runtime = self.runtime.lock().await;
+        if runtime.owner_fence().is_err() {
+            return;
+        }
+        let progress = catalogue.authored_world_callbacks().and_then(|callbacks| {
+            callbacks.iter().find(|callback| callback.key == source.callback)
+        }).and_then(|callback| callback.presence_progress());
+        let Some(progress) = progress.filter(|_| runtime.player_control_facts(source.actor, session).is_ok()) else {
+            map.facts.finish_presence_opening(&opening, false);
+            return;
+        };
+        let outcome = slot.commit_paid_presence_progress(
+            self.root, self.character, self.holder, fence, std::sync::Arc::clone(catalogue),
+            &source.callback, source.command,
+        ).await;
+        if matches!(outcome, Err(CharacterProgressionError::Unavailable(_) | CharacterProgressionError::CharacterRevisionMismatch)) {
+            return;
+        }
+        let publish = matches!(outcome, Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)));
+        if map.facts.finish_presence_opening(&opening, publish) && publish {
+            // Crystal gems.lua:155-158 presents one private message with the opening.
+            self.states.chat.push_quest_feedback(session, &progress.message);
+            self.schedule_quest_refresh(session);
+        }
+    }
+
     pub(super) async fn run_source_owner_cycles(
         &self,
         shutdown: &oteryn_foundation::CancellationToken,
@@ -108,6 +154,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gate.begin_turn();
                 }
             }
+            self.root.with_background_operation(self.drain_paid_presence_opening()).await;
             // Rotate independent units, including empty discoveries. The two
             // Rotten slots retain cyclic pre/AI/post order across resumed sweeps;
             // monster melee runs with the AI phase, between them.

@@ -80,7 +80,7 @@ struct TimedPresence {
     window: Option<PresenceWindow>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct PresenceWindow {
     pub target: u64,
     pub before: EntryFacts,
@@ -88,6 +88,24 @@ pub struct PresenceWindow {
     pub player: crate::foundation::GameSessionId,
     pub count: u8,
     pub effect: u16,
+    pub progress: Option<PresenceProgressSource>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PresenceProgressSource {
+    pub callback: String,
+    pub actor: crate::foundation::ExactActorRef,
+    pub command: crate::foundation::CommandRef,
+}
+
+#[derive(Clone, Debug)]
+pub struct PendingPresenceOpening {
+    pub source: PresenceProgressSource,
+    target: u64,
+    revision: u64,
+    after: EntryFacts,
+    position: TilePos,
+    effect: u16,
 }
 
 /// Already qualified facts for one atomic, Channel-local callback projection.
@@ -189,6 +207,7 @@ pub(super) struct CallbackStates {
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
     timed_presences: BTreeMap<u64, TimedPresence>,
+    presence_openings: BTreeMap<u64, PendingPresenceOpening>,
     naginata_picks: Vec<NaginataPick>,
 }
 
@@ -216,12 +235,14 @@ impl CallbackStates {
             .filter(|field| {
                 field.published.is_some()
                     && field.expires > now
-                    && field.window.is_some_and(|other| {
+                    && field.window.as_ref().is_some_and(|other| {
                         other.target == window.target && other.player == window.player
                     })
             })
             .count();
-        if count != usize::from(window.count) || self.hidden.contains(&window.target) {
+        if count != usize::from(window.count) || self.hidden.contains(&window.target)
+            || self.presence_openings.contains_key(&window.target)
+        {
             return;
         }
         let (revision, current) = self
@@ -235,8 +256,14 @@ impl CallbackStates {
         if let Some(revision) = revision.checked_add(1)
             && let Some((position, _)) = view::placement_of(window.target)
         {
-            self.changed.insert(window.target, (revision, window.after));
-            self.record_effect(None, position, window.effect);
+            if let Some(source) = window.progress {
+                self.presence_openings.insert(window.target, PendingPresenceOpening {
+                    source, target: window.target, revision, after: window.after, position, effect: window.effect,
+                });
+            } else {
+                self.changed.insert(window.target, (revision, window.after));
+                self.record_effect(None, position, window.effect);
+            }
         }
     }
 
@@ -245,6 +272,7 @@ impl CallbackStates {
             || (presence.published.is_none()
                 && presence
                     .window
+                    .as_ref()
                     .is_some_and(|window| self.key_reserved(window.target)))
     }
 
@@ -265,6 +293,7 @@ impl CallbackStates {
 
     fn key_reserved(&self, key: u64) -> bool {
         self.reserved.contains(&key)
+            || self.presence_openings.contains_key(&key)
             || view::placement_of(key)
                 .map(|(pos, _)| pos)
                 .or_else(|| self.movement_item(key).map(|(pos, _)| pos))
@@ -572,7 +601,7 @@ impl CallbackStates {
                         starts: *starts,
                         expires: *expires,
                         published: None,
-                        window: *window,
+                        window: window.clone(),
                     },
                 );
             }
@@ -634,6 +663,7 @@ impl CallbackStates {
         self.hidden.retain(|key| !key_inside(key));
         self.passable.retain(|key, _| !key_inside(key));
         self.movement_decays.retain(|(_, key), _| !key_inside(key));
+        self.presence_openings.retain(|key, _| !key_inside(key));
         let cleared = |p: &TilePos| {
             p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
         };
@@ -662,6 +692,7 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.timed_presences.len() * 2
+            + self.presence_openings.len()
             + self.solid_items.len()
             + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
@@ -670,6 +701,26 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    pub fn next_presence_opening(&self) -> Option<PendingPresenceOpening> {
+        self.callbacks.lock().ok()?.presence_openings.values().next().cloned()
+    }
+
+    pub fn finish_presence_opening(&self, opening: &PendingPresenceOpening, publish: bool) -> bool {
+        let Ok(mut state) = self.callbacks.lock() else { return false };
+        if !state.presence_openings.get(&opening.target).is_some_and(|pending| {
+            pending.source == opening.source && pending.revision == opening.revision
+        }) {
+            return false;
+        }
+        let state = Arc::make_mut(&mut state);
+        state.presence_openings.remove(&opening.target);
+        if publish {
+            state.changed.insert(opening.target, (opening.revision, opening.after));
+            state.record_effect(None, opening.position, opening.effect);
+        }
+        true
+    }
+
     pub fn quest_timed_presence_available(&self, position: TilePos, appearance: u16) -> bool {
         self.callbacks
             .lock()
@@ -1044,7 +1095,7 @@ impl BundleFacts {
                         facts: presence.entry,
                     });
                 presence.published = Some(entry);
-                let window = presence.window;
+                let window = presence.window.clone();
                 states.timed_presences.insert(key, presence);
                 if let Some(window) = window {
                     states.open_presence_window(window, now);

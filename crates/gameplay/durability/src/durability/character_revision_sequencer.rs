@@ -457,6 +457,23 @@ impl RevisionSlot {
         .await
     }
 
+    #[allow(clippy::too_many_arguments, reason = "binds the paid occurrence to the character revision owner")]
+    pub async fn commit_paid_presence_progress(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        source: &str,
+        command: crate::foundation::CommandRef,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority), fence, Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| root.commit_paid_presence_progress(authority, node, fence, std::sync::Arc::clone(&catalogue), source, command),
+        ).await
+    }
+
     /// Preserve the revision cursor while consulting the registered actor admission owner.
     #[allow(
         dead_code,
