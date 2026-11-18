@@ -269,7 +269,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             proofs.push(proof);
         }
         if players.is_empty()
-            || (!payback && !players.iter().any(|(who, s, _)| *who == actor && *s == session))
+            || (!payback
+                && !players
+                    .iter()
+                    .any(|(who, s, _)| *who == actor && *s == session))
         {
             return UseDisposition::Rejected;
         }
@@ -409,6 +412,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(phases);
         if let (Some(room), Some(chain)) = (&mut payback_room, chain) {
             **room = Some(chain);
+            states.owner_wake.notify_one();
         }
         drop(payback_room);
         if let Some(reservation) = reservation

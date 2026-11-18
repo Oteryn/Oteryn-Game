@@ -64,14 +64,15 @@ pub(super) fn callback() -> TestResult<Callback> {
 }
 
 pub(super) async fn exercise(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     placement: &[u8],
     key: u64,
-    partner: crate::foundation::ExactActorRef,
+    partner: AdmittedSession,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    for member in [actor, partner] {
+    let partner_actor = partner.runtime_actor.ok_or("partner")?;
+    for member in [actor, partner_actor] {
         let runtime = owner.runtime.lock().await;
         let at = runtime
             .read_actor_position(member)
@@ -116,10 +117,14 @@ pub(super) async fn exercise(
                 .map_err(debug)?
                 .is_empty()
         );
-        for (member, y) in [(actor, 100), (partner, 101)] {
+        for (seat, y) in [(admitted, 100), (&partner, 101)] {
+            let member = seat.runtime_actor.ok_or("member")?;
+            let before = runtime.read_actor_position(member).map_err(debug)?;
             runtime
-                .initialize_pinned_test_position(
+                .relocate_arena_player(
                     member,
+                    seat.game_session_id,
+                    before,
                     crate::foundation::MovementLocalPosition {
                         x: 100,
                         y,
@@ -145,11 +150,13 @@ pub(super) async fn exercise(
         )
         .await;
     assert_eq!(outcome.disposition, UseDisposition::Committed);
-    let mut runtime = owner.runtime.lock().await;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(601))
+        .ok_or("encounter deadline clock")?;
+    owner.drain_quest_encounter_deadlines().await;
+    let runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
-    states
-        .encounter_phases
-        .tick_payback(&mut runtime, owner.owner_now().get() + 600_000_001);
     assert!(
         states
             .encounter_phases

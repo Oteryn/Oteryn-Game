@@ -305,7 +305,7 @@ pub(super) fn cults_scenario(reenter: bool, payback: bool) -> TestResult {
                         },
                     )
                     .await?
-                    .0,
+                    .1,
                 )
             } else {
                 None
@@ -330,8 +330,10 @@ pub(super) fn cults_scenario(reenter: bool, payback: bool) -> TestResult {
                 "phase admission"
             );
             if let Some(partner) = partner {
-                return super::wrath_payback::exercise(&owner, &admitted, &placement, key, partner)
-                    .await;
+                return super::wrath_payback::exercise(
+                    &mut owner, &admitted, &placement, key, partner,
+                )
+                .await;
             }
             assert_eq!(
                 owner

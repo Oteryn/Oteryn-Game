@@ -241,8 +241,7 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
-    states.encounter_phases.tick_payback(runtime, now_us);
+pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) {
     states.encounter_phases.reset_incarnations(runtime);
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;

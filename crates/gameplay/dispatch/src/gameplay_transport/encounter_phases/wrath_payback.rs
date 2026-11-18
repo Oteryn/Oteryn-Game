@@ -86,6 +86,11 @@ impl Payback {
 }
 
 impl Registry {
+    pub(in crate::gameplay_transport) fn next_payback_due_us(&self) -> Option<u64> {
+        Some(self.payback.lock().ok()?.as_ref()?.deadline)
+    }
+
+
     pub(super) fn payback_death(&self, runtime: &mut ChannelRuntimeV1, actor: ExactActorRef) {
         let Ok(mut room) = self.payback.lock() else {
             return;
