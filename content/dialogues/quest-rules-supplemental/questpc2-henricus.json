@@ -156,8 +156,8 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
-          "op": "ne",
-          "value": 25
+          "op": "lt",
+          "value": 23
         }
       ],
       "reply": [

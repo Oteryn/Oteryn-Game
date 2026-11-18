@@ -19,13 +19,13 @@ use std::sync::Arc;
 fn henricus_postgres_dispatch_purchase_refusals_and_replay() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false, 25).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Henricus PostgreSQL thread panicked")??;
     Ok(())
 }
 
-fn scenario(partial: bool) -> TestResult {
+pub(super) fn scenario(partial: bool, questline: i64) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "henricus", true, false).await?;
@@ -186,8 +186,8 @@ fn scenario(partial: bool) -> TestResult {
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline','oteryn:quest.the_inquisition_quest',25,2)")
-            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline','oteryn:quest.the_inquisition_quest',$2,2)")
+            .bind(id(41).as_slice()).bind(questline).execute(&mut *tx).await?;
         if partial {
             sqlx::query("INSERT INTO game_character_blessings(character_id,blessing_key,provenance) VALUES(encode($1,'hex')::uuid,'oteryn:blessing.the_spiritual_shielding','fixture')")
                 .bind(id(41).as_slice()).execute(&mut *tx).await?;
@@ -414,7 +414,7 @@ fn scenario(partial: bool) -> TestResult {
 fn henricus_postgres_dispatch_partial_ownership_refuses_without_charge() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, 25).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Henricus partial ownership PostgreSQL thread panicked")??;
     Ok(())

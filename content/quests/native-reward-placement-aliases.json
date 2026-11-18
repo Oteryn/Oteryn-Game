@@ -12,6 +12,18 @@
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
         "Committed region-z14-x127-y125.b3: ground351 and chest2472 at32591,32097,14; both entries have no retained unique tag. Original source identity, reward and claim policy are unchanged."
       ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.witches_grimoire",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6270,
+      "project_position": { "x": 32649, "y": 31932, "z": 1 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2615-L2621",
+        "content/world/placements/region-z01-x127-y124.b3"
+      ]
     }
   ]
 }
