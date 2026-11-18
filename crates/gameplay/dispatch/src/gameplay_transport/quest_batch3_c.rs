@@ -65,10 +65,11 @@ pub(super) fn capture(
         for rule in &snapshot.objectives {
             if rule.creature != entry.creature
                 || !rule.recipient(position, damaged)
-                || (rule.delivery.is_some() && !runtime.read_actor_position(entry.target).is_ok_and(|at| {
-                    let at = at.position();
-                    rule.recipient([at.x, at.y, -i32::from(at.floor)], false)
-                }))
+                || (rule.delivery.is_some()
+                    && !runtime.read_actor_position(entry.target).is_ok_and(|at| {
+                        let at = at.position();
+                        rule.recipient([at.x, at.y, -i32::from(at.floor)], false)
+                    }))
                 || (rule.top_damage_only
                     && (!principal_present
                         || principal.actor != snapshot.actor

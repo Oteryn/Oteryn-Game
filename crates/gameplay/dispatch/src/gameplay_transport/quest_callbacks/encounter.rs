@@ -221,7 +221,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .commit_quest_creature_spawn(&[(link.monster.creature.as_str(), health, at)])
             .ok()?
             .first()?;
-        if states
+        if runtime.contains_live_creature(original)
+            && states
             .encounter_phases
             .link(
                 runtime,
@@ -654,6 +655,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             phases.push(phase);
         }
         drop(phases);
+        if let Some(link) = &encounter.linked_arrival {
+            for monster in &encounter.monsters {
+                map.facts.emit_movement_effect(tile(monster.position), link.arrival_effect);
+            }
+        }
         if let Some(visits) = &mut visits {
             visits.push(EncounterVisit {
                 room: encounter.clone(),

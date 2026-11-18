@@ -85,9 +85,12 @@ impl DeathDelivery {
                     && rule.define_transition
                     && rule.effects.len() == 1
                     && rule.effects.iter().all(|effect| {
-                        effect.track == "oteryn:quest-progress/quest/u12_30/poltergeist_outfits/received"
-                            && effect.default == -1 && effect.from.kind == "any"
-                            && effect.set == Some(1) && effect.add.is_none()
+                        effect.track
+                            == "oteryn:quest-progress/quest/u12_30/poltergeist_outfits/received"
+                            && effect.default == -1
+                            && effect.from.kind == "any"
+                            && effect.set == Some(1)
+                            && effect.add.is_none()
                     })
             }
         }
@@ -179,8 +182,11 @@ fn documents() -> Result<Vec<Document>, String> {
     DOCUMENTS
         .iter()
         .copied()
-        .chain(super::authored_bindings::embedded::NATIVE_DEATH_REWARDS.iter()
-            .map(|(_, document)| document.as_bytes()))
+        .chain(
+            super::authored_bindings::embedded::NATIVE_DEATH_REWARDS
+                .iter()
+                .map(|(_, document)| document.as_bytes()),
+        )
         .map(|bytes| {
             let doc: Document = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
             if doc.schema != 1 || !doc.runtime_enabled {
@@ -232,29 +238,46 @@ pub fn rule(key: &str) -> Option<&'static Rule> {
 pub fn rule_for<'a>(catalogue: &'a QuestStateCatalogue, key: &str) -> Option<&'a Rule> {
     let _ = catalogue;
     #[cfg(any(test, feature = "test-support"))]
-    if let Some(rule) = catalogue.fixture_source_deaths.iter().find(|r| r.transition == key) {
+    if let Some(rule) = catalogue
+        .fixture_source_deaths
+        .iter()
+        .find(|r| r.transition == key)
+    {
         return Some(rule);
     }
     rule(key)
 }
 
 pub fn active_for(
-    catalogue: Option<&QuestStateCatalogue>, tracks: &BTreeMap<String, i64>,
+    catalogue: Option<&QuestStateCatalogue>,
+    tracks: &BTreeMap<String, i64>,
 ) -> Vec<Rule> {
-    let mut active: Vec<_> = rules().ok().into_iter().flatten()
-        .filter(|rule| rule.active(tracks)).cloned().collect();
+    let mut active: Vec<_> = rules()
+        .ok()
+        .into_iter()
+        .flatten()
+        .filter(|rule| rule.active(tracks))
+        .cloned()
+        .collect();
     let _ = (&catalogue, &mut active);
     #[cfg(any(test, feature = "test-support"))]
     if let Some(catalogue) = catalogue {
-        active.extend(catalogue.fixture_source_deaths.iter()
-            .filter(|rule| rule.active(tracks)).cloned());
+        active.extend(
+            catalogue
+                .fixture_source_deaths
+                .iter()
+                .filter(|rule| rule.active(tracks))
+                .cloned(),
+        );
     }
     active
 }
 
 #[cfg(any(test, feature = "test-support"))]
 pub fn with_fixture_rule(
-    catalogue: &QuestStateCatalogue, quest: &str, document: &str,
+    catalogue: &QuestStateCatalogue,
+    quest: &str,
+    document: &str,
 ) -> Result<QuestStateCatalogue, String> {
     let mut rule: Rule = serde_json::from_str(document).map_err(|error| error.to_string())?;
     rule.quest = quest.into();
@@ -263,9 +286,12 @@ pub fn with_fixture_rule(
     {
         return Err("invalid fixture source death delivery".into());
     }
-    let mut with_rule = catalogue.with_fixture_transition(rule.transition()?)
+    let mut with_rule = catalogue
+        .with_fixture_transition(rule.transition()?)
         .map_err(|error| format!("{error:?}"))?;
-    with_rule.fixture_source_deaths.clone_from(&catalogue.fixture_source_deaths);
+    with_rule
+        .fixture_source_deaths
+        .clone_from(&catalogue.fixture_source_deaths);
     with_rule.fixture_source_deaths.push(rule);
     Ok(with_rule)
 }

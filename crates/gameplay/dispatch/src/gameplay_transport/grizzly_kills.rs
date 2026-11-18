@@ -286,7 +286,10 @@ pub(super) fn tracks_native_creature(queue: &KillSettlementQueue, creature: &str
                     .native_counters
                     .iter()
                     .any(|counter| counter.creature == creature)
-                    || snapshot.source_objectives.iter().any(|rule| rule.creature == creature)
+                    || snapshot
+                        .source_objectives
+                        .iter()
+                        .any(|rule| rule.creature == creature)
             })
         })
 }
@@ -550,9 +553,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .filter(|objective| objective.active(&tracks))
                                 .map(|objective| objective.key.clone())
                                 .collect(),
-                            source_objectives: oteryn_gameplay_quests::quest::source_deaths::active_for(
-                                self.quest_catalogue.as_deref(), &tracks,
-                            ),
+                            source_objectives:
+                                oteryn_gameplay_quests::quest::source_deaths::active_for(
+                                    self.quest_catalogue.as_deref(),
+                                    &tracks,
+                                ),
                         },
                         hit_snapshot,
                     ))
