@@ -4,7 +4,9 @@ use super::{
     fixture::{Harness, debug},
 };
 use crate::foundation::{ExactActorRef, MovementLocalPosition};
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase, Position};
+use oteryn_gameplay_quests::quest::world_callbacks::{
+    Callback, EncounterPhase, Position, ZelosPassages,
+};
 
 const KNIGHTS: [&str; 4] = [
     "oteryn:creature.magnor_mournbringer",
@@ -26,6 +28,7 @@ pub(super) fn configure(callback: &mut Callback) -> TestResult {
     callback.key = "oteryn:quest-callback/grave-danger/zelos-ritual".into();
     callback.storage.clear();
     let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+    let at = |x, y| Position { x, y, floor: -7 };
     encounter.phase = Some(EncounterPhase::GraveDangerZelos {
         exit: Position {
             x: 103,
@@ -37,7 +40,19 @@ pub(super) fn configure(callback: &mut Callback) -> TestResult {
             y: 116,
             floor: -7,
         },
-        passages: None,
+        passages: Some(ZelosPassages {
+            pairs: [
+                [at(115, 117), at(111, 117)],
+                [at(110, 106), at(113, 106)],
+                [at(119, 106), at(122, 106)],
+                [at(110, 109), at(113, 109)],
+                [at(119, 109), at(122, 109)],
+                [at(110, 112), at(113, 112)],
+                [at(119, 112), at(122, 112)],
+                [at(119, 125), at(122, 125)],
+            ],
+            corners: [at(110, 118), at(126, 106), at(106, 126), at(126, 126)],
+        }),
         north_arrival: Position {
             x: 115,
             y: 114,
@@ -185,6 +200,22 @@ pub(super) async fn exercise(
             (116, 117, 7),
             "the locked vortex returns the entrant"
         );
+    }
+    for (direction, expected) in [
+        (StepDirection::West, (110, 117, 7)),
+        (StepDirection::South, (116, 117, 7)),
+    ] {
+        tick_at(owner, owner.owner_now().get() + 2_000_000).await;
+        let (step, _) = owner
+            .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
+            .await;
+        assert_eq!(step.disposition, StepDisposition::Moved);
+        let runtime = owner.runtime.lock().await;
+        let position = runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position();
+        assert_eq!((position.x, position.y, position.floor), expected);
     }
     super::engenc2_cults::kill(owner, admitted, nargol, KNIGHTS[1], 101).await?;
     let now = owner.owner_now().get();
