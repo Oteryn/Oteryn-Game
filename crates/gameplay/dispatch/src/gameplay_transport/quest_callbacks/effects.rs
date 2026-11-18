@@ -134,7 +134,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Ok(None)
     }
 
-    pub(super) async fn lock_quest_teleport_owners(
+    pub(in crate::gameplay_transport) async fn lock_quest_teleport_owners(
         &self,
     ) -> Option<(
         tokio::sync::MutexGuard<'_, ChannelRuntimeV1>,

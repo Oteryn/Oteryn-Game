@@ -5,9 +5,10 @@ use crate::durability::activity_handoff::{
     ActivityRefusal,
 };
 use crate::durability::character_last_position::LastPositionCell;
-use crate::foundation::{CharacterId, MovementPositionSnapshot};
+use crate::foundation::{CharacterId, MovementLocalPosition, MovementPositionSnapshot};
 use crate::map::boot::BundleMap;
-use crate::map::view::{TilePos, placement_key};
+use crate::map::overlay::TilePos;
+use crate::map::view::{MapFacts, placement_key};
 use std::num::NonZeroU32;
 
 #[derive(Clone, Copy)]
@@ -33,18 +34,26 @@ pub(super) fn at(map: &BundleMap, position: MovementLocalPosition) -> Option<War
     };
     let base = map.overlay.base().tile(tile.x, tile.y, tile.floor)?;
     let is_portal = base
-        .depths()
+        .ids()
         .iter()
-        .filter(|depth| **depth == 0)
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
         .enumerate()
-        .any(|(ordinal, _)| {
-            u8::try_from(ordinal)
-                .ok()
-                .and_then(|index| placement_key(tile, index))
-                .is_some_and(|key| {
-                    map.facts
-                        .quest_callback_matches(key, None, Some(57243), Some(1949))
-                })
+        .any(|(ordinal, (id, _))| {
+            let Some(ordinal) = u8::try_from(ordinal).ok() else {
+                return false;
+            };
+            let Some(key) = placement_key(tile, ordinal) else {
+                return false;
+            };
+            !map.facts.base_hidden(key)
+                && map
+                    .facts
+                    .quest_callback_matches(key, None, Some(57243), None)
+                && map
+                    .facts
+                    .base_entry(tile, ordinal, *id)
+                    .is_some_and(|entry| entry.appearance_id == 1949)
         });
     is_portal.then_some(WarzonePortal {
         key: boss,
@@ -129,6 +138,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let owner = ActivityHandoffOwner::new(self.root.clone());
+        if owner
+            .portal_boss_on_cooldown(self.character, self.holder, fence, portal.key)
+            .await
+            .ok()?
+        {
+            return Some(Err(ActivityRefusal::Cooldown));
+        }
         let definition = owner
             .read_portal_boss_room(self.character, self.holder, fence, portal.key, origin_pin)
             .await
