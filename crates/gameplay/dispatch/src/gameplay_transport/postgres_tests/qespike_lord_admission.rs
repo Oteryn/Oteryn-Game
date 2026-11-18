@@ -4,6 +4,7 @@ use super::desert_party_rite::{current, positions, pull_next, relocate};
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{ExactActorRef, GameSessionId};
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, QuestTrack,
     reward_callbacks::ItemAmount,

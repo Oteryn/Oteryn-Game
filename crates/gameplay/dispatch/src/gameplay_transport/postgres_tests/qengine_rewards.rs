@@ -1147,6 +1147,9 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == super::qespike_kill_area::NAME {
+        return Box::pin(super::qespike_kill_area::exercise(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-authored-bindings" {
         return Box::pin(super::authored_quest_bindings::exercise(owner, admitted, h)).await;
     }

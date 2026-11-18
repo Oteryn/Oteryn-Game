@@ -112,6 +112,22 @@ pub(super) struct GrizzlyCaptureCache {
 }
 
 impl GrizzlyCaptureCache {
+    #[cfg(test)]
+    pub(super) fn counter_death_fixture(
+        &self,
+        target: ExactActorRef,
+        transition: &str,
+    ) -> Option<crate::durability::quest_state::native_kills::NativeQuestDeath> {
+        self.deaths
+            .iter()
+            .find(|(actor, _, _)| *actor == target)?
+            .2
+            .native
+            .iter()
+            .find(|recipient| recipient.death.transition == transition)
+            .map(|recipient| recipient.death.clone())
+    }
+
     fn remember(
         &mut self,
         target: ExactActorRef,
