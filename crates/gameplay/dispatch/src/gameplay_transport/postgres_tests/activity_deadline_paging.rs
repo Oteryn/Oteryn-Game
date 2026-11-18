@@ -107,12 +107,20 @@ async fn window_case(h: &Harness) -> TestResult {
     ).fetch_one(&h.pool).await?;
     h.root.set_test_quest_clock(clock)?;
     let window = std::num::NonZeroU32::new(8_000).ok_or("nonzero enrollment window")?;
+    let second_source = second.participants[0].source;
+    assert!(owner.open_portal_room(&authority, &h.node, second_source, BOSS).await?.is_none());
     for request in [&first, &second] {
         let account: String = sqlx::query_scalar(
             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
         ).bind(request.initiating_character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
         evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
         if request.initiating_character_id == second.initiating_character_id {
+            let (handoff, allocation) = owner
+                .open_portal_room(&authority, &h.node, second_source, BOSS)
+                .await?
+                .ok_or("second entrant could not discover the occupied portal room")?;
+            assert_eq!(handoff, first.handoff_id);
+            assert_eq!(allocation.scope, first.destination_scope);
             assert_eq!(
                 owner.enter_boss_admission_window(&authority, &h.node, competing.clone(), window).await?,
                 ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity)
