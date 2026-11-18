@@ -436,10 +436,7 @@ fn scenario() -> TestResult {
                     &closed,
                 )
                 .map_err(debug)?;
-                runtime
-                    .commit_source_step(proof)
-                    .map_err(debug)
-                    .map_err(Into::into)
+                runtime.commit_source_step(proof).map_err(debug)
             };
         let step_onto =
             async |owner: &mut ComposedFreshAdmission<'_, '_, '_>, at| -> TestResult<_> {
@@ -476,15 +473,10 @@ fn scenario() -> TestResult {
                 .map_or(0, |cue| cue.0);
             let mut placement = map.overlay.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
-            {
-                // Advance the input clock between independent real USE commands.
-                let mut gate = owner
-                    .states
-                    .world_gate
-                    .lock()
-                    .map_err(|_| "world action gate")?;
-                *gate = Default::default();
-            }
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(1))
+                .ok_or("advance action clock")?;
             let outcome = owner
                 .use_world_object(
                     actor,
