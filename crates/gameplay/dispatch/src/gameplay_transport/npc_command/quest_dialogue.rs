@@ -531,16 +531,15 @@ pub(super) async fn apply(
             if step.failure_reply.is_empty() {
                 return rejected();
             }
-            let mut rendered = reply(
+            let rendered = reply(
                 &admission.states.chat,
                 command.game_session_id,
                 &step.context,
                 &intent,
                 step.failure_reply,
             );
-            rendered.disposition = NpcIntentDisposition::Rejected;
             let runtime = admission.runtime.lock().await;
-            publish_committed_reply(
+            let mut outcome = publish_committed_reply(
                 admission.states.npc_conversations.current_npc(
                     &admission.states.chat,
                     &runtime,
@@ -550,7 +549,9 @@ pub(super) async fn apply(
                 ),
                 &step.context,
                 rendered,
-            )
+            );
+            outcome.disposition = NpcIntentDisposition::Rejected;
+            outcome
         }
     }
 }

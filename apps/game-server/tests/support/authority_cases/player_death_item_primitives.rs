@@ -2195,10 +2195,10 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     let reset = prepare_nested_reset(&h, &h.root).await?;
     let audits_before = h.count("game_item_audit_outbox").await?;
     // Every attempt uses the production deadline and durable retry ceiling.
-    // Only retry a timed-out statement or a definite rejection near the deadline.
+    // Match the retryable errors used by recover_retiring at boot.
     use crate::durability::item_decay_retire::DecayRetireError;
     use crate::durability::item_mint_audit::RL08_RETRY_WORK_UNITS_MAX;
-    use crate::durability::{DB_PASS_DEADLINE, DurabilityError, SqlxFailureClass};
+    use crate::durability::{DB_PASS_DEADLINE, DurabilityError};
     // Independent fixture processes can hit the same deadline together.
     let retry_jitter = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
@@ -2252,16 +2252,14 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
             }
         }
         remaining -= 1;
-        let retryable = match &retired {
+        let retryable = matches!(
+            &retired,
             Err(DecayRetireError::Unavailable(
-                DurabilityError::RootPassDeadlineExceeded
-                | DurabilityError::Database(SqlxFailureClass::RetryableStatement),
-            )) => true,
-            Err(DecayRetireError::Unavailable(DurabilityError::CommitRejected)) => {
-                retirement_elapsed >= DB_PASS_DEADLINE
-            }
-            _ => false,
-        };
+                DurabilityError::RootUnavailable
+                    | DurabilityError::RootPassDeadlineExceeded
+                    | DurabilityError::CommitOutcomeUnknown
+            ))
+        );
         if remaining > 0 && retryable {
             // A failed attempt cannot retire any part of this tree or publish an audit.
             assert_eq!(nested_death_snapshot(&h, selected).await?, before_drop);

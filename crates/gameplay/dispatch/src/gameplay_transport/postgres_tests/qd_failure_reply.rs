@@ -107,7 +107,8 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
                 loop {
                     let blocked: bool = sqlx::query_scalar(
                         "SELECT EXISTS(SELECT 1 FROM pg_locks \
-                         WHERE relation='game_character_quest_receipts'::regclass AND NOT granted)",
+                         WHERE database=(SELECT oid FROM pg_database WHERE datname=current_database()) \
+                           AND relation='game_character_quest_receipts'::regclass AND NOT granted)",
                     )
                     .fetch_one(&h.pool)
                     .await?;
@@ -137,13 +138,13 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
             let outcome = response.await;
             assert!(!outcome.unknown);
             assert!(!outcome.inventory_changed);
+            assert_eq!(outcome.disposition, NpcIntentDisposition::Rejected);
             if stale {
                 assert!(
                     outcome.conversation.is_none(),
                     "the reopened conversation received the old reply"
                 );
             } else {
-                assert_eq!(outcome.disposition, NpcIntentDisposition::Rejected);
                 assert_eq!(
                     outcome.conversation.ok_or("Muriel refusal line")?.lines,
                     [FAILURE]
@@ -155,7 +156,10 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
         assert_eq!(receipts, 0);
-        Ok(())
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
     });
     eprintln!(
         "POSTGRES_CASE_COMPLETED muriel_failure_reply duration={:?} success={}",
