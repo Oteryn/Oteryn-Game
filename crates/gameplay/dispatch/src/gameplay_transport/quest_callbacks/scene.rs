@@ -1,5 +1,8 @@
 use super::*;
-use crate::map::facts::{QuestCallbackProjection, QuestSceneField, QuestSceneMutation};
+use crate::map::{
+    facts::{QuestCallbackProjection, QuestSceneField, QuestSceneMutation},
+    view::EntryFacts,
+};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn prepare_quest_scene(
