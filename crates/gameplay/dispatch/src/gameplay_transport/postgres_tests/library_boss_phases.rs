@@ -8,7 +8,7 @@ use crate::foundation::{CommandId, CommandRef, ExactActorRef, OwnerDamageCommand
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     capabilities::SelectedCapabilities,
-    connection::{AdmittedSession, FirstEntryOutcome},
+    connection::{AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority},
     kill_reward::{KillSink, record_creature_kill},
 };
 use crate::map::view::MapFacts;
