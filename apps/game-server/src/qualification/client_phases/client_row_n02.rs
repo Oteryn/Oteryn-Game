@@ -16,7 +16,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("N02_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "N02_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -63,7 +65,10 @@ async fn send(
     }
     let receipt = wheel::decode_wheel_reply(&response.payload)
         .map_err(|error| format!("{name} receipt: {error:?}"))?;
-    let current = response.wheel.as_deref().ok_or("current Wheel frame absent")?;
+    let current = response
+        .wheel
+        .as_deref()
+        .ok_or("current Wheel frame absent")?;
     let current = wheel::decode_wheel_reply(current)
         .map_err(|error| format!("{name} current Wheel: {error:?}"))?;
     if response.atelier.is_none() || (!receipt.refused && receipt != current) {
@@ -73,7 +78,22 @@ async fn send(
 }
 
 fn csv(points: &[u16; 36]) -> String {
-    points.iter().map(u16::to_string).collect::<Vec<_>>().join(",")
+    points
+        .iter()
+        .map(u16::to_string)
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+fn wheel_restored(refused: bool, before: u64, after: u64, points_match: bool) -> bool {
+    !refused && before.checked_add(1) == Some(after) && points_match
+}
+
+#[test]
+fn wheel_restoration_requires_confirmed_revision_and_points() {
+    assert!(!wheel_restored(false, 2, 2, true));
+    assert!(!wheel_restored(false, u64::MAX, 0, true));
+    assert!(wheel_restored(false, 2, 3, true));
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -89,7 +109,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("query refused: {initial:?}").into());
     }
     let mut target = initial.points;
-    target[CORE_SLOT] = if initial.points[CORE_SLOT] == 25 { 0 } else { 25 };
+    target[CORE_SLOT] = if initial.points[CORE_SLOT] == 25 {
+        0
+    } else {
+        25
+    };
     let (_, saved) = send(
         &mut client,
         request(1, v7(0xad, 1), initial.revision, target),
@@ -108,17 +132,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         csv(&saved.points)
     );
     capture("n02-expected.txt", expected.as_bytes());
-    // Restore the original allocation; a failure is evidence only, the capture is complete.
-    match send(
+    let (_, restored) = send(
         &mut client,
         request(1, v7(0xad, 2), saved.revision, initial.points),
         "restore",
         false,
     )
-    .await
-    {
-        Ok((_, restored)) if !restored.refused && restored.points == initial.points => {}
-        other => evidence(&format!("N02_RESTORE_UNCONFIRMED {other:?}").replace(' ', "_")),
+    .await?;
+    if !wheel_restored(
+        restored.refused,
+        saved.revision,
+        restored.revision,
+        restored.points == initial.points,
+    ) {
+        return Err(format!("wheel restoration unconfirmed: {restored:?}").into());
+    }
+    let (_, confirmed) = send(&mut client, vec![8, 0], "restore-query", false).await?;
+    if confirmed != restored {
+        return Err(format!(
+            "restored wheel differs from authoritative query: {restored:?} -> {confirmed:?}"
+        )
+        .into());
     }
     let _ = client.session_mut().logout().await;
     Ok(format!(
@@ -128,7 +162,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=N02.client status=CAPTURED evidence={observed}"
         )),

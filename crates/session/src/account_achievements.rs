@@ -15,6 +15,24 @@ pub enum Response {
 }
 
 impl<S: SessionStream> Session<S> {
+    /// Sends the fixed truncated field used by the qualification rejection probe.
+    #[cfg(feature = "test-support")]
+    pub async fn qualification_malformed_achievement_query(
+        &mut self,
+    ) -> Result<GatedCommandResult, SessionError> {
+        self.ensure_usable()?;
+        let outcome = self
+            .send_and_read_result(COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, &[0x08])
+            .await;
+        let result = self.poison_on_error(outcome)?;
+        Ok(GatedCommandResult {
+            command_id: result.command_id,
+            status: result.status,
+            server_sequence: result.server_sequence,
+            payload: result.payload,
+        })
+    }
+
     pub async fn account_achievements(&mut self, page: u32) -> Result<Response, SessionError> {
         self.ensure_usable()?;
         let payload = encode_account_achievements_query(AccountAchievementsQuery { page });

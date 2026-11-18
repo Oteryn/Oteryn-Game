@@ -16,7 +16,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W19A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "W19A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -36,12 +38,21 @@ fn visible(inventory: &oteryn_dev_client::CharacterInventory) -> String {
         .collect()
 }
 
-async fn wait_inventory(client: &mut DevClientSession) -> TestResult<oteryn_dev_client::CharacterInventory> {
+async fn wait_inventory(
+    client: &mut DevClientSession,
+    after: u64,
+    refusal_baseline: &oteryn_dev_client::CharacterInventory,
+) -> TestResult<oteryn_dev_client::CharacterInventory> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         for event in client.take_events() {
             if let SessionEvent::Inventory(delta) = event {
-                return Ok(delta.value);
+                if delta.server_sequence > after {
+                    return Ok(delta.value);
+                }
+                if &delta.value != refusal_baseline {
+                    return Err("step=use-with inventory changed before the valid USE reply".into());
+                }
             }
         }
         if tokio::time::Instant::now() >= deadline {
@@ -49,6 +60,29 @@ async fn wait_inventory(client: &mut DevClientSession) -> TestResult<oteryn_dev_
         }
         client.service_liveness(Duration::from_millis(20)).await?;
     }
+}
+
+fn exact_bag_outcome(source_spent: bool, reward: u64, minimum: u32, maximum: u32) -> bool {
+    source_spent && (u64::from(minimum)..=u64::from(maximum)).contains(&reward)
+}
+
+#[test]
+fn surprise_bag_use_requires_exact_source_and_allowed_reward_count() {
+    assert!(!exact_bag_outcome(false, 2, 1, 2));
+    assert!(!exact_bag_outcome(true, 3, 1, 2));
+    assert!(exact_bag_outcome(true, 2, 1, 2));
+}
+
+fn only_plain_use_committed(refused_receipt: bool, plain_receipt: bool) -> bool {
+    !refused_receipt && plain_receipt
+}
+
+#[test]
+fn bag_custody_must_be_bound_to_the_plain_use_command() {
+    assert!(!only_plain_use_committed(true, false));
+    assert!(!only_plain_use_committed(true, true));
+    assert!(!only_plain_use_committed(false, false));
+    assert!(only_plain_use_committed(false, true));
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -64,9 +98,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let rewards = rule
         .rewards
         .iter()
-        .map(|reward| provisioning::item_reference(&index, reward.item_id).map(std::num::NonZeroU32::get))
-        .collect::<TestResult<Vec<u32>>>()?;
-    let before = client.inventory().cloned().ok_or("step=inventory snapshot absent")?;
+        .map(|reward| {
+            let reference = provisioning::item_reference(&index, reward.item_id)?.get();
+            Ok((reference, (reward.minimum, reward.maximum)))
+        })
+        .collect::<TestResult<BTreeMap<u32, (u32, u32)>>>()?;
+    let before = client
+        .inventory()
+        .cloned()
+        .ok_or("step=inventory snapshot absent")?;
     let bag = before
         .entries
         .iter()
@@ -90,27 +130,56 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }),
     })
     .map_err(|error| format!("use-with encode: {error:?}"))?;
-    let refused = client
-        .session_mut()
-        .world_context_use(&payload)
-        .await?;
-    let (detail, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&refused.payload)
-        .map_err(|error| format!("step=use-with refusal detail: {error:?}"))?;
+    client.take_events();
+    let refused_id = client.next_command_id();
+    let refused = client.session_mut().world_context_use(&payload).await?;
+    let (detail, _) =
+        oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&refused.payload)
+            .map_err(|error| format!("step=use-with refusal detail: {error:?}"))?;
     let disposition = use_wire::decode_use_result(detail)
         .map_err(|error| format!("step=use-with result: {error:?}"))?;
+    client.service_liveness(Duration::from_millis(250)).await?;
+    let changed_on_refusal = client
+        .take_events()
+        .into_iter()
+        .any(|event| matches!(event, SessionEvent::Inventory(delta) if delta.value != before));
     if refused.status != CommandStatus::Accepted
         || disposition != use_wire::UseDisposition::NothingToUse
-        || client.inventory().map(units).as_ref() != Some(&held_before)
+        || changed_on_refusal
+        || client.inventory() != Some(&before)
     {
-        return Err(format!("step=use-with status={:?} disposition={disposition:?}", refused.status).into());
+        return Err(format!(
+            "step=use-with status={:?} disposition={disposition:?}",
+            refused.status
+        )
+        .into());
     }
 
-    client.take_events();
+    let plain_id = client.next_command_id();
     let reply = client.use_item(bag.handle).await?;
-    if reply.status != CommandStatus::Accepted || reply.disposition != use_wire::UseDisposition::Committed {
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != use_wire::UseDisposition::Committed
+    {
         return Err(format!("step=use reply={reply:?}").into());
     }
-    let after = wait_inventory(&mut client).await?;
+    let after = wait_inventory(&mut client, reply.result_server_sequence, &before).await?;
+    use sqlx::Connection as _;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let receipts: Vec<String> = sqlx::query_scalar(
+        "SELECT command_id::text FROM game_item_craft_records          WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid          AND command_id IN ($3::text::numeric, $4::text::numeric) AND recipe LIKE 'oteryn:event-container.%'",
+    )
+    .bind(client.join_snapshot().game_session_id.as_bytes().as_slice())
+    .bind(clients.characters[1].as_slice())
+    .bind(refused_id.to_string())
+    .bind(plain_id.to_string())
+    .fetch_all(&mut connection)
+    .await?;
+    if !only_plain_use_committed(
+        receipts.contains(&refused_id.to_string()),
+        receipts.contains(&plain_id.to_string()),
+    ) {
+        return Err(format!("step=use durable receipt mismatch: refused={refused_id}, plain={plain_id}, receipts={receipts:?}").into());
+    }
     let held_after = units(&after);
     let changed: Vec<u32> = held_before
         .keys()
@@ -120,25 +189,49 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
         .collect();
-    let spent = held_before.get(&bag_ref.get()).copied().unwrap_or(0) == held_after.get(&bag_ref.get()).copied().unwrap_or(0) + 1;
-    let minted: Vec<u32> = changed.iter().copied().filter(|key| *key != bag_ref.get()).collect();
-    if !spent || minted.len() != 1 || !rewards.contains(&minted[0]) || held_after.get(&minted[0]).copied().unwrap_or(0) <= held_before.get(&minted[0]).copied().unwrap_or(0) {
+    let bag_count_after = after
+        .entries
+        .iter()
+        .find(|item| item.handle == bag.handle)
+        .map_or(0, |item| item.count.get());
+    let spent = bag.count.get().checked_sub(1) == Some(bag_count_after)
+        && held_before
+            .get(&bag_ref.get())
+            .copied()
+            .unwrap_or(0)
+            .checked_sub(1)
+            == Some(held_after.get(&bag_ref.get()).copied().unwrap_or(0));
+    let minted: Vec<u32> = changed
+        .iter()
+        .copied()
+        .filter(|key| *key != bag_ref.get())
+        .collect();
+    let [reward] = minted.as_slice() else {
+        return Err(format!("step=outcome expected one reward definition: {minted:?}").into());
+    };
+    let delta = held_after
+        .get(reward)
+        .copied()
+        .unwrap_or(0)
+        .checked_sub(held_before.get(reward).copied().unwrap_or(0));
+    if !rewards.get(reward).is_some_and(|&(min, max)| {
+        delta.is_some_and(|count| exact_bag_outcome(spent, count, min, max))
+    }) {
         return Err(format!("step=outcome before={held_before:?} after={held_after:?}").into());
     }
     let after_payload = item_view::encode_character_inventory_with_equip_drop(&after, true)
         .map_err(|error| format!("inventory encode: {error:?}"))?;
     capture("w19a-before.bin", &before_payload);
     capture("w19a-after.bin", &after_payload);
-    capture(
-        "w19a-expected.txt",
-        visible(&after).as_bytes(),
-    );
+    capture("w19a-expected.txt", visible(&after).as_bytes());
     let _ = client.session_mut().logout().await;
     Ok(format!("bag={} reward={}", bag_ref.get(), minted[0]))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W19a.client status=CAPTURED evidence={observed}"
         )),

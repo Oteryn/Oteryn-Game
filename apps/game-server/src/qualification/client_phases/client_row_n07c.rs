@@ -25,6 +25,8 @@ fn collect(
     selected: bool,
     facts: &mut Vec<AnalyserFact>,
     events: &mut Vec<String>,
+    target: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    target_removed: &mut bool,
 ) -> TestResult {
     use oteryn_protocol_oteryn::analyser::{encode_analyser_fact, encode_attributed_analyser_fact};
     let hex = |bytes: Vec<u8>| {
@@ -64,8 +66,7 @@ fn collect(
                     .value
                     .iter()
                     .map(|fact| {
-                        encode_attributed_analyser_fact(&fact.fact, fact.attacker.as_ref())
-                            .map(hex)
+                        encode_attributed_analyser_fact(&fact.fact, fact.attacker.as_ref()).map(hex)
                     })
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(|error| format!("analyser capture codec: {error:?}"))?;
@@ -78,6 +79,10 @@ fn collect(
                     encoded,
                 )
             }
+            SessionEvent::WorldSpatialEntities(delta) => {
+                *target_removed |= delta.value.leave.contains(&target);
+                continue;
+            }
             _ => continue,
         };
         events.push(format!(
@@ -89,9 +94,52 @@ fn collect(
 }
 
 /// Fight the adjacent creature and collect every analyser fact the server pushes for the kill.
+fn rat_race() -> TestResult<std::num::NonZeroU32> {
+    use crate::content::{ProjectEvidenceLimits, canonical_bestiary_rows};
+    let races = canonical_bestiary_rows(ProjectEvidenceLimits {
+        max_documents: 5,
+        max_document_bytes: 2_500_000,
+        max_total_bytes: 8_000_000,
+        max_json_depth: 10,
+        max_decoded_fields: 65_000,
+        max_string_bytes: 1_000_000,
+        max_locator_bytes: 128,
+        max_locator_segments: 5,
+        max_reference_records: 4096,
+        max_import_records: 1,
+        max_reimport_states: 1,
+    })?;
+    let index = races
+        .iter()
+        .position(|(race, _)| race.key() == "oteryn:creature.rat")
+        .ok_or("rat absent from the canonical bestiary")?;
+    std::num::NonZeroU32::new(u32::try_from(index + 1)?).ok_or_else(|| "rat race index zero".into())
+}
+
+fn settled_target(
+    target_removed: bool,
+    kills: usize,
+    matching_xp: bool,
+    matching_loot: bool,
+    exact_death: bool,
+) -> bool {
+    target_removed && exact_death && kills == 1 && matching_xp && matching_loot
+}
+
+#[test]
+fn analyser_settlement_requires_target_death_xp_and_loot() {
+    assert!(!settled_target(false, 1, true, true, true));
+    assert!(!settled_target(true, 1, false, true, true));
+    assert!(!settled_target(true, 1, true, false, true));
+    assert!(!settled_target(true, 1, true, true, false));
+    assert!(settled_target(true, 1, true, true, true));
+}
+
 async fn fight(
+    clients: &SeamClients<'_>,
     client: &mut DevClientSession,
     selected: bool,
+    race_id: std::num::NonZeroU32,
 ) -> TestResult<(Vec<AnalyserFact>, Vec<String>)> {
     let here = client.world_spatial().actor_position;
     let target = client
@@ -99,6 +147,10 @@ async fn fight(
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
+                    && entry.display_name.is_some_and(|name| {
+                        name.as_str()
+                            .is_ok_and(|name| name.eq_ignore_ascii_case("Rat"))
+                    })
                     && entry.position.floor == here.floor
                     && entry
                         .position
@@ -110,6 +162,8 @@ async fn fight(
         })
         .copied()
         .ok_or("no adjacent creature after travel")?;
+    client.take_events();
+    let mut death = super::client_row_w22a::DeathProbe::start(clients).await?;
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -121,22 +175,59 @@ async fn fight(
     let mut events = Vec::new();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while !facts
-        .iter()
-        .any(|fact| matches!(fact, AnalyserFact::Kill { .. }))
-    {
+    let mut target_removed = false;
+    while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(100)).await?;
-        collect(client, selected, &mut facts, &mut events)?;
-        if tokio::time::Instant::now() >= deadline {
-            return Err("no analyser Kill fact before the deadline".into());
+        collect(
+            client,
+            selected,
+            &mut facts,
+            &mut events,
+            target.entity,
+            &mut target_removed,
+        )?;
+        let mut kills = facts.iter().filter_map(|fact| match fact {
+            AnalyserFact::Kill { race } => Some(*race),
+            _ => None,
+        });
+        let kill = kills.next();
+        if kill.is_some_and(|race| race != Some(race_id)) || kills.next().is_some() {
+            return Err("multiple analyser kills make target attribution ambiguous".into());
+        }
+        let xp = facts
+            .iter()
+            .filter(|fact| matches!(fact, AnalyserFact::Experience { .. }))
+            .count();
+        if xp > 1
+            || facts
+                .iter()
+                .any(|fact| matches!(fact, AnalyserFact::Dropped(_)))
+        {
+            return Err("ambiguous or dropped analyser settlement facts".into());
+        }
+        let matching_xp = facts.iter().any(|fact| {
+            matches!(fact,
+            AnalyserFact::Experience { raw: 5, gained } if *gained > 0)
+        });
+        let matching_loot = facts.iter().any(|fact| {
+            matches!(fact,
+            AnalyserFact::KillLoot { race, corpse_items, .. }
+            if Some(*race) == kill && !corpse_items.is_empty())
+        });
+        let exact_death = target_removed
+            && matching_loot
+            && death.corpse_identity(target.entity, true).await?.is_some();
+        if settled_target(
+            target_removed,
+            usize::from(kill.is_some()),
+            matching_xp,
+            matching_loot,
+            exact_death,
+        ) {
+            return Ok((facts, events));
         }
     }
-    // The loot and experience facts of the same settlement may follow in another batch.
-    for _ in 0..8 {
-        client.service_liveness(Duration::from_millis(100)).await?;
-        collect(client, selected, &mut facts, &mut events)?;
-    }
-    Ok((facts, events))
+    Err("selected rat removal and its analyser kill, XP and loot were not all observed".into())
 }
 
 fn line(fact: &AnalyserFact) -> String {
@@ -170,6 +261,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let race_id = rat_race()?;
     let mut client = connect_world(clients, 0x35).await?;
     if !client.selected_capabilities().contains(&10) {
         return Err("analyser capability 10 not selected".into());
@@ -178,7 +270,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let attribution_selected = client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1);
-    let (facts, events) = fight(&mut client, attribution_selected).await?;
+    let (facts, events) = fight(clients, &mut client, attribution_selected, race_id).await?;
     let kills = facts
         .iter()
         .filter(|fact| matches!(fact, AnalyserFact::Kill { .. }))

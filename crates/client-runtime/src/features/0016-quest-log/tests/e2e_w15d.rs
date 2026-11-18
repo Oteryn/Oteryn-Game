@@ -1,7 +1,6 @@
 //! W15d client replay: the quest journal lists captured before and after the guidance shrine use
 //! enter the native quest reducer (`QuestState::from_snapshot` / `QuestState::apply`). The
-//! shrine callback is one-way, so a refused use leaves the projection and revision unchanged and
-//! a committed use changes the list; a stale or malformed list delta is refused without change.
+//! shrine advances the Guidance mission in the already-listed pilgrimage.
 use super::*;
 
 type BoxError = Box<dyn std::error::Error>;
@@ -10,6 +9,7 @@ struct Capture {
     snapshot: Vec<u8>,
     before: Vec<u8>,
     after: Vec<u8>,
+    line: Vec<u8>,
     expected: String,
 }
 
@@ -36,16 +36,27 @@ fn capture() -> Result<Capture, BoxError> {
             snapshot: std::fs::read(root.join("w15d-snapshot.bin"))?,
             before: std::fs::read(root.join("w15d-before.bin"))?,
             after: std::fs::read(root.join("w15d-after.bin"))?,
+            line: std::fs::read(root.join("w15d-line.bin"))?,
             expected: std::fs::read_to_string(root.join("w15d-expected.txt"))?,
         });
     }
     let encode = |log: &QuestLog| encode_quest_log(log).map_err(|error| format!("{error:?}"));
     Ok(Capture {
         snapshot: encode(&QuestLog::default())?,
-        before: encode(&list_log(&[(3, false)]))?,
+        before: encode(&list_log(&[(3, false), (14, false)]))?,
         after: encode(&list_log(&[(3, false), (14, false)]))?,
-        expected: "snapshot_revision=2\nuse=Committed\nlist_before=3:0\nbefore_base=2\nbefore_new=3\n\
-                   before_sequence=41\nlist_after=3:0;14:0\nafter_base=3\nafter_new=4\nafter_sequence=43\n"
+        line: encode(&QuestLog {
+            view: Some(QuestLogView::Line(oteryn_session::quest_log::QuestLine {
+                quest_index: 14, completed: false,
+                missions: vec![oteryn_session::quest_log::QuestMission {
+                    mission_index: 1, name: "Shrine of Guidance".into(),
+                    text: "You honoured the Shrine of Guidance.".into(), done: true,
+                }],
+            })),
+            ..QuestLog::default()
+        })?,
+        expected: "snapshot_revision=2\nuse=Committed\nlist_before=3:0;14:0\nbefore_base=2\nbefore_new=3\n\
+                   before_sequence=41\nlist_after=3:0;14:0\nafter_base=3\nafter_new=4\nafter_sequence=43\nquest_index=14\nline_base=4\nline_new=5\nline_sequence=45\n"
             .into(),
     })
 }
@@ -105,11 +116,16 @@ fn e2e_w15d_shrine_use_quest_list_replays_into_the_quest_reducer() -> Result<(),
         .map_err(|error| format!("{error:?}"))?;
     assert_eq!(visible(&state), value(expected, "list_after")?);
     assert_eq!(state.revision, Some(number(expected, "after_new")?));
-    match value(expected, "use")? {
-        "Committed" => assert_ne!(visible(&state), visible(&before)),
-        "Rejected" => assert_eq!(state.list, before.list),
-        other => return Err(format!("w15d unknown use outcome {other}").into()),
-    }
+    assert_eq!(value(expected, "use")?, "Committed");
+    assert_eq!(state.list, before.list);
+    state
+        .apply(&delta(expected, "line", &capture.line)?)
+        .map_err(|error| format!("{error:?}"))?;
+    let index = u32::try_from(number(expected, "quest_index")?)?;
+    assert!(matches!(&state.log.view, Some(QuestLogView::Line(line))
+        if line.quest_index == index
+            && line.missions.iter().any(|mission| mission.name == "Shrine of Guidance" && mission.done)));
+    assert_eq!(state.revision, Some(number(expected, "line_new")?));
 
     // A replayed delta (stale base revision) and a refused command result leave the list alone.
     let kept = state.clone();

@@ -10,7 +10,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("N07A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "N07A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -40,22 +42,63 @@ fn titles(bytes: &[u8]) -> TestResult<(Vec<u8>, u8)> {
     Ok((bytes[70..70 + count].to_vec(), bytes[70 + count]))
 }
 
+fn choose_title(earned: &[u8], selected: u8) -> Option<u8> {
+    earned
+        .iter()
+        .copied()
+        .find(|id| *id != 0 && *id != selected)
+}
+
+#[test]
+fn title_selection_requires_an_earned_change() {
+    assert!(choose_title(&[], 0).is_none());
+    assert!(choose_title(&[1], 1).is_none());
+    assert_eq!(choose_title(&[1, 2], 1), Some(2));
+}
+
 fn ids(values: &[u8]) -> String {
-    values.iter().map(u8::to_string).collect::<Vec<_>>().join(",")
+    values
+        .iter()
+        .map(u8::to_string)
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xf7).await?;
     // The page the titles selector requests (offset 0, limit 1).
     let page = info::PageRequest::new(0, 1).ok_or("page")?;
-    let query = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
+    let mut query = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
     if query.status != CommandStatus::Accepted {
         return Err(format!("QuerySelf status={:?}", query.status).into());
     }
+    let (earned, mut selected_before) = titles(&query.payload)?;
+    if choose_title(&earned, selected_before).is_none() && earned.contains(&selected_before) {
+        let clear = send(&mut client, info::CharacterInfoOperation::Select(None)).await?;
+        if clear.status != CommandStatus::Accepted
+            || clear.payload.len() != 9
+            || clear.payload.first() != Some(&3)
+        {
+            return Err(
+                format!("could not clear title before exercising selection: {clear:?}").into(),
+            );
+        }
+        query = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
+        let (reread_earned, reread_selected) = titles(&query.payload)?;
+        if query.status != CommandStatus::Accepted
+            || reread_earned != earned
+            || reread_selected != 0
+        {
+            return Err("title clear setup was not reflected by QuerySelf".into());
+        }
+        selected_before = reread_selected;
+    }
+    let title = choose_title(&earned, selected_before)
+        .and_then(info::CharacterTitle::from_id)
+        .ok_or("no different earned title")?;
     capture("n07a-query.bin", &query.payload);
-    let (earned, selected_before) = titles(&query.payload)?;
-    let chosen = earned.first().copied().unwrap_or(0);
-    let operation = info::CharacterInfoOperation::Select(info::CharacterTitle::from_id(chosen));
+    let chosen = title.id();
+    let operation = info::CharacterInfoOperation::Select(Some(title));
     let select = send(&mut client, operation).await?;
     if select.status != CommandStatus::Accepted
         || select.payload.len() != 9
@@ -69,7 +112,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .filter(|id| !earned.contains(id))
         .find_map(info::CharacterTitle::from_id)
         .ok_or("every title is earned")?;
-    let refused = send(&mut client, info::CharacterInfoOperation::Select(Some(unearned))).await?;
+    let refused = send(
+        &mut client,
+        info::CharacterInfoOperation::Select(Some(unearned)),
+    )
+    .await?;
     if refused.status != CommandStatus::Rejected {
         return Err(format!("unearned Select was not rejected: {refused:?}").into());
     }
@@ -95,7 +142,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=N07a.client status=CAPTURED evidence={expected}"
         )),

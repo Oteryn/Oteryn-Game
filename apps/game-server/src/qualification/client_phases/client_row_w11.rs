@@ -12,11 +12,81 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W11_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "W11_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
+fn remote_refusal(status: CommandStatus, reply: &wire::BossActivityReply) -> bool {
+    status == CommandStatus::Rejected
+        && matches!(
+            reply,
+            wire::BossActivityReply::Refused(
+                wire::BossActivityRefusal::Position | wire::BossActivityRefusal::NoCapacity
+            )
+        )
+}
+
+#[test]
+fn remote_soul_war_lever_is_checked_before_level() {
+    use wire::{BossActivityRefusal as Refusal, BossActivityReply::Refused};
+    assert!(!remote_refusal(
+        CommandStatus::Accepted,
+        &Refused(Refusal::Position)
+    ));
+    assert!(!remote_refusal(
+        CommandStatus::Rejected,
+        &Refused(Refusal::Level)
+    ));
+    assert!(remote_refusal(
+        CommandStatus::Rejected,
+        &Refused(Refusal::Position)
+    ));
+    assert!(remote_refusal(
+        CommandStatus::Rejected,
+        &Refused(Refusal::NoCapacity)
+    ));
+}
+
+// A remote packet cannot reach the roster gate. Exercise the same prerequisite
+// owner called by live dispatch with an otherwise qualified underlevel roster.
+async fn verify_soul_war_level_gate() -> TestResult {
+    use oteryn_gameplay_encounters::bosses::endgame_entry::{
+        self, Encounter, EntryFacts, EntryRefusal,
+    };
+    let encounter = Encounter::from_boss_key(BOSS).ok_or("Soul War encounter not recognized")?;
+    let mut participant = EntryFacts {
+        character: [1; 16],
+        character_revision: 1,
+        level: 249,
+        access: true,
+        chain_ready: true,
+    };
+    let result = endgame_entry::enter(encounter, &[participant], |_| async { Ok(()) }).await;
+    if result != Err(EntryRefusal::Level) {
+        return Err(format!("step=roster-level expected Level at 249: {result:?}").into());
+    }
+    participant.level = 250;
+    let result = endgame_entry::enter(encounter, &[participant], |_| async { Ok(()) }).await;
+    if result != Ok(()) {
+        return Err(format!(
+            "step=roster-level expected admission to shared owner at 250: {result:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn soul_war_roster_gate_enforces_level_before_shared_handoff() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .build()?
+        .block_on(verify_soul_war_level_gate())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    verify_soul_war_level_gate().await?;
     let mut client = connect_world(clients, 0x02).await?;
     let query = wire::query_taints("").ok_or("taint query encoder")?;
     let taints = client
@@ -38,6 +108,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .await?;
     let reply = wire::decode_boss_activity_reply(&lever.payload)
         .map_err(|error| format!("lever reply malformed: {error:?} status={:?}", lever.status))?;
+    if !remote_refusal(lever.status, &reply) {
+        return Err(format!(
+            "lever did not return the expected remote Position or NoCapacity refusal: status={:?} reply={reply:?}",
+            lever.status
+        )
+        .into());
+    }
     let activity = match &reply {
         wire::BossActivityReply::Accepted {
             deadline_unix_ms, ..
@@ -58,7 +135,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("w11-taints.bin", &taints.payload);
     capture("w11-lever.bin", &lever.payload);
     let expected = format!(
-        "now={}\nsoul_war={}\nrotten_blood={}\nrotten_blood_flags={}\nrotten_blood_final={}\nlever_status={:?}\nactivity={activity}\n",
+        "now={}\nsoul_war={}\nrotten_blood={}\nrotten_blood_flags={}\nrotten_blood_final={}\nlever_status={:?}\nactivity={activity}\nroster_level_gate=249-refused-250-eligible\n",
         snapshot.now,
         taint.soul_war,
         taint.rotten_blood,
@@ -71,7 +148,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W11.client status=CAPTURED evidence={observed}"
         )),

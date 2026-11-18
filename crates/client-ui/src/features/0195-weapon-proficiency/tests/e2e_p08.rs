@@ -64,7 +64,7 @@ fn fixture() -> Result<Captured, Error> {
         browse: browse.encode().ok_or_else(none)?,
         select: select.encode().ok_or_else(none)?,
         stale: stale.encode(),
-        expected: "catalogue_total=1\ncatalogue_first=258|Wand|120\nbrowse_total=1\nbrowse_rows=1\nselect_result=Accepted\nselect_levels=[Some(0)]\nstale_result=StaleRevision\n".into(),
+        expected: "catalogue_total=1\ncatalogue_first=258|Wand|120\nbrowse_total=1\nbrowse_rows=1\nselect_definition=258\nselect_result=Accepted\nselect_levels=[Some(0)]\nstale_result=StaleRevision\n".into(),
     })
 }
 
@@ -151,7 +151,7 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
     let confirmed = p.page.clone();
 
     // SelectPerk sends the exact weapon/level/perk bytes and shows the server's typed reply.
-    p.weapon = definition.parse()?;
+    p.weapon = value(e, "select_definition")?.parse()?;
     p.level = 0;
     p.perk = 0;
     let select = request(&mut p, Intent::SelectPerk).ok_or("select request")?;

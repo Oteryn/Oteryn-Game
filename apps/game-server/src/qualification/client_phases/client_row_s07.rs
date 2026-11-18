@@ -8,70 +8,134 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::target_move::{WalkDisposition, send};
 use oteryn_protocol_oteryn::bed::COMMAND_TYPE_BED_SLEEP_INTENT;
 use oteryn_protocol_oteryn::item_view::{ItemHandle, encode_item_target};
+use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin, MapTile};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, decode_use_result};
 
-const BED: ActorPosition = ActorPosition { x: 32311, y: 32804, floor: 7 };
-const APPROACH: ActorPosition = ActorPosition { x: 32312, y: 32804, floor: 7 };
+const BED: ActorPosition = ActorPosition {
+    x: 32311,
+    y: 32804,
+    floor: 7,
+};
+const APPROACH: ActorPosition = ActorPosition {
+    x: 32312,
+    y: 32804,
+    floor: 7,
+};
 
 fn capture(name: &str, bytes: &[u8]) {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S07_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "S07_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
-async fn travel(client: &mut DevClientSession) -> TestResult {
+async fn travel(client: &mut DevClientSession) -> TestResult<MapTile> {
+    let mut bed = client
+        .session_mut()
+        .world_map_snapshot()
+        .and_then(|map| map.tiles.into_iter().find(|tile| tile.position == BED));
     if client.world_spatial().actor_position == APPROACH {
-        return Ok(());
+        return bed.ok_or_else(|| "step=bed-handle bed tile missing at admission".into());
     }
     let reply = send(client.session_mut(), APPROACH).await?;
     if reply.status != CommandStatus::Accepted
         || reply.disposition != Some(WalkDisposition::Accepted)
     {
-        return Err(format!("step=walk status={:?} disposition={:?}", reply.status, reply.disposition).into());
+        return Err(format!(
+            "step=walk status={:?} disposition={:?}",
+            reply.status, reply.disposition
+        )
+        .into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
-        if client.world_spatial().actor_position == APPROACH {
-            return Ok(());
+        observe_map_tile(&mut bed, BED, client.take_events());
+        if client.world_spatial().actor_position == APPROACH
+            && let Some(bed) = bed
+        {
+            return Ok(bed);
         }
     }
     Err("step=walk stopped before the bed approach".into())
 }
 
-fn bed_handle(client: &mut DevClientSession) -> TestResult<ItemHandle> {
-    let snapshot = client
-        .session_mut()
-        .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
-        .ok_or("step=bed-handle missing world map")?;
-    let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
-        .map_err(|error| format!("step=bed-handle decode {error:?}"))?;
-    map.tiles
+fn is_bed_target(matches_bed: bool, has_handle: bool) -> bool {
+    matches_bed && has_handle
+}
+
+#[test]
+fn bed_target_requires_bed_definition_even_when_other_items_have_handles() {
+    assert!(!is_bed_target(false, true));
+    assert!(!is_bed_target(true, false));
+    assert!(is_bed_target(true, true));
+}
+
+fn bed_definitions() -> TestResult<BTreeSet<std::num::NonZeroU32>> {
+    use crate::content::{ReferenceItemField, native_gameplay::ItemProfilesDocument};
+
+    let index = provisioning::item_index()?;
+    let profiles = native_input()?
+        .item_profiles
+        .as_ref()
+        .ok_or("step=bed-handle missing item profiles")?;
+    let profiles: ItemProfilesDocument = serde_json::from_slice(&profiles.bytes)?;
+    Ok(profiles
+        .records
         .iter()
-        .find(|tile| tile.position == BED)
-        .and_then(|tile| {
-            tile.items.iter().find_map(|item| match item.origin {
-                oteryn_protocol_oteryn::world_map::MapOrigin::Handle(handle) => Some(handle),
+        .filter(|record| matches!(record.semantics.bed, ReferenceItemField::Known(_)))
+        .flat_map(|record| {
+            [
+                (&record.authoring.item.key, &record.authoring.item.revision),
+                (
+                    &record.production_definition.production_key,
+                    &record.production_definition.revision_ref,
+                ),
+            ]
+        })
+        .filter_map(|(key, revision)| index.definition_ref("Item", key, revision))
+        .collect())
+}
+
+fn bed_handle(tile: &MapTile, beds: &BTreeSet<std::num::NonZeroU32>) -> TestResult<ItemHandle> {
+    tile.items
+        .iter()
+        .find_map(|item| {
+            let MapDefinition::Item(reference) = item.definition else {
+                return None;
+            };
+            let handle = match item.origin {
+                MapOrigin::Handle(handle) => Some(handle),
                 _ => None,
-            })
+            };
+            is_bed_target(beds.contains(&reference), handle.is_some())
+                .then_some(handle)
+                .flatten()
         })
         .ok_or_else(|| "step=bed-handle authored bed has no live item handle".into())
 }
 
 /// Sleeps on the bed with magic-level training and returns the raw reply payload plus its
 /// decoded disposition.
-async fn sleep(client: &mut DevClientSession) -> TestResult<(Vec<u8>, UseDisposition)> {
-    let target = encode_item_target(bed_handle(client)?);
+async fn sleep(
+    client: &mut DevClientSession,
+    handle: ItemHandle,
+) -> TestResult<(Vec<u8>, UseDisposition)> {
+    let target = encode_item_target(handle);
     let mut payload = vec![0x0a, u8::try_from(target.len())?];
     payload.extend(target);
     payload.extend([0x10, 6]);
     let reply = client
         .session_mut()
-        .gated_command(oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1, COMMAND_TYPE_BED_SLEEP_INTENT, &payload)
+        .gated_command(
+            oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
+            COMMAND_TYPE_BED_SLEEP_INTENT,
+            &payload,
+        )
         .await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step=sleep status={:?}", reply.status).into());
@@ -82,15 +146,16 @@ async fn sleep(client: &mut DevClientSession) -> TestResult<(Vec<u8>, UseDisposi
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let beds = bed_definitions()?;
     let mut sleeper = connect_character(clients, 0x60, 1).await?;
-    travel(&mut sleeper).await?;
-    let (sleep_payload, slept) = sleep(&mut sleeper).await?;
+    let bed = travel(&mut sleeper).await?;
+    let (sleep_payload, slept) = sleep(&mut sleeper, bed_handle(&bed, &beds)?).await?;
     if slept != UseDisposition::OfflineTraining {
         return Err(format!("step=sleep observed {slept:?}, expected OfflineTraining").into());
     }
     let mut peer = connect_character(clients, 0x61, 0).await?;
-    travel(&mut peer).await?;
-    let (occupied_payload, occupied) = sleep(&mut peer).await?;
+    let bed = travel(&mut peer).await?;
+    let (occupied_payload, occupied) = sleep(&mut peer, bed_handle(&bed, &beds)?).await?;
     let _ = peer.session_mut().logout().await;
     if occupied != UseDisposition::BedOccupied {
         return Err(format!("step=occupied observed {occupied:?}, expected BedOccupied").into());
@@ -111,7 +176,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=S07.client status=CAPTURED evidence={observed}"
         )),

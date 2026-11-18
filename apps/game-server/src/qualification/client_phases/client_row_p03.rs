@@ -13,7 +13,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "P03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -53,9 +55,22 @@ fn slot(reply: &wire::Reply, number: u8) -> TestResult<&wire::Slot> {
         .ok_or_else(|| format!("slot {number} absent").into())
 }
 
+fn reroll_applied(status: u8) -> bool {
+    status == 0
+}
+
+#[test]
+fn prey_reroll_rejects_refused_receipt() {
+    assert!(!reroll_applied(1));
+    assert!(reroll_applied(0));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x23).await?;
-    if !client.selected_capabilities().contains(&wire::CAPABILITY_PREY_V1) {
+    if !client
+        .selected_capabilities()
+        .contains(&wire::CAPABILITY_PREY_V1)
+    {
         return Err("admission omitted Prey capability 140".into());
     }
     let (_, initial, _) = send(&mut client, wire::Request::Query, "query").await?;
@@ -72,6 +87,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "reroll",
     )
     .await?;
+    if !reroll_applied(reroll.status) {
+        return Err(format!("list reroll refused: {reroll:?}").into());
+    }
     let current = current.ok_or("reroll returned no current state")?;
     let after = slot(&current, before.slot)?.clone();
     let (_, refusal, refused_current) = send(
@@ -105,7 +123,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P03.client status=CAPTURED evidence={expected}"
         )),

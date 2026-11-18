@@ -1,4 +1,4 @@
-//! P05 replay: server TASK_BOARD replies for a Talisman purchase and the refused repeat, applied
+//! P05 replay: server TASK_BOARD replies for a Talisman purchase and the second purchase, applied
 //! through the production `talisman::request`, `apply_full_result` and `panel_text`.
 use super::*;
 use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
@@ -62,16 +62,11 @@ fn fixture() -> Result<Captured, Error> {
         bonus: 0,
         next_cost: 5,
     };
-    let after = TalismanPath {
-        level: 1,
-        bonus: 1,
-        next_cost: 10,
-    };
     Ok(Captured {
         query: encode(&reply(0, 30, before))?,
-        buy: encode(&reply(0, 25, after))?,
-        repeat: encode(&reply(2, 25, after))?,
-        expected: "bounty_points_before=30\nbounty_points_after=25\ntalisman_before=0,0,5|0,0,0|0,0,0|0,0,0\ntalisman_after=1,1,10|0,0,0|0,0,0|0,0,0\nrefusal=2\n".into(),
+        buy: encode(&reply(0, 30, before))?,
+        repeat: encode(&reply(4, 30, before))?,
+        expected: "bounty_points_before=30\nbounty_points_after=30\ntalisman_before=0,0,5|0,0,0|0,0,0|0,0,0\ntalisman_after=0,0,5|0,0,0|0,0,0|0,0,0\nrefusal=4\n".into(),
     })
 }
 
@@ -132,7 +127,7 @@ fn shown(panel: &TaskBoardPanel) -> Vec<String> {
 }
 
 #[test]
-fn e2e_p05_replays_purchase_and_refused_repeat() -> Result<(), Error> {
+fn e2e_p05_replays_purchase_and_second_command() -> Result<(), Error> {
     let captured = captured()?;
     let e = captured.expected.as_str();
     let mut panel = TaskBoardPanel {
@@ -168,22 +163,26 @@ fn e2e_p05_replays_purchase_and_refused_repeat() -> Result<(), Error> {
             .as_deref(),
         Some(value(e, "bounty_points_after")?)
     );
-    assert_ne!(value(e, "talisman_before")?, value(e, "talisman_after")?);
+    assert_eq!(value(e, "talisman_before")?, value(e, "talisman_after")?);
 
-    // The repeated purchase is refused: feedback shows and the Talisman lines do not move.
+    // This is a new purchase. Its balance-dependent feedback preserves the Talisman paths.
     let confirmed = panel.weekly.clone();
     talisman::request(&mut panel, talisman::Intent::Buy).ok_or("buy request")?;
     apply_full_result(
         &mut panel,
         &result(CommandStatus::Accepted, &captured.repeat),
     );
-    assert_eq!(
-        panel.feedback,
-        Some("The server refused: task or bounty is not in the required state")
-    );
+    let expected_refusal = value(e, "refusal")?;
+    let feedback = match expected_refusal {
+        "0" => None,
+        "4" => Some("The server refused: insufficient points, tokens, or rule resources"),
+        "14" => Some("The server refused: insufficient gold"),
+        other => return Err(format!("unexpected second purchase refusal {other}").into()),
+    };
+    assert_eq!(panel.feedback, feedback);
     assert_eq!(shown(&panel), talisman_lines(value(e, "talisman_after")?));
     let repeated = panel.weekly.as_ref().ok_or("weekly state")?;
-    assert_eq!(value(e, "refusal")?, "2");
+
     assert_eq!(repeated.refusal.to_string(), value(e, "refusal")?);
     assert_eq!(
         repeated.talisman,

@@ -17,39 +17,58 @@ fn value<'a>(text: &'a str, key: &str) -> Result<&'a str, BoxError> {
 
 struct Captured {
     snapshot: Vec<u8>,
-    countdown: Vec<u8>,
+    countdown: Option<Vec<u8>>,
     expected: String,
 }
 
 fn load() -> Result<Captured, BoxError> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let root = std::path::Path::new(&root);
-        let expected = std::fs::read_to_string(root.join("w05a-expected.txt"))?;
-        let countdown = if value(&expected, "countdown")? == "present" {
-            std::fs::read(root.join("w05a-countdown.bin"))?
-        } else {
-            // The planned reset was outside its five-minute window during the poll.
-            encode_server_save_countdown(ServerSaveCountdown {
-                ending_epoch: 20_388,
-                minutes_remaining: 5,
-            })
-            .map_err(|error| format!("{error:?}"))?
-        };
-        return Ok(Captured {
-            snapshot: std::fs::read(root.join("w05a-snapshot.bin"))?,
-            countdown,
-            expected,
-        });
+        return load_live(root);
     }
     Ok(Captured {
         snapshot: SERVER_SAVE_COUNTDOWN_SNAPSHOT.to_vec(),
-        countdown: encode_server_save_countdown(ServerSaveCountdown {
+        countdown: Some(encode_server_save_countdown(ServerSaveCountdown {
             ending_epoch: 20_388,
             minutes_remaining: 5,
         })
-        .map_err(|error| format!("{error:?}"))?,
+        .map_err(|error| format!("{error:?}"))?),
         expected: "snapshot_revision=0\ncountdown=present\nbase_revision=0\nnew_revision=1\nending_epoch=20388\nminutes_remaining=5\n".into(),
     })
+}
+
+fn load_live(root: &std::path::Path) -> Result<Captured, BoxError> {
+    let expected = std::fs::read_to_string(root.join("w05a-expected.txt"))?;
+    let countdown = match value(&expected, "countdown")? {
+        "present" => Some(std::fs::read(root.join("w05a-countdown.bin"))?),
+        "absent" => None,
+        status => return Err(format!("unexpected countdown observation {status}").into()),
+    };
+    Ok(Captured {
+        snapshot: std::fs::read(root.join("w05a-snapshot.bin"))?,
+        countdown,
+        expected,
+    })
+}
+
+#[test]
+fn live_w05a_absence_does_not_synthesize_countdown() -> Result<(), BoxError> {
+    let root = std::env::temp_dir().join(format!("oteryn-w05a-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    let result = (|| {
+        std::fs::write(
+            root.join("w05a-snapshot.bin"),
+            SERVER_SAVE_COUNTDOWN_SNAPSHOT,
+        )?;
+        std::fs::write(
+            root.join("w05a-expected.txt"),
+            "snapshot_revision=0\ncountdown=absent\n",
+        )?;
+        load_live(&root)
+    })();
+    std::fs::remove_dir_all(&root)?;
+    assert!(result?.countdown.is_none());
+    Ok(())
 }
 
 async fn admitted(snapshot: Vec<u8>) -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
@@ -104,23 +123,30 @@ fn e2e_w05a_countdown_delta_replay() -> Result<(), BoxError> {
         );
         assert_eq!(snapshot.revision, 0);
 
-        let event = delta(&mut session, 41, 0, &captured.countdown)?;
+        let Some(countdown) = captured.countdown.as_deref() else {
+            assert_eq!(value(expected, "countdown")?, "absent");
+            assert_eq!(
+                session.gated_revisions,
+                vec![(STATE_DOMAIN_SERVER_SAVE_COUNTDOWN, 0)]
+            );
+            return Ok(());
+        };
+        let event = delta(&mut session, 41, 0, countdown)?;
         let SessionEvent::ServerSaveCountdown(applied) = event else {
             return Err("countdown delta did not produce a countdown event".into());
         };
         assert_eq!((applied.base_revision, applied.new_revision), (0, 1));
         assert!((1..=5).contains(&applied.value.minutes_remaining));
         assert_ne!(applied.value.ending_epoch, 0);
-        if value(expected, "countdown")? == "present" {
-            assert_eq!(
-                applied.value.ending_epoch.to_string(),
-                value(expected, "ending_epoch")?
-            );
-            assert_eq!(
-                applied.value.minutes_remaining.to_string(),
-                value(expected, "minutes_remaining")?
-            );
-        }
+        assert_eq!(value(expected, "countdown")?, "present");
+        assert_eq!(
+            applied.value.ending_epoch.to_string(),
+            value(expected, "ending_epoch")?
+        );
+        assert_eq!(
+            applied.value.minutes_remaining.to_string(),
+            value(expected, "minutes_remaining")?
+        );
         assert_eq!(
             session.gated_revisions,
             vec![(STATE_DOMAIN_SERVER_SAVE_COUNTDOWN, 1)]
@@ -130,7 +156,7 @@ fn e2e_w05a_countdown_delta_replay() -> Result<(), BoxError> {
         // applied revision stays 1 and no event is produced.
         let zero_minutes = [0x08, 0x08, 0x10, 0x00];
         assert!(delta(&mut session, 42, 1, &zero_minutes).is_err());
-        assert!(delta(&mut session, 43, 0, &captured.countdown).is_err());
+        assert!(delta(&mut session, 43, 0, countdown).is_err());
         assert_eq!(
             session.gated_revisions,
             vec![(STATE_DOMAIN_SERVER_SAVE_COUNTDOWN, 1)]

@@ -51,30 +51,39 @@ fn e2e_p17_replays_exiva_deny_add_and_remove_lists() -> Result<(), Box<dyn std::
         selected: true,
         ..ExivaPanel::default()
     };
-    // Deny everyone: mode 0 and an empty list.
+    // Deny everyone without discarding unrelated stored entries.
     assert!(panel.apply(&denied));
-    assert_eq!(
-        panel.list,
-        Some(PlayerList {
-            modes: modes("denied_modes")?,
-            players: Vec::new()
-        })
-    );
-    assert_eq!(panel_text(&panel), "Exiva allow list (0/100)\r\n");
+    let denied_list = panel.list.clone().ok_or("denied list absent")?;
+    assert_eq!(denied_list.modes, modes("denied_modes")?);
+    assert!(!denied_list.players.iter().any(|(member, _)| *member == id));
+    let display = |list: &PlayerList| {
+        let names = list
+            .players
+            .iter()
+            .map(|(_, name)| name.as_str())
+            .collect::<Vec<_>>();
+        format!(
+            "Exiva allow list ({}/100)\r\n{}",
+            names.len(),
+            names.join("\r\n")
+        )
+    };
+    assert_eq!(panel_text(&panel), display(&denied_list));
 
-    // Add the named player: mode 2 and exactly the server's resolved id and name.
+    // Add exactly the named player and preserve all other entries.
     assert!(panel.apply(&allowed));
-    assert_eq!(
-        panel.list,
-        Some(PlayerList {
-            modes: modes("allowed_modes")?,
-            players: vec![(id, name.to_owned())]
-        })
+    let allowed_list = panel.list.as_ref().ok_or("allowed list absent")?;
+    assert_eq!(allowed_list.modes, modes("allowed_modes")?);
+    assert!(allowed_list.players.contains(&(id, name.to_owned())));
+    assert_eq!(allowed_list.players.len(), denied_list.players.len() + 1);
+    assert!(
+        allowed_list
+            .players
+            .iter()
+            .filter(|(member, _)| *member != id)
+            .eq(denied_list.players.iter())
     );
-    assert_eq!(
-        panel_text(&panel),
-        format!("Exiva allow list (1/100)\r\n{name}")
-    );
+    assert_eq!(panel_text(&panel), display(allowed_list));
 
     // A malformed or out-of-range payload leaves the last authoritative list untouched.
     let accepted = panel.list.clone();
@@ -86,15 +95,11 @@ fn e2e_p17_replays_exiva_deny_add_and_remove_lists() -> Result<(), Box<dyn std::
     assert!(!panel.apply(&truncated));
     assert_eq!(panel.list, accepted);
 
-    // Removal keeps the mode and empties the list.
+    // Removal keeps the mode and restores the other entries.
     assert!(panel.apply(&removed));
-    assert_eq!(
-        panel.list,
-        Some(PlayerList {
-            modes: modes("removed_modes")?,
-            players: Vec::new()
-        })
-    );
-    assert_eq!(panel_text(&panel), "Exiva allow list (0/100)\r\n");
+    let removed_list = panel.list.as_ref().ok_or("removed list absent")?;
+    assert_eq!(removed_list.modes, modes("removed_modes")?);
+    assert_eq!(removed_list.players, denied_list.players);
+    assert_eq!(panel_text(&panel), display(removed_list));
     Ok(())
 }

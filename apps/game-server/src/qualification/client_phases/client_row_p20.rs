@@ -10,7 +10,9 @@ pub(super) fn capture(row: &str, name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("{row}_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "{row}_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -71,7 +73,7 @@ pub(super) async fn talk(
         .await?;
     let disposition = wire::decode_npc_intent_result(&reply.payload)
         .map_err(|error| format!("{text} reply decode: {error:?}"))?;
-    if disposition != wire::NpcIntentDisposition::Ok {
+    if reply.status != CommandStatus::Accepted || disposition != wire::NpcIntentDisposition::Ok {
         return Err(format!("talk {text:?} refused: {disposition:?}").into());
     }
     loop {
@@ -87,7 +89,11 @@ pub(super) async fn talk(
         if conversation.open.map(|(actor, _)| actor) != Some(npc) {
             return Err(format!("{text} delta belonged to another NPC").into());
         }
-        if conversation.lines.iter().any(|line| line.contains(['|', '\n'])) {
+        if conversation
+            .lines
+            .iter()
+            .any(|line| line.contains(['|', '\n']))
+        {
             return Err("conversation line contains a reserved separator".into());
         }
         return Ok((delta.payload, conversation.lines));
@@ -96,6 +102,55 @@ pub(super) async fn talk(
 
 pub(super) fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn promotion_confirmation(answer: &[String], promoted: bool, unchanged: bool) -> bool {
+    let [line] = answer else { return false };
+    match line.as_str() {
+        "You are now promoted." => promoted,
+        "You are not eligible for this service yet."
+        | "You already have this blessing."
+        | "You need current Premium for this service."
+        | "You do not have enough gold for this service." => unchanged,
+        _ => false,
+    }
+}
+
+#[test]
+fn promotion_confirmation_must_explain_the_purchase_outcome() {
+    assert!(!promotion_confirmation(&["Welcome.".into()], false, true));
+    assert!(!promotion_confirmation(
+        &["You are now promoted.".into()],
+        false,
+        true
+    ));
+    assert!(promotion_confirmation(
+        &["You are now promoted.".into()],
+        true,
+        false
+    ));
+    assert!(!promotion_confirmation(
+        &["You need current Premium for this service.".into()],
+        true,
+        false
+    ));
+    assert!(promotion_confirmation(
+        &["You need current Premium for this service.".into()],
+        false,
+        true
+    ));
+}
+
+async fn promotion_state(
+    connection: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
+) -> TestResult<(bool, i64)> {
+    let promoted = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_promotions WHERE character_id = encode($1, 'hex')::uuid)")
+        .bind(clients.characters[0].as_slice()).fetch_one(&mut *connection).await?;
+    Ok((
+        promoted,
+        super::client_row_p05::gold(connection, clients).await?,
+    ))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -109,7 +164,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x52, 0).await?;
-    let npc = approach_npc(&mut client, world, &metadata.npcs, "oteryn:npc.king_tibianus").await?;
+    let npc = approach_npc(
+        &mut client,
+        world,
+        &metadata.npcs,
+        "oteryn:npc.king_tibianus",
+    )
+    .await?;
     let (greeting_bytes, greeting) = talk(&mut client, npc, "hi").await?;
     if greeting.is_empty() {
         return Err("hi produced an empty conversation".into());
@@ -120,7 +181,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("promotion quote observed={quote:?}").into());
     }
     capture("P20", "p20-quote.bin", &quote_bytes);
+    use sqlx::Connection as _;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let (promoted_before, gold_before) = promotion_state(&mut connection, clients).await?;
     let (confirm_bytes, confirm) = talk(&mut client, npc, "yes").await?;
+    let (promoted_after, gold_after) = promotion_state(&mut connection, clients).await?;
+    if !promotion_confirmation(
+        &confirm,
+        !promoted_before && promoted_after && gold_before.checked_sub(20_000) == Some(gold_after),
+        (promoted_before, gold_before) == (promoted_after, gold_after),
+    ) {
+        return Err(format!("promotion confirmation disagrees with durable state: {confirm:?}; promoted {promoted_before}->{promoted_after}; gold {gold_before}->{gold_after}").into());
+    }
     capture("P20", "p20-confirm.bin", &confirm_bytes);
     let expected = format!(
         "npc_identity={}\nnpc_generation={}\ngreeting={}\nquote={}\nconfirm={}\n",
@@ -136,7 +208,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P20.client status=CAPTURED evidence={expected}"
         )),

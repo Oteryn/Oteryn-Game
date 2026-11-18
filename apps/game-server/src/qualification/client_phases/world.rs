@@ -2846,6 +2846,39 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
     })
 }
 
+fn observe_map_tile(
+    held: &mut Option<oteryn_protocol_oteryn::world_map::MapTile>,
+    at: ActorPosition,
+    events: Vec<oteryn_dev_client::SessionEvent>,
+) {
+    use oteryn_dev_client::SessionEvent;
+    for event in events {
+        match event {
+            SessionEvent::WorldMap(delta) => {
+                if delta.value.cleared.contains(&at) {
+                    *held = None;
+                }
+                if let Some(tile) = delta
+                    .value
+                    .tiles
+                    .into_iter()
+                    .find(|tile| tile.position == at)
+                {
+                    *held = Some(tile);
+                }
+            }
+            SessionEvent::WorldMapSnapshot(snapshot) => {
+                *held = snapshot
+                    .value
+                    .tiles
+                    .into_iter()
+                    .find(|tile| tile.position == at);
+            }
+            _ => {}
+        }
+    }
+}
+
 fn first_reachable<T: Copy, P>(
     candidates: impl IntoIterator<Item = T>,
     mut plan: impl FnMut(T) -> Option<P>,

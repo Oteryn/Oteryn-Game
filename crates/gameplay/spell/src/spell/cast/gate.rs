@@ -24,8 +24,7 @@ pub struct CastContext<'a> {
     pub draw: &'a mut dyn FnMut(i64, i64) -> i64,
 }
 
-/// The §3 mapping from a core rejection to the wire disposition. A rejection the table does not
-/// name (weapon, shield, chain or party facts) cannot occur for the V1 book and fails closed.
+/// Maps core refusal reasons to the cast dispositions in the protocol contract.
 pub const fn disposition(rejection: &CastRejection) -> SpellCastDisposition {
     match rejection {
         CastRejection::GroupCooling { .. } | CastRejection::SpellCooling { .. } => {

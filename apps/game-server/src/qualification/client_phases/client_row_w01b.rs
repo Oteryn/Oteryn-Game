@@ -5,7 +5,9 @@
 //! the view at the segment start. The consumer is `Session::apply_state_delta` and
 //! `Session::world_entities` in `crates/session`.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityRef, SessionEvent, WorldSpatialEntity};
+use oteryn_dev_client::{
+    DevClientSession, EntityDetail, EntityRef, SessionEvent, WorldSpatialEntity,
+};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::world_spatial_entities::{
     WorldSpatialEntitiesSnapshot, encode_world_spatial_entities_delta,
@@ -17,7 +19,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W01B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "W01B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -70,11 +74,7 @@ struct Segment {
 }
 
 impl Segment {
-    fn begin(
-        client: &DevClientSession,
-        name: &'static str,
-        target: EntityRef,
-    ) -> TestResult<Self> {
+    fn begin(client: &DevClientSession, name: &'static str, target: EntityRef) -> TestResult<Self> {
         let view = client.world_entities().ok_or("entity view absent")?;
         let observation = client.world_spatial();
         let snapshot = encode_world_spatial_entities_snapshot(&WorldSpatialEntitiesSnapshot {
@@ -166,6 +166,17 @@ fn creature_at(client: &DevClientSession, at: TilePos) -> Option<WorldSpatialEnt
     })
 }
 
+fn new_corpse(previously_visible: bool, at_last_position: bool, exact_death: bool) -> bool {
+    !previously_visible && at_last_position && exact_death
+}
+
+#[test]
+fn existing_corpse_does_not_prove_rat_death() {
+    assert!(!new_corpse(true, true, true));
+    assert!(!new_corpse(false, true, false));
+    assert!(new_corpse(false, true, true));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -186,6 +197,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 .iter()
                 .filter(|entry| {
                     entry.kind == oteryn_dev_client::EntityKind::Creature
+                        && entry.display_name.is_some_and(|name| {
+                            name.as_str()
+                                .is_ok_and(|name| name.eq_ignore_ascii_case("Rat"))
+                        })
                         && entry.position.floor == here.floor
                 })
                 .min_by_key(|entry| distance(entry.position, here))
@@ -221,6 +236,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     // Kill: attack and record the damage, removal and corpse deltas.
     client.take_events();
+    let mut existing_corpses: BTreeSet<_> = client
+        .world_entities()
+        .ok_or("W01b missing entities before attack")?
+        .iter()
+        .filter(|entry| entry.kind == oteryn_dev_client::EntityKind::Corpse)
+        .map(|entry| entry.entity)
+        .collect();
+    let mut death = super::client_row_w22a::DeathProbe::start(clients).await?;
     let mut kill = Segment::begin(&client, "kill", target.entity)?;
     let attack = client
         .session_mut()
@@ -232,23 +255,52 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut last = target.position;
+    let mut target_removed = false;
+    let mut exact = None;
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         let events = client.take_events();
         for event in &events {
-            if let SessionEvent::WorldSpatialEntities(delta) = event
-                && let Some(entity) = delta.value.update.iter().find(|entry| entry.entity == target.entity)
-            {
-                last = entity.position;
+            if let SessionEvent::WorldSpatialEntities(delta) = event {
+                target_removed |= delta.value.leave.contains(&target.entity);
+                if !target_removed {
+                    existing_corpses.extend(
+                        delta
+                            .value
+                            .enter
+                            .iter()
+                            .filter(|entity| entity.kind == oteryn_dev_client::EntityKind::Corpse)
+                            .map(|entity| entity.entity),
+                    );
+                }
+                if let Some(entity) = delta
+                    .value
+                    .update
+                    .iter()
+                    .find(|entry| entry.entity == target.entity)
+                {
+                    last = entity.position;
+                }
             }
         }
         kill.record(events)?;
+        if target_removed && exact.is_none() {
+            exact = death.corpse_identity(target.entity, false).await?;
+        }
         if let Some(corpse) = client.world_entities().and_then(|entities| {
             entities
                 .iter()
-                .find(|entity| entity.kind == oteryn_dev_client::EntityKind::Corpse && entity.position == last)
+                .find(|entity| {
+                    entity.kind == oteryn_dev_client::EntityKind::Corpse
+                        && new_corpse(
+                            existing_corpses.contains(&entity.entity),
+                            entity.position == last,
+                            exact == Some(entity.entity.identity),
+                        )
+                })
                 .copied()
-        }) && target_state(&client, target.entity).is_none()
+        }) && target_removed
+            && target_state(&client, target.entity).is_none()
         {
             break corpse;
         }
@@ -256,9 +308,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err("W01b client capture: no corpse and removal before the deadline".into());
         }
     };
-    if !kill.trace.iter().any(|line| line.ends_with("|-") || line == "absent")
+    if !kill
+        .trace
+        .iter()
+        .any(|line| line.ends_with("|-") || line == "absent")
         || !kill.trace.iter().any(|line| {
-            line.rsplit('|').next().and_then(|health| health.parse::<u32>().ok()).is_some_and(|health| health < 100)
+            line.rsplit('|')
+                .next()
+                .and_then(|health| health.parse::<u32>().ok())
+                .is_some_and(|health| health < 100)
         })
     {
         return Err("W01b client capture: kill lacked a damage delta or a removal delta".into());
@@ -326,7 +384,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=W01b.client status=CAPTURED evidence={:?}",
             expected.replace('\n', ";")

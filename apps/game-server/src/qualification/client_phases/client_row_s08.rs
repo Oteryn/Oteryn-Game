@@ -33,6 +33,50 @@ async fn poll(a: &mut DevClientSession, b: &mut DevClientSession) -> TestResult 
     Ok(())
 }
 
+fn journey_finished_before_deadline(
+    timed_out: bool,
+    attacker_logged_out: bool,
+    victim_logged_out: bool,
+) -> bool {
+    !timed_out && attacker_logged_out && victim_logged_out
+}
+
+#[test]
+fn skull_journey_requires_completion_before_cap_and_both_logouts() {
+    assert!(!journey_finished_before_deadline(true, true, true));
+    assert!(!journey_finished_before_deadline(false, false, true));
+    assert!(!journey_finished_before_deadline(false, true, false));
+    assert!(journey_finished_before_deadline(false, true, true));
+}
+
+async fn with_journey_deadline<T>(
+    budget: Duration,
+    journey: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    tokio::time::timeout(budget, journey)
+        .await
+        .map_err(|_| "step=journey hard deadline elapsed")?
+}
+
+#[test]
+fn skull_journey_cap_cancels_a_stalled_exchange() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()?
+        .block_on(async {
+            let stalled = async {
+                tokio::time::sleep(Duration::from_millis(30)).await;
+                Ok(())
+            };
+            assert!(
+                with_journey_deadline(Duration::ZERO, stalled)
+                    .await
+                    .is_err()
+            );
+            Ok(())
+        })
+}
+
 async fn observe(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
     flow(clients).await
 }
@@ -118,8 +162,14 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
     if pvp_expert::decode_expert_fight_modes(&delta.payload).ok() != Some(expected) {
         return Err("step=expert the served mode differs from Red Fist".into());
     }
-    let health = victim.actor_vitals().map(|v| v.health).ok_or("victim vitals absent")?;
-    let attack = attacker.session_mut().attack_target(Some(&victim_ref)).await?;
+    let health = victim
+        .actor_vitals()
+        .map(|v| v.health)
+        .ok_or("victim vitals absent")?;
+    let attack = attacker
+        .session_mut()
+        .attack_target(Some(&victim_ref))
+        .await?;
     if attack.disposition != attacks::AttackIntentDisposition::Ok {
         return Err(format!("step=attack {attack:?}").into());
     }
@@ -162,17 +212,40 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
         attacker_ref.generation,
         icon.skull
     );
-    // Wait out the attacker's pz lock so later rows can log out.
-    let release = tokio::time::Instant::now() + Duration::from_secs(70);
-    while tokio::time::Instant::now() < release {
-        poll(&mut attacker, &mut victim).await?;
-        if let Ok(outcome) = attacker.session_mut().logout().await
-            && outcome.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-        {
-            break;
-        }
+    let stopped = attacker.session_mut().attack_target(None).await?;
+    if stopped.disposition != attacks::AttackIntentDisposition::Ok {
+        return Err(format!("step=stop-attack refused: {stopped:?}").into());
     }
-    let _ = victim.session_mut().logout().await;
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let release = tokio::time::Instant::now() + Duration::from_secs(70);
+    verdict::Harness::global().bounded_wait(release, "fight-lock-release");
+    let attacker_logout = tokio::time::timeout_at(release, async {
+        loop {
+            poll(&mut attacker, &mut victim).await?;
+            let outcome = attacker.session_mut().logout().await?;
+            match outcome.result {
+                Some(LogoutResult::Accepted) => return Ok::<_, Box<dyn std::error::Error>>(true),
+                Some(LogoutResult::InFight { .. } | LogoutResult::Busy) => {}
+                None => return Err(format!("step=attacker-logout refused: {outcome:?}").into()),
+            }
+        }
+    })
+    .await;
+    let (timed_out, attacker_logged_out) = match attacker_logout {
+        Ok(result) => (false, result?),
+        Err(_) => (true, false),
+    };
+    let victim_logout = victim.session_mut().logout().await?;
+    if !journey_finished_before_deadline(
+        timed_out,
+        attacker_logged_out,
+        victim_logout.result == Some(LogoutResult::Accepted),
+    ) {
+        return Err(format!(
+            "step=logout attacker_timed_out={timed_out}; victim={victim_logout:?}"
+        )
+        .into());
+    }
     Ok((reply.payload, expected))
 }
 
@@ -180,7 +253,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match verdict::observe(observe(clients)).await {
+    match verdict::observe(with_journey_deadline(
+        Duration::from_secs(180),
+        observe(clients),
+    ))
+    .await
+    {
         Ok((payload, expected)) => {
             if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
                 let root = Path::new(&root);
@@ -189,7 +267,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                     ("s08-expected.txt", expected.as_bytes()),
                 ] {
                     if let Err(error) = std::fs::write(root.join(name), bytes) {
-                        evidence(&format!("S08_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+                        evidence(&format!(
+                            "S08_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+                        ));
                     }
                 }
             }

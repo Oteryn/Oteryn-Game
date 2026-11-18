@@ -1,5 +1,5 @@
-//! P11 client replay capture: the real typed account-achievements page 0 and local codec
-//! refusal of malformed query bytes, without a wire submission. The consumer is
+//! P11 client replay capture of the typed account-achievements page 0 and both the local
+//! codec and server refusals of malformed query bytes. The consumer is
 //! `Session::account_achievements` in `crates/session/src/account_achievements.rs`.
 use super::*;
 use oteryn_dev_client::client_runtime::account_achievements::Response;
@@ -14,6 +14,17 @@ fn capture(name: &str, bytes: &[u8]) {
             "P11_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
         ));
     }
+}
+
+fn malformed_query_refused(submitted: bool, refused: bool, empty: bool) -> bool {
+    submitted && refused && empty
+}
+
+#[test]
+fn achievements_probe_requires_a_server_rejection() {
+    assert!(!malformed_query_refused(false, true, true));
+    assert!(!malformed_query_refused(true, false, true));
+    assert!(malformed_query_refused(true, true, true));
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -31,9 +42,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("malformed query was not refused locally without submission".into());
     }
+    let refusal = client
+        .session_mut()
+        .qualification_malformed_achievement_query()
+        .await?;
+    if !malformed_query_refused(
+        refusal.command_id == next_command && client.next_command_id() > next_command,
+        refusal.status == CommandStatus::Rejected,
+        refusal.payload.is_empty(),
+    ) {
+        return Err(format!("malformed query server response: {refusal:?}").into());
+    }
     let reread = client.session_mut().account_achievements(0).await?;
     if reread != Response::Page(page.clone()) {
-        return Err(format!("local malformed refusal changed the page: {reread:?}").into());
+        return Err(format!("malformed query changed the page: {reread:?}").into());
+    }
+    if client
+        .take_events()
+        .iter()
+        .any(|event| matches!(event, oteryn_dev_client::SessionEvent::AchievementEarned(_)))
+    {
+        return Err("malformed query produced an achievement notification".into());
     }
     // The typed core owner has decoded the real reply; encode that exact value,
     // as other typed capture owners do, for the session replay consumer.
@@ -48,7 +77,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .map(|row| format!("{}:{}:{}", row.key, row.grade, row.points))
         .collect();
     let expected = format!(
-        "page={}\ntotal_points={}\nfact_count={}\nhas_more={}\nrows={}\nmalformed_query=local-codec-refusal\nmalformed_wire_submission=false\n",
+        "page={}\ntotal_points={}\nfact_count={}\nhas_more={}\nrows={}\nmalformed_query=local-codec-refusal\nmalformed_wire_submission=false\nmalformed_server_query=wire-rejected\n",
         page.page,
         page.total_points,
         page.fact_count,
@@ -60,7 +89,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P11.client status=CAPTURED evidence={expected}"
         )),
