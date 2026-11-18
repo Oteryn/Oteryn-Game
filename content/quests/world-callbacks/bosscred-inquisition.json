@@ -1,0 +1,281 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2151",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "native": {
+          "position": {
+            "x": 33157,
+            "y": 31728,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33069,
+        "y": 31782,
+        "floor": -13
+      },
+      "failure_teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/enter_teleport",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:10",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_boss.lua:19-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2157",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "native": {
+          "position": {
+            "x": 33123,
+            "y": 31692,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33372,
+        "y": 31613,
+        "floor": -14
+      },
+      "failure_teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/enter_teleport",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 2,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:43",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_boss.lua:19-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2162",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "native": {
+          "position": {
+            "x": 33197,
+            "y": 31768,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33153,
+        "y": 31782,
+        "floor": -12
+      },
+      "failure_teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/enter_teleport",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 3,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:71",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_boss.lua:19-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2168",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "native": {
+          "position": {
+            "x": 33232,
+            "y": 31734,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33038,
+        "y": 31753,
+        "floor": -15
+      },
+      "failure_teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/enter_teleport",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 4,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:104",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_boss.lua:19-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2174",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "native": {
+          "position": {
+            "x": 33197,
+            "y": 31704,
+            "floor": -11
+          },
+          "ordinal": 2,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33199,
+        "y": 31686,
+        "floor": -12
+      },
+      "failure_teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/enter_teleport",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 5,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:133",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_boss.lua:19-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2178",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "native": {
+          "position": {
+            "x": 33104,
+            "y": 31735,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33110,
+        "y": 31682,
+        "floor": -12
+      },
+      "failure_teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/enter_teleport",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 6,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:160",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_boss.lua:19-29"
+      ]
+    }
+  ]
+}

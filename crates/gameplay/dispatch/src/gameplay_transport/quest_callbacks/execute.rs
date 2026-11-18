@@ -23,6 +23,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
     ) -> UseDisposition {
+        if super::super::kill_reward::is_forge_exit(&callback.key) {
+            let Ok(attack) = self.states.attack.try_lock() else {
+                return UseDisposition::Rejected;
+            };
+            if attack
+                .kills()
+                .forge_exit_open(&callback.key, actor, self.owner_now().get() / 1000)
+                != Some(true)
+            {
+                return UseDisposition::Rejected;
+            }
+        }
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
             && let Some(bindings) = catalogue.authored_bindings()

@@ -675,6 +675,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         &serde_json::json!({"schema":1,"callbacks":[nomads_window::callback()?]}).to_string(),
     )?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/bosscred-inquisition.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/children-grease.json"
     ))?);
     callbacks.extend(parse(include_str!(

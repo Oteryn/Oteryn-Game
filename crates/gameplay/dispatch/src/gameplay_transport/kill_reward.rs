@@ -389,8 +389,79 @@ struct RefusedSourceDrop {
     reason: SourceDropRefusalReason,
 }
 
+// Crystal 201189f8, The Inquisition boss death and portal movement callbacks.
+const FORGE_BOSSES: [(&str, usize); 7] = [
+    ("oteryn:creature.ushuriel", 0),
+    ("oteryn:creature.zugurosh", 1),
+    ("oteryn:creature.madareth", 2),
+    ("oteryn:creature.latrivan", 3),
+    ("oteryn:creature.golgordan", 3),
+    ("oteryn:creature.annihilon", 4),
+    ("oteryn:creature.hellgorak", 5),
+];
+const FORGE_PORTALS: [&str; 6] = [
+    "oteryn:quest-callback/inquisition-portal-2151",
+    "oteryn:quest-callback/inquisition-portal-2157",
+    "oteryn:quest-callback/inquisition-portal-2162",
+    "oteryn:quest-callback/inquisition-portal-2168",
+    "oteryn:quest-callback/inquisition-portal-2174",
+    "oteryn:quest-callback/inquisition-portal-2178",
+];
+
+pub(super) fn is_forge_exit(callback: &str) -> bool {
+    FORGE_PORTALS.contains(&callback)
+}
+
+#[derive(Debug, Default)]
+struct ForgeCredit {
+    scope: Option<(crate::foundation::RuntimeScopeRefV1, u64)>,
+    deaths: [Option<CreatureDeathOccurrenceKey>; 7],
+    windows: [Option<u64>; 6],
+    brothers_waiting: bool,
+}
+
+impl ForgeCredit {
+    fn record(&mut self, creature: &str, death: CreatureDeathOccurrenceKey, now_ms: u64) {
+        let Some((index, (_, room))) = FORGE_BOSSES
+            .iter()
+            .enumerate()
+            .find(|(_, (key, _))| *key == creature)
+        else {
+            return;
+        };
+        let room = *room;
+        let scope = (
+            death.runtime_scope(),
+            death.scope_ownership_generation().get(),
+        );
+        if self.scope != Some(scope) {
+            *self = Self {
+                scope: Some(scope),
+                ..Self::default()
+            };
+        }
+
+        if self.deaths[index] == Some(death) {
+            return;
+        }
+        self.deaths[index] = Some(death);
+        let active = self.windows[room].is_some_and(|deadline| now_ms < deadline);
+        if room == 3 {
+            if active {
+                return;
+            }
+            self.brothers_waiting = !self.brothers_waiting;
+            if self.brothers_waiting {
+                return;
+            }
+        }
+        self.windows[room] = now_ms.checked_add(600_000);
+    }
+}
+
 #[derive(Debug, Default)]
 struct KillQueueState {
+    forge_credit: ForgeCredit,
     /// Advisory deduplication follows the already bounded, exact corpse projections.
     analyser: Vec<(ExactActorRef, Arc<Mutex<super::analyser::DeathReceipts>>)>,
     boss_contributions: boss_reward_contribution::BossContributions,
@@ -561,6 +632,21 @@ struct FrozenProficiencyDeath {
 }
 
 impl KillSettlementQueue {
+    pub(super) fn forge_exit_open(
+        &self,
+        callback: &str,
+        actor: ExactActorRef,
+        now_ms: u64,
+    ) -> Option<bool> {
+        let room = FORGE_PORTALS.iter().position(|key| *key == callback)?;
+        let state = self.state();
+        Some(
+            state.forge_credit.scope
+                == Some((actor.runtime_scope(), actor.scope_generation().get()))
+                && state.forge_credit.windows[room].is_some_and(|deadline| now_ms < deadline),
+        )
+    }
+
     pub(super) fn statistics(&self) -> &super::public_kill_statistics::CaptureQueue {
         &self.2
     }
@@ -2028,6 +2114,12 @@ pub fn record_creature_kill(
         refuse("damage_shares_unavailable", &creature);
         return;
     };
+    if wild {
+        sink.queue
+            .state()
+            .forge_credit
+            .record(&creature, facts.death, now_ms);
+    }
     if !top.is_gone()
         && let Some(states) = sink.prey
     {
@@ -2152,6 +2244,7 @@ pub fn record_creature_kill(
                     || !super::grizzly_kills::tracks_creature(&creature)
                         && !super::grizzly_kills::tracks_native_creature(sink.queue, &creature)
                         && !tracks_native_progression(&creature)
+                        && !(wild && FORGE_BOSSES.iter().any(|(boss, _)| *boss == creature))
                         && !sink.prey.is_some_and(|states| {
                             states.encounter_phases.has_terminal(runtime, target)
                         })
