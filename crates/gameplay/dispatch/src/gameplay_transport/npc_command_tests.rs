@@ -713,8 +713,7 @@ fn mordecai_categories_open_only_the_selected_offers() {
                     &trade(npc, 0),
                     Some(&index),
                 )
-                .err()
-                .expect("stale trade");
+                .expect_err("stale trade");
             assert_eq!(refusal.disposition, NpcIntentDisposition::Stale);
             assert_eq!(refusal.update.window, Some(window));
         }
