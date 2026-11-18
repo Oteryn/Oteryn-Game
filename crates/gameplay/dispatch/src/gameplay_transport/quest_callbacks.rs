@@ -190,7 +190,7 @@ fn local(p: Position) -> MovementLocalPosition {
         floor: -i16::from(p.floor),
     }
 }
-fn native(p: MovementLocalPosition) -> Option<TilePos> {
+pub(super) fn native(p: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: p.x.try_into().ok()?,
         y: p.y.try_into().ok()?,
@@ -1275,6 +1275,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             entered
         };
+        if let Some(landing) = self
+            .step_arena_concession(actor, session, origin, entered)
+            .await
+        {
+            return landing;
+        }
         let entered = self
             .step_arena_portal(permit, actor, session, origin, entered)
             .await;

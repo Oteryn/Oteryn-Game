@@ -123,6 +123,7 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
 
 #[derive(Clone, Copy)]
 enum NativeScenario {
+    Concession,
     Portals,
     RecreatedPillars,
     Departure,
@@ -175,9 +176,14 @@ fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
 fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
     scenario_route_with_expiry(funded, route, false)
 }
+pub(super) fn south_portal_concession() -> TestResult {
+    scenario_route(true, Some(NativeScenario::Concession))
+}
+
 fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool) -> TestResult {
     let native_portals = route.is_some();
-    let leave_early = matches!(route, Some(NativeScenario::Departure));
+    let concede = matches!(route, Some(NativeScenario::Concession));
+    let leave_early = concede || matches!(route, Some(NativeScenario::Departure));
     let timeout_early = matches!(route, Some(NativeScenario::Timeout));
     let reset_monsters = matches!(route, Some(NativeScenario::ResetMonsters));
     run(async |admin| {
@@ -200,6 +206,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         let native = active.native_gameplay().ok_or("native")?;
         let (bytes, pins) = if matches!(route, Some(NativeScenario::RecreatedPillars)) {
             fixture::bundle_with_pillar_floors(native)?
+        } else if concede {
+            fixture::bundle_with_concession(native)?
         } else if native_portals {
             fixture::bundle_with_pillars(native)?
         } else {
@@ -542,21 +550,33 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                     .find(|c| runtime.contains_live_creature(c.actor))
                     .ok_or("live arena opponent")?
                     .actor;
-                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
-                runtime
-                    .relocate_arena_player(
+                if !concede {
+                    let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                    runtime.relocate_arena_player(
                         deps.actor,
                         admitted.game_session_id,
                         before,
-                        crate::foundation::MovementLocalPosition {
-                            x: 32251,
-                            y: 31098,
-                            floor: 6,
-                        },
-                    )
-                    .map_err(debug)?;
+                        crate::foundation::MovementLocalPosition { x: 32251, y: 31098, floor: 6 },
+                    ).map_err(debug)?;
+                }
                 target
             };
+            if concede {
+                // Crystal 201189f8 movements_arena_pit.lua:1-21,70-72.
+                let (outcome, _) = owner.ordinary_paced_step(
+                    deps.actor, admitted.game_session_id,
+                    oteryn_protocol_oteryn::world_spatial::StepDirection::South, None, None,
+                ).await;
+                let at = outcome.moved_to.ok_or("south portal STEP")?.actor_position;
+                assert_eq!((at.x, at.y, at.floor), (32251, 31098, 6));
+                let runtime = deps.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let outfit = states.get(&runtime, deps.actor, admitted.game_session_id)
+                    .ok_or("player conditions")?.owned_conditions();
+                let now = owner.owner_now().get();
+                assert_eq!(outfit.outfit_at(now), Some(111));
+                assert_eq!(outfit.outfit_at(now + 120_000_000), None);
+            }
             owner.clock_origin -= std::time::Duration::from_secs(3);
             owner.drain_monster_melee().await;
             let stored: (i32, i32) = sqlx::query_as("SELECT (body->>'rank')::int,(body->>'phase')::int FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid")

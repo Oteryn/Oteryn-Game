@@ -9,25 +9,32 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false)
+    bundle_layout(native, true, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillars(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false)
+    bundle_layout(native, true, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillar_floors(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, false, true)
+    bundle_layout(native, false, true, false)
+}
+
+pub(in super::super) fn bundle_with_concession(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, true, false, true)
 }
 
 fn bundle_layout(
     native: &crate::content::native_gameplay::NativeGameplayState,
     with_pillars: bool,
     pillar_floors_only: bool,
+    with_concession: bool,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
@@ -127,6 +134,23 @@ fn bundle_layout(
             tile.y = at.1;
             tiles.insert(at, tile);
         }
+    }
+    if with_concession {
+        let (x, y) = donor::CENTERS[0];
+        let tile = tiles
+            .get_mut(&(u16::try_from(x)?, u16::try_from(y + 1)?, -7))
+            .ok_or("south portal fixture")?;
+        let portal = u32::try_from(bundle.manifest.palette.iter()
+            .position(|entry| entry.key == "oteryn:item.tibia.i5022")
+            .ok_or("portal palette")?)?;
+        tile.items.push(oteryn_world_bundle::sector::Item {
+            palette: portal,
+            depth: 0,
+            attrs: oteryn_world_bundle::sector::Attrs {
+                action: Some(25300),
+                ..Default::default()
+            },
+        });
     }
     let mut sectors = std::collections::BTreeMap::<(i8, u16, u16), Sector>::new();
     for ((x, y, z), tile) in tiles {
