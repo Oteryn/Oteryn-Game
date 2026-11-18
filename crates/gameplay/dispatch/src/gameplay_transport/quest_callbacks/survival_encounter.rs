@@ -100,7 +100,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 self.states
                     .chat
-                    .push_quest_feedback(*other, "A clicking sound tatters the silence.");
+                    .push_quest_feedback(*other, "A plate clicks.");
                 occupants += 1;
             }
         }
@@ -166,8 +166,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             credits: None,
             retry_at: due,
         });
-        self.states.chat.push_quest_feedback(session,
-            "The army is complete again. You hear a hatch opening elsewhere, followed by a grinding sound.");
+        self.states
+            .chat
+            .push_quest_feedback(session, "The hatch has opened.");
         states.owner_wake.notify_one();
     }
 

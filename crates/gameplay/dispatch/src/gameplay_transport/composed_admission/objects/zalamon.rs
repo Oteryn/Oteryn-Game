@@ -95,10 +95,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
         });
         if !allowed {
-            self.states.chat.push_quest_feedback(
-                session,
-                "The door seems to be sealed against unwanted intruders.",
-            );
+            self.states
+                .chat
+                .push_quest_feedback(session, "The door is sealed.");
             return outcome(UseDisposition::Locked);
         }
         let doors = map.facts.doors();
