@@ -466,9 +466,12 @@ async fn observe_look_item(
             _ => None,
         }
     {
-        runtime
+        if !runtime
             .player_control_facts(actor, session)
-            .map_err(|_| unavailable)?;
+            .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return Err(unavailable);
+        }
         let pin = content_generation(&runtime);
         drop(runtime);
         let inscription = admission
@@ -486,12 +489,12 @@ async fn observe_look_item(
         if current != definition
             || content_generation(&runtime) != pin
             || runtime.owner_fence().is_err()
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
         {
             return Err(unavailable);
         }
-        runtime
-            .player_control_facts(actor, session)
-            .map_err(|_| unavailable)?;
         return Ok(match (ordinary, inscription) {
             (ItemLookResult::Text(text), Some(inscription)) => {
                 let description = if let Some(name) = inscription
