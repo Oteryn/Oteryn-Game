@@ -130,6 +130,26 @@ pub(super) async fn with_npc_items(
         EntityRef,
     ) -> TestResult,
 ) -> TestResult {
+    with_npc_items_and_loot(h, catalogue, npc, items, None, exercise).await
+}
+
+pub(super) struct FixtureCorpseLoot {
+    pub corpse: &'static str,
+    pub table: &'static str,
+}
+
+pub(super) async fn with_npc_items_and_loot(
+    h: &Harness,
+    catalogue: Arc<QuestStateCatalogue>,
+    npc: &str,
+    items: &[FixtureItem],
+    corpse: Option<FixtureCorpseLoot>,
+    exercise: impl AsyncFnOnce(
+        &mut ComposedFreshAdmission<'_, '_, '_>,
+        &AdmittedSession,
+        EntityRef,
+    ) -> TestResult,
+) -> TestResult {
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -138,7 +158,7 @@ pub(super) async fn with_npc_items(
         .await
         .map_err(debug)?;
     let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-    let (controller, activated) = if items.is_empty() {
+    let (controller, activated) = if items.is_empty() && corpse.is_none() {
         super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?
     } else {
         use crate::content::native_gameplay::{PinnedGameplayBytes, test_support};
@@ -179,14 +199,42 @@ pub(super) async fn with_npc_items(
                 json!({"state":"KNOWN","value":item.weight});
             records.push(record);
         }
-        let bytes = serde_json::to_vec(&profiles)?;
-        input.item_profiles = Some(PinnedGameplayBytes {
-            sha256: <sha2::Sha256 as sha2::Digest>::digest(&bytes)
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect(),
-            bytes,
-        });
+        let pin = |document: &Value| -> TestResult<PinnedGameplayBytes> {
+            let bytes = serde_json::to_vec(document)?;
+            Ok(PinnedGameplayBytes {
+                sha256: <sha2::Sha256 as sha2::Digest>::digest(&bytes)
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect(),
+                bytes,
+            })
+        };
+        input.item_profiles = Some(pin(&profiles)?);
+        if let Some(corpse) = corpse {
+            let mut loot: Value = serde_json::from_slice(
+                &input
+                    .loot_tables
+                    .as_ref()
+                    .ok_or("native loot tables")?
+                    .bytes,
+            )?;
+            let facts = loot["items"]
+                .as_array_mut()
+                .ok_or("loot item facts")?
+                .iter_mut()
+                .find(|facts| facts["item"]["key"] == corpse.corpse)
+                .ok_or("fixture corpse loot facts")?;
+            // The fixture isolates death MINT and decay from unrelated loot admission.
+            facts["materializable"] = json!(true);
+            let table = loot["tables"]
+                .as_array_mut()
+                .ok_or("loot table definitions")?
+                .iter_mut()
+                .find(|table| table["identity"]["key"] == corpse.table)
+                .ok_or("fixture creature loot table")?;
+            table["entries"] = json!([]);
+            input.loot_tables = Some(pin(&loot)?);
+        }
         test_support::try_activate_input(world_id, &input).map_err(debug)?
     };
     let generation = controller.active().ok_or("active content")?;
