@@ -2,8 +2,8 @@
 
 The dispatch lib-test crate hits the 16 GiB memory limit during rustc
 codegen. A package-only test profile builds and links all 4,339 tests
-at 15.58 GiB with one Cargo job. The same manifest profile is being
-measured with two jobs. Splitting the generated PostgreSQL mount is
+at 15.58 GiB with one Cargo job. Two concurrent codegen workers still
+exhaust the budget at 256 codegen units. Splitting the generated PostgreSQL mount is
 the tested structural alternative with more memory headroom. Its
 two scratch executables cover the complete test registry and peak at
 14.52 GiB per process.
@@ -30,6 +30,7 @@ durability checks passed. The focused case used that retained cluster.
 | Dispatch lib test, dependencies cached | 1 | 16,559,372 | 392.963 | rustc SIGKILL before link |
 | Dispatch lib test with the combined package profile, dependencies cached | 1 | 16,340,144 | 1296.471 | Linked and listed 4,339 tests (4,341 output lines) |
 | Dispatch LLD replay with the combined package profile | — | 4,846,628 | 40.141 | Linked |
+| Dispatch lib test with the combined package profile, dependencies cached | 2 | 16,393,060 | 1005.117 | rustc SIGKILL with two LLVM workers |
 | Dispatch lib test, 32 codegen units, dependencies cached | 1 | 16,551,756 | 622.273 | rustc SIGKILL before link |
 | Dispatch MIR-only replay, incremental retained | 1 | 16,660,920 | 688.945 | emitted MIR, then OOM-killed |
 | Dispatch lib test, incremental off | 2 | 16,581,872 | 306.471 | rustc SIGKILL before link |
@@ -229,7 +230,12 @@ command confirms these settings. Its LLVM coordinator appeared with a
 additional OOM kill. The resulting `cargo test -- --list` output
 contains 4,341 lines and lists all 4,339 tests. This is the first
 package-only trial to produce the complete dispatch executable.
-The two-job measurement and hosted-runner margin are still open.
+At two Cargo jobs, the checked-in profile with 256 units reached
+16,393,060 KiB and was OOM-killed in 1,005.117 s. The last sample
+showed concurrent optimization workers for two codegen units. A
+512-unit trial tests whether smaller units fit at two jobs. The
+hosted-runner margin remains unverified. Focused formatting and
+locked Cargo metadata checks passed.
 
 The linked dispatch test executable is 1,259,914,408 bytes. The final
 link received 241 rlibs (1,487,495,302 bytes) and 258 objects
@@ -276,6 +282,58 @@ library jobs had different outcomes: `lib-rest` completed successfully
 while `lib-content` reached 55 minutes with its test step open. These CI
 statuses establish where the jobs stopped. The local cgroup counter and
 process measurements establish the reproduced OOM.
+
+## Workflow proposal for the serial profile
+
+The measured 256-unit profile produces the full dispatch lib-test
+binary with one Cargo job. Applying the same job limit to both PostgreSQL
+archive steps and the two Merge Queue workspace lib shards gives a
+planning peak of 15.58 GiB for dispatch rustc. The PR unit shards already
+set one Cargo job. The hosted aggregate and wall time need validation.
+
+The exact diff below preserves the existing test commands and timeout
+values. It applies to the pinned base and parses as YAML. Changing the
+Merge Queue workflow requires rotating its protected-base blob pin with
+owner approval.
+
+```diff
+diff --git a/.github/workflows/merge-authority-audit.yml b/.github/workflows/merge-authority-audit.yml
+index 8120f540d..5b35a93f8 100644
+--- a/.github/workflows/merge-authority-audit.yml
++++ b/.github/workflows/merge-authority-audit.yml
+@@ -28,3 +28,3 @@ jobs:
+     env:
+-      EXPECTED_MERGE_GROUP_GATE_BLOB: "67e38c236b1964e03f47f5180540168e39456c71"
++      EXPECTED_MERGE_GROUP_GATE_BLOB: "dc67791e2310da19b63a7b7d63a18e10ed3e6f9b"
+       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
+diff --git a/.github/workflows/merge-group-gate.yml b/.github/workflows/merge-group-gate.yml
+index 67e38c236..dc67791e2 100644
+--- a/.github/workflows/merge-group-gate.yml
++++ b/.github/workflows/merge-group-gate.yml
+@@ -612,2 +612,4 @@ jobs:
+         if: matrix.shard == 'lib-content'
++        env:
++          CARGO_BUILD_JOBS: "1"
+         run: |
+@@ -617,2 +619,4 @@ jobs:
+         if: matrix.shard == 'lib-rest'
++        env:
++          CARGO_BUILD_JOBS: "1"
+         run: |
+@@ -832,2 +836,4 @@ jobs:
+       - name: Archive PostgreSQL-backed library tests
++        env:
++          CARGO_BUILD_JOBS: "1"
+         run: |
+diff --git a/.github/workflows/pr-postgres-harness.yml b/.github/workflows/pr-postgres-harness.yml
+index fd29af7b1..51e40163d 100644
+--- a/.github/workflows/pr-postgres-harness.yml
++++ b/.github/workflows/pr-postgres-harness.yml
+@@ -334,2 +334,3 @@ jobs:
+           LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
++          CARGO_BUILD_JOBS: "1"
+           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
+```
 
 ## Proposed structural fix
 
