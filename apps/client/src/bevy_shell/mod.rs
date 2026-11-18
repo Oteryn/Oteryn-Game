@@ -22,6 +22,7 @@ mod selection;
 mod speech_bubbles;
 mod text_messages;
 mod ui;
+pub(crate) use ui::{BuiltInFont, install_font_fallback, ui_font};
 mod updater;
 mod window_drag;
 
@@ -118,9 +119,7 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
 }
 fn build_app(options: Options, owner: HostOwner, plugins: bevy::app::PluginGroupBuilder) -> App {
     let mut app = App::new();
-    if !options.ui_assets.join(ui::EXTERNAL_FONT).is_file() {
-        app.insert_resource(ui::BuiltInFont);
-    }
+    install_font_fallback(&mut app, &options.ui_assets);
     if options.smoke {
         app.add_systems(Update, smoke_exit);
     }

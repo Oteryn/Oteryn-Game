@@ -1,5 +1,6 @@
 //! Pre-admission account menu and Premium overview over the authenticated controllers.
 mod bridge;
+mod commerce;
 #[cfg(test)]
 mod tests;
 use super::{
@@ -12,8 +13,8 @@ use bevy::{
     prelude::*,
     ui_widgets::{Activate, ScrollArea},
 };
-use bridge::Action;
 pub(super) use bridge::Services;
+use bridge::{Action, Screen};
 use oteryn_client_ui_bevy as source;
 
 #[derive(Component)]
@@ -30,6 +31,7 @@ pub(super) fn install(app: &mut App) {
     app.add_systems(Startup, setup.after(super::ui::setup))
         .add_systems(PreUpdate, poll.before(super::poll_owner))
         .add_systems(Update, (project, keyboard).chain());
+    commerce::install(app);
 }
 fn setup(mut commands: Commands) {
     commands.spawn((
@@ -74,10 +76,11 @@ fn project(
         return;
     };
     // Re-evaluate remaining time and freshness using the controller's original clock.
-    let text = request.premium.as_ref().map_or_else(
-        || request.account_feedback.clone(),
-        crate::premium::View::status_text,
-    );
+    let text = match &request.screen {
+        Screen::Account(view) => view.status_text(),
+        Screen::Coin(view) => view.status_text(),
+        Screen::Premium(view) => view.status_text(),
+    };
     for mut body in &mut texts {
         if body.0 != text {
             body.0.clone_from(&text);
@@ -114,10 +117,10 @@ fn project(
             ))
             .id();
         commands.entity(root).add_child(panel);
-        let (title, primary) = if request.premium.is_some() {
-            ("Premium overview", (Action::Refresh, "Refresh"))
-        } else {
-            ("Account Services", (Action::Premium, "Premium"))
+        let (title, primary) = match &request.screen {
+            Screen::Premium(_) => ("Premium overview", Some((Action::Refresh, "Refresh"))),
+            Screen::Account(_) => ("Account Services", Some((Action::Premium, "Premium"))),
+            Screen::Coin(_) => ("Get Oteryn coins", None),
         };
         source::dialog_caption(&mut commands, panel, title, skin.font.clone());
         let scroll = commands
@@ -127,6 +130,7 @@ fn project(
                     min_height: px(0.),
                     flex_shrink: 1.,
                     overflow: Overflow::scroll_y(),
+                    flex_direction: FlexDirection::Column,
                     ..default()
                 },
             ))
@@ -138,6 +142,7 @@ fn project(
             ))
             .id();
         commands.entity(scroll).add_child(body);
+        commerce::build(&mut commands, &skin, scroll, request);
         commands.entity(panel).add_child(scroll);
         let footer = commands
             .spawn(Node {
@@ -146,7 +151,7 @@ fn project(
                 ..default()
             })
             .id();
-        for (action, label) in [primary, (Action::Back, "Back")] {
+        for (action, label) in primary.into_iter().chain([(Action::Back, "Back")]) {
             let button = commands
                 .spawn((
                     source::button(skin.buttons.clone(), 90.),

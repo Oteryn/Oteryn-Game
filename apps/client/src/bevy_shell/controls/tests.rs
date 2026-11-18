@@ -222,3 +222,35 @@ fn manual_turn_keeps_the_active_attack() -> Result<(), Box<dyn std::error::Error
     }
     Ok(())
 }
+
+#[test]
+fn alt_arrows_on_visible_minimap_do_not_step_or_cancel_walking()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{KeyCode, Modifier};
+    let mut host = HostOwner::new(None)?;
+    assert!(host.settings.preferences.panel_visible("minimap"));
+    let view = PlayView::new(TileCoord::new(100, 100), -3, &[])?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.bevy_target_walk_selected();
+    install(&mut host, view, link);
+    for code in [
+        KeyCode::ARROW_RIGHT,
+        KeyCode::ARROW_LEFT,
+        KeyCode::ARROW_UP,
+        KeyCode::ARROW_DOWN,
+    ] {
+        host.route_input(
+            &[NormalizedInputEvent::Key {
+                code,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Alt),
+                repeat: false,
+            }],
+            false,
+        );
+        let play = host.play.as_mut().ok_or("play")?;
+        play.view.tick(&play.link).map_err(|e| format!("{e:?}"))?;
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}

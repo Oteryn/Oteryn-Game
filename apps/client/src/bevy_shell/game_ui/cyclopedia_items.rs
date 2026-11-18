@@ -217,6 +217,7 @@ fn build(
         .spawn((
             Search,
             TextInput,
+            bevy::input_focus::tab_navigation::TabIndex(0),
             EditableText::new(search_value),
             source::font(skin.font.clone(), false),
             TextColor(source::TEXT_COLOR),

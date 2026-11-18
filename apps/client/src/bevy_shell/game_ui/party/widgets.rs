@@ -105,36 +105,40 @@ pub(super) fn build(
                     .map(|m| (m.handle, m.name.as_str(), Some(m), None)),
             );
         for (handle, member_name, member, combat_row) in entries {
-            let selected = panel.selected_member == Some(handle);
-            let button = commands
-                .spawn((
+            let summon = combat_row.is_some_and(|row| row.summon);
+            let selected = !summon && panel.selected_member == Some(handle);
+            let mut row = commands.spawn((
+                Name::new("party.member"),
+                Node {
+                    width: percent(100.),
+                    min_height: px(20.),
+                    flex_shrink: 0.,
+                    padding: px(2.).all(),
+                    overflow: Overflow::clip_x(),
+                    ..default()
+                },
+                BackgroundColor(if selected {
+                    Color::srgb_u8(88, 88, 88)
+                } else {
+                    Color::NONE
+                }),
+            ));
+            if !summon {
+                row.insert((
                     Button,
                     Control {
                         generation,
                         serial,
                         kind: Kind::Member(handle),
                     },
-                    Name::new("party.member"),
                     bevy::input_focus::tab_navigation::TabIndex(0),
-                    Node {
-                        width: percent(100.),
-                        min_height: px(20.),
-                        flex_shrink: 0.,
-                        padding: px(2.).all(),
-                        overflow: Overflow::clip_x(),
-                        ..default()
-                    },
-                    BackgroundColor(if selected {
-                        Color::srgb_u8(88, 88, 88)
-                    } else {
-                        Color::NONE
-                    }),
                 ))
-                .observe(activate)
-                .id();
-            if pending {
-                commands.entity(button).insert(InteractionDisabled);
+                .observe(activate);
+                if pending {
+                    row.insert(InteractionDisabled);
+                }
             }
+            let button = row.id();
             let caption = match (member.filter(|_| panel.own_channel.is_some()), combat_row) {
                 (Some(member), Some(row)) if !row.summon => Cow::Owned(format!(
                     "{member_name} — {}",

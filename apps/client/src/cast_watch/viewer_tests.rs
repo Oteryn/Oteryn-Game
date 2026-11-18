@@ -269,3 +269,24 @@ fn watch_layout_keeps_long_chat_and_draft_reachable_after_resize()
     assert!(shown_text(&mut app)?.ends_with("Cast chat: h"));
     Ok(())
 }
+
+#[test]
+fn watch_chat_uses_the_bundled_font_when_the_external_font_is_absent()
+-> Result<(), Box<dyn std::error::Error>> {
+    let folder = tempfile::tempdir()?;
+    let (link, _) = channel();
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_message::<KeyboardInput>();
+    crate::bevy_shell::install_font_fallback(&mut app, folder.path());
+    install(&mut app, link);
+    app.update();
+    let world = app.world_mut();
+    let font = world
+        .query_filtered::<&TextFont, With<WatchText>>()
+        .single(world)?;
+    assert_eq!(font.font, Handle::<Font>::default().into());
+    Ok(())
+}

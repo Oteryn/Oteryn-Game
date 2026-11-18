@@ -10,6 +10,8 @@ use bevy::{
 };
 use model::{Contact, Snapshot};
 use oteryn_client_ui::vip::Intent;
+#[path = "vip/consent.rs"]
+mod consent;
 #[cfg(test)]
 #[path = "vip/context_menu_tests.rs"]
 mod context_menu_tests;
@@ -86,6 +88,8 @@ enum Action {
     Icon(u64, i8),
     Notify(u64),
     Group(u64, u8),
+    Consent(consent::Action),
+    Withdraw(u64),
 }
 #[derive(Component)]
 struct List;
@@ -125,13 +129,17 @@ pub(super) fn install(app: &mut App) {
                 .after(super::super::setup)
                 .after(crate::bevy_shell::ui::setup),
         )
-        .add_systems(Startup, presentation::setup.after(view::setup))
+        .add_systems(
+            Startup,
+            (consent::setup, presentation::setup).after(view::setup),
+        )
         .add_systems(
             Update,
             (
                 view::project,
                 presentation::project,
                 groups::project,
+                consent::project,
                 view::dialog,
                 input::keyboard,
             )

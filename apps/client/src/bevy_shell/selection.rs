@@ -79,7 +79,11 @@ pub(super) struct Skin {
 #[derive(Component)]
 struct OutfitToggle(u64);
 
-pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
+pub(super) fn setup(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    fallback: Option<Res<crate::bevy_shell::BuiltInFont>>,
+) {
     commands.insert_resource(PickerState::default());
     commands.insert_resource(Skin {
         buttons: source::ButtonImages {
@@ -90,7 +94,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         inset: assets.load("images/1pixel-down-frame.png"),
         checked: assets.load("images/skin/classic/checkbox-checked.png"),
         unchecked: assets.load("images/skin/classic/checkbox-unchecked.png"),
-        font: assets.load("fonts/verdanab.ttf"),
+        font: crate::bevy_shell::ui_font(&assets, fallback.is_some()),
     });
     commands.spawn((
         Picker,

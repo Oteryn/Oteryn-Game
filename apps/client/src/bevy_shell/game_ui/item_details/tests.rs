@@ -550,3 +550,29 @@ fn parity_a_inspection_proficiency_navigation_keeps_displayed_weapon() -> TestRe
     );
     Ok(())
 }
+
+#[test]
+fn two_handed_weapon_opens_proficiency_without_a_catalogue_row() -> TestResult {
+    let (mut app, link, mut commands, outbox) = app(true)?;
+    outbox.bevy_proficiency_initialize();
+    inspect(&link, &mut commands, Request::Item(7.try_into()?))?;
+    let mut inspected = reply("Two-handed sword");
+    inspected.items[0]
+        .attributes
+        .push(("Weapon Type".into(), "sword, two-handed".into()));
+    response(&link, &inspected)?;
+    app.update();
+    let button = action(&mut app, Kind::Proficiency)?;
+    assert!(
+        app.world()
+            .get::<bevy::ui::InteractionDisabled>(button)
+            .is_none()
+    );
+    app.world_mut().trigger(Activate { entity: button });
+    assert!(link.weapon_proficiency_panel().open);
+    assert_eq!(link.weapon_proficiency_panel().weapon, 42);
+    assert!(
+        matches!(commands.try_recv()?, PlayCommand::Feature(command) if command.capability == 195)
+    );
+    Ok(())
+}

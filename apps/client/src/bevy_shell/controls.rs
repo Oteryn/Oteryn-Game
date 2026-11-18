@@ -102,6 +102,21 @@ impl HostOwner {
         if let Some(play) = &mut self.play {
             play.view.observe_arrow_releases(&controls);
         }
+        // A native keyboard event is routed on its own. The minimap handles Alt+arrows
+        // from Bevy keyboard input, including when autowalk is active.
+        if self.settings.preferences.panel_visible("minimap")
+            && self.settings.preferences.rotation_modifier != "ALT"
+            && matches!(
+                controls.as_slice(),
+                [NormalizedInputEvent::Key { code, modifiers, .. }]
+                    if matches!(code.get(), 79..=82)
+                        && *modifiers == oteryn_input_actions::Modifiers::one(
+                            oteryn_input_actions::Modifier::Alt,
+                        )
+            )
+        {
+            return;
+        }
         let (routed, open) = self.settings.input_in_context(&controls, chat);
         let clicks = self.controls.mouse.route(&routed);
         let spells = self.controls.spells.route(&routed);

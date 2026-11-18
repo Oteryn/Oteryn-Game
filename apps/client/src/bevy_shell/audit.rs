@@ -23,12 +23,23 @@ pub(super) fn capture_on_key(
     mut owner: NonSendMut<HostOwner>,
     viewport: Res<super::game_ui::viewport::WorldViewport>,
     mut automatic: Local<super::screenshots::AutomaticState>,
-    captures: Query<&super::screenshots::Capture>,
+    captures: Query<Entity, With<bevy::render::view::screenshot::Screenshot>>,
     clock: Res<Time<Real>>,
     mut writes: NonSendMut<super::screenshots::Writes>,
 ) {
     writes.poll(&mut owner);
-    super::screenshots::observe(
+    let manual = keys.just_pressed(KeyCode::F12);
+    let manual_batch = manual
+        && output.path.is_none()
+        && owner.play.is_some()
+        && owner
+            .settings
+            .preferences
+            .screenshots
+            .effective()
+            .backlog_frames
+            > 0;
+    let readback = super::screenshots::observe(
         &mut commands,
         &mut owner,
         *viewport,
@@ -36,14 +47,15 @@ pub(super) fn capture_on_key(
         &captures,
         &clock,
         &writes,
+        manual_batch,
     );
-    if !keys.just_pressed(KeyCode::F12) {
+    if !manual || manual_batch {
         return;
     }
     if let Some(path) = &output.path {
-        super::screenshots::request_audit(&mut commands, path.with_extension("png"));
+        super::screenshots::request_audit(&mut commands, readback, path.with_extension("png"));
     } else {
-        super::screenshots::request(&mut commands, &mut owner, *viewport);
+        super::screenshots::request(&mut commands, readback, &mut owner, *viewport);
     }
 }
 #[derive(Resource)]

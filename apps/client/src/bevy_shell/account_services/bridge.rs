@@ -1,5 +1,5 @@
 //! Bounded handoff of public account views; credentials remain in the admission worker.
-use crate::{account_services, premium};
+use crate::{account_services, coin_shop, premium};
 use oteryn_foundation::CancellationToken;
 use std::sync::{
     Arc,
@@ -14,12 +14,22 @@ pub(in crate::bevy_shell) enum Action {
     Refresh,
     Back,
 }
+pub(super) enum Screen {
+    Account(account_services::View),
+    Coin(coin_shop::View),
+    Premium(premium::View),
+}
+#[derive(Clone)]
+pub(super) enum Reply {
+    General(Action),
+    Account(account_services::Action),
+    Coin(coin_shop::Action),
+}
 pub(in crate::bevy_shell) struct Request {
     pub id: u64,
-    pub account_feedback: String,
-    pub premium: Option<premium::View>,
+    pub(super) screen: Screen,
     cancel: CancellationToken,
-    reply: SyncSender<Action>,
+    reply: SyncSender<Reply>,
     epoch: u64,
     deadline: Instant,
 }
@@ -29,6 +39,7 @@ pub(in crate::bevy_shell) struct Services {
     epoch: Arc<AtomicU64>,
     account: account_services::Presenter,
     premium: premium::Presenter,
+    coin: coin_shop::Presenter,
 }
 impl Services {
     pub fn new() -> Self {
@@ -36,28 +47,27 @@ impl Services {
         let epoch = Arc::new(AtomicU64::new(1));
         let sequence = Arc::new(AtomicU64::new(1));
         let callback_epoch = epoch.clone();
-        let ask = move |premium, account_feedback, cancel: CancellationToken| {
+        let ask = move |screen, cancel: CancellationToken| {
             let current = callback_epoch.load(Ordering::Acquire);
             let (reply, result) = mpsc::sync_channel(1);
             let deadline = Instant::now() + Duration::from_secs(300);
             let request = Request {
                 id: sequence.fetch_add(1, Ordering::Relaxed),
-                premium,
-                account_feedback,
+                screen,
                 cancel: cancel.clone(),
                 reply,
                 epoch: current,
                 deadline,
             };
             if cancel.is_cancelled() || sender.try_send(request).is_err() {
-                return Action::Back;
+                return Reply::General(Action::Back);
             }
             loop {
                 if cancel.is_cancelled()
                     || callback_epoch.load(Ordering::Acquire) != current
                     || Instant::now() >= deadline
                 {
-                    return Action::Back;
+                    return Reply::General(Action::Back);
                 }
                 match result.recv_timeout(Duration::from_millis(50)) {
                     Ok(action) => {
@@ -65,32 +75,40 @@ impl Services {
                             || callback_epoch.load(Ordering::Acquire) != current
                             || Instant::now() >= deadline
                         {
-                            Action::Back
+                            Reply::General(Action::Back)
                         } else {
                             action
                         };
                     }
                     Err(mpsc::RecvTimeoutError::Timeout) => {}
-                    Err(_) => return Action::Back,
+                    Err(_) => return Reply::General(Action::Back),
                 }
             }
         };
-        // Both callbacks share the bounded queue and identity sequence.
+        // All presenters share the bounded queue and identity sequence.
         let account_ask = ask.clone();
+        let coin_ask = ask.clone();
         Self {
             requests,
             pending: None,
             epoch,
             account: Arc::new(move |view, cancel| {
-                match account_ask(None, view.feedback.clone(), cancel) {
-                    Action::Premium => account_services::Action::Premium,
+                match account_ask(Screen::Account(view.clone()), cancel) {
+                    Reply::Account(action) => action,
+                    Reply::General(Action::Premium) => account_services::Action::Premium,
                     _ => account_services::Action::Back,
                 }
             }),
             premium: Arc::new(move |view, cancel| {
-                match ask(Some(view.clone()), String::new(), cancel) {
-                    Action::Refresh => premium::Action::Refresh,
+                match ask(Screen::Premium(view.clone()), cancel) {
+                    Reply::General(Action::Refresh) => premium::Action::Refresh,
                     _ => premium::Action::Back,
+                }
+            }),
+            coin: Arc::new(move |view, cancel| {
+                match coin_ask(Screen::Coin(view.clone()), cancel) {
+                    Reply::Coin(action) => action,
+                    _ => coin_shop::Action::Back,
                 }
             }),
         }
@@ -98,6 +116,7 @@ impl Services {
     pub fn configure(&self, config: &mut crate::NativeLoginConfig) {
         config.account_services = self.account.clone();
         config.premium = self.premium.clone();
+        config.coin_shop = self.coin.clone();
     }
     pub fn pending(&self) -> Option<&Request> {
         self.pending.as_ref().filter(|r| {
@@ -121,19 +140,26 @@ impl Services {
         }
     }
     pub fn respond(&mut self, id: u64, action: Action) {
+        self.reply(id, Reply::General(action));
+    }
+    pub(super) fn reply(&mut self, id: u64, reply: Reply) {
         if !self.pending().is_some_and(|r| {
             r.id == id
-                && (action == Action::Back
-                    || if r.premium.is_some() {
-                        action == Action::Refresh
-                    } else {
-                        action == Action::Premium
-                    })
+                && matches!(
+                    (&r.screen, &reply),
+                    (_, Reply::General(Action::Back))
+                        | (Screen::Premium(_), Reply::General(Action::Refresh))
+                        | (
+                            Screen::Account(_),
+                            Reply::General(Action::Premium) | Reply::Account(_)
+                        )
+                        | (Screen::Coin(_), Reply::Coin(_))
+                )
         }) {
             return;
         }
         if let Some(request) = self.pending.take() {
-            let _ = request.reply.try_send(action);
+            let _ = request.reply.try_send(reply);
         }
     }
     pub fn cancel(&mut self) {

@@ -105,6 +105,8 @@ const STATUS_VALUE: f32 = 42.;
 struct MonkRow;
 #[derive(Component)]
 struct MonkLabel;
+#[derive(Component)]
+struct SereneIcon;
 mod layout;
 use layout::setup;
 fn button(
@@ -220,6 +222,7 @@ fn project(
     mut monk: (
         Query<&mut Text, With<MonkLabel>>,
         Query<&mut Node, (With<MonkRow>, Without<VitalFill>)>,
+        Query<&mut Visibility, With<SereneIcon>>,
     ),
     mut fills: Query<(&VitalFill, &mut Node, &mut BackgroundColor), Without<MonkRow>>,
     mut actions: Query<(Entity, &mut HudAction, Has<InteractionDisabled>), Without<CombatControl>>,
@@ -293,6 +296,14 @@ fn project(
         if node.display != display {
             node.display = display;
         }
+    }
+    let serene_visibility = if vitals.is_some_and(|v| v.serene) {
+        Visibility::Inherited
+    } else {
+        Visibility::Hidden
+    };
+    for mut visibility in &mut monk.2 {
+        visibility.set_if_neq(serene_visibility);
     }
     for (kind, mut text) in &mut info {
         let next = match kind {

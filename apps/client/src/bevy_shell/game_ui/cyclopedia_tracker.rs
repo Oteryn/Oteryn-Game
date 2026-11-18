@@ -288,6 +288,7 @@ fn build(commands: &mut Commands, skins: &Skins, boss: bool, view: View) -> Show
             .spawn((
                 KeyField(boss),
                 TextInput,
+                bevy::input_focus::tab_navigation::TabIndex(0),
                 editable,
                 source::font(skins.font.clone(), false),
                 TextColor(source::TEXT_COLOR),

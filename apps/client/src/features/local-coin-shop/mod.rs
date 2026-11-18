@@ -20,7 +20,7 @@ pub enum Action {
     OpenCheckout,
     Back,
 }
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct View {
     pub catalogue: Option<CoinCatalogue>,
     pub balance: Option<CoinBalance>,

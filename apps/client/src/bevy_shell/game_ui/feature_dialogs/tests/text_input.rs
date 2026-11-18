@@ -259,3 +259,63 @@ fn parity_a_modal_selects_first_choice_and_arrows_change_real_answer() -> TestRe
 
 #[path = "defaults.rs"]
 mod defaults;
+
+#[test]
+fn enter_on_remember_only_toggles_and_explicit_submit_keeps_consent() -> TestResult {
+    use bevy::input::{
+        ButtonState,
+        keyboard::{Key, KeyboardInput},
+    };
+    let (mut app, _, mut fixture) = app_with_choices(false)?;
+    app.add_plugins(bevy::ui_widgets::CheckboxPlugin);
+    fixture.with_defaults();
+    app.update();
+    let world = app.world_mut();
+    let editor = world
+        .query_filtered::<Entity, With<ValueField>>()
+        .single(world)?;
+    world
+        .get_mut::<EditableText>(editor)
+        .ok_or("editor")?
+        .editor_mut()
+        .set_text("1");
+    let checkbox = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| matches!(action.kind, ActionKind::Remember).then_some(entity))
+        .ok_or("remember checkbox")?;
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(checkbox, FocusCause::Navigated);
+    app.world_mut().trigger(ValueChange {
+        source: checkbox,
+        value: true,
+        is_final: true,
+    });
+    app.update();
+    assert!(app.world().resource::<State>().remember);
+    for remember in [false, true] {
+        app.world_mut().write_message(KeyboardInput {
+            key_code: KeyCode::Enter,
+            logical_key: Key::Enter,
+            state: ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
+        app.update();
+        assert!(fixture.accepted_input()?.is_none());
+        assert_eq!(app.world().resource::<State>().remember, remember);
+    }
+    let submit = button(&mut app)?;
+    app.world_mut().trigger(Activate { entity: submit });
+    app.update();
+    assert!(
+        fixture
+            .accepted_input()?
+            .ok_or("explicit consent")?
+            .dont_show_again
+    );
+    Ok(())
+}

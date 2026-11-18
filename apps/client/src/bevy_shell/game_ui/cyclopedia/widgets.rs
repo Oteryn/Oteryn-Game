@@ -173,6 +173,7 @@ pub(super) fn render(
             .spawn((
                 HoldingsSearch,
                 bevy::ui_widgets::TextInput,
+                bevy::input_focus::tab_navigation::TabIndex(0),
                 bevy::text::EditableText::new(&panel.items.search),
                 source::font(skin.font.clone(), false),
                 TextColor(source::TEXT_COLOR),

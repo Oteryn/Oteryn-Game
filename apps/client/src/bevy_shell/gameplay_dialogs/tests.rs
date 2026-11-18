@@ -265,3 +265,15 @@ fn context_attack_rejects_a_replacement_target_or_changed_combat_state() -> Resu
     }
     Ok(())
 }
+
+#[test]
+fn gameplay_dialogs_use_the_bundled_font_in_installed_client() {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .insert_resource(crate::bevy_shell::BuiltInFont)
+        .add_systems(Startup, setup);
+    app.update();
+    assert_eq!(app.world().resource::<Skin>().font, Handle::default());
+}

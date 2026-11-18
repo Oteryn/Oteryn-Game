@@ -26,6 +26,12 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
 fn fixture_with(
     prepare: impl FnOnce(&mut HostOwner),
 ) -> Result<Fixture, Box<dyn std::error::Error>> {
+    fixture_app(prepare, App::new())
+}
+fn fixture_app(
+    prepare: impl FnOnce(&mut HostOwner),
+    mut app: App,
+) -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
     link.use_shared_frontend();
     outbox.bevy_cyclopedia_tracker_initialize();
@@ -35,7 +41,6 @@ fn fixture_with(
     view.use_shared_frontend();
     owner.play = Some(ActivePlay { view, link });
     owner.phase = Phase::Playing;
-    let mut app = App::new();
     app.insert_non_send(owner)
         .init_resource::<InputFocus>()
         .insert_resource(Skins {
@@ -468,5 +473,76 @@ fn open_tracker_windows_are_saved_in_the_layout_and_reopen_next_session() -> Tes
             .preferences
             .panel_visible("bosstiary-tracker")
     );
+    Ok(())
+}
+
+#[test]
+fn acquired_bestiary_field_accepts_typed_creature_key_and_tracks_it() -> TestResult {
+    use bevy::{
+        asset::AssetPlugin,
+        input::{
+            ButtonState, InputPlugin,
+            keyboard::{Key, KeyboardInput},
+        },
+        input_focus::{AcquireFocus, InputDispatchPlugin, tab_navigation::TabNavigationPlugin},
+        text::{RemSize, TextPlugin},
+        ui_widgets::TextInputPlugin,
+        window::{PrimaryWindow, WindowPlugin},
+    };
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        AssetPlugin::default(),
+        InputPlugin,
+        InputDispatchPlugin,
+        TabNavigationPlugin,
+        WindowPlugin::default(),
+        TextPlugin,
+        TextInputPlugin,
+    ))
+    .init_resource::<UiScale>()
+    .init_resource::<RemSize>()
+    .add_systems(PostUpdate, bevy::ui::widget::update_editable_text_styles);
+    let (mut app, mut commands, outbox) = fixture_app(|_| {}, app)?;
+    let font = app
+        .world_mut()
+        .resource_mut::<Assets<Font>>()
+        .add(Font::from_bytes(
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/assets/FiraMono-subset.ttf"
+            ))
+            .to_vec(),
+        ));
+    app.world_mut().resource_mut::<Skins>().font = font;
+    toolbar(&mut app, "bestiary_tracker")?;
+    assert_eq!(command(&mut commands)?.kind, 383);
+    reply(&mut app, &outbox, &tracker(false, &[]))?;
+    let world = app.world_mut();
+    let field = world
+        .query_filtered::<Entity, With<KeyField>>()
+        .single(world)?;
+    let window = world
+        .query_filtered::<Entity, With<PrimaryWindow>>()
+        .single(world)?;
+    world.trigger(AcquireFocus {
+        focused_entity: field,
+        window,
+    });
+    assert_eq!(world.resource::<InputFocus>().get(), Some(field));
+    let creature = "oteryn:creature.wolf";
+    world.write_message(KeyboardInput {
+        key_code: KeyCode::KeyO,
+        logical_key: Key::Character(creature.into()),
+        state: ButtonState::Pressed,
+        text: Some(creature.into()),
+        repeat: false,
+        window,
+    });
+    app.update();
+    click(&mut app, false, &Action::Track)?;
+    let add = command(&mut commands)?;
+    assert_eq!(add.kind, 383);
+    assert_eq!(add.payload, change(TrackerAction::Add, creature)?);
     Ok(())
 }

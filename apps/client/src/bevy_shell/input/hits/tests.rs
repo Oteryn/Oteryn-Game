@@ -331,3 +331,41 @@ fn world_right_click_cancels_armed_use_with_and_cursor_spell_before_loot_or_menu
     }
     Ok(())
 }
+
+#[test]
+fn a_left_docked_action_slot_cannot_route_a_click_to_the_world() -> TestResult {
+    let mut f = fixture(1., false)?;
+    let anchor = f
+        .app
+        .world_mut()
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left: px(0.),
+                ..default()
+            },
+            ChildOf(f.world),
+        ))
+        .id();
+    let slot = f
+        .app
+        .world_mut()
+        .spawn((bevy::ui_widgets::Button, Node::default(), ChildOf(anchor)))
+        .id();
+    let caption = f
+        .app
+        .world_mut()
+        .spawn((Text::new("F1"), ChildOf(slot)))
+        .id();
+    {
+        let mut hover = f.app.world_mut().resource_mut::<HoverMap>();
+        let hits = hover.entry(PointerId::Mouse).or_default();
+        hits.clear();
+        hits.insert(caption, HitData::new(f.window, 0., None, None));
+    }
+    mouse(&mut f.app, Vec2::splat(64.));
+    f.app.update();
+    assert_eq!(f.app.world().resource::<InputFocus>().get(), Some(f.editor));
+    assert!(f.commands.try_recv().is_err());
+    Ok(())
+}

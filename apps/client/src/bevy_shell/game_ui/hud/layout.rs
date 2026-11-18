@@ -102,6 +102,9 @@ pub(super) fn setup(
         .id();
     let serene = super::super::art::fixed(&mut commands, &skins.font, "status-serene", STATUS_ICON);
     commands
+        .entity(serene)
+        .insert((SereneIcon, Visibility::Hidden));
+    commands
         .entity(monk)
         .add_children(&[harmony, label, serene]);
     commands.entity(regions.vitals).add_child(monk);

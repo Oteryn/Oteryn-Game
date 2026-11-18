@@ -117,6 +117,22 @@ pub(super) fn activate(
             }
         }
         Action::Save(serial) => prepare(&mut state, &fields, serial),
+        Action::Consent(action) => {
+            if let Ok(snapshot) = Snapshot::read(&panel)
+                && let Some(intent) = action.intent(&snapshot)
+            {
+                play.link.vip_request(intent);
+            }
+        }
+        Action::Withdraw(entry) => {
+            if presentation.context == Some((owner.generation(), panel.revision, entry))
+                && Snapshot::read(&panel)
+                    .is_ok_and(|snapshot| snapshot.entries.iter().any(|row| row.entry == entry))
+            {
+                play.link.vip_request(Intent::Withdraw(entry));
+                presentation.context = None;
+            }
+        }
         Action::Remove(entry) => {
             if (presentation.context == Some((owner.generation(), panel.revision, entry))
                 && Snapshot::read(&panel)

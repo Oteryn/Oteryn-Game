@@ -436,14 +436,18 @@ pub(super) fn install(app: &mut App) {
             scale::apply.before(bevy::ui::UiSystems::Prepare),
         );
 }
-fn setup(mut commands: Commands, assets: Res<AssetServer>) {
+fn setup(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    fallback: Option<Res<crate::bevy_shell::BuiltInFont>>,
+) {
     commands.insert_resource(Skin {
         buttons: source::ButtonImages {
             up: assets.load("images/skin/classic/button-grey-up.png"),
             down: assets.load("images/skin/classic/button-grey-down.png"),
         },
         frame: assets.load("images/skin/classic/dialog-frame-borderimage.png"),
-        font: assets.load("fonts/verdanab.ttf"),
+        font: crate::bevy_shell::ui_font(&assets, fallback.is_some()),
         checked: assets.load("images/skin/classic/checkbox-checked.png"),
         unchecked: assets.load("images/skin/classic/checkbox-unchecked.png"),
     });

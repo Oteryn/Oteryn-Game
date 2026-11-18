@@ -6,6 +6,7 @@ use bevy::{
         pointer::{PointerId, PointerLocation},
     },
     prelude::*,
+    ui_widgets::{Button, Checkbox, TextInput},
     window::PrimaryWindow,
 };
 #[derive(SystemParam)]
@@ -13,6 +14,7 @@ pub(in crate::bevy_shell) struct WorldPointerHits<'w, 's> {
     hover: Res<'w, HoverMap>,
     pointers: Query<'w, 's, (&'static PointerId, &'static PointerLocation)>,
     primary: Query<'w, 's, (Entity, &'static Window), With<PrimaryWindow>>,
+    controls: Query<'w, 's, (), Or<(With<Button>, With<Checkbox>, With<TextInput>)>>,
     parents: Query<'w, 's, &'static ChildOf>,
 }
 impl WorldPointerHits<'_, '_> {
@@ -73,6 +75,9 @@ impl WorldPointerHits<'_, '_> {
                 loop {
                     if current == world {
                         return true;
+                    }
+                    if self.controls.contains(current) {
+                        return false;
                     }
                     let Ok(parent) = self.parents.get(current) else {
                         return false;

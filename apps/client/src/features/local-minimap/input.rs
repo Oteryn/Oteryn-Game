@@ -143,6 +143,21 @@ impl PlayView {
     }
 
     #[cfg(bevy_shell)]
+    pub(crate) fn remove_minimap_marker(&mut self, at: (i32, i32, i16)) -> std::io::Result<()> {
+        let removed = super::state::lock(&self.minimap).remove_marker(at.0, at.1, at.2);
+        removed
+            .and_then(|()| self.rebuild().map_err(std::io::Error::other))
+            .inspect_err(|error| {
+                super::state::lock(&self.minimap).feedback = format!("Map mark: {error}");
+            })
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn remembered_minimap_mark(&self, at: (i32, i32, i16)) -> Option<&super::view::MinimapMark> {
+        self.scene.minimap_memory.marks.iter().find(|mark| (mark.x, mark.y, mark.floor) == at)
+    }
+
+    #[cfg(bevy_shell)]
     pub(crate) fn edit_minimap_marker(&mut self, at: (i32, i32, i16), label: String, color: u8) -> std::io::Result<()> {
         let edited = super::state::lock(&self.minimap).edit_marker(at.0, at.1, at.2, label, color);
         edited

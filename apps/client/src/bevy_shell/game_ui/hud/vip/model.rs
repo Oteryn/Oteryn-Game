@@ -23,10 +23,20 @@ pub(super) struct Group {
     pub name: String,
 }
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+pub(super) struct Consent {
+    pub handle: u64,
+    pub name: String,
+    pub accepted: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub(super) struct Snapshot {
     pub entries: Vec<Contact>,
     pub groups: Vec<Group>,
     pub next_entry: Option<u64>,
+    #[serde(default)]
+    pub consents: Vec<Consent>,
+    pub shown: Option<bool>,
 }
 impl Snapshot {
     pub fn read(panel: &oteryn_client_ui::vip::VipPanel) -> Result<Self, &'static str> {

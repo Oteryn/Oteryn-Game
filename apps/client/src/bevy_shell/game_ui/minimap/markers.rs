@@ -18,7 +18,13 @@ struct Field;
 #[derive(Component)]
 struct Control {
     key: MarkerKey,
-    save: bool,
+    action: Action,
+}
+#[derive(Clone, Copy)]
+enum Action {
+    Save,
+    Remove,
+    Cancel,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<Editor>()
@@ -121,17 +127,23 @@ fn project(
         .id();
     commands.entity(root).add_child(caption);
     let mut label = String::new();
+    let mut existing = false;
+    editor.color = 0;
     if let Some(play) = &owner.play {
         play.view.satellite_map(|_, markers| {
             if let Some(mark) = markers.iter().find(|m| (m.x, m.y, m.floor) == key.1) {
+                existing = true;
                 label.clone_from(&mark.label);
                 editor.color = mark.color;
             }
         });
+        if !existing && let Some(mark) = play.view.remembered_minimap_mark(key.1) {
+            existing = true;
+            label.clone_from(&mark.label);
+        }
     }
     if label.is_empty() {
         label = "Mark".into();
-        editor.color = 0;
     }
     let mut text = EditableText::new(label);
     text.max_characters = Some(128);
@@ -152,11 +164,18 @@ fn project(
         .id();
     commands.entity(root).add_child(field);
     focus.set(field, bevy::input_focus::FocusCause::Navigated);
-    for (save, label) in [(true, "Save mark"), (false, "Cancel")] {
+    for (action, label) in [
+        (Action::Save, "Save mark"),
+        (Action::Remove, "Remove mark"),
+        (Action::Cancel, "Cancel"),
+    ] {
+        if matches!(action, Action::Remove) && !existing {
+            continue;
+        }
         let button = commands
             .spawn((
                 source::button(skin.buttons.clone(), 110.),
-                Control { key, save },
+                Control { key, action },
             ))
             .observe(activate)
             .id();
@@ -173,6 +192,7 @@ fn activate(
     controls: Query<&Control>,
     guard: super::super::modal::ModalGuard,
     mut editor: ResMut<Editor>,
+    mut owner: NonSendMut<HostOwner>,
 ) {
     let Ok(control) = controls.get(event.entity) else {
         return;
@@ -180,11 +200,48 @@ fn activate(
     if !guard.allows(event.entity) || editor.at != Some(control.key) {
         return;
     }
-    if control.save {
-        editor.pending = Some(event.entity);
-    } else {
-        editor.at = None;
-        editor.pending = None;
+    match control.action {
+        Action::Save => editor.pending = Some(event.entity),
+        Action::Cancel => {
+            editor.at = None;
+            editor.pending = None;
+        }
+        Action::Remove => {
+            let (generation, at) = control.key;
+            if owner.generation() != generation || owner.modal_active() {
+                return;
+            }
+            let owner = &mut *owner;
+            let Some(play) = &mut owner.play else { return };
+            if play.view.gameplay_input_blocked(&play.link) {
+                return;
+            }
+            let world_mark = play.view.satellite_map(|_, marks| {
+                marks.iter().any(|mark| (mark.x, mark.y, mark.floor) == at)
+            });
+            if world_mark {
+                if play.view.remove_minimap_marker(at).is_err() {
+                    return;
+                }
+            } else if let Some(mark) = play.view.remembered_minimap_mark(at) {
+                let mut preferences = owner.settings.preferences.clone();
+                if preferences.minimap.binding == play.view.preferences().minimap.binding
+                    && let Some(index) = preferences
+                        .minimap
+                        .marks
+                        .iter()
+                        .position(|saved| saved == mark)
+                {
+                    preferences.minimap.remove_mark(index);
+                    owner.settings.apply(preferences);
+                    if let Err(error) = owner.settings.capture(&mut play.view) {
+                        owner.status = error.to_string();
+                    }
+                }
+            }
+            editor.at = None;
+            editor.pending = None;
+        }
     }
 }
 fn finish(

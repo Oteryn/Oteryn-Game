@@ -472,3 +472,14 @@ fn trimmed_search_fits_wire_limit() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn catalogue_search_can_acquire_focus() -> TestResult {
+    let (mut app, _, _, _) = catalogue_window()?;
+    let world = app.world_mut();
+    let field = world
+        .query_filtered::<Entity, With<Search>>()
+        .single(world)?;
+    crate::bevy_shell::ui::assert_editor_acquires_focus(world, field);
+    Ok(())
+}

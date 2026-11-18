@@ -41,8 +41,8 @@ impl PlayLink {
                 if !item.attributes.iter().any(|(label, value)| {
                     label == "Weapon Type"
                         && matches!(
-                            value.as_str(),
-                            "axe" | "club" | "distance" | "fist" | "sword" | "wand"
+                            value.split(',').next().map(str::trim),
+                            Some("axe" | "club" | "distance" | "fist" | "sword" | "wand")
                         )
                 }) {
                     return false;

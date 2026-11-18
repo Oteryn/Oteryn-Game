@@ -133,6 +133,15 @@ pub(super) fn render(
             ready && panel.gift.confirmed.is_none() && panel.hireling_modal_id.is_none(),
         );
     }
+    button(
+        commands,
+        skin,
+        root,
+        key,
+        Kind::CoinCheckout,
+        "Get Oteryn coins",
+        ready && snapshot.coin_checkout,
+    );
     let tabs = row(commands, root);
     for (kind, title) in [
         (Kind::Products, "Products"),

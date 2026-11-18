@@ -196,9 +196,23 @@ pub(super) struct ScopeLabel;
 pub(super) struct Indicator(Entity);
 
 #[derive(Resource)]
-pub(super) struct BuiltInFont;
+pub(crate) struct BuiltInFont;
 
 pub(super) const EXTERNAL_FONT: &str = "fonts/verdanab.ttf";
+
+pub(crate) fn install_font_fallback(app: &mut App, assets: &std::path::Path) {
+    if !assets.join(EXTERNAL_FONT).is_file() {
+        app.insert_resource(BuiltInFont);
+    }
+}
+
+pub(crate) fn ui_font(assets: &AssetServer, fallback: bool) -> Handle<Font> {
+    if fallback {
+        Handle::default()
+    } else {
+        assets.load(EXTERNAL_FONT)
+    }
+}
 
 pub(super) fn setup(
     mut commands: Commands,
@@ -224,11 +238,7 @@ pub(super) fn setup(
         unchecked: assets.load(format!("{SKIN}checkbox-unchecked.png")),
         frame: assets.load(format!("{SKIN}dialog-frame-borderimage.png")),
         inset: assets.load("images/1pixel-down-frame.png"),
-        font: if fallback.is_some() {
-            Handle::default()
-        } else {
-            assets.load(EXTERNAL_FONT)
-        },
+        font: ui_font(&assets, fallback.is_some()),
     };
     let shell = commands
         .spawn((
@@ -565,3 +575,14 @@ pub(super) fn keyboard(
 
 #[cfg(test)]
 mod toolbar_tests;
+
+#[cfg(test)]
+pub(super) fn assert_editor_acquires_focus(world: &mut World, field: Entity) {
+    use bevy::input_focus::{AcquireFocus, InputFocus, tab_navigation::acquire_focus_tab_index};
+    world.add_observer(acquire_focus_tab_index);
+    world.trigger(AcquireFocus {
+        focused_entity: field,
+        window: Entity::PLACEHOLDER,
+    });
+    assert_eq!(world.resource::<InputFocus>().get(), Some(field));
+}

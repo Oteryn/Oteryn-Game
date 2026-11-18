@@ -178,11 +178,46 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         Page::Misc => &miscellaneous::MAIN,
         Page::Gameplay => &miscellaneous::GAMEPLAY,
         Page::Diagnostics => &diagnostics::ROWS,
-        Page::Screenshots => &[check!(
-            "screenshots.game-only",
-            "Capture game area only",
-            screenshots.game_only
-        )],
+        Page::Screenshots => &[
+            check!(
+                "screenshots.game-only",
+                "Capture game area only",
+                screenshots.game_only
+            ),
+            check!(
+                "screenshots.death",
+                "Capture on death",
+                screenshots.on_death
+            ),
+            check!(
+                "screenshots.level",
+                "Capture on level up",
+                screenshots.on_level
+            ),
+            check!(
+                "screenshots.skill",
+                "Capture on skill up",
+                screenshots.on_skill
+            ),
+            check!(
+                "screenshots.achievement",
+                "Capture on achievement",
+                screenshots.on_achievement
+            ),
+            Row {
+                id: "screenshots.backlog",
+                label: "Screenshot backlog (seconds, 0 disables)",
+                editor: Editor::Number {
+                    read: |p| u16::from(p.screenshots.effective().backlog_frames),
+                    write: |p, value| {
+                        p.screenshots.backlog_frames = 0;
+                        p.screenshots.backlog_seconds = value as u8;
+                    },
+                    min: 0,
+                    max: 10,
+                },
+            },
+        ],
     }
 }
 const BASIC: [Row; 7] = [

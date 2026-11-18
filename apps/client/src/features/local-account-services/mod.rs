@@ -42,7 +42,7 @@ pub enum Action {
     Back,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct View {
     pub page: Option<BazaarPage>,
     pub quote: Option<TransferQuote>,

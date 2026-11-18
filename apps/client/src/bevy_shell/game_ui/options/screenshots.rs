@@ -138,3 +138,56 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod automatic_tests {
+    use super::*;
+    use crate::play::screenshot::CaptureAction;
+    use bevy::ui_widgets::ValueChange;
+
+    #[test]
+    fn unchecking_death_capture_and_applying_prevents_a_death_capture()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = super::super::tests::app(Page::Screenshots, None)?;
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner.settings.preferences.screenshots.on_death = true;
+            owner.cancel();
+            owner.open_graphics();
+        }
+        let checkbox = app
+            .world_mut()
+            .spawn(Control::Check("screenshots.death"))
+            .observe(super::super::toggle)
+            .id();
+        app.world_mut().trigger(ValueChange {
+            source: checkbox,
+            value: false,
+            is_final: true,
+        });
+        let (link, _, outbox) = crate::play::play_channel();
+        let now = std::time::Instant::now();
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        assert!(owner.settings.preferences.screenshots.on_death);
+        owner.apply(true);
+        for (seq, health) in [(1, 100), (2, 0)] {
+            outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
+                oteryn_session::AppliedDelta {
+                    server_sequence: seq,
+                    base_revision: seq - 1,
+                    new_revision: seq,
+                    value: oteryn_session::ActorVitals {
+                        health,
+                        max_health: 100,
+                        ..default()
+                    },
+                },
+            )]);
+            assert!(matches!(
+                owner.settings.prepare_screenshots(now, Some(&link)),
+                CaptureAction::Idle
+            ));
+        }
+        Ok(())
+    }
+}

@@ -320,6 +320,7 @@ pub(super) fn project(
             for (label, command) in [
                 ("Message", Action::Message(entry)),
                 ("Edit", Action::Edit(entry)),
+                ("Withdraw consent", Action::Withdraw(entry)),
                 ("Remove", Action::Remove(entry)),
                 ("Add", Action::Add),
                 ("Close", Action::MenuClose),
@@ -333,11 +334,15 @@ pub(super) fn project(
                         command,
                     },
                     label,
-                    45.,
-                    if matches!(command, Action::Message(_)) {
-                        "vip.message"
+                    if matches!(command, Action::Withdraw(_)) {
+                        115.
                     } else {
-                        "vip.menu.action"
+                        45.
+                    },
+                    match command {
+                        Action::Message(_) => "vip.message",
+                        Action::Withdraw(_) => "vip.menu.withdraw",
+                        _ => "vip.menu.action",
                     },
                 );
                 commands.entity(root).add_child(entity);

@@ -148,22 +148,20 @@ pub(super) fn route(
         }
     }
 }
-fn route_keyboard(
+pub(super) fn route_keyboard(
     owner: &mut HostOwner,
     event: NormalizedInputEvent,
     blocked: bool,
     editor: Option<bool>,
 ) {
-    use oteryn_input_actions::{Modifier, Modifiers};
+    use oteryn_input_actions::Modifier;
     let shortcut = matches!(&event, NormalizedInputEvent::Key { code, modifiers, .. }
         if !matches!(code.get(), 79..=82)
             && ((modifiers.contains(Modifier::Control)
                     && !matches!(code.get(), 4 | 6 | 25 | 27..=29))
                 || modifiers.contains(Modifier::Alt)
                 || modifiers.contains(Modifier::Super)
-                || matches!(code.get(), 58..=69 | 104..=115)
-                || (code.get() == 43 && (*modifiers == Modifiers::NONE
-                    || *modifiers == Modifiers::one(Modifier::Shift)))));
+                || matches!(code.get(), 58..=69 | 104..=115)));
     owner.route_input(
         &[event],
         blocked || editor.is_some_and(|composer| !composer || !shortcut),

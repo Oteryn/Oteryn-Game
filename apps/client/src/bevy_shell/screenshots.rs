@@ -8,7 +8,7 @@ use bevy::{
 use bevy_tasks::{IoTaskPool, Task, futures::check_ready};
 use std::{collections::VecDeque, io, path::PathBuf};
 mod automatic;
-pub(super) use automatic::{Capture, State as AutomaticState, observe};
+pub(super) use automatic::{State as AutomaticState, observe};
 
 type Job = Box<dyn FnOnce() -> Completion + Send>;
 const MAX_QUEUED_CAPTURES: usize = 4;
@@ -69,11 +69,17 @@ impl Writes {
     }
 }
 
-pub(super) fn request(commands: &mut Commands, owner: &mut HostOwner, viewport: WorldViewport) {
+pub(super) fn request(
+    commands: &mut Commands,
+    readback: Option<Entity>,
+    owner: &mut HostOwner,
+    viewport: WorldViewport,
+) {
     let preferences = owner.settings.preferences.screenshots.effective();
     let crop = preferences.game_only.then_some(viewport);
     owner.status = "Capturing screenshot…".into();
-    commands.spawn(Screenshot::primary_window()).observe(
+    let entity = readback.unwrap_or_else(|| commands.spawn(Screenshot::primary_window()).id());
+    commands.entity(entity).observe(
         move |event: On<ScreenshotCaptured>,
               mut owner: NonSendMut<HostOwner>,
               mut writes: NonSendMut<Writes>| {
@@ -109,8 +115,9 @@ fn pixels(image: Image, crop: Option<WorldViewport>) -> io::Result<Pixels> {
 }
 
 /// Audit mode keeps its fixed PNG name, replacing it only after encoding completes.
-pub(super) fn request_audit(commands: &mut Commands, path: PathBuf) {
-    commands.spawn(Screenshot::primary_window()).observe(
+pub(super) fn request_audit(commands: &mut Commands, readback: Option<Entity>, path: PathBuf) {
+    let entity = readback.unwrap_or_else(|| commands.spawn(Screenshot::primary_window()).id());
+    commands.entity(entity).observe(
         move |event: On<ScreenshotCaptured>, mut writes: NonSendMut<Writes>| {
             let image = event.image.clone();
             let path = path.clone();

@@ -274,6 +274,8 @@ fn remember(
 fn keyboard(
     guard: ModalGuard,
     overlays: Query<Entity, With<Overlay>>,
+    focus: Res<InputFocus>,
+    checkboxes: Query<(), With<bevy::ui_widgets::Checkbox>>,
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -311,6 +313,13 @@ fn keyboard(
             };
             state.selected = Some(dialog.choices[next].0);
             state.pending = None;
+        }
+        if matches!(event.key_code, KeyCode::Enter | KeyCode::NumpadEnter)
+            && focus
+                .get()
+                .is_some_and(|entity| checkboxes.contains(entity))
+        {
+            continue;
         }
         if matches!(
             event.key_code,

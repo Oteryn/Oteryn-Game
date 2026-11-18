@@ -76,6 +76,7 @@ pub(super) fn perform(
     }
     state.fields = values;
     let success = match action.kind {
+        Kind::CoinCheckout => link.open_coin_checkout(),
         Kind::Buy => {
             if !buy_enabled(panel) {
                 return false;

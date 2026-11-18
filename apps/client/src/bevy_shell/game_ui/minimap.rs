@@ -419,6 +419,9 @@ fn shortcuts(
         (KeyCode::PageUp, Nav::FloorUp),
         (KeyCode::PageDown, Nav::FloorDown),
     ] {
+        if matches!(action, Nav::Pan(..)) && owner.settings.preferences.rotation_modifier == "ALT" {
+            continue;
+        }
         if keys.just_pressed(key) {
             apply_navigation(&mut owner, action);
         }

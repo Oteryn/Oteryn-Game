@@ -498,3 +498,47 @@ fn quick_loot_can_add_carried_item_and_remove_confirmed_filter_entry() -> TestRe
     );
     Ok(())
 }
+
+#[test]
+fn confirmed_filter_mutations_update_the_displayed_mode() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture(true)?;
+    open(&mut app)?;
+    let has_label = |app: &mut App, label: &str| {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == label)
+    };
+    for (action, label) in [
+        (Action::Select(Mode::Skip), "Confirmed: skip listed items"),
+        (
+            Action::Add {
+                mode: Mode::Accept,
+                definition: 42,
+            },
+            "Confirmed: only listed items",
+        ),
+        (
+            Action::Remove {
+                mode: Mode::Skip,
+                definition: 42,
+            },
+            "Confirmed: skip listed items",
+        ),
+        (Action::Clear(Mode::Accept), "Confirmed: only listed items"),
+    ] {
+        let link = &app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link;
+        assert!(link.quick_loot_action(action));
+        let _ = request(&mut commands)?;
+        config_response(&outbox, CommandStatus::Accepted)?;
+        app.update();
+        assert!(has_label(&mut app, label));
+    }
+    Ok(())
+}

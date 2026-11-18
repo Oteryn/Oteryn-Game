@@ -50,6 +50,7 @@ pub fn run() -> Result<(), String> {
             }),
     )
     .insert_resource(ClearColor(Color::BLACK));
+    crate::bevy_shell::install_font_fallback(&mut app, &options.ui_assets);
     install(&mut app, link.clone());
     let exit = app.run();
     link.leave();
@@ -94,6 +95,7 @@ fn setup(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
     assets: Res<AssetServer>,
+    fallback: Option<Res<crate::bevy_shell::BuiltInFont>>,
     mut viewer: NonSendMut<Viewer>,
 ) {
     viewer.image = images.add(canvas(None));
@@ -131,7 +133,7 @@ fn setup(
                     WatchText,
                     Text::new(String::new()),
                     TextFont {
-                        font: assets.load("fonts/verdanab.ttf").into(),
+                        font: crate::bevy_shell::ui_font(&assets, fallback.is_some()).into(),
                         font_size: 12.0.into(),
                         ..default()
                     },

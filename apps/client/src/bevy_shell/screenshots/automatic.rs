@@ -8,11 +8,6 @@ pub(in crate::bevy_shell) struct State {
     generation: Option<u64>,
 }
 
-#[derive(Component)]
-pub(in crate::bevy_shell) struct Capture {
-    generation: u64,
-}
-
 pub(super) struct Completed {
     generation: u64,
     game_only: bool,
@@ -60,35 +55,45 @@ fn prepare(owner: &mut HostOwner, at: Instant) -> CaptureAction {
         .prepare_screenshots(at, owner.play.as_ref().map(|play| &play.link))
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Shares the frame readback with the F12 consumer"
+)]
 pub(in crate::bevy_shell) fn observe(
     commands: &mut Commands,
     owner: &mut HostOwner,
     viewport: WorldViewport,
     state: &mut State,
-    captures: &Query<&Capture>,
+    captures: &Query<Entity, With<Screenshot>>,
     clock: &Time<Real>,
     writes: &Writes,
-) {
+    manual: bool,
+) -> Option<Entity> {
     let generation = owner.play.as_ref().map(|_| owner.generation());
     if state.generation != generation {
         owner.settings.reset_screenshot_session();
         state.generation = generation;
     }
-    let Some(generation) = generation else { return };
+    let existing = captures.iter().next();
+    let Some(generation) = generation else {
+        return existing;
+    };
+    if manual {
+        owner.settings.request_screenshot();
+        owner.status = "Capturing screenshot…".into();
+    }
     let at = clock.last_update().unwrap_or(clock.startup());
     let action = prepare(owner, at);
     if matches!(action, CaptureAction::Idle)
         || writes.automatic
         || writes.is_full()
-        || captures
-            .iter()
-            .any(|capture| capture.generation == generation)
+        || existing.is_some()
     {
-        return;
+        return existing;
     }
     let game_only = owner.settings.preferences.screenshots.effective().game_only;
-    commands
-        .spawn((Screenshot::primary_window(), Capture { generation }))
+    let entity = commands
+        .spawn(Screenshot::primary_window())
         .observe(
             move |event: On<ScreenshotCaptured>,
                   mut owner: NonSendMut<HostOwner>,
@@ -120,5 +125,7 @@ pub(in crate::bevy_shell) fn observe(
                     })
                 }));
             },
-        );
+        )
+        .id();
+    Some(entity)
 }

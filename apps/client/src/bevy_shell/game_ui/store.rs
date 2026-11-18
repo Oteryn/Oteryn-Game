@@ -35,6 +35,7 @@ enum Kind {
     Category(usize),
     ClearSearch,
     Close,
+    CoinCheckout,
     Confirm,
     Gift,
     GiftControl(usize),
@@ -66,12 +67,14 @@ struct Field(usize);
 struct Snapshot {
     store: StorePanel,
     history: purchase_history::Panel,
+    coin_checkout: bool,
 }
 impl Snapshot {
     fn read(link: &crate::play::PlayLink) -> Self {
         Self {
             store: link.store_panel(),
             history: link.discovery_panel().history,
+            coin_checkout: link.coin_checkout_available(),
         }
     }
 }

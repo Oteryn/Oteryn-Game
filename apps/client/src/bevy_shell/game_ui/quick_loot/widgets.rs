@@ -205,13 +205,17 @@ pub(super) fn render(
         .id();
     commands.entity(body).add_child(filters);
     text(commands, skins, filters, "QuickLoot filter");
-    let selected = panel.confirmed.iter().rev().find_map(|action| {
-        if let Action::Select(mode) = action {
-            Some(*mode)
-        } else {
-            None
-        }
-    });
+    let selected = panel
+        .confirmed
+        .iter()
+        .rev()
+        .find_map(|action| match action {
+            Action::Select(mode)
+            | Action::Add { mode, .. }
+            | Action::Remove { mode, .. }
+            | Action::Clear(mode) => Some(*mode),
+            _ => None,
+        });
     text(
         commands,
         skins,

@@ -275,6 +275,7 @@ fn project(
         .spawn((
             Donation,
             TextInput,
+            bevy::input_focus::tab_navigation::TabIndex(0),
             gold,
             source::font(skins.font.clone(), false),
             TextColor(source::TEXT_COLOR),

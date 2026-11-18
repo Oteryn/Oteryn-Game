@@ -21,6 +21,7 @@ pub(in crate::bevy_shell::game_ui::chat) fn message_row(
                 row: row.clone(),
             },
             TextInput,
+            bevy::input_focus::tab_navigation::TabIndex(-1),
             EditableText::new(&row.text),
             bevy::text::TextReadWriteMode::ReadOnly,
             TextCursorStyle::default(),
