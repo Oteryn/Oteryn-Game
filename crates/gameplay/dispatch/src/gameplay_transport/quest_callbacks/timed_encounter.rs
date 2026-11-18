@@ -14,6 +14,7 @@ pub(super) struct TimedEncounter {
     content: [u8; 32],
     map: [u8; 32],
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
+    participant: Option<(ExactActorRef, GameSessionId)>,
     spawn_at: u64,
     reset_at: u64,
     attempted_spawn: bool,
@@ -22,6 +23,31 @@ pub(super) struct TimedEncounter {
 impl TimedEncounter {
     pub(super) fn source_key(&self) -> u64 {
         self.key
+    }
+
+    pub(super) fn contains_participant(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        position: MovementLocalPosition,
+        now: u64,
+    ) -> bool {
+        now < self.reset_at
+            && self.scope == runtime.encounter_owner_scope()
+            && self.content == runtime.content_pin().server_artifact_digest()
+            && self.map == map.overlay.base().digest()
+            && self.revision == map.facts.object_revision(self.key)
+            && self
+                .participant
+                .is_none_or(|participant| participant == (actor, session))
+            && self
+                .callback
+                .effects
+                .encounter
+                .as_ref()
+                .is_some_and(|room| super::encounter::room_contains(room, position))
     }
 
     pub(super) fn next_due_us(&self) -> u64 {
@@ -118,6 +144,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             content: runtime.content_pin().server_artifact_digest(),
             map: map.overlay.base().digest(),
             scope: runtime.encounter_owner_scope(),
+            participant: personal.then_some((actor, session)),
             spawn_at,
             reset_at,
             attempted_spawn: false,

@@ -39,6 +39,14 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
         self.assertTrue(all(r['provenance'] for r in actual))
 
+    def test_jack_springer_uses_the_pinned_isle_of_the_kings_cell(self):
+        rows = [r['declaration'] for r in self.records
+                if r['declaration']['npc'] == 'oteryn:npc.jack_springer']
+        self.assertEqual([r['cell'] for r in rows], [{'x': 32326, 'y': 32261, 'floor': 9}])
+        source, = rows[0]['provenance']
+        self.assertEqual(source['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
+        self.assertEqual(source['source_row'], 'data-global/world/world-npc.xml')
+
     def test_m38_swan_keeps_the_exact_stationary_source_anchor(self):
         actual = [r['declaration'] for r in self.records
                   if r['declaration']['npc'] == 'oteryn:npc.a_swan']

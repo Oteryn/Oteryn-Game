@@ -278,10 +278,16 @@ pub mod wheel_allocation;
 #[path = "features/0031-tutorial-notices/mod.rs"]
 pub mod tutorial_notices;
 
+/// The in-game Change Channel window (capability 512).
+#[path = "features/0512-channel-switch/mod.rs"]
+pub mod channel_switch;
 #[path = "features/0497-sanction-record/mod.rs"]
 pub mod sanction_record;
 #[path = "features/0075-server-save-countdown/protocol.rs"]
 pub mod server_save_countdown;
+/// The Channel on Party, VIP and Guild rows (capability 513).
+#[path = "features/0513-social-channel/mod.rs"]
+pub mod social_channel;
 
 /// Weekly Task Board state and controls.
 #[path = "features/0072-task-board/mod.rs"]

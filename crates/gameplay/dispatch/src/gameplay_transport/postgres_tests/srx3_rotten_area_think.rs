@@ -1,5 +1,6 @@
 //! Real published World regular minion onThink -> canonical named icon + KV.
 use super::fixture::{Harness, debug, run};
+use super::kill_reward_e2e::scenario_thread::run as run_on_thread;
 use super::{TestResult, reset};
 use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -9,8 +10,19 @@ fn srx3_rotten_area_native_reserved_think_publishes_canonical_icon_and_kv_postgr
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
+    run_rotten_world_case(RottenWorldCase::InitialCharge)
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum RottenWorldCase {
+    InitialCharge,
+    ChargeInterval,
+    TorkadaExpedition,
+}
+
+pub(super) fn run_rotten_world_case(case: RottenWorldCase) -> TestResult {
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-rotten-area-native", || {
+    let result = run_on_thread("srx3-rotten-area-native", move || {
         run(async |admin| {
             reset();
             // Pinned XML178092-178094: Bloated Man-Maggot33887,31662,14.
@@ -61,6 +73,44 @@ fn srx3_rotten_area_native_reserved_think_publishes_canonical_icon_and_kv_postgr
             super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 1999)
                 .await?;
             let player = admitted.runtime_actor.ok_or("actual World player")?;
+            if matches!(case, RottenWorldCase::TorkadaExpedition) {
+                owner.admit_quest_session(&admitted).await;
+                let session = admitted.game_session_id;
+                let npc = super::rotten_blood_progression::place_npc(
+                    &owner,
+                    player,
+                    session,
+                    "oteryn:npc.torkada",
+                )
+                .await?;
+                for (number, text) in [(40, "hi"), (41, "expedition"), (42, "mission"), (43, "yes")]
+                {
+                    owner.clock_origin -= std::time::Duration::from_secs(2);
+                    super::rotten_blood_progression::talk(
+                        &owner, player, session, npc, number, text,
+                    )
+                    .await?;
+                }
+                use oteryn_gameplay_quests::quest::rotten_blood::{
+                    ACCESS_DOOR_TRACK, ACCESS_TRACK,
+                };
+                let character = admitted
+                    .item_fence
+                    .ok_or("actual current character fence")?
+                    .character_id;
+                let state = owner
+                    .root
+                    .read_character_quest_state(&authority, character)
+                    .await
+                    .map_err(debug)?;
+                // Rotten Blood Quest/Spoiler, curid 102953, oldid 1107075, Method.
+                assert_eq!(state.tracks().get(ACCESS_TRACK), Some(&1));
+                assert_eq!(state.tracks().get(ACCESS_DOOR_TRACK), Some(&1));
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             let at = MovementLocalPosition {
                 x: 33887,
                 y: 31662,
@@ -136,6 +186,9 @@ fn srx3_rotten_area_native_reserved_think_publishes_canonical_icon_and_kv_postgr
                     "native source timestamp must be durable: {track}"
                 );
             }
+            if matches!(case, RottenWorldCase::ChargeInterval) {
+                assert_global_charge_interval(&h, &mut owner, character.as_bytes(), player).await?;
+            }
             drop(owner);
             drop(authority);
             drop(seal);
@@ -147,4 +200,59 @@ fn srx3_rotten_area_native_reserved_think_publishes_canonical_icon_and_kv_postgr
         started.elapsed()
     );
     result
+}
+
+async fn assert_global_charge_interval(
+    h: &Harness,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    character: &[u8; 16],
+    player: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use oteryn_gameplay_quests::quest::rotten_blood::area_icons::TRACKS;
+    use std::time::Duration;
+
+    let read_clock = || {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT value FROM game_character_quest_tracks
+             WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(character.as_slice())
+        .bind(TRACKS[1])
+        .fetch_one(&h.pool)
+    };
+    let first = read_clock().await?;
+    let deadline = std::time::Instant::now() + Duration::from_secs(25);
+    let second = loop {
+        let wall: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(&h.pool)
+                .await?;
+        if wall >= first + 19 {
+            // Let the native minion Think at each probe near the boundary.
+            // The persisted charge still uses PostgreSQL's real wall clock.
+            owner.clock_origin -= Duration::from_secs(1);
+        }
+        owner.drain_monster_melee().await;
+        let current = read_clock().await?;
+        if current > first {
+            break current;
+        }
+        if std::time::Instant::now() >= deadline {
+            return Err("no second Rotten Charge within 25 seconds of the first".into());
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    };
+    // Rotten Blood Quest/Spoiler, curid 102953, oldid 1107075, Rotten Charges.
+    assert_eq!(second - first, 20);
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(
+        runtime
+            .rotten_blood_keyed_icons(player)
+            .map_err(debug)?
+            .into_iter()
+            .flatten()
+            .find(|icon| icon.0 == "rotten-area"),
+        Some(("rotten-area", 0, 17, 2))
+    );
+    Ok(())
 }
