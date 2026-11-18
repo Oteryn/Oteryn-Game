@@ -121,14 +121,14 @@ impl super::DurabilityRoot {
                 }
                 if callback.key == Callback::ESSENCE_PORTAL {
                     use oteryn_gameplay_quests::quest::CharacterUseLimit;
-                    let (deadline, now): (Option<i64>, i64) = sqlx::query_as(
+                    let (available_at, now): (Option<i64>, i64) = sqlx::query_as(
                         "SELECT (SELECT available_at FROM game_character_boss_cooldowns
                                   WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2),
                                 floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint",
                     ).bind(fence.character_id.as_bytes().as_slice())
                         .bind(super::boss_encounter::cooldown_storage::ESSENCE_BOSS)
                         .fetch_one(&mut *tx).await?;
-                    let available = deadline.map_or(CharacterUseLimit::Available, CharacterUseLimit::CooldownUntil)
+                    let available = available_at.map_or(CharacterUseLimit::Available, CharacterUseLimit::CooldownUntil)
                         .allows_use(now);
                     commit_semantic_transaction(tx, deadline).await?;
                     return Ok(Ok(available));
