@@ -601,9 +601,22 @@ impl Callback {
     /// A pure quest-state predicate, with no Quest mutation or receipt.
     #[must_use]
     pub fn is_read_only(&self) -> bool {
-        !self.storage.is_empty()
-            && self.operation_count() == 0
+        self.operation_count() == 0
             && self.storage.iter().all(|storage| storage.read_only)
+            && (!self.storage.is_empty()
+                || self.minimum_level.is_some()
+                || self.boss_cooldown_requirement().is_some())
+    }
+
+    /// Crystal's shortcut uses the exact shared boss cooldown identity.
+    pub fn boss_cooldown_requirement(&self) -> Option<&'static str> {
+        match self.key.as_str() {
+            "oteryn:quest-callback/galthen-yselda-shortcut-1"
+            | "oteryn:quest-callback/galthen-yselda-shortcut-2" => {
+                Some("oteryn:boss.megasylvan_yselda")
+            }
+            _ => None,
+        }
     }
 }
 
@@ -1111,7 +1124,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         })
                 })
             })
-            || (callback.storage.iter().any(|storage| storage.read_only)
+            || ((callback.is_read_only() || callback.storage.iter().any(|storage| storage.read_only)
+                || callback.boss_cooldown_requirement().is_some())
                 && (!callback.is_read_only()
                     || callback.teleport.is_none()
                     || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
@@ -1119,7 +1133,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || !callback.passages.is_empty()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
-                    || callback.minimum_level.is_some()
+                    || (callback.minimum_level.is_some() && !callback.storage.is_empty())
                     || callback.requires_live_premium()
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
@@ -1206,7 +1220,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback.storage.len() + callback.operation_count() > MAX_EFFECTS
             || callback
                 .minimum_level
-                .is_some_and(|level| level == 0 || !callback.has_personal_state())
+                .is_some_and(|level| level == 0 || (!callback.has_personal_state() && !callback.is_read_only()))
             || callback.admission.as_ref().is_some_and(|a| {
                 (!a.regular_blessings && !a.promotion && !a.premium)
                     || callback.actor_kind != ActorKind::Player

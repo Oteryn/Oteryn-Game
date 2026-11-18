@@ -501,7 +501,7 @@ async fn now_ms(tx: &mut Transaction<'_, Postgres>) -> Result<i64> {
 
 // The existing root-scoped fixture quest clock can advance this quest's room
 // deadline without changing source policy or sleeping for the donor's twenty minutes.
-async fn quest_activity_now_ms(tx: &mut Transaction<'_, Postgres>, root: &DurabilityRoot) -> Result<i64> {
+pub(super) async fn quest_activity_now_ms(tx: &mut Transaction<'_, Postgres>, root: &DurabilityRoot) -> Result<i64> {
     let now = now_ms(tx).await?;
     #[cfg(any(test, feature = "test-support"))]
     if let Some(clock) = root.quest_test_clock_handle() {

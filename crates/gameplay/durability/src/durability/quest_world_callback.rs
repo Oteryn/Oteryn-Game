@@ -119,12 +119,28 @@ impl super::DurabilityRoot {
                 if !context_is_current(&mut tx, permit, fence, context).await? {
                     return Ok(Ok(false));
                 }
-                let current: Option<String> = sqlx::query_scalar(
-                    "SELECT content_revision FROM game_character_progression_state \
+                let current: Option<(String, i64)> = sqlx::query_as(
+                    "SELECT content_revision, level FROM game_character_progression_state \
                      WHERE character_id=encode($1,'hex')::uuid",
                 ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-                if current.as_deref() != Some(catalogue.content_revision()) {
+                let Some((revision, level)) = current else {
                     return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                };
+                if revision != catalogue.content_revision() {
+                    return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                }
+                if callback.minimum_level.is_some_and(|minimum| level < i64::from(minimum)) {
+                    return Ok(Ok(false));
+                }
+                if let Some(boss) = callback.boss_cooldown_requirement() {
+                    let now = super::activity_handoff::quest_activity_now_ms(&mut tx, self).await?;
+                    let cooldown: Option<i64> = sqlx::query_scalar(
+                        "SELECT available_at FROM game_character_boss_cooldowns
+                         WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 FOR SHARE",
+                    ).bind(fence.character_id.as_bytes().as_slice()).bind(boss).fetch_optional(&mut *tx).await?;
+                    if cooldown.is_some_and(|until| until > now) {
+                        return Ok(Ok(false));
+                    }
                 }
                 let pending: bool = sqlx::query_scalar(
                     "SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns \
