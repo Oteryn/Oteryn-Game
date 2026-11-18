@@ -384,8 +384,8 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
-          "minimum": 1,
-          "maximum": 1,
+          "minimum": 0,
+          "maximum": 4,
           "set": 2
         }
       ],
@@ -2933,13 +2933,34 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_hat",
-          "minimum": 1,
-          "maximum": 1,
+          "minimum": 0,
+          "maximum": 2,
           "set": 0
         }
       ],
       "reply": [
         "Oh, you're back already? Did you bring a legion helmet, 100 chicken feathers and 50 honeycombs?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Pretty hat, isn't it?"
       ]
     },
     {
@@ -3833,8 +3854,8 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
-          "minimum": 1,
-          "maximum": 1,
+          "minimum": 0,
+          "maximum": 2,
           "set": 2
         }
       ],
@@ -4852,6 +4873,33 @@
         "hat"
       ],
       "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
       "next_topic": 1,
       "storage": [
         {
@@ -4869,33 +4917,6 @@
       ],
       "reply": [
         "Shall I teach you how to make a feather hat?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.norma",
-      "keywords": [
-        "addon",
-        "outfit",
-        "hat"
-      ],
-      "topic": 0,
-      "next_topic": 2,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 0
-        }
-      ],
-      "reply": [
-        "Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?"
       ]
     },
     {

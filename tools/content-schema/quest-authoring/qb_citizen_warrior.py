@@ -15,14 +15,10 @@ TWO_HOURS = 7201
 
 
 def append(add, storage, offers, callbacks, prefix):
-    def callback(name, npc, words, states, *, citizen_addon=None, requires_premium=True, **kwargs):
+    def callback(name, npc, words, states, *, requires_premium=True, **kwargs):
         add("qb-" + name, "outfit_and_addon_quests", npc, words, states, **kwargs)
         if requires_premium:
             callbacks[-1]["requires_premium"] = True
-        if citizen_addon is not None:
-            callbacks[-1]["forbids_addons"] = [
-                {"outfit": "oteryn:outfit.citizen", "addons": citizen_addon}
-            ]
 
     def offer(npc, words, topic, next_topic, states, reply):
         offers.append(
@@ -77,7 +73,7 @@ def append(add, storage, offers, callbacks, prefix):
     callback(
         "citizen-backpack-start", "lubo", ["yes"], states, topic=2, requires_premium=False
     )
-    states = [storage(backpack, 1, 2), storage(mission, 1, 2)]
+    states = [storage(backpack, 1, 2), storage(mission, 0, 2, 2)]
     offer(
         "lubo",
         ["addon", "outfit", "backpack", "leather"],
@@ -126,8 +122,8 @@ def append(add, storage, offers, callbacks, prefix):
         "Pretty, isn't it? My friend Amber taught me how to make it, but I could help you with "
         "one if you like. What do you say?",
     )
-    callback("citizen-hat-start", "hanna", ["yes"], states, topic=1, citizen_addon=2)
-    states = [storage(hat, 1, 2), storage(hat_mission, 1, 0)]
+    callback("citizen-hat-start", "hanna", ["yes"], states, topic=1, requires_premium=False)
+    states = [storage(hat, 1, 2), storage(hat_mission, 0, 0, 2)]
     offer(
         "hanna",
         ["addon", "outfit", "hat"],
@@ -145,7 +141,15 @@ def append(add, storage, offers, callbacks, prefix):
         take=[(3374, 1), (5902, 50), (5890, 100)],
         outfit=("citizen", 2),
         topic=2,
-        citizen_addon=2,
+        requires_premium=False,
+    )
+    offer(
+        "hanna",
+        ["addon", "outfit", "hat"],
+        0,
+        0,
+        [storage(hat, 2, 2)],
+        "Pretty hat, isn't it?",
     )
 
     warrior = prefix + "u7_8/warrior_outfits/"

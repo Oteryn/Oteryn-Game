@@ -570,13 +570,23 @@ fn qb_outfit_progress_advances_from_main_definition() -> TestResult {
 }
 
 #[test]
-fn qb_citizen_owned_hat_refuses_mainland_exchange_without_consuming() -> TestResult {
+fn qb_citizen_owned_hat_accepts_mainland_exchange_without_duplicate_unlock() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-qb-owned-hat")
 }
 
 #[test]
-fn qb_citizen_free_account_refuses_mainland_exchange_without_consuming() -> TestResult {
+fn qb_citizen_free_account_accepts_mainland_exchange() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-qb-free-account")
+}
+
+#[test]
+fn qb_citizen_hanna_opens_recipe_for_owned_hat() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-start-owned-hat")
+}
+
+#[test]
+fn qb_citizen_hanna_opens_recipe_for_free_account() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-start-free-account")
 }
 
 #[test]
@@ -604,6 +614,31 @@ fn qb_crystal_citizen_norma_can_restart_at_mission_zero() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-qb-crystal-norma-restart")
 }
 
+#[test]
+fn qb_crystal_citizen_lubo_mission_zero() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-crystal-lubo-mission-zero")
+}
+
+#[test]
+fn qb_crystal_citizen_amber_mission_zero() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-crystal-amber-mission-zero")
+}
+
+#[test]
+fn qb_crystal_citizen_norma_mission_zero() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-crystal-norma-mission-zero")
+}
+
+#[test]
+fn qb_crystal_citizen_hanna_mission_zero() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-crystal-hanna-mission-zero")
+}
+
+#[test]
+fn qb_crystal_citizen_hanna_completed() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-crystal-hanna-completed")
+}
+
 async fn crystal_citizen(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -611,7 +646,14 @@ async fn crystal_citizen(
     name: &str,
 ) -> TestResult {
     use super::classic_quests::{install, talk};
-    let (npc, key) = match name {
+    let (label, key) = match name {
+        "qengine-rewards-qb-crystal-lubo-mission-zero" => ("lubo", "qb-citizen-backpack-materials"),
+        "qengine-rewards-qb-crystal-amber-mission-zero" => {
+            ("amber", "l6-citizen-rook-backpack-materials")
+        }
+        "qengine-rewards-qb-crystal-norma-mission-zero" => ("norma", "l6-citizen-rook-hat"),
+        "qengine-rewards-qb-crystal-hanna-mission-zero"
+        | "qengine-rewards-qb-crystal-hanna-completed" => ("hanna", "qb-citizen-hat"),
         "qengine-rewards-qb-crystal-lubo-completed" => ("lubo", "qb-citizen-backpack"),
         "qengine-rewards-qb-crystal-amber-completed" => ("amber", "l6-citizen-rook-backpack"),
         "qengine-rewards-qb-crystal-lubo-progress"
@@ -619,7 +661,7 @@ async fn crystal_citizen(
         "qengine-rewards-qb-crystal-norma-restart" => ("norma", "l6-citizen-rook-hat"),
         _ => return Err("unknown Citizen parity case".into()),
     };
-    let npc_key = format!("oteryn:npc.{npc}");
+    let npc_key = format!("oteryn:npc.{label}");
     let [npc] = install(owner, admitted, [npc_key.as_str()]).await?;
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let key = format!("oteryn:quest-reward/{key}");
@@ -627,14 +669,72 @@ async fn crystal_citizen(
         .iter()
         .find(|row| row.key == key)
         .ok_or("Citizen reward")?;
-    let mut progress = reward.storage.iter().map(|row| (row.track.clone(), row.set)).collect::<Vec<_>>();
+    let mut progress = reward
+        .storage
+        .iter()
+        .map(|row| (row.track.clone(), row.set))
+        .collect::<Vec<_>>();
+
+    if name.ends_with("mission-zero") {
+        select_outfit_capabilities(owner, admitted)?;
+        for (track, value) in &mut progress {
+            *value = i64::from(!track.contains("/mission_"));
+        }
+        seed_quest_prerequisites(h, owner, admitted, &progress, 106).await?;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+        let mut bags = Vec::new();
+        let mut occurrence = 500;
+        let mut inventory_before = Vec::new();
+        for item in &reward.take {
+            supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
+            inventory_before.push(quantity(h, &item.item).await?);
+        }
+        let (result, _, _) =
+            super::qengine_rewards::wire_reward(owner, admitted, npc, reward, false).await?;
+        assert_eq!(
+            result,
+            NpcIntentDisposition::Ok,
+            "{label} accepts payment at mission zero"
+        );
+        for (item, available) in reward.take.iter().zip(inventory_before) {
+            assert_eq!(
+                quantity(h, &item.item).await?,
+                available - i64::from(item.count)
+            );
+        }
+        for state in &reward.storage {
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(&state.track)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(value, state.set);
+        }
+        if let Some(timer) = reward.state_ops.first() {
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(&timer.track)
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(value > 0, "{label} starts the backpack timer after payment");
+        }
+        return Ok(());
+    }
 
     let lubo_payment = matches!(
         name,
         "qengine-rewards-qb-crystal-lubo-progress" | "qengine-rewards-qb-crystal-lubo-free-account"
     );
     if name.ends_with("lubo-progress") {
-        let addon_key = reward.outfit.as_ref().ok_or("backpack reward")?.grant_key(1);
+        let addon_key = reward
+            .outfit
+            .as_ref()
+            .ok_or("backpack reward")?
+            .grant_key(1);
         sqlx::query("WITH receipt AS (INSERT INTO game_account_appearance_unlock_receipts(grant_occurrence_id,account_id,unlock_key,content_revision,granting_character_id,source_kind,source_event_id) SELECT game_character_uuid_v7(),account_id,$1,$2,character_id,'quest',$3 FROM game_character_roots RETURNING grant_occurrence_id,account_id,unlock_key) INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) SELECT account_id,unlock_key,grant_occurrence_id FROM receipt")
             .bind(addon_key)
             .bind(oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE)
@@ -644,7 +744,8 @@ async fn crystal_citizen(
         for (_, value) in &mut progress {
             *value = 1;
         }
-        let materials = callbacks.iter()
+        let materials = callbacks
+            .iter()
             .find(|row| row.key == "oteryn:quest-reward/qb-citizen-backpack-materials")
             .ok_or("leather payment")?;
         let leather = materials.take.first().ok_or("leather")?;
@@ -656,19 +757,30 @@ async fn crystal_citizen(
     if name.ends_with("norma-restart") {
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx).await?;
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) SELECT character_id,$1,'content-1',decode('b7fb183d7dfa0ad88b806eccb3cfc7db3b949b1908963c935a57fb99244def4a','hex'),character_revision,character_revision FROM game_character_roots")
             .bind(&reward.quest).execute(&mut *tx).await?;
         tx.commit().await?;
     }
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     talk(owner, admitted, npc, 110, "hi").await?;
     let before = counts(h).await?;
     let leather = "oteryn:item.tibia.i5878";
     let leather_before = quantity(h, leather).await?;
     let lines = talk(owner, admitted, npc, 111, "addon").await?;
     if name.ends_with("completed") {
-        assert!(lines.iter().any(|line| line.contains("I can only make one backpack per person")), "{lines:?}");
+        let expected = if label == "hanna" {
+            "Pretty hat, isn't it?"
+        } else {
+            "I can only make one backpack per person"
+        };
+        assert!(
+            lines.iter().any(|line| line.contains(expected)),
+            "{lines:?}"
+        );
         assert_eq!(counts(h).await?, before);
         assert_eq!(quantity(h, leather).await?, leather_before);
     } else {
@@ -677,9 +789,16 @@ async fn crystal_citizen(
             assert_eq!(quantity(h, leather).await?, leather_before - 100);
             assert_eq!(counts(h).await?.3, before.3);
         } else {
-            let value: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
-                .bind(&progress[0].0).fetch_one(&h.pool).await?;
-            assert_eq!(value, 1, "Norma reopens the quest when the mission counter is zero");
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(&progress[0].0)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                value, 1,
+                "Norma reopens the quest when the mission counter is zero"
+            );
         }
     }
     Ok(())
@@ -715,15 +834,28 @@ async fn citizen_hat_regression(
 ) -> TestResult {
     select_outfit_capabilities(owner, admitted)?;
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
+    let starting = name.starts_with("qengine-rewards-qb-start-");
+    let key = if starting {
+        "oteryn:quest-reward/qb-citizen-hat-start"
+    } else {
+        "oteryn:quest-reward/qb-citizen-hat"
+    };
     let hat = callbacks
         .iter()
-        .find(|callback| callback.key == "oteryn:quest-reward/qb-citizen-hat")
+        .find(|callback| callback.key == key)
         .ok_or("mainland hat callback")?;
     let [hanna] = super::classic_quests::install(owner, admitted, ["oteryn:npc.hanna"]).await?;
     let ready = hat
         .storage
         .iter()
-        .map(|state| (state.track.clone(), state.minimum))
+        .map(|state| {
+            let value = if !starting && state.track.ends_with("/mission_hat") {
+                1
+            } else {
+                state.minimum
+            };
+            (state.track.clone(), value)
+        })
         .collect::<Vec<_>>();
     seed_quest_prerequisites(h, owner, admitted, &ready, 106).await?;
 
@@ -748,7 +880,7 @@ async fn citizen_hat_regression(
             .bind(oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE)
             .bind(b"qb-rook-hat-fixture".as_slice()).execute(&h.pool).await?;
     }
-    let accepted = name.ends_with("main-predecessor");
+    let already_owned = name.ends_with("owned-hat");
     assert_eq!(
         owner
             .session_premium_gate(admitted.game_session_id)
@@ -768,31 +900,41 @@ async fn citizen_hat_regression(
         assert!(available >= i64::from(item.count));
         inventory_before.push(available);
     }
-    let before = counts(h).await?;
-    let (result, _, _) =
-        super::qengine_rewards::wire_reward(owner, admitted, hanna, hat, accepted).await?;
-    if accepted {
-        assert_eq!(
-            result,
-            NpcIntentDisposition::Ok,
-            "an active reward must accept main's pinned progress"
-        );
-        for state in &hat.storage {
-            let value: i64 = sqlx::query_scalar(
-                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
-            )
-            .bind(&state.track)
-            .fetch_one(&h.pool)
-            .await?;
-            assert_eq!(value, state.set);
-        }
-    } else {
-        assert_eq!(result, NpcIntentDisposition::Rejected);
-        assert_eq!(counts(h).await?, before);
+    let (result, _, _) = super::qengine_rewards::wire_reward(
+        owner,
+        admitted,
+        hanna,
+        hat,
+        name.ends_with("main-predecessor"),
+    )
+    .await?;
+    assert_eq!(result, NpcIntentDisposition::Ok, "{name}");
+    let hat_key = callbacks
+        .iter()
+        .find(|callback| callback.key == "oteryn:quest-reward/qb-citizen-hat")
+        .and_then(|callback| callback.outfit.as_ref())
+        .ok_or("mainland hat reward")?
+        .grant_key(2);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key=$1",
+    )
+    .bind(hat_key)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, i64::from(already_owned || !starting));
+    for state in &hat.storage {
+        let value: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind(&state.track)
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(value, state.set);
     }
     for (item, available) in hat.take.iter().zip(inventory_before) {
-        let consumed = if accepted { i64::from(item.count) } else { 0 };
-        assert_eq!(quantity(h, &item.item).await?, available - consumed);
+        assert_eq!(
+            quantity(h, &item.item).await?,
+            available - i64::from(item.count)
+        );
     }
     Ok(())
 }
@@ -812,6 +954,8 @@ pub(super) async fn exercise(
         "qengine-rewards-qb-main-predecessor"
             | "qengine-rewards-qb-owned-hat"
             | "qengine-rewards-qb-free-account"
+            | "qengine-rewards-qb-start-owned-hat"
+            | "qengine-rewards-qb-start-free-account"
     ) {
         return Box::pin(citizen_hat_regression(owner, admitted, h, name)).await;
     }
@@ -1266,13 +1410,7 @@ pub(super) async fn exercise(
         }
         if matches!(
             family,
-            "royal-costume"
-                | "druid-rook"
-                | "druid"
-                | "knight"
-                | "assassin"
-                | "hunter"
-                | "warrior"
+            "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin" | "hunter" | "warrior"
         ) {
             expected_take.extend(present.iter().map(amount));
         }
@@ -1331,8 +1469,9 @@ pub(super) async fn exercise(
         );
 
         if batch == "qb" {
-            assert!(
+            assert_eq!(
                 callback.requires_premium,
+                family != "citizen",
                 "Premium gate for {}",
                 callback.key
             );
