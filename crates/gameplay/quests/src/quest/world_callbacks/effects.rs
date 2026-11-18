@@ -442,6 +442,33 @@ pub struct LinearPhases {
     /// Speech from forms 2 through the final form, in order.
     pub speeches: Vec<String>,
     pub reservation_ms: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub staging_area: Option<EncounterStagingArea>,
+}
+
+/// Same-floor spectator rectangle whose players all enter at one landing cell.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterStagingArea {
+    pub minimum: Position,
+    pub maximum: Position,
+    pub destination: Position,
+}
+
+impl EncounterStagingArea {
+    pub fn contains(self, position: Position) -> bool {
+        position.floor == self.minimum.floor
+            && (self.minimum.x..=self.maximum.x).contains(&position.x)
+            && (self.minimum.y..=self.maximum.y).contains(&position.y)
+    }
+
+    fn overlaps_room(self, encounter: &Encounter) -> bool {
+        self.minimum.floor == encounter.room_min.floor
+            && self.minimum.x <= encounter.room_max.x
+            && self.maximum.x >= encounter.room_min.x
+            && self.minimum.y <= encounter.room_max.y
+            && self.maximum.y >= encounter.room_min.y
+    }
 }
 
 impl LinearPhases {
@@ -1101,6 +1128,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
+        let staging_area = encounter
+            .linear_phases
+            .as_ref()
+            .and_then(|chain| chain.staging_area);
         let source_party = encounter.phase.is_some();
         let party_limit = if encounter.phase == Some(EncounterPhase::Linear) {
             36
@@ -1134,6 +1165,17 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || (u64::from(encounter.room_max.x.saturating_sub(encounter.room_min.x)) + 1)
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
+            } else if let Some(area) = staging_area {
+                !encounter.players.is_empty()
+                    || !pos(area.minimum)
+                    || !pos(area.maximum)
+                    || area.minimum.floor != area.maximum.floor
+                    || area.minimum.x > area.maximum.x
+                    || area.minimum.y > area.maximum.y
+                    || area.overlaps_room(encounter)
+                    || !pos(area.destination)
+                    || !in_room(area.destination)
+                    || unique_monsters.contains(&area.destination)
             } else {
                 !(1..=party_limit).contains(&encounter.players.len())
             }

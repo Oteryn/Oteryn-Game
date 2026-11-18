@@ -1,5 +1,6 @@
 //! Crystal 201189f8 data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua:1-42,
-//! actions_mission11_payback_time_lever.lua:1-48.
+//! actions_mission11_payback_time_lever.lua:1-48, src/map/spectators.cpp:180-187,
+//! and src/map/map_const.hpp:20-23.
 use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult,
     fixture::{debug, id},
@@ -16,17 +17,18 @@ use serde_json::json;
 
 pub(super) const PREFIX: &str = "qewrath-payback-";
 const LEVER: Position = Position {
-    x: 33358,
+    x: 33362,
     y: 31404,
     floor: -9,
 };
+// A zero minimum range in the Lua call expands by 11 cells in both axes.
 const TEAM_PAD: Position = Position {
-    x: 33358,
-    y: 31405,
+    x: 33346,
+    y: 31393,
     floor: -9,
 };
 const OUTSIDE_TIMEOUT: &str = "qewrath-payback-outside-timeout";
-const OUTSIDE_PAD: Position = Position { y: 31403, ..LEVER };
+const OUTSIDE_PAD: Position = Position { x: 33363, ..LEVER };
 const BUSY: &str = "The arena is already in use.";
 const LANDING: Position = Position {
     x: 33359,
@@ -80,10 +82,7 @@ fn fixture() -> TestResult<Callback> {
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua:1-42"],
         "effects":{"encounter":{
             "minimum_level":0,
-            "players":[
-                {"from":{"x":33357,"y":31404,"floor":-9},"to":LANDING},
-                {"from":TEAM_PAD,"to":LANDING}
-            ],
+            "players":[],
             "monsters":[
                 {"creature":FORMS[0],"position":FIGHT},
                 {"creature":GUARD,"position":{"x":33355,"y":31403,"floor":-10}},
@@ -95,7 +94,10 @@ fn fixture() -> TestResult<Callback> {
                 "IT'S NOT THAT EASY MORTALS! FEEL THE POWER OF THE GOD!",
                 "NOOO! NOW YOU HERETICS WILL FACE MY GODLY WRATH!",
                 "YOU ... WILL ... PAY WITH ETERNITY ... OF AGONY!"
-            ],"reservation_ms":600000},
+            ],"reservation_ms":600000,"staging_area":{
+                "minimum":TEAM_PAD,"maximum":{"x":33362,"y":31409,"floor":-9},
+                "destination":LANDING
+            }},
         }}
     });
     use oteryn_gameplay_quests::quest::authored_bindings::{Bindings, Trigger};
@@ -120,7 +122,11 @@ fn fixture() -> TestResult<Callback> {
 }
 
 pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
-    super::quest_world_callbacks::world(&fixture()?, LEVER)
+    super::quest_world_callbacks::world_with_cells(
+        &fixture()?,
+        LEVER,
+        &[TEAM_PAD, OUTSIDE_PAD, LANDING],
+    )
 }
 
 pub(super) async fn exercise(
@@ -346,7 +352,7 @@ pub(super) async fn exercise(
     // Crystal's spectator scan gathers stacked players and excludes anyone
     // outside the staging rectangle, even if they are operating the lever.
     let closed = crate::map::floor::BundleDoors(&map.facts);
-    let pad = Position { x: 33357, ..LEVER };
+    let pad = TEAM_PAD;
     let operator_pad = if name == OUTSIDE_TIMEOUT {
         OUTSIDE_PAD
     } else {

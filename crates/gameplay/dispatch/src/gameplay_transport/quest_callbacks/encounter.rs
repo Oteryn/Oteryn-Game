@@ -222,6 +222,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut staged = Vec::new();
+        if let Some(area) = encounter
+            .linear_phases
+            .as_ref()
+            .and_then(|chain| chain.staging_area)
+        {
+            // Crystal 201189f8 actions_mission11_payback_time_lever.lua:35–40
+            // and src/map/spectators.cpp:180–187 gather the full spectator area.
+            staged.extend(census.iter().filter_map(|&(who, expected, session)| {
+                let session = session?;
+                let at = native(expected.position())?;
+                area.contains(Position {
+                    x: at.x,
+                    y: at.y,
+                    floor: at.floor,
+                })
+                .then_some((who, session, expected, area.destination))
+            }));
+        }
         for member in &encounter.players {
             let mut occupants = census
                 .iter()
