@@ -16,9 +16,24 @@ pub(super) struct EncounterVisit {
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     creatures: Vec<ExactActorRef>,
+    ejection: Option<ScheduledEjection>,
+}
+
+struct ScheduledEjection {
+    due_us: u64,
+    destination: MovementLocalPosition,
+    scope: (
+        crate::foundation::RuntimeScopeRefV1,
+        crate::foundation::ScopeOwnershipGeneration,
+    ),
+    map_digest: [u8; 32],
 }
 
 impl EncounterVisit {
+    pub(super) fn ejection_due_us(&self) -> Option<u64> {
+        self.ejection.as_ref().map(|ejection| ejection.due_us)
+    }
+
     fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
         self.creatures
             .iter()
@@ -42,7 +57,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             visits.iter().any(|visit| {
                 visit.participants.contains(&(actor, session))
                     && room_contains(&visit.room, position)
-                    && visit.active(runtime)
+                    && (visit.active(runtime) || visit.ejection.is_some())
             })
         }) {
             return true;
@@ -55,6 +70,84 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
         })
+    }
+
+    pub(super) fn eject_due_quest_visitors(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        now: u64,
+    ) {
+        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+            return;
+        };
+        let doors = crate::map::floor::BundleDoors(&map.facts);
+        visits.retain_mut(|visit| {
+            let Some(ejection) = visit.ejection.as_ref() else {
+                return visit.active(runtime);
+            };
+            if ejection.scope != runtime.encounter_owner_scope()
+                || ejection.map_digest != map.overlay.base().digest()
+            {
+                return false;
+            }
+            if ejection.due_us > now {
+                return true;
+            }
+            let [(actor, session)] = visit.participants.as_slice() else {
+                return false;
+            };
+            if runtime.player_control_facts(*actor, *session).is_err() {
+                return false;
+            }
+            let Ok(expected) = runtime.read_actor_position(*actor) else {
+                return false;
+            };
+            let from = expected.position();
+            if !room_contains(&visit.room, from) {
+                return false;
+            }
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+                runtime,
+                self.movement_cells(),
+                *actor,
+                *session,
+                expected,
+                ejection.destination,
+                &doors,
+            ) else {
+                return true;
+            };
+            let Ok(snapshots) = runtime.commit_quest_relocation(vec![proof], || true) else {
+                return true;
+            };
+            for snapshot in snapshots {
+                let to = snapshot.position();
+                states.stage_special_movement_step(
+                    runtime,
+                    map,
+                    *actor,
+                    *session,
+                    now,
+                    Some(from),
+                    to,
+                    None,
+                );
+                states.stage_underwater_step(
+                    runtime,
+                    *actor,
+                    *session,
+                    now,
+                    underwater(map, from),
+                    underwater(map, to),
+                );
+                if let Some(pos) = native(to) {
+                    map.facts.emit_movement_effect(pos, 11);
+                }
+            }
+            false
+        });
     }
 
     #[allow(
@@ -365,7 +458,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
                 return UseDisposition::Rejected;
             };
-            visits.retain(|visit| visit.active(runtime));
+            visits.retain(|visit| visit.active(runtime) || visit.ejection.is_some());
             if visits.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
                 || visits.try_reserve(1).is_err()
             {
@@ -414,10 +507,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(phases);
         if let Some(visits) = &mut visits {
+            // Crystal hidden_threats/movement-cave_spider_room.lua:54-58 starts
+            // the player-specific timer only after successful room admission.
+            let ejection = encounter.ejection.map(|rule| ScheduledEjection {
+                due_us: self
+                    .owner_now()
+                    .get()
+                    .saturating_add(u64::from(rule.after_ms) * 1_000),
+                destination: local(rule.destination),
+                scope: runtime.encounter_owner_scope(),
+                map_digest: map.overlay.base().digest(),
+            });
+            if ejection.is_some() {
+                states.owner_wake.notify_one();
+            }
             visits.push(EncounterVisit {
                 room: encounter.clone(),
                 participants: party,
                 creatures: actors.clone(),
+                ejection,
             });
         }
         drop(visits);

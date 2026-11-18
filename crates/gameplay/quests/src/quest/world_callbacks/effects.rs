@@ -311,6 +311,16 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+    /// Crystal hidden_threats/movement-cave_spider_room.lua:54-58.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ejection: Option<EncounterEjection>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterEjection {
+    pub after_ms: u32,
+    pub destination: Position,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -841,7 +851,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        if encounter.ejection.is_some_and(|ejection| {
+            !personal_encounter
+                || callback.trigger != Trigger::StepIn
+                || encounter.phase.is_some()
+                || callback.personal_room_entry().is_none()
+                || !(1..=3_600_000).contains(&ejection.after_ms)
+                || !pos(ejection.destination)
+                || in_room(ejection.destination)
+        }) || (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()

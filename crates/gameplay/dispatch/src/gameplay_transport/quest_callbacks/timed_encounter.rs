@@ -170,10 +170,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let now = self.owner_now().get();
+        {
+            let mut states = self.states.spell_states.lock().await;
+            self.eject_due_quest_visitors(&mut runtime, &mut states, map, now);
+        }
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };
-        let now = self.owner_now().get();
         let mut index = 0;
         while index < pending.len() {
             let memo = &mut pending[index];
