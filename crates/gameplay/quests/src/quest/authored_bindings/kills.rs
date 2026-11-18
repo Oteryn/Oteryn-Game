@@ -104,7 +104,7 @@ impl KillCounter {
             if self.minimum != 0
                 || encounter.timing.is_some()
                 || encounter.players.is_empty()
-                || encounter.players.len() > 8
+                || encounter.players.len() > encounter.maximum_staging_count()
                 || encounter.monsters.is_empty()
                 || encounter.monsters.len() > 8
                 || i64::try_from(defenders) != Ok(self.maximum)

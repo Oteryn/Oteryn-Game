@@ -47,7 +47,7 @@ impl GrizzlyCaptureCache {
             })
         });
         if self.encounters.len() >= MAX_RUNS
-            || !(1..=8).contains(&selected.len())
+            || !(1..=16).contains(&selected.len())
             || self.encounters.iter().any(|run| {
                 run.source == source
                     && run

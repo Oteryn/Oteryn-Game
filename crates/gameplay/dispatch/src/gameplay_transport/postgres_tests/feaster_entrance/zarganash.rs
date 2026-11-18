@@ -36,15 +36,16 @@ fn catalogue(
     floor: i16,
 ) -> TestResult<QuestStateCatalogue> {
     let cell = |dx| serde_json::json!({"x":x+dx,"y":y,"floor":-floor});
+    let players: Vec<_> = (3..if pale_worm { 13 } else { 5 })
+        .map(|dx| serde_json::json!({"from":cell(dx),"to":cell(if pale_worm { 0 } else { dx-3 })}))
+        .collect();
     let source = serde_json::json!({
-        "key":SOURCE,"quest":QUEST,"trigger":"use","selector":{"position":cell(-2),"ordinal":0},
+        "key":SOURCE,"quest":QUEST,"trigger":"use","selector":{"position":cell(3),"ordinal":0},
         "lever":null,"reversible":false,"passages":[],"storage":[],"teleport":null,
         "effects":{"encounter":{
             "minimum_level":250,
-            "players":[
-                {"from":cell(-2),"to":cell(0)},
-                {"from":cell(-1),"to":cell(1)}
-            ],
+            "players":players,
+            "partial_party":pale_worm,
             "monsters":[{"position":cell(2),"creature":boss}],
             "room_min":cell(0),"room_max":cell(2)
         }},

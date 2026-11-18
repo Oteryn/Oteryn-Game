@@ -155,8 +155,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
-                // Cults collects whoever stands on the five source staging tiles.
-                if unwelcome || encounter.phase == Some(EncounterPhase::Cults) {
+                // These levers admit whoever is standing on their staging tiles.
+                if encounter.allows_partial_party() {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -203,7 +203,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            let Ok(proof) = crate::map::floor::prepare_quest_party_entry(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -212,6 +212,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
+                encounter.allows_partial_party(),
             ) else {
                 return UseDisposition::NotPossible;
             };

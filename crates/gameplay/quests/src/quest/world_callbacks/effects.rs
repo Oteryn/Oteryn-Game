@@ -302,6 +302,9 @@ pub struct EncounterMonster {
 pub struct Encounter {
     pub minimum_level: u32,
     pub players: Vec<EncounterPlayer>,
+    /// The lever admits whoever stands on a staging tile and can share its landing.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub partial_party: bool,
     /// For timed room admission, the first creature owns the shared boss cooldown.
     pub monsters: Vec<EncounterMonster>,
     pub room_min: Position,
@@ -323,6 +326,18 @@ pub enum EncounterPhase {
 }
 
 impl Encounter {
+    pub fn allows_partial_party(&self) -> bool {
+        self.partial_party
+            || matches!(
+                self.phase,
+                Some(EncounterPhase::Cults | EncounterPhase::Unwelcome)
+            )
+    }
+
+    pub fn maximum_staging_count(&self) -> usize {
+        if self.allows_partial_party() { 16 } else { 8 }
+    }
+
     pub fn contains(&self, position: Position) -> bool {
         position.floor == self.room_min.floor
             && (self.room_min.x..=self.room_max.x).contains(&position.x)
@@ -871,7 +886,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        let common_landing = source_party || encounter.phase == Some(EncounterPhase::Unwelcome);
+        let common_landing = encounter.allows_partial_party();
+        if encounter.partial_party
+            && (callback.trigger != super::Trigger::Use || encounter.timing.is_some())
+        {
+            return false;
+        }
         if encounter.phase == Some(EncounterPhase::Unwelcome)
             && (callback.trigger != super::Trigger::Use
                 || encounter.minimum_level != 250
@@ -938,8 +958,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                    .contains(&encounter.players.len())
+                !(1..=encounter.maximum_staging_count()).contains(&encounter.players.len())
             }
             || !(1..=if encounter.phase.is_some() || timed_room.is_some() {
                 16
