@@ -475,7 +475,7 @@ async fn exercise_world(
             assert!(matches!(feedback.as_slice(), [ChatLine::Local {
                 text, mode: ChatSpeechMode::MonsterSay, position, ..
             }] if text == ROOM_OCCUPIED_TEXT && (position.x, position.y, position.floor) == (start.x, start.y, start.floor)), "{feedback:?}");
-            assert_return_effect(&owner, start)?;
+            assert_teleport_effect(&owner, start)?;
         }
         if keep_cave_monsters {
             let awarded = sqlx::query_scalar::<_, bool>(
@@ -555,7 +555,7 @@ async fn exercise_world(
         let mut feedback = feedback;
         feedback.extend(owner.states.chat.drain(admitted.game_session_id));
         assert!(matches!(feedback.as_slice(), [ChatLine::Private { text, .. }] if text == expected), "{feedback:?}");
-        assert_return_effect(&owner, start)?;
+        assert_teleport_effect(&owner, start)?;
         let runtime = deps.runtime.lock().await;
         assert_eq!(
             runtime
@@ -575,6 +575,15 @@ async fn exercise_world(
         return Ok(());
     }
     if boss.is_some() {
+        use oteryn_protocol_oteryn::chat::ChatLine;
+        let mut feedback = feedback;
+        feedback.extend(owner.states.chat.drain(admitted.game_session_id));
+        assert!(!feedback.iter().any(|line| matches!(
+            line,
+            ChatLine::Local { text, .. } | ChatLine::Private { text, .. }
+                if [ROOM_OCCUPIED_TEXT, LEVEL_TEXT, COOLDOWN_TEXT].contains(&text.as_str())
+        )), "successful entry repeated refusal feedback: {feedback:?}");
+        assert_teleport_effect(&owner, local(ROOM))?;
         let expiry = cooldown().await?.ok_or("recorded boss cooldown")?;
         let time_after: i64 = sqlx::query_scalar(
             "SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint",
@@ -785,16 +794,16 @@ async fn exercise_world(
     Ok(())
 }
 
-fn assert_return_effect(
+fn assert_teleport_effect(
     owner: &super::ComposedFreshAdmission<'_, '_, '_>,
-    start: crate::foundation::MovementLocalPosition,
+    place: crate::foundation::MovementLocalPosition,
 ) -> TestResult {
     let map = owner.bundle_map().ok_or("room map")?;
     let effects = map.facts.movement_effects_since(0);
     let at = crate::map::overlay::TilePos {
-        x: u16::try_from(start.x)?,
-        y: u16::try_from(start.y)?,
-        floor: -i8::try_from(start.floor)?,
+        x: u16::try_from(place.x)?,
+        y: u16::try_from(place.y)?,
+        floor: -i8::try_from(place.floor)?,
     };
     assert_eq!(effects.iter().filter(|(_, position, effect)| *position == at && *effect == 11).count(), 1);
     Ok(())
