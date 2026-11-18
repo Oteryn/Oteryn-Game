@@ -58,9 +58,12 @@ struct Progress {
     source_known: bool,
     source_due: Option<u64>,
     ai_known: bool,
+    think_cursor: usize,
     movement: Option<Option<u64>>,
     heals_known: bool,
     fields_known: bool,
+    field_cursor: usize,
+    field_actors: Option<Arc<[ExactActorRef]>>,
     proposals: Vec<RetainedProposal>,
     actors: Vec<ExactActorRef>,
     rejected: bool,
@@ -223,11 +226,39 @@ impl PendingProfilePass {
     pub(super) fn finish_heals(&self) {
         self.progress().heals_known = true;
     }
+    pub(super) fn think_cursor(&self) -> usize {
+        self.progress().think_cursor
+    }
+    pub(super) fn advance_thinks(&self, end: usize) {
+        self.progress().think_cursor = end;
+    }
+    pub(super) fn field_batch(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> (Arc<[ExactActorRef]>, std::ops::Range<usize>) {
+        let mut progress = self.progress();
+        let start = progress.field_cursor;
+        let actors = progress.field_actors.get_or_insert_with(|| {
+            runtime
+                .visible_entities()
+                .creatures
+                .into_iter()
+                .map(|actor| actor.actor)
+                .collect()
+        });
+        let end = (start + PROFILE_ACTORS_PER_PASS).min(actors.len());
+        (Arc::clone(actors), start..end)
+    }
+    pub(super) fn advance_fields(&self, end: usize, total: usize) {
+        let mut progress = self.progress();
+        progress.field_cursor = end;
+        if end == total {
+            progress.fields_known = true;
+            progress.field_actors = None;
+        }
+    }
     pub(super) fn fields_known(&self) -> bool {
         self.progress().fields_known
-    }
-    pub(super) fn finish_fields(&self) {
-        self.progress().fields_known = true;
     }
     fn consumers_ready(&self) -> Result<bool, ()> {
         let progress = self.progress();

@@ -188,7 +188,7 @@ async fn exercise(harness: &Harness) -> TestResult {
             );
             for now in [1_000_000, 2_000_000] {
                 owner
-                    .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
+                    .tick_creature_fields(&mut map, runtime, states, native, actors, now, native_health_names)
                     .await?;
                 assert!(map.validate_transaction(runtime).await);
                 for (ordinal, actor) in actors.iter().enumerate() {

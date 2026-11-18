@@ -538,6 +538,32 @@ impl CreatureAiTable {
         revisions: &RevisionSet,
         players: &[TargetCandidate],
         reader: &mut R,
+        consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
+    ) -> Vec<(ExactActorRef, ThinkReport)> {
+        self.run_reserved_current_think_slice(
+            runtime,
+            batch,
+            0..batch.occurrences().len(),
+            root,
+            revisions,
+            players,
+            reader,
+            consume,
+        )
+        .await
+    }
+
+    /// Consume a contiguous part of the original reservation under the same fence.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn run_reserved_current_think_slice<R: MonsterThinkReader>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        batch: &ReservedNativeThinkBatch,
+        range: std::ops::Range<usize>,
+        root: &GameplayDecisionRoot,
+        revisions: &RevisionSet,
+        players: &[TargetCandidate],
+        reader: &mut R,
         mut consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
     ) -> Vec<(ExactActorRef, ThinkReport)> {
         if !runtime
@@ -563,7 +589,7 @@ impl CreatureAiTable {
             })
             .collect::<Vec<_>>();
         let mut reports = Vec::new();
-        for reserved in &batch.entries {
+        for reserved in &batch.entries[range] {
             if !runtime
                 .owner_fence()
                 .is_ok_and(|fence| fence.accepts_stamp(batch.stamp))

@@ -108,6 +108,9 @@ pub(super) fn native_owner_turn(
     }
 }
 
+// Keep SQL-backed actor work bounded even when a whole channel wakes together.
+const PROFILE_ACTORS_PER_PASS: usize = 128;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn drive_monster_profiles(
@@ -577,7 +580,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.finish_source(primal_due, rotten_due);
                 }
                 let table = &mut states.monster_melee.creature_ai;
-                if !pending.ai_known() { for occurrence in batch.occurrences() {
+                let think_start = pending.think_cursor();
+                let think_end = (think_start + PROFILE_ACTORS_PER_PASS).min(batch.occurrences().len());
+                if !pending.ai_known() { for occurrence in &batch.occurrences()[think_start..think_end] {
                     if runtime.contains_live_creature(occurrence.actor) {
                         table.refresh_current_native_creature(runtime, native, occurrence.actor)
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
@@ -640,9 +645,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let summons = &mut states.monster_summons;
                 let waves = &mut states.rotten_waves;
                 if !pending.ai_known() { table
-                    .run_reserved_current_thinks_borrowed(
+                    .run_reserved_current_think_slice(
                         runtime,
                         batch,
+                        think_start..think_end,
                         &root,
                         &schedule_revisions,
                         candidates,
@@ -669,7 +675,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             }
                         },
                     )
-                    .await; }
+                    .await;
+                    pending.advance_thinks(think_end);
+                    if think_end < batch.occurrences().len() {
+                        if !reader.map.validate_transaction(runtime).await {
+                            return Err(crate::durability::DurabilityError::Unavailable);
+                        }
+                        drop(reader);
+                        tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        return Ok((Some(now), Vec::new(), Vec::new(), false));
+                    }
+                }
                 if !batch.current_for(runtime) {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
@@ -713,10 +729,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     pending.finish_heals();
                 }
                 if !pending.fields_known() {
-                owner
-                    .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
-                    .await?;
-                pending.finish_fields();
+                    let (actors, range) = pending.field_batch(runtime);
+                    owner.tick_creature_fields(
+                        &mut map, runtime, states, native, &actors[range.clone()], now, native_health_names,
+                    ).await?;
+                    pending.advance_fields(range.end, actors.len());
+                    if range.end < actors.len() {
+                        drop(map);
+                        tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        return Ok((Some(now), Vec::new(), Vec::new(), false));
+                    }
                 }
                 if !map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
@@ -747,7 +769,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Preserve the native scheduler's proposal order across ordinary
                 // attacks and source callbacks. Delayed work also runs on idle turns.
                 let callback_result: Result<(), ()> = async {
-                    while !pending.items_ready() {
+                    for _ in 0..PROFILE_ACTORS_PER_PASS {
+                        if pending.items_ready() {
+                            break;
+                        }
                         if !retained::resume_one_due(owner,runtime,states,attack,room,native,
                             &mut map,&parties,now,execution_now,native_health_names).await? {
                             return Err(());
@@ -758,6 +783,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 callback_result.map_err(|()| crate::durability::DurabilityError::Unavailable)?;
 
                 drop(map);
+                if !pending.items_ready() {
+                    tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    return Ok((Some(now), Vec::new(), Vec::new(), false));
+                }
                 let next_due = next_due.into_iter()
                     .chain(pending.source_due())
                     .chain(states.rotten_blood_callbacks.next_due_time())

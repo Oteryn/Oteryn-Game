@@ -222,20 +222,38 @@ fn live_join_visibility_projects_only_the_observers_interest_area_postgres() -> 
 
 #[test]
 fn monster_pass_cost_idle_channel_does_not_query_every_empty_tile() -> TestResult {
-    pass_cost(false, false)
+    pass_cost(false, false, None)
 }
 
 #[test]
 fn monster_pass_cost_spread_channel_batches_exact_empty_tiles() -> TestResult {
-    pass_cost(true, false)
+    pass_cost(true, false, None)
 }
 
 #[test]
 fn monster_pass_cost_spread_passive_census_batches_field_reads() -> TestResult {
-    pass_cost(true, true)
+    pass_cost(true, true, None)
 }
 
-fn pass_cost(spread: bool, passive: bool) -> TestResult {
+#[test]
+fn foreground_logout_gets_holder_between_large_monster_profile_batches() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    pass_cost(true, false, Some(ProfileRegression::Logout))
+}
+
+#[test]
+fn every_awake_monster_thinks_once_per_due_cycle_across_profile_batches() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    pass_cost(true, false, Some(ProfileRegression::DueCycle))
+}
+
+#[derive(Clone, Copy)]
+enum ProfileRegression {
+    Logout,
+    DueCycle,
+}
+
+fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>) -> TestResult {
     run_case(async move |harness| {
         prepare_current_session(harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -249,8 +267,9 @@ fn pass_cost(spread: bool, passive: bool) -> TestResult {
             crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
         let active = controller.active().ok_or("active generation")?;
         let native = active.native_gameplay().ok_or("native gameplay")?;
+        let count = if regression.is_some() { 2048 } else { 512 };
         let (deps, rat) = if spread {
-            spread_dependencies(active, &pin)?
+            spread_dependencies_with_capacity(active, &pin, count)?
         } else {
             super::fixture::dependencies_with_capacity(active, &pin, 1024)?
         };
@@ -278,7 +297,7 @@ fn pass_cost(spread: bool, passive: bool) -> TestResult {
         let positions = if spread {
             // One real native creature per spatial chunk. A dense 32x32 fixture
             // hides the node's thousands of independent 16x16 empty-cell reads.
-            (1..512)
+            (1..i32::try_from(count)?)
                 .map(|index| MovementLocalPosition {
                     x: index * 16 + 1,
                     y: 1,
@@ -323,13 +342,13 @@ fn pass_cost(spread: bool, passive: bool) -> TestResult {
                 return Err("qualified creature placement refused".into());
             };
             actors.push(actor);
-            if actors.len() == 512 {
+            if actors.len() == count {
                 break;
             }
         }
         assert_eq!(
             actors.len(),
-            512,
+            count,
             "real source-qualified positioned creatures"
         );
         drop(objects);
@@ -370,6 +389,68 @@ fn pass_cost(spread: bool, passive: bool) -> TestResult {
             "sim-1",
         )
         .map_err(debug)?;
+        if let Some(regression) = regression {
+            let start = 10_000_000;
+            let prepared = owner.capture_native_health_names(&runtime).map_err(debug)?;
+            let names = owner.read_prepared_native_health_names(&permit, prepared).await;
+            let names = owner.seal_native_health_names(&runtime, names).map_err(debug)?;
+            match regression {
+                ProfileRegression::Logout => {
+                    use crate::gameplay_transport::connection::LogoutReply;
+                    use oteryn_protocol_oteryn::logout::LogoutResult;
+                    let started = std::time::Instant::now();
+                    let background = async {
+                        // Own the guards here so the foreground can lock the runtime as
+                        // soon as this physical pass returns.
+                        let (mut runtime, mut states, mut attack) = (runtime, states, attack);
+                        owner.drive_monster_profiles(
+                            &mut runtime, &mut states, &mut attack, &deps.room, native,
+                            &permit, &revisions, &[], start, &names,
+                        ).await.map_err(debug)
+                    };
+                    let mut background = std::pin::pin!(background);
+                    assert!(std::future::poll_fn(|cx| std::task::Poll::Ready(
+                        std::future::Future::poll(background.as_mut(), cx).is_pending()
+                    )).await);
+                    assert!(!owner.root.is_ready(), "the profile pass already holds the root");
+                    let foreground = tokio::time::timeout(
+                        std::time::Duration::from_secs(2), owner.logout_session(deps.admitted),
+                    );
+                    let (logout, profile) = tokio::join!(biased; foreground, background);
+                    assert_eq!(logout?, LogoutReply::Result(LogoutResult::Accepted));
+                    let (_, _, complete) = profile?;
+                    assert!(!complete, "logout must get the holder before the profile cycle completes");
+                    eprintln!("foreground logout elapsed_ms={}", started.elapsed().as_millis());
+                }
+                ProfileRegression::DueCycle => {
+                    let started = std::time::Instant::now();
+                    let mut seen = std::collections::BTreeSet::new();
+                    let mut turns = 0;
+                    // The existing 1,024-think window is still enforced. The
+                    // second window drains the rest of this same due cohort.
+                    for now in [start, start + crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS] {
+                        loop {
+                            turns += 1;
+                            assert!(turns <= 128, "profile cursor failed to drain");
+                            let (_, thought, complete) = owner.drive_monster_profiles(
+                                &mut runtime, &mut states, &mut attack, &deps.room, native,
+                                &permit, &revisions, &[], now, &names,
+                            ).await.map_err(debug)?;
+                            for actor in thought {
+                                assert!(seen.insert(actor.placement_identity()), "duplicate think");
+                            }
+                            if complete {
+                                break;
+                            }
+                        }
+                    }
+                    assert!(turns > 2, "the cohort should span several holder checkouts");
+                    assert_eq!(seen, actors.iter().map(|actor| actor.placement_identity()).collect());
+                    eprintln!("awake cohort turns={turns} elapsed_ms={}", started.elapsed().as_millis());
+                }
+            }
+            return Ok(());
+        }
         for now in [10_000_000, 10_050_000] {
             let prepared_names = owner.capture_native_health_names(&runtime).map_err(debug)?;
             let read_names = owner
@@ -422,12 +503,20 @@ fn spread_dependencies(
     active: &crate::content::ActiveGeneration,
     pin: &crate::content::NativeEntryContentPin,
 ) -> TestResult<(Dependencies, ExactActorRef)> {
+    spread_dependencies_with_capacity(active, pin, 512)
+}
+
+fn spread_dependencies_with_capacity(
+    active: &crate::content::ActiveGeneration,
+    pin: &crate::content::NativeEntryContentPin,
+    count: usize,
+) -> TestResult<(Dependencies, ExactActorRef)> {
     use crate::content::channel_content_pin::ChannelContentPin;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
     let mut deps = Dependencies::new()?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let entry = pin.qualified_room();
-    let world = crate::map::spell_tiles::tests::movement_arena::rectangle((0, 0), (8191, 2), -7);
+    let world = crate::map::spell_tiles::tests::movement_arena::rectangle((0, 0), (i32::try_from(count)? * 16 - 1, 2), -7);
     let cells = world
         .movement_cells(entry.movement_cells())
         .map_err(debug)?;
@@ -460,7 +549,7 @@ fn spread_dependencies(
         1,
         1,
         "runtime-scope-assignment:1",
-        1024,
+        count * 2,
         channel_pin,
     )
     .map_err(debug)?;
