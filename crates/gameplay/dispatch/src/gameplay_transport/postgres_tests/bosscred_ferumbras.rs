@@ -13,6 +13,7 @@ pub(super) const PORTAL: Position = Position {
     floor: -13,
 };
 const WEST: Position = Position { x: 33173, ..PORTAL };
+const WAIT: Position = Position { y: 31512, ..PORTAL };
 const BOSS: Position = Position {
     x: 33172,
     y: 31501,
@@ -46,7 +47,7 @@ pub(super) fn fixture_callback(mut callback: Callback) -> Callback {
 }
 
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    super::quest_world_callbacks::world_with_cells(callback, PORTAL, &[WEST, BOSS, EXIT])
+    super::quest_world_callbacks::world_with_cells(callback, PORTAL, &[WEST, BOSS, EXIT, WAIT])
 }
 
 pub(super) async fn exercise(
@@ -58,7 +59,7 @@ pub(super) async fn exercise(
     use super::quest_world_callbacks::local;
     super::questpc7_native_deaths::prepare_native_hunter(owner, first).await?;
     let (actor, mut second) =
-        super::grizzly_boss::vacancy::second_player(owner, deps, harness, local(PORTAL)).await?;
+        super::grizzly_boss::vacancy::second_player(owner, deps, harness, local(WAIT)).await?;
     assert!(
         owner
             .refresh_source_party_presence(actor, second.game_session_id)
@@ -97,6 +98,7 @@ pub(super) async fn exercise(
         target
     };
     super::questpc7_native_deaths::lethal_creature(owner, first, target, 31_601, CREATURE).await?;
+    let first_session = first.game_session_id;
     for player in [&mut *first, &mut second] {
         assert!(super::questpc7_ferumbras::value(owner, player, CREDIT).await? > 0);
         let actor = player.runtime_actor.ok_or("player actor")?;
@@ -113,6 +115,17 @@ pub(super) async fn exercise(
                 .position(),
             local(EXIT)
         );
+        super::grizzly_boss::vacancy::teleport(
+            owner,
+            actor,
+            player.game_session_id,
+            local(if player.game_session_id == first_session {
+                BOSS
+            } else {
+                WAIT
+            }),
+        )
+        .await?;
     }
     owner.clock_origin = owner
         .clock_origin
@@ -131,5 +144,28 @@ pub(super) async fn exercise(
             )
             .is_none()
     );
+    for (player, parking) in [(&mut *first, BOSS), (&mut second, WAIT)] {
+        let actor = player.runtime_actor.ok_or("player actor")?;
+        super::grizzly_boss::vacancy::teleport(owner, actor, player.game_session_id, local(WEST))
+            .await?;
+        super::questpc7_ferumbras::step(owner, player, StepDirection::East).await?;
+        assert_ne!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            local(EXIT)
+        );
+        super::grizzly_boss::vacancy::teleport(
+            owner,
+            actor,
+            player.game_session_id,
+            local(parking),
+        )
+        .await?;
+    }
     Ok(())
 }
