@@ -842,6 +842,7 @@ async fn wardrobe(
         storage: callback.storage.clone(),
         requires: vec![],
         participants: vec![],
+        draw_replies: vec![],
         state_ops: vec![],
         requires_premium: false,
         requires_outfits: vec![],

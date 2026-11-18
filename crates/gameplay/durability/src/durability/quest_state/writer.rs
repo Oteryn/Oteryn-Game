@@ -1785,21 +1785,21 @@ impl DurabilityRoot {
                         && let super::soul_war_source::SoulWarSourceAction::Step(step)=input.as_ref() {
                         step.observe_spite_clock(stored.get(oteryn_gameplay_quests::quest::soul_war::source_items::SPITE_FIRE).copied().unwrap_or(0),now);
                     }
-                    // M47: historical receipts returned above. Draw only in this fenced
-                    // transaction; the resulting complete snapshot is persisted in its
-                    // existing Quest receipt, atomically with all four source tracks.
-                    let draw_sides = transition.effects.iter().find_map(|effect| {
-                        match effect.effect {
-                            oteryn_gameplay_quests::quest::QuestEffectKind::Draw { sides, .. } => Some(sides),
-                            _ => None,
-                        }
-                    });
-                    let roll = if let Some(sides) = draw_sides {
-                        let draw: i16 = sqlx::query_scalar("SELECT (1 + floor(random() * $1::smallint))::smallint")
-                            .bind(i16::from(sides))
-                            .fetch_one(&mut *tx).await?;
-                        Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
-                    } else if transition.effects.iter().any(|effect| matches!(
+                    // Crystal telas.lua:94-105 draws a uniformly shuffled prefix.
+                    // Historical receipts returned above; one draw on a later request is
+                    // independent of the previous value (golem_servant.lua:84-94).
+                    let draws = if let Some((sides, count)) = transition.draw_shape() {
+                        sqlx::query_scalar::<_, i16>(
+                            "SELECT value::smallint FROM generate_series(1, $1::int) AS value                              ORDER BY random() LIMIT $2",
+                        )
+                        .bind(i32::from(sides))
+                        .bind(i64::try_from(count).map_err(|_| DurabilityError::InvalidStoredState)?)
+                        .fetch_all(&mut *tx).await?
+                    } else {
+                        Vec::new()
+                    };
+                    // M47: the native Barbarian Mead rule retains its own roll contract.
+                    let roll = if transition.effects.iter().any(|effect| matches!(
                         effect.effect,
                         oteryn_gameplay_quests::quest::QuestEffectKind::Native(
                             oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead
@@ -1815,7 +1815,7 @@ impl DurabilityRoot {
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || counter_reset_plan.as_ref().map_or_else(
-                                || catalogue.evaluate_with_roll(transition, &stored, now, roll),
+                                || catalogue.evaluate_with_draws(transition, &stored, now, roll, &draws),
                                 |plan| Ok(plan.clone())),
                             |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {

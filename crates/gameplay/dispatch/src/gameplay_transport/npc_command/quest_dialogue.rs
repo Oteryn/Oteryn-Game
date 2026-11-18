@@ -237,6 +237,34 @@ fn reply(
     }
 }
 
+fn draw_reply(
+    callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+    receipt: &crate::durability::quest_state::CommittedQuestTransition,
+) -> Option<String> {
+    if callback.draw_replies.is_empty() {
+        return None;
+    }
+    let track = &callback
+        .state_ops
+        .iter()
+        .find(|operation| {
+            matches!(
+                operation.effect,
+                oteryn_gameplay_quests::quest::reward_callbacks::StateMutation::Draw { .. }
+            )
+        })?
+        .track;
+    let value = receipt
+        .changes
+        .iter()
+        .find(|change| &change.track == track)?
+        .after;
+    callback
+        .draw_replies
+        .get(usize::try_from(value.checked_sub(1)?).ok()?)
+        .cloned()
+}
+
 /// A receipt remains successful when its original conversation has ended. Only
 /// the current conversation may receive dialogue, including a refusal line.
 /// Reconciliation must not reopen an older generation or publish into another
@@ -481,7 +509,10 @@ pub(super) async fn apply(
     }
     let newly_committed = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
     match outcome {
-        Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {
+        Ok(
+            QuestTransitionOutcome::Committed(receipt)
+            | QuestTransitionOutcome::AlreadyCommitted(receipt),
+        ) => {
             #[cfg(test)]
             if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
                 && let Some(state) = sessions.get_mut(&command.game_session_id)
@@ -489,6 +520,19 @@ pub(super) async fn apply(
             {
                 state.quest_dialogue.interrupt_after_commit = None;
                 return unknown();
+            }
+            if let Some(line) = reward_callback
+                .as_ref()
+                .and_then(|row| draw_reply(row, &receipt))
+            {
+                rendered = reply(
+                    &admission.states.chat,
+                    command.game_session_id,
+                    &step.context,
+                    &intent,
+                    vec![line],
+                );
+                rendered.inventory_changed = value_callback;
             }
             finish(admission, command.game_session_id, true);
             admission
@@ -580,6 +624,7 @@ pub(in crate::gameplay_transport) async fn resume(
         .request
         .transition_key
         .starts_with("oteryn:quest-reward/");
+    let transition_key = pending.request.transition_key.clone();
     match admission
         .root
         .reconcile_character_quest_transition(
@@ -591,7 +636,23 @@ pub(in crate::gameplay_transport) async fn resume(
     {
         Ok(receipt) => {
             finish(admission, command.game_session_id, receipt.is_some());
-            if receipt.is_some() {
+            if let Some(receipt) = receipt {
+                let mut lines = pending.reply;
+                if let Some(line) = admission
+                    .quest_catalogue
+                    .as_deref()
+                    .and_then(|catalogue| {
+                        oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue).ok()
+                    })
+                    .and_then(|callbacks| {
+                        callbacks
+                            .into_iter()
+                            .find(|callback| callback.key == transition_key)
+                    })
+                    .and_then(|callback| draw_reply(&callback, &receipt))
+                {
+                    lines = vec![line];
+                }
                 admission
                     .refresh_quest_session(command.game_session_id, false)
                     .await;
@@ -603,7 +664,7 @@ pub(in crate::gameplay_transport) async fn resume(
                     command.game_session_id,
                     &pending.context,
                     &pending.intent,
-                    pending.reply,
+                    lines,
                 );
                 rendered.inventory_changed = value_callback;
                 let runtime = admission.runtime.lock().await;

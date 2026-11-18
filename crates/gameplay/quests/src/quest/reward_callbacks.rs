@@ -325,6 +325,9 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub magic_effects: Vec<super::npc_magic::Cue>,
     pub reply: Vec<String>,
+    /// One indexed reply from the single draw committed by this dialogue.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub draw_replies: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub failure_reply: Vec<String>,
     pub sources: Vec<String>,
@@ -752,6 +755,15 @@ fn validate_document_with_capacity(
         {
             return Err(format!("invalid reward value extension {}", c.key));
         }
+        let mut draws = c
+            .state_ops
+            .iter()
+            .filter_map(|operation| match operation.effect {
+                StateMutation::Draw { sides } => Some(sides),
+                _ => None,
+            });
+        let draw_sides = draws.next();
+        let draw_count = usize::from(draw_sides.is_some()) + draws.count();
         let tracks: BTreeSet<_> = c.storage.iter().map(|s| &s.track).collect();
         let op_keys: BTreeSet<_> = c.state_ops.iter().map(|s| &s.track).collect();
         let participant_keys: BTreeSet<_> = c
@@ -779,7 +791,15 @@ fn validate_document_with_capacity(
                 != c.participants.len()
             || op_keys.len() != c.state_ops.len()
             || !op_keys.is_disjoint(&tracks)
-            || c.state_ops.iter().any(|s| !s.valid() || matches!(s.effect, StateMutation::Draw { .. }))
+            || c.state_ops.iter().any(|s| !s.valid())
+            || (draw_count > 0 && (c.carried_item.is_some() || c.world_claim.is_some()))
+            || (!c.draw_replies.is_empty()
+                && (draw_count != 1
+                    || draw_sides.map(usize::from) != Some(c.draw_replies.len())
+                    || !c.reply.is_empty()
+                    || c.draw_replies.iter().any(|line| {
+                        line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
+                    })))
             || participant_keys.len() != participant_count
             || !participant_keys.is_disjoint(&op_keys)
             || !participant_keys.is_disjoint(&tracks)
@@ -1059,7 +1079,7 @@ fn validate_document_with_capacity(
             || c.failure_reply.iter().any(|line| {
                 line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
             })
-            || c.reply.is_empty()
+            || (c.reply.is_empty() && c.draw_replies.is_empty())
             || c.achievement_progress.len() > 8
             || c.achievement_progress
                 .iter()

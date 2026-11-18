@@ -371,6 +371,20 @@ pub struct QuestTransition {
     pub world_change: Option<String>,
 }
 
+impl QuestTransition {
+    pub fn draw_shape(&self) -> Option<(u8, usize)> {
+        let mut draws = self
+            .effects
+            .iter()
+            .filter_map(|effect| match effect.effect {
+                QuestEffectKind::Draw { sides, .. } => Some(sides),
+                _ => None,
+            });
+        let sides = draws.next()?;
+        Some((sides, 1 + draws.count()))
+    }
+}
+
 /// Why a transition writes nothing (§4 "Validation").
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuestRefusal {
@@ -556,9 +570,10 @@ impl QuestStateCatalogue {
                             && usize::from(other_effect) != index
                             && (track.min..=track.max).contains(&value)
                     }
-                    QuestEffectKind::Draw { sides, binding } => {
-                        binding.is_some()
-                            && sides >= 2
+                    QuestEffectKind::Draw { sides, .. } => {
+                        transition.draw_shape().is_some_and(|(pool, count)| {
+                            pool == sides && count <= usize::from(pool)
+                        }) && sides >= 2
                             && track.min <= 1
                             && track.max >= i64::from(sides)
                     }
@@ -776,6 +791,17 @@ impl QuestStateCatalogue {
         now: i64,
         roll: Option<u8>,
     ) -> Result<Vec<QuestTrackChange>, QuestRefusal> {
+        self.evaluate_with_draws(transition, stored, now, roll, &[])
+    }
+
+    pub fn evaluate_with_draws(
+        &self,
+        transition: &QuestTransition,
+        stored: &BTreeMap<String, i64>,
+        now: i64,
+        native_roll: Option<u8>,
+        draws: &[i16],
+    ) -> Result<Vec<QuestTrackChange>, QuestRefusal> {
         if transition.effects.iter().enumerate().any(|(index,effect)| {
             effect.effect==QuestEffectKind::Computed || matches!(effect.effect,
                 QuestEffectKind::SetWhenAtLeast {other_effect,..}
@@ -811,10 +837,11 @@ impl QuestStateCatalogue {
                 .iter()
                 .map(|(track, value)| (track.key.clone(), *value))
                 .collect();
-            Some(rule.evaluate_with_roll(&snapshot, roll)?)
+            Some(rule.evaluate_with_roll(&snapshot, native_roll)?)
         } else {
             None
         };
+        let mut draws = draws.iter().copied();
         transition
             .effects
             .iter()
@@ -838,8 +865,9 @@ impl QuestStateCatalogue {
                     QuestEffectKind::SetIf { equals, value } => {
                         Some(if before == equals { value } else { before })
                     }
-                    QuestEffectKind::Draw { sides, .. } => roll
-                        .filter(|value| (1..=sides).contains(value))
+                    QuestEffectKind::Draw { sides, .. } => draws
+                        .next()
+                        .filter(|value| (1..=i16::from(sides)).contains(value))
                         .map(i64::from),
                     QuestEffectKind::Computed => None,
                     QuestEffectKind::SetWhenAtLeast {
