@@ -613,7 +613,15 @@ pub(super) async fn consume(
         return Ok(true);
     }
     if oteryn_gameplay_quests::quest::dangerous_depth_geodes::shared_input(callback)
-        && !dangerous_depth_geode::contribute(tx, world_id, channel_id, context.reset_epoch, &callback.key, command).await?
+        && !dangerous_depth_geode::contribute(
+            tx,
+            world_id,
+            channel_id,
+            context.reset_epoch,
+            &callback.key,
+            command,
+        )
+        .await?
     {
         return Ok(false);
     }
