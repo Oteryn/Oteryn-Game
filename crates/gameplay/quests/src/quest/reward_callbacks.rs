@@ -2116,6 +2116,7 @@ mod tests {
         Ok(())
     }
 
+    /// Regenerate with tools/content-schema/quest-authoring/refresh_reward_hash_baselines.py.
     #[test]
     fn published_ungated_quest_hash_baseline() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
@@ -2123,7 +2124,7 @@ mod tests {
         for (key, expected) in [
             (
                 "oteryn:quest.outfit_and_addon_quests",
-                "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
+                "dc0481a1440d1560096470f0409ab9fca95a1a57e14f3c0896e5f5ecccaeafb0",
             ),
             // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
@@ -2167,10 +2168,17 @@ mod tests {
         Ok(())
     }
 
+    // Five Citizen, nine Warrior and five Shaman rows from
+    // qb_citizen_warrior.py and qb_shaman.py.
+    const QB_SHARED_REWARD_ROWS: usize = 5 + 9 + 5;
+
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.len(), 207 + 59 + 124 + 1 + 1);
+        assert_eq!(
+            load()?.len(),
+            (207 + QB_SHARED_REWARD_ROWS) + 59 + 124 + 1 + 1
+        );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2215,12 +2223,12 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 207);
+        assert_eq!(legacy.len(), 207 + QB_SHARED_REWARD_ROWS);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
             .collect();
-        assert_eq!(original.len(), 195);
+        assert_eq!(original.len(), 195 + QB_SHARED_REWARD_ROWS);
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
@@ -2944,7 +2952,9 @@ mod outfit_reward_predecessor_tests {
             .iter()
             .filter(|callback| callback.quest == QUEST)
             .count();
-        assert_eq!(owned, 112);
+        // qb_citizen_warrior.py emits five Citizen and nine Warrior rows.
+        // qb_shaman.py emits four shared addon rows. Hairycles belongs to The Ape City.
+        assert_eq!(owned, 112 + 5 + 9 + 4);
         let participants = document
             .callbacks
             .iter()
@@ -3013,7 +3023,7 @@ mod outfit_reward_predecessor_tests {
         );
         assert_eq!(
             hex(&full_hash),
-            "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8"
+            "dc0481a1440d1560096470f0409ab9fca95a1a57e14f3c0896e5f5ecccaeafb0"
         );
         assert_eq!((declared.1.len(), full_defaults.len()), (51, 52));
         assert!(
