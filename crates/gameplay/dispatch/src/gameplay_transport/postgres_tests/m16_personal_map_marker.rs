@@ -117,9 +117,9 @@ pub(super) async fn exercise(
         floor: -7,
         text: "Treasure".into(),
     }];
-    let wiki_opened = open_wiki_turn_in(owner, admitted, npc).await?;
+    // TibiaWiki Targuna Quest/Spoiler, curid 110238, oldid 1208547.
     let (before, delta) =
-        conversation(owner, admitted, npc, 6, &["hi", "mission", "yes"], true).await?;
+        conversation(owner, admitted, npc, 4, &["hi", "quest", "yes"], true).await?;
     assert!(before.map_marks.is_empty());
     assert_eq!(delta.ok_or("marker delta")?.map_marks, expected);
     assert_eq!(counts(h).await?, (1, 1));
@@ -137,13 +137,13 @@ pub(super) async fn exercise(
     );
     // A new connection restores the marker without a query; replaying the exact
     // confirmation and then repeating it with a fresh command creates no second fact.
-    let (restored, _) = conversation(owner, admitted, npc, 8, &["yes"], false).await?;
+    let (restored, _) = conversation(owner, admitted, npc, 6, &["yes"], false).await?;
     assert_eq!(restored.map_marks, expected);
     // The canonical capability 451 query uses the same committed personal fact.
     let payload = super::quest_world_callbacks::wire(
         owner,
         admitted,
-        9,
+        7,
         COMMAND_TYPE_PERSONAL_MAP_MARKS_QUERY,
         Vec::new(),
     )
@@ -167,33 +167,11 @@ pub(super) async fn exercise(
         )
     );
     let (repeated, _) =
-        conversation(owner, admitted, npc, 10, &["hi", "mission", "yes"], false).await?;
+        conversation(owner, admitted, npc, 8, &["hi", "mission", "yes"], false).await?;
     assert_eq!(repeated.map_marks, expected);
     assert_eq!(counts(h).await?, (1, 1));
-    assert!(wiki_opened, "TibiaWiki Sterling turn-in opens on quest");
     eprintln!("M16_STERLING_DISPATCH_PG_EXECUTED marker_delta_reconnect_replay");
     Ok(())
-}
-
-async fn open_wiki_turn_in(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    npc: EntityRef,
-) -> TestResult<bool> {
-    // The subsequent framed conversation still exercises the donor's mission keyword.
-    let mut accepted = true;
-    for word in ["hi", "quest"] {
-        let command = admitted.continuity.next_command_id;
-        admitted.continuity.next_command_id = command.checked_add(1).ok_or("command overflow")?;
-        accepted &= super::qengine_rewards::talk(owner, admitted, npc, command, word).await?
-            == oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Ok;
-    }
-    Ok(accepted
-        && owner
-            .states
-            .npc_conversations
-            .fixture_quest_topic(admitted.game_session_id)?
-            == 2)
 }
 
 async fn counts(h: &Harness) -> TestResult<(i64, i64)> {
@@ -275,7 +253,7 @@ async fn conversation(
                         result.status,
                         if command_id < before.continuity.next_command_id {
                             CommandStatus::DuplicateReplay
-                        } else if matches!(command_id, 3 | 12) {
+                        } else if matches!(command_id, 3 | 10) {
                             // Missing or already advanced storage cannot confirm this transition.
                             CommandStatus::Rejected
                         } else {
