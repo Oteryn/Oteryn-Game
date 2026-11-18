@@ -350,14 +350,20 @@ impl Case {
             }
             set_fixture_track(owner, h, fence, SCOUT_POINTS, if access { 9 } else { 14 }).await?;
         }
-        let occupant = if self == Self::Occupied {
-            // The grove is occupied while the actual landing remains free.
+        let occupied_position = match self {
+            Self::Occupied => Some(GROVE_OCCUPANT),
+            // Crystal Game::internalTeleport (game.cpp:3184-3191) uses
+            // FLAG_NOLIMIT, so another player cannot block the seasonal return.
+            Self::Calendar { use_action: false, allowed: false, .. } => Some(SEASONAL_RETURN),
+            _ => None,
+        };
+        let occupant = if let Some(occupied_position) = occupied_position {
             let mut runtime = owner.runtime.lock().await;
             let visitor = GameSessionId::decode(&id(51)).map_err(debug)?;
             let reservation = runtime.reserve_fresh_session(visitor).map_err(debug)?;
             let visitor_actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
             runtime
-                .initialize_pinned_test_position(visitor_actor, local(GROVE_OCCUPANT))
+                .initialize_pinned_test_position(visitor_actor, local(occupied_position))
                 .map_err(debug)?;
             Some((visitor, visitor_actor))
         } else {

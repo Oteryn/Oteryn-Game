@@ -9,10 +9,17 @@ struct ScriptedTeleport<'a> {
     session: GameSessionId,
     expected: MovementPositionSnapshot,
     destination: MovementLocalPosition,
-    pz_blocked: bool,
-    closed: &'a dyn CellBlocker,
     facing: Option<MovementFacing>,
-    scripted: bool,
+    landing: Landing<'a>,
+}
+
+enum Landing<'a> {
+    Checked {
+        pz_blocked: bool,
+        closed: &'a dyn CellBlocker,
+        scripted: bool,
+    },
+    NativeReturn,
 }
 
 #[allow(
@@ -37,10 +44,35 @@ pub fn prepare_scripted_quest_teleport_facing<'a>(
         session,
         expected,
         destination,
-        pz_blocked,
-        closed,
         facing,
-        scripted,
+        landing: Landing::Checked {
+            pz_blocked,
+            closed,
+            scripted,
+        },
+    };
+    proof.check(runtime)?;
+    Ok(proof)
+}
+
+/// An authored StepIn refusal restores the player even if the return tile
+/// is occupied. Crystal game.cpp:3167-3191 uses FLAG_NOLIMIT for teleportTo.
+pub fn prepare_quest_step_return<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    destination: MovementLocalPosition,
+) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+    let proof = ScriptedTeleport {
+        cells,
+        actor,
+        session,
+        expected,
+        destination,
+        facing: None,
+        landing: Landing::NativeReturn,
     };
     proof.check(runtime)?;
     Ok(proof)
@@ -48,7 +80,12 @@ pub fn prepare_scripted_quest_teleport_facing<'a>(
 
 impl ScriptedTeleport<'_> {
     fn check(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        if !self.scripted {
+        if let Landing::Checked {
+            pz_blocked,
+            closed,
+            scripted: false,
+        } = self.landing
+        {
             return prepare_quest_callback_teleport_facing(
                 runtime,
                 self.cells,
@@ -56,8 +93,8 @@ impl ScriptedTeleport<'_> {
                 self.session,
                 self.expected,
                 self.destination,
-                self.pz_blocked,
-                self.closed,
+                pz_blocked,
+                closed,
                 self.facing,
             )
             .map(|_| ());
@@ -72,11 +109,16 @@ impl ScriptedTeleport<'_> {
         )?;
         let to = self.destination;
         let cell = (to.x, to.y, i32::from(to.floor));
-        if ground_of(self.cells)(cell) == Ground::Absent
-            || !landable_of(self.cells, self.pz_blocked, self.closed)(cell)
-            || runtime
-                .position_occupied_by_other(self.actor, to)
-                .map_err(MovementError::Actor)?
+        if ground_of(self.cells)(cell) == Ground::Absent {
+            return Err(MovementError::Blocked);
+        }
+        if let Landing::Checked {
+            pz_blocked, closed, ..
+        } = self.landing
+            && (!landable_of(self.cells, pz_blocked, closed)(cell)
+                || runtime
+                    .position_occupied_by_other(self.actor, to)
+                    .map_err(MovementError::Actor)?)
         {
             return Err(MovementError::Blocked);
         }

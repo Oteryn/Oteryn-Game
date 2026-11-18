@@ -376,22 +376,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // tile (Crystal movements_holy_tible_tile.lua:14-16).
             None => origin.map(|origin| origin.position()),
         };
-        let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         let mut at = expected.position();
-        if let Some(destination) = destination
-            && let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
-                runtime,
-                self.movement_cells(),
-                actor,
-                session,
-                expected,
-                destination,
-                blocked,
-                &crate::map::floor::BundleDoors(&map.facts),
-                None,
+        let snapshot = destination
+            .into_iter()
+            .chain(
+                origin
+                    .map(|origin| origin.position())
+                    .filter(|at| Some(*at) != destination),
             )
-            && let Ok(snapshot) = runtime.commit_source_step(proof)
-        {
+            .find_map(|destination| {
+                let proof = crate::map::floor::prepare_quest_step_return(
+                    runtime,
+                    self.movement_cells(),
+                    actor,
+                    session,
+                    expected,
+                    destination,
+                )
+                .ok()?;
+                runtime.commit_source_step(proof).ok()
+            });
+        if let Some(snapshot) = snapshot {
             at = snapshot.position();
             let now = self.owner_now().get();
             states.stage_special_movement_step(
