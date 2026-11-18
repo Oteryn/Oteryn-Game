@@ -292,6 +292,7 @@ process measurements establish the reproduced OOM.
 | Check | Result |
 | --- | --- |
 | Dispatch formatting and locked workspace metadata | Passed before the environment rule took effect |
+| `cargo check -p oteryn-gameplay-dispatch --locked` | Passed with one Cargo job in the dev profile |
 | Dispatch lib build and inventory, one Cargo job | Passed, 4,339 tests and 4,341 output lines |
 | Retained offline-death retry against PostgreSQL 18.6 | Passed in 76.76 s |
 | Default and tuned dispatch lib builds, two Cargo jobs | Hit the cgroup OOM limit |
