@@ -10,6 +10,16 @@ pub enum Facing {
     West,
 }
 
+/// Choose whether an opening USE proceeds or takes a source-authored hit.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct UseChance {
+    pub faces: u16,
+    pub winning_faces: u16,
+    pub failure_hit: StepDamage,
+    pub failure_message: String,
+}
+
 /// A once-only earned mount through the existing account appearance owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -144,6 +154,8 @@ pub struct CallbackEffects {
     pub boss_cooldown: Option<BossCooldownGate>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub use_summon: Option<UseSummon>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub use_chance: Option<UseChance>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -524,6 +536,27 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || effects.reward_door.is_some()
             || !summon.creature.starts_with("oteryn:creature.")
             || !super::super::valid_quest_key(&summon.creature)
+    }) {
+        return false;
+    }
+    if effects.use_chance.as_ref().is_some_and(|chance| {
+        callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || callback.lever.is_none()
+            || callback.reversible
+            || callback.requires_durable_commit()
+            || callback.item_on_target.is_some()
+            || callback.teleport.is_some()
+            || callback.remote_teleport.is_some()
+            || effects.encounter.is_some()
+            || effects.scene.is_some()
+            || !(2..=10_000).contains(&chance.faces)
+            || !(1..chance.faces).contains(&chance.winning_faces)
+            || chance.failure_hit.amount == 0
+            || chance.failure_hit.effect == 0
+            || chance.failure_message.is_empty()
+            || chance.failure_message.len() > 256
+            || chance.failure_message.chars().any(char::is_control)
     }) {
         return false;
     }

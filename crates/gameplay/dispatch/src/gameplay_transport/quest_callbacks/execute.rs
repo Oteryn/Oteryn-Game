@@ -216,6 +216,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Occupied;
         }
+        if !close && let Some(chance) = callback.effects.use_chance.as_ref() {
+            let QuestCause::Use(command) = cause else {
+                return UseDisposition::Rejected;
+            };
+            let Some(wins) =
+                super::use_chance::wins(runtime, actor, command, &callback.key, key, chance)
+            else {
+                return UseDisposition::Rejected;
+            };
+            if !wins {
+                if !map.facts.apply_quest_callback(
+                    key,
+                    expected_revision,
+                    after,
+                    &[],
+                    &[],
+                    false,
+                    None,
+                ) {
+                    return UseDisposition::StaleState;
+                }
+                if let Ok(snapshot) = runtime.read_actor_position(actor) {
+                    self.apply_quest_hit(
+                        runtime,
+                        states,
+                        actor,
+                        session,
+                        snapshot,
+                        map,
+                        chance.failure_hit,
+                    );
+                }
+                self.states
+                    .chat
+                    .push_quest_feedback(session, &chance.failure_message);
+                return UseDisposition::Committed;
+            }
+        }
         let summon = match self.prepare_callback_summon(runtime, map, callback, pos) {
             Ok(summon) => summon,
             Err(disposition) => return disposition,

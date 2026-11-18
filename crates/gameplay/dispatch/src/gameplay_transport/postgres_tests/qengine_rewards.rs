@@ -960,6 +960,9 @@ pub(super) async fn exercise(
     if name == super::gerimor_reports::NAME {
         return Box::pin(super::gerimor_reports::exercise(owner, admitted, h, authority)).await;
     }
+    if name == super::rahemos_chance::NAME {
+        return Box::pin(super::rahemos_chance::exercise(owner, admitted)).await;
+    }
     if name == super::thalas_greeting::NAME {
         return Box::pin(super::thalas_greeting::exercise(owner, admitted, h, authority)).await;
     }

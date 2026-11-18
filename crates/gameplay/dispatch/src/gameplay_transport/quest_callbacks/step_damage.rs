@@ -6,7 +6,7 @@ use crate::{
     player_lethal::PlayerHitKind,
 };
 use oteryn_gameplay_quests::quest::world_callbacks::{
-    StepDamageKind, StepDamageVocation, VocationStepDamage,
+    StepDamage, StepDamageKind, StepDamageVocation, VocationStepDamage,
 };
 use oteryn_protocol_oteryn::analyser::AnalyserDamageSource;
 
@@ -58,6 +58,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             damage.other
         };
+        self.apply_quest_hit(&runtime, &mut states, actor, session, entered, map, hit);
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "damage and presentation use the same current actor snapshot"
+    )]
+    pub(super) fn apply_quest_hit(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        entered: MovementPositionSnapshot,
+        map: &BundleMap,
+        hit: StepDamage,
+    ) {
+        let Some(state) = states.get(runtime, actor, session) else {
+            return;
+        };
         let (kind, resistance) = match hit.kind {
             StepDamageKind::Fire => (PlayerHitKind::Fire, ReferenceResistanceKind::Fire),
             StepDamageKind::Physical => {
@@ -76,7 +96,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if states
             .apply_creature_damage_kind(
-                &runtime,
+                runtime,
                 actor,
                 session,
                 amount,
