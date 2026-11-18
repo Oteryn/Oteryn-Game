@@ -28,7 +28,7 @@ pub(super) struct ActivePhase {
 
 #[derive(Debug)]
 enum Fight {
-    Cults(CultsEncounter),
+    Cults(Box<CultsEncounter>),
     Linear(LinearEncounter),
 }
 
@@ -244,6 +244,10 @@ impl Registry {
     }
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the phase binds the exact admission roster, source, map scope and clock"
+)]
 pub(super) fn bind(
     runtime: &mut ChannelRuntimeV1,
     callback: &Callback,
@@ -321,9 +325,9 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: Fight::Cults(CultsEncounter::bind(
+        fight: Fight::Cults(Box::new(CultsEncounter::bind(
             runtime, players, pillars, stops, centre,
-        )?),
+        )?)),
         room: encounter.clone(),
         participants: players.to_vec(),
         credits,
