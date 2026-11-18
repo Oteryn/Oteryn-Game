@@ -302,7 +302,11 @@ pub struct EncounterMonster {
 pub struct Encounter {
     pub minimum_level: u32,
     pub players: Vec<EncounterPlayer>,
+    #[serde(default)]
     pub monsters: Vec<EncounterMonster>,
+    /// Alternative native rosters indexed Monday through Sunday in UTC.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weekday_monsters: Option<[Vec<EncounterMonster>; 7]>,
     pub room_min: Position,
     pub room_max: Position,
     /// A value-free source switch schedules native monsters without moving a party.
@@ -311,6 +315,18 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+}
+
+impl Encounter {
+    pub fn monsters_at_startup(&self, unix_seconds: i64) -> &[EncounterMonster] {
+        if let Some(week) = &self.weekday_monsters {
+            // The Unix epoch fell on Thursday.
+            let weekday = (unix_seconds.div_euclid(86_400) + 3).rem_euclid(7);
+            &week[weekday as usize]
+        } else {
+            &self.monsters
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -839,8 +855,24 @@ pub(super) fn valid(callback: &Callback) -> bool {
         };
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
-        let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
+        let rotating = encounter.weekday_monsters.is_some();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let valid_roster = |monsters: &[EncounterMonster]| {
+            let positions: BTreeSet<_> = monsters.iter().map(|m| m.position).collect();
+            (1..=if rotating || encounter.phase.is_some() {
+                16
+            } else {
+                8
+            })
+                .contains(&monsters.len())
+                && positions.len() == monsters.len()
+                && unique_to.is_disjoint(&positions)
+                && monsters.iter().all(|m| {
+                    pos(m.position)
+                        && in_room(m.position)
+                        && super::super::valid_quest_key(&m.creature)
+                })
+        };
         if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
@@ -862,14 +894,21 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
             }
-            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                .contains(&encounter.monsters.len())
+            || match &encounter.weekday_monsters {
+                Some(week) => {
+                    encounter.phase.is_some()
+                        || encounter.timing.is_some()
+                        || encounter.minimum_level == 0
+                        || encounter.players.len() > 5
+                        || !encounter.monsters.is_empty()
+                        || !week.iter().all(|day| valid_roster(day))
+                }
+                None => !valid_roster(&encounter.monsters),
+            }
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
-            || (unique_to.len() != encounter.players.len() && !source_party)
-            || unique_monsters.len() != encounter.monsters.len()
-            || !unique_to.is_disjoint(&unique_monsters)
+            || (unique_to.len() != encounter.players.len() && !source_party && !rotating)
             || !pos(encounter.room_min)
             || !pos(encounter.room_max)
             || encounter.room_min.floor != encounter.room_max.floor
@@ -880,11 +919,6 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || !pos(p.to)
                     || !in_room(p.to)
                     || (in_room(p.from) && callback.personal_room_entry() != Some(p.from))
-            })
-            || encounter.monsters.iter().any(|m| {
-                !pos(m.position)
-                    || !in_room(m.position)
-                    || !super::super::valid_quest_key(&m.creature)
             })
         {
             return false;
@@ -1103,6 +1137,62 @@ mod phase_tests {
         }))?;
         let encoded = serde_json::to_value(encounter)?;
         assert_eq!(encoded["phase"], "cults_boss_phase_closures");
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod weekday_encounter_tests {
+    use super::*;
+
+    #[test]
+    fn dream_scar_roster_uses_startup_weekday_and_repeats_source_days() -> Result<(), String> {
+        let mut callback = super::super::load()?
+            .into_iter()
+            .find(|row| {
+                row.effects.encounter.as_ref().is_some_and(|encounter| {
+                    encounter.phase.is_none()
+                        && encounter.timing.is_none()
+                        && encounter.players.len() <= 5
+                })
+            })
+            .ok_or("party encounter callback")?;
+        let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+        let position = encounter
+            .monsters
+            .first()
+            .ok_or("encounter monster")?
+            .position;
+        let bosses = [
+            "alptramun",
+            "izcandar_the_banished",
+            "malofur_mangrinder",
+            "maxxenius",
+            "izcandar_the_banished",
+            "plagueroot",
+            "maxxenius",
+        ];
+        encounter.monsters.clear();
+        encounter.weekday_monsters = Some(bosses.map(|boss| {
+            vec![EncounterMonster {
+                position,
+                creature: format!("oteryn:creature.{boss}"),
+            }]
+        }));
+
+        // Jan 5, 1970 was the first Monday after the Unix epoch.
+        for (day, boss) in (4_i64..11).zip(bosses) {
+            let key = format!("oteryn:creature.{boss}");
+            assert_eq!(encounter.monsters_at_startup(day * 86_400)[0].creature, key);
+            assert_eq!(
+                encounter.monsters_at_startup(day * 86_400 + 86_399)[0].creature,
+                key
+            );
+        }
+        assert_eq!(
+            encounter.monsters_at_startup(-1)[0].creature,
+            "oteryn:creature.malofur_mangrinder"
+        );
         Ok(())
     }
 }

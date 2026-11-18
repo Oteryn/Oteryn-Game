@@ -153,9 +153,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
-                // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
+                // These source levers collect whoever stands on the staging tiles.
+                if encounter.weekday_monsters.is_some()
+                    || encounter.phase
+                        == Some(
+                            oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults,
+                        )
                 {
                     continue;
                 }
@@ -225,7 +228,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         }
         let mut monsters = Vec::new();
-        for monster in &encounter.monsters {
+        let roster = if encounter.weekday_monsters.is_some() {
+            let Some(started_at) = super::super::unix_seconds().and_then(|now| {
+                now.checked_sub(i64::try_from(self.clock_origin.elapsed().as_secs()).ok()?)
+            }) else {
+                return UseDisposition::Rejected;
+            };
+            encounter.monsters_at_startup(started_at)
+        } else {
+            &encounter.monsters
+        };
+        for monster in roster {
             let at = local(monster.position);
             if self.movement_cells.index().lookup(
                 self.movement_cells.scope(),
