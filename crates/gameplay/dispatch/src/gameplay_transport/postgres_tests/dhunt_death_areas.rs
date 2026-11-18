@@ -12,9 +12,10 @@ const COUNT: &str = "oteryn:quest-progress/authored-kills/count";
 
 #[test]
 fn shared_party_credits_each_character_from_the_second_death_area_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    assert!(!admin.is_empty(), "PostgreSQL admin URL is empty");
     super::party_xp::run(super::party_xp::Case::DhuntDeathAreas)
 }
 

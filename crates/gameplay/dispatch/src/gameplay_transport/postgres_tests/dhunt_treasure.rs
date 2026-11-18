@@ -28,9 +28,10 @@ const BUNDLES: &[&[(u16, i64)]] = &[
 
 #[test]
 fn repeatable_use_mints_one_bundle_and_grants_the_tenth_claim_achievement_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    assert!(!admin.is_empty(), "PostgreSQL admin URL is empty");
     let source = Position {
         x: 33137,
         y: 32351,
@@ -71,7 +72,7 @@ fn document(template: &Callback) -> TestResult<Vec<u8>> {
     });
     Ok(serde_json::to_vec(&json!({"schema":1,"quests":[{
         "quest":QUEST,
-        "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
+        "recipe_sha256":"c6bb54b0c423a165891b0ca32fb305a0963d1a06417249b0b317ec34cf65e708",
         "sources":["physical USE fixture"],
         "tracks":[
             {"key":KILLS,"initial":1,"minimum":0,"maximum":1},
@@ -183,8 +184,32 @@ pub(super) async fn exercise(
             "SELECT count(*) FROM game_account_achievement_grant_requests WHERE achievement_key = $1",
         ).bind(ACHIEVEMENT).fetch_one(&h.pool).await?;
         assert_eq!(awards, i64::from(claim >= 10));
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(1))
+            .ok_or("clock")?;
+        let empty_stock =
+            oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
+                placement: placement.clone(),
+                expected_revision: claim - 8,
+            })
+            .map_err(debug)?;
+        let denied = Box::pin(super::quest_world_callbacks::wire(
+            owner,
+            admitted,
+            command + 1,
+            2,
+            empty_stock,
+        ))
+        .await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(&denied).map_err(debug)?,
+            UseDisposition::Rejected,
+            "the successful claim must consume the accumulated kills"
+        );
+        assert_eq!(quantities(h).await?, before);
         if claim < 11 {
-            super::qengine_kill_stories::death(owner, admitted, "oteryn:creature.rat", command + 1)
+            super::qengine_kill_stories::death(owner, admitted, "oteryn:creature.rat", command + 2)
                 .await?;
         }
     }
