@@ -448,7 +448,13 @@ pub(super) async fn exercise_wave(
             .quest_callback_blocked(map.overlay.base(), entrance, false)
     );
     assert_eq!(
-        use_net(owner, admitted, early, 1, 71).await?,
+        use_net(owner, admitted, early, 1, 70).await?,
+        UseDisposition::NothingToUse,
+        "the selected backpack cannot stand in for a carried net"
+    );
+    assert!(map.facts.movement_items(early).is_empty());
+    assert_eq!(
+        use_net(owner, admitted, early, 2, 71).await?,
         UseDisposition::Committed
     );
     assert_eq!(
@@ -463,7 +469,7 @@ pub(super) async fn exercise_wave(
             .is_none()
     );
     assert_eq!(
-        use_net(owner, admitted, pos, 2, 72).await?,
+        use_net(owner, admitted, pos, 3, 72).await?,
         UseDisposition::Committed
     );
     assert!(
