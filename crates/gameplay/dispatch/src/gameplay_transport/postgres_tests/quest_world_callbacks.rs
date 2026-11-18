@@ -343,7 +343,11 @@ pub(super) fn world_with_cells(
         callback,
         trigger,
         callback.selector.appearance.unwrap_or(100),
-        1,
+        callback
+            .selector
+            .native
+            .as_ref()
+            .map_or(1, |native| native.ordinal),
         &[],
         &[],
         None,
@@ -481,9 +485,13 @@ fn world_cells(
         family: bundle::Family::Terrain,
         id: 1,
         terrain: Some(bundle::Terrain {
-            kind: bundle::TerrainKind::Common,
+            kind: if ordinal == 0 {
+                bundle::TerrainKind::Ground
+            } else {
+                bundle::TerrainKind::Common
+            },
             walkable: None,
-            ground_speed: None,
+            ground_speed: (ordinal == 0).then_some(150),
             blocks_projectile: None,
         }),
     });
@@ -1090,14 +1098,16 @@ fn world_cells(
     };
     let mut sectors: BTreeMap<(i8, u16, u16), Vec<sector::Tile>> = BTreeMap::new();
     for ((floor, x, y), mut items) in cells {
-        items.insert(
-            0,
-            sector::Item {
-                palette: 0,
-                depth: 0,
-                attrs: Default::default(),
-            },
-        );
+        if ordinal != 0 || (x, y, floor) != (trigger.x, trigger.y, trigger.floor) {
+            items.insert(
+                0,
+                sector::Item {
+                    palette: 0,
+                    depth: 0,
+                    attrs: Default::default(),
+                },
+            );
+        }
         sectors
             .entry((floor, x / 32, y / 32))
             .or_default()

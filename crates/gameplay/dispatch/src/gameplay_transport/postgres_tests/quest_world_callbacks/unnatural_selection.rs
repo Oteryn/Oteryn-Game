@@ -5,13 +5,13 @@
 //! existing scalar NPC transition; all sixteen dance steps use the wire dispatcher.
 //! No quest rows, equipment edges or achievements are seeded by SQL.
 use super::*;
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::foundation::{CommandId, CommandRef, ConnectionGeneration};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, unnatural_selection as dance};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use std::sync::Arc;
@@ -101,7 +101,11 @@ pub(super) async fn exercise(
 ) -> TestResult {
     // This literal route contains diagonal STEP commands; negotiate their real wire capability.
     let offered = owner.offered_capabilities();
-    let mut pending = admitted.continuity.selected_capabilities.as_slice().to_vec();
+    let mut pending = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
     pending.extend([
         oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
         oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1,
@@ -114,9 +118,12 @@ pub(super) async fn exercise(
             pending.extend_from_slice(capability.requires);
         }
     }
-    admitted.continuity.selected_capabilities = crate::gameplay_transport::capabilities::SelectedCapabilities::select(
-        offered, &supported.into_iter().collect::<Vec<_>>(),
-    ).ok_or("dance diagonal capabilities must be offered")?;
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            offered,
+            &supported.into_iter().collect::<Vec<_>>(),
+        )
+        .ok_or("dance diagonal capabilities must be offered")?;
     let actor = admitted.runtime_actor.ok_or("dance actor")?;
     owner
         .runtime
