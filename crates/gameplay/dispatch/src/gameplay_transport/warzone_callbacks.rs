@@ -95,12 +95,16 @@ fn tick_hearts(
             (snapshot.state.policy.definition_key == HEART).then_some(snapshot)
         })
         .collect();
-    timers.0.retain(|(actor, _)| hearts.iter().any(|heart| heart.actor == *actor));
+    timers
+        .0
+        .retain(|(actor, _)| hearts.iter().any(|heart| heart.actor == *actor));
     for heart in hearts {
         let deadline = match timers.0.iter().find(|(actor, _)| *actor == heart.actor) {
             Some((_, deadline)) => *deadline,
             None => {
-                timers.0.push((heart.actor, now_us.saturating_add(HEART_TIMEOUT_US)));
+                timers
+                    .0
+                    .push((heart.actor, now_us.saturating_add(HEART_TIMEOUT_US)));
                 continue;
             }
         };
