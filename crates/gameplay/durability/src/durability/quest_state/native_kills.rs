@@ -22,6 +22,7 @@ pub enum NativeDeathSource {
         position: (u16, u16, i8),
         hit_at_ms: Option<u64>,
         death_at_ms: u64,
+        died_at_unix_ms: u64,
     },
     Encounter(super::encounter_deaths::EncounterDeathContext),
     Source(super::source_deaths::SourceDeathContext),
@@ -38,6 +39,17 @@ pub struct NativeQuestDeath {
 }
 
 impl NativeQuestDeath {
+    pub(super) fn evaluation_time(&self, catalogue: &QuestStateCatalogue, now: i64) -> i64 {
+        if let NativeDeathSource::Damage { died_at_unix_ms, .. } = self.source
+            && oteryn_gameplay_quests::quest::native_kills::counter_for(catalogue, &self.transition)
+                .is_some_and(|counter| counter.record_defeat_time)
+            && let Ok(observed) = i64::try_from(died_at_unix_ms / 1_000)
+        {
+            return observed.min(now);
+        }
+        now
+    }
+
     pub(super) fn valid(
         &self,
         request: &QuestTransitionRequest,
@@ -81,11 +93,12 @@ impl NativeQuestDeath {
                             }
                     })
                 }
-                NativeDeathSource::Damage { position: (x, y, z), hit_at_ms, death_at_ms, .. } => {
+                NativeDeathSource::Damage { position: (x, y, z), hit_at_ms, death_at_ms, died_at_unix_ms, .. } => {
                     oteryn_gameplay_quests::quest::native_kills::counter_for(catalogue, &self.transition)
                         .is_some_and(|counter| {
                             counter.creature == self.creature
                                 && counter.encounter_source.is_none()
+                                && (!counter.record_defeat_time || *died_at_unix_ms >= 1_000)
                                 && self.definition_hash.is_some_and(|hash| catalogue.definition_hash(counter.quest) == Some(hash))
                                 && counter.damage_credit.is_some_and(|credit| credit.admits_hit(*hit_at_ms, *death_at_ms))
                                 && oteryn_gameplay_quests::quest::native_kills::admits_death_position(
@@ -176,7 +189,7 @@ impl NativeQuestDeath {
             }
             NativeDeathSource::Source(source) => source.bind(binding),
             NativeDeathSource::Encounter(source) => source.bind(binding),
-            NativeDeathSource::Damage { death, session, character, lease_generation, position: (x, y, z), hit_at_ms, death_at_ms } => {
+            NativeDeathSource::Damage { death, session, character, lease_generation, position: (x, y, z), hit_at_ms, death_at_ms, died_at_unix_ms } => {
                 let digest = Sha256::new()
                     .chain_update(*binding)
                     .chain_update(b"native-damage-credit-v1")
@@ -190,6 +203,7 @@ impl NativeQuestDeath {
                     .chain_update([u8::from(hit_at_ms.is_some())])
                     .chain_update(hit_at_ms.unwrap_or_default().to_be_bytes())
                     .chain_update(death_at_ms.to_be_bytes())
+                    .chain_update(died_at_unix_ms.to_be_bytes())
                     .finalize();
                 binding[1..].copy_from_slice(&digest);
             }

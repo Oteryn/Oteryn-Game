@@ -8,6 +8,13 @@ pub(crate) enum NativeQuestEvent {
     Hit(native_hits::NativeQuestHit),
 }
 impl NativeQuestEvent {
+    pub(super) fn evaluation_time(&self, catalogue: &QuestStateCatalogue, now: i64) -> i64 {
+        match self {
+            Self::Death(death) => death.evaluation_time(catalogue, now),
+            Self::Door(_) | Self::Hit(_) => now,
+        }
+    }
+
     pub(super) fn permits_scope(&self, fence: &CurrentCharacterGameplayFence) -> bool {
         match self {
             Self::Death(death) => death.permits_scope(fence),

@@ -74,6 +74,9 @@ pub struct KillCounter {
     pub death_areas: Vec<DeathArea>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub damage_credit: Option<DamageCredit>,
+    /// Store the credited defeat's Unix second for elapsed-time callback gates.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub record_defeat_time: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub set_to_maximum: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -97,6 +100,12 @@ impl KillCounter {
                     || self.advance_gate_to.is_some()
                     || !(self.minimum..self.maximum).contains(&self.gate_value))
             || self.minimum >= self.maximum
+            || self.record_defeat_time
+                && (self.damage_credit.is_none()
+                    || self.set_to_maximum
+                    || self.advance_gate_to.is_some()
+                    || self.minimum != 0
+                    || self.maximum != i64::MAX)
             || self.death_area.is_some_and(|area| !area.valid())
             || self.death_areas.len() > 16
             || self.death_areas.iter().any(|area| !area.valid())
@@ -189,10 +198,17 @@ impl KillCounter {
             },
             QuestEffect {
                 track: self.track.clone(),
-                from: QuestComparison::Between(self.minimum, self.maximum - 1),
+                from: if self.record_defeat_time {
+                    QuestComparison::ElapsedAtLeast(0)
+                } else {
+                    QuestComparison::Between(self.minimum, self.maximum - 1)
+                },
                 // Crystal201189f the_secret_library_quest/creaturescripts_kill.lua:10-39.
                 effect: if self.set_to_maximum {
                     QuestEffectKind::Set(self.maximum)
+                } else if self.record_defeat_time {
+                    // Ferumbras creaturescripts_bosses_kill.lua:114-124.
+                    QuestEffectKind::SetNow
                 } else {
                     QuestEffectKind::Add(1)
                 },
@@ -216,6 +232,7 @@ impl KillCounter {
             death_area: self.death_area,
             death_areas: &self.death_areas,
             damage_credit: self.damage_credit,
+            record_defeat_time: self.record_defeat_time,
             encounter_source: self.encounter_source.as_deref(),
         }
     }

@@ -191,7 +191,10 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             "trigger":{"kind":"step_in","callback":window_callback(at, case)?}
         }));
     }
-    let fixture_digest = format!("{:x}", Sha256::digest(serde_json::to_vec(&stages)?));
+    let fixture_digest = Sha256::digest(serde_json::to_vec(&stages)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     let definition = json!({"schema":1, "quests":[{
         "quest":QUEST,
         "recipe_sha256": fixture_digest,

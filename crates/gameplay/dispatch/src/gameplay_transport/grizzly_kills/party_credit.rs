@@ -171,6 +171,7 @@ pub(super) fn capture(
                         position,
                         hit_at_ms: hit.last_hit,
                         death_at_ms: entry.facts.death_at_ms,
+                        died_at_unix_ms: entry.facts.died_at_unix_ms,
                     },
                 },
             });

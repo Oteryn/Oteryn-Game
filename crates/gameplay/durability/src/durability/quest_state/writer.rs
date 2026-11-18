@@ -1801,10 +1801,11 @@ impl DurabilityRoot {
                             .fetch_one(&mut *tx).await?;
                         Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
                     } else { None };
+                    let evaluation_time = native.as_ref().map_or(now, |death| death.evaluation_time(&catalogue, now));
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || counter_reset_plan.as_ref().map_or_else(
-                                || catalogue.evaluate_with_roll(transition, &stored, now, roll),
+                                || catalogue.evaluate_with_roll(transition, &stored, evaluation_time, roll),
                                 |plan| Ok(plan.clone())),
                             |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {
