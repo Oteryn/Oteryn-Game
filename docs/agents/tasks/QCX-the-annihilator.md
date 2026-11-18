@@ -38,3 +38,4 @@ The Avar Tar opening offer accepts `demon outfit` and advances to the existing c
 - The same shard and filter without `OTERYN_TEST_POSTGRES_ADMIN_URL`: 1 passed in 0.00 s. This exercises the route-less guard.
 - The NPC offer generator check and both formatting checks passed. World pin refresh reproduced digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`, and pin check verified the one world.
 - Quest authoring checks completed all 44 commands. The schema verifier passed 269 of 269 cases.
+- Dispatch library Clippy passed with all features and `-D warnings`.
