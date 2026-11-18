@@ -10,7 +10,7 @@ pub(in crate::gameplay_transport) fn capture(
     if map.overlay.runtime_scope() != runtime.binding().runtime_scope() {
         return false;
     }
-    let Some(at) = native(step.to).map(tile) else {
+    let Some(at) = native(step.to) else {
         return false;
     };
     let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
