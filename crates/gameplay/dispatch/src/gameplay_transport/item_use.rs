@@ -6,6 +6,8 @@
 #[path = "drome_cube_use.rs"]
 pub(super) mod drome_cube;
 
+mod goshnar;
+
 #[path = "item_use_gourmet.rs"]
 pub(super) mod gourmet;
 mod rotten_essence;
@@ -868,7 +870,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let placement = target.placement.clone();
-        let base_target_item = {
+        let before = inventory.fluids.get(&source).copied().unwrap_or(0);
+        let (base_target_item, goshnar_target) = {
             let mut runtime = self.runtime.lock().await;
             let at = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)?;
             let facts = at.map.facts.pinned();
@@ -895,7 +898,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let tile =
                 crate::map::view::compose_tile(&at.map.overlay, &facts, resolved.pos).ok()??;
-            tile.entries
+            let item = tile
+                .entries
                 .iter()
                 .find(|entry| {
                     entry.source.key()
@@ -912,8 +916,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .ok()
                     }
                     _ => None,
-                })
+                });
+            (
+                item,
+                goshnar::target_matches(at.map, resolved.placement_key, before),
+            )
         };
+        if goshnar_target && base_target_item.and_then(fluid_source_subtype).is_none() {
+            let Some(permit) = self.spell_lane_permit().await else {
+                return Some(UseOutcome::rejected());
+            };
+            let Some(transfer) = self
+                .prepare_goshnar_transfer(&permit, actor, command.game_session_id, &target)
+                .await
+            else {
+                return Some(UseOutcome {
+                    disposition: UseDisposition::NotPossible,
+                    ..UseOutcome::rejected()
+                });
+            };
+            let request = ItemFluidRequest {
+                command_id: command.command_id,
+                transaction_id: crate::operator_files::uuid_v7().ok()?,
+                change: ItemFluidChange {
+                    item_instance_id: source,
+                    definition: entry.item.definition.clone(),
+                    fluid_before: before,
+                    fluid_after: 0,
+                },
+                other: None,
+            };
+            let disposition = self
+                .commit_fluid_at(
+                    actor,
+                    &command,
+                    fence,
+                    request,
+                    None,
+                    Some(FluidEffect::Transfer(transfer)),
+                )
+                .await
+                .unwrap_or_else(|disposition| disposition);
+            drop(permit);
+            return Some(UseOutcome {
+                disposition,
+                ..UseOutcome::rejected()
+            });
+        }
         // Only read durable splash objects after the complete map target/range validation.
         // Refused USE_WITH commands must not mutate (or otherwise refresh) map state.
         let splashes = self
@@ -930,7 +979,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|splash| splash.placement == placement)
             .map(|splash| splash.splash_item_id)
             .or(base_target_item)?;
-        let before = inventory.fluids.get(&source).copied().unwrap_or(0);
         let (after, splash) = if before == 0 {
             (fluid_source_subtype(target_item)?, None)
         } else {
@@ -1065,8 +1113,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         request: ItemFluidRequest,
         restore: Option<ReferencePotionRestore>,
     ) -> Result<UseDisposition, UseDisposition> {
-        self.commit_fluid_at(actor, command, fence, request, None, restore)
-            .await
+        self.commit_fluid_at(
+            actor,
+            command,
+            fence,
+            request,
+            None,
+            restore.map(FluidEffect::Restore),
+        )
+        .await
     }
 
     async fn commit_fluid_at(
@@ -1076,7 +1131,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterItemFence,
         request: ItemFluidRequest,
         splash: Option<ItemFluidSplash>,
-        restore: Option<ReferencePotionRestore>,
+        effect: Option<FluidEffect>,
     ) -> Result<UseDisposition, UseDisposition> {
         let session = command.game_session_id;
         let reserved: Vec<[u8; 16]> = std::iter::once(request.change.item_instance_id)
@@ -1092,7 +1147,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start_drink(self.owner_ms())?;
         }
-        let analyser_supply = restore.as_ref().map(|_| request.change.definition.clone());
+        let analyser_supply = matches!(effect, Some(FluidEffect::Restore(_)))
+            .then(|| request.change.definition.clone());
         let commit =
             self.root
                 .commit_item_fluid_at(self.character, self.holder, fence, request, splash);
@@ -1107,21 +1163,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Ok(Err(_)) => (UseDisposition::Rejected, false, false),
         };
-        let runtime = self.runtime.lock().await;
+        let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        if known_commit && let Some(restore) = restore {
-            if let Some(definition) = &analyser_supply {
-                states.analyser.supply(actor, session, definition, 1);
+        if known_commit {
+            match effect {
+                Some(FluidEffect::Restore(restore)) => {
+                    if let Some(definition) = &analyser_supply {
+                        states.analyser.supply(actor, session, definition, 1);
+                    }
+                    apply_effect(
+                        &runtime,
+                        &mut states,
+                        actor,
+                        session,
+                        command.command_id,
+                        &Effect::Potion(vec![restore]),
+                        self.owner_ms(),
+                    );
+                }
+                Some(FluidEffect::Transfer(transfer)) => {
+                    transfer.project(self, &mut runtime, &mut states)
+                }
+                None => {}
             }
-            apply_effect(
-                &runtime,
-                &mut states,
-                actor,
-                session,
-                command.command_id,
-                &Effect::Potion(vec![restore]),
-                self.owner_ms(),
-            );
         }
         if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
             gate.settle(
@@ -1132,6 +1196,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         Ok(disposition)
     }
+}
+
+enum FluidEffect {
+    Restore(ReferencePotionRestore),
+    Transfer(goshnar::GroupTransfer),
 }
 
 fn fluid_map_target_in_range(ax: i32, ay: i32, af: i16, tx: i32, ty: i32, tf: i16) -> bool {
