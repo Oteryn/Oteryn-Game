@@ -314,7 +314,6 @@ pub(in super::super) fn exercise(
             drop(slot);
             if main_era_save {
                 let main = owner.quest_catalogue.as_deref().ok_or("main catalogue")?;
-                let hash = main.definition_hash(&callback.quest).ok_or("main hash")?;
                 let active = main
                     .with_fixture_transition(
                         catalogue
@@ -323,14 +322,26 @@ pub(in super::super) fn exercise(
                             .clone(),
                     )
                     .map_err(debug)?;
-                let active = if callback.quest == "oteryn:quest.children_of_the_revolution_quest" {
-                    // The shared read-only owner recognizes the actual deployed pin.
-                    active
-                } else {
-                    active
-                        .with_fixture_predecessor(main, &callback.quest)
-                        .map_err(debug)?
-                };
+                let (active, hash) =
+                    if callback.quest == "oteryn:quest.children_of_the_revolution_quest" {
+                        // The fully loaded deployed definition at 4740f9a8.
+                        // Keep this fixture pinned even when later content is active.
+                        (
+                            active,
+                            [
+                                0xe9, 0x1b, 0x65, 0xcb, 0x6e, 0x0a, 0x69, 0xe9, 0xb4, 0x47, 0x3b,
+                                0xb8, 0x3d, 0xb9, 0x70, 0xa1, 0x15, 0xbd, 0x63, 0x1a, 0xcb, 0xfa,
+                                0xe3, 0x4b, 0x7a, 0x7e, 0x5f, 0x8d, 0x74, 0x0e, 0x52, 0xc2,
+                            ],
+                        )
+                    } else {
+                        (
+                            active
+                                .with_fixture_predecessor(main, &callback.quest)
+                                .map_err(debug)?,
+                            main.definition_hash(&callback.quest).ok_or("main hash")?,
+                        )
+                    };
                 assert_ne!(active.definition_hash(&callback.quest), Some(hash));
                 // Restore the historical pin in both members of the seeded save.
                 let mut save = h.pool.begin().await?;
