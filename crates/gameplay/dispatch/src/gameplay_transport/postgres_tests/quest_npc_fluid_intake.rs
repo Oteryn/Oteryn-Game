@@ -23,6 +23,7 @@ const MISSING: &str = "You have not brought the requested drink.";
 const ACCEPTED: &str = "Thank you for the drink.";
 
 pub(super) enum FixtureItem {
+    GhostTear,
     Pot,
     Skull,
     HeatedHammer,
@@ -41,6 +42,8 @@ pub(super) fn generation_with_item(
     let mut packet: Value = serde_json::from_slice(&profiles.bytes)?;
     let records = packet["records"].as_array_mut().ok_or("profile records")?;
     let (id, template, name, weight) = match item {
+        // Crystal 201189f8 data/items/items.xml:23374-23376.
+        FixtureItem::GhostTear => (8746, "oteryn:item.tibia.i10198", "ghost's tear", 1000),
         // Crystal 201189f8 data/items/items.xml:26533-26536.
         FixtureItem::Skull => (
             10159,

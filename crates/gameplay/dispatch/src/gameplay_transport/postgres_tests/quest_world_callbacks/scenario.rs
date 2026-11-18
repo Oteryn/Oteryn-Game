@@ -32,6 +32,7 @@ fn scenario_case(
     let skull_custody = name == super::super::quest_skull_custody::NAME;
     let worm_punisher = name.starts_with(super::super::worm_punisher_progress::NAME);
     let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
+    let arthei_tear = name == super::super::arthei_ghost_tear::NAME;
     let boreth_cleanup = name == super::super::boreth_death_cleanup::NAME;
     let lersatio_mirrors = name == super::super::lersatio_mirrors::NAME;
     let marziel_blood = name.starts_with(super::super::marziel_blood_step::NAME);
@@ -373,6 +374,8 @@ fn scenario_case(
         callback(super::super::qengine_m02_use::NAME)?
     } else if skull_custody {
         super::super::quest_skull_custody::bone_pile()?
+    } else if arthei_tear {
+        super::super::arthei_ghost_tear::callback()?
     } else if boreth_cleanup {
         callback("unnatural-selection-ray-of-light")?
     } else if lersatio_mirrors {
@@ -950,6 +953,8 @@ fn scenario_case(
                 require_state: false,
             });
         world(&physical, trigger)?
+    } else if arthei_tear {
+        super::super::arthei_ghost_tear::world(&callback)?
     } else if lersatio_mirrors {
         super::super::lersatio_mirrors::world(&callback)?
     } else if marziel_blood {
@@ -1052,7 +1057,9 @@ fn scenario_case(
             .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
         use super::super::quest_npc_fluid_intake::{FixtureItem, generation_with_item};
-        let fixture_item = if skull_custody {
+        let fixture_item = if arthei_tear {
+            Some(FixtureItem::GhostTear)
+        } else if skull_custody {
             Some(FixtureItem::Skull)
         } else if npc_fluid && name.ends_with("lazaran") {
             Some(FixtureItem::Pot)
@@ -1581,7 +1588,7 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
-            } else if lersatio_mirrors {
+            } else if arthei_tear || lersatio_mirrors {
                 6
             } else if classic_npc || qd_world || boreth_cleanup || marziel_blood {
                 5
@@ -1605,7 +1612,7 @@ fn scenario_case(
         runtime
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
-        if boreth_cleanup || lersatio_mirrors || marziel_blood {
+        if arthei_tear || boreth_cleanup || lersatio_mirrors || marziel_blood {
             generation
                 .native_gameplay()
                 .ok_or("native encounter policies")?
@@ -3331,6 +3338,8 @@ fn scenario_case(
                 origin,
             ))
             .await?;
+        } else if arthei_tear {
+            Box::pin(super::super::arthei_ghost_tear::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if lersatio_mirrors {
             Box::pin(super::super::lersatio_mirrors::exercise(&mut owner, &admitted, &h)).await?;
         } else if marziel_blood {
