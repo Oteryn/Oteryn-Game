@@ -281,8 +281,11 @@ fn copied_diagnostics_hold_the_overlay_and_the_last_fifty_redacted_lines() {
         );
     }
     let text = overlay::clipboard_text("FPS 60\nAuthorization: Bearer secret-value");
-    assert!(text.starts_with("Oteryn client diagnostics\nFPS 60\n"));
-    assert!(text.contains("Authorization: Bearer [redacted]"));
+    let clean = overlay::clipboard_text("FPS 60");
+    assert!(clean.starts_with("Oteryn client diagnostics\nFPS 60\n"));
+    assert!(text.starts_with(
+        "Oteryn client diagnostics\n[record redacted: possible credential]\n\nLast log lines:\n"
+    ));
     assert!(!text.contains("secret-value"));
     let copied = text
         .split("Last log lines:\n")
