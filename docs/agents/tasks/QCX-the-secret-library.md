@@ -54,3 +54,6 @@ Six-report progression, entry-gate replacement and old-save handling, the remain
 
 - The baseline B3 decode found no unique attribute on appearance 5951 at `32025,32469,7`. The regenerated map binds UID 6330. The retained-map binder and the PostgreSQL claim dispatch fixture both accepted the same selector. The fixture checks one item and replay.
 - The baseline dispatch binary failed Gail's reply assertion with the abbreviated text. It passed the Hawser case against the regenerated on-disk map in 110.05 s. That was a mixed-input run, so the Hawser regression's baseline evidence is the B3 decode.
+- Replaying the Hawser case with just the baseline map index and B3 region restored failed at the shipped-map binding assertion. The corrected files were restored immediately after the replay.
+- PG via shard (pgsplit build files applied on `4ea4adfd43a9d72477c6991fc9ee468edc7ec567`). Two passed, zero failed. Gail took 130.10 s and Hawser took 49.76 s. The same filter without the PostgreSQL URL returned `Ok(())` for both cases in 0.00 s.
+- The first corrected-head run exposed the callback's eight-source limit. The final generated Gail record keeps the two direct citations. The repaired head passed the callback generator check, World pin check, formatting, and dispatch Clippy with `-D warnings`. The quest-authoring run completed all 44 checks.
