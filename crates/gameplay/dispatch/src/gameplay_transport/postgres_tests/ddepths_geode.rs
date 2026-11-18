@@ -74,7 +74,16 @@ async fn exercise(
             .catalogue()
             .clone(),
     ));
-    super::boss_activity::issue_content_and_reset(h, &scene.pin).await?;
+    let map_revision = crate::map::overlay::map_revision(
+        owner.bundle_map().ok_or("published World")?.overlay.base(),
+    );
+    super::boss_activity::issue_content_and_reset_with_runtime_pin(
+        h,
+        &scene.pin,
+        &scene.pin,
+        &map_revision,
+    )
+    .await?;
     let mut admitted = deps.admitted;
     super::srx3_activity_source_fixture::prepare_player(h, &owner, &mut admitted, 1999).await?;
     // Source 27509 is retained but held for production materialization. Seed its exact
@@ -142,5 +151,13 @@ async fn exercise(
         "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1",
     ).bind(FRAGMENT).fetch_one(&h.pool).await?;
     assert_eq!(remainder, 1);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts
+         WHERE transition_key='oteryn:quest-callback/dangerous-depth-geode-iv'
+           AND cause_kind='use' AND NOT completes AND cardinality(track_keys)=0",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, 30);
     Ok(())
 }
