@@ -10,6 +10,7 @@ use oteryn_protocol_oteryn::{
 pub(super) const FIRE: u16 = 49362;
 const ROD: &str = "oteryn:item.tibia.i3483";
 const SUPPORT: &str = "oteryn:creature.wolf";
+const DEMON: &str = "oteryn:creature.overcharged_demon";
 
 #[test]
 fn two_players_break_four_shields_and_credit_the_enraged_death_and_exit() -> TestResult {
@@ -27,7 +28,15 @@ fn support_death_during_handoff_delay_keeps_easy_credit_and_denies_the_forge() -
     run(admin, Case::ShieldEasy)
 }
 
-pub(super) fn lever(at: MovementLocalPosition) -> TestResult<Callback> {
+#[test]
+fn overcharged_demon_refills_once_and_stays_owned_across_the_hard_handoff() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ShieldReinforcements)
+}
+
+pub(super) fn lever(at: MovementLocalPosition, reinforcements: bool) -> TestResult<Callback> {
     let mut lever = serde_json::to_value(mode_lever(at, false)?)?;
     let tile = |x, y| json!({"x":at.x+x, "y":at.y+y, "floor":-at.floor});
     let room = &mut lever["effects"]["encounter"];
@@ -39,6 +48,11 @@ pub(super) fn lever(at: MovementLocalPosition) -> TestResult<Callback> {
     room["monsters"].as_array_mut().ok_or("initial room roster")?.push(json!({
         "position":tile(4,1),"creature":SUPPORT
     }));
+    if reinforcements {
+        let roster = room["monsters"].as_array_mut().ok_or("reinforcement roster")?;
+        roster.push(json!({"position":tile(6,1),"creature":DEMON}));
+        roster.push(json!({"position":tile(7,1),"creature":DEMON}));
+    }
     lever["reversible"] = json!(true);
     lever["effects"]["encounter_outcome"]["shield_handoff"] = json!({
         "support":SUPPORT,"terminal":CAVE_RAT,"thresholds_percent":[80,60,40,20],
@@ -46,6 +60,11 @@ pub(super) fn lever(at: MovementLocalPosition) -> TestResult<Callback> {
         "fire_delay_ms":1500,"tool_appearance":3483,"dodge_percent":0,
         "handoff_delay_ms":3000
     });
+    if reinforcements {
+        // Crystal 201189f8 arbaziloth_fight.lua:310-339.
+        lever["effects"]["encounter_outcome"]["shield_handoff"]["reinforcements"] =
+            json!({"creature":DEMON,"check_interval_ms":2000,"respawn_delay_ms":5000});
+    }
     lever["sources"] = json!(["Crystal 201189f8 arbaziloth_fight.lua:125-274 and boss_lever.lua:59-74,171-187"]);
     Ok(serde_json::from_value(lever)?)
 }
@@ -55,19 +74,25 @@ pub(super) async fn exercise(
     players: &[Player],
     at: MovementLocalPosition,
     pool: &sqlx::PgPool,
-    hard: bool,
+    case: Case,
 ) -> TestResult {
+    let hard = case != Case::ShieldEasy;
+    let reinforcements = case == Case::ShieldReinforcements;
+    let set_clock = |ms: u64| {
+        owner.states.test_owner_time.store(ms * 1_000 + 1, std::sync::atomic::Ordering::Relaxed);
+    };
     let player = players[0];
     let fence = owner.current_quest_fence(player.session).await.map_err(debug)?.ok_or("character fence")?.item_fence();
     let native = owner.active_generation.and_then(|generation| generation.native_gameplay()).ok_or("pinned items")?;
     let rod = native.item_index().and_then(|index| index.definition_ref("Item", ROD, "definition-r1")).ok_or("fishing rod")?;
     seed_rod(pool).await?;
     let map = owner.bundle_map().ok_or("shield map")?;
-    let lever = lever(at)?.selector.position.ok_or("lever tile")?;
+    let lever = lever(at, reinforcements)?.selector.position.ok_or("lever tile")?;
     let key = crate::map::view::placement_key(TilePos { x:lever.x, y:lever.y, floor:lever.floor }, 1).ok_or("lever key")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let command = |id| UseCommand { game_session_id:player.session, command_id:id, item_fence:Some(fence) };
+    set_clock(1_000);
     let result = owner.use_quest_callback(player.actor, command(501), map, &WorldObjectTarget {
         placement, expected_revision:map.facts.object_revision(key),
     }).await.ok_or("lever result")?;
@@ -91,6 +116,14 @@ pub(super) async fn exercise(
     for member in players {
         assert_eq!(enter_exit(owner, *member, portal).await?, room);
     }
+
+    let adds = if reinforcements {
+        let first = MovementLocalPosition { x: at.x + 6, y: at.y + 1, ..at };
+        let second = MovementLocalPosition { x: at.x + 7, ..first };
+        Some(exercise_refill(owner, players, first, second).await?)
+    } else {
+        None
+    };
 
     for (stage, percent) in [80, 60, 40, 20].into_iter().enumerate() {
         let number = u64::try_from(stage)?;
@@ -127,6 +160,7 @@ pub(super) async fn exercise(
             owner.tick_encounter_shields(&mut runtime, due + 1501);
             assert!(fire_tile(owner, at)?.is_none());
         }
+        set_clock(due + 1501);
         assert_eq!(FreshAdmissionAuthority::use_encounter_tool(owner, player.actor, command(531 + number), &intent, None)
             .await.map_err(debug)?.ok_or("rod use")?.disposition, UseDisposition::Committed);
         let mut runtime = owner.runtime.lock().await;
@@ -142,6 +176,9 @@ pub(super) async fn exercise(
         let mut runtime = owner.runtime.lock().await;
         assert!(runtime.contains_live_creature(boss));
         owner.tick_encounter_shields(&mut runtime, after_rod + 3000);
+        if let Some(adds) = adds {
+            assert!(adds.into_iter().all(|add| runtime.contains_live_creature(add)));
+        }
         if hard {
             assert!(!runtime.contains_live_creature(boss));
             assert!(!runtime.contains_live_creature(support));
@@ -163,6 +200,11 @@ pub(super) async fn exercise(
     }
     settle_actor_death(owner, players, if hard { CAVE_RAT } else { RAT }, terminal,
         if hard { Case::ShieldHard } else { Case::ShieldEasy }, 541).await?;
+    if let Some(adds) = adds {
+        let mut runtime = owner.runtime.lock().await;
+        owner.tick_encounter_shields(&mut runtime, after_rod + 12_000);
+        assert!(adds.into_iter().all(|add| !runtime.contains_live_creature(add)));
+    }
     for (member, character) in players.iter().zip([60,61]) {
         assert_eq!(enter_exit(owner, *member, portal).await?, if hard { landing } else { room });
         assert_eq!(track_value(pool, character).await?, i64::from(!hard));
@@ -171,6 +213,42 @@ pub(super) async fn exercise(
         assert_eq!(hard_wins, i64::from(hard));
     }
     Ok(())
+}
+
+async fn exercise_refill(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: &[Player],
+    first: MovementLocalPosition,
+    second: MovementLocalPosition,
+) -> TestResult<[ExactActorRef; 2]> {
+    fn at(runtime: &ChannelRuntimeV1, position: MovementLocalPosition) -> Option<ExactActorRef> {
+        runtime.positioned_melee_census().ok()?.into_iter().find_map(|(actor, snapshot, _)| {
+            (snapshot.position() == position
+                && runtime.matches_live_creature_identity(actor, DEMON.as_bytes())).then_some(actor)
+        })
+    }
+    let (fallen, survivor) = {
+        let runtime = owner.runtime.lock().await;
+        (at(&runtime, first).ok_or("first reinforcement")?,
+         at(&runtime, second).ok_or("second reinforcement")?)
+    };
+    settle_actor_death(owner, players, DEMON, fallen, Case::ShieldReinforcements, 505).await?;
+    let mut runtime = owner.runtime.lock().await;
+    for now in [2_999, 3_000, 7_999] {
+        owner.tick_encounter_shields(&mut runtime, now);
+        assert_eq!(at(&runtime, first), None, "refill before the complete delay");
+        assert_eq!(at(&runtime, second), Some(survivor));
+    }
+    owner.tick_encounter_shields(&mut runtime, 8_000);
+    let replacement = at(&runtime, first).ok_or("delayed reinforcement")?;
+    assert_ne!(replacement, fallen);
+    assert!(runtime.retains_corpse_projection(fallen));
+    for now in [8_000, 9_999] {
+        owner.tick_encounter_shields(&mut runtime, now);
+        assert_eq!(at(&runtime, first), Some(replacement));
+        assert_eq!(at(&runtime, second), Some(survivor));
+    }
+    Ok([replacement, survivor])
 }
 
 fn fire_tile(owner: &ComposedFreshAdmission<'_, '_, '_>, at: MovementLocalPosition) -> TestResult<Option<MovementLocalPosition>> {
