@@ -200,11 +200,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(permit);
         if let Some(feet) = result.rabbit_feet {
             let message = match feet {
-                0 => "Your attempt to skin the rabbit failed. None of the rabbit's feet are in an acceptable condition to create a lucky charm.",
+                0 => {
+                    "Your attempt to skin the rabbit failed. None of the rabbit's feet are in an acceptable condition to create a lucky charm."
+                }
                 1 => "You successfully gathered a rabbit's foot in excellent condition.",
                 _ => "You successfully gathered two rabbit's feet in excellent condition.",
             };
-            self.states.chat.push_quest_feedback(command.game_session_id, message);
+            self.states
+                .chat
+                .push_quest_feedback(command.game_session_id, message);
         }
         Ok(outcome(result.disposition))
     }
