@@ -168,7 +168,11 @@ fn scenario(rabbit: bool) -> TestResult {
             .await?;
 
         if rabbit {
-            return exercise_rabbit(&owner, &harness, native, fence, deps.actor).await;
+            let result = exercise_rabbit(&owner, &harness, native, fence, deps.actor).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return result.and(harness.cleanup().await);
         }
 
         let race = native
