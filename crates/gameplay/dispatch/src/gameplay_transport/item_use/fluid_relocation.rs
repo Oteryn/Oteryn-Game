@@ -105,9 +105,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Ok(attack) = self.states.attack.try_lock() else {
                         return UseDisposition::Rejected;
                     };
-                    movers.iter().all(|(who, _, member)| {
-                        attack.expert_modes(*who, *member).expert == ExpertMode::Dove
-                    })
+                    let dove =
+                        |who, member| attack.expert_modes(who, member).expert == ExpertMode::Dove;
+                    movers.iter().all(|&(who, _, member)| dove(who, member))
+                        && census.iter().all(|&(who, at, member)| {
+                            at.position() != destination
+                                || member.is_none_or(|member| dove(who, member))
+                        })
                 }
                 WorldPvpType::Hardcore => false,
             };

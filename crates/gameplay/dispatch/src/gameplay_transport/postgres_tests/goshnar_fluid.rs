@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::world_object::{
 use std::num::NonZeroU64;
 
 pub(super) const NAME: &str = "qengine-rewards-goshnar-fluid";
+pub(super) const OPEN_NAME: &str = "qengine-rewards-goshnar-fluid-open-pvp";
 const TARGET: Position = Position { x: 101, y: 100, floor: -7 };
 pub(super) const STAGING: Position = Position { y: 101, ..TARGET };
 const DESTINATION: Position = Position { x: 104, y: 100, ..TARGET };
@@ -20,6 +21,15 @@ fn goshnar_blood_use_with_checks_world_policy_then_moves_two_staged_players() ->
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
         super::quest_world_callbacks::scenario(NAME, TARGET, false)
+    })
+}
+
+#[test]
+fn goshnar_blood_use_respects_the_open_pvp_stance_of_a_landing_occupant() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(OPEN_NAME, || {
+        super::quest_world_callbacks::scenario(OPEN_NAME, TARGET, false)
     })
 }
 
@@ -43,6 +53,7 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
+    open_pvp: bool,
 ) -> TestResult {
     assert!(owner.states.quest_callbacks.fixture.set(vec![callback(TARGET)?]).is_ok());
     let session = admitted.game_session_id;
@@ -99,12 +110,39 @@ pub(super) async fn exercise(
     sqlx::query(
         "INSERT INTO game_spell_field_world_policies
          (world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity)
-         VALUES(encode($1,'hex')::uuid,'policy-1',1,8,60000,'99902524e052f37574194466c2949c576e4ab269',
-                session_user,'goshnar-optional-pvp-fixture')",
-    ).bind(id(42).as_slice()).execute(&h.pool).await?;
+         VALUES(encode($1,'hex')::uuid,'policy-1',$2,8,60000,'99902524e052f37574194466c2949c576e4ab269',
+                session_user,'goshnar-pvp-fixture')",
+    ).bind(id(42).as_slice()).bind(if open_pvp { 2_i16 } else { 1_i16 }).execute(&h.pool).await?;
+    let landing = super::quest_world_callbacks::local(DESTINATION);
+    let peer_origin = if open_pvp { landing } else { staging };
     let (member, member_session) = super::classic_quests::install_peer(
-        owner, h, authority, *admitted, staging,
+        owner, h, authority, *admitted, peer_origin,
     ).await?;
+    if open_pvp {
+        use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode};
+        // The Tibia Fandom archive, The_Pits_of_Inferno_Quest/Spoiler, documents
+        // Open PvP stacking for Dove. Make only the stationary player non-Dove.
+        {
+            let runtime = owner.runtime.lock().await;
+            let mut attack = owner.states.attack.lock().await;
+            assert!(attack.set_expert_modes(&runtime, member, member_session, ExpertFightModes {
+                expert: ExpertMode::WhiteHand, ..ExpertFightModes::default()
+            }));
+        }
+        let (next, refused, _) = super::item_craft::exchange(
+            owner,*admitted,admitted.continuity.next_command_id,&payload,Some(reference)
+        ).await?;
+        *admitted=next;
+        assert_eq!(refused, UseDisposition::NotPossible);
+        assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), staging);
+        let filled: i16 = sqlx::query_scalar("SELECT fluid_subtype FROM game_item_fluid_states")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(filled, 5);
+        let runtime = owner.runtime.lock().await;
+        assert!(owner.states.attack.lock().await.set_expert_modes(
+            &runtime, member, member_session, ExpertFightModes::default(),
+        ));
+    }
     let (next, disposition, _) = super::item_craft::exchange(
         owner,*admitted,admitted.continuity.next_command_id,&payload,Some(reference)
     ).await?;
@@ -113,7 +151,7 @@ pub(super) async fn exercise(
     {
         let runtime = owner.runtime.lock().await;
         for who in [actor, member] {
-            assert_eq!(runtime.read_actor_position(who).map_err(debug)?.position(), super::quest_world_callbacks::local(DESTINATION));
+            assert_eq!(runtime.read_actor_position(who).map_err(debug)?.position(), landing);
         }
     }
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
