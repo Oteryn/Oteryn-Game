@@ -670,7 +670,7 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(
-        &serde_json::json!({"schema":1,"callbacks":[secret_library::scorpion()?]}).to_string(),
+        &serde_json::json!({"schema":1,"callbacks":[secret_library::scorpion()?,secret_library::ghulosh()?]}).to_string(),
     )?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"

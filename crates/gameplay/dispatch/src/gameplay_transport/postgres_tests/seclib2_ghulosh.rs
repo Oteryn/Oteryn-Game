@@ -1,0 +1,217 @@
+//! The shipped Ghulosh bookstand starts the encounter through native USE.
+use super::fixture::{Harness, debug, id, run};
+use super::{Dependencies, TestResult, prepare_current_session, reset};
+use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority, UseCommand};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use std::sync::Arc;
+
+const START: MovementLocalPosition = MovementLocalPosition { x: 32747, y: 32773, floor: 10 };
+const ENTRY: MovementLocalPosition = MovementLocalPosition { x: 32757, y: 32727, floor: 10 };
+const BOSS: &str = "oteryn:creature.ghulosh";
+const DEATHGAZE: &str = "oteryn:creature.ghulosh_deathgaze";
+const BOOK: &str = "oteryn:creature.the_book_of_death";
+const DEATH: &str = "oteryn:creature.concentrated_death";
+
+#[test]
+fn seclib2_ghulosh_use_transforms_and_respawns_book_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("PostgreSQL test URL is empty".into());
+    }
+    super::kill_reward_e2e::scenario_thread::run("seclib2-ghulosh", || {
+        run(async |admin| {
+            reset();
+            let h = Harness::create_with_admission_seed(admin, "seclib2_ghulosh", true, false).await?;
+            prepare_current_session(&h).await?;
+            let mut deps = Dependencies::new()?;
+            let (controller, activated) = super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id, "content-1",
+            )?;
+            let generation = controller.active().ok_or("active generation")?;
+            let native = generation.native_gameplay().ok_or("native gameplay")?;
+            use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
+            let world = native_scene(native, vec![
+                NativeCrop {
+                    bytes: include_bytes!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/../../../content/world/placements/region-z10-x127-y128.b3"
+                    )),
+                    region: (10, 127, 128),
+                    bounds: (32746, 32772, 32752, 32774),
+                    start: (32747, 32773),
+                    expected: vec![ExpectedTile {
+                        position: (32746, 32773),
+                        ids: vec![28285, 28889, 28888],
+                        counted_entry: None,
+                    }],
+                },
+                NativeCrop {
+                    bytes: include_bytes!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/../../../content/world/placements/region-z10-x127-y127.b3"
+                    )),
+                    region: (10, 127, 127),
+                    bounds: (32748, 32713, 32763, 32729),
+                    start: (32757, 32727),
+                    expected: vec![],
+                },
+            ], &[])?;
+            let cells = world.movement_cells(activated.qualified_room().movement_cells()).map_err(debug)?;
+            let frame = world.frame_binding_digest(deps.admitted.world_id);
+            let room = activated.qualified_room().bundle_view(
+                cells.clone(), frame, world.map_revision_digest(),
+                crate::content::NativeEntryStart { x: START.x, y: START.y, floor: START.floor },
+            ).ok_or("bundle combat view")?;
+            let pin = ChannelContentPin::from_activation(
+                deps.admitted.world_id, activated.activation_sequence(),
+                generation.identity().server_artifact_digest(),
+                generation.identity().client_artifact_digest(), frame,
+                world.map_revision_digest(), (START.x, START.y, START.floor),
+            );
+            let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                deps.admitted.world_id, deps.admitted.channel_id,
+                crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+                1, 1, 1, "runtime-scope-assignment:1", 8, pin,
+            ).map_err(debug)?;
+            let session = deps.admitted.game_session_id;
+            let slot = runtime.reserve_fresh_session(session).map_err(debug)?;
+            deps.actor = runtime.commit_fresh_session(slot).map_err(debug)?;
+            runtime.initialize_pinned_test_position(deps.actor, START).map_err(debug)?;
+            native.install_companion_policies(&mut runtime).map_err(debug)?;
+            deps.runtime = tokio::sync::Mutex::new(runtime);
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let mut owner = deps.owner(&h, &authority);
+            owner.active_generation = Some(generation);
+            owner.movement_cells = (&cells).into();
+            owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
+            owner.quest_catalogue = Some(Arc::new(
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?.catalogue().clone(),
+            ));
+            let mut admitted = deps.admitted;
+            admitted.runtime_actor = Some(deps.actor);
+            admitted.first_entry = FirstEntryOutcome::Positioned;
+            let fence = owner.current_quest_fence(session).await.map_err(debug)?.ok_or("quest fence")?;
+            admitted.item_fence = Some(fence.item_fence());
+            sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+                .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+            sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+                .bind(id(42).as_slice()).bind(id(43).as_slice())
+                .bind(generation.identity().server_artifact_digest().as_slice())
+                .bind(generation.identity().client_artifact_digest().as_slice())
+                .bind(frame.as_slice()).execute(&h.pool).await?;
+            deps.runtime.lock().await.bind_attacker_lease(
+                deps.actor, session, crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    fence.character_lease_generation,
+                ).map_err(debug)?,
+            ).map_err(debug)?;
+            owner.admit_progression_session(&mut admitted).await;
+            {
+                let runtime = deps.runtime.lock().await;
+                let mut spells = owner.states.spell_states.lock().await;
+                assert!(spells.initialize(&runtime, deps.actor, session,
+                    crate::spell::cast::CharacterCastFacts {
+                        level: 250,
+                        ..crate::gameplay_transport::actor_spell::tests::FACTS
+                    }, (0, 0), owner.owner_now()).is_some());
+            }
+            owner.admit_quest_session(&admitted).await;
+
+            assert!(owner.refresh_source_party_presence(deps.actor, session).await);
+            let placement = crate::map::view::placement_key(
+                crate::map::overlay::TilePos { x: 32746, y: 32773, floor: -10 }, 2,
+            ).ok_or("bookstand placement")?;
+            let outcome = owner.use_object(
+                deps.actor,
+                UseCommand { game_session_id: session, command_id: 1, item_fence: admitted.item_fence },
+                WorldObjectTarget {
+                    placement: world.base().digest().into_iter().chain(placement.to_be_bytes()).collect(),
+                    expected_revision: 0,
+                },
+            ).await;
+            assert_eq!(outcome.disposition, UseDisposition::Committed);
+            assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(), ENTRY);
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let spells = owner.states.spell_states.lock().await;
+                let boss = exact(&runtime, BOSS)?;
+                let snapshot = runtime.companion_snapshot(boss).map_err(debug)?;
+                let hp = snapshot.maximum_health * 3 / 4;
+                runtime.set_test_creature_health(boss, hp).map_err(debug)?;
+                crate::gameplay_transport::encounter_phases::tick(&mut runtime, &spells, 1000);
+                assert_eq!(exact(&runtime, DEATHGAZE)?, boss);
+                assert_eq!(runtime.companion_snapshot(boss).map_err(debug)?.health, hp);
+            }
+            kill(&owner, admitted, BOOK, 100, 2000).await?;
+            kill(&owner, admitted, DEATH, 101, 3000).await?;
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let spells = owner.states.spell_states.lock().await;
+                for now in [6999, 7000, 9000, 11000, 13000, 14999] {
+                    crate::gameplay_transport::encounter_phases::tick(&mut runtime, &spells, now);
+                    assert!(exact(&runtime, BOOK).is_err(), "book respawned at {now}");
+                }
+                crate::gameplay_transport::encounter_phases::tick(&mut runtime, &spells, 15000);
+                exact(&runtime, BOOK)?;
+            }
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
+fn exact(runtime: &ChannelRuntimeV1, creature: &str) -> TestResult<crate::foundation::ExactActorRef> {
+    runtime.current_live_creature_census().map_err(debug)?.into_iter()
+        .find(|actor| runtime.matches_live_creature_identity(*actor, creature.as_bytes()))
+        .ok_or_else(|| format!("expected {creature}").into())
+}
+
+async fn kill(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: super::AdmittedSession,
+    creature: &str,
+    command: u64,
+    now_ms: u64,
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
+    let queue = owner.states.attack.lock().await.kills().clone();
+    let mut runtime = owner.runtime.lock().await;
+    let spells = owner.states.spell_states.lock().await;
+    let actor = admitted.runtime_actor.ok_or("player")?;
+    let target = exact(&runtime, creature)?;
+    let lease = runtime.bound_attacker_lease(actor, admitted.game_session_id).map_err(debug)?;
+    let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+    runtime.borrow_exact_actor_commit_at(now_ms).commit_damage_for_bound_attacker(
+        target, actor,
+        CommandRef::new(admitted.game_session_id, CommandId::new(command).map_err(debug)?),
+        0,
+        OwnerDamageCommand {
+            target: creature.as_bytes(),
+            occurrence: b"seclib2-ghulosh",
+            binding: b"seclib2-library-death",
+            damage: health,
+        },
+    ).map_err(debug)?;
+    crate::gameplay_transport::kill_reward::record_creature_kill(
+        &mut runtime,
+        crate::gameplay_transport::kill_reward::KillSink {
+            prey: Some(&spells), activity: &[], queue: &queue,
+            rewards: owner.reward_table(), charms: None,
+        },
+        target,
+        crate::combat::CapturedRewardPrincipal {
+            character: lease.character_id(), lease_generation: lease.generation(),
+            session: admitted.game_session_id, actor,
+        },
+        now_ms, None,
+    );
+    Ok(())
+}

@@ -43,3 +43,43 @@ pub(super) fn scorpion() -> Result<super::Callback, String> {
     }))
     .map_err(|error| error.to_string())
 }
+
+/// The donor binds this bookstand by position (ghulosh.lua:1–42).
+pub(super) fn ghulosh() -> Result<super::Callback, String> {
+    let quest = "oteryn:quest.the_secret_library_quest";
+    let at = |x, y| serde_json::json!({"x": x, "y": y, "floor": -10});
+    let players = (32747..=32751)
+        .map(|x| serde_json::json!({"from":at(x,32773),"to":at(32757,32727)}))
+        .collect::<Vec<_>>();
+    serde_json::from_value(serde_json::json!({
+        "key": "oteryn:quest-callback/secret-library-ghulosh",
+        "quest": quest,
+        "trigger": "use",
+        "selector": {"position":at(32746,32773),"appearance":28888,"ordinal":2},
+        "reversible": false,
+        "passages": [],
+        "storage": [],
+        "offerings": [],
+        "return_on_failure": false,
+        "effects": {"encounter": {
+            "minimum_level": 250,
+            "players": players,
+            "monsters": [
+                {"creature":"oteryn:creature.ghulosh","position":at(32756,32720)},
+                {"creature":"oteryn:creature.bone_jaw","position":at(32755,32721)},
+                {"creature":"oteryn:creature.the_book_of_death","position":at(32755,32716)}
+            ],
+            "room_min":at(32748,32713),
+            "room_max":at(32763,32729),
+            "phase":"library_ghulosh"
+        }},
+        "sources": [
+            concat!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:",
+                "data-global/scripts/actions/bosses_levers/ghulosh.lua:1-42"),
+            concat!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:",
+                "data-global/scripts/quests/the_secret_library_quest/library_area/",
+                "creaturescripts_ghulosh.lua:1-64")
+        ]
+    }))
+    .map_err(|error| error.to_string())
+}

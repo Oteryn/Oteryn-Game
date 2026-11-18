@@ -320,6 +320,8 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "library_ghulosh")]
+    Ghulosh,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -787,10 +789,24 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
+    let library_lever = effects.encounter.as_ref().is_some_and(|encounter| {
+        encounter.phase == Some(EncounterPhase::Ghulosh)
+            && callback.trigger == Trigger::Use
+            && callback.actor_kind == ActorKind::Player
+            && callback.selector.position.is_some()
+            && !callback.has_personal_state()
+            && callback.lever.is_none()
+            && !callback.reversible
+            && callback.offerings.is_empty()
+            && callback.item_on_target.is_none()
+            && !encounter.players.is_empty()
+            && encounter.players.len() <= 5
+    });
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && !library_lever
                 && (!lever
                     || (effects.scene.is_none()
                         && effects.party_transfer.is_none()
@@ -850,8 +866,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        let source_party = matches!(
+            encounter.phase,
+            Some(EncounterPhase::Cults | EncounterPhase::Ghulosh)
+        );
+        if (encounter.minimum_level == 0 && encounter.phase != Some(EncounterPhase::Cults))
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
