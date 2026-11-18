@@ -10,6 +10,7 @@ individual process peak. Concurrent processes also contribute to cgroup usage.
 | Run | Cargo jobs | Peak RSS (KiB) | Wall (s) | Result |
 | --- | ---: | ---: | ---: | --- |
 | Dispatch lib test, dependencies rebuilt | 2 | 16,437,864 | 1067.773 | rustc SIGKILL before link |
+| Dispatch lib test, fresh resubmission on the same source | 2 | 16,590,240 | 1428.314 | rustc SIGKILL before link |
 | Dispatch lib test, dependencies cached | 1 | 16,559,372 | 392.963 | rustc SIGKILL before link |
 | Dispatch lib test, incremental off | 2 | 16,581,872 | 306.471 | rustc SIGKILL before link |
 | Dispatch lib test, debug = 0 | 2 | 16,567,508 | 398.737 | rustc SIGKILL before link |
@@ -24,7 +25,10 @@ bytes. Its link used 239 rlibs (1,953,996,922 bytes) and 263 objects
 (1,163,839,310 bytes). It never produced a test executable or invoked a
 linker, so its full test list and link input totals remain unavailable.
 
-Dispatch reached about 14 GiB before the LLVM coordinator appeared. Its
+In the resubmitted baseline, the dispatch test rustc high-water mark was
+15,092,520 KiB (14.39 GiB) before the LLVM coordinator thread appeared.
+RSS continued rising after codegen started. The cgroup recorded one OOM
+kill when rustc received SIGKILL. There was no final linker invocation. Its
 source tree has 4,238 test attributes and 29 direct lifted-test mounts in
 `lib.rs`. The build script generates another 735 PostgreSQL module mounts
 for the same test crate. The PostgreSQL subtree contains 2,171 test
