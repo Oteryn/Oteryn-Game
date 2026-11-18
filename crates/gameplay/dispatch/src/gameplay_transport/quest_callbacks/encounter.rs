@@ -149,12 +149,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let step_entry = encounter.step_destination.and_then(|destination| {
             let origin = runtime.read_actor_position(actor).ok()?.position();
-            Some((native(origin)?, destination))
+            Some((origin, local(destination)))
         });
         let personal_entry = step_entry
             .map(|(origin, _)| origin)
-            .or_else(|| callback.personal_room_entry())
-            .map(local);
+            .or_else(|| callback.personal_room_entry().map(local));
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
                 && in_room(pos.position())
@@ -170,12 +169,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         for (from, to) in encounter
             .players
             .iter()
-            .map(|member| (member.from, member.to))
+            .map(|member| (local(member.from), local(member.to)))
             .chain(step_entry)
         {
-            let mut occupants = census
-                .iter()
-                .filter(|(_, pos, _)| pos.position() == local(from));
+            let mut occupants = census.iter().filter(|(_, pos, _)| pos.position() == from);
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
                 if encounter.phase
@@ -233,7 +230,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 who,
                 member_session,
                 expected,
-                local(to),
+                to,
                 blocked,
                 &closed,
             ) else {
