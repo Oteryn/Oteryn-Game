@@ -329,6 +329,13 @@ async fn exercise(h: &Harness) -> TestResult {
     owner.clock_origin -= std::time::Duration::from_secs(2);
     let fence = super::death_ml_loss_composed::current_fence(&owner, session).await?;
     admitted.item_fence = Some(fence.item_fence());
+    admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[4, 6, 11, 15, 18],
+        )
+        .ok_or("sphere USE capabilities")?;
     let command = admitted.continuity.next_command_id;
     let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target(&owner, right)?)
         .map_err(debug)?;
