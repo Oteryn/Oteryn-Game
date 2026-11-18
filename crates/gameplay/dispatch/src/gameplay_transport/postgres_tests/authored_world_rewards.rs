@@ -45,6 +45,44 @@ fn ddepths_disjoint_achievement_use_routes_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-achievement-routes")
 }
 
+pub(super) const WARZONE_PUMP: Position = Position { x: 33673, y: 32304, floor: -15 };
+
+#[test]
+fn ddepths_warzone_pump_native_use_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::qengine_rewards::scenario("qengine-rewards-ddepths-pump")
+}
+
+pub(super) async fn exercise_warzone_pump(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let pos = WARZONE_PUMP;
+    let key = oteryn_world_bundle::bundle::placement_key(pos.floor, pos.x, pos.y, 1)
+        .ok_or("pump placement")?;
+    let map = owner.bundle_map().ok_or("pump map")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
+        placement,
+        expected_revision: map.facts.object_revision(key),
+    }).map_err(debug)?;
+    let result = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?;
+    assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
+    let awards: Vec<String> = sqlx::query_scalar(
+        "SELECT achievement_key FROM game_account_achievements WHERE achievement_key IN
+            ('oteryn:achievement/buried_the_baron','oteryn:achievement/death_in_the_depths') ORDER BY achievement_key",
+    ).fetch_all(&h.pool).await?;
+    assert_eq!(awards, ["oteryn:achievement/buried_the_baron"]);
+    Ok(())
+}
+
 pub(super) async fn exercise_achievement_routes(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,

@@ -455,10 +455,10 @@ pub(crate) fn dangerous_depth_pumps() -> Vec<Callback> {
         set: if write { 1 } else { value },
         set_if: None,
         add: None,
-        preserve: false,
+        preserve: !write,
         increment: false,
         at_least: false,
-        read_only: !write,
+        read_only: false,
     };
     let mut callbacks = Vec::new();
     for (index, (x, y, progress, achievement)) in PUMPS.into_iter().enumerate() {
