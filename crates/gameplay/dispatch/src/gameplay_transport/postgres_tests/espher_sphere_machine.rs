@@ -115,7 +115,7 @@ async fn exercise(h: &Harness) -> TestResult {
         activated.qualified_room().clone(),
         crate::spell::cast::v1_spell_book().map_err(debug)?,
     )?;
-    let admitted = deps.admitted;
+    let mut admitted = deps.admitted;
     let actor = deps.actor;
     let session = admitted.game_session_id;
     let mut owner = deps.owner(h, &authority);
@@ -131,6 +131,8 @@ async fn exercise(h: &Harness) -> TestResult {
                 key: SEED.into(),
                 quest: QUEST.into(),
                 completes: false,
+                experience: None,
+                world_change: None,
                 effects: vec![QuestEffect {
                     track: MACHINE_GEMS.into(),
                     from: QuestComparison::Between(-1, 19),
@@ -175,6 +177,7 @@ async fn exercise(h: &Harness) -> TestResult {
             )
             .ok_or("druid projection")?;
     }
+    owner.admit_progression_session(&mut admitted).await;
     let left = machine_key(&owner, LEFT, 842)?;
     let right = machine_key(&owner, RIGHT, 843)?;
     assert_eq!(
