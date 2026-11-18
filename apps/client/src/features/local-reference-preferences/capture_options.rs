@@ -85,10 +85,6 @@ impl ScreenshotPreferences {
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(io::Error::other)?
             .as_nanos();
-        let path = directory.join(format!(
-            "oteryn-{stamp}-{}.bmp",
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
         let crop = if self.game_only {
             frame.game
         } else {
@@ -99,8 +95,14 @@ impl ScreenshotPreferences {
                 height: frame.height,
             }
         };
-        capture.save(&path, frame.width, frame.height, frame.bgra, crop)?;
-        Ok(path)
+        super::screenshot::retry_capture_name(|| {
+            let path = directory.join(format!(
+                "oteryn-{stamp}-{}.bmp",
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            capture.save(&path, frame.width, frame.height, frame.bgra, crop)?;
+            Ok(path)
+        })
     }
 }
 
@@ -123,7 +125,13 @@ mod audit_tests {
     #[test]
     fn screenshot_alias_frame_writer_rejects_relative_folders()
     -> Result<(), Box<dyn std::error::Error>> {
-        let folder = format!("relative-frame-capture-{}", std::process::id());
+        let cwd = std::env::current_dir()?;
+        let fixture = crate::play::screenshot::TestDir::new_in(&cwd)?;
+        let folder = fixture
+            .join("captures")
+            .strip_prefix(&cwd)?
+            .to_string_lossy()
+            .into_owned();
         let preferences = ScreenshotPreferences {
             folder: folder.clone(),
             ..Default::default()
@@ -139,15 +147,8 @@ mod audit_tests {
                 height: 1,
             },
         };
-        let result = preferences.save_frame(
-            &mut CaptureController::default(),
-            &std::env::temp_dir(),
-            frame,
-        );
-        if let Ok(path) = &result {
-            std::fs::remove_file(path)?;
-            std::fs::remove_dir(&folder)?;
-        }
+        let result =
+            preferences.save_frame(&mut CaptureController::default(), fixture.path(), frame);
         assert!(result.is_err());
         assert!(!Path::new(&folder).exists());
         Ok(())

@@ -1,4 +1,5 @@
 use super::*;
+use crate::play::screenshot::TestDir;
 use bevy::{
     asset::RenderAssetUsages,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
@@ -61,7 +62,8 @@ fn capture_frame(app: &mut App, image: Image) -> TestResult {
 }
 #[test]
 fn f12_completion_saves_distinct_bmps_in_configured_destination() -> TestResult {
-    let root = std::env::temp_dir().join(format!("gap60-captures-{}", std::process::id()));
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let mut app = app(&root, false)?;
     capture(&mut app)?;
     capture(&mut app)?;
@@ -80,12 +82,12 @@ fn f12_completion_saves_distinct_bmps_in_configured_destination() -> TestResult 
             .status
             .starts_with("Screenshot saved:")
     );
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 #[test]
 fn game_only_crops_rendered_pixels_and_write_errors_reach_player() -> TestResult {
-    let root = std::env::temp_dir().join(format!("gap60-crop-{}", std::process::id()));
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let mut app = app(&root, true)?;
     capture(&mut app)?;
     let path = std::fs::read_dir(&root)?.next().ok_or("capture")??.path();
@@ -116,17 +118,15 @@ fn game_only_crops_rendered_pixels_and_write_errors_reach_player() -> TestResult
         )
         .is_err()
     );
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
 #[test]
 fn death_event_captures_without_f12_and_deduplicates() -> TestResult {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join(format!(".audit-screenshots-auto-{}", std::process::id()));
+    let fixture = TestDir::new()?;
+    let root = fixture.join("captures");
     capture_death(&root, false)?;
     assert_eq!(std::fs::read_dir(&root)?.count(), 1);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -229,16 +229,40 @@ fn capture_death(destination: &std::path::Path, backlog: bool) -> TestResult {
     Ok(())
 }
 
+// Libtest accepts a skip pattern that matches no test. Only an explicit
+// subprocess invocation can select these cases. The parent owns the fixture.
+#[cfg(unix)]
+fn child_mode(marker: &str) -> bool {
+    let mut args = std::env::args_os();
+    while let Some(arg) = args.next() {
+        if arg == "--skip" && args.next().is_some_and(|arg| arg == marker) {
+            return true;
+        }
+    }
+    false
+}
+
+#[cfg(unix)]
+fn child_root() -> io::Result<PathBuf> {
+    let root = std::env::current_dir()?;
+    if std::env::temp_dir() != root {
+        return Err(io::Error::other(
+            "Capture subprocess must use its test fixture",
+        ));
+    }
+    Ok(root)
+}
+
 #[cfg(unix)]
 #[test]
 fn f12_without_config_home_saves_capture() -> TestResult {
-    const CHILD: &str = "OTERYN_TEST_F12_NO_HOME";
-    if std::env::var_os(CHILD).is_none()
+    const CHILD: &str = "oteryn-test-f12-child";
+    if !child_mode(CHILD)
         || crate::play::PreferenceStore::path().is_some()
         || std::env::var_os("LOCALAPPDATA").is_some()
     {
-        let root = std::env::temp_dir().join(format!("oteryn-f12-no-home-{}", std::process::id()));
-        std::fs::create_dir(&root)?;
+        let fixture = TestDir::new()?;
+        let root = fixture.path().to_path_buf();
         let status = std::process::Command::new("sh")
             .args(["-c", r#"umask 022; exec "$@""#, "sh"])
             .arg(std::env::current_exe()?)
@@ -246,16 +270,17 @@ fn f12_without_config_home_saves_capture() -> TestResult {
                 "--exact",
                 "bevy_shell::screenshots::tests::f12_without_config_home_saves_capture",
             ])
-            .env(CHILD, "1")
+            .args(["--skip", CHILD])
+            .current_dir(&root)
             .env("TMPDIR", &root)
             .env_remove("HOME")
             .env_remove("LOCALAPPDATA")
             .env_remove("XDG_CONFIG_HOME")
             .status();
-        std::fs::remove_dir_all(root)?;
         assert!(status?.success());
         return Ok(());
     }
+    let root = child_root()?;
     let mut app = app(std::path::Path::new(""), false)?;
     capture(&mut app)?;
     let path = app
@@ -269,7 +294,7 @@ fn f12_without_config_home_saves_capture() -> TestResult {
     assert!(path.is_file());
     let parent = path.parent().ok_or("capture directory")?;
     assert_eq!(parent.metadata()?.permissions().mode() & 0o077, 0);
-    assert_eq!(parent.parent(), Some(std::env::temp_dir().as_path()));
+    assert_eq!(parent.parent(), Some(root.as_path()));
     Ok(())
 }
 
@@ -277,15 +302,16 @@ fn f12_without_config_home_saves_capture() -> TestResult {
 #[test]
 fn death_with_backlog_uses_a_private_fallback() -> TestResult {
     use std::os::unix::fs::PermissionsExt;
-    const CHILD: &str = "OTERYN_TEST_DEATH_NO_HOME";
-    if std::env::var_os(CHILD).is_some()
+    const CHILD: &str = "oteryn-test-death-child";
+    if child_mode(CHILD)
         && crate::play::PreferenceStore::path().is_none()
         && std::env::var_os("LOCALAPPDATA").is_none()
     {
+        child_root()?;
         return capture_death(std::path::Path::new(""), true);
     }
-    let root = std::env::temp_dir().join(format!("oteryn-death-no-home-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let status = std::process::Command::new("sh")
         .args(["-c", r#"umask 022; exec "$@""#, "sh"])
         .arg(std::env::current_exe()?)
@@ -293,7 +319,8 @@ fn death_with_backlog_uses_a_private_fallback() -> TestResult {
             "--exact",
             "bevy_shell::screenshots::tests::death_with_backlog_uses_a_private_fallback",
         ])
-        .env(CHILD, "1")
+        .args(["--skip", CHILD])
+        .current_dir(&root)
         .env("TMPDIR", &root)
         .env_remove("HOME")
         .env_remove("LOCALAPPDATA")
@@ -315,7 +342,6 @@ fn death_with_backlog_uses_a_private_fallback() -> TestResult {
         }
     }
     assert_eq!(captures, 2);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -323,8 +349,8 @@ fn death_with_backlog_uses_a_private_fallback() -> TestResult {
 #[test]
 fn inherited_f12_marker_preserves_existing_captures() -> TestResult {
     use std::os::unix::fs::PermissionsExt;
-    let root = std::env::temp_dir().join(format!("oteryn-f12-marker-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let config = if cfg!(target_os = "macos") {
         root.join("Library/Application Support")
     } else {
@@ -347,7 +373,6 @@ fn inherited_f12_marker_preserves_existing_captures() -> TestResult {
         .env_remove("XDG_CONFIG_HOME")
         .status();
     let preserved = std::fs::read(&existing);
-    std::fs::remove_dir_all(root)?;
     assert!(status?.success());
     assert_eq!(preserved?, b"existing capture");
     Ok(())
@@ -356,15 +381,8 @@ fn inherited_f12_marker_preserves_existing_captures() -> TestResult {
 #[cfg(unix)]
 #[test]
 fn inherited_capture_destination_marker_runs_the_matrix() -> TestResult {
-    let stamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)?
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!(
-        "oteryn-matrix-marker-{}-{stamp}",
-        std::process::id()
-    ));
-    use std::os::unix::fs::DirBuilderExt;
-    std::fs::DirBuilder::new().mode(0o700).create(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let config = if cfg!(target_os = "macos") {
         root.join("Library/Application Support")
     } else {
@@ -387,7 +405,6 @@ fn inherited_capture_destination_marker_runs_the_matrix() -> TestResult {
         .output();
     let entries = std::fs::read_dir(&screenshots)?.count();
     let preserved = std::fs::read(existing);
-    std::fs::remove_dir_all(root)?;
     assert_eq!(entries, 1, "matrix runner wrote to the inherited home");
     assert_eq!(preserved?, b"existing capture");
     let output = output?;
@@ -403,8 +420,8 @@ fn inherited_capture_destination_marker_runs_the_matrix() -> TestResult {
 #[test]
 fn manual_and_death_captures_share_private_destinations() -> TestResult {
     use std::{os::unix::fs::PermissionsExt, process::Command};
-    let root = std::env::temp_dir().join(format!("oteryn-capture-matrix-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let mut failures = Vec::new();
     let cases = (0..8)
         .flat_map(|mask| [(mask, false, false), (mask, true, false)])
@@ -429,10 +446,15 @@ fn manual_and_death_captures_share_private_destinations() -> TestResult {
             .args(["-c", r#"umask 022; exec "$@""#, "sh"])
             .arg(std::env::current_exe()?)
             .args(["--exact", CAPTURE_DESTINATION_TEST])
-            .env(
-                CAPTURE_DESTINATION_CASE,
-                if explicit { "explicit" } else { "default" },
-            )
+            .args([
+                "--skip",
+                if explicit {
+                    CAPTURE_EXPLICIT
+                } else {
+                    CAPTURE_DEFAULT
+                },
+            ])
+            .current_dir(&case)
             .env("TMPDIR", &case);
         for (bit, name) in ["HOME", "XDG_CONFIG_HOME", "LOCALAPPDATA"]
             .into_iter()
@@ -448,7 +470,7 @@ fn manual_and_death_captures_share_private_destinations() -> TestResult {
             failures.push((mask, explicit, legacy));
         }
         if legacy {
-            assert_eq!(shared.metadata()?.permissions().mode() & 0o777, 0o700);
+            assert_eq!(shared.metadata()?.permissions().mode() & 0o777, 0o755);
             assert_eq!(
                 std::fs::read(shared.join("legacy.bmp"))?,
                 b"BM legacy capture"
@@ -456,7 +478,6 @@ fn manual_and_death_captures_share_private_destinations() -> TestResult {
             assert_eq!(std::fs::read_dir(shared)?.count(), 1);
         }
     }
-    std::fs::remove_dir_all(root)?;
     assert!(
         failures.is_empty(),
         "failed destination cases: {failures:?}"
@@ -465,7 +486,9 @@ fn manual_and_death_captures_share_private_destinations() -> TestResult {
 }
 
 #[cfg(unix)]
-const CAPTURE_DESTINATION_CASE: &str = "OTERYN_TEST_CAPTURE_MATRIX_CHILD";
+const CAPTURE_DEFAULT: &str = "oteryn-test-capture-default";
+#[cfg(unix)]
+const CAPTURE_EXPLICIT: &str = "oteryn-test-capture-explicit";
 #[cfg(unix)]
 const CAPTURE_DESTINATION_TEST: &str =
     "bevy_shell::screenshots::tests::capture_destination_matrix_case";
@@ -477,11 +500,11 @@ fn capture_destination_matrix_case() -> TestResult {
     if !std::env::args_os().any(|arg| arg == CAPTURE_DESTINATION_TEST) {
         return Ok(());
     }
-    let Some(mode) = std::env::var_os(CAPTURE_DESTINATION_CASE) else {
+    let explicit = child_mode(CAPTURE_EXPLICIT);
+    if !explicit && !child_mode(CAPTURE_DEFAULT) {
         return Ok(());
-    };
-    let explicit = mode == "explicit";
-    let root = std::env::temp_dir();
+    }
+    let root = child_root()?;
     for name in ["HOME", "XDG_CONFIG_HOME", "LOCALAPPDATA"] {
         if let Some(path) = std::env::var_os(name) {
             assert_eq!(Path::new(&path), root.join(name));
@@ -554,8 +577,8 @@ fn capture_destination_matrix_case() -> TestResult {
 #[test]
 fn audit_f12_replaces_png_with_private_capture() -> TestResult {
     use std::os::unix::fs::PermissionsExt;
-    let root = std::env::temp_dir().join(format!("oteryn-audit-capture-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let output = root.join("new").join("audit.json");
     let mut app = app(&root, false)?;
     app.insert_resource(super::super::audit::AuditOutput::new(Some(output.clone())));
@@ -581,44 +604,46 @@ fn audit_f12_replaces_png_with_private_capture() -> TestResult {
     let folder = path.parent().ok_or("capture directory")?;
     assert_eq!(folder.metadata()?.permissions().mode() & 0o777, 0o700);
     assert_eq!(std::fs::read_dir(folder)?.count(), 1);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
 #[cfg(unix)]
 #[test]
-fn f12_restricts_legacy_capture_in_existing_directory() -> TestResult {
+fn f12_preserves_legacy_capture_in_existing_directory() -> TestResult {
     use std::os::unix::fs::PermissionsExt;
-    let root = std::env::temp_dir().join(format!("oteryn-legacy-captures-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o755))?;
     let legacy = root.join("oteryn-1-2.bmp");
     std::fs::write(&legacy, b"BM legacy capture")?;
     std::fs::set_permissions(&legacy, std::fs::Permissions::from_mode(0o644))?;
+    let original = root.join("oteryn-3-4.bmp");
+    let backup = root.join("hard-linked-backup.bmp");
+    std::fs::write(&original, b"BM linked capture")?;
+    std::fs::set_permissions(&original, std::fs::Permissions::from_mode(0o644))?;
+    std::fs::hard_link(&original, &backup)?;
     capture(&mut app(&root, false)?)?;
+    for linked in [&original, &backup] {
+        assert_eq!(linked.metadata()?.permissions().mode() & 0o777, 0o644);
+        assert_eq!(std::fs::read(linked)?, b"BM linked capture");
+    }
     let mode = root.metadata()?.permissions().mode() & 0o777;
     let legacy_mode = legacy.metadata()?.permissions().mode() & 0o777;
-    let data = std::fs::read(legacy);
+    let data = std::fs::read(&legacy);
     let entries = std::fs::read_dir(&root)?.count();
-    std::fs::remove_dir_all(root)?;
-    assert_eq!(entries, 2);
+    assert_eq!(entries, 4);
     assert_eq!(mode, 0o755);
-    assert_eq!(legacy_mode, 0o600);
+    assert_eq!(legacy_mode, 0o644);
     assert_eq!(data?, b"BM legacy capture");
     Ok(())
 }
 
 #[cfg(unix)]
-fn audit_capture_after_json(
-    fixture: &str,
-    basename: &str,
-    parent_mode: u32,
-    expected_mode: u32,
-) -> TestResult {
+fn audit_capture_after_json(basename: &str, parent_mode: u32, expected_mode: u32) -> TestResult {
     use super::super::audit;
     use std::os::unix::fs::PermissionsExt;
-    let root = std::env::temp_dir().join(format!("oteryn-audit-{fixture}-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let folder = root.join("audit");
     let output = folder.join(basename).with_extension("json");
     let mut app = app(&root, false)?;
@@ -634,18 +659,22 @@ fn audit_capture_after_json(
     );
     std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(parent_mode))?;
     let legacy = folder.join("oteryn-1-2-3.bmp");
+    let lookalike = folder.join("oteryn-1-2.bmp");
     let unrelated = folder.join("unrelated.bmp");
-    if parent_mode & 0o1000 != 0 {
-        for file in [&legacy, &unrelated] {
+    if parent_mode & 0o020 != 0 {
+        for file in [&legacy, &lookalike, &unrelated] {
             std::fs::write(file, b"BM previous file")?;
             std::fs::set_permissions(file, std::fs::Permissions::from_mode(0o644))?;
         }
     }
     capture(&mut app)?;
-    if parent_mode & 0o1000 != 0 {
-        assert_eq!(legacy.metadata()?.permissions().mode() & 0o777, 0o600);
+    if parent_mode & 0o020 != 0 {
+        assert_eq!(legacy.metadata()?.permissions().mode() & 0o777, 0o644);
         assert_eq!(std::fs::read(legacy)?, b"BM previous file");
-        assert_eq!(unrelated.metadata()?.permissions().mode() & 0o777, 0o644);
+        for file in [&lookalike, &unrelated] {
+            assert_eq!(file.metadata()?.permissions().mode() & 0o777, 0o644);
+            assert_eq!(std::fs::read(file)?, b"BM previous file");
+        }
     }
     let path = output.with_extension("png");
     let saved = std::fs::read(&path);
@@ -654,37 +683,36 @@ fn audit_capture_after_json(
         .map(|entry| entry.permissions().mode() & 0o777);
     let mode = folder.metadata()?.permissions().mode() & 0o1777;
     let entries = std::fs::read_dir(&folder)?.count();
-    std::fs::remove_dir_all(root)?;
     assert_eq!(&saved?[..8], b"\x89PNG\r\n\x1a\n");
     assert_eq!(png_mode?, 0o600);
     assert_eq!(mode, expected_mode);
-    assert_eq!(entries, if parent_mode & 0o1000 != 0 { 4 } else { 2 });
+    assert_eq!(entries, if parent_mode & 0o020 != 0 { 5 } else { 2 });
     Ok(())
 }
 
 #[cfg(unix)]
 #[test]
 fn audit_f12_after_json_preserves_existing_directory() -> TestResult {
-    audit_capture_after_json("normal", "audit", 0o755, 0o755)
+    audit_capture_after_json("audit", 0o755, 0o755)
 }
 
 #[cfg(unix)]
 #[test]
 fn audit_f12_accepts_maximum_audit_staging_basename() -> TestResult {
-    audit_capture_after_json("long", &"a".repeat(244), 0o755, 0o755)
+    audit_capture_after_json(&"a".repeat(244), 0o755, 0o755)
 }
 
 #[cfg(unix)]
 #[test]
 fn audit_f12_writes_private_png_in_shared_sticky_directory() -> TestResult {
-    audit_capture_after_json("shared", "audit", 0o1777, 0o1777)
+    audit_capture_after_json("audit", 0o1777, 0o1777)
 }
 
 #[cfg(unix)]
 #[test]
 fn inherited_matrix_fixture_preserves_a_previous_process_directory() -> TestResult {
-    let root = std::env::temp_dir().join(format!("oteryn-matrix-collision-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let config = if cfg!(target_os = "macos") {
         "Library/Application Support"
     } else {
@@ -721,7 +749,6 @@ fn inherited_matrix_fixture_preserves_a_previous_process_directory() -> TestResu
             )
         })
         .transpose();
-    std::fs::remove_dir_all(root)?;
     assert!(
         output.status.success(),
         "{}",
@@ -737,12 +764,13 @@ fn inherited_matrix_fixture_preserves_a_previous_process_directory() -> TestResu
 #[test]
 fn fallback_captures_from_two_processes_use_distinct_directories() -> TestResult {
     use std::os::unix::fs::PermissionsExt;
-    let root = std::env::temp_dir().join(format!("oteryn-shared-tmp-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     for _ in 0..2 {
         let output = std::process::Command::new(std::env::current_exe()?)
             .args(["--exact", CAPTURE_DESTINATION_TEST])
-            .env(CAPTURE_DESTINATION_CASE, "default")
+            .args(["--skip", CAPTURE_DEFAULT])
+            .current_dir(&root)
             .env("TMPDIR", &root)
             .env_remove("HOME")
             .env_remove("XDG_CONFIG_HOME")
@@ -760,28 +788,26 @@ fn fallback_captures_from_two_processes_use_distinct_directories() -> TestResult
         assert_eq!(folder.metadata()?.permissions().mode() & 0o777, 0o700);
         assert_eq!(std::fs::read_dir(folder.path())?.count(), 3);
     }
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
 #[cfg(unix)]
 #[test]
 fn audit_f12_preserves_group_writable_directory() -> TestResult {
-    audit_capture_after_json("group", "audit", 0o775, 0o775)
+    audit_capture_after_json("audit", 0o775, 0o775)
 }
 
 #[cfg(unix)]
 #[test]
 fn configured_bmps_preserve_group_writable_directory() -> TestResult {
     use std::os::unix::fs::PermissionsExt;
-    let root = std::env::temp_dir().join(format!("oteryn-bmp-group-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o775))?;
     capture(&mut app(&root, false)?)?;
     capture_death(&root, false)?;
     let mode = root.metadata()?.permissions().mode() & 0o777;
     let files = std::fs::read_dir(&root)?.collect::<Result<Vec<_>, _>>()?;
-    std::fs::remove_dir_all(root)?;
     assert_eq!(mode, 0o775);
     assert_eq!(files.len(), 2);
     Ok(())
@@ -791,8 +817,8 @@ fn configured_bmps_preserve_group_writable_directory() -> TestResult {
 #[test]
 fn f12_and_death_save_in_write_and_search_only_directory() -> TestResult {
     use std::os::unix::fs::PermissionsExt;
-    let root = std::env::temp_dir().join(format!("oteryn-write-search-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let mut manual = app(&root, false)?;
     std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o300))?;
     let can_read = std::fs::read_dir(&root).is_ok();
@@ -808,7 +834,6 @@ fn f12_and_death_save_in_write_and_search_only_directory() -> TestResult {
                 .map(|entry| entry.permissions().mode() & 0o777)
         })
         .collect::<Result<Vec<_>, _>>()?;
-    std::fs::remove_dir_all(root)?;
     manual_result?;
     death_result?;
     assert_eq!(mode, 0o300);
@@ -827,63 +852,140 @@ fn f12_and_death_save_in_write_and_search_only_directory() -> TestResult {
     Ok(())
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 #[test]
-fn audit_f12_skips_stale_staging_files_from_reused_pid() -> TestResult {
-    const FIXTURE: &str = "OTERYN_TEST_AUDIT_STAGING_FIXTURE";
-    const TEST: &str =
-        "bevy_shell::screenshots::tests::audit_f12_skips_stale_staging_files_from_reused_pid";
-    if std::env::args_os().any(|arg| arg == TEST)
-        && let Some(root) = std::env::var_os(FIXTURE)
-    {
-        let root = PathBuf::from(root);
-        let output = root.join("new-audit.json");
-        let mut app = app(&root, false)?;
-        app.insert_resource(super::super::audit::AuditOutput::new(Some(output.clone())));
-        capture(&mut app)?;
-        assert_eq!(
-            &std::fs::read(output.with_extension("png"))?[..8],
-            b"\x89PNG\r\n\x1a\n"
-        );
-        for sequence in 0..2 {
-            let stale = root.join(format!(
-                ".oteryn-audit-{}-{sequence}.tmp",
-                std::process::id()
-            ));
-            assert_eq!(std::fs::read(stale)?, b"stale");
+fn f12_and_death_do_not_open_capture_directory_for_scanning() -> TestResult {
+    use rustix::fs::inotify::{self, CreateFlags, Reader, WatchFlags};
+    use std::mem::MaybeUninit;
+
+    let fixture = TestDir::new()?;
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(fixture.path(), std::fs::Permissions::from_mode(0o755))?;
+    let watch = inotify::init(CreateFlags::NONBLOCK | CreateFlags::CLOEXEC)?;
+    inotify::add_watch(&watch, fixture.path(), WatchFlags::OPEN)?;
+    capture(&mut app(fixture.path(), false)?)?;
+    capture_death(fixture.path(), true)?;
+    let mut buffer = [MaybeUninit::uninit(); 4096];
+    let mut events = Reader::new(&watch, &mut buffer);
+    let mut captures = 0;
+    loop {
+        match events.next() {
+            Ok(event) => {
+                assert!(event.file_name().is_some(), "capture opened its directory");
+                captures += 1;
+            }
+            Err(rustix::io::Errno::AGAIN) => break,
+            Err(error) => return Err(error.into()),
         }
-        assert_eq!(std::fs::read_dir(root)?.count(), 3);
-        return Ok(());
     }
-    let root = std::env::temp_dir().join(format!("oteryn-audit-collision-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
-    let output = std::process::Command::new("sh")
-        .args(["-c", r#"
-            for sequence in 0 1; do
-                printf stale > "$OTERYN_TEST_AUDIT_STAGING_FIXTURE/.oteryn-audit-$$-$sequence.tmp" || exit 1
-            done
-            exec "$@"
-        "#, "sh"])
-        .arg(std::env::current_exe()?)
-        .args(["--exact", TEST])
-        .env(FIXTURE, &root)
-        .output();
-    std::fs::remove_dir_all(root)?;
-    let output = output?;
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stdout)
+    assert_eq!(captures, 3);
+    Ok(())
+}
+
+type AuditOpen = Box<dyn FnMut(&std::path::Path) -> io::Result<std::fs::File>>;
+
+thread_local! {
+    static AUDIT_OPEN: std::cell::RefCell<Option<AuditOpen>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(super) fn open_audit_capture(path: &std::path::Path) -> io::Result<std::fs::File> {
+    AUDIT_OPEN.with_borrow_mut(|open| match open {
+        Some(open) => open(path),
+        None => crate::play::screenshot::create_capture_file(path),
+    })
+}
+
+fn audit_f12_retries_staging_collision(vanishing: bool) -> TestResult {
+    use crate::play::screenshot::create_capture_file;
+    use std::{cell::RefCell, rc::Rc};
+
+    let fixture = TestDir::new()?;
+    let output = fixture.join("new-audit.json");
+    let mut app = app(fixture.path(), false)?;
+    app.insert_resource(super::super::audit::AuditOutput::new(Some(output.clone())));
+    let attempted = Rc::new(RefCell::new(Vec::new()));
+    let recorded = Rc::clone(&attempted);
+    AUDIT_OPEN.set(Some(Box::new(move |candidate| {
+        let mut recorded = recorded.borrow_mut();
+        let collide = recorded.len() < 2;
+        recorded.push(candidate.to_path_buf());
+        if collide {
+            std::fs::File::options()
+                .write(true)
+                .create_new(true)
+                .open(candidate)?;
+            std::fs::write(candidate, b"stale")?;
+        }
+        let result = create_capture_file(candidate);
+        if collide && vanishing {
+            std::fs::remove_file(candidate)?;
+        }
+        result
+    })));
+    let result = capture(&mut app);
+    AUDIT_OPEN.set(None);
+    result?;
+
+    assert_eq!(
+        &std::fs::read(output.with_extension("png"))?[..8],
+        b"\x89PNG\r\n\x1a\n"
+    );
+    let attempted = attempted.borrow();
+    assert_eq!(attempted.len(), 3);
+    for prior in &attempted[..2] {
+        if vanishing {
+            assert!(!prior.exists());
+        } else {
+            assert_eq!(std::fs::read(prior)?, b"stale");
+        }
+    }
+    assert!(!attempted[2].exists());
+    assert_eq!(
+        std::fs::read_dir(fixture.path())?.count(),
+        if vanishing { 1 } else { 3 }
     );
     Ok(())
+}
+
+#[test]
+fn audit_f12_retries_when_occupied_staging_name_vanishes() -> TestResult {
+    audit_f12_retries_staging_collision(true)
+}
+
+#[cfg(unix)]
+const AUDIT_COLLISION_TEST: &str =
+    "bevy_shell::screenshots::tests::audit_f12_skips_stale_staging_files_from_reused_pid";
+
+#[cfg(unix)]
+#[test]
+fn inherited_audit_staging_fixture_is_untouched() -> TestResult {
+    let fixture = TestDir::new()?;
+    let existing = fixture.join("new-audit.png");
+    std::fs::write(&existing, b"existing PNG")?;
+    let child = std::process::Command::new(std::env::current_exe()?)
+        .args(["--exact", AUDIT_COLLISION_TEST])
+        .env("OTERYN_TEST_AUDIT_STAGING_FIXTURE", fixture.path())
+        .output()?;
+    assert_eq!(std::fs::read(existing)?, b"existing PNG");
+    assert!(
+        child.status.success(),
+        "{}",
+        String::from_utf8_lossy(&child.stdout)
+    );
+    Ok(())
+}
+
+#[test]
+fn audit_f12_skips_stale_staging_files_from_reused_pid() -> TestResult {
+    audit_f12_retries_staging_collision(false)
 }
 
 #[cfg(target_os = "linux")]
 #[test]
 fn read_only_legacy_destination_does_not_block_fallback_capture() -> TestResult {
     use std::os::unix::fs::PermissionsExt;
-    let root = std::env::temp_dir().join(format!("oteryn-readonly-legacy-{}", std::process::id()));
-    std::fs::create_dir(&root)?;
+    let fixture = TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let legacy = root.join("LOCALAPPDATA/Oteryn/screenshots");
     std::fs::create_dir_all(&legacy)?;
     std::fs::set_permissions(&legacy, std::fs::Permissions::from_mode(0o755))?;
@@ -917,7 +1019,8 @@ os.execv(sys.argv[1], sys.argv[1:])
         ])
         .arg(std::env::current_exe()?)
         .args(["--exact", CAPTURE_DESTINATION_TEST])
-        .env(CAPTURE_DESTINATION_CASE, "default")
+        .args(["--skip", CAPTURE_DEFAULT])
+        .current_dir(&root)
         .env("LOCALAPPDATA", root.join("LOCALAPPDATA"))
         .env("TMPDIR", &root)
         .env_remove("HOME")
@@ -925,7 +1028,6 @@ os.execv(sys.argv[1], sys.argv[1:])
         .output();
     let entries = std::fs::read_dir(&root)?.count();
     let legacy_mode = legacy.metadata()?.permissions().mode() & 0o777;
-    std::fs::remove_dir_all(root)?;
     let output = output?;
     assert!(
         output.status.success(),
@@ -938,5 +1040,46 @@ os.execv(sys.argv[1], sys.argv[1:])
         "expected the legacy tree and the private fallback"
     );
     assert_eq!(legacy_mode, 0o755);
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn crop_fixture_preserves_previous_process_directory() -> TestResult {
+    let fixture = TestDir::new()?;
+    let template =
+        Pixels::new(2, 1, vec![0; 8])?.save(fixture.path().to_str().ok_or("fixture path")?)?;
+    let child_root = fixture.join("child");
+    std::fs::create_dir(&child_root)?;
+    let child = std::process::Command::new("sh")
+        .args([
+            "-c",
+            r#"
+            mkdir "$TMPDIR/gap60-crop-$$" || exit 1
+            cp "$1" "$TMPDIR/gap60-crop-$$/file" || exit 1
+            shift
+            exec "$@"
+            "#,
+            "sh",
+        ])
+        .arg(&template)
+        .arg(std::env::current_exe()?)
+        .args([
+            "--exact",
+            "bevy_shell::screenshots::tests::game_only_crops_rendered_pixels_and_write_errors_reach_player",
+        ])
+        .env("TMPDIR", &child_root)
+        .output()?;
+    let entries = std::fs::read_dir(child_root)?.collect::<Result<Vec<_>, _>>()?;
+    assert_eq!(entries.len(), 1);
+    assert_eq!(
+        std::fs::read(entries[0].path().join("file"))?,
+        std::fs::read(template)?
+    );
+    assert!(
+        child.status.success(),
+        "{}",
+        String::from_utf8_lossy(&child.stdout)
+    );
     Ok(())
 }

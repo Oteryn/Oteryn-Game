@@ -5,7 +5,8 @@ fn t060_selected_engine_and_aa_survive_restart_and_live_input_queue()
     use crate::play::{SettingsState, play_channel};
     use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
     use oteryn_renderer::{Antialiasing, GraphicsEngine};
-    let path = std::env::temp_dir().join(format!("t060-select-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("t060-select.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut preferences = settings.preferences.clone();
     preferences.graphics.engine = GraphicsEngine::Vulkan;
@@ -46,7 +47,8 @@ fn t060_selected_engine_and_aa_survive_restart_and_live_input_queue()
 fn t060_graphics_settings_restore_into_real_scene_and_presentation_request()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::SettingsState;
-    let path = std::env::temp_dir().join(format!("t060-graphics-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("t060-graphics.json");
     let mut state = SettingsState::new(Some(path.clone()));
     let mut prefs = state.preferences.clone();
     prefs.ui_scale = 100;
@@ -88,7 +90,8 @@ fn graphics_preferences_reach_live_scene_lighting_and_gpu_floor_separation()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{Pushed, SettingsState};
     use oteryn_session::{world_clock::WorldClock, world_weather::WorldWeather};
-    let path = std::env::temp_dir().join(format!("t062-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("t062.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut play = view()?;
     let mut map = crate::play::tests::feature_local_world_view::live_snapshot(100);

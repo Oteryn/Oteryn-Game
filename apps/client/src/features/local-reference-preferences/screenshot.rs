@@ -3,8 +3,6 @@ use super::{PreferenceStore, SettingsState};
 #[path = "screenshot_backlog.rs"]
 mod backlog;
 pub(super) use backlog::ScreenshotRuntime;
-#[cfg(unix)]
-use std::os::unix::fs::MetadataExt;
 use std::{
     fs::{DirBuilder, File},
     io::{self, BufWriter, Write},
@@ -47,12 +45,16 @@ impl Pixels {
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(io::Error::other)?
             .as_nanos();
-        let path = folder.join(format!(
-            "oteryn-{stamp}-{}-{}.bmp",
-            std::process::id(),
-            SEQUENCE.fetch_add(1, Ordering::Relaxed)
-        ));
-        let mut file = BufWriter::new(create_capture_file(&path)?);
+        let (path, file) = retry_capture_name(|| {
+            let path = folder.join(format!(
+                "oteryn-{stamp}-{}-{}.bmp",
+                std::process::id(),
+                SEQUENCE.fetch_add(1, Ordering::Relaxed)
+            ));
+            let file = create_capture_file(&path)?;
+            Ok((path, file))
+        })?;
+        let mut file = BufWriter::new(file);
         let result = self
             .write_bmp(&mut file)
             .and_then(|()| file.flush())
@@ -114,10 +116,22 @@ pub(super) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
     }
 }
 
+#[cfg(not(unix))]
 fn local_app_data() -> Option<PathBuf> {
     std::env::var_os("LOCALAPPDATA")
         .map(PathBuf::from)
         .filter(|path| path.is_absolute())
+}
+
+pub(crate) fn retry_capture_name<T>(mut attempt: impl FnMut() -> io::Result<T>) -> io::Result<T> {
+    const MAX_ATTEMPTS: usize = 32;
+    for _ in 1..MAX_ATTEMPTS {
+        match attempt() {
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+            result => return result,
+        }
+    }
+    attempt()
 }
 
 /// Open a new screenshot with private permissions before writing any pixels.
@@ -136,79 +150,22 @@ pub(crate) fn create_capture_file(path: &Path) -> io::Result<File> {
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty());
     if let Some(parent) = parent {
-        directory.create(parent)?;
+        directory.create(parent).map_err(|error| {
+            if error.kind() == io::ErrorKind::AlreadyExists {
+                io::Error::new(io::ErrorKind::NotADirectory, error)
+            } else {
+                error
+            }
+        })?;
     }
-    let file = options.open(path)?;
-    #[cfg(unix)]
-    {
-        let folder = parent.unwrap_or_else(|| Path::new("."));
-        if let Ok(entry) = folder.metadata()
-            && entry.mode() & 0o011 != 0
-            && let Ok(created) = file.metadata()
-        {
-            restrict_legacy_bmps(folder, created.uid());
-        }
-    }
-    Ok(file)
-}
-
-#[cfg(unix)]
-fn restrict_legacy_bmps(folder: &Path, owner: u32) {
-    use rustix::fs::{Mode, OFlags, open};
-    use std::{io::Read, os::unix::fs::PermissionsExt};
-
-    let Ok(entries) = std::fs::read_dir(folder) else {
-        return;
-    };
-    for entry in entries.flatten() {
-        let name = entry.file_name();
-        let Some(stem) = name.to_str()
-            .and_then(|name| name.strip_prefix("oteryn-"))
-            .and_then(|name| name.strip_suffix(".bmp"))
-        else {
-            continue;
-        };
-        // Both retained BMP writers used this prefix and two or three numeric fields.
-        let mut fields = stem.split('-');
-        if !(2..=3).contains(&fields.clone().count())
-            || !fields.all(|field| {
-                !field.is_empty() && field.bytes().all(|byte| byte.is_ascii_digit())
-            })
-        {
-            continue;
-        }
-        let Ok(before) = entry.metadata() else {
-            continue;
-        };
-        if !before.is_file() || before.uid() != owner || before.nlink() != 1 || before.mode() & 0o077 == 0 {
-            continue;
-        }
-        // Check the exact open inode before changing permissions in a shared directory.
-        let Ok(fd) = open(entry.path(), OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC, Mode::empty()) else {
-            continue;
-        };
-        let mut file = File::from(fd);
-        let Ok(opened) = file.metadata() else {
-            continue;
-        };
-        let mut signature = [0; 2];
-        if opened.is_file()
-            && opened.uid() == owner
-            && opened.nlink() == 1
-            && (opened.dev(), opened.ino()) == (before.dev(), before.ino())
-            && file.read_exact(&mut signature).is_ok()
-            && &signature == b"BM"
-        {
-            let _ = file.set_permissions(std::fs::Permissions::from_mode(opened.mode() & !0o077));
-        }
-    }
+    options.open(path)
 }
 
 /// Keep the fallback private and reuse it for all captures in this process.
 #[cfg(unix)]
 fn private_capture_directory() -> io::Result<PathBuf> {
     use std::{
-        os::unix::fs::{DirBuilderExt, PermissionsExt},
+        os::unix::fs::DirBuilderExt,
         sync::Mutex,
         time::{SystemTime, UNIX_EPOCH},
     };
@@ -226,23 +183,6 @@ fn private_capture_directory() -> io::Result<PathBuf> {
     let folder =
         std::env::temp_dir().join(format!("oteryn-screenshots-{}-{stamp}", std::process::id()));
     std::fs::DirBuilder::new().mode(0o700).create(&folder)?;
-    // Legacy cleanup is best effort. The new directory already protects fresh captures.
-    if let Some(legacy) = local_app_data().map(|root| root.join("Oteryn/screenshots"))
-        && let Ok(entry) = legacy.symlink_metadata()
-        && entry.is_dir()
-        && folder.metadata().is_ok_and(|created| entry.uid() == created.uid())
-        && let Ok(opened) = File::open(legacy.join("."))
-        && let Ok(actual) = opened.metadata()
-        && (actual.dev(), actual.ino()) == (entry.dev(), entry.ino())
-    {
-        let mode = actual.mode();
-        if mode & 0o1022 != 0
-            || (mode & 0o077 != 0
-                && opened.set_permissions(std::fs::Permissions::from_mode(mode & !0o077)).is_err())
-        {
-            restrict_legacy_bmps(&legacy, entry.uid());
-        }
-    }
     *directory = Some(folder.clone());
     Ok(folder)
 }
@@ -270,3 +210,9 @@ impl SettingsState {
             .map(Some)
     }
 }
+
+#[cfg(test)]
+#[path = "screenshot_fixture.rs"]
+mod fixture;
+#[cfg(test)]
+pub(crate) use fixture::TestDir;

@@ -51,31 +51,27 @@ pub(super) fn request_audit(commands: &mut Commands, path: PathBuf) {
 }
 
 fn save_audit(image: &Image, path: &std::path::Path) -> io::Result<()> {
-    use crate::play::screenshot::create_capture_file;
+    #[cfg(not(test))]
+    use crate::play::screenshot::create_capture_file as open_audit_capture;
+    use crate::play::screenshot::retry_capture_name;
     use std::sync::atomic::{AtomicU64, Ordering};
+    #[cfg(test)]
+    use tests::open_audit_capture;
 
     static NEXT: AtomicU64 = AtomicU64::new(0);
     let image = image.clone().try_into_dynamic().map_err(io::Error::other)?;
     let format = bevy::image::ImageFormat::Png
         .as_image_crate_format()
         .ok_or_else(|| io::Error::other("PNG support is unavailable"))?;
-    let (temporary, mut file) = loop {
+    let (temporary, mut file) = retry_capture_name(|| {
         let candidate = path.with_file_name(format!(
             ".oteryn-audit-{}-{}.tmp",
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed),
         ));
-        match create_capture_file(&candidate) {
-            Ok(file) => break (candidate, file),
-            Err(error)
-                if error.kind() == io::ErrorKind::AlreadyExists
-                    && candidate.symlink_metadata().is_ok() =>
-            {
-                continue;
-            }
-            Err(error) => return Err(error),
-        }
-    };
+        let file = open_audit_capture(&candidate)?;
+        Ok((candidate, file))
+    })?;
     let result = image
         .into_rgb8()
         .write_to(&mut file, format)

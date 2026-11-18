@@ -225,10 +225,8 @@ mod merge_compatibility {
     #[test]
     fn rich_options_profiles_load_after_context_extraction()
     -> Result<(), Box<dyn std::error::Error>> {
-        let path = std::env::temp_dir().join(format!(
-            "clientgap-profile-merge-{}.json",
-            std::process::id()
-        ));
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let path = fixture.join("clientgap-profile-merge.json");
         let mut preferences = ReferencePreferences::default();
         preferences.rebind("0009-highscores-open", "ALT+H")?;
         preferences.add_hotkey_profile("Merge compatibility")?;
@@ -262,8 +260,8 @@ mod legacy_chords {
             ),
             ("action_keys", serde_json::json!({"0":"CTRL+E"}), "CTRL+E"),
         ] {
-            let path = std::env::current_dir()?
-                .join(format!("legacy-chords-{}-{field}.json", std::process::id()));
+            let fixture = crate::play::screenshot::TestDir::new()?;
+            let path = fixture.join(format!("legacy-chords-{field}.json"));
             let mut doc = serde_json::to_value(ReferencePreferences::default())?;
             doc.as_object_mut()
                 .ok_or("object")?
@@ -291,8 +289,8 @@ mod legacy_chords {
             send: false,
         };
         let utility = |action| CustomAction::Utility { action };
-        let path = std::env::current_dir()?
-            .join(format!("global-chords-upgrade-{}.json", std::process::id()));
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let path = fixture.join("global-chords-upgrade.json");
         let mut doc = serde_json::to_value(ReferencePreferences::default())?;
         let fields = doc.as_object_mut().ok_or("object")?;
         fields.remove("schema_version");
@@ -474,8 +472,8 @@ mod size_limit_tests {
     use super::*;
     #[test]
     fn oversized_writes_preserve_existing_stores() -> Result<(), Box<dyn std::error::Error>> {
-        let root = std::env::temp_dir().join(format!("preference-size-{}", std::process::id()));
-        std::fs::create_dir_all(&root)?;
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let root = fixture.path().to_path_buf();
         let path = root.join("settings.json");
         let mut store = PreferenceStore::defaults(path.clone());
         store.apply(ReferencePreferences::default())?;
@@ -542,7 +540,6 @@ mod size_limit_tests {
         );
         assert_eq!(std::fs::read(store.backup_path())?, backup_bytes);
         assert_eq!(std::fs::read(&path)?, rejected);
-        std::fs::remove_dir_all(root)?;
         Ok(())
     }
 }

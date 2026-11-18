@@ -55,7 +55,8 @@ mod tests {
     fn basic_options_groups_save_atomically_and_drive_live_consumers()
     -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(BASIC_GROUPS, ["Gameplay", "Interface", "Graphics", "Sound"]);
-        let path = std::env::temp_dir().join(format!("basic-options-{}.json", std::process::id()));
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let path = fixture.join("basic-options.json");
         let mut state = SettingsState::new(Some(path.clone()));
         let mut options = BasicOptions::from(&state.preferences);
         options.movement = MovementKeys::ArrowsAndWasd;

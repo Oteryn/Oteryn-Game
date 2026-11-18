@@ -15,8 +15,8 @@ fn click(app: &mut App, predicate: impl Fn(&Edit) -> bool) -> TestResult {
 #[test]
 fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResult {
     use bevy::{asset::AssetPlugin, input_focus::InputFocus};
-    let folder = std::env::temp_dir().join(format!("gap23-toolbar-{}", std::process::id()));
-    std::fs::create_dir_all(&folder)?;
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let folder = fixture.path().to_path_buf();
     let path = folder.join("preferences.json");
     let mut owner = HostOwner::new(Some(path.clone()))?;
     let (link, _commands, _outbox) = crate::play::play_channel();
@@ -170,6 +170,5 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
         )?;
         assert_eq!(order(app.world().non_send::<HostOwner>()), expected);
     }
-    std::fs::remove_dir_all(folder)?;
     Ok(())
 }

@@ -134,8 +134,8 @@ mod audit_tests {
     #[test]
     fn unlimited_foreground_frames_survive_store_apply_and_reload()
     -> Result<(), Box<dyn std::error::Error>> {
-        let path =
-            std::env::temp_dir().join(format!("unlimited-frame-limit-{}.json", std::process::id()));
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let path = fixture.join("unlimited-frame-limit.json");
         let mut store = super::super::PreferenceStore::defaults(path.clone());
         let mut preferences = ReferencePreferences::default();
         preferences.frames.foreground = 0;

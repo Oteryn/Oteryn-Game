@@ -164,7 +164,9 @@ fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestR
         .add_systems(Update, project);
     app.world_mut().spawn((Window::default(), PrimaryWindow));
     app.update();
-    if let Some(path) = std::env::var_os("OTERYN_BEVY_SCENE_CAPTURE") {
+    if std::env::var_os("OTERYN_BEVY_SCENE_CAPTURE").is_some() {
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let path = fixture.join("scene.png");
         let sprites = app
             .world_mut()
             .query_filtered::<(&Sprite, &Transform, &RenderLayers), With<WorldQuad>>()
@@ -188,8 +190,10 @@ fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestR
             atlas,
             sprites,
             samples.clone(),
-            path.into(),
+            path.clone(),
         )?;
+        fixture.keep();
+        println!("Scene capture saved to {}", path.display());
     }
     for (point, rgb) in &samples {
         let sprite = app

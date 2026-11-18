@@ -351,15 +351,6 @@ mod tests {
 
     type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-    fn temp(name: &str) -> PathBuf {
-        let directory = std::env::temp_dir().join(format!(
-            "oteryn-logs-{name}-{}-{:?}",
-            std::process::id(),
-            std::thread::current().id()
-        ));
-        let _ = fs::remove_dir_all(&directory);
-        directory
-    }
     fn names(directory: &Path) -> io::Result<Vec<String>> {
         let mut names: Vec<_> = fs::read_dir(directory)?
             .filter_map(Result::ok)
@@ -372,7 +363,8 @@ mod tests {
 
     #[test]
     fn the_log_file_is_created_per_utc_day_under_logs() -> TestResult {
-        let directory = temp("create").join("logs");
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let directory = fixture.join("logs");
         let file = RollingFile::new(directory.clone(), KEEP_FILES, TOTAL_CAP);
         file.write_text(SystemTime::now(), "first line\n")?;
         file.write_dated("2030-01-02", "next day\n")?;
@@ -382,13 +374,14 @@ mod tests {
             vec![today.clone(), "client-2030-01-02.log".into()]
         );
         assert_eq!(fs::read_to_string(directory.join(today))?, "first line\n");
-        fs::remove_dir_all(directory.parent().ok_or("parent")?)?;
+        fs::remove_dir_all(&directory)?;
         Ok(())
     }
 
     #[test]
     fn rotation_keeps_the_newest_seven_files() -> TestResult {
-        let directory = temp("keep");
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let directory = fixture.join("logs");
         fs::create_dir_all(&directory)?;
         for day in 1..=9 {
             fs::write(
@@ -424,7 +417,8 @@ mod tests {
             assert!(status.success());
             return Ok(());
         }
-        let directory = temp("shared");
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let directory = fixture.join("logs");
         let writers = [(); 2].map(|()| Arc::new(RollingFile::new(directory.clone(), 7, 1000)));
         let date = "2030-01-01";
         writers[0].write_dated(date, "first line\n")?;
@@ -493,7 +487,8 @@ mod tests {
 
     #[test]
     fn writable_log_directory_works_when_sibling_lock_cannot_be_created() -> TestResult {
-        let directory = temp("writable");
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let directory = fixture.join("logs");
         let logs = directory.join("logs");
         fs::create_dir_all(&logs)?;
         #[cfg(unix)]
@@ -521,7 +516,8 @@ mod tests {
 
     #[test]
     fn the_total_size_stays_under_the_cap() -> TestResult {
-        let directory = temp("cap");
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let directory = fixture.join("logs");
         fs::create_dir_all(&directory)?;
         fs::write(directory.join("client-2030-01-01.log"), vec![b'a'; 300])?;
         fs::write(directory.join("client-2030-01-02.log"), vec![b'b'; 300])?;
@@ -566,7 +562,8 @@ mod tests {
 
     #[test]
     fn formatted_lines_carry_time_level_target_thread_and_are_redacted() -> TestResult {
-        let directory = temp("format");
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let directory = fixture.join("logs");
         let file = Arc::new(RollingFile::new(directory.clone(), KEEP_FILES, TOTAL_CAP));
         let subscriber = test_subscriber(&file, "info");
         std::thread::Builder::new()
@@ -597,7 +594,8 @@ mod tests {
 
     #[test]
     fn third_party_targets_stay_at_warn_unless_named() -> TestResult {
-        let directory = temp("caps");
+        let fixture = crate::play::screenshot::TestDir::new()?;
+        let directory = fixture.join("logs");
         let file = Arc::new(RollingFile::new(directory.clone(), KEEP_FILES, TOTAL_CAP));
         for (directives, shown) in [("debug", false), ("debug,hyper=debug", true)] {
             tracing::subscriber::with_default(test_subscriber(&file, directives), || {

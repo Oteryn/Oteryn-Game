@@ -1,27 +1,9 @@
 use super::*;
-use std::sync::atomic::{AtomicU64, Ordering};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-static NEXT: AtomicU64 = AtomicU64::new(0);
-struct Temp(PathBuf);
-impl Temp {
-    fn new() -> std::io::Result<Self> {
-        let path = std::env::temp_dir().join(format!(
-            "bevy-login-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&path)?;
-        Ok(Self(path))
-    }
-}
-impl Drop for Temp {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
+use crate::play::screenshot::TestDir as Temp;
 fn settings(temp: &Temp) -> Result<LoginSettings, Box<dyn std::error::Error>> {
     let certificate = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
-    let path = temp.0.join("root.der");
+    let path = temp.join("root.der");
     std::fs::write(&path, certificate.cert.der())?;
     Ok(LoginSettings {
         platform_url: "http://127.0.0.1:18564".into(),
@@ -46,7 +28,7 @@ fn shared_login_request_exposes_form_on_every_native_platform() -> TestResult {
 #[test]
 fn malformed_login_settings_and_invalid_submit_remain_visible_without_admission() -> TestResult {
     let temp = Temp::new()?;
-    let path = temp.0.join("login.json");
+    let path = temp.join("login.json");
     std::fs::write(&path, b"not-json")?;
     let mut host = HostOwner::new(None)?;
     host.configure_login(Some(path.clone()), |_| None);
@@ -62,7 +44,7 @@ fn malformed_login_settings_and_invalid_submit_remain_visible_without_admission(
 #[test]
 fn existing_login_owner_saves_public_configuration_and_rejects_blocked_save() -> TestResult {
     let temp = Temp::new()?;
-    let path = temp.0.join("login.json");
+    let path = temp.join("login.json");
     let mut state = LoginState::default();
     state.load(Some(path.clone()), |_| None);
     state.form.settings = settings(&temp)?;
@@ -87,7 +69,7 @@ fn text_input_values_and_native_activate_reach_existing_validation() -> TestResu
     use bevy::asset::AssetPlugin;
     let temp = Temp::new()?;
     let mut host = HostOwner::new(None)?;
-    host.configure_login(Some(temp.0.join("login.json")), |_| None);
+    host.configure_login(Some(temp.join("login.json")), |_| None);
     host.request_login();
     let mut app = App::new();
     app.add_plugins((
@@ -127,7 +109,7 @@ fn text_input_values_and_native_activate_reach_existing_validation() -> TestResu
         host.login.form.settings.platform_url,
         "https://example.invalid?token=refused"
     );
-    assert!(!temp.0.join("login.json").exists());
+    assert!(!temp.join("login.json").exists());
     Ok(())
 }
 #[test]

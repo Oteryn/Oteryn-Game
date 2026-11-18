@@ -196,7 +196,8 @@ fn o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals()
 #[test]
 fn o037_shortcut_panel_collapse_and_order_survive_restart() -> Result<(), Box<dyn std::error::Error>>
 {
-    let path = std::env::temp_dir().join(format!("cg-mainpanel-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cg-mainpanel.json");
     let mut state = crate::play::SettingsState::new(Some(path.clone()));
     let mut json = serde_json::to_value(&state.preferences)?;
     json["shortcuts_collapsed"] = serde_json::json!(true);

@@ -79,7 +79,8 @@ fn named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate()
             .is_err()
     );
     assert_eq!(preferences, unchanged);
-    let path = std::env::temp_dir().join(format!("clientgap-profiles-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("clientgap-profiles.json");
     let mut store = PreferenceStore::defaults(path.clone());
     store.apply(preferences.clone())?;
     assert_eq!(
@@ -114,8 +115,8 @@ fn named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate()
 fn admitted_character_preferences_are_isolated_and_reloaded()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::SettingsState;
-    let root = std::env::temp_dir().join(format!("clientgap-scope-{}", std::process::id()));
-    std::fs::create_dir_all(&root)?;
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let path = root.join("preferences.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let global = settings.preferences.clone();
@@ -151,7 +152,6 @@ fn admitted_character_preferences_are_isolated_and_reloaded()
     recovered.reset_defaults()?;
     recovered.restore_backup()?;
     assert_eq!(recovered.preferences, changed);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 #[path = "custom_hotkeys.rs"]
@@ -179,8 +179,8 @@ mod screenshots;
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>
 {
     use crate::play::{PreferenceStore, ReferencePreferences, SettingsState};
-    let root = std::env::temp_dir().join(format!("clientgap-transfer-{}", std::process::id()));
-    std::fs::create_dir_all(&root)?;
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let path = root.join("settings.json");
     let export = root.join("export.json");
     let mut state = SettingsState::new(Some(path.clone()));
@@ -214,7 +214,6 @@ fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn
     assert!(state.reset_defaults().is_err());
     assert_eq!(state.preferences, changed);
     assert_eq!(std::fs::read(&path)?, before);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -265,7 +264,8 @@ fn settings_rebind_conflicts_routes_and_survives_restart() -> Result<(), Box<dyn
 {
     use crate::play::{PreferenceStore, preference_bindings};
     use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
-    let path = std::env::temp_dir().join(format!("oteryn-c25-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("oteryn-c25.json");
     let _ = std::fs::remove_file(&path);
     let mut store = PreferenceStore::load(path.clone())?;
     let bindings = preference_bindings()?;
@@ -330,7 +330,8 @@ fn every_registered_binding_conflicts_and_invalid_saves_leave_preferences_unchan
             .rebind("0009-highscores-open", "CTRL+CTRL+H")
             .is_err()
     );
-    let path = std::env::temp_dir().join(format!("oteryn-c25-invalid-{}", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("oteryn-c25-invalid");
     let _ = std::fs::remove_file(&path);
     let mut store = PreferenceStore::load(path.clone())?;
     preferences.ui_scale = 181;
