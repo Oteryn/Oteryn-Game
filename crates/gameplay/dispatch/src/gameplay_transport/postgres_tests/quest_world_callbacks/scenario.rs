@@ -366,6 +366,8 @@ fn scenario_case(
     let board_portal = matches!(name, dreamers_board_portal::READY | dreamers_board_portal::MISSING);
     use super::super::dreamers_color_grid;
     let color_grid = dreamers_color_grid::matches(name);
+    use super::super::dreamers_knightwatch_toll;
+    let knightwatch = matches!(name, dreamers_knightwatch_toll::NIGHTMARE | dreamers_knightwatch_toll::BROTHERHOOD);
     use super::super::dreamers_stone_exit;
     let stone_exit = name == dreamers_stone_exit::NAME;
     use super::super::zarganash_linked_boss;
@@ -374,6 +376,8 @@ fn scenario_case(
         zarganash_linked_boss::binding()?
     } else if feaster_solo {
         feaster_solo_rooms::binding(name)?
+    } else if knightwatch {
+        dreamers_knightwatch_toll::binding()?
     } else if board_exit {
         dreamers_board_exit::binding()?
     } else if board_portal {
@@ -690,6 +694,8 @@ fn scenario_case(
         zarganash_linked_boss::world(&callback)?
     } else if feaster_solo {
         feaster_solo_rooms::world(&callback, name)?
+    } else if knightwatch {
+        dreamers_knightwatch_toll::world(&callback)?
     } else if board_exit {
         dreamers_board_exit::world(&callback)?
     } else if board_portal {
@@ -1747,6 +1753,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if knightwatch {
+            owner.quest_catalogue = Some(dreamers_knightwatch_toll::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback, name,
+            )?);
+        }
         if feaster_solo {
             owner.quest_catalogue = Some(feaster_solo_rooms::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback,
@@ -2981,6 +2992,8 @@ fn scenario_case(
             Box::pin(zarganash_linked_boss::exercise(&mut owner, &mut admitted)).await?;
         } else if feaster_solo {
             Box::pin(feaster_solo_rooms::exercise(&mut owner, &mut admitted, &h, fence, name)).await?;
+        } else if knightwatch {
+            Box::pin(dreamers_knightwatch_toll::exercise(&owner, &mut admitted, &h, fence, &callback)).await?;
         } else if board_exit {
             Box::pin(dreamers_board_exit::exercise(
                 &owner, &mut admitted, &h, fence, &callback,
