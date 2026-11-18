@@ -152,6 +152,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
+        if callback.effects.reset_appearance.is_some()
+            && callback.selector.appearance != Some(after.appearance_id)
+        {
+            return UseDisposition::NothingToUse;
+        }
         if goblin_elevator::owns(&callback.key) {
             if callback.selector.appearance != Some(after.appearance_id) {
                 return UseDisposition::NothingToUse;

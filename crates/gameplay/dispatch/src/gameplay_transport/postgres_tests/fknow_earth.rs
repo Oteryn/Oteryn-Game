@@ -100,7 +100,8 @@ pub(super) async fn exercise(
         let reply = quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
         assert_eq!(
             oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-            UseDisposition::Committed
+            UseDisposition::Committed,
+            "birch stage at placement revision {revision}"
         );
         assert_eq!(appearance()?, placed);
     }

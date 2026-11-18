@@ -88,7 +88,7 @@ pub struct CallbackEffects {
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
-    /// Return a staged transformation to its declared resting appearance.
+    /// Match the live stage appearance and restore the declared resting appearance.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_appearance: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -649,6 +649,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
             appearance == 0
                 || effects.reset_after_ms.is_none()
                 || effects.transform.is_none()
+                || callback
+                    .selector
+                    .appearance
+                    .is_none_or(|source| source == 0)
                 || effects.transform == Some(appearance)
                 || callback.trigger != Trigger::Use
                 || callback.reversible

@@ -250,6 +250,25 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    let timed_stage = callback.effects.reset_appearance.is_some();
+    if timed_stage {
+        let live_appearance = map
+            .overlay
+            .base()
+            .tile(pos.x, pos.y, pos.floor)
+            .and_then(|tile| {
+                tile.ids()
+                    .iter()
+                    .zip(tile.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .nth(usize::from(ordinal))
+            })
+            .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
+            .map(|facts| facts.appearance_id);
+        if live_appearance.is_none() || live_appearance != callback.selector.appearance {
+            return false;
+        }
+    }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
     let source_ordinal = match callback.key.as_str() {
@@ -377,7 +396,16 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                     .nth(usize::from(ordinal))
                     .map(|(id, _)| *id)
             })
-            .is_some_and(|id| map.facts.quest_callback_native_object(key, id, appearance))
+            .is_some_and(|id| {
+                let original = if timed_stage {
+                    map.facts.quest_callback_base_appearance(pos, ordinal, id)
+                } else {
+                    Some(appearance)
+                };
+                original.is_some_and(|appearance| {
+                    map.facts.quest_callback_native_object(key, id, appearance)
+                })
+            })
     {
         // An authored ordinal alias describes a bare native object. Retained
         // UID/AID bindings keep their existing source owner, including chests.
@@ -401,9 +429,10 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         && map
             .facts
             .quest_callback_matches(key, selector.unique, selector.action, None)
-        && (map
-            .facts
-            .quest_callback_matches(key, None, None, selector.appearance)
+        && (timed_stage
+            || map
+                .facts
+                .quest_callback_matches(key, None, None, selector.appearance)
             || ((selector.position.is_some()
                 || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE
                 || oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key)
