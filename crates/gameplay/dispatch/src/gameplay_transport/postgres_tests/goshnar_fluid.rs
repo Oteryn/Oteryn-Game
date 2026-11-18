@@ -15,7 +15,7 @@ const DESTINATION: Position = Position { x: 104, y: 100, ..TARGET };
 const VIAL: &str = "oteryn:item.tibia.i2874";
 
 #[test]
-fn goshnar_blood_use_with_moves_two_staged_players_and_empties_one_vial() -> TestResult {
+fn goshnar_blood_use_with_checks_world_policy_then_moves_two_staged_players() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
@@ -45,24 +45,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     assert!(owner.states.quest_callbacks.fixture.set(vec![callback(TARGET)?]).is_ok());
-    sqlx::query(
-        "INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')"
-    ).bind(id(42).as_slice()).execute(&h.pool).await?;
-    sqlx::query(
-        "INSERT INTO game_spell_field_world_policies
-         (world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity)
-         VALUES(encode($1,'hex')::uuid,'policy-1',1,8,60000,'99902524e052f37574194466c2949c576e4ab269',
-                session_user,'goshnar-optional-pvp-fixture')",
-    ).bind(id(42).as_slice()).execute(&h.pool).await?;
     let session = admitted.game_session_id;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let fence = owner.current_quest_fence(session).await
         .map_err(|()| "fence")?.ok_or("fence")?;
     let staging = super::quest_world_callbacks::local(STAGING);
     assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), staging);
-    let (member, member_session) = super::classic_quests::install_peer(
-        owner, h, authority, *admitted, staging,
-    ).await?;
     super::quest_world_callbacks::input_item(
         owner, fence.item_fence(),
         &Offering { position:TARGET,item:VIAL.into(),count:1 },
@@ -95,6 +83,28 @@ pub(super) async fn exercise(
         })),
         use_with_position:None,
     }).map_err(debug)?;
+    let (next, disposition, _) = super::item_craft::exchange(
+        owner,*admitted,admitted.continuity.next_command_id,&payload,Some(reference)
+    ).await?;
+    *admitted=next;
+    assert_eq!(disposition, UseDisposition::Rejected);
+    assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), staging);
+    let filled: i16 = sqlx::query_scalar("SELECT fluid_subtype FROM game_item_fluid_states")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(filled, 5);
+
+    sqlx::query(
+        "INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')"
+    ).bind(id(42).as_slice()).execute(&h.pool).await?;
+    sqlx::query(
+        "INSERT INTO game_spell_field_world_policies
+         (world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity)
+         VALUES(encode($1,'hex')::uuid,'policy-1',1,8,60000,'99902524e052f37574194466c2949c576e4ab269',
+                session_user,'goshnar-optional-pvp-fixture')",
+    ).bind(id(42).as_slice()).execute(&h.pool).await?;
+    let (member, member_session) = super::classic_quests::install_peer(
+        owner, h, authority, *admitted, staging,
+    ).await?;
     let (next, disposition, _) = super::item_craft::exchange(
         owner,*admitted,admitted.continuity.next_command_id,&payload,Some(reference)
     ).await?;

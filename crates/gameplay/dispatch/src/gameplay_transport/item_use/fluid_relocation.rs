@@ -34,13 +34,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let session = command.game_session_id;
         use oteryn_gameplay_combat_rules::pvp::WorldPvpType;
         use oteryn_protocol_oteryn::pvp_expert::ExpertMode;
-        let world = {
+        let policy = {
             let runtime = self.runtime.lock().await;
             self.expert_context(&runtime, actor, session, command.command_id, &permit)
                 .await
-                .map(|(world, _)| world)
         };
-        let optional_pvp = world.map(|world| world == WorldPvpType::Optional);
+        let Some((world, _)) = policy else {
+            return UseDisposition::Rejected;
+        };
+        let optional_pvp = Some(world == WorldPvpType::Optional);
         let staging = MovementLocalPosition {
             x: i32::from(target.x) + i32::from(relocation.staging_dx),
             y: i32::from(target.y) + i32::from(relocation.staging_dy),
@@ -98,8 +100,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Fandom archive The_Pits_of_Inferno_Quest/Spoiler, Goshnar:
             // Optional PvP and Dove in Open PvP can share the landing.
             let stack = match world {
-                Some(WorldPvpType::Optional) => true,
-                Some(WorldPvpType::Open) => {
+                WorldPvpType::Optional => true,
+                WorldPvpType::Open => {
                     let Ok(attack) = self.states.attack.try_lock() else {
                         return UseDisposition::Rejected;
                     };
@@ -107,7 +109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         attack.expert_modes(*who, *member).expert == ExpertMode::Dove
                     })
                 }
-                Some(WorldPvpType::Hardcore) | None => false,
+                WorldPvpType::Hardcore => false,
             };
             if movers.len() > 1 && !stack {
                 return UseDisposition::NotPossible;
