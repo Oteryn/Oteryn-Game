@@ -1681,12 +1681,16 @@ pub(super) struct CallbackPortals<'a> {
     pub inner: &'a dyn crate::map::floor::CellBlocker,
     pub map: Option<&'a BundleMap>,
     pub callbacks: &'a [Callback],
+    pub deferred_native_teleport: Option<crate::content::LogicalCell>,
 }
 impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
     fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
         self.inner.blocks(cell)
     }
     fn suppresses_native_teleport(&self, cell: crate::content::LogicalCell) -> bool {
+        if self.deferred_native_teleport == Some(cell) {
+            return true;
+        }
         let Some(map) = self.map else {
             return false;
         };

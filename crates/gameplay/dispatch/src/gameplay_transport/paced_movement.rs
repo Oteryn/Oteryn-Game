@@ -230,6 +230,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             inner: &pvp_blocking,
             map: self.bundle_map(),
             callbacks: self.callback_content(),
+            deferred_native_teleport: super::soul_war_world::deferred_teleport_cell(self, &runtime),
         };
         let blocking: &dyn crate::map::floor::CellBlocker = &callback_portals;
         let equipped_speed_delta = equipment

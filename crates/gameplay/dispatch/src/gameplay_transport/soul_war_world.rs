@@ -1,9 +1,13 @@
 //! Literal Soul War World triggers after the canonical physical STEP commits.
 use super::ComposedFreshAdmission;
+use crate::content::LogicalCell;
 use crate::durability::raid_schedule::ClaustrophobicRaidStart;
-use crate::foundation::{ExactActorRef, GameSessionId, MovementPositionSnapshot};
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
+};
 use crate::map::boot::BundleCollisionIndexExt;
 use oteryn_gameplay_encounter_rules::raid::source_claustrophobic::{Position, Raid, spec};
+use oteryn_gameplay_quests::quest::soul_war::{ALL_MINI_BOSSES, MINIMUM_LEVEL, SoulWarBoss};
 use sha2::{Digest, Sha256};
 
 pub(super) async fn committed_step(
@@ -130,9 +134,47 @@ async fn committed_raid_step(
     }
 }
 
+// Crystal 201189f moveevent-soul_war_entrances.lua:87.
+const MEGALOMANIA_GATE: [i32; 3] = [33611, 31430, 10];
+
+fn quest_portal_context<'a>(
+    owner: &'a ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+) -> Option<(
+    &'a crate::content::QualifiedNativeEntryRoom,
+    crate::content::QualifiedPublishedWorldContext,
+)> {
+    if !matches!(
+        runtime.binding().runtime_scope(),
+        crate::foundation::RuntimeScopeRefV1::Channel { .. }
+    ) {
+        return None;
+    }
+    let room = owner.rooms().gate_monster_ai()?;
+    let context = owner
+        .active_generation?
+        .qualify_published_world_context(room, runtime.content_pin())?;
+    Some((room, context))
+}
+
+/// Let the gate's StepIn see the source tile before following its map teleport.
+pub(super) fn deferred_teleport_cell(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+) -> Option<LogicalCell> {
+    let (_, context) = quest_portal_context(owner, runtime)?;
+    let (x, y, floor) = context.source_frame().physical_position(MEGALOMANIA_GATE)?;
+    Some(LogicalCell {
+        x,
+        y,
+        z: i32::from(floor),
+    })
+}
+
 #[derive(Clone, Copy)]
 enum QuestPortal {
     Hunt([i32; 3]),
+    MegalomaniaGate,
     RewardRoom,
 }
 
@@ -141,6 +183,7 @@ impl QuestPortal {
         // Crystal 201189f moveevent-soul_war_entrances.lua:1-49 and
         // moveevent-teleport_entrance_reward.lua:9-22.
         Some(match position {
+            MEGALOMANIA_GATE => Self::MegalomaniaGate,
             [33615, 31422, 10] => Self::Hunt([34009, 31014, 9]),
             [33618, 31422, 10] => Self::Hunt([33972, 31041, 11]),
             [33621, 31416, 10] => Self::RewardRoom,
@@ -160,14 +203,9 @@ async fn quest_portal(
     origin: MovementPositionSnapshot,
     committed: MovementPositionSnapshot,
 ) -> Option<MovementPositionSnapshot> {
-    let room = owner.rooms().gate_monster_ai()?;
-    let active = owner.active_generation?;
     let runtime = owner.runtime.lock().await;
-    let context = active.qualify_published_world_context(room, runtime.content_pin())?;
-    if !matches!(
-        runtime.binding().runtime_scope(),
-        crate::foundation::RuntimeScopeRefV1::Channel { .. }
-    ) || runtime.read_actor_position(actor) != Ok(committed)
+    let (room, context) = quest_portal_context(owner, &runtime)?;
+    if runtime.read_actor_position(actor) != Ok(committed)
         || runtime.player_control_facts(actor, session).is_err()
     {
         return None;
@@ -207,7 +245,8 @@ async fn quest_portal(
     let Some(player) = states.get(&runtime, actor, session) else {
         return Some(committed);
     };
-    let (destination, message) = match portal {
+    let level = player.character_facts().level;
+    let (destination, message, scripted) = match portal {
         QuestPortal::Hunt(destination) => {
             let message = if player.character_facts().level < 250 {
                 Some("You need level 250 to enter here.")
@@ -216,22 +255,65 @@ async fn quest_portal(
             } else {
                 None
             };
-            (destination, message)
+            (Some(destination), message.map(String::from), true)
+        }
+        QuestPortal::MegalomaniaGate => {
+            // Crystal 201189f moveevent-soul_war_entrances.lua:60-85.
+            let message = if level < MINIMUM_LEVEL {
+                Some("You are not allowed to enter here.".into())
+            } else if state.defeated_bosses != ALL_MINI_BOSSES {
+                let mut message = String::from("You still need to defeat:");
+                for (boss, name) in [
+                    (SoulWarBoss::Cruelty, "\nGoshnar's Cruelty"),
+                    (SoulWarBoss::Greed, "\nGoshnar's Greed"),
+                    (SoulWarBoss::Hatred, "\nGoshnar's Hatred"),
+                    (SoulWarBoss::Malice, "\nGoshnar's Malice"),
+                    (SoulWarBoss::Spite, "\nGoshnar's Spite"),
+                ] {
+                    if state.defeated_bosses & boss.bit() == 0 {
+                        message.push_str(name);
+                    }
+                }
+                Some(message)
+            } else {
+                None
+            };
+            (None, message, false)
         }
         QuestPortal::RewardRoom => (
-            [33621, 31411, 10],
-            (!state.completed()).then_some(
-                "Only warriors who defeated Goshnar's Megalomania can access this area.",
-            ),
+            Some([33621, 31411, 10]),
+            (!state.completed()).then(|| {
+                "Only warriors who defeated Goshnar's Megalomania can access this area.".into()
+            }),
+            true,
         ),
     };
     let destination = if message.is_some() {
         origin.position()
-    } else {
+    } else if let Some(destination) = destination {
         let Some((x, y, floor)) = frame.physical_position(destination) else {
             return Some(committed);
         };
-        crate::foundation::MovementLocalPosition { x, y, floor }
+        MovementLocalPosition { x, y, floor }
+    } else {
+        let Ok(cell) = crate::map::floor::resolve_teleport_arrival(
+            owner.movement_cells(),
+            LogicalCell {
+                x: at.x,
+                y: at.y,
+                z: i32::from(at.floor),
+            },
+        ) else {
+            return Some(committed);
+        };
+        let Ok(floor) = i16::try_from(cell.z) else {
+            return Some(committed);
+        };
+        MovementLocalPosition {
+            x: cell.x,
+            y: cell.y,
+            floor,
+        }
     };
     let Some(map) = owner.bundle_map() else {
         return Some(committed);
@@ -248,17 +330,18 @@ async fn quest_portal(
         blocked,
         &closed,
         committed.facing(),
-        true,
+        scripted || message.is_some(),
     ) else {
         return Some(committed);
     };
     let Ok(arrival) = runtime.commit_source_step(proof) else {
         return Some(committed);
     };
+    let accepted = message.is_none();
     if let Some(message) = message {
         owner.states.server_messages.send_current(
             session,
-            oteryn_protocol_oteryn::zones_nologout::ServerMessage::Advance(message.into()),
+            oteryn_protocol_oteryn::zones_nologout::ServerMessage::Advance(message),
         );
     }
     // Convert the current physical frame to the map's negative source floor.
@@ -271,13 +354,18 @@ async fn quest_portal(
                 .emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, 11);
         }
     };
-    if matches!(portal, QuestPortal::Hunt(_)) {
-        if message.is_none() {
-            effect(origin.position());
+    match portal {
+        QuestPortal::Hunt(_) => {
+            if accepted {
+                effect(origin.position());
+            }
+            effect(destination);
         }
-        effect(destination);
-    } else if message.is_none() {
-        effect(destination);
+        QuestPortal::MegalomaniaGate if level < MINIMUM_LEVEL => {
+            effect(destination);
+        }
+        QuestPortal::RewardRoom if accepted => effect(destination),
+        _ => {}
     }
     Some(arrival)
 }
