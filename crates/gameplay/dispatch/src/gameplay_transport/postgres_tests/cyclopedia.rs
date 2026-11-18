@@ -44,6 +44,33 @@ fn visible_points(points: &[Point], at: Point) -> u8 {
         }
     })
 }
+
+async fn move_fixture_actor(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    target: MovementLocalPosition,
+) -> TestResult {
+    let mut runtime = owner.runtime.lock().await;
+    let mut movement = runtime.borrow_movement_position();
+    let mut current = movement.read(deps.actor).map_err(debug)?;
+    while current.position() != target {
+        let at = current.position();
+        let next = if at.x != target.x {
+            MovementLocalPosition {
+                x: at.x + (target.x - at.x).signum(),
+                ..at
+            }
+        } else {
+            MovementLocalPosition {
+                y: at.y + (target.y - at.y).signum(),
+                ..at
+            }
+        };
+        current = movement.commit_cardinal(current, next).map_err(debug)?;
+    }
+    Ok(())
+}
+
 #[test]
 fn cyclopedia_postgres_real_dispatch() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -824,20 +851,30 @@ fn scenario(canonical: bool) -> TestResult {
                 "native 60-second home delay gets the persisted factor two"
             );
         }
-        sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,3,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=2").execute(&h.pool).await?;
-        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=3")
-            .execute(&h.pool)
+        // The removed draw yielded 6/100 on day five for fixture World id(42).
+        // Day four is also unfunded, so prior-winner exclusion could not mask a random boost.
+        for unfunded_epoch in 3..=5_i64 {
+            sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,$1::bigint,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=$1::bigint-1")
+                .bind(unfunded_epoch).execute(&h.pool).await?;
+            sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$1::bigint")
+                .bind(unfunded_epoch)
+                .execute(&h.pool)
+                .await?;
+            owner.reset_epoch = u64::try_from(unfunded_epoch)?;
+            let query_id = admitted.continuity.next_command_id;
+            let (status, unfunded) =
+                support::exchange(&owner, &mut admitted, query_id, 72, &[]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(unfunded[28], 1, "unfunded epoch {unfunded_epoch}");
+            assert_eq!(pool(&unfunded), 5_000_001);
+            let (improved, winner): (bool, bool) = sqlx::query_as(
+                "SELECT improved,donation_winner FROM game_world_cyclopedia_epochs WHERE epoch=$1::bigint AND area_id=1",
+            )
+            .bind(unfunded_epoch)
+            .fetch_one(&h.pool)
             .await?;
-        owner.reset_epoch = 3;
-        let (_, epoch_three) = support::exchange(&owner, &mut admitted, 22, 72, &[]).await?;
-        assert_eq!(epoch_three[28], 1);
-        assert_eq!(pool(&epoch_three), 5_000_001);
-        let (improved, winner): (bool, bool) = sqlx::query_as(
-            "SELECT improved,donation_winner FROM game_world_cyclopedia_epochs WHERE epoch=3",
-        )
-        .fetch_one(&h.pool)
-        .await?;
-        assert_eq!((improved, winner), (false, false));
+            assert_eq!((improved, winner), (false, false));
+        }
         let reset_id = admitted.continuity.next_command_id;
         let (_, reset_pois) =
             support::exchange(&owner, &mut admitted, reset_id, 73, &request(2, 0)).await?;
@@ -870,6 +907,35 @@ fn scenario(canonical: bool) -> TestResult {
             .exploration
             .ok_or("reset exploration")?
             .points;
+        // From the one-tile generation margin, the query may show only the real viewport.
+        let edge = points.first().ok_or("reset POI")?;
+        let at = Point {
+            x: edge.x + if edge.x <= 23 { 8 } else { -8 },
+            ..*edge
+        };
+        move_fixture_actor(
+            &owner,
+            &deps,
+            MovementLocalPosition {
+                x: at.x,
+                y: at.y,
+                floor: -at.floor,
+            },
+        )
+        .await?;
+        let query_id = admitted.continuity.next_command_id;
+        let (status, view) = support::exchange(&owner, &mut admitted, query_id, 72, &[]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(view[0], 0);
+        assert_eq!(
+            count(&view), 0,
+            "query projects POIs without discovering them"
+        );
+        assert_eq!(
+            u32::from(view[29]),
+            visible_points(&points, at).count_ones(),
+            "the generation margin does not extend the discovery viewport"
+        );
         // Movement consumes the admitted equipment owner, unlike map-only requests.
         sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
@@ -898,31 +964,16 @@ fn scenario(canonical: bool) -> TestResult {
             } else {
                 (-1, StepDirection::East)
             };
-            {
-                let mut runtime = owner.runtime.lock().await;
-                let mut movement = runtime.borrow_movement_position();
-                let mut current = movement.read(deps.actor).map_err(debug)?;
-                let target = MovementLocalPosition {
+            move_fixture_actor(
+                &owner,
+                &deps,
+                MovementLocalPosition {
                     x: point.x + 2 * offset,
                     y: point.y,
                     floor: -point.floor,
-                };
-                while current.position() != target {
-                    let at = current.position();
-                    let next = if at.x != target.x {
-                        MovementLocalPosition {
-                            x: at.x + (target.x - at.x).signum(),
-                            ..at
-                        }
-                    } else {
-                        MovementLocalPosition {
-                            y: at.y + (target.y - at.y).signum(),
-                            ..at
-                        }
-                    };
-                    current = movement.commit_cardinal(current, next).map_err(debug)?;
-                }
-            }
+                },
+            )
+            .await?;
             owner.clock_origin -= std::time::Duration::from_secs(2);
             // Each exchange closes its socket; the next admission restores movement state.
             deps.initialize(&owner).await;

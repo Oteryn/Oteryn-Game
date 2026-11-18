@@ -29,8 +29,13 @@ impl Point {
     const VIEW_X: u32 = 7;
     const VIEW_Y: u32 = 5;
 
-    pub fn in_window(self, at: Self) -> bool {
+    // Keep newly generated POIs one tile beyond the viewport.
+    fn in_window(self, at: Self) -> bool {
         self.within_view(at, 1)
+    }
+
+    pub fn in_viewport(self, at: Self) -> bool {
+        self.within_view(at, 0)
     }
 
     fn within_view(self, at: Self, margin: u32) -> bool {
@@ -198,7 +203,7 @@ impl BasicArea {
                 };
                 let before = exploration.found;
                 for (index, point) in exploration.points.iter().enumerate() {
-                    if point.within_view(at, 0) {
+                    if point.in_viewport(at) {
                         exploration.found |= 1 << index;
                     }
                 }

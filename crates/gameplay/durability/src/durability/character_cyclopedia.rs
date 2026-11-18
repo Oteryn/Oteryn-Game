@@ -150,7 +150,7 @@ fn projection(
             e.points
                 .iter()
                 .enumerate()
-                .filter(|(i, p)| e.found & (1 << i) == 0 && p.in_window(request.at))
+                .filter(|(i, p)| e.found & (1 << i) == 0 && p.in_viewport(request.at))
                 .map(|(_, p)| {
                     Ok((
                         u16::try_from(p.x).map_err(|_| DurabilityError::InvalidStoredState)?,
