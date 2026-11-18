@@ -15,8 +15,8 @@ pub const SOURCE_SPAWN_AREA: [[i32; 3]; 2] = [[33637, 32516, 5], [33664, 32537, 
 pub const SOURCE_SPECTATOR_AREA: [[i32; 3]; 2] = [[33637, 32516, 5], [33663, 32538, 5]];
 
 /// Bind the donor's inclusive draw to the persisted command occurrence.
-pub fn successful_use(seed: [u8; 32], occurrence: [u8; 16]) -> Result<bool, RaidError> {
-    Ok(RaidRandom::new(seed, occurrence).amount(4, 0, 0, 10_000)? >= 7_000)
+pub fn successful_use(seed: [u8; 32], session: [u8; 16], command: u64) -> Result<bool, RaidError> {
+    Ok(RaidRandom::new(seed, session).below("silencer-chamber", command, 10_001)? >= 7_000)
 }
 
 pub fn select(
@@ -83,14 +83,15 @@ mod tests {
         let from = RaidPosition {
             x: 10,
             y: 20,
-            floor: -5,
+            floor: 5,
         };
         let to = RaidPosition {
             x: 37,
             y: 41,
-            floor: -5,
+            floor: 5,
         };
         let raid = select([1; 32], [2; 16], from, to)?;
+        assert_eq!(raid.definition.waves.len(), 4);
         for (wave, (delay, range)) in raid.definition.waves.iter().zip([
             (60_000, 8..=15),
             (120_000, 11..=18),

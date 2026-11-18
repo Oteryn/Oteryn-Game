@@ -89,7 +89,7 @@ impl DurabilityRoot {
                 Err(ItemUseError::Unavailable(error)) => return Err(error),
                 Err(error) => return Ok(Err(error)),
             };
-            let fired = successful_use(plateau.bundle_digest, request.transaction_id)
+            let fired = successful_use(plateau.bundle_digest, *fence.game_session_id.as_bytes(), request.command_id)
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
             if fired {
                 let key = crate::content::ProductionKey::new(RAID_KEY)

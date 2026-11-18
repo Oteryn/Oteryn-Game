@@ -51,7 +51,7 @@ impl RaidRandom {
         }
     }
 
-    fn below(&self, purpose: &str, index: u64, bound: u64) -> Result<u64, RaidError> {
+    pub(super) fn below(&self, purpose: &str, index: u64, bound: u64) -> Result<u64, RaidError> {
         if bound == 0 {
             return Err(RaidError::InvalidDefinition);
         }
