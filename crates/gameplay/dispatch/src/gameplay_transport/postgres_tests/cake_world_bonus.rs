@@ -70,16 +70,28 @@ pub(super) async fn assert_regeneration(
                 break;
             }
             let due = started_at + u64::from(interval) * 1_000;
+            let scheduled = {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                states
+                    .get(&runtime, actor, session)
+                    .and_then(|state| state.owned_conditions().get(ConflictKey::Recovery))
+                    .cloned()
+                    .ok_or("scheduled Cake pulse")?
+            };
             owner
                 .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(due - 1))
                 .await;
             let before = {
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
-                states
-                    .get(&runtime, actor, session)
-                    .ok_or("cake player state")?
-                    .vitals()
+                let state = states.get(&runtime, actor, session).ok_or("cake player state")?;
+                assert_eq!(
+                    state.owned_conditions().get(ConflictKey::Recovery),
+                    Some(&scheduled),
+                    "Cake regeneration must leave the pulse pending until its deadline"
+                );
+                state.vitals()
             };
             let (_, after) = owner
                 .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(due))
