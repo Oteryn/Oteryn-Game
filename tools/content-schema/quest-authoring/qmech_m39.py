@@ -95,7 +95,7 @@ def append(add, callbacks, offers, declarations, inputs, pin):
     # TibiaWiki quest reward and Phantom Army report, with Crystal's item identity.
     add('l2-zalamon-phantom-army', 'children_of_the_revolution_quest', 'zalamon', ['mission'],
         [state(child+'questline',20,21),state(child+'mission05',-1,3,maximum=3)], give=(10199,1))
-    callbacks[-1].update(experience=10000, requires_premium=True, reply=[
+    callbacks[-1].update(experience=10000, completes=True, requires_premium=True, reply=[
         "Too clozze, far too clozze. I felt a huge impact not long after you left. Zze war machinery of zze emperor muzzt finally have been zztarted. ...",
         "I focuzzed and could only hope zzat I would reach you before everyzzing wazz too late. If I hadn't been able to tranzzport you here, our cauzze would have been lozzt. ...",
         "I'm afraid we cannot continue zzizz fight here today. Zze rezzizztanzze izz zztill fragile. I'm afraid, zzere izz zztill much left to do. We'll have to prepare for war. ...",

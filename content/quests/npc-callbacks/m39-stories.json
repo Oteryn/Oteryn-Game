@@ -915,6 +915,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:150-162"
       ],
       "experience": 10000,
+      "completes": true,
       "requires_premium": true
     },
     {
