@@ -380,6 +380,11 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
         drop(objects);
         let mut states = owner.states.spell_states.lock().await;
         for actor in &actors {
+            // First town entry admits only the nearby rat. Faraway spawn
+            // points still enter the profile pass's full field census.
+            if logout && *actor != rat {
+                continue;
+            }
             let policy = runtime
                 .companion_snapshot(*actor)
                 .map_err(debug)?
