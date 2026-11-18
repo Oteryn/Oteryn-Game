@@ -20,6 +20,8 @@ mod foreground;
 mod holder_queue;
 #[cfg(any(test, feature = "test-support"))]
 mod quest_clock;
+#[cfg(any(test, feature = "test-support"))]
+pub(crate) use quest_clock::read_fixture_unix_seconds;
 mod ready_admission;
 
 use foreground::HolderPriority;

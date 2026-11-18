@@ -9,6 +9,10 @@ pub(super) fn new() -> Arc<AtomicI64> {
     Arc::new(AtomicI64::new(i64::MIN))
 }
 
+pub(crate) fn read_fixture_unix_seconds(clock: Option<&AtomicI64>) -> Option<i64> {
+    clock.map(|clock| clock.load(Ordering::Acquire)).filter(|time| *time >= 0)
+}
+
 impl DurabilityRoot {
     fn fixture_quest_clock(&self) -> Option<&Arc<AtomicI64>> {
         match &self.runtime {

@@ -1777,10 +1777,8 @@ impl DurabilityRoot {
                         }
                     }
                     #[cfg(any(test, feature = "test-support"))]
-                    let now = test_clock.as_ref().map_or(now, |clock| {
-                        let configured = clock.load(std::sync::atomic::Ordering::Acquire);
-                        if configured >= 0 { configured } else { now }
-                    });
+                    let now = super::super::db::read_fixture_unix_seconds(test_clock.as_deref())
+                        .unwrap_or(now);
                     if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
                         && let super::soul_war_source::SoulWarSourceAction::Step(step)=input.as_ref() {
                         step.observe_spite_clock(stored.get(oteryn_gameplay_quests::quest::soul_war::source_items::SPITE_FIRE).copied().unwrap_or(0),now);

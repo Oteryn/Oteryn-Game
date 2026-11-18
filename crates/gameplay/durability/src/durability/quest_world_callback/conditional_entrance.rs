@@ -98,6 +98,8 @@ impl super::super::DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        #[cfg(any(test, feature = "test-support"))]
+        let test_clock = self.quest_test_clock_handle();
         let mut context = (permit, world);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |db, deadline, (permit, world)| {
             Box::pin(async move {
@@ -141,9 +143,15 @@ impl super::super::DurabilityRoot {
                     // Use one observation of the server's UTC calendar for both
                     // Chyllfroest callbacks (movements_prohibit_entry.lua:9-15,
                     // actions_reward.lua:4-8).
+                    #[cfg(any(test, feature = "test-support"))]
+                    let fixture_time = crate::durability::db::read_fixture_unix_seconds(test_clock.as_deref());
+                    #[cfg(not(any(test, feature = "test-support")))]
+                    let fixture_time: Option<i64> = None;
                     let (month, day): (i16, i16) = sqlx::query_as(
-                        "SELECT extract(month FROM d)::smallint,extract(day FROM d)::smallint                            FROM (SELECT transaction_timestamp() AT TIME ZONE 'UTC' AS d) sample",
-                    ).fetch_one(&mut *tx).await?;
+                        "SELECT extract(month FROM d)::smallint, extract(day FROM d)::smallint
+                         FROM (SELECT coalesce(to_timestamp($1::bigint::double precision),
+                                              transaction_timestamp()) AT TIME ZONE 'UTC' AS d) sample",
+                    ).bind(fixture_time).fetch_one(&mut *tx).await?;
                     facts.date = Some(MonthDay(
                         month.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
                         day.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,

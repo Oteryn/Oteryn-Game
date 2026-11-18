@@ -66,7 +66,7 @@ pub(super) enum Case {
     Level,
     Premium,
     Occupied,
-    Calendar { use_action: bool, donor_window: bool },
+    Calendar { use_action: bool, utc_seconds: i64, allowed: bool },
     PvpLock,
     Stair,
 }
@@ -128,8 +128,7 @@ impl Case {
             // Demon Oak movements_entrance.lua:21-44, only players count.
             Self::Occupied => json!({"kind":"unoccupied","minimum":LANDING,"maximum":LANDING}),
             // Chyllfroest movements_prohibit_entry.lua:9-15 and actions_reward.lua:4-8.
-            Self::Calendar { donor_window: true, .. } => json!({"kind":"calendar","start":[4,1],"end":[5,1]}),
-            Self::Calendar { donor_window: false, .. } => json!({"kind":"calendar","start":[5,2],"end":[3,31]}),
+            Self::Calendar { .. } => json!({"kind":"calendar","start":[4,1],"end":[5,1]}),
             // Thieves Guild actions_climbing_vine.lua:13-18.
             Self::PvpLock => json!({"kind":"no_pvp_lock"}),
             // Bounac action-bounac_entrance.lua:24-25 intercepts the native
@@ -321,11 +320,8 @@ impl Case {
         let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
             .fetch_one(&h.pool)
             .await?;
-        if let Self::Calendar { donor_window, .. } = self {
-            let in_season: bool = sqlx::query_scalar(
-                "SELECT to_char(transaction_timestamp() AT TIME ZONE 'UTC','MMDD') BETWEEN '0401' AND '0501'",
-            ).fetch_one(&h.pool).await?;
-            let allowed = in_season == donor_window;
+        if let Self::Calendar { utc_seconds, allowed, .. } = self {
+            h.root.set_test_quest_clock(utc_seconds)?;
             let result = self.attempt(owner, admitted, callback, 1).await?;
             assert_eq!(result, allowed);
             let expected = if allowed { local(LANDING) } else { origin };
@@ -702,10 +698,13 @@ fn conditional_step_and_use_evaluate_the_annual_calendar() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    for use_action in [false, true] {
-        for donor_window in [true, false] {
-            scenario(Case::Calendar { use_action, donor_window })?;
-        }
+    for (use_action, utc_seconds, allowed) in [
+        (false, 1_775_001_599, false), // March 31 23:59:59 UTC
+        (false, 1_775_001_600, true),  // April 1 00:00:00 UTC
+        (true, 1_777_679_999, true),   // May 1 23:59:59 UTC
+        (true, 1_777_680_000, false),  // May 2 00:00:00 UTC
+    ] {
+        scenario(Case::Calendar { use_action, utc_seconds, allowed })?;
     }
     Ok(())
 }
