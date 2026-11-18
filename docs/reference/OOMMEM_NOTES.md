@@ -110,7 +110,10 @@ The clean half-mount link replay used 4,898,860 KiB in 9.891 s.
 
 ## One-job trial with 32 codegen units
 
-The package override compiled with `-C codegen-units=32`, keeping line
+The single-variable package override was
+`--config profile.test.package.oteryn-gameplay-dispatch.codegen-units=32`
+on the same `cargo test --locked --lib --no-run` command with cached
+dependencies. It compiled with `-C codegen-units=32`, keeping line
 tables and incremental compilation. The sampled rustc high-water mark
 was 15,097,208 KiB before the LLVM coordinator appeared, within 4,688 KiB
 of the default two-job build at that point. The nearly identical
