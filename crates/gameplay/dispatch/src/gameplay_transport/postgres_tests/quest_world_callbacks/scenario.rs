@@ -23,6 +23,8 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let dhunt_hoard = name == super::super::dhunt_treasure::SCENARIO;
+    let name = if dhunt_hoard { "m07/lion-well" } else { name };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
@@ -2012,6 +2014,14 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 fence,
+                &callback,
+            ))
+            .await?;
+        } else if dhunt_hoard {
+            Box::pin(super::super::dhunt_treasure::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
                 &callback,
             ))
             .await?;

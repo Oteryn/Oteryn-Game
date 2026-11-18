@@ -1942,6 +1942,18 @@ impl DurabilityRoot {
                     {
                         let (Some(admission), Some(tuple)) = (*reward_admission, reward_tuple) else { return Err(DurabilityError::InvalidStoredState); };
                         let (QuestCause::Use(command) | QuestCause::Step(command)) = request.cause else { return Err(DurabilityError::InvalidStoredState); };
+                        let alternatives = &world.effects.item_reward_alternatives;
+                        let reward = if alternatives.is_empty() {
+                            reward
+                        } else {
+                            let choices = i16::try_from(1 + alternatives.len())
+                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let index: i16 = sqlx::query_scalar("SELECT floor(random() * $1::smallint)::smallint")
+                                .bind(choices).fetch_one(&mut *tx).await?;
+                            std::iter::once(reward).chain(alternatives)
+                                .nth(usize::try_from(index).map_err(|_| DurabilityError::InvalidStoredState)?)
+                                .ok_or(DurabilityError::InvalidStoredState)?
+                        };
                         // Fresh value must use the generation proved by the physical
                         // occurrence. Historical receipts returned before this check.
                         let revision = format!("sha256:{}", admission.native.source_digest().iter()
@@ -2039,12 +2051,20 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
-                    if let Some(world) = &callback && !world.achievements.is_empty() {
-                        let (cause, ordinal) = request.cause.key();
-                        let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key)).map_err(|_| DurabilityError::InvalidStoredState)?;
-                        let occurrence = sha2::Sha256::digest(&occurrence);
-                        let keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
-                        super::super::account_achievement::grant_missing(&mut tx, fence.character_id, &keys, "oteryn:quest-world-reward", &occurrence).await?;
+                    if let Some(world) = &callback {
+                        let mut keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
+                        if let Some(achievement) = &world.effects.claim_achievement
+                            && changes.iter().any(|change| change.track == achievement.track
+                                && change.before == achievement.value - 1
+                                && change.after == achievement.value) {
+                            keys.push(&achievement.key);
+                        }
+                        if !keys.is_empty() {
+                            let (cause, ordinal) = request.cause.key();
+                            let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key)).map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let occurrence = sha2::Sha256::digest(&occurrence);
+                            super::super::account_achievement::grant_missing(&mut tx, fence.character_id, &keys, "oteryn:quest-world-reward", &occurrence).await?;
+                        }
                     }
                     let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
                     if completes {

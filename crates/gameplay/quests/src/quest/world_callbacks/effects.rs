@@ -65,6 +65,12 @@ pub struct CallbackEffects {
     pub mount_reward: Option<MountReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
+    /// The primary reward and these alternatives are equally likely on each fresh USE.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub item_reward_alternatives: Vec<super::super::reward_callbacks::ItemReward>,
+    /// Grant once when the claim increments this track to the exact value.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub claim_achievement: Option<ClaimAchievement>,
     /// An existing, preserved local quest epoch; commands never create reward cycles.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward_cycle: Option<String>,
@@ -148,6 +154,14 @@ impl From<&str> for QuestCompletion {
 #[serde(deny_unknown_fields)]
 pub struct RewardDoor {
     pub claim: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ClaimAchievement {
+    pub track: String,
+    pub value: i64,
+    pub key: String,
 }
 
 impl CallbackEffects {
@@ -458,6 +472,42 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     if effects.item_reward_per_use && !super::per_use_reward::admitted(callback) {
+        return false;
+    }
+    if (!effects.item_reward_alternatives.is_empty() || effects.claim_achievement.is_some())
+        && (!effects.item_reward_per_use
+            || callback.item_reward.is_some()
+            || !callback.state_operations.is_empty()
+            || callback.storage.iter().any(|storage| storage.add.is_some()))
+    {
+        return false;
+    }
+    if effects.item_reward_alternatives.len() > 15
+        || effects.item_reward_alternatives.iter().any(|alternative| {
+            !super::super::reward_callbacks::valid_item_reward(alternative)
+                || effects
+                    .item_reward
+                    .as_ref()
+                    .is_none_or(|primary| primary.premium != alternative.premium)
+        })
+        || effects
+            .claim_achievement
+            .as_ref()
+            .is_some_and(|achievement| {
+                !achievement.key.starts_with("oteryn:achievement/")
+                    || !super::super::valid_quest_key(&achievement.key)
+                    || callback.achievements.contains(&achievement.key)
+                    || achievement.value <= 0
+                    || !callback.storage.iter().any(|storage| {
+                        storage.track == achievement.track
+                            && !storage.read_only
+                            && storage.increment
+                            && storage.set == 1
+                            && (storage.minimum..=storage.maximum)
+                                .contains(&(achievement.value - 1))
+                    })
+            })
+    {
         return false;
     }
     if effects.player_speech.as_ref().is_some_and(|text| {
