@@ -832,7 +832,10 @@ async fn exercise_outcome(
     at: MovementLocalPosition,
     pool: &sqlx::PgPool,
 ) -> TestResult {
-    use crate::map::view::{MapFacts, placement_key};
+    use crate::map::{
+        floor::CellBlocker,
+        view::{MapFacts, placement_key},
+    };
     let lobby = [
         at,
         MovementLocalPosition {
@@ -852,6 +855,20 @@ async fn exercise_outcome(
     let portal = MovementLocalPosition { x: at.x + 6, ..at };
     let landing = MovementLocalPosition { x: at.x + 8, ..at };
     let map = owner.bundle_map().ok_or("encounter bundle map")?;
+    let doors = crate::map::floor::BundleDoors(&map.facts);
+    let blocker = crate::gameplay_transport::quest_callbacks::CallbackPortals {
+        inner: &doors,
+        map: Some(map),
+        callbacks: owner.callback_content(),
+    };
+    assert!(
+        blocker.suppresses_native_teleport(crate::content::LogicalCell {
+            x: portal.x,
+            y: portal.y,
+            z: i32::from(portal.floor),
+        }),
+        "the authored gate must own the raw teleport before StepIn"
+    );
     for (index, hard) in [false, true].into_iter().enumerate() {
         let callback = mode_lever(at, hard)?;
         let tile = callback.selector.position.ok_or("lever tile")?;

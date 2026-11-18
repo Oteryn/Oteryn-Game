@@ -1678,9 +1678,8 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// A conditional source callback owns the portal only when its full native binding
-/// matches and callback selection at this tile is unambiguous. Ordinary step proofs
-/// still enforce entry collision, doors, pacing, occupancy and protection-zone rules.
+/// Conditional callbacks take custody of a matched native portal before StepIn.
+/// Ordinary step proofs still enforce entry collision, pacing and protection zones.
 pub(super) struct CallbackPortals<'a> {
     pub inner: &'a dyn crate::map::floor::CellBlocker,
     pub map: Option<&'a BundleMap>,
@@ -1705,8 +1704,10 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
             return false;
         };
         if !self.callbacks.iter().any(|c| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
-                .is_some_and(|b| tile(b.position) == at)
+            (c.effects.require_encounter_outcome.is_some()
+                && c.selector.position.map(tile) == Some(at))
+                || oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
+                    .is_some_and(|b| tile(b.position) == at)
         }) {
             return false;
         }
@@ -1714,6 +1715,7 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
             return false;
         };
         let mut selected = None;
+        let mut ambiguous = false;
         for ordinal in 0..base.depths().iter().filter(|d| **d == 0).count() {
             let Some(key) = u8::try_from(ordinal)
                 .ok()
@@ -1729,17 +1731,28 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
                 .iter()
                 .filter(|c| c.trigger == Trigger::StepIn && matches(map, c, key))
             {
+                // Crystal forge_teleport.lua:17-29 owns the raw portal even
+                // when another matching callback makes StepIn ambiguous.
+                if callback.effects.require_encounter_outcome.is_some() {
+                    return true;
+                }
                 if selected.replace((callback, key)).is_some() {
-                    return false;
+                    ambiguous = true;
                 }
             }
         }
-        selected.is_some_and(|(c, key)| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(|b| {
-                map.facts
-                    .quest_callback_native_teleport(key, b.appearance, tile(b.raw_destination))
+        !ambiguous
+            && selected.is_some_and(|(c, key)| {
+                oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(
+                    |b| {
+                        map.facts.quest_callback_native_teleport(
+                            key,
+                            b.appearance,
+                            tile(b.raw_destination),
+                        )
+                    },
+                )
             })
-        })
     }
 }
 
