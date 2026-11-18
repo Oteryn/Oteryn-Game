@@ -935,6 +935,9 @@ mod explicit_reset_tests {
         let mut missing_deadline = callback.clone();
         missing_deadline.effects.reset_after_ms = None;
         assert!(!valid(&missing_deadline));
+        let mut unqualified_stage = callback.clone();
+        unqualified_stage.selector.appearance = None;
+        assert!(!valid(&unqualified_stage));
         let mut identical_transform = callback;
         identical_transform.effects.reset_appearance = identical_transform.effects.transform;
         assert!(!valid(&identical_transform));
