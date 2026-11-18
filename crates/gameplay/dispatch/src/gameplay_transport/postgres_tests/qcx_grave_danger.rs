@@ -88,6 +88,41 @@ fn scenario() -> TestResult {
     })
 }
 
+fn global_placement() -> TestResult<NpcPlacement> {
+    use oteryn_world_bundle_compiler::{bundle, compile, npc, source};
+
+    let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../.."));
+    let position = (32326, 32261, -9);
+    let project = source::project_regions(root, &[(position.0 / 256, position.1 / 256)])?;
+    let (registry, palette) = source::registry(root, &project)?;
+    let input = compile::Input {
+        regions: &project.regions,
+        palette: &palette,
+        identity: bundle::Identity::default(),
+        world: source::world_extent(root)?,
+        build_class: bundle::BuildClass::NonProduction,
+        draft_areas: Vec::new(),
+        families: &project.families,
+    };
+    let (spawns, _) = compile::realize_spawns(&input, &registry)?;
+    let (table, report) = compile::realize_npcs(&input, &registry, &spawns)?;
+    let jack = table.npcs.iter().find(|row| row.key == grave::NPC).ok_or_else(|| {
+        let held = report.held.iter().find(|row| row.npc == grave::NPC);
+        format!("missing compiled Jack Springer placement: {held:?}")
+    })?;
+    let [placement] = jack.placements.as_slice() else {
+        return Err("expected one published Jack Springer placement".into());
+    };
+    assert_eq!((placement.x, placement.y, placement.floor), position);
+    assert_eq!(placement.direction, npc::Direction::North);
+    Ok(NpcPlacement {
+        x: placement.x,
+        y: placement.y,
+        floor: placement.floor,
+        direction: MovementFacing::North,
+    })
+}
+
 async fn place_jack(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -131,10 +166,11 @@ async fn place_jack(
             .map_err(debug)?,
         )
         .map_err(debug)?;
+    let placement = global_placement()?;
     let at = MovementLocalPosition {
-        x: 33294,
-        y: 31677,
-        floor: 15,
+        x: i32::from(placement.x),
+        y: i32::from(placement.y) - 1,
+        floor: i16::from(-placement.floor),
     };
     runtime
         .initialize_pinned_test_position(actor, at)
@@ -144,12 +180,7 @@ async fn place_jack(
             &NpcPlacementTable {
                 npcs: vec![NpcPlacements {
                     key: grave::NPC.into(),
-                    placements: vec![NpcPlacement {
-                        x: u16::try_from(at.x)?,
-                        y: u16::try_from(at.y + 1)?,
-                        floor: -i8::try_from(at.floor)?,
-                        direction: MovementFacing::South,
-                    }],
+                    placements: vec![placement],
                 }],
             },
             |_| true,

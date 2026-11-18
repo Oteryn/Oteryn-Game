@@ -831,6 +831,46 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/chosen/children/phantom-army-report",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "completes": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i10199",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "experience": 10000,
+      "reply": [
+        "The resistance owes you its survival. Take this serpent crest and rest before the next fight."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua#L150-L162"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/chosen/wrath/start",
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "npc": "oteryn:npc.zalamon",

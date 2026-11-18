@@ -56,30 +56,54 @@ pub(super) async fn exercise(
     owner.refresh_quest_session(admitted.game_session_id, false).await;
     super::grizzly_npc::wire::talk_refused(owner, admitted, npc, &[(1, "hi"), (2, "wrath mission")]).await?;
     assert_eq!(stage(h).await?, -1, "Zalamon requires Children of the Revolution");
-    complete_children_of_the_revolution(owner, admitted).await?;
-    super::grizzly_npc::wire::talk(owner, admitted, npc, &[(3, "hi"), (4, "wrath mission")]).await?;
+    seed_phantom_army_return(owner, admitted, h).await?;
+    let character_id = id(41);
+    let xp = || {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT total_experience FROM game_character_progression_state
+             WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(character_id.as_slice())
+        .fetch_one(&h.pool)
+    };
+    let before = xp().await?;
+    super::grizzly_npc::wire::talk(owner, admitted, npc, &[(3, "hi"), (4, "mission")]).await?;
+    let values: Vec<i64> = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks
+         WHERE character_id=encode($1,'hex')::uuid AND track_key IN ($2, $3)
+         ORDER BY track_key",
+    )
+    .bind(id(41).as_slice())
+    .bind(CHILDREN_MISSION)
+    .bind(CHILDREN_STAGE)
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(values, [3, 21]);
+    assert_eq!(quantity(h, 10199).await?, 1);
+    assert_eq!(xp().await? - before, 10_000);
+    super::grizzly_npc::wire::talk(owner, admitted, npc, &[(5, "hi"), (6, "wrath mission")]).await?;
     assert_eq!(stage(h).await?, 0, "real NPC starts the chosen mission");
     carry(owner, admitted, 953, 2, 810).await?;
-    super::grizzly_npc::wire::talk_refused(owner, admitted, npc, &[(5, "hi"), (6, "crate")]).await?;
+    super::grizzly_npc::wire::talk_refused(owner, admitted, npc, &[(7, "hi"), (8, "crate")]).await?;
     assert_eq!(stage(h).await?, 0);
     assert_eq!(quantity(h, 953).await?, 2, "missing inputs never partially charge");
     assert_eq!(quantity(h, 11328).await?, 0);
     carry(owner, admitted, 5901, 1, 811).await?;
-    super::grizzly_npc::wire::talk_refused(owner, admitted, npc, &[(7, "hi"), (8, "crate")]).await?;
+    super::grizzly_npc::wire::talk_refused(owner, admitted, npc, &[(9, "hi"), (10, "crate")]).await?;
     assert_eq!(quantity(h, 953).await?, 2, "two nails do not satisfy three");
     assert_eq!(quantity(h, 5901).await?, 1, "wood is retained on a failed hand-in");
     carry(owner, admitted, 953, 1, 812).await?;
     owner.refresh_quest_session(admitted.game_session_id, false).await;
-    super::grizzly_npc::wire::talk(owner, admitted, npc, &[(9, "hi"), (10, "crate")]).await?;
+    super::grizzly_npc::wire::talk(owner, admitted, npc, &[(11, "hi"), (12, "crate")]).await?;
     assert_eq!(stage(h).await?, 1);
     assert_eq!(quantity(h, 953).await?, 0);
     assert_eq!(quantity(h, 5901).await?, 0);
     assert_eq!(quantity(h, 11328).await?, 1, "exact source marked crate");
-    super::grizzly_npc::wire::talk(owner, admitted, npc, &[(10, "crate")]).await?;
+    super::grizzly_npc::wire::talk(owner, admitted, npc, &[(12, "crate")]).await?;
     assert_eq!(quantity(h, 11328).await?, 1, "same command cannot duplicate the crate");
     owner.states.quest_sessions.lock().map_err(debug)?.remove(&admitted.game_session_id);
     owner.admit_quest_session(admitted).await;
-    super::grizzly_npc::wire::talk_refused(owner, admitted, npc, &[(11, "hi"), (12, "crate")]).await?;
+    super::grizzly_npc::wire::talk_refused(owner, admitted, npc, &[(13, "hi"), (14, "crate")]).await?;
     assert_eq!(stage(h).await?, 1);
     assert_eq!(quantity(h, 11328).await?, 1);
     let completed: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2")
@@ -133,9 +157,15 @@ async fn quantity(h: &Harness,item:u16) -> TestResult<i64> {
         .bind(id(41).as_slice()).bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
 }
 
-async fn complete_children_of_the_revolution(
+const CHILDREN_STAGE: &str =
+    "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline";
+const CHILDREN_MISSION: &str =
+    "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05";
+
+async fn seed_phantom_army_return(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    h: &Harness,
 ) -> TestResult {
     use crate::durability::quest_state::{
         QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
@@ -146,21 +176,21 @@ async fn complete_children_of_the_revolution(
     };
     use std::sync::Arc;
 
-    let key = "oteryn:quest-transition/qcx50-fixture-children-complete";
+    let key = "oteryn:quest-transition/qcx50-fixture-phantom-army-return";
+    let production = owner.quest_catalogue.clone().ok_or("quest catalogue")?;
     let catalogue = Arc::new(
-        owner
-            .quest_catalogue
-            .as_ref()
-            .ok_or("quest catalogue")?
+        production
             .with_fixture_transition(QuestTransition {
                 key: key.into(),
                 quest: "oteryn:quest.children_of_the_revolution_quest".into(),
-                effects: vec![QuestEffect {
-                    track: "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline"
-                        .into(),
-                    from: QuestComparison::Any,
-                    effect: QuestEffectKind::Set(21),
-                }],
+                effects: [(CHILDREN_STAGE, 20), (CHILDREN_MISSION, 2)]
+                    .into_iter()
+                    .map(|(track, value)| QuestEffect {
+                        track: track.into(),
+                        from: QuestComparison::Any,
+                        effect: QuestEffectKind::Set(value),
+                    })
+                    .collect(),
                 completes: false,
                 experience: None,
                 world_change: None,
@@ -194,6 +224,24 @@ async fn complete_children_of_the_revolution(
             .map_err(debug)?;
         assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
     }
+    // Replace the fixture transition's pin with the exact 871c1dec
+    // production pin for a character returning from the battlefield.
+    let mut save = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *save)
+        .await?;
+    let state = sqlx::query(
+        "UPDATE game_character_quest_states
+         SET definition_hash = decode('42f19e449f681042976a398141a147d3e0a9f48c312c7a756f528b25fb7520b4', 'hex')
+         WHERE character_id=encode($1,'hex')::uuid
+           AND quest_key='oteryn:quest.children_of_the_revolution_quest'",
+    )
+    .bind(id(41).as_slice())
+    .execute(&mut *save)
+    .await?;
+    assert_eq!(state.rows_affected(), 1);
+    save.commit().await?;
+    owner.quest_catalogue = Some(production);
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
