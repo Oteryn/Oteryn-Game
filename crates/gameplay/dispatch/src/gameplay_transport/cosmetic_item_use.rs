@@ -3,7 +3,7 @@ pub(super) mod capture_commit;
 pub(super) mod quest_targets;
 
 use super::ComposedFreshAdmission;
-use super::connection::{UseCommand, UseOutcome};
+use super::connection::{FreshAdmissionAuthority, UseCommand, UseOutcome};
 use super::item_ref_admission::NativeItemWeights;
 use super::item_view::ItemKey;
 use super::spell_premium_coordinator::RegisteredSpellAccessOwner;
@@ -14,6 +14,12 @@ use crate::gameplay_transport::actor_spell::NoveltyEffectRequest;
 use crate::gameplay_transport::spell_access_facts::CurrentSpellAccessOwner;
 use oteryn_gameplay_items::novelty_items::{NoveltyEffects, NoveltyKind};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
+use oteryn_protocol_oteryn::zones_nologout::ServerMessage;
+
+const LIVING_IDOL: &str = "oteryn:item.tibia.i40578";
+const ANCIENT_AUCAR: &str = "oteryn:outfit.ancient_aucar";
+// Crystal 201189f8 actions_idol_of_tukh.lua:19–23.
+const MAGIC_GREEN: u16 = 15;
 
 impl ItemCosmeticPremium for RegisteredSpellAccessOwner {
     fn current(&self, account: [u8; 16]) -> bool {
@@ -775,6 +781,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(catalogue) = self.quest_catalogue.as_ref() else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
+        let direct_idol_use = item.definition.production_key == LIVING_IDOL
+            && intent.use_with.is_none()
+            && intent.use_with_map_item.is_none();
+        let living_idol =
+            direct_idol_use && bound.iter().any(|callback| is_idol_outfit_reward(callback));
         let callback = {
             let sessions = self.states.quest_sessions.lock().map_err(|_| ())?;
             let tracks = sessions
@@ -806,14 +817,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .all(|op| op.advisory_holds(catalogue, tracks))
                     })
             });
-            let Some(callback) = selected.next() else {
-                return Ok(Some(outcome(UseDisposition::Rejected)));
-            };
+            let callback = selected.next().cloned();
             if selected.next().is_some() {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
-            callback.clone()
+            callback
         };
+        let Some(callback) = callback else {
+            if living_idol {
+                self.notify_duplicate_idol(actor, command).await;
+            }
+            return Ok(Some(outcome(UseDisposition::Rejected)));
+        };
+        let living_idol = direct_idol_use && is_idol_outfit_reward(&callback);
         let Some(permit) = self.spell_lane_permit().await else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
@@ -952,6 +968,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(creature_runtime);
         drop(sequence);
         drop(permit);
+        if living_idol && matches!(result, QuestTransitionOutcome::Committed(_)) {
+            self.present_idol_reward(actor, command, &callback.reply)
+                .await;
+        }
+        if living_idol && matches!(result, QuestTransitionOutcome::Refused(_)) {
+            self.notify_duplicate_idol(actor, command).await;
+        }
         let disposition = if matches!(
             result,
             QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
@@ -964,4 +987,69 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         Ok(Some(outcome(disposition)))
     }
+
+    async fn notify_duplicate_idol(&self, actor: ExactActorRef, command: UseCommand) {
+        if self
+            .appearance_observation(actor, command.game_session_id, Vec::new())
+            .await
+            .is_some_and(|appearance| {
+                appearance
+                    .catalogue
+                    .outfits
+                    .iter()
+                    .any(|outfit| outfit.key == ANCIENT_AUCAR)
+            })
+        {
+            self.states.server_messages.send_current(
+                command.game_session_id,
+                ServerMessage::StatusText("You have already obtained this outfit!".into()),
+            );
+        }
+    }
+
+    async fn present_idol_reward(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        reply: &[String],
+    ) {
+        let mut runtime = self.runtime.lock().await;
+        if runtime.owner_fence().is_err()
+            || !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return;
+        }
+        for line in reply {
+            self.states.server_messages.send_current(
+                command.game_session_id,
+                ServerMessage::Advance(line.clone()),
+            );
+        }
+        if let Some(at) = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
+            && let (Ok(x), Ok(y), Ok(floor)) = (
+                at.at.x.try_into(),
+                at.at.y.try_into(),
+                at.at.floor.try_into(),
+            )
+        {
+            at.map
+                .facts
+                .emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, MAGIC_GREEN);
+        }
+    }
+}
+
+fn is_idol_outfit_reward(
+    callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+) -> bool {
+    callback
+        .outfit
+        .as_ref()
+        .is_some_and(|reward| reward.outfit == ANCIENT_AUCAR && reward.addons == 0)
+        && callback
+            .forbids_outfits
+            .iter()
+            .any(|outfit| outfit == ANCIENT_AUCAR)
 }
