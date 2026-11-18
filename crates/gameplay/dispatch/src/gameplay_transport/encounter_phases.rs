@@ -5,7 +5,7 @@ use crate::foundation::{
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::arbaziloth::{self, ArbazilothEncounter};
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
+use oteryn_gameplay_quests::quest::world_callbacks::{Encounter, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
@@ -197,18 +197,13 @@ impl Registry {
 
 pub(super) fn bind(
     runtime: &mut ChannelRuntimeV1,
-    callback: &Callback,
+    encounter: &Encounter,
     key: u64,
     actors: &[ExactActorRef],
     players: &[(ExactActorRef, GameSessionId)],
     credits: Vec<grizzly_kills::EncounterCredit>,
     cells: crate::content::NativeEntryMovementCells,
 ) -> Result<ActivePhase, CarrierError> {
-    let encounter = callback
-        .effects
-        .encounter
-        .as_ref()
-        .ok_or(CarrierError::PlanConflict)?;
     if encounter.phase == Some(EncounterPhase::Arbaziloth) {
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
             cells.index()

@@ -56,7 +56,12 @@ fn run(admin: String, fixture_name: &'static str, destination: TilePos) -> TestR
     run_case(admin, fixture_name, destination, false)
 }
 
-fn run_case(admin: String, fixture_name: &'static str, destination: TilePos, hard_win: bool) -> TestResult {
+fn run_case(
+    admin: String,
+    fixture_name: &'static str,
+    destination: TilePos,
+    hard_win: bool,
+) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -67,7 +72,12 @@ fn run_case(admin: String, fixture_name: &'static str, destination: TilePos, har
         .map_err(Into::into)
 }
 
-fn scenario(admin: String, fixture_name: &'static str, destination: TilePos, hard_win: bool) -> TestResult {
+fn scenario(
+    admin: String,
+    fixture_name: &'static str,
+    destination: TilePos,
+    hard_win: bool,
+) -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -90,9 +100,15 @@ fn scenario(admin: String, fixture_name: &'static str, destination: TilePos, har
             let room = qualify_native_entry_room(world).map_err(debug)?;
             let (bytes, pins) = portal_fixture(destination)?;
             let map = boot(&bytes, &pins, world, channel, |key| {
-                (key == "oteryn:item.tibia.i37000")
-                    .then(|| fixture::floor_items("oteryn:item.tibia.i37001"))
-                    .flatten()
+                let mut definition = fixture::floor_items("oteryn:item.tibia.i37001")?;
+                match key {
+                    "oteryn:item.tibia.i37000" => Some(definition),
+                    "oteryn:item.tibia.i49362" => {
+                        definition.reference = std::num::NonZeroU32::new(5)?;
+                        Some(definition)
+                    }
+                    _ => None,
+                }
             })
             .map_err(debug)?;
             assert_eq!(map.floors().teleport(PORTAL), Some(destination));
@@ -136,6 +152,12 @@ fn scenario(admin: String, fixture_name: &'static str, destination: TilePos, har
                     .ok_or("spell state")?;
             }
             if hard_win {
+                owner.quest_catalogue = Some(std::sync::Arc::new(
+                    oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                        .map_err(debug)?
+                        .catalogue()
+                        .clone(),
+                ));
                 two_player_exit(&h, &owner, deps.actor, session, &cells).await?;
                 drop(owner);
                 drop(authority);
@@ -178,8 +200,13 @@ fn portal_fixture(destination: TilePos) -> TestResult<(Vec<u8>, crate::map::boot
     };
     let mut portal = manifest.palette.pop().ok_or("portal palette")?;
     portal.key = "oteryn:item.tibia.i37000".into();
+    let mut fire = portal.clone();
+    fire.key = "oteryn:item.tibia.i49362".into();
+    fire.id = 1;
+    portal.id = 0;
     manifest.palette.truncate(1);
     manifest.palette.push(portal);
+    manifest.palette.push(fire);
     let tile = |at: TilePos| sector::Tile {
         x: at.x,
         y: at.y,
@@ -211,9 +238,18 @@ fn portal_fixture(destination: TilePos) -> TestResult<(Vec<u8>, crate::map::boot
             sx: START.x / 32,
             sy: START.y / 32,
             tiles: vec![
-                tile(TilePos { x: START.x - 3, ..START }),
-                tile(TilePos { x: START.x - 2, ..START }),
-                tile(TilePos { x: START.x - 1, ..START }),
+                tile(TilePos {
+                    x: START.x - 3,
+                    ..START
+                }),
+                tile(TilePos {
+                    x: START.x - 2,
+                    ..START
+                }),
+                tile(TilePos {
+                    x: START.x - 1,
+                    ..START
+                }),
                 tile(START),
                 entrance,
             ],
@@ -232,7 +268,6 @@ fn portal_fixture(destination: TilePos) -> TestResult<(Vec<u8>, crate::map::boot
     Ok((bytes, pins))
 }
 
-
 async fn two_player_exit(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -241,21 +276,41 @@ async fn two_player_exit(
     cells: &crate::content::NativeEntryMovementCells,
 ) -> TestResult {
     use super::fixture::id;
-    use crate::foundation::{GameSessionId, OwnerDamageCommand};
+    use crate::foundation::{CommandId, CommandRef, GameSessionId, OwnerDamageCommand};
+    use crate::gameplay_transport::{
+        encounter_phases, grizzly_kills,
+        kill_reward::{DrainOutcome, KillSink, record_creature_kill},
+    };
     use crate::map::floor::{BundleDoors, prepare_quest_encounter_member};
-    use oteryn_gameplay_encounters::bosses::phase_controller::arbaziloth::{
-        ArbazilothEncounter, BOSS, FORGEMASTER,
+    use oteryn_gameplay_encounters::bosses::phase_controller::arbaziloth::{BOSS, FORGEMASTER};
+    use oteryn_gameplay_quests::quest::world_callbacks::{
+        Encounter, EncounterMonster, EncounterPhase, EncounterPlayer, Position,
     };
     const ENRAGED: &str = "oteryn:creature.enraged_arbaziloth";
     let other_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    let admissions = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone());
-    let first_lease = admissions.current_session_at(session).await?.0.current_character_lease();
-    let second_lease = admissions.current_session_at(other_session).await?.0.current_character_lease();
-    let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
-        owner.world_id, "content-1",
-    )?;
-    let native = controller.active().and_then(|g| g.native_gameplay()).ok_or("native policies")?;
-    let original = native.policies().policies().iter().find(|p| p.definition_key == BOSS)
+    let admissions =
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone());
+    let first_lease = admissions
+        .current_session_at(session)
+        .await?
+        .0
+        .current_character_lease();
+    let second_lease = admissions
+        .current_session_at(other_session)
+        .await?
+        .0
+        .current_character_lease();
+    let (controller, _) =
+        super::death_ml_loss_composed::production_generation_with_pin(owner.world_id, "content-1")?;
+    let native = controller
+        .active()
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native policies")?;
+    let original = native
+        .policies()
+        .policies()
+        .iter()
+        .find(|p| p.definition_key == BOSS)
         .ok_or("Arbaziloth policy")?;
     let mut runtime = owner.runtime.lock().await;
     let digest = runtime.content_pin().server_artifact_digest();
@@ -265,21 +320,62 @@ async fn two_player_exit(
         policy.maximum_health = 100;
         policy
     });
-    runtime.install_companion_policies(
-        crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
-            digest, Vec::from(policies),
-        ).map_err(debug)?,
-    ).map_err(debug)?;
-    let reservation = runtime.reserve_fresh_session(other_session).map_err(debug)?;
+    runtime
+        .install_companion_policies(
+            crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
+                digest,
+                Vec::from(policies),
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    let reservation = runtime
+        .reserve_fresh_session(other_session)
+        .map_err(debug)?;
     let other = runtime.commit_fresh_session(reservation).map_err(debug)?;
-    let start = MovementLocalPosition { x: i32::from(START.x), y: i32::from(START.y), floor: 14 };
-    runtime.initialize_pinned_test_position(other, MovementLocalPosition { x: start.x - 1, ..start }).map_err(debug)?;
-    runtime.bind_attacker_lease(first, session, first_lease).map_err(debug)?;
-    runtime.bind_attacker_lease(other, other_session, second_lease).map_err(debug)?;
-    owner.states.spell_states.lock().await.initialize(
-        &runtime, other, other_session, crate::gameplay_transport::actor_spell::tests::FACTS, (0, 0), owner.owner_now(),
-    ).ok_or("second spell state")?;
+    let start = MovementLocalPosition {
+        x: i32::from(START.x),
+        y: i32::from(START.y),
+        floor: 14,
+    };
+    runtime
+        .initialize_pinned_test_position(
+            other,
+            MovementLocalPosition {
+                x: start.x - 1,
+                ..start
+            },
+        )
+        .map_err(debug)?;
+    runtime
+        .bind_attacker_lease(first, session, first_lease)
+        .map_err(debug)?;
+    runtime
+        .bind_attacker_lease(other, other_session, second_lease)
+        .map_err(debug)?;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .initialize(
+            &runtime,
+            other,
+            other_session,
+            crate::gameplay_transport::actor_spell::tests::FACTS,
+            (0, 0),
+            owner.owner_now(),
+        )
+        .ok_or("second spell state")?;
+    drop(runtime);
     let players = [(first, session), (other, other_session)];
+    for (actor, session) in players {
+        owner.refresh_quest_session(session, true).await;
+        assert!(owner.refresh_source_party_presence(actor, session).await);
+    }
+    let queue = owner.states.attack.lock().await.kills().clone();
+    let mut runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
     use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
     let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
         cells.index()
@@ -287,46 +383,199 @@ async fn two_player_exit(
         return Err("bundle arena cells".into());
     };
     let doors = BundleDoors(&index.map().facts);
-    let proofs = players.iter().map(|&(actor, session)| {
-        let original = runtime.read_actor_position(actor).map_err(debug)?;
-        prepare_quest_encounter_member(&runtime, cells, actor, session, original, start, false, &doors, true).map_err(debug)
-    }).collect::<Result<Vec<_>, _>>()?;
-    let (entered, (mut encounter, boss)) = runtime.commit_quest_encounter_with_phase(
-        proofs,
-        &[
-            (BOSS, 100, MovementLocalPosition { x: start.x - 2, ..start }),
-            (FORGEMASTER, 100, MovementLocalPosition { x: start.x - 3, ..start }),
+    let proofs = players
+        .iter()
+        .map(|&(actor, session)| {
+            let original = runtime.read_actor_position(actor).map_err(debug)?;
+            prepare_quest_encounter_member(
+                &runtime, cells, actor, session, original, start, false, &doors, true,
+            )
+            .map_err(debug)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let position = |x| Position {
+        x,
+        y: START.y,
+        floor: START.floor,
+    };
+    let encounter = Encounter {
+        minimum_level: 0,
+        players: vec![
+            EncounterPlayer {
+                from: position(START.x),
+                to: position(START.x),
+            },
+            EncounterPlayer {
+                from: position(START.x - 1),
+                to: position(START.x),
+            },
         ],
-        |runtime, actors| Ok((ArbazilothEncounter::bind(runtime, &players, actors[0], actors[1])?, actors[0])),
-        || true,
-    ).map_err(debug)?;
+        monsters: vec![
+            EncounterMonster {
+                creature: BOSS.into(),
+                position: position(START.x - 2),
+            },
+            EncounterMonster {
+                creature: FORGEMASTER.into(),
+                position: position(START.x - 3),
+            },
+        ],
+        room_min: position(START.x - 3),
+        room_max: position(PORTAL.x),
+        timing: None,
+        phase: Some(EncounterPhase::Arbaziloth),
+    };
+    let credits =
+        grizzly_kills::capture_encounter_admission(owner, &runtime, &players).map_err(debug)?;
+    let mut active = states
+        .encounter_phases
+        .reserve(&mut runtime, 1)
+        .map_err(debug)?;
+    let (entered, (phase, boss)) = runtime
+        .commit_quest_encounter_with_phase(
+            proofs,
+            &[
+                (
+                    BOSS,
+                    100,
+                    MovementLocalPosition {
+                        x: start.x - 2,
+                        ..start
+                    },
+                ),
+                (
+                    FORGEMASTER,
+                    100,
+                    MovementLocalPosition {
+                        x: start.x - 3,
+                        ..start
+                    },
+                ),
+            ],
+            |runtime, actors| {
+                Ok((
+                    encounter_phases::bind(
+                        runtime,
+                        &encounter,
+                        1,
+                        actors,
+                        &players,
+                        credits,
+                        cells.clone(),
+                    )?,
+                    actors[0],
+                ))
+            },
+            || true,
+        )
+        .map_err(debug)?;
+    active.push(phase);
+    drop(active);
     assert_eq!(entered.len(), 2);
     assert!(entered.iter().all(|snapshot| snapshot.position() == start));
     for (phase, health) in [100, 80, 60, 40].into_iter().enumerate() {
         let occurrence = format!("nrwicked-party-{phase}");
         let binding = format!("{occurrence}\0damage");
-        runtime.borrow_exact_actor_commit().commit_damage(boss, OwnerDamageCommand {
-            target: BOSS.as_bytes(), occurrence: occurrence.as_bytes(), binding: binding.as_bytes(), damage: health,
-        }).map_err(debug)?;
-        let shields = runtime.arbaziloth_shields_mut(boss).ok_or("bound shields")?;
+        runtime
+            .borrow_exact_actor_commit()
+            .commit_damage(
+                boss,
+                OwnerDamageCommand {
+                    target: BOSS.as_bytes(),
+                    occurrence: occurrence.as_bytes(),
+                    binding: binding.as_bytes(),
+                    damage: health,
+                },
+            )
+            .map_err(debug)?;
+        let shields = runtime
+            .arbaziloth_shields_mut(boss)
+            .ok_or("bound shields")?;
         assert!(shields.step_on_fire());
         assert!(shields.use_rod(100, 100));
     }
-    let enraged = encounter.advance(&mut runtime, 3100, |_, _| true).map_err(debug)?.ok_or("enraged replacement")?;
-    runtime.borrow_exact_actor_commit().commit_damage(enraged, OwnerDamageCommand {
-        target: ENRAGED.as_bytes(), occurrence: b"hard-win", binding: b"hard-win\0damage", damage: 100,
-    }).map_err(debug)?;
-    let mut death = runtime.borrow_combat_death();
-    let receipt = death.committed_lethal_receipt(enraged).map_err(debug)?;
-    death.project_committed_lethal(receipt).map_err(debug)?;
-    assert!(encounter.projected_death(&mut runtime, enraged).map_err(debug)?);
-    assert_eq!(encounter.victors(&runtime).map_err(debug)?, Some(players.as_slice()));
+    encounter_phases::tick(&mut runtime, &states, 3100);
+    let enraged = runtime
+        .positioned_actor_census()
+        .map_err(debug)?
+        .into_iter()
+        .map(|(actor, _, _)| actor)
+        .find(|actor| runtime.matches_live_creature_identity(*actor, ENRAGED.as_bytes()))
+        .ok_or("enraged replacement")?;
+    let observed = owner.owner_now();
+    let now = observed.get() / 1000;
+    for (actor, session, damage) in [(other, other_session, 25), (first, session, 75)] {
+        runtime
+            .borrow_exact_actor_commit_at(now)
+            .commit_damage_for_bound_attacker(
+                enraged,
+                actor,
+                CommandRef::new(session, CommandId::new(1).map_err(debug)?),
+                0,
+                OwnerDamageCommand {
+                    target: ENRAGED.as_bytes(),
+                    occurrence: session.as_bytes(),
+                    binding: b"nrwicked-admitted-damage",
+                    damage,
+                },
+            )
+            .map_err(debug)?;
+    }
+    for _ in 0..2 {
+        record_creature_kill(
+            &mut runtime,
+            KillSink {
+                prey: Some(&states),
+                activity: &[],
+                queue: &queue,
+                rewards: native.reward_table(),
+                charms: None,
+            },
+            enraged,
+            crate::combat::CapturedRewardPrincipal {
+                character: first_lease.character_id(),
+                lease_generation: first_lease.generation(),
+                session,
+                actor: first,
+            },
+            now,
+            Some(observed),
+        );
+    }
+    drop(states);
     drop(runtime);
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
+    for lease in [first_lease, second_lease] {
+        let rows = owner
+            .root
+            .read_character_quest_state(owner.character, lease.character_id())
+            .await
+            .map_err(debug)?;
+        let track = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked";
+        assert_eq!(rows.tracks().get(&format!("{track}/hard_kills")), Some(&1));
+        assert_eq!(
+            rows.tracks()
+                .get(&format!("{track}/kill_arbaziloth/questline")),
+            Some(&2)
+        );
+    }
     for (actor, session) in players {
         let (outcome, _) = owner.paced_step(actor, session, StepDirection::East).await;
         assert_eq!(outcome.disposition, StepDisposition::Moved);
-        let at = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
-        assert_eq!((at.x, at.y, at.floor), (i32::from(FORGE.x), i32::from(FORGE.y), 14));
+        let at = owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (at.x, at.y, at.floor),
+            (i32::from(FORGE.x), i32::from(FORGE.y), 14)
+        );
     }
     Ok(())
 }

@@ -327,7 +327,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map(|credits| {
                         super::super::encounter_phases::bind(
                             runtime,
-                            callback,
+                            encounter,
                             key,
                             actors,
                             &party,
