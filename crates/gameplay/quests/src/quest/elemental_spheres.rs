@@ -405,6 +405,39 @@ mod tests {
     use super::*;
 
     #[test]
+    fn elemental_spheres_machine_routes_use_the_same_durable_counter() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let track = catalogue.track(MACHINE_GEMS).ok_or("gem counter")?;
+        assert_eq!((track.initial, track.min, track.max), (-1, -1, i64::MAX));
+        for rule in USES {
+            let transition = catalogue.transition(rule.key);
+            if rule.appearance >= 846 {
+                assert!(transition.is_none());
+                continue;
+            }
+            let [effect] = transition
+                .ok_or("machine USE transition")?
+                .effects
+                .as_slice()
+            else {
+                return Err("machine USE must have exactly one counter effect".into());
+            };
+            use super::super::{QuestComparison, QuestEffectKind};
+            assert_eq!(effect.track, MACHINE_GEMS);
+            if rule.entering {
+                assert_eq!(effect.from, QuestComparison::Between(20, i64::MAX));
+                assert_eq!(effect.effect, QuestEffectKind::Add(-20));
+            } else {
+                assert_eq!(effect.from, QuestComparison::Between(-1, 19));
+                assert_eq!(effect.effect, QuestEffectKind::Add(0));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn m49_elemental_arrival_requires_the_corpse_and_all_eight_charged_cells()
     -> Result<(), &'static str> {
         let rule = rules()
