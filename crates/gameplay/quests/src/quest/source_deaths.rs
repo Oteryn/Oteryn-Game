@@ -294,3 +294,17 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     )
     .map_err(|error| format!("{error:?}"))
 }
+
+/// Closed donor callback owned atomically by the native death settlement.
+pub fn overlord(creature: &str) -> Option<&'static Rule> {
+    if !matches!(
+        creature,
+        "oteryn:creature.earth_overlord"
+            | "oteryn:creature.energy_overlord"
+            | "oteryn:creature.fire_overlord"
+            | "oteryn:creature.ice_overlord"
+    ) {
+        return None;
+    }
+    rules().ok()?.iter().find(|rule| rule.creature == creature)
+}

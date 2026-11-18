@@ -276,31 +276,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(rejected());
         }
-        let mut slots = Vec::with_capacity(plan.members.len());
-        let mut members = Vec::with_capacity(plan.members.len());
+        let mut recipients = std::collections::BTreeMap::new();
         for member in &plan.members {
-            let mut slot = self.revision_sequencer.acquire(member.character).await;
+            recipients.insert(member.character, (member.session, None));
+        }
+        for (character, session, lease) in super::quest_kill_objectives::overlord_recipients(entry)
+        {
+            if let Some((old_session, _)) = recipients.get(&character)
+                && *old_session != session
+            {
+                return Err(rejected());
+            }
+            recipients.insert(character, (session, Some(lease)));
+        }
+        let mut slots = Vec::with_capacity(recipients.len());
+        let mut quest_fences = Vec::with_capacity(recipients.len());
+        for (character, (session, lease)) in recipients {
+            let mut slot = self.revision_sequencer.acquire(character).await;
             let mut fence = self
-                .current_quest_fence(member.session)
+                .current_quest_fence(session)
                 .await
                 .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?
                 .ok_or_else(rejected)?;
-            if fence.character_id != member.character {
+            if fence.character_id != character
+                || lease.is_some_and(|lease| fence.character_lease_generation != lease)
+            {
                 return Err(rejected());
             }
-            if member.character.as_bytes() == entry.facts.principal.character.as_bytes()
+            if character.as_bytes() == entry.facts.principal.character.as_bytes()
                 && (fence.game_session_id != entry.facts.principal.session
                     || fence.character_lease_generation != entry.facts.principal.lease_generation)
             {
                 return Err(rejected());
             }
-            fence.expected_character_revision = slot
-                .cursor(self.root, self.character)
-                .await
-                .map_err(|error|match error {
-                    crate::durability::character_authority::CharacterAuthorityError::Unavailable(error)=>CharacterProgressionError::Unavailable(error),
-                    _=>rejected(),
-                })?;
+            fence.expected_character_revision = slot.cursor(self.root, self.character).await.map_err(|error| match error {
+                crate::durability::character_authority::CharacterAuthorityError::Unavailable(error) => CharacterProgressionError::Unavailable(error),
+                _ => rejected(),
+            })?;
+            quest_fences.push(fence);
+            slots.push(slot);
+        }
+        let mut members = Vec::with_capacity(plan.members.len());
+        for member in &plan.members {
+            let fence = *quest_fences
+                .iter()
+                .find(|fence| fence.character_id == member.character)
+                .ok_or_else(rejected)?;
             let binding = self
                 .progression_binding(member.session)
                 .ok_or(CharacterProgressionError::MissingProgressionState)?;
@@ -338,7 +359,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 party_id: member.party_id,
                 party_revision: member.party_revision,
             });
-            slots.push(slot);
         }
         let endgame_kill = entry.soulpit_experience.is_none()
             && super::kill_reward::tracks_native_progression(&entry.creature);
@@ -369,13 +389,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             entry,
             Some(members),
             &plan,
+            &quest_fences,
         );
         let result = self
             .root
             .try_issue_semantic_pass()?
             .run_with_context(&mut ctx, move |holder, deadline, ctx| {
                 Box::pin(async move {
-                    let (owner, runtime, states, _attack, entry, members, previous) = ctx;
+                    let (owner, runtime, states, _attack, entry, members, previous, quest_fences) = ctx;
                     let b = runtime.binding();
                     let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
                     let scope = item_tx::assert_spell_item_scope_in_transaction(
@@ -418,7 +439,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 && damage.lease_generation == Some(member.fence.character_lease_generation))))
                             .collect::<Vec<_>>();
                         let objectives = match super::quest_kill_objectives::apply_in_transaction(
-                            &mut tx, owner.holder, entry, &participants, owner.quest_catalogue.as_deref()).await {
+                            &mut tx, owner.holder, entry, &participants, quest_fences, owner.quest_catalogue.as_deref()).await {
                             Ok(committed) => committed, Err(error) => return Ok(Err(error)),
                         };
                         party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
@@ -577,7 +598,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ).await { return Ok(Err(error)); }
                     }
                     let objectives = match super::quest_kill_objectives::apply_in_transaction(
-                        &mut tx, owner.holder, entry, &participants, owner.quest_catalogue.as_deref()).await {
+                        &mut tx, owner.holder, entry, &participants, quest_fences, owner.quest_catalogue.as_deref()).await {
                         Ok(committed) => committed, Err(error) => return Ok(Err(error)),
                     };
                     party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
