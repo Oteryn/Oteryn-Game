@@ -20,6 +20,8 @@ individual process peak. Concurrent processes also contribute to cgroup usage.
 | Dispatch lib test, fresh resubmission on the same source | 2 | 16,590,240 | 1428.314 | rustc SIGKILL before link |
 | Dispatch lib test, independent pinned-base run | 2 | 16,436,944 | 2747.548 | rustc SIGKILL before link |
 | Dispatch lib test, dependencies cached | 1 | 16,559,372 | 392.963 | rustc SIGKILL before link |
+| Dispatch lib test with the combined package profile, dependencies cached | 1 | 16,340,144 | 1296.471 | Linked and listed 4,339 tests (4,341 output lines) |
+| Dispatch LLD replay with the combined package profile | — | 4,846,628 | 40.141 | Linked |
 | Dispatch lib test, 32 codegen units, dependencies cached | 1 | 16,551,756 | 622.273 | rustc SIGKILL before link |
 | Dispatch MIR-only replay, incremental retained | 1 | 16,660,920 | 688.945 | emitted MIR, then OOM-killed |
 | Dispatch lib test, incremental off | 2 | 16,581,872 | 306.471 | rustc SIGKILL before link |
@@ -220,6 +222,18 @@ additional OOM kill. The resulting `cargo test -- --list` output
 contains 4,341 lines and lists all 4,339 tests. This is the first
 package-only trial to produce the complete dispatch executable.
 The two-job measurement and hosted-runner margin are still open.
+
+The linked dispatch test executable is 1,259,914,408 bytes. The final
+link received 241 rlibs (1,487,495,302 bytes) and 258 objects
+(1,447,076,144 bytes). Its ELF comment identifies LLD 23.1.5. Replaying
+the captured linker command against the same inputs measured 4,846,628
+KiB over 40.141 s.
+
+The complete executable ran the exact
+`boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger`
+case against PostgreSQL 18.6. It emitted the state-and-replay completion
+marker and reported 1 passed, 0 failed, 0 ignored and 4,338 filtered
+after 76.76 s.
 
 ## Hosted build scope
 
