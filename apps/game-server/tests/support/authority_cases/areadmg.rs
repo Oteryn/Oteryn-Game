@@ -360,15 +360,12 @@ async fn exercise(h: &fixture::Harness, case: Case) -> TestResult {
         if is_pits { &protections } else { &[] },
     )
     .await?;
+    let mut fence = composed_test_owner::load_quests(&owner, session).await?;
     if let Some(track_values) = case.initial_cuts() {
         super::engnpc2_live_transport::seed_tool(h, native, rules::AXE).await?;
-        for (track, value) in rules::CUT_TRACKS.into_iter().zip(track_values) {
-            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(41).as_slice()).bind(track).bind(rules::QUEST).bind(value)
-        .execute(&h.pool).await?;
-        }
+        seed_oak_cuts(&owner, &mut fence, track_values).await?;
+        fence = composed_test_owner::load_quests(&owner, session).await?;
     }
-    let fence = composed_test_owner::load_quests(&owner, session).await?;
     match case {
         Case::PitsMatching | Case::PitsOther => {
             let expected = if matches!(case, Case::PitsMatching) {
@@ -383,6 +380,46 @@ async fn exercise(h: &fixture::Harness, case: Case) -> TestResult {
             oak_cut(h, &owner, &runtime, actor, fence, native, case).await
         }
     }
+}
+
+async fn seed_oak_cuts(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    fence: &mut crate::durability::character_progression::CurrentCharacterGameplayFence,
+    cuts: [i64; 4],
+) -> TestResult {
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::foundation::{CommandId, CommandRef};
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    let mut command = 10_000;
+    for (transition, before) in rules::CUT_TRANSITIONS.into_iter().zip(cuts) {
+        for _ in 1..before {
+            command += 1;
+            let result = owner
+                .root
+                .commit_character_quest_transition(
+                    owner.character,
+                    owner.holder,
+                    *fence,
+                    QuestTransitionRequest {
+                        transition_key: transition.into(),
+                        cause: QuestCause::Command(CommandRef::new(
+                            fence.game_session_id,
+                            CommandId::new(command).map_err(debug)?,
+                        )),
+                    },
+                    Arc::clone(catalogue),
+                )
+                .await
+                .map_err(debug)?;
+            let QuestTransitionOutcome::Committed(receipt) = result else {
+                return Err(format!("historical oak cut refused: {result:?}").into());
+            };
+            fence.expected_character_revision = receipt.committed_character_revision;
+        }
+    }
+    Ok(())
 }
 
 async fn check_step(
