@@ -1075,6 +1075,12 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == super::scutty_debt_payment::NAME {
+        return Box::pin(super::scutty_debt_payment::exercise(
+            owner, admitted, h, authority,
+        ))
+        .await;
+    }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return Box::pin(super::l6_paradox_upper::exercise(
             owner, admitted, h, authority, name,

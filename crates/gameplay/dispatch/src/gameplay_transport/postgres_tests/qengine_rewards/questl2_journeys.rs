@@ -1,6 +1,6 @@
 use super::*;
 use crate::map::view::MapFacts;
-use oteryn_protocol_oteryn::world_object::{UseDisposition,WorldObjectTarget};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 pub(super) async fn quantity(h: &Harness, item: u32) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1").bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
 }

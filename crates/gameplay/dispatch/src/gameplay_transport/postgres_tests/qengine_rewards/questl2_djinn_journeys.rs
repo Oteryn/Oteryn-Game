@@ -51,11 +51,20 @@ pub(super) async fn exercise(
         refs.each_ref().map(String::as_str),
         // Every actor owns a distinct, reachable cell; leave callback cells clear.
         [
-            (33291, 31675), (33292, 31675), (33293, 31675),
-            (33294, 31675), (33295, 31675), (33291, 31676),
-            (33292, 31676), (33293, 31676), (33294, 31676),
-            (33295, 31676), (33291, 31677), (33295, 31677),
-        ].map(|(x, y)| Position { x, y, floor: -15 }),
+            (33291, 31675),
+            (33292, 31675),
+            (33293, 31675),
+            (33294, 31675),
+            (33295, 31675),
+            (33291, 31676),
+            (33292, 31676),
+            (33293, 31676),
+            (33294, 31676),
+            (33295, 31676),
+            (33291, 31677),
+            (33295, 31677),
+        ]
+        .map(|(x, y)| Position { x, y, floor: -15 }),
     )
     .await?;
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
@@ -398,8 +407,7 @@ async fn shop(
     let id = first + 2;
     commands.push((id, 8, payload.clone()));
     commands.push((id, 8, payload));
-    let results =
-        super::super::questl2_fixture::wire_sequence(owner, admitted, commands).await?;
+    let results = super::super::questl2_fixture::wire_sequence(owner, admitted, commands).await?;
     assert_eq!(results.len(), 4);
     assert_eq!(
         oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(&results[2])
