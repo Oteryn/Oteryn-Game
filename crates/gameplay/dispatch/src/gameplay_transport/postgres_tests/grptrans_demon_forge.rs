@@ -26,16 +26,28 @@ fn grptrans_demon_forge_step_accepts_any_exact_throne_postgres() -> TestResult {
     };
     super::kill_reward_e2e::scenario_thread::run("grptrans-demon-forge", move || {
         run(async move |_| {
-            let h =
-                Harness::create_with_admission_seed(admin, "grptrans_forge", false, false).await?;
-            let result = exercise(&h).await;
-            h.cleanup().await?;
-            result
+            for (throne, wrong_value, accepted_value) in [
+                ("oteryn:quest-progress/storage/41020", 2, 1),
+                ("oteryn:quest-progress/storage/41026", 1, 10),
+            ] {
+                let h = Harness::create_with_admission_seed(
+                    admin.clone(), "grptrans_forge", false, false,
+                ).await?;
+                let result = exercise(&h, throne, wrong_value, accepted_value).await;
+                h.cleanup().await?;
+                result?;
+            }
+            Ok(())
         })
     })
 }
 
-async fn exercise(h: &Harness) -> TestResult {
+async fn exercise(
+    h: &Harness,
+    throne_track: &str,
+    wrong_value: i64,
+    accepted_value: i64,
+) -> TestResult {
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -164,17 +176,17 @@ async fn exercise(h: &Harness) -> TestResult {
         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
-    for (throne, expected) in [(None, START), (Some(1_i64), START), (Some(10_i64), FORGE)] {
+    for (throne, expected) in [(None, START), (Some(wrong_value), START), (Some(accepted_value), FORGE)] {
         if let Some(value) = throne {
             let mut tx = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *tx)
                 .await?;
             sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
-                SELECT character_id,'oteryn:quest-progress/storage/41026','oteryn:quest.the_pits_of_inferno_quest',$2,character_revision
+                SELECT character_id,$2,'oteryn:quest.the_pits_of_inferno_quest',$3,character_revision
                 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
                 ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
-                .bind(id(41).as_slice()).bind(value).execute(&mut *tx).await?;
+                .bind(id(41).as_slice()).bind(throne_track).bind(value).execute(&mut *tx).await?;
             tx.commit().await?;
         }
         owner.clock_origin = owner
@@ -199,7 +211,7 @@ async fn exercise(h: &Harness) -> TestResult {
                 .map_err(debug)?
                 .position(),
             expected,
-            "Demon Forge destination with Pumin storage {throne:?}",
+            "Demon Forge destination with {throne_track} value {throne:?}",
         );
     }
     Ok(())
