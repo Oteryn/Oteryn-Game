@@ -31,6 +31,7 @@ enum Route {
     CathedralNote,
     CoalBasin,
     Demonrage,
+    Logic,
     Lord,
     Combat,
     Complete,
@@ -86,6 +87,10 @@ pub(super) fn demonrage_switches(admin: String) -> TestResult {
     run_with_admin(Route::Demonrage, admin)
 }
 
+pub(super) fn logic_campfire_layout(admin: String) -> TestResult {
+    run_with_admin(Route::Logic, admin)
+}
+
 pub(super) fn lord_switches(admin: String) -> TestResult {
     run_with_admin(Route::Lord, admin)
 }
@@ -111,6 +116,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             | Route::CathedralNote
             | Route::CoalBasin
             | Route::Demonrage
+            | Route::Logic
             | Route::Lord
     );
     let start = if route == Route::Lord {
@@ -121,6 +127,8 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         super::quest_coal_basin::START
     } else if route == Route::Demonrage {
         super::quest_demonrage::START
+    } else if route == Route::Logic {
+        super::quest_banshee_logic::START
     } else if route == Route::Ashmunrah {
         super::l6_shared_gate_native::start("l6-tomb-gate-native-open-50138")?
     } else if matches!(
@@ -191,7 +199,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let mut currents = Vec::new();
         let mut operations = Vec::new();
         let participants = match route {
-            Route::CathedralNote | Route::TimedPassage => 1,
+            Route::CathedralNote | Route::Logic | Route::TimedPassage => 1,
             Route::Ashmunrah | Route::CoalBasin | Route::Demonrage | Route::Lord => 2,
             _ => 4,
         };
@@ -529,6 +537,14 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         }
         if route == Route::Demonrage {
             let result = super::quest_demonrage::exercise(&mut owner, &mut admitted, map).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
+        if route == Route::Logic {
+            let result = super::quest_banshee_logic::exercise(&mut owner, &mut admitted[0], map).await;
             drop(owner);
             drop(authority);
             drop(seal);

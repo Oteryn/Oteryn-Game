@@ -91,18 +91,18 @@ fn stages() -> Vec<Value> {
     stages
 }
 
-fn target(map: &BundleMap, p: Position) -> TestResult<WorldObjectTarget> {
-    let key = placement_key(tile(p), 1).ok_or("Demonrage lever placement")?;
+pub(super) fn target(map: &BundleMap, p: Position) -> TestResult<WorldObjectTarget> {
+    let key = placement_key(tile(p), 1).ok_or("seal lever placement")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     Ok(WorldObjectTarget {placement,expected_revision:map.facts.object_revision(key)})
 }
 
-fn appearance(map: &BundleMap, p: Position) -> TestResult<u16> {
-    let t = map.overlay.base().tile(p.x,p.y,p.floor).ok_or("Demonrage tile")?;
+pub(super) fn appearance(map: &BundleMap, p: Position) -> TestResult<u16> {
+    let t = map.overlay.base().tile(p.x,p.y,p.floor).ok_or("seal tile")?;
     let id = t.ids().iter().zip(t.depths()).filter(|(_,d)| **d == 0).nth(1)
-        .map(|(&id,_)| id).ok_or("Demonrage slot")?;
-    Ok(map.facts.base_entry(tile(p),1,id).ok_or("Demonrage object")?.appearance_id)
+        .map(|(&id,_)| id).ok_or("seal object slot")?;
+    Ok(map.facts.base_entry(tile(p),1,id).ok_or("seal object")?.appearance_id)
 }
 
 #[test]
