@@ -70,7 +70,7 @@ fn seclib2_ghulosh_party_use_transforms_respawns_book_and_exits_postgres() -> Te
                         "/../../../content/world/placements/region-z13-x127-y127.b3"
                     )),
                     region: (13, 127, 127),
-                    bounds: (32664, 32711, 32665, 32712),
+                    bounds: (32664, 32711, 32666, 32712),
                     start: (32664, 32711),
                     expected: vec![ExpectedTile {
                         position: (32664,32711), ids: vec![11421], counted_entry: None,
@@ -228,6 +228,13 @@ fn seclib2_ghulosh_party_use_transforms_respawns_book_and_exits_postgres() -> Te
                 ).await;
                 assert_eq!(step.disposition, oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved);
                 assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), EXIT);
+                if actor == deps.actor {
+                    let (step, _) = owner.ordinary_paced_step(
+                        actor, session, oteryn_protocol_oteryn::world_spatial::StepDirection::East,
+                        None, None,
+                    ).await;
+                    assert_eq!(step.disposition, oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved);
+                }
             }
             drop(owner);
             drop(authority);
