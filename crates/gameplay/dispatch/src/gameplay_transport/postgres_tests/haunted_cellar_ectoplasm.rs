@@ -45,6 +45,7 @@ pub(super) fn binding() -> TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
         "key":USE,"quest":QUEST,"trigger":"use",
         "selector":{"native":{"position":EGG,"ordinal":1,"appearance":29305}},
+        "reversible":false,"passages":[],"offerings":[],"return_on_failure":false,
         "requires_world_admission":true,
         "item_on_target":{
             "item":EMPTY,"alternatives":[PARTIAL],"count":1,

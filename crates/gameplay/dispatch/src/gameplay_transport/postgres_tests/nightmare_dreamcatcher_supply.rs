@@ -33,6 +33,7 @@ pub(super) fn binding() -> TestResult<Callback> {
         "key":KEY, "quest":"oteryn:quest.the_dream_courts_quest", "trigger":"use",
         "selector":{"native":{"position":POLE,"ordinal":1,"appearance":29274}},
         "lever":[29274,29275], "requires_world_admission":true,
+        "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
         "success_message":"You can rip off a dream catcher!",
         "effects":{
             "ground_supply_on_open":true, "reset_after_ms":10000,

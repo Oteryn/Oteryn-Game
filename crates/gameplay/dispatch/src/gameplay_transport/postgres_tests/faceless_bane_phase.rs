@@ -52,6 +52,7 @@ pub(super) fn binding() -> TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
         "key":KEY,"quest":QUEST,"trigger":"use",
         "selector":{"native":{"position":LEVER,"ordinal":2,"appearance":9110}},
+        "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
         "effects":{
             "encounter":{"minimum_level":250,"players":players,
                 "room_min":at(33607,32553),"room_max":at(33627,32570),
@@ -72,6 +73,7 @@ fn release_binding() -> TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
         "key":"oteryn:quest-callback/dream-courts/faceless-bane-release","quest":QUEST,"trigger":"step_in",
         "selector":{"native":{"position":RELEASE,"ordinal":1,"appearance":431}},
+        "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
         "effects":{"release_encounter":KEY},
         "sources":[
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/movements_faceless_tiles.lua:25-40"

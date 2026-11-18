@@ -32,6 +32,7 @@ pub(super) fn binding() -> TestResult<Callback> {
         "key":KEY,"quest":"oteryn:quest.dreamer_s_challenge_quest","trigger":"use",
         "selector":{"native":{"position":LEVER,"ordinal":2,"appearance":2772}},
         "lever":[2772,2773],"reversible":true,"requires_world_admission":true,
+        "passages":[],"storage":[],"offerings":[],"return_on_failure":false,
         "effects":{"ground_supply":[
             {"item":WHITE_ITEM,"count":8,"position":WHITE},
             {"item":BLACK_ITEM,"count":12,"position":BLACK}
