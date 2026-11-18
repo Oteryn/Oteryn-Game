@@ -119,6 +119,17 @@ impl Callback {
     /// Presentation follows a newly committed receipt. Replayed receipts do not
     /// repeat success text; the dispatch owner supplies that distinction.
     pub fn committed_message<'a>(&'a self, changes: &[QuestTrackChange]) -> Option<&'a str> {
+        if let Some(claim) = &self.effects.claim
+            && let Some(track) = &claim.selection_track
+            && let Some(change) = changes.iter().find(|change| &change.track == track)
+            && let Ok(index) = usize::try_from(change.after.saturating_sub(1))
+            && let Some(message) = claim
+                .rewards
+                .get(index)
+                .and_then(|reward| reward.message.as_deref())
+        {
+            return Some(message);
+        }
         match self.native_rule {
             Some(NativeRule::BarbarianMead) => crate::quest::barbarian_mead::message(changes),
             // Crystal actions_cult_symbol.lua:43-47. Mission-only repair is silent.

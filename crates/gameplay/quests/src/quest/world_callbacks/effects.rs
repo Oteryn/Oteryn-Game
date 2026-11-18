@@ -58,6 +58,8 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub claim: Option<super::Claim>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requires_item_disguise: Option<ItemDisguiseRequirement>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub restore_disguise: bool,
@@ -393,6 +395,13 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .claim
+        .as_ref()
+        .is_some_and(|claim| !claim.valid(callback))
+    {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

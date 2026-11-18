@@ -1,5 +1,6 @@
 //! The carried selection accompanies a World turn without changing legacy contexts.
 use super::QuestWorldContext;
+use crate::durability::character_last_position::FinalLastPosition;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseTarget};
 use serde::Serialize;
 
@@ -9,6 +10,10 @@ pub struct QuestWorldToolContext {
     world: QuestWorldContext,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) selected_tool: Option<SelectedQuestTool>,
+    // The checkpoint is freshly derived for a retry. The bound callback and
+    // actor occurrence already identify the command and its restore effect.
+    #[serde(skip)]
+    pub(crate) claim_vitals: Option<FinalLastPosition>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -22,10 +27,16 @@ impl From<QuestWorldContext> for QuestWorldToolContext {
         Self {
             world,
             selected_tool: None,
+            claim_vitals: None,
         }
     }
 }
 impl QuestWorldToolContext {
+    pub fn with_claim_vitals(mut self, save: FinalLastPosition) -> Self {
+        self.claim_vitals = Some(save);
+        self
+    }
+
     /// The replay identity of a legacy World claim. Like main's RewardClaim
     /// chest owner, its receipt is keyed by cause and claim; the actor's
     /// movement proof is re-derived by a rebuilt owner and is checked live.
@@ -71,6 +82,7 @@ impl QuestWorldContext {
         Some(QuestWorldToolContext {
             world: self,
             selected_tool: Some(SelectedQuestTool { source, intent }),
+            claim_vitals: None,
         })
     }
 }

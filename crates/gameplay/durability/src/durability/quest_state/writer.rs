@@ -1025,6 +1025,12 @@ impl DurabilityRoot {
             .transpose()
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .flatten();
+        let claim_vitals = context.as_ref().and_then(|(_, world, _)| world.claim_vitals);
+        if claim_vitals.is_some() != callback.as_ref().and_then(|world| world.effects.claim.as_ref())
+            .is_some_and(|claim| claim.restore_vitals)
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let world_reward = callback.as_ref().and_then(|c| c.item_reward().as_ref());
         let world_disguise = callback
             .as_ref()
@@ -1032,7 +1038,9 @@ impl DurabilityRoot {
         let step_world_reward = callback
             .as_ref()
             .is_some_and(|c| c.has_fenced_step_reward());
-        if (reward_callback.is_some() || world_reward.is_some() || world_disguise.is_some())
+        if (reward_callback.is_some()
+            || callback.as_ref().is_some_and(|world| world.needs_item_reward_admission())
+            || world_disguise.is_some())
             != reward_admission.is_some()
             || (world_disguise.is_some() && !matches!(request.cause, QuestCause::Step(_)))
             || (reward_callback.is_some()
@@ -2039,12 +2047,68 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
-                    if let Some(world) = &callback && !world.achievements.is_empty() {
-                        let (cause, ordinal) = request.cause.key();
-                        let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key)).map_err(|_| DurabilityError::InvalidStoredState)?;
-                        let occurrence = sha2::Sha256::digest(&occurrence);
-                        let keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
-                        super::super::account_achievement::grant_missing(&mut tx, fence.character_id, &keys, "oteryn:quest-world-reward", &occurrence).await?;
+                    if let Some(save) = claim_vitals {
+                        use super::super::character_last_position::{LastPositionKey, LastPositionWrite, upsert_last_position};
+                        if save.record.world_id != fence.runtime_scope.world_id()
+                            || save.write_sequence == 0 || save.record.vitals.is_none()
+                        {
+                            return Ok(Err(CharacterProgressionError::InvalidInput));
+                        }
+                        let key = LastPositionKey {
+                            character_lease_generation: fence.character_lease_generation,
+                            write_sequence: save.write_sequence,
+                        };
+                        if upsert_last_position(&mut tx, character.as_bytes(), key, &save.record).await?
+                            != LastPositionWrite::Written
+                        {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
+                    if let Some(world) = &callback {
+                        if let Some(claim) = &world.effects.claim
+                            && let Some(selection_track) = &claim.selection_track
+                        {
+                            let (Some(admission), Some(tuple)) = (*reward_admission, reward_tuple) else {
+                                return Err(DurabilityError::InvalidStoredState);
+                            };
+                            let QuestCause::Use(command) = request.cause else {
+                                return Err(DurabilityError::InvalidStoredState);
+                            };
+                            let revision = format!("sha256:{}", admission.native.source_digest().iter()
+                                .map(|byte| format!("{byte:02x}")).collect::<String>());
+                            if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
+                                || admission.weights.generation_digest() != admission.native.source_digest() {
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                            let Some((index, selected)) = super::super::quest_world_callback::claim::choose(
+                                &mut tx, fence.character_id, admission.native, claim,
+                            ).await? else {
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            };
+                            if super::super::reward_claim_mint::quest::mint(
+                                &mut tx, tuple, &node, fence, command, &world.key,
+                                super::super::reward_claim_mint::quest::QuestMintClaim::WorldUse,
+                                &selected.give, admission, None,
+                            ).await?.is_none() {
+                                tx.rollback().await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                            changes.iter_mut().find(|change| change.track == *selection_track)
+                                .ok_or(DurabilityError::InvalidStoredState)?.after =
+                                i64::try_from(index + 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+                        }
+                        let mut keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
+                        if let Some(milestone) = world.effects.claim.as_ref().and_then(|claim| claim.milestone.as_ref())
+                            && changes.iter().any(|change| change.track == milestone.track && change.after == milestone.count)
+                        {
+                            keys.push(&milestone.achievement);
+                        }
+                        if !keys.is_empty() {
+                            let (cause, ordinal) = request.cause.key();
+                            let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key)).map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let occurrence = sha2::Sha256::digest(&occurrence);
+                            super::super::account_achievement::grant_missing(&mut tx, fence.character_id, &keys, "oteryn:quest-world-reward", &occurrence).await?;
+                        }
                     }
                     let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
                     if completes {

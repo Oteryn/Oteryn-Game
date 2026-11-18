@@ -1067,6 +1067,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 context.into()
             };
+            // Crystal actions_fountain.lua:3-11 restores health and mana together.
+            let (context, restored) = if callback
+                .effects
+                .claim
+                .as_ref()
+                .is_some_and(|claim| claim.restore_vitals)
+            {
+                use crate::durability::character_last_position::LastVitals;
+                let Some(current) = states.get(runtime, actor, session) else {
+                    return UseDisposition::Rejected;
+                };
+                let Some((after_health, _)) = current.after_health_gain(u64::MAX) else {
+                    return UseDisposition::Rejected;
+                };
+                let Some((after, _)) = after_health.after_mana_gain(u64::MAX) else {
+                    return UseDisposition::Rejected;
+                };
+                let Ok(player) = runtime.read_actor_position(actor) else {
+                    return UseDisposition::Rejected;
+                };
+                let mut save = self.placed_record(runtime, player.position());
+                save.record.vitals = LastVitals::new(after.vitals().health, after.vitals().mana);
+                save.record.rest = Some(after.bed_rest_snapshot(self.owner_now().get()));
+                (context.with_claim_vitals(save), Some(after))
+            } else {
+                (context, None)
+            };
             let reward_weights = self
                 .active_generation
                 .and_then(|g| g.native_gameplay())
@@ -1088,7 +1115,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            let reward_admission = if callback.item_reward().is_some()
+            let reward_admission = if callback.needs_item_reward_admission()
                 || callback.effects.requires_item_disguise.is_some()
             {
                 self.active_generation
@@ -1192,7 +1219,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
-            if callback.item_reward().is_some()
+            if callback.needs_item_reward_admission()
                 && matches!(
                     &outcome,
                     Ok(QuestTransitionOutcome::Committed(_)
@@ -1219,6 +1246,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
+                    if let Some(after) = restored
+                        && let Some(live) = states.get_mut(runtime, actor, session)
+                    {
+                        *live = after;
+                    }
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.

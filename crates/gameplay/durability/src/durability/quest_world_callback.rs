@@ -2,6 +2,7 @@
 pub mod carried_step;
 pub(super) mod carrot;
 pub(crate) mod character_requirements;
+pub(crate) mod claim;
 mod completed_quests;
 pub(super) mod completion;
 mod ground_read;
