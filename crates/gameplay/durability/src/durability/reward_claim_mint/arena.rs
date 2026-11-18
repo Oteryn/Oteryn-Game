@@ -59,7 +59,9 @@ impl DurabilityRoot {
             if let Some(reply)=arena::replay(&mut tx,gameplay,request.command,&payload).await? {tx.commit(deadline).await?;return Ok(Ok(reply));}
             let state=arena::load_state(&mut tx,gameplay).await?;
             let masks=arena::claimed_masks(&mut tx,gameplay).await?;
-            let refusal=if state.completed<rank || state.phase!=3 {Some(D::WrongState)}
+            // Crystal movements_arena_pit.lua:26-46 permanently opens the rank's reward door.
+            // Chest USE remains available on later visits, with the original once-claim key.
+            let refusal=if state.completed<rank {Some(D::WrongState)}
                 else if masks[usize::from(rank-1)]&(1<<(category-1))!=0 {Some(D::AlreadyClaimed)} else {None};
             if let Some(disposition)=refusal {
                 let bytes=finish(&mut tx,gameplay,&request,&payload,&state,disposition).await?;

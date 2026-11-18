@@ -132,7 +132,7 @@ enum NativeScenario {
     PitGroundReset,
     Timeout,
     ResetMonsters,
-    SharedRewards,
+    SharedRewards { leave_before_use: bool },
     SpectatorTransfer,
     TrophyInscription,
 }
@@ -183,7 +183,17 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
     scenario_route_with_expiry(funded, route, false)
 }
 pub(super) fn chest_and_wire_share_rewards() -> TestResult {
-    scenario_route(true, Some(NativeScenario::SharedRewards))
+    scenario_route(
+        true,
+        Some(NativeScenario::SharedRewards { leave_before_use: false }),
+    )
+}
+
+pub(super) fn earned_chest_after_leaving() -> TestResult {
+    scenario_route(
+        true,
+        Some(NativeScenario::SharedRewards { leave_before_use: true }),
+    )
 }
 
 pub(super) fn south_portal_concession() -> TestResult {
@@ -212,7 +222,7 @@ pub(super) fn spectator_transfer() -> TestResult {
 
 fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool) -> TestResult {
     let native_portals = route.is_some();
-    let shared_rewards = matches!(route, Some(NativeScenario::SharedRewards));
+    let shared_rewards = matches!(route, Some(NativeScenario::SharedRewards { .. }));
     let concede = matches!(route, Some(NativeScenario::Concession));
     let pit_ground_reset = matches!(route, Some(NativeScenario::PitGroundReset));
     let halvar = pit_ground_reset || matches!(route, Some(NativeScenario::Halvar));
@@ -843,8 +853,10 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 5022));
 
         }
-        if shared_rewards {
-            return super::qcx61_shared_rewards::after_first_rank(&mut owner, &mut admitted, &harness, deps.actor).await;
+        if let Some(NativeScenario::SharedRewards { leave_before_use }) = route {
+            return super::qcx61_shared_rewards::after_first_rank(
+                &mut owner, &mut admitted, &harness, deps.actor, leave_before_use,
+            ).await;
         }
         if halvar_next_rank {
             return super::qcx61_halvar_next_rank::after_greenhorn(&mut owner, &mut admitted, &harness, deps.actor).await;
