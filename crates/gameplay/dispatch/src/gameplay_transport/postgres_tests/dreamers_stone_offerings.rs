@@ -1,4 +1,4 @@
-//! Crystal 201189f dreamers_challenge_quest/actions_stone_teleport.lua:4-8,30-67.
+//! Crystal 201189f dreamers_challenge_quest/actions_stone_teleport.lua:4-22,30-67.
 use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{input_item, local, scenario, wire, world_cells};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
@@ -283,12 +283,14 @@ pub(super) async fn exercise(
     let source = placement_key(tile(LEVER), 1).ok_or("lever key")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&source.to_be_bytes());
-    let payload = encode_use_intent(&WorldObjectTarget {
-        placement,
-        expected_revision: 0,
-    })
-    .map_err(debug)?;
-    let reply = wire(owner, admitted, 1, COMMAND_TYPE_USE_INTENT, payload).await?;
+    let payload = |expected_revision| {
+        encode_use_intent(&WorldObjectTarget {
+            placement: placement.clone(),
+            expected_revision,
+        })
+        .map_err(debug)
+    };
+    let reply = wire(owner, admitted, 1, COMMAND_TYPE_USE_INTENT, payload(0)?).await?;
     assert_eq!(
         decode_use_result(&reply).map_err(debug)?,
         UseDisposition::Committed
@@ -312,19 +314,32 @@ pub(super) async fn exercise(
     for (at, _, active) in WELLS {
         assert_eq!(appearance(at)?, active);
     }
-    let (pools, ground, later): (i64, i64, i64) = sqlx::query_as(
-        "SELECT (SELECT count(*) FROM game_quest_stone_splash_consumptions),
+    let receipt_counts = || {
+        sqlx::query_as::<_, (i64, i64, i64)>(
+            "SELECT (SELECT count(*) FROM game_quest_stone_splash_consumptions),
                 (SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key=$1),
                 (SELECT count(*) FROM game_item_instances
                  WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i6299')",
-    )
-    .bind(STONE_KEY)
-    .fetch_one(&harness.pool)
-    .await?;
+        )
+        .bind(STONE_KEY)
+        .fetch_one(&harness.pool)
+    };
+    let expected_counts = if full { (1, 3, 0) } else { (1, 0, 1) };
+    assert_eq!(receipt_counts().await?, expected_counts);
+
+    // Crystal actions_stone_teleport.lua:16-23,33-43 only restores the
+    // wells on the return face. The opened portal stays until a player uses it.
+    let reply = wire(owner, admitted, 2, COMMAND_TYPE_USE_INTENT, payload(1)?).await?;
     assert_eq!(
-        (pools, ground, later),
-        if full { (1, 3, 0) } else { (1, 0, 1) }
+        decode_use_result(&reply).map_err(debug)?,
+        UseDisposition::Committed
     );
+    assert_eq!(appearance(LEVER)?, 2772);
+    for (at, dormant, _) in WELLS {
+        assert_eq!(appearance(at)?, dormant);
+    }
+    assert_eq!(appearance(PORTAL)?, if full { 1949 } else { 1842 });
+    assert_eq!(receipt_counts().await?, expected_counts);
     if full {
         let actor = admitted.runtime_actor.ok_or("actor")?;
         {
@@ -345,7 +360,7 @@ pub(super) async fn exercise(
         let reply = wire(
             owner,
             admitted,
-            2,
+            3,
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
             encode_step_intent(StepDirection::East),
         )
