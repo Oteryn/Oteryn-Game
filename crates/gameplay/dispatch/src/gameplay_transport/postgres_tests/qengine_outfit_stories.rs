@@ -1491,8 +1491,10 @@ pub(super) async fn exercise(
             | "knight"
             | "hunter"
             | "mage"
+            | "warrior"
     ) {
-        // Ajax's 101 iron ores outweigh a fresh carrier.
+        // The fixture carries full source batches and a surplus unit to verify exact
+        // consumption. Trisha's 100 hardened bones alone weigh 600 oz.
         let carrying_level = if family == "royal-costume" { 200 } else { 50 };
         earn_level(owner, admitted, authority, carrying_level).await?;
     }

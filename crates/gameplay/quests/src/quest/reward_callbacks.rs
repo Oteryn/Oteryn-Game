@@ -1446,6 +1446,18 @@ fn extend_callbacks(
     Ok(updated)
 }
 
+// The QB addon routes were first published after the retained Outfit definition.
+fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
+    callback
+        .key
+        .strip_prefix("oteryn:quest-reward/")
+        .is_some_and(|key| {
+            ["qb-barbarian-", "qb-citizen-", "qb-warrior-"]
+                .iter()
+                .any(|prefix| key.starts_with(prefix))
+        })
+}
+
 /// Recover the complete reward definition captured before Citizen NPC activation.
 /// The current loader still installs NPC prerequisites before active rewards.
 pub(super) fn retain_outfit_reward_predecessor(
@@ -1479,6 +1491,7 @@ pub(super) fn retain_outfit_reward_predecessor(
     let callbacks = document
         .callbacks
         .into_iter()
+        .filter(|callback| !is_qb_outfit_extension(callback))
         .filter(|callback| {
             callback.quest == QUEST
                 || callback
@@ -2169,8 +2182,10 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.len(), 207 + 59 + 124 + 1 + 1);
+        // shared-reward-callbacks.json has 207 existing rows plus the generated
+        // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
+        // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
+        assert_eq!(load()?.len(), 238 + 59 + 124 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2194,7 +2209,9 @@ mod tests {
     #[test]
     fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
     -> Result<(), String> {
-        let legacy = parse(DOCUMENTS[0])?;
+        let shared = parse(DOCUMENTS[0])?;
+        let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
+        assert_eq!(qb.len(), 31);
         let added_keys = [
             "oteryn:quest-reward/l2-wizard-flowers",
             "oteryn:quest-reward/l2-wizard-flowers-start",
@@ -2270,6 +2287,13 @@ mod tests {
                 .ok_or("completion transition")?
                 .completes
         );
+        for callback in qb {
+            assert!(
+                catalogue.catalogue().transition(&callback.key).is_some(),
+                "active QB outfit transition {}",
+                callback.key
+            );
+        }
         assert!(parse_documents(&[DOCUMENTS[0], DOCUMENTS[0]]).is_err());
         let mut malformed: serde_json::Value =
             serde_json::from_str(DOCUMENTS[1]).map_err(|e| e.to_string())?;
@@ -2938,7 +2962,18 @@ mod outfit_reward_predecessor_tests {
     }
 
     fn complete_rewards(before: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-        let document = embedded_document()?;
+        let mut document = embedded_document()?;
+        assert_eq!(
+            document
+                .callbacks
+                .iter()
+                .filter(|callback| callback.quest == QUEST)
+                .count(),
+            143
+        );
+        document
+            .callbacks
+            .retain(|callback| !is_qb_outfit_extension(callback));
         let owned = document
             .callbacks
             .iter()
