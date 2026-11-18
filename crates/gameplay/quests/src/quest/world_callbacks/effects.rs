@@ -347,7 +347,8 @@ pub struct ZelosPassages {
 impl ZelosPassages {
     pub fn routes(self, entrance: Position) -> Option<[(Position, Position); 20]> {
         let mut routes = [(entrance, entrance); 20];
-        for ([first, second], legs) in self.pairs.into_iter().zip(routes.chunks_exact_mut(2)) {
+        let (paired_routes, _) = routes.as_chunks_mut::<2>();
+        for ([first, second], legs) in self.pairs.into_iter().zip(paired_routes) {
             for ((from, across), leg) in [(first, second), (second, first)].into_iter().zip(legs) {
                 let dx = (i32::from(across.x) - i32::from(from.x)).signum();
                 let dy = (i32::from(across.y) - i32::from(from.y)).signum();
