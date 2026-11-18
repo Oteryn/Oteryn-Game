@@ -82,6 +82,7 @@ struct ReadOnlyGate {
     session: GameSessionId,
     expected: MovementPositionSnapshot,
     callback: String,
+    party: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
 }
 
 /// A World observation is retained only until the native actor/object CAS. It is
@@ -1170,7 +1171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let allowed = self.root.check_character_world_callback(
                     self.character, self.holder, fence, &callback.key,
-                    std::sync::Arc::clone(catalogue), &permit, context,
+                    std::sync::Arc::clone(catalogue), &permit, context.clone(),
                 ).await;
                 if !matches!(allowed, Ok(true)) {
                     if let Some(message) = &callback.failure_message {
@@ -1178,8 +1179,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     return UseDisposition::Rejected;
                 }
+                let party = if oteryn_gameplay_quests::quest::court_warlock::admitted(callback) {
+                    let Some(party) = self.check_court_warlock_party(
+                        &permit, callback, actor, catalogue, context,
+                    ).await else {
+                        return UseDisposition::Rejected;
+                    };
+                    party
+                } else {
+                    Vec::new()
+                };
                 Some(ReadOnlyGate {
-                    actor, session: command.game_session_id, expected, callback: callback.key.clone(),
+                    actor, session: command.game_session_id, expected, callback: callback.key.clone(), party,
                 })
             } else {
                 None
@@ -1477,6 +1488,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             session,
                             expected: entered,
                             callback: callback.key.clone(),
+                            party: Vec::new(),
                         })
                     } else {
                         None

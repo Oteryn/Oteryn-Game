@@ -953,6 +953,15 @@ impl BundleFacts {
         if entry.id != id {
             return None;
         }
+        use oteryn_gameplay_quests::quest::stag_cathedral as cathedral;
+        let source = cathedral::SOURCE;
+        if ordinal == 0
+            && (pos.x, pos.y, pos.floor) == (source.x, source.y, source.floor)
+            && entry.facts.appearance_id == cathedral::OPEN
+        {
+            // Crystal bounac_cathedral.lua:170-171 closes the imported hole at startup.
+            return self.quest_callback_replacement(key, cathedral::CLOSED);
+        }
         let facts = EntryFacts {
             bound: placement.bound,
             count: u32::from(placement.count),

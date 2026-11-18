@@ -2,9 +2,13 @@
 use super::{actor_spell::ChannelSpellStates, grizzly_kills, kill_reward::PendingKillSettlement};
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
+    MovementPositionSnapshot, RuntimeScopeRefV1, ScopeOwnershipGeneration, SourceStepCommitProof,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
+use oteryn_gameplay_quests::quest::{
+    court_warlock,
+    world_callbacks::{Callback, EncounterPhase, Position},
+};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
@@ -22,6 +26,206 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    court_warlock: Mutex<Option<CourtWarlockPhase>>,
+}
+
+#[derive(Debug)]
+struct CourtWarlockPhase {
+    owner: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
+    cells: crate::content::NativeEntryMovementCells,
+    participants: Vec<ExactActorRef>,
+    first_wave_at: Option<u64>,
+    timeout_at: u64,
+    raubritters: Vec<ExactActorRef>,
+}
+
+impl Registry {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the exact party proofs and lever CAS publish the phase together"
+    )]
+    pub(super) fn admit_court_warlock<P: SourceStepCommitProof>(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+        now: u64,
+        key: u64,
+        participants: Vec<ExactActorRef>,
+        proofs: Vec<P>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        if participants.is_empty()
+            || participants.len() != proofs.len()
+            || key != court_lever_key().ok_or(CarrierError::PlanConflict)?
+            || court_warlock::RAUBRITTERS
+                .iter()
+                .any(|creature| runtime.companion_policy(creature).is_err())
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let mut active = self
+            .court_warlock
+            .lock()
+            .map_err(|_| CarrierError::PlanConflict)?;
+        let owner = runtime.encounter_owner_scope();
+        if active.as_ref().is_some_and(|phase| phase.owner == owner) {
+            return Err(CarrierError::PlanConflict);
+        }
+        let phase = CourtWarlockPhase {
+            owner,
+            cells: cells.clone(),
+            participants,
+            first_wave_at: Some(
+                now.checked_add(court_warlock::INITIAL_WAVE_US)
+                    .ok_or(CarrierError::PlanConflict)?,
+            ),
+            timeout_at: now
+                .checked_add(court_warlock::TIMEOUT_US)
+                .ok_or(CarrierError::PlanConflict)?,
+            raubritters: Vec::new(),
+        };
+        let relocated = runtime.commit_source_steps_and_project(proofs, project)?;
+        *active = Some(phase);
+        Ok(relocated)
+    }
+
+    pub(super) fn court_warlock_due_us(&self) -> Option<u64> {
+        let active = self.court_warlock.lock().ok()?;
+        let phase = active.as_ref()?;
+        Some(phase.first_wave_at.unwrap_or(phase.timeout_at))
+    }
+
+    pub(super) fn tick_court_warlock(&self, runtime: &mut ChannelRuntimeV1, now: u64) {
+        let Ok(mut active) = self.court_warlock.lock() else {
+            return;
+        };
+        if let Some(phase) = active.as_mut()
+            && (phase.owner != runtime.encounter_owner_scope()
+                || phase.advance(runtime, now).is_ok_and(|finished| finished))
+        {
+            *active = None;
+        }
+    }
+}
+
+fn court_lever_key() -> Option<u64> {
+    let pos = court_warlock::LEVER;
+    crate::map::view::placement_key(
+        crate::map::overlay::TilePos {
+            x: pos.x,
+            y: pos.y,
+            floor: pos.floor,
+        },
+        1,
+    )
+}
+
+impl CourtWarlockPhase {
+    fn advance(&mut self, runtime: &mut ChannelRuntimeV1, now: u64) -> Result<bool, CarrierError> {
+        let census = runtime.positioned_melee_census()?;
+        let occupants: Vec<_> = census
+            .into_iter()
+            .filter_map(|(actor, at, session)| {
+                (court_room_contains(at.position())).then_some((actor, at, session?))
+            })
+            .collect();
+        if occupants.is_empty() || now >= self.timeout_at {
+            self.eject(runtime, &occupants)?;
+            let live = runtime.current_live_creature_census()?;
+            self.raubritters.retain(|actor| {
+                live.contains(actor) && runtime.remove_encounter_actor(*actor).is_err()
+            });
+            return Ok(self.raubritters.is_empty());
+        }
+        let Some(due) = self.first_wave_at.filter(|due| now >= *due) else {
+            return Ok(false);
+        };
+        // The first occupied lever station is the reference target. Fall back to a
+        // current room occupant if that actor has left since admission.
+        let (_, origin, _) = self
+            .participants
+            .iter()
+            .find_map(|participant| occupants.iter().find(|(actor, _, _)| actor == participant))
+            .unwrap_or(&occupants[0]);
+        let origin = origin.position();
+        if !placement(&self.cells, runtime, origin) {
+            self.first_wave_at = None;
+            return Ok(false);
+        }
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+            runtime.content_pin().server_artifact_digest(),
+        );
+        let mut wave = Vec::with_capacity(court_warlock::RAUBRITTERS_PER_WAVE);
+        for index in 0..court_warlock::RAUBRITTERS_PER_WAVE {
+            let mut occurrence = [0; 16];
+            occurrence[..8].copy_from_slice(&due.to_be_bytes());
+            occurrence[8..].copy_from_slice(&(index as u64).to_be_bytes());
+            let draw = oteryn_simulation_determinism::deterministic_decision_u64(
+                &root,
+                oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence),
+                "quest.court_warlock.first_wave",
+                0,
+            )
+            .map_err(|_| CarrierError::PlanConflict)?;
+            let creature =
+                court_warlock::RAUBRITTERS[draw as usize % court_warlock::RAUBRITTERS.len()];
+            wave.push((
+                creature,
+                runtime.companion_policy(creature)?.maximum_health,
+                origin,
+            ));
+        }
+        self.raubritters = runtime.commit_quest_creature_spawn(&wave)?;
+        self.first_wave_at = None;
+        Ok(false)
+    }
+
+    fn eject(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        occupants: &[(ExactActorRef, MovementPositionSnapshot, GameSessionId)],
+    ) -> Result<(), CarrierError> {
+        if occupants.is_empty() {
+            return Ok(());
+        }
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            self.cells.index()
+        else {
+            return Err(CarrierError::PlanConflict);
+        };
+        let closed = crate::map::floor::BundleDoors(&index.map().facts);
+        let proofs = occupants
+            .iter()
+            .map(|&(actor, at, session)| {
+                crate::map::floor::prepare_quest_encounter_ejection(
+                    runtime,
+                    &self.cells,
+                    actor,
+                    session,
+                    at,
+                    court_local(court_warlock::EXIT),
+                    &closed,
+                )
+                .map_err(|_| CarrierError::PlanConflict)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        runtime.commit_quest_relocation(proofs, || true)?;
+        Ok(())
+    }
+}
+
+fn court_room_contains(at: MovementLocalPosition) -> bool {
+    let min = court_local(court_warlock::ROOM_MIN);
+    let max = court_local(court_warlock::ROOM_MAX);
+    at.floor == min.floor && (min.x..=max.x).contains(&at.x) && (min.y..=max.y).contains(&at.y)
+}
+
+fn court_local(pos: Position) -> MovementLocalPosition {
+    MovementLocalPosition {
+        x: i32::from(pos.x),
+        y: i32::from(pos.y),
+        floor: -i16::from(pos.floor),
+    }
 }
 
 impl Registry {

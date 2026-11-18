@@ -776,6 +776,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         super::rotten_blood::altar_callback(),
         super::schrodinger_island::callback(),
     ];
+    native_callbacks.push(super::court_warlock::callback());
     native_callbacks.extend(super::elvenbane::callbacks());
     native_callbacks.extend(super::last_creep_native::callbacks()?);
     native_callbacks.extend(super::fire_feathered_native::callbacks());
@@ -1103,7 +1104,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             })
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
-                    || callback.teleport.is_none()
+                    || (callback.teleport.is_none() && !super::court_warlock::admitted(callback))
                     || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()

@@ -11,6 +11,7 @@ struct CallbackTeleport<'a> {
     closed: &'a dyn CellBlocker,
     facing: Option<MovementFacing>,
     player_stack: bool,
+    forced: bool,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -62,6 +63,36 @@ pub fn prepare_quest_callback_teleport_facing<'a>(
         closed,
         facing,
         player_stack: false,
+        forced: false,
+    };
+    proof.check(runtime)?;
+    Ok(proof)
+}
+
+/// A source party can share a landing tile while retaining ordinary control and PZ rules.
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_quest_party_teleport<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    destination: MovementLocalPosition,
+    pz_blocked: bool,
+    closed: &'a dyn CellBlocker,
+    player_stack: bool,
+) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+    let proof = CallbackTeleport {
+        cells,
+        actor,
+        session,
+        expected,
+        destination,
+        pz_blocked,
+        closed,
+        facing: None,
+        player_stack,
+        forced: false,
     };
     proof.check(runtime)?;
     Ok(proof)
@@ -88,6 +119,7 @@ pub fn prepare_quest_encounter_ejection<'a>(
         pz_blocked: false,
         facing: None,
         player_stack: true,
+        forced: true,
     };
     proof.check(runtime)?;
     Ok(proof)
@@ -95,7 +127,7 @@ pub fn prepare_quest_encounter_ejection<'a>(
 
 impl CallbackTeleport<'_> {
     fn check(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        // Only a forced encounter ejection (`player_stack`) moves a control-lost player.
+        // Only a forced encounter ejection moves a control-lost player.
         qualify_origin_control(
             runtime,
             self.cells,
@@ -103,7 +135,7 @@ impl CallbackTeleport<'_> {
             self.session,
             self.expected,
             None,
-            self.player_stack,
+            self.forced,
         )?;
         let to = self.destination;
         let cell = (to.x, to.y, i32::from(to.floor));

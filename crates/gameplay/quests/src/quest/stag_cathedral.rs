@@ -18,7 +18,8 @@ pub const WARLOCK_SPAWN: Position = Position {
 };
 pub const WARLOCK: &str = "oteryn:creature.ancient_lion_warlock";
 pub const CLOSED: u16 = 417;
-pub const OPEN: u16 = 52654;
+// The served B3 ground root at SOURCE is the captured hole, appearance 516.
+pub const OPEN: u16 = 516;
 pub const PICK: &str = "oteryn:item.tibia.i3456";
 pub const STARLIGHT: &str = "oteryn:item.tibia.i3249";
 pub const OPEN_US: u64 = 300_000_000;

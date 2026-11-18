@@ -2,6 +2,8 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, court_warlock};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(
@@ -88,6 +90,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        let court = court_warlock::admitted(callback);
         if preflight && callback.has_personal_state() {
             if !callback.requires_world_admission {
                 return UseDisposition::Rejected;
@@ -109,7 +112,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             }
         }
-        if callback.has_personal_state() && !preflight && reservation.is_none() {
+        if callback.has_personal_state() && !preflight && reservation.is_none() && !court {
             return UseDisposition::Rejected;
         }
         if encounter.timing.is_some() {
@@ -153,9 +156,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
-                // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
+                // Source levers collect whoever stands on their staging tiles.
+                if court
+                    || encounter.phase
+                        == Some(
+                            oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults,
+                        )
                 {
                     continue;
                 }
@@ -203,7 +209,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            let Ok(proof) = crate::map::floor::prepare_quest_party_teleport(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -212,6 +218,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
+                court,
             ) else {
                 return UseDisposition::NotPossible;
             };
@@ -223,6 +230,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .any(|(who, s, _)| *who == actor && *s == session)
         {
             return UseDisposition::Rejected;
+        }
+        if court {
+            let Some(native) = self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+            else {
+                return UseDisposition::Rejected;
+            };
+            if native.install_companion_policies(runtime).is_err() {
+                return UseDisposition::Rejected;
+            }
+            let participants = players.iter().map(|(actor, _, _)| *actor).collect();
+            let snapshots = states.encounter_phases.admit_court_warlock(
+                runtime,
+                self.movement_cells(),
+                self.owner_now().get(),
+                key,
+                participants,
+                proofs,
+                || {
+                    map.facts.apply_quest_callback(
+                        key,
+                        expected_revision,
+                        after,
+                        &[],
+                        &[],
+                        false,
+                        None,
+                    )
+                },
+            );
+            let Ok(snapshots) = snapshots else {
+                return UseDisposition::Occupied;
+            };
+            states.owner_wake.notify_one();
+            self.publish_encounter_arrivals(runtime, states, map, players, snapshots);
+            return UseDisposition::Committed;
         }
         let mut monsters = Vec::new();
         for monster in &encounter.monsters {
@@ -358,6 +402,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return disposition;
         }
+        self.publish_encounter_arrivals(runtime, states, map, players, snapshots);
+        UseDisposition::Committed
+    }
+
+    fn publish_encounter_arrivals(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
+        snapshots: Vec<MovementPositionSnapshot>,
+    ) {
         for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {
             states.stage_special_movement_step(
                 runtime,
@@ -381,8 +437,73 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 map.facts.emit_movement_effect(pos, 11);
             }
         }
-        UseDisposition::Committed
     }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn check_court_warlock_party(
+        &self,
+        permit: &SpellLanePermit,
+        callback: &Callback,
+        initiator: ExactActorRef,
+        catalogue: &std::sync::Arc<QuestStateCatalogue>,
+        context: QuestWorldContext,
+    ) -> Option<Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>> {
+        let party = court_warlock_party(&*self.runtime.lock().await, callback)?;
+        if !party.iter().any(|(actor, _, _)| *actor == initiator) {
+            return None;
+        }
+        for &(actor, session, expected) in &party {
+            if actor == initiator {
+                continue;
+            }
+            let fence = self.current_quest_fence(session).await.ok()??;
+            let mut context = context.clone();
+            context.actor_placement = actor.placement_identity();
+            context.movement_revision = expected.revision();
+            if !self
+                .root
+                .check_character_world_callback(
+                    self.character,
+                    self.holder,
+                    fence,
+                    &callback.key,
+                    std::sync::Arc::clone(catalogue),
+                    permit,
+                    context,
+                )
+                .await
+                .ok()?
+            {
+                if let Some(message) = &callback.failure_message {
+                    self.states.chat.push_quest_feedback(session, message);
+                }
+                return None;
+            }
+        }
+        Some(party)
+    }
+}
+
+pub(super) fn court_warlock_party(
+    runtime: &ChannelRuntimeV1,
+    callback: &Callback,
+) -> Option<Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>> {
+    let encounter = callback.effects.encounter.as_ref()?;
+    let census = runtime.positioned_melee_census().ok()?;
+    let mut party = Vec::new();
+    for station in &encounter.players {
+        let mut occupants = census
+            .iter()
+            .filter(|(_, position, _)| position.position() == local(station.from));
+        if let Some(&(actor, expected, Some(session))) = occupants.next() {
+            if occupants.next().is_some() {
+                return None;
+            }
+            party.push((actor, session, expected));
+        }
+    }
+    Some(party)
 }
 
 #[allow(

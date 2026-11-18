@@ -50,6 +50,7 @@ fn scenario_case(
     let m44 =
         name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
     let qm48 = name == "qm48/mammoth";
+    let stag = matches!(name, super::super::stag_engine::CATHEDRAL | super::super::stag_engine::COURT);
     let m03_use = name == super::super::qengine_m03_use::NAME;
     let qd_world = name.starts_with(super::super::qd_world::PREFIX);
     let elemental_pin = name.starts_with("qn1-elemental-");
@@ -77,7 +78,7 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m03_use
+    let native_crop = stag || m03_use
         || qd_world
         || engenc_asura
         || m49
@@ -113,7 +114,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if stag {
+        super::super::stag_engine::start(name)
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -350,7 +353,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if name == super::super::stag_engine::CATHEDRAL {
+        callback("order-of-the-stag-crypt-exit")?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
@@ -1025,7 +1030,9 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m03_use {
+        let world = if stag {
+            super::super::stag_engine::world(name, generation.native_gameplay().ok_or("Stag native content")?)?
+        } else if m03_use {
             super::super::qengine_m03_use::world(
                 generation
                     .native_gameplay()
@@ -1866,6 +1873,16 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
+        if name == super::super::stag_engine::CATHEDRAL {
+            return Box::pin(super::super::stag_engine::exercise_cathedral(
+                &mut owner, &mut admitted, &h, fence, deps.actor,
+            )).await;
+        }
+        if name == super::super::stag_engine::COURT {
+            return Box::pin(super::super::stag_engine::exercise_court(
+                &mut owner, &mut admitted, &h, fence, deps.actor,
+            )).await;
+        }
         if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
                 &mut owner,

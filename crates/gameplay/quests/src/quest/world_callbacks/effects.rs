@@ -317,6 +317,8 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "court_warlock")]
+    CourtWarlock,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -840,7 +842,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let court_warlock = super::super::court_warlock::admitted(callback);
+        let source_party = encounter.phase == Some(EncounterPhase::Cults) || court_warlock;
         if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
@@ -862,8 +865,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
             }
-            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                .contains(&encounter.monsters.len())
+            || (encounter.phase == Some(EncounterPhase::CourtWarlock) && !court_warlock)
+            || (!court_warlock
+                && !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+                    .contains(&encounter.monsters.len()))
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()

@@ -590,6 +590,11 @@ impl BundleFacts {
     ) -> Option<u8> {
         let states = self.callbacks.lock().ok().map(|s| Arc::clone(&s))?;
         let first = placement_key(pos, 0)?;
+        let cathedral = oteryn_gameplay_quests::quest::stag_cathedral::SOURCE;
+        if (pos.x, pos.y, pos.floor) == (cathedral.x, cathedral.y, cathedral.floor) {
+            // The timed portal owns the exact landing and creature spawn.
+            return Some(0);
+        }
         if states.phase_entry(pos, 0).is_some() {
             return Some(0);
         }
