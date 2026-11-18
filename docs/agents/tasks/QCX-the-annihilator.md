@@ -34,3 +34,7 @@ Base `98d09d5ce17df2a621df3fac9c2ce341dccc073b`.
 The Avar Tar opening offer accepts `demon outfit` and advances to the existing confirmation and base choice. The authoring change is confined to that offer in `qengine_rewards.py`. Its output is generated into `content/quests/shared-reward-offers.json`.
 
 - PG via shard (pgsplit build files applied on `922ef6745bc88625d4d016cc1ba6cb4bb8a7ce60`): 1 failed in 61.64 s. The real NPC dispatcher returned empty lines for both `demon outfit` and the following `yes`, exactly the pre-fix failure.
+- PG via shard (pgsplit build files applied on `1b6b4cfb0635698d7a0f29199baf3b24f5e72d6a`): 1 passed in 54.11 s. The full phrase opened Avar Tar's offer and `yes` reached the reward choice.
+- The same shard and filter without `OTERYN_TEST_POSTGRES_ADMIN_URL`: 1 passed in 0.00 s. This exercises the route-less guard.
+- The NPC offer generator check and both formatting checks passed. World pin refresh reproduced digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`, and pin check verified the one world.
+- Quest authoring checks completed all 44 commands. The schema verifier passed 269 of 269 cases.
