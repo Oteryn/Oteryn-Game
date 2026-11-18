@@ -30,8 +30,8 @@ const PORT_HOPE: TilePos = TilePos {
     y: 32784,
     floor: -6,
 };
-// The harbor-to-walkway leg spans 155 by 14 cells. Starting the next search here
-// keeps Grizzly's ramp within the planner's 160-cell horizontal bound.
+// Grizzly's nearest talk-range x is 32690, 163 cells east of the harbor.
+// Split the bounded search at this donor walkway, 155 cells east of the harbor.
 const WALKWAY: TilePos = TilePos {
     x: 32682,
     y: 32770,
@@ -39,6 +39,8 @@ const WALKWAY: TilePos = TilePos {
 };
 // Crystal 201189f8, data-global/world/world.otbm: stepping west from this cell onto
 // the i482 opening at (32674, 32784, 6) drops onto i1968 one floor below.
+// The lower route needs the admitted walkable object profiles, including i1968
+// at the landing and i1054/i1057/i1976 at the ramp foot.
 const LADDER_APPROACH: TilePos = TilePos {
     x: 32675,
     y: 32784,
@@ -546,6 +548,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     })
 }
 
+#[cfg(test)]
 pub(crate) fn port_hope_route_smoke() -> TestResult {
     use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
 
@@ -608,6 +611,8 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         ChannelId::decode(&v7(1, 3))?,
     )?;
     let grizzly = placement(&metadata.npcs, NPC)?;
+    // Bluebear must come through npc_placement_scope.json and the world compiler.
+    // A travel service definition alone does not spawn its NPC on the Thais deck.
     let captain = placement(&metadata.npcs, CAPTAIN)?;
     // Crystal 201189f8, data-global/world/world-npc.xml:886-887,1018-1019.
     for (npc, cell) in [(captain, (32310, 32209, -6)), (grizzly, (32693, 32767, -6))] {
