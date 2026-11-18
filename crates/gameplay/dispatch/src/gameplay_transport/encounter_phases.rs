@@ -209,6 +209,20 @@ pub(super) fn bind(
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
     if encounter.phase == Some(EncounterPhase::Arbaziloth) {
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err(CarrierError::PlanConflict);
+        };
+        if index
+            .map()
+            .facts
+            .movement_item_facts(49362)
+            .is_none_or(|fire| fire.pickupable)
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+
         let find_actor = |key: &str| {
             actors
                 .iter()
@@ -400,9 +414,23 @@ impl ActivePhase {
             })
             .collect();
         let count = u64::try_from(candidates.len()).map_err(|_| CarrierError::PlanConflict)?;
-        let selected = now_ms
-            .checked_rem(count)
-            .ok_or(CarrierError::PlanConflict)?;
+        if count == 0 {
+            return Err(CarrierError::PlanConflict);
+        }
+        use oteryn_simulation_determinism::{
+            DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+        };
+        let mut occurrence = [0; 16];
+        occurrence[..8].copy_from_slice(&self.key.to_be_bytes());
+        occurrence[8..].copy_from_slice(&now_ms.to_be_bytes());
+        let draw = deterministic_decision_u64(
+            &GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest()),
+            DecisionOccurrenceId::from_bytes(occurrence),
+            "arbaziloth.arena_fire",
+            0,
+        )
+        .map_err(|_| CarrierError::PlanConflict)?;
+        let selected = crate::spell::uniform_draw(draw, 0, count - 1);
         let fire = candidates[usize::try_from(selected).map_err(|_| CarrierError::PlanConflict)?];
         if !map.facts.project_arbaziloth_fire(self.key, fire, false) {
             return Err(CarrierError::PlanConflict);
