@@ -64,7 +64,7 @@ fn folio_use_relocates_and_resets_success_without_starting_a_headache() -> TestR
     };
     assert!(!admin.is_empty());
     super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
-        exercise(admin, "relocate").await
+        exercise(admin, "relocate", false).await
     })
 }
 
@@ -75,7 +75,7 @@ fn folio_use_starts_a_headache_and_spawns_one_active_bookworm() -> TestResult {
     };
     assert!(!admin.is_empty());
     super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
-        exercise(admin, "headache-bookworm").await
+        exercise(admin, "headache-bookworm", false).await
     })
 }
 
@@ -86,7 +86,18 @@ fn folio_success_counts_the_first_read_from_a_negative_legacy_value() -> TestRes
     };
     assert!(!admin.is_empty());
     super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
-        exercise(admin, "success").await
+        exercise(admin, "success", false).await
+    })
+}
+
+#[test]
+fn folio_reconnect_projects_the_committed_headache_spawn_once() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+        exercise(admin, "headache-bookworm", true).await
     })
 }
 
@@ -137,7 +148,7 @@ fn catalogue(initial_count: i64) -> TestResult<QuestStateCatalogue> {
     Ok(Bindings::parse(&serde_json::to_vec(&data)?)?.attach(&base)?)
 }
 
-async fn exercise(admin: String, branch: &str) -> TestResult {
+async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> TestResult {
     let success = branch == "success";
     let expect_headache = branch == "headache-bookworm";
     let h =
@@ -241,6 +252,43 @@ async fn exercise(admin: String, branch: &str) -> TestResult {
     };
     let command = command_for(branch, 1).ok_or("folio branch occurrence")?;
     admitted.continuity.next_command_id = command;
+    if interrupt_projection {
+        // A lost result after the durable commit must resume the same branch
+        // before dispatching any subsequent command through the Channel.
+        owner
+            .states
+            .quest_callbacks
+            .interrupt_after_commit
+            .store(true, std::sync::atomic::Ordering::Release);
+        assert!(
+            wire(
+                &owner,
+                &mut admitted,
+                command,
+                COMMAND_TYPE_USE_INTENT,
+                req.clone()
+            )
+            .await
+            .is_err(),
+            "the interrupted USE closes without acknowledging the outcome"
+        );
+        assert!(owner.has_pending_quest_callback(session));
+        let saved = h
+            .root
+            .read_character_quest_state(&authority, fence.character_id)
+            .await
+            .map_err(debug)?;
+        assert_eq!(saved.tracks().get(COUNT), Some(&0));
+        assert_eq!(saved.tracks().get(CLOCK), Some(&quest_now));
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            !runtime
+                .current_live_creature_census()
+                .map_err(debug)?
+                .into_iter()
+                .any(|actor| runtime.matches_live_creature_identity(actor, BOOKWORM.as_bytes()))
+        );
+    }
     let first = wire(
         &owner,
         &mut admitted,
@@ -253,6 +301,7 @@ async fn exercise(admin: String, branch: &str) -> TestResult {
         decode_use_result(&first).map_err(debug)?,
         UseDisposition::Committed
     );
+    assert!(!owner.has_pending_quest_callback(session));
     let snapshot = h
         .root
         .read_character_quest_state(&authority, fence.character_id)
