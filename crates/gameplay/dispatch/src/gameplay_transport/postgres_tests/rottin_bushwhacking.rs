@@ -453,7 +453,7 @@ pub(super) async fn exercise_wave(
             .quest_callback_blocked(map.overlay.base(), entrance, false)
     );
     assert_eq!(
-        use_net(owner, admitted, ordinary_ground, 69, 2).await?,
+        use_net(owner, admitted, ordinary_ground, 69, 71).await?,
         UseDisposition::NothingToUse,
         "the selected net requires the authored trap ground"
     );
