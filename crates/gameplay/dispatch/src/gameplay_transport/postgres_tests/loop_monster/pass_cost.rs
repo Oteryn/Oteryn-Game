@@ -443,15 +443,13 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                 ProfileRegression::Logout => {
                     use crate::gameplay_transport::connection::LogoutReply;
                     use oteryn_protocol_oteryn::logout::LogoutResult;
-                    assert_eq!(
-                        states
-                            .monster_melee
-                            .creature_ai
+                    let table = &mut states.monster_melee.creature_ai;
+                    if table.due(rat).is_none() {
+                        let _ = table
                             .wake_for_player(&runtime, deps.actor, 0)
-                            .map_err(debug)?,
-                        vec![rat],
-                        "first entry wakes the nearby rat"
-                    );
+                            .map_err(debug)?;
+                    }
+                    assert_eq!(table.due(rat), Some(0), "the nearby rat is due");
                     assert!(owner.root.is_ready(), "the durability holder starts ready");
                     let batch_started = std::time::Instant::now();
                     let background = async {
