@@ -337,7 +337,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         keys: Vec<String>,
-    ) -> Result<std::collections::BTreeSet<String>, CharacterProgressionError> {
+    ) -> Result<std::collections::BTreeSet<String>> {
         if !(1..=128).contains(&keys.len()) {
             return Err(CharacterProgressionError::InvalidInput);
         }
