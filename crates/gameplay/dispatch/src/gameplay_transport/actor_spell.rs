@@ -1403,6 +1403,32 @@ impl ChannelSpellStates {
         )
     }
 
+    /// Crystal's unpaid Vestibule penalty uses direct Physical health change.
+    pub(super) fn apply_blood_entrance_health_loss(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        let health = self.get(runtime, actor, session)?.vitals().health;
+        let damage = (health / 5).max(1);
+        if health.saturating_sub(damage) <= 10 {
+            return None;
+        }
+        self.apply_creature_damage_kind_inner(
+            runtime,
+            actor,
+            session,
+            damage,
+            crate::player_lethal::PlayerHitKind::Physical,
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::None,
+            true,
+            None,
+        )
+    }
+
     /// Exact native Soul War Lua health callbacks use the existing HP/shield/death
     /// owner, with source qualification before selecting origin-less processing.
     #[allow(clippy::too_many_arguments)]

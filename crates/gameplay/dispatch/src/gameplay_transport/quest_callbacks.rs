@@ -26,6 +26,7 @@ mod phase;
 mod rafzane_elevator;
 mod reward_door;
 mod rewards;
+mod rotten_blood_entrance;
 mod rotten_flame;
 mod scene;
 mod scene_actors;
@@ -1277,6 +1278,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .step_arena_portal(permit, actor, session, origin, entered)
             .await;
         let entered = self.step_arena_exit(actor, session, entered).await;
+        if let Some(landed) = self
+            .step_rotten_blood_entrance(actor, session, origin, entered)
+            .await
+        {
+            return landed;
+        }
         let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
