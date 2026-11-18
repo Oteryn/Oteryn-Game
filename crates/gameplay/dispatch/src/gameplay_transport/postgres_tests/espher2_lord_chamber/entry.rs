@@ -76,9 +76,16 @@ pub(super) async fn exercise(
     };
     let mut players = Vec::new();
     let mut missing_sphere = None;
-    // Admit the Paladin at the lever first, so the real USE can be tested
-    // while only two of the four source positions are occupied.
-    for (index, station) in party.stations.iter().enumerate().rev() {
+    let stations = party.stations.iter().enumerate();
+    let initiator = stations
+        .clone()
+        .find(|(_, station)| Some(station.from) == party.initiator_at)
+        .ok_or("entry initiator station")?;
+    // The initiator is already admitted. Bootstrap peers in ascending source
+    // revision order so the real USE can run after the first peer joins.
+    for (index, station) in
+        std::iter::once(initiator).chain(stations.filter(|(index, _)| *index != initiator.0))
+    {
         let member = u8::try_from(index)?;
         let session = if Some(station.from) == party.initiator_at {
             admitted.game_session_id
@@ -163,7 +170,7 @@ pub(super) async fn exercise(
         let item = station.carried_item.as_deref().ok_or("carried sphere")?;
         let character = *fence.character_id.as_bytes();
         let bag = 70 + member * 4;
-        if index == 0 {
+        if players.len() + 1 == party.stations.len() {
             missing_sphere = Some((character, bag, item));
         } else {
             super::super::item_look::seed_character_main_backpack(h, character, bag, &[(item, 1)])
