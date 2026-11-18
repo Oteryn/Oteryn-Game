@@ -1016,6 +1016,9 @@ async fn exercise_rabbit(
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     actor: crate::foundation::ExactActorRef,
 ) -> TestResult {
+    let obsidian_knife = 71;
+    let stake = 72;
+    let kitchen_knife = 73;
     let race = native
         .reward_table()
         .row("oteryn:creature.rabbit")
@@ -1052,7 +1055,10 @@ async fn exercise_rabbit(
             .bind(corpse.as_slice()).fetch_one(&h.pool).await
     };
     assert_eq!(
-        attempt(71).await.ok_or("rabbit refusal")?.disposition,
+        attempt(obsidian_knife)
+            .await
+            .ok_or("rabbit refusal")?
+            .disposition,
         UseDisposition::NothingToUse
     );
     assert_eq!(body().await?, "oteryn:item.tibia.i6017");
@@ -1061,7 +1067,10 @@ async fn exercise_rabbit(
     owner.drain_source_item_deadlines().await;
     assert_eq!(body().await?, "oteryn:item.tibia.i4301");
     assert_eq!(
-        attempt(71).await.ok_or("rabbit refusal")?.disposition,
+        attempt(obsidian_knife)
+            .await
+            .ok_or("rabbit refusal")?
+            .disposition,
         UseDisposition::NothingToUse
     );
 
@@ -1076,9 +1085,18 @@ async fn exercise_rabbit(
         .bind("oteryn:quest.rottin_wood_and_the_married_men_quest")
         .execute(&mut *tx).await?;
     tx.commit().await?;
+    assert!(
+        attempt(stake)
+            .await
+            .is_none_or(|outcome| outcome.disposition != UseDisposition::Committed)
+    );
+    assert_eq!(body().await?, "oteryn:item.tibia.i4301");
     for _ in 0..2 {
         assert_eq!(
-            attempt(73).await.ok_or("kitchen knife rabbit USE")?.disposition,
+            attempt(kitchen_knife)
+                .await
+                .ok_or("kitchen knife rabbit USE")?
+                .disposition,
             UseDisposition::Committed,
             "Crystal's kitchen knife action can skin a mature rabbit"
         );
@@ -1093,7 +1111,7 @@ async fn exercise_rabbit(
             actor,
             retry,
             intent,
-            Some(ItemKey::Instance(id(73))),
+            Some(ItemKey::Instance(id(kitchen_knife))),
             Some(ItemKey::Instance(corpse)),
         )
         .await;
@@ -1108,13 +1126,25 @@ async fn exercise_rabbit(
     let feet: i64 = sqlx::query_scalar("SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i12172' AND lifecycle=1")
         .fetch_one(&h.pool).await?;
     assert_eq!(feet, 2);
+    let knife_quantity: i64 = sqlx::query_scalar(
+        "SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1",
+    )
+    .bind(id(kitchen_knife).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(knife_quantity, 1);
     let schedules: Vec<i64> = sqlx::query_scalar("SELECT p.expires_at_unix_ms-m.materialized_at FROM game_spell_field_temporal_schedules p JOIN game_item_mint_receipts m USING(item_instance_id) WHERE p.item_instance_id=encode($1,'hex')::uuid ORDER BY source_stage")
         .bind(corpse.as_slice()).fetch_all(&h.pool).await?;
     assert_eq!(schedules, [10_000, 310_000, 610_000]);
 
     // The third stage must accept the real skinning receipt as its predecessor.
     age_rabbit_fixture(h, corpse, 600_000).await?;
-    owner.states.spell_states.lock().await.next_item_deadline_pass_us = 0;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .next_item_deadline_pass_us = 0;
     owner.drain_source_item_deadlines().await;
     assert_eq!(body().await?, "oteryn:item.tibia.i4303");
     Ok(())
