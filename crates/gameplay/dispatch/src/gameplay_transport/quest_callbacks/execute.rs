@@ -1622,14 +1622,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Crystal actions_crude_lava_pump_achievements.lua:5–27 emits fire on
         // every fresh USE, including after the achievement has been claimed.
         if fresh_effects
-            && oteryn_gameplay_quests::quest::source_world_objects::is_dangerous_depth_pump(callback)
+            && oteryn_gameplay_quests::quest::source_world_objects::is_dangerous_depth_pump(
+                callback,
+            )
         {
             const FIRE_AREA: u16 = 7;
             for x in pos.x.saturating_sub(1)..=pos.x.saturating_add(1) {
                 for y in pos.y.saturating_sub(1)..=pos.y.saturating_add(1) {
                     if map.overlay.base().contains(x, y, pos.floor) {
                         map.facts.emit_movement_effect(
-                            crate::map::overlay::TilePos { x, y, floor: pos.floor },
+                            crate::map::overlay::TilePos {
+                                x,
+                                y,
+                                floor: pos.floor,
+                            },
                             FIRE_AREA,
                         );
                     }
