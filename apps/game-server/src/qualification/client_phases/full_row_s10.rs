@@ -212,16 +212,11 @@ fn carried_gold(client: &DevClientSession) -> TestResult<u64> {
 }
 
 fn utc_rashid_destination() -> TestResult<RashidDestination> {
-    Ok(utc_rashid_clock()?.0)
-}
-
-fn utc_rashid_clock() -> TestResult<(RashidDestination, Duration)> {
     let elapsed = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|error| format!("step rashid-gate: server clock before epoch: {error}"))?;
-    Ok((
-        oteryn_gameplay_entities::rashid_schedule::destination_at(i64::try_from(elapsed.as_millis())?),
-        Duration::new(elapsed.as_secs() % 86_400, elapsed.subsec_nanos()),
+    Ok(oteryn_gameplay_entities::rashid_schedule::destination_at(
+        i64::try_from(elapsed.as_millis())?,
     ))
 }
 
@@ -345,9 +340,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .iter()
         .find(|npc| npc.key == "oteryn:npc.rashid")
         .ok_or("step rashid-gate: compiled world omitted Rashid")?;
-    let (expected_rashid, (expected_rashid_position, trade)) =
-        observe_consistent_weekday(utc_rashid_clock, async |day, settle| {
-            settle_rashid_rotation(&mut client, settle).await?;
+    let (expected_rashid, (expected_rashid_position, trade_position, trade)) =
+        observe_consistent_weekday(utc_rashid_destination, async |day| {
             verify_rashid_trade(&mut client, world, authored_rashid, day, None).await
         })
         .await?;
@@ -356,7 +350,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         (
             expected_rashid.city,
             expected_rashid_position,
-            client.world_spatial().actor_position,
+            trade_position,
             &trade,
         ),
     );
@@ -373,8 +367,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step fresh-admission: durable state mismatch position={:?}/{saved_position:?} gold={}/{}", fresh.world_spatial().actor_position, carried_gold(&fresh)?, saved_gold).into());
     }
-    let (_, (_, fresh_trade)) = observe_consistent_weekday(utc_rashid_clock, async |day, settle| {
-        settle_rashid_rotation(&mut fresh, settle).await?;
+    let (_, (_, _, fresh_trade)) = observe_consistent_weekday(utc_rashid_destination, async |day| {
         verify_rashid_trade(
             &mut fresh,
             world,
@@ -393,15 +386,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 type PlacementCoordinates = (u16, u16, i8);
 
 async fn observe_consistent_weekday<T>(
-    mut clock: impl FnMut() -> TestResult<(RashidDestination, Duration)>,
-    mut observe: impl AsyncFnMut(RashidDestination, Duration) -> TestResult<T>,
+    mut clock: impl FnMut() -> TestResult<RashidDestination>,
+    mut observe: impl AsyncFnMut(RashidDestination) -> TestResult<T>,
 ) -> TestResult<(RashidDestination, T)> {
     for _ in 0..2 {
-        // The Channel's source-item loop sleeps up to one second between passes.
-        // Allow a second pass before evaluating the newly active weekday.
-        let (day, since_midnight) = clock()?;
-        let settle = Duration::from_secs(2).saturating_sub(since_midnight);
-        let observation = observe(day, settle).await;
+        let day = clock()?;
+        let observation = observe(day).await;
         let observation = match observation {
             Err(error)
                 if error.is::<oteryn_dev_client::SessionError>()
@@ -411,19 +401,11 @@ async fn observe_consistent_weekday<T>(
             }
             observation => observation,
         };
-        if day == clock()?.0 {
+        if day == clock()? {
             return Ok((day, observation?));
         }
     }
     Err("step rashid-gate: weekday changed during both observations".into())
-}
-
-async fn settle_rashid_rotation(client: &mut DevClientSession, duration: Duration) -> TestResult {
-    if !duration.is_zero() {
-        client.service_liveness(duration).await?;
-        client.take_events();
-    }
-    Ok(())
 }
 
 async fn verify_rashid_trade(
@@ -432,37 +414,58 @@ async fn verify_rashid_trade(
     authored: &oteryn_world_bundle::npc::Npc,
     day: RashidDestination,
     audited: Option<RashidDestination>,
-) -> TestResult<(PlacementCoordinates, Vec<String>)> {
+) -> TestResult<(PlacementCoordinates, ActorPosition, Vec<String>)> {
     let (_, expected) = weekday_rashid(authored, day)?;
-    if audited != Some(day) {
-        for anchor in &authored.placements {
-            let coordinates = (anchor.x, anchor.y, anchor.floor);
-            if coordinates == expected {
-                continue;
-            }
+    let (trade_position, trade) = audit_rashid_anchors(
+        client,
+        expected,
+        authored.placements.iter().map(|anchor| (anchor.x, anchor.y, anchor.floor)),
+        audited != Some(day),
+        async |client, coordinates| {
             let found = inspect_rashid_anchor(client, world, coordinates).await?;
             if utc_rashid_destination()? != day {
                 return Err("step rashid-gate: UTC weekday changed during anchor tour".into());
             }
-            if found.is_some() {
+            Ok(found)
+        },
+        async |client, actor| {
+            talk(client, actor, "hi").await?;
+            let (trade, _, shop_opened) = talk(client, actor, "trade").await?;
+            if trade.is_empty() || !shop_opened {
+                return Err("step rashid-gate: trade returned no conversation/shop delta".into());
+            }
+            Ok((client.world_spatial().actor_position, trade))
+        },
+    ).await?;
+    Ok((expected, trade_position, trade))
+}
+
+async fn audit_rashid_anchors<C, A, T>(
+    client: &mut C,
+    expected: PlacementCoordinates,
+    anchors: impl IntoIterator<Item = PlacementCoordinates>,
+    inspect_off_days: bool,
+    mut inspect: impl AsyncFnMut(&mut C, PlacementCoordinates) -> TestResult<Option<A>>,
+    trade: impl AsyncFnOnce(&mut C, A) -> TestResult<T>,
+) -> TestResult<T> {
+    // A stalled owner can leave yesterday's actor live. Wait for today's actor
+    // within the existing row deadline before treating an off-day actor as a duplicate.
+    let actor = loop {
+        if let Some(actor) = inspect(client, expected).await? {
+            break actor;
+        }
+    };
+    let trade = trade(client, actor).await?;
+    if inspect_off_days {
+        for coordinates in anchors {
+            if coordinates != expected && inspect(client, coordinates).await?.is_some() {
                 return Err(format!(
                     "step rashid-gate: live Rashid at off-day anchor {coordinates:?}"
-                )
-                .into());
+                ).into());
             }
         }
     }
-    let found = inspect_rashid_anchor(client, world, expected).await?;
-    if utc_rashid_destination()? != day {
-        return Err("step rashid-gate: UTC weekday changed before dialogue".into());
-    }
-    let actor = found.ok_or("step rashid-gate: no live Rashid at today's anchor")?;
-    talk(client, actor, "hi").await?;
-    let (trade, _, shop_opened) = talk(client, actor, "trade").await?;
-    if trade.is_empty() || !shop_opened {
-        return Err("step rashid-gate: trade returned no conversation/shop delta".into());
-    }
-    Ok((expected, trade))
+    Ok(trade)
 }
 
 async fn inspect_rashid_anchor(
@@ -476,9 +479,10 @@ async fn inspect_rashid_anchor(
         floor: -i16::from(floor),
     };
     let from = tile(client.world_spatial().actor_position)?;
-    // A cell one tile from the anchor keeps the entire three-tile wander area in view.
+    // Inspect from an adjacent cell so the player cannot occupy Rashid's arrival cell.
+    // This also keeps the entire three-tile wander area in view.
     let path = reach_route(client, world, from, |at| {
-        at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 1
+        at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) == 1
     })
     .await?
     .map_err(|failure| format!("step rashid-gate: cannot inspect anchor {anchor:?}: {failure}"))?;
@@ -662,8 +666,8 @@ async fn rashid_observation_restarts_after_utc_rollover() -> TestResult {
     let mut clock = [before, after, after, after].into_iter();
     let mut observations = Vec::new();
     let (day, result) = observe_consistent_weekday(
-        || clock.next().map(|day| (day, Duration::from_secs(10))).ok_or_else(|| "fixture clock exhausted".into()),
-        async |day, _| {
+        || clock.next().ok_or_else(|| "fixture clock exhausted".into()),
+        async |day| {
             observations.push(day);
             if day == before {
                 return Err("old anchor saw a live actor after rollover".into());
@@ -678,25 +682,6 @@ async fn rashid_observation_restarts_after_utc_rollover() -> TestResult {
 }
 
 #[tokio::test]
-async fn rashid_audit_allows_owner_pass_after_midnight() -> TestResult {
-    use oteryn_gameplay_entities::rashid_schedule::destination_at;
-    let day = destination_at(86_400_025);
-    let (_, trade) = observe_consistent_weekday(
-        || Ok((day, Duration::from_millis(25))),
-        async |observed, settle| {
-            assert_eq!(observed, day);
-            if settle < Duration::from_millis(975) {
-                return Err("previous-day actor is still at the old anchor".into());
-            }
-            Ok("fresh trade")
-        },
-    )
-    .await?;
-    assert_eq!(trade, "fresh trade");
-    Ok(())
-}
-
-#[tokio::test]
 async fn rashid_rollover_preserves_the_original_transport_error() -> TestResult {
     use oteryn_dev_client::SessionError;
     use oteryn_gameplay_entities::rashid_schedule::destination_at;
@@ -705,8 +690,8 @@ async fn rashid_rollover_preserves_the_original_transport_error() -> TestResult 
     let mut days = [before, after, after, after].into_iter();
     let mut attempts = 0;
     let result = observe_consistent_weekday(
-        || days.next().map(|day| (day, Duration::from_secs(10))).ok_or_else(|| "fixture clock exhausted".into()),
-        async |_, _| -> TestResult<()> {
+        || days.next().ok_or_else(|| "fixture clock exhausted".into()),
+        async |_| -> TestResult<()> {
             attempts += 1;
             Err(SessionError::from(std::io::Error::from(std::io::ErrorKind::UnexpectedEof)).into())
         },
@@ -718,4 +703,58 @@ async fn rashid_rollover_preserves_the_original_transport_error() -> TestResult 
     };
     assert!(matches!(error.downcast_ref::<SessionError>(), Some(SessionError::Io(error)) if error.kind() == std::io::ErrorKind::UnexpectedEof));
     Ok(())
+}
+
+#[tokio::test]
+async fn rashid_audits_off_day_anchors_only_after_observing_rotation() -> TestResult {
+    let yesterday = (10, 20, -7);
+    let today = (30, 40, -7);
+    let mut probes = Vec::new();
+    let mut rotated = false;
+    let trade = audit_rashid_anchors(
+        &mut probes,
+        today,
+        [yesterday, today],
+        true,
+        async |probes, anchor| {
+            probes.push(anchor);
+            if anchor == today {
+                // First probe sees the owner waiting for the flush. The next sees rotation.
+                return Ok(std::mem::replace(&mut rotated, true).then_some(today));
+            }
+            Ok((!rotated).then_some(yesterday))
+        },
+        async |_, actor| {
+            assert_eq!(actor, today);
+            Ok("trade")
+        },
+    )
+    .await?;
+    assert_eq!(trade, "trade");
+    assert_eq!(probes, [today, today, yesterday]);
+    Ok(())
+}
+
+#[tokio::test]
+async fn rashid_still_rejects_duplicate_off_day_actor_after_trade() {
+    let yesterday = (10, 20, -7);
+    let today = (30, 40, -7);
+    let mut probes = Vec::new();
+    let result = audit_rashid_anchors(
+        &mut probes,
+        today,
+        [yesterday, today],
+        true,
+        async |probes, anchor| {
+            probes.push(anchor);
+            Ok(Some(anchor))
+        },
+        async |_, actor| {
+            assert_eq!(actor, today);
+            Ok("trade")
+        },
+    )
+    .await;
+    assert!(result.is_err_and(|error| error.to_string().contains("live Rashid at off-day anchor")));
+    assert_eq!(probes, [today, yesterday]);
 }
