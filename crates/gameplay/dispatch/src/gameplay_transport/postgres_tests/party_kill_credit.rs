@@ -27,6 +27,7 @@ enum Case {
     Top,
     Time,
     Window,
+    WindowConsumed,
     Area,
     Summon,
     Ordered,
@@ -88,7 +89,21 @@ fn two_players_share_the_timed_boss_exit_and_return_on_expiry() -> TestResult {
     run(admin, Case::Window)
 }
 
-fn window_callback(at: MovementLocalPosition) -> TestResult<Callback> {
+#[test]
+fn advancing_a_ward_exit_consumes_it_for_the_other_player() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::WindowConsumed)
+}
+
+impl Case {
+    fn is_window(self) -> bool {
+        matches!(self, Self::Window | Self::WindowConsumed)
+    }
+}
+
+fn window_callback(at: MovementLocalPosition, case: Case) -> TestResult<Callback> {
     let x = u16::try_from(at.x)?;
     let y = u16::try_from(at.y)?;
     let floor = i8::try_from(-at.floor)?;
@@ -104,7 +119,8 @@ fn window_callback(at: MovementLocalPosition) -> TestResult<Callback> {
             "creatures":[RAT,CAVE_RAT],
             "area":{"minimum":[x+2,y,at.floor],"maximum":[x+2,y,at.floor]},
             "required_deaths":2,
-            "duration_ms":600_000
+            "duration_ms":600_000,
+            "consume_on_progress":case == Case::WindowConsumed
         }},
         "storage":[{"track":EXIT, "minimum":0,"maximum":1,"set":1}],
         "offerings":[],
@@ -138,7 +154,9 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             counter["damage_credit"]["recent_damage_ms"] = json!(60_000);
             "Crystal201189f the_inquisition_quest/creaturescripts_inquisition_ungreez.lua:2-10"
         }
-        Case::Window => "Crystal201189f creaturescripts_inquisition_boss.lua:19-29",
+        Case::Window | Case::WindowConsumed => {
+            "Crystal201189f creaturescripts_inquisition_boss.lua:19-29 and movements_teleport_main.lua:191-201"
+        }
         Case::Time => {
             counter["damage_credit"]["recent_damage_ms"] = json!(60_000);
             "Crystal201189f creature.lua:219-240, config.lua.dist:40"
@@ -167,10 +185,10 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         counter["maximum"] = json!(3);
         stages.push(stage("cave-rat", &counter));
     }
-    if case == Case::Window {
+    if case.is_window() {
         stages.push(json!({
             "key":"timed-exit", "completes":false,
-            "trigger":{"kind":"step_in","callback":window_callback(at)?}
+            "trigger":{"kind":"step_in","callback":window_callback(at, case)?}
         }));
     }
     let fixture_digest = format!("{:x}", Sha256::digest(serde_json::to_vec(&stages)?));
@@ -215,8 +233,8 @@ fn run(admin: String, case: Case) -> TestResult {
             y: start.y,
             floor: start.floor,
         };
-        let world = if case == Case::Window {
-            let callback = window_callback(at)?;
+        let world = if case.is_window() {
+            let callback = window_callback(at, case)?;
             Some(super::quest_world_callbacks::world(
                 &callback,
                 callback.selector.position.ok_or("exit tile")?,
@@ -265,7 +283,7 @@ fn run(admin: String, case: Case) -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
         let mut players = Vec::new();
-        for index in 0..if case == Case::Window { 2 } else { 3 } {
+        for index in 0..if case.is_window() { 2 } else { 3 } {
             let (current, _) =
                 crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
                     &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
@@ -285,7 +303,7 @@ fn run(admin: String, case: Case) -> TestResult {
             runtime
                 .bind_attacker_lease(actor, session, current.current_character_lease())
                 .map_err(debug)?;
-            let initial = if case == Case::Window && index == 1 {
+            let initial = if case.is_window() && index == 1 {
                 MovementLocalPosition {
                     x: at.x + 1,
                     y: at.y - 1,
@@ -315,7 +333,7 @@ fn run(admin: String, case: Case) -> TestResult {
 
         if let Some(cells) = &cells {
             owner.movement_cells = cells.into();
-            exercise_window(&owner, &players, at, &h.pool).await?;
+            exercise_window(&owner, &players, at, &h.pool, case).await?;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -405,7 +423,9 @@ fn run(admin: String, case: Case) -> TestResult {
             Case::Top => [1, 1, 0],
             Case::Time | Case::Summon => [1, 2, 0],
             Case::Ordered => [3, 3, 0],
-            Case::Window => return Err("timed exit requires bundle cells".into()),
+            Case::Window | Case::WindowConsumed => {
+                return Err("timed exit requires bundle cells".into());
+            }
         };
         assert_tracks(&h.pool, expected).await?;
         drop(owner);
@@ -420,6 +440,7 @@ async fn exercise_window(
     players: &[Player],
     at: MovementLocalPosition,
     pool: &sqlx::PgPool,
+    case: Case,
 ) -> TestResult {
     let portal = MovementLocalPosition { x: at.x + 1, ..at };
     let ward = MovementLocalPosition { x: at.x + 2, ..at };
@@ -446,10 +467,20 @@ async fn exercise_window(
     set_clock(201_000);
     death(owner, players, CAVE_RAT, ward, Case::Window, 101).await?;
     set_clock(202_000);
-    for (player, origin) in players.iter().zip(original) {
-        assert_eq!(enter_exit(owner, *player, portal).await?, landing);
-        move_to(owner, *player, origin).await?;
+    assert_eq!(enter_exit(owner, players[0], portal).await?, landing);
+    move_to(owner, players[0], original[0]).await?;
+    if case == Case::WindowConsumed {
+        assert_eq!(enter_exit(owner, players[1], portal).await?, original[1]);
+        set_clock(203_000);
+        death(owner, players, RAT, ward, case, 103).await?;
+        set_clock(204_000);
+        death(owner, players, CAVE_RAT, ward, case, 104).await?;
+        // An already-earned stage may use the open exit without consuming it.
+        assert_eq!(enter_exit(owner, players[0], portal).await?, landing);
+        move_to(owner, players[0], original[0]).await?;
     }
+    assert_eq!(enter_exit(owner, players[1], portal).await?, landing);
+    move_to(owner, players[1], original[1]).await?;
     let passed: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_tracks WHERE track_key=$1 AND value=1",
     )
