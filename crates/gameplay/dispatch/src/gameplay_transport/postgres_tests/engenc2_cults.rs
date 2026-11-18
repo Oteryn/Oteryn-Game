@@ -378,67 +378,74 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
             );
             let reenter = match scenario {
                 PhaseScenario::CountVlarkorth => {
-                    return super::gravedg_lich_knights::exercise_count(
+                    super::gravedg_lich_knights::exercise_count(
                         &owner,
                         &admitted,
                         &second.ok_or("second admitted player")?,
                     )
-                    .await;
+                    .await?;
+                    false
                 }
                 PhaseScenario::Cults { reenter } => reenter,
                 PhaseScenario::DukeKrule => {
-                    return super::gravedg_lich_knights::exercise_duke(
+                    super::gravedg_lich_knights::exercise_duke(
                         &owner,
                         &admitted,
                         second
                             .and_then(|p| p.runtime_actor)
                             .ok_or("second admitted player")?,
                     )
-                    .await;
+                    .await?;
+                    false
                 }
                 PhaseScenario::EarlOsam => {
-                    return super::gravedg_lich_knights::exercise_osam(
+                    super::gravedg_lich_knights::exercise_osam(
                         &owner,
                         &admitted,
                         &second.ok_or("second admitted player")?,
                     )
-                    .await;
+                    .await?;
+                    false
                 }
                 PhaseScenario::FivePlayerCredit { azaram } => {
                     let mut party = vec![admitted, second.ok_or("second admitted player")?];
                     party.extend(additional);
-                    return super::gravedg_lich_knights::exercise_five(&h, &owner, &party, azaram)
-                        .await;
+                    super::gravedg_lich_knights::exercise_five(&h, &owner, &party, azaram)
+                        .await?;
+                    false
                 }
                 PhaseScenario::LordAzaram => {
-                    return super::gravedg_lich_knights::exercise_azaram(
+                    super::gravedg_lich_knights::exercise_azaram(
                         &owner,
                         &admitted,
                         second
                             .and_then(|p| p.runtime_actor)
                             .ok_or("second admitted player")?,
                     )
-                    .await;
+                    .await?;
+                    false
                 }
                 PhaseScenario::Sirs => {
-                    return super::gravedg_lich_knights::exercise(
+                    super::gravedg_lich_knights::exercise(
                         &h,
                         &owner,
                         &admitted,
                         &second.ok_or("second admitted player")?,
                     )
-                    .await;
+                    .await?;
+                    false
                 }
                 PhaseScenario::Zelos { full_party: true } => {
                     let mut party = vec![admitted, second.ok_or("second admitted player")?];
                     party.extend(additional);
-                    return super::gravedg_zelos::exercise_full_party(
+                    super::gravedg_zelos::exercise_full_party(
                         &h,
                         &owner,
                         &party,
                         before_admission,
                     )
-                    .await;
+                    .await?;
+                    false
                 }
                 PhaseScenario::Zelos { full_party: false } => {
                     let cooldowns: Vec<(Vec<u8>, i64)> = sqlx::query_as(
@@ -502,9 +509,15 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                             .object_revision(key),
                         after_timeout
                     );
-                    return Ok(());
+                    false
                 }
             };
+            if party_test {
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             assert_eq!(
                 owner
                     .states
