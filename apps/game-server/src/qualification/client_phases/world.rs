@@ -5734,12 +5734,24 @@ impl<T, F: FnOnce(&mut T)> Drop for PendingExchange<'_, T, F> {
     }
 }
 
+fn action_deadline(deadline: tokio::time::Instant, phase: &'static str) -> TestResult {
+    if tokio::time::Instant::now() >= deadline {
+        return Err(verdict::HarnessError::boxed(
+            verdict::Cause::Deadline { phase },
+            format!("{phase} deadline expired"),
+        ));
+    }
+    Ok(())
+}
+
 async fn timed_exchange<T, R>(
     client: &mut T,
     deadline: tokio::time::Instant,
+    phase: &'static str,
     invalidate: impl FnOnce(&mut T),
     operation: impl AsyncFnOnce(&mut T) -> R,
-) -> Result<R, tokio::time::error::Elapsed> {
+) -> TestResult<R> {
+    action_deadline(deadline, phase)?;
     let mut pending = PendingExchange {
         client,
         invalidate: Some(invalidate),
@@ -5748,7 +5760,10 @@ async fn timed_exchange<T, R>(
     if result.is_ok() {
         pending.invalidate = None;
     }
-    result
+    // The operation can complete on the same poll as the timer. In that case the
+    // exchange is complete, but its result arrived too late for qualification.
+    action_deadline(deadline, phase)?;
+    Ok(result?)
 }
 
 async fn approach_action<R>(
@@ -5757,23 +5772,14 @@ async fn approach_action<R>(
     phase: &'static str,
     operation: impl AsyncFnOnce(&mut oteryn_dev_client::DevClientSession) -> TestResult<R>,
 ) -> TestResult<R> {
-    let expired = || {
-        verdict::HarnessError::boxed(
-            verdict::Cause::Deadline { phase },
-            format!("{phase} deadline expired"),
-        )
-    };
-    if tokio::time::Instant::now() >= deadline {
-        return Err(expired());
-    }
     timed_exchange(
         client,
         deadline,
+        phase,
         |client| client.session_mut().invalidate_interrupted_exchange(),
         operation,
     )
-    .await
-    .map_err(|_| expired())?
+    .await?
 }
 
 fn account_for_spawn_wait(work_deadline: &mut tokio::time::Instant, started: tokio::time::Instant) {
@@ -5797,7 +5803,9 @@ async fn approach_spawn_target(
     mut work_deadline: Option<&mut tokio::time::Instant>,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     let mut steps = 0;
-    while tokio::time::Instant::now() < deadline {
+    let mut phase = "spawn-observation";
+    loop {
+        action_deadline(deadline, phase)?;
         let here = client.world_spatial().actor_position;
         let Some(target) = client
             .world_entities()
@@ -5806,11 +5814,12 @@ async fn approach_spawn_target(
             if steps == 32 {
                 break;
             }
+            phase = "spawn-observation";
             let started = tokio::time::Instant::now();
             wait_for_spawn_observation(
                 verdict::Harness::global(),
                 deadline,
-                approach_action(client, deadline, "spawn-observation", async |client| {
+                approach_action(client, deadline, phase, async |client| {
                     client.service_liveness(Duration::from_millis(100)).await?;
                     Ok(())
                 }),
@@ -5838,12 +5847,11 @@ async fn approach_spawn_target(
         let step_deadline = work_deadline
             .as_deref()
             .map_or(deadline, |work| deadline.min(*work));
-        approach_action(
-            client,
-            step_deadline,
-            "spawn-approach-step",
-            async |client| walk(client, world, &[*direction]).await,
-        )
+        phase = "spawn-approach-step";
+        verdict::Harness::global().progress(phase);
+        approach_action(client, step_deadline, phase, async |client| {
+            walk(client, world, &[*direction]).await
+        })
         .await?;
         steps += 1;
     }
@@ -6884,6 +6892,7 @@ fn qualification_timeout_invalidates_interrupted_exchange() -> TestResult {
             let result = timed_exchange(
                 &mut usable,
                 start + budget,
+                "spawn-approach-step",
                 |usable| *usable = false,
                 async |_| {
                     tokio::time::sleep(Duration::from_secs(10)).await;
@@ -6899,6 +6908,7 @@ fn qualification_timeout_invalidates_interrupted_exchange() -> TestResult {
                 timed_exchange(
                     &mut usable,
                     start + Duration::from_secs(30),
+                    "spawn-approach-step",
                     |usable| *usable = false,
                     async |_| std::future::pending::<()>().await,
                 ),
@@ -6911,6 +6921,53 @@ fn qualification_timeout_invalidates_interrupted_exchange() -> TestResult {
 }
 
 #[test]
+fn qualification_ready_exchange_at_deadline_is_rejected() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let mut usable = true;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+            let phase = "earn-fare-combat-and-loot";
+            let result = timed_exchange(
+                &mut usable,
+                deadline,
+                phase,
+                |usable| *usable = false,
+                async |_| tokio::time::sleep_until(deadline).await,
+            )
+            .await;
+            let Err(error) = result else {
+                return Err("exchange completed at its deadline".into());
+            };
+            assert_eq!(
+                verdict::classify(error.as_ref()),
+                verdict::Cause::Deadline { phase }
+            );
+            assert!(
+                usable,
+                "a completed exchange leaves the session synchronized"
+            );
+            Ok(())
+        })
+}
+
+#[test]
+fn qualification_spawn_deadline_keeps_last_action() -> TestResult {
+    for phase in ["spawn-observation", "spawn-approach-step", "earn-fare-work"] {
+        let Err(error) = action_deadline(tokio::time::Instant::now(), phase) else {
+            return Err(format!("{phase} accepted an expired deadline").into());
+        };
+        assert_eq!(
+            verdict::classify(error.as_ref()),
+            verdict::Cause::Deadline { phase }
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn qualification_two_respawns_preserve_fare_work_budget() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -6918,9 +6975,9 @@ fn qualification_two_respawns_preserve_fare_work_budget() -> TestResult {
         .build()?
         .block_on(async {
             let start = tokio::time::Instant::now();
+            let (mut work_deadline, hard_deadline) =
+                full_row_s10::fare_deadlines(start, [90_000].into_iter());
             let work = Duration::from_secs(180);
-            let mut work_deadline = start + work;
-            let hard_deadline = work_deadline + spawn_observation_budget([90_000].into_iter());
             for _ in 0..2 {
                 let waiting = tokio::time::Instant::now();
                 tokio::time::sleep(Duration::from_secs(90)).await;
@@ -6931,12 +6988,17 @@ fn qualification_two_respawns_preserve_fare_work_budget() -> TestResult {
             let combat = timed_exchange(
                 &mut usable,
                 work_deadline.min(hard_deadline),
+                "earn-fare-combat-and-loot",
                 |usable| *usable = false,
                 async |_| tokio::time::sleep(Duration::from_secs(120)).await,
             )
             .await;
-            assert!(combat.is_err());
-            assert_eq!(tokio::time::Instant::now(), hard_deadline);
+            assert!(combat.is_ok());
+            assert_eq!(
+                tokio::time::Instant::now() - start,
+                Duration::from_secs(300)
+            );
+            assert!(hard_deadline >= work_deadline);
             Ok(())
         })
 }

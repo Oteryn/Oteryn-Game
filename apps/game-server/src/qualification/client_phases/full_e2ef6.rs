@@ -1548,7 +1548,7 @@ async fn earn_death_prerequisites(
             return Err(format!("player prerequisite blocked: rat hunting/loot budget exhausted; required level={level} carried_gold={gold}; observed XP={} level={} carried_gold={money}", build.0, build.1).into());
         }
         let target = travel_to_spawn_target(client, world, spawns, "oteryn:creature.rat").await
-            .map_err(|error| format!("player prerequisite blocked: required level={level} carried_gold={gold}, observed XP={} level={} carried_gold={money}; rat route: {error}", build.0, build.1))?;
+            .map_err(|error| verdict::context(format!("player prerequisite blocked: required level={level} carried_gold={gold}, observed XP={} level={} carried_gold={money}; rat route: {error}", build.0, build.1), error))?;
         client_hunt::hunt_target(client, Some(target)).await.map_err(|error| format!("player prerequisite blocked: real rat kill/loot: {error}; required level={level} carried_gold={gold}; before XP={} level={} carried_gold={money}", build.0, build.1))?;
     }
 }

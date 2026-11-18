@@ -354,6 +354,7 @@ pub(super) async fn earn(
             .into());
         }
         let mut picked = None;
+        let mut route_deadline = None;
         for (index, candidate) in ranked.iter().enumerate() {
             if unreachable.contains(&index) {
                 continue;
@@ -369,11 +370,21 @@ pub(super) async fn earn(
                         candidate.key
                     ));
                     unreachable.insert(index);
+                    if route_deadline.is_none()
+                        && matches!(verdict::classify(error.as_ref()), verdict::Cause::Deadline { .. })
+                    {
+                        route_deadline = Some(error);
+                    }
                 }
             }
         }
-        let (candidate, target) =
-            picked.ok_or_else(|| format!("{row}: no reachable gold creature at level {level}"))?;
+        let Some((candidate, target)) = picked else {
+            let message = format!("{row}: no reachable gold creature at level {level}");
+            return Err(match route_deadline {
+                Some(error) => verdict::context(format!("{message}; {error}"), error),
+                None => message.into(),
+            });
+        };
         if deadline.is_none() {
             let budget = candidate.budget(needed.saturating_sub(observed));
             deadline = Some(tokio::time::Instant::now() + budget);

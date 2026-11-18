@@ -42,8 +42,10 @@ fn show(pos: TilePos) -> String {
     format!("{},{},{}", pos.x, pos.y, -i16::from(pos.floor))
 }
 
+#[derive(Default)]
 struct Row {
     failed: usize,
+    deadline: Option<Box<dyn std::error::Error>>,
 }
 
 impl Row {
@@ -53,8 +55,23 @@ impl Row {
             Err(error) => {
                 self.failed += 1;
                 evidence(&format!("Q02_CHECK {step} FAIL {error}"));
+                if self.deadline.is_none()
+                    && matches!(verdict::classify(error.as_ref()), verdict::Cause::Deadline { .. })
+                {
+                    self.deadline = Some(error);
+                }
             }
         }
+    }
+    fn finish(self) -> TestResult {
+        if self.failed == 0 {
+            return Ok(());
+        }
+        let summary = format!("{} Q02 step(s) failed", self.failed);
+        Err(match self.deadline {
+            Some(error) => verdict::context(format!("{summary}; {error}"), error),
+            None => summary.into(),
+        })
     }
 }
 
@@ -340,7 +357,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let objects = ordinals(&bytes, &[BOAT_TO_ADA, BOAT_BACK, MARK_WALL, CRYPT_EXIT])?;
     let mut client = connect_character(clients, 0xe6, 1).await?;
-    let mut row = Row { failed: 0 };
+    let mut row = Row::default();
     let c = &mut client;
     row.check("setup", setup(clients, c).await);
     row.check(
@@ -407,10 +424,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     );
     row.check("reward", reward(c));
     let _ = client.session_mut().logout().await;
-    if row.failed > 0 {
-        return Err(format!("{} Q02 step(s) failed", row.failed).into());
-    }
-    Ok(())
+    row.finish()
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -424,4 +438,20 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64()
     ));
+}
+
+#[test]
+fn qualification_q02_verdict_keeps_spawn_deadline() -> TestResult {
+    let mut row = Row::default();
+    row.check("kesar", Err("earlier assertion".into()));
+    let phase = "spawn-observation";
+    row.check("court_warlock", Err(verdict::HarnessError::boxed(
+        verdict::Cause::Deadline { phase }, "Warlock observation timed out",
+    )));
+    row.check("boat_return", Err("later assertion".into()));
+    let Err(error) = row.finish() else {
+        return Err("failed Q02 checks produced a passing row".into());
+    };
+    assert_eq!(verdict::classify(error.as_ref()), verdict::Cause::Deadline { phase });
+    Ok(())
 }

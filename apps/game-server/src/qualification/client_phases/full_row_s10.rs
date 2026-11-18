@@ -73,10 +73,13 @@ impl Row {
     }
 }
 
+// Keep the original 85 seconds for admission and the checks after fare earning.
+const ROW_BUDGET: Duration = Duration::from_secs(455);
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(&mut row, clients))).await;
-    row.finish(match result { Ok(result) => result, Err(_) => Err("step deadline: no server reply within 360s; need the server to complete the pending NPC/travel command".into()) });
+    let result = verdict::indexed_timeout(ROW_BUDGET, verdict::observe(journey(&mut row, clients))).await;
+    row.finish(match result { Ok(result) => result, Err(_) => Err("step deadline: no server reply within 455s; need the server to complete the pending NPC/travel command".into()) });
 }
 
 async fn talk(
@@ -206,6 +209,14 @@ fn utc_rashid_destination() -> TestResult<RashidDestination> {
     ))
 }
 
+pub(super) fn fare_deadlines(
+    now: tokio::time::Instant,
+    respawns: impl Iterator<Item = u32>,
+) -> (tokio::time::Instant, tokio::time::Instant) {
+    let work_deadline = now + Duration::from_secs(180);
+    (work_deadline, work_deadline + 2 * spawn_observation_budget(respawns))
+}
+
 async fn earn(
     client: &mut DevClientSession,
     world: &crate::map::boot::BundleWorld,
@@ -222,15 +233,17 @@ async fn earn(
             })
         })
         .collect();
-    // Observation pauses the work clock. The absolute deadline still reserves time
-    // for the rest of S10, even if successive respawns take longer than expected.
-    let mut fare_work_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
-    let deadline = fare_work_deadline
-        + spawn_observation_budget(rats.iter().map(|&(_, _, _, respawn_ms)| respawn_ms));
+    let (mut fare_work_deadline, deadline) = fare_deadlines(
+        tokio::time::Instant::now(),
+        rats.iter().map(|&(_, _, _, respawn_ms)| respawn_ms),
+    );
     while carried_gold(client)? < needed {
-        if tokio::time::Instant::now() >= fare_work_deadline.min(deadline) {
-            return Err(format!("step earn-fare: combat/loot budget expired; observed carried_gold={}, required={needed}; need sufficient authored player-obtainable loot", carried_gold(client)?).into());
-        }
+        action_deadline(fare_work_deadline.min(deadline), "earn-fare-work").map_err(|error| {
+            verdict::context(
+                format!("step earn-fare: {error}; required carried_gold={needed}"),
+                error,
+            )
+        })?;
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
             rats.iter().any(|&(x, y, floor, _)| {
                 at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 1 && at.floor == floor
