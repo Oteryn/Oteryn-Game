@@ -1304,6 +1304,43 @@ mod read_only_pin_tests {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
 
     #[test]
+    fn read_only_callback_accepts_registered_main_era_save() -> Result<(), String> {
+        let quest = "oteryn:quest.grave_danger_quest";
+        let loaded =
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-current")
+                .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        // Grave Danger's deployed definition at 871c1dec7.
+        let stored = super::super::quest_state::QuestStateRecord {
+            pinned_content_revision: "content-previous".into(),
+            definition_hash: [
+                0x50, 0x54, 0x57, 0x5c, 0x76, 0x48, 0x05, 0x22, 0xbd, 0xc3, 0x1b, 0xab, 0x71, 0x18,
+                0x73, 0xfc, 0x7d, 0xd8, 0x59, 0xb3, 0x83, 0x2d, 0x4b, 0xca, 0xcb, 0xee, 0xed, 0xe0,
+                0x25, 0x9e,
+            ],
+            completed: false,
+        };
+        assert_ne!(
+            catalogue.definition_hash(quest),
+            Some(stored.definition_hash)
+        );
+        assert!(
+            oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                catalogue,
+                quest,
+                &stored.definition_hash
+            )
+            .is_some()
+        );
+        assert!(
+            read_only_pin_allows(&stored, catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?,
+            "a registered predecessor must retain passage access"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn read_only_callback_keeps_access_on_an_unchanged_historical_content_pin() -> Result<(), String>
     {
         let quest = "oteryn:quest.fixture.read_only";

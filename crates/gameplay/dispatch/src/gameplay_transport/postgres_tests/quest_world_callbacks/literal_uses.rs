@@ -61,7 +61,7 @@ fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestRe
             let callback = callback(name)?;
             assert_eq!(callback.selector.position, Some(position(source)));
             assert_eq!(callback.teleport, Some(position(destination)));
-            exercise(callback, appearance, ordinal, None)?;
+            exercise(callback, appearance, ordinal, None, false)?;
         }
         Ok(())
     })
@@ -97,12 +97,12 @@ fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> Test
             assert!(callback.is_read_only());
             assert_eq!(callback.storage[0].minimum, minimum);
             for stage in [None, Some(minimum - 1), Some(minimum), Some(13)] {
-                exercise(callback.clone(), appearance, ordinal, stage)?;
+                exercise(callback.clone(), appearance, ordinal, stage, false)?;
             }
         }
         // The production map contains the pre-startup wall too; position-based
         // server dispatch must not depend on the donor's visual transform.
-        exercise(callback("order-of-the-stag-crypt-exit")?, 1507, 1, None)?;
+        exercise(callback("order-of-the-stag-crypt-exit")?, 1507, 1, None, false)?;
         Ok(())
     })
 }
@@ -111,7 +111,13 @@ fn position((x, y, floor): (u16, u16, i8)) -> Position {
     Position { x, y, floor }
 }
 
-fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>) -> TestResult {
+pub(in super::super) fn exercise(
+    callback: Callback,
+    appearance: u16,
+    ordinal: u8,
+    stage: Option<i64>,
+    main_era_save: bool,
+) -> TestResult {
     let started = std::time::Instant::now();
     let trigger = callback.selector.position.ok_or("position")?;
     let world = world_ordinal(&callback, trigger, appearance, ordinal)?;
@@ -299,7 +305,29 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                 crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
             ));
             drop(slot);
-            owner.quest_catalogue = Some(catalogue);
+            if main_era_save {
+                let main = owner.quest_catalogue.as_deref().ok_or("main catalogue")?;
+                let hash = main.definition_hash(&callback.quest).ok_or("main hash")?;
+                let active = main
+                    .with_fixture_transition(catalogue.transition(seed).ok_or("fixture transition")?.clone())
+                    .map_err(debug)?
+                    .with_fixture_predecessor(main, &callback.quest)
+                    .map_err(debug)?;
+                assert_ne!(active.definition_hash(&callback.quest), Some(hash));
+                // Restore the historical pin in both members of the seeded save.
+                let mut save = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role = replica")
+                    .execute(&mut *save)
+                    .await?;
+                sqlx::query("UPDATE game_character_quest_states SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2")
+                    .bind(hash.as_slice()).bind(&callback.quest).execute(&mut *save).await?;
+                sqlx::query("UPDATE game_character_quest_receipts SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2")
+                    .bind(hash.as_slice()).bind(&callback.quest).execute(&mut *save).await?;
+                save.commit().await?;
+                owner.quest_catalogue = Some(std::sync::Arc::new(active));
+            } else {
+                owner.quest_catalogue = Some(catalogue);
+            }
         }
         let key = oteryn_world_bundle::bundle::placement_key(
             trigger.floor,
@@ -325,6 +353,11 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             .read_character_quest_state(&authority, fence.character_id)
             .await
             .map_err(debug)?;
+        if main_era_save {
+            let stored = before.states().get(&callback.quest).ok_or("main-era state")?;
+            assert!(!stored.completed);
+            assert_eq!(stored.pinned_content_revision, "content-main-era");
+        }
         let receipts_before: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
                 .fetch_one(&h.pool)

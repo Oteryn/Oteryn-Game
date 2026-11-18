@@ -686,6 +686,31 @@ impl QuestStateCatalogue {
         Ok(updated)
     }
 
+    /// Model a later content activation that declares an exact previous definition compatible.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn with_fixture_predecessor(
+        mut self,
+        previous: &Self,
+        quest: &str,
+    ) -> Result<Self, QuestCatalogueError> {
+        let hash = previous
+            .definition_hash(quest)
+            .ok_or_else(|| QuestCatalogueError::InvalidKey(quest.to_owned()))?;
+        self.predecessors
+            .entry(quest.to_owned())
+            .or_default()
+            .push(NpcDefinitionPredecessor {
+                hash,
+                defaults: previous
+                    .tracks
+                    .values()
+                    .filter(|track| track.quest == quest)
+                    .map(|track| (track.key.clone(), track.initial))
+                    .collect(),
+            });
+        Ok(self)
+    }
+
     /// A catalogue with no quest: every transition request is unknown.
     #[must_use]
     pub fn empty(content_revision: impl Into<String>) -> Option<Self> {

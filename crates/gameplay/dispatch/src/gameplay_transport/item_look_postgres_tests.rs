@@ -262,6 +262,7 @@ async fn serve_looks(
     admitted: AdmittedSession,
     own: EntityRef,
     rat: EntityRef,
+    goblets: bool,
 ) -> TestResult {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
@@ -273,7 +274,13 @@ async fn serve_looks(
         drop(server);
     };
     let mut serving = std::pin::pin!(serving);
-    let mut looking = std::pin::pin!(client_looks(&mut client, own, rat));
+    let mut looking = std::pin::pin!(async {
+        if goblets {
+            super::arena_goblet_look::client_looks(&mut client).await
+        } else {
+            client_looks(&mut client, own, rat).await
+        }
+    });
     let mut served = false;
     let mut result = None;
     std::future::poll_fn(|context| {
@@ -315,6 +322,14 @@ fn scenario() -> TestResult {
 }
 
 pub(super) fn scenario_with_inspection(inspection: Option<bool>) -> TestResult {
+    scenario_inner(inspection, false)
+}
+
+pub(super) fn scenario_with_goblets() -> TestResult {
+    scenario_inner(None, true)
+}
+
+fn scenario_inner(inspection: Option<bool>, goblets: bool) -> TestResult {
     run(async |admin| {
         reset();
         let harness = Harness::create_with_admission_seed(admin, "item_look", true, false).await?;
@@ -511,7 +526,11 @@ pub(super) fn scenario_with_inspection(inspection: Option<bool>) -> TestResult {
             .await?;
         admitted.item_fence = item_fence_of(current);
 
-        seed_main_backpack(&harness, &[("oteryn:item.tibia.i6120", 1)]).await?;
+        if goblets {
+            super::arena_goblet_look::seed_goblets(&harness).await?;
+        } else {
+            seed_main_backpack(&harness, &[("oteryn:item.tibia.i6120", 1)]).await?;
+        }
         if inspection.is_some() {
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING").bind(id(41).as_slice()).execute(&harness.pool).await?;
         }
@@ -537,7 +556,7 @@ pub(super) fn scenario_with_inspection(inspection: Option<bool>) -> TestResult {
         } else {
             tokio::time::timeout(
                 std::time::Duration::from_secs(30),
-                serve_looks(&owner, admitted, own, rat),
+                serve_looks(&owner, admitted, own, rat, goblets),
             )
             .await??;
         }

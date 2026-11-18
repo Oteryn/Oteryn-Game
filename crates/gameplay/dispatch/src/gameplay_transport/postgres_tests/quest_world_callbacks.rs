@@ -10,7 +10,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
-fn callback(name: &str) -> TestResult<Callback> {
+pub(super) fn callback(name: &str) -> TestResult<Callback> {
     // The Stampede entry is an authored binding of the content catalogue.
     if name == "m01b/asura-palace/s1/entry" || name == super::m01c_stampede_entry::CALLBACK {
         let label = if name == super::m01c_stampede_entry::CALLBACK {
@@ -1236,7 +1236,7 @@ mod assertions;
 #[path = "quest_world_callbacks/lions_rock.rs"]
 mod lions_rock;
 #[path = "quest_world_callbacks/literal_uses.rs"]
-mod literal_uses;
+pub(super) mod literal_uses;
 #[path = "quest_world_callbacks/rotten_blood.rs"]
 mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]
