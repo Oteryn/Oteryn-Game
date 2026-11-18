@@ -886,6 +886,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        let flip_party_lever_on_refusal =
+            callback
+                .effects
+                .party_transfer
+                .as_ref()
+                .is_some_and(|party| {
+                    party.vacant_room.is_none()
+                        && party.initiator_at.is_none()
+                        && party
+                            .stations
+                            .iter()
+                            .all(|station| station.carried_item.is_none())
+                });
         let party = if let Some(party) = &callback.effects.party_transfer {
             if after.appearance_id != party.activation_appearance {
                 return if map.facts.apply_quest_callback(
@@ -904,16 +917,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             match self.prepare_party_transfer(runtime, states, &closed, callback, session) {
                 Ok(plan) => Some(plan),
-                Err(refusal)
-                    if party.vacant_room.is_some()
-                        || party.initiator_at.is_some()
-                        || party
-                            .stations
-                            .iter()
-                            .any(|station| station.carried_item.is_some()) =>
-                {
-                    return refusal;
-                }
+                Err(refusal) if !flip_party_lever_on_refusal => return refusal,
                 Err(refusal) => {
                     // The ground-offering rite toggles before validating. Refusal changes
                     // only that appearance; no participant or offering changes.
@@ -1293,8 +1297,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     {
                         self.states.chat.push_quest_feedback(session, message);
                     }
-                    if party.is_some() {
-                        // The source lever still flips on a missing sacrifice.
+                    if flip_party_lever_on_refusal {
+                        // Ground-offering rites flip their lever even if the sacrifice is missing.
                         map.facts.apply_quest_callback(key, expected_revision, after, &[], &[], close, None);
                     }
                     return UseDisposition::Rejected;

@@ -3,7 +3,9 @@ use super::{TestResult, debug};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{CharacterId, CharacterLease, CommandId, CommandRef, ExactActorRef};
 use crate::gameplay_transport::{
-    connection::UseCommand, item_view::ItemKey, kill_reward::KillSink,
+    connection::{FreshAdmissionAuthority, UseCommand},
+    item_view::ItemKey,
+    kill_reward::{DrainOutcome, KillSink},
 };
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 use std::num::NonZeroU64;
@@ -101,16 +103,28 @@ pub(super) async fn exercise(
         queue.has_session(session),
         "the real death must reach kill settlement"
     );
-    let _ = owner.drain_kill_rewards(session).await;
-    let corpse = owner
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
+    let visible = owner
         .runtime
         .lock()
         .await
         .visible_corpses()
         .first()
-        .ok_or("Lord's committed ashes")?
-        .item
-        .item_instance_id;
+        .cloned()
+        .ok_or("Lord's committed ashes")?;
+    let corpse = visible.item.item_instance_id;
+    assert!(
+        owner
+            .root
+            .read_corpse_contents(owner.character, corpse)
+            .await
+            .map_err(debug)?
+            .is_some(),
+        "the original ashes expose loot before the deadline"
+    );
     let mut tx = h.pool.begin().await?;
     // Drive the existing timer with an aged test receipt, without sleeping ten seconds.
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -160,7 +174,7 @@ pub(super) async fn exercise(
         )
         .await?;
         let use_knife = |command_id| {
-            owner.use_cooking_conversion(
+            owner.use_craft(
                 actor,
                 UseCommand {
                     game_session_id: item_fence.game_session_id,
@@ -174,7 +188,7 @@ pub(super) async fn exercise(
                     use_with_position: None,
                 },
                 Some(ItemKey::Instance(super::id(bag + 1))),
-                Some(ItemKey::Instance(corpse)),
+                Some(ItemKey::Entity(visible.identity)),
             )
         };
         assert_eq!(

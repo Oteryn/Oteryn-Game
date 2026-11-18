@@ -58,6 +58,7 @@ pub(super) async fn exercise(
         .and_then(|native| native.training_formula())
         .ok_or("training formula")?;
     let mut players = Vec::new();
+    let mut missing_sphere = None;
     for (index, station) in party.stations.iter().enumerate() {
         let member = u8::try_from(index)?;
         let session = if Some(station.from) == party.initiator_at {
@@ -141,13 +142,14 @@ pub(super) async fn exercise(
             ));
         }
         let item = station.carried_item.as_deref().ok_or("carried sphere")?;
-        super::super::item_look::seed_character_main_backpack(
-            h,
-            *fence.character_id.as_bytes(),
-            70 + member * 4,
-            &[(item, 1)],
-        )
-        .await?;
+        let character = *fence.character_id.as_bytes();
+        let bag = 70 + member * 4;
+        if index == 0 {
+            missing_sphere = Some((character, bag, item));
+        } else {
+            super::super::item_look::seed_character_main_backpack(h, character, bag, &[(item, 1)])
+                .await?;
+        }
         {
             let mut runtime = owner.runtime.lock().await;
             runtime
@@ -185,7 +187,7 @@ pub(super) async fn exercise(
             assert!(states.load_owned_build(&runtime, actor, session, &build));
         }
         owner.refresh_quest_session(session, false).await;
-        players.push((actor, local(station.to)));
+        players.push((actor, local(station.from), local(station.to)));
     }
 
     let position = callback.selector.position.ok_or("entry lever tile")?;
@@ -201,23 +203,63 @@ pub(super) async fn exercise(
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let fence = fence(owner, admitted.game_session_id).await?;
+    let target = WorldObjectTarget {
+        placement,
+        expected_revision: 0,
+    };
+    let actor = admitted.runtime_actor.ok_or("initiator")?;
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: 101,
+        item_fence: Some(fence.item_fence()),
+    };
+    let refused = owner.use_object(actor, command, target.clone()).await;
+    assert_eq!(refused.disposition, UseDisposition::Rejected);
+    assert_eq!(
+        map.facts.object_revision(key),
+        0,
+        "a missing sphere must leave the lever ready"
+    );
+    {
+        let runtime = owner.runtime.lock().await;
+        for (actor, origin, _) in &players {
+            assert_eq!(
+                runtime
+                    .read_actor_position(*actor)
+                    .map_err(debug)?
+                    .position(),
+                *origin
+            );
+        }
+    }
+    let (character, bag, item) = missing_sphere.ok_or("withheld non-initiator sphere")?;
+    super::super::item_look::seed_character_main_backpack(h, character, bag, &[(item, 1)]).await?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(1))
+        .ok_or("USE gate clock")?;
     let outcome = owner
         .use_object(
-            admitted.runtime_actor.ok_or("initiator")?,
+            actor,
             UseCommand {
-                game_session_id: admitted.game_session_id,
-                command_id: 101,
-                item_fence: Some(fence.item_fence()),
+                command_id: 102,
+                ..command
             },
-            WorldObjectTarget {
-                placement,
-                expected_revision: 0,
-            },
+            target,
         )
         .await;
     assert_eq!(outcome.disposition, UseDisposition::Committed);
+    let retained: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
+         WHERE i.definition_production_key IN ('oteryn:item.tibia.i942','oteryn:item.tibia.i946',
+             'oteryn:item.tibia.i947','oteryn:item.tibia.i948') AND i.quantity=1 AND i.lifecycle=1",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(
+        retained, 4,
+        "admission checks the four carried spheres without consuming them"
+    );
     let runtime = owner.runtime.lock().await;
-    for (actor, destination) in players {
+    for (actor, _, destination) in players {
         assert_eq!(
             runtime
                 .read_actor_position(actor)
