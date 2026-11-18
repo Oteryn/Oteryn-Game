@@ -78,6 +78,9 @@ pub struct CallbackEffects {
     /// Transfer the admitted roster still in the encounter room when it expires.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timed_group_transfer: Option<TimedGroupTransfer>,
+    /// Create a nonportable map object until the shared deadline.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timed_display: Option<TimedDisplay>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reward_door: Option<RewardDoor>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -327,6 +330,14 @@ pub enum EncounterPhase {
 pub struct EncounterTiming {
     pub spawn_after_ms: u32,
     pub reset_after_ms: u32,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TimedDisplay {
+    pub position: Position,
+    pub appearance: u16,
+    pub after_ms: u32,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -838,6 +849,31 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || cycle.remove == 0
             || cycle.create == 0
             || cycle.remove == cycle.create)
+    {
+        return false;
+    }
+    if let Some(display) = effects.timed_display
+        && (!pos(display.position)
+            || display.appearance == 0
+            || !(1..=3_600_000).contains(&display.after_ms)
+            || callback.actor_kind != ActorKind::Player
+            || callback.trigger != Trigger::Use
+            || !callback.requires_world_admission
+            || !callback.has_state_writes()
+            || callback
+                .item_on_target
+                .as_ref()
+                .is_none_or(|input| input.reusable || input.count != 1)
+            || callback.lever.is_some()
+            || callback.reversible
+            || !callback.passages.is_empty()
+            || effects.encounter.is_some()
+            || effects.scene.is_some()
+            || effects.target_transform.is_some()
+            || effects.reset_after_ms.is_some()
+            || effects.portals.is_some()
+            || effects.item_presence.is_some()
+            || effects.item_cycle.is_some())
     {
         return false;
     }

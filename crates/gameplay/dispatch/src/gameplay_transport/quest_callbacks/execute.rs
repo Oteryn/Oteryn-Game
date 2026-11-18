@@ -701,6 +701,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 if source_flame {
                     3
+                } else if callback.effects.timed_display.is_some() {
+                    8
                 } else {
                     callback.passages.len()
                 },
@@ -1399,6 +1401,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 *due = published_due;
             }
+            if let Some(crate::map::facts::QuestCallbackProjection::TimedDisplay { due, .. }) =
+                &mut projection
+                && let Some(display) = callback.effects.timed_display
+            {
+                let Some(deadline) = self
+                    .owner_now()
+                    .get()
+                    .checked_add(u64::from(display.after_ms) * 1_000)
+                else {
+                    return UseDisposition::Exhausted;
+                };
+                *due = deadline;
+            }
             // Crystal actions_lions_rock.lua:69: start the shared reset after
             // durable success. Commit latency must not shorten its visible lifetime.
             if let Some(crate::map::facts::QuestCallbackProjection::TimedPassages {
@@ -1511,6 +1526,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::map::facts::QuestCallbackProjection::TimedTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedRemoteTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedEntrance { .. }
+                    | crate::map::facts::QuestCallbackProjection::TimedDisplay { .. }
             )
         ) || callback.effects.reset_after_ms.is_some()
             || callback.effects.passages_reset_after_ms.is_some()

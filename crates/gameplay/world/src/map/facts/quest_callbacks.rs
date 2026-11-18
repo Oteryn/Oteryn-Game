@@ -112,6 +112,11 @@ pub enum QuestCallbackProjection {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
         expires: Option<u64>,
     },
+    TimedDisplay {
+        position: TilePos,
+        entry: EntryFacts,
+        due: u64,
+    },
     ItemPresence {
         position: TilePos,
         entry: EntryFacts,
@@ -157,6 +162,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    timed_displays: BTreeMap<(u64, u64), (TilePos, EntryId)>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
@@ -412,6 +418,31 @@ impl CallbackStates {
                     );
                 }
             }
+            QuestCallbackProjection::TimedDisplay {
+                position,
+                entry: facts,
+                due,
+            } => {
+                if close || facts.pickupable {
+                    return false;
+                }
+                let Some(sequence) = self.movement_sequence.checked_add(1) else {
+                    return false;
+                };
+                let Some(entry) = EntryId::callback(sequence) else {
+                    return false;
+                };
+                self.movement_sequence = sequence;
+                self.movement_items
+                    .entry(*position)
+                    .or_default()
+                    .push(view::ComposedEntry {
+                        source: view::EntrySource::Added(entry),
+                        facts: *facts,
+                    });
+                self.timed_displays
+                    .insert((*due, sequence), (*position, entry));
+            }
             QuestCallbackProjection::ItemPresence {
                 position,
                 entry: facts,
@@ -517,6 +548,7 @@ impl CallbackStates {
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
         self.presences.retain(|_, (p, _)| !cleared(p));
+        self.timed_displays.retain(|_, (p, _)| !cleared(p));
     }
 
     pub(super) fn has_capacity(&self, additional: usize) -> bool {
@@ -530,6 +562,7 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self.timed_displays.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -836,6 +869,7 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(states.timed_displays.keys().next().map(|(due, _)| *due))
             .min()
     }
 
@@ -856,6 +890,22 @@ impl BundleFacts {
         for owner in expired {
             states.remove_portals(owner);
             changed += 1;
+        }
+        // Each display expires by its own added-entry identity. Another use of the
+        // same source cannot inherit (or be deleted by) an earlier display's timer.
+        while let Some((&(due, sequence), &(pos, id))) = states.timed_displays.first_key_value() {
+            if due > now || states.position_reserved(pos) {
+                break;
+            }
+            states.timed_displays.remove(&(due, sequence));
+            if let Some(entries) = states.movement_items.get_mut(&pos) {
+                let before = entries.len();
+                entries.retain(|entry| entry.source != view::EntrySource::Added(id));
+                changed += usize::from(entries.len() != before);
+                if entries.is_empty() {
+                    states.movement_items.remove(&pos);
+                }
+            }
         }
         let due: Vec<_> = states
             .movement_decays
@@ -1648,6 +1698,7 @@ impl BundleFacts {
                     entries.iter().any(|(key, _, _)| states.key_reserved(*key))
                 }
                 QuestCallbackProjection::ItemPresence { position, .. }
+                | QuestCallbackProjection::TimedDisplay { position, .. }
                 | QuestCallbackProjection::ItemCycle { position, .. } => {
                     states.position_reserved(*position)
                 }

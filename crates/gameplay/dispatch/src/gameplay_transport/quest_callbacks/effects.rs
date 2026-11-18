@@ -24,6 +24,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(target) = &callback.effects.target_transform {
             return super::source_transforms::prepare(map, target).map(Some);
         }
+        // Crystal 201189f8 the_thieves_guild_quest/actions_note.lua:17-21.
+        if let Some(display) = callback.effects.timed_display {
+            let position = tile(display.position);
+            let entry = map
+                .facts
+                .movement_item_facts(display.appearance)
+                .filter(|facts| !facts.pickupable)
+                .ok_or(UseDisposition::Rejected)?;
+            if map.facts.house_tile(position)
+                || map
+                    .overlay
+                    .base()
+                    .tile(position.x, position.y, position.floor)
+                    .is_none()
+            {
+                return Err(UseDisposition::Rejected);
+            }
+            let due = self
+                .owner_now()
+                .get()
+                .checked_add(u64::from(display.after_ms) * 1_000)
+                .ok_or(UseDisposition::Exhausted)?;
+            return Ok(Some(QuestCallbackProjection::TimedDisplay {
+                position,
+                entry,
+                due,
+            }));
+        }
         if let Some(presence) = &callback.effects.item_presence {
             let pos = tile(presence.position);
             let facts = map

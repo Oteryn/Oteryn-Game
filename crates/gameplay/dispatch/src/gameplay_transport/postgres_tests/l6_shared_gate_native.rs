@@ -384,7 +384,7 @@ pub(super) fn world(
     native_scene(native, crops, &[])
 }
 // Setup between isolated native interaction pockets; every action under test is literal USE/STEP.
-async fn relocate(
+pub(super) async fn relocate(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,

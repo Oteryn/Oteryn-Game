@@ -25,6 +25,9 @@ fn annihilator_source_route_earned_reward_exit_and_reentry() -> TestResult {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Route {
     Entry,
+    TimedGroup,
+    TimedPassage,
+    Ashmunrah,
     Combat,
     Complete,
     ObjectiveAtomicity,
@@ -59,9 +62,28 @@ pub(super) fn elvenbane_source_exploration() -> TestResult {
     run(Route::ElvenbaneExploration)
 }
 
+pub(super) fn timed_group_transfer(admin: String) -> TestResult {
+    run_with_admin(Route::TimedGroup, admin)
+}
+
+pub(super) fn timed_passage(admin: String) -> TestResult {
+    run_with_admin(Route::TimedPassage, admin)
+}
+
+pub(super) fn personal_switch_threshold(admin: String) -> TestResult {
+    run_with_admin(Route::Ashmunrah, admin)
+}
+
 fn run(route: Route) -> TestResult {
-    let combat = route != Route::Entry;
-    let start = if matches!(
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    run_with_admin(route, admin)
+}
+
+fn run_with_admin(route: Route, admin: String) -> TestResult {
+    let combat = !matches!(route, Route::Entry | Route::TimedGroup | Route::TimedPassage | Route::Ashmunrah);
+    let start = if route == Route::Ashmunrah {
+        super::l6_shared_gate_native::start("l6-tomb-gate-native-open-50138")?
+    } else if matches!(
         route,
         Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
     ) {
@@ -93,10 +115,7 @@ fn run(route: Route) -> TestResult {
             floor: -13,
         }
     };
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
-    super::kill_reward_e2e::scenario_thread::run_async(async move |admin| {
+    super::kill_reward_e2e::scenario_thread::run_async(async move |_| {
         let started = std::time::Instant::now();
         let h =
             crate::bestiary_postgres_harness::Harness::create(admin, "annihilator_route", false)
@@ -111,21 +130,27 @@ fn run(route: Route) -> TestResult {
             "content-1",
         )?;
         let generation = controller.active().ok_or("active generation")?;
-        let world = source_world(
-            generation.native_gameplay().ok_or("native gameplay")?,
-            start,
-            matches!(
-                route,
-                Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
-            ),
-        )?;
+        let native = generation.native_gameplay().ok_or("native gameplay")?;
+        let world = if route == Route::Ashmunrah {
+            super::l6_shared_gate_native::world(native, "l6-tomb-gate-native-open-50138")?
+        } else {
+            source_world(
+                native,
+                start,
+                matches!(
+                    route,
+                    Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
+                ),
+            )?
+        };
         let now: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
                 .fetch_one(&h.pool)
                 .await?;
         let mut currents = Vec::new();
         let mut operations = Vec::new();
-        for index in 0..4_u8 {
+        let participants = if route == Route::Ashmunrah { 2 } else { 4 };
+        for index in 0..participants {
             let (current, operation) =
                 crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
                     &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
@@ -449,6 +474,15 @@ fn run(route: Route) -> TestResult {
             return Err("native bundle collision index".into());
         };
         let map = index.map();
+        if route == Route::Ashmunrah {
+            let result =
+                super::quest_switch_windows::ashmunrah(&mut owner, &mut admitted, &h.pool).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         if matches!(
             route,
             Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
@@ -515,6 +549,32 @@ fn run(route: Route) -> TestResult {
                 .await?;
             }
         }
+        if route == Route::TimedPassage {
+            let result = super::quest_switch_windows::reversible_passage(
+                &mut owner, &mut admitted[0], map,
+            ).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
+        if route == Route::TimedGroup {
+            let content = oteryn_gameplay_quests::quest::world_callbacks::load()?;
+            let mut entry = content.iter()
+                .find(|callback| callback.key.ends_with("/annihilator-entry"))
+                .ok_or("fixture encounter")?.clone();
+            // Exercise the Lord deadline (actions_lord_of_elements_lever.lua:63-69,180)
+            // using the existing physical four-player admission fixture.
+            let mut authored = serde_json::to_value(&entry)?;
+            authored["effects"]["timed_group_transfer"] = serde_json::json!({
+                "after_ms": 600000,
+                "destination": start,
+            });
+            entry = serde_json::from_value(authored)?;
+            assert!(owner.states.quest_callbacks.fixture.set(vec![entry]).is_ok());
+            owner.states.test_owner_time.store(100_000_001, std::sync::atomic::Ordering::Relaxed);
+        }
         let lever = target(map, 33226, 31671)?;
         assert_eq!(
             use_target(&mut owner, &mut admitted[0], &lever).await?,
@@ -530,6 +590,42 @@ fn run(route: Route) -> TestResult {
         }
         assert_eq!(runtime.visible_entities().creatures.len(), 6);
         drop(runtime);
+        if route == Route::TimedGroup {
+            use std::sync::atomic::Ordering;
+            let clock = &owner.states.test_owner_time;
+            assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), Some(700_000_000));
+            clock.store(700_000_000, Ordering::Relaxed);
+            owner.drain_quest_encounter_deadlines().await;
+            assert_eq!(target(map, 33226, 31671)?.expected_revision, 1);
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let absent = &admitted[3];
+                let actor = absent.runtime_actor.ok_or("leaving participant")?;
+                let expected = runtime.read_actor_position(actor).map_err(debug)?;
+                let doors = crate::map::floor::BundleDoors(&map.facts);
+                let exit = Position { x: start.x - 1, ..start };
+                let proof = crate::map::floor::prepare_quest_encounter_ejection(
+                    &runtime, owner.movement_cells(), actor, absent.game_session_id,
+                    expected, local(exit), &doors,
+                ).map_err(debug)?;
+                runtime.commit_source_step(proof).map_err(debug)?;
+            }
+            clock.store(700_000_001, Ordering::Relaxed);
+            owner.drain_quest_encounter_deadlines().await;
+            let runtime = owner.runtime.lock().await;
+            for (index, member) in admitted.iter().enumerate() {
+                let at = runtime
+                    .read_actor_position(member.runtime_actor.ok_or("actor")?)
+                    .map_err(debug)?
+                    .position();
+                let expected = if index == 3 { Position { x: start.x - 1, ..start } } else { start };
+                assert_eq!(at, local(expected));
+            }
+            assert!(runtime.visible_entities().creatures.is_empty());
+            drop(runtime);
+            assert_eq!(target(map, 33226, 31671)?.expected_revision, 2);
+            assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
+        }
         if combat {
             super::annihilator_combat::clear_corridor(&mut owner, &mut admitted[0]).await?;
         }

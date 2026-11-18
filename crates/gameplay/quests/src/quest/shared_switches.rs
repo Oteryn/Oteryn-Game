@@ -75,6 +75,7 @@ pub struct Gate {
     pub unique: u16,
     pub counter_recipe: &'static str,
     pub required: u16,
+    pub character_scoped: bool,
     pub destination: Position,
     pub effect: u16,
     pub source_file: &'static str,
@@ -97,6 +98,7 @@ pub const GATES: &[Gate] = &[
         unique: 50135,
         counter_recipe: "oteryn:quest-callback/ancient-tombs-thalas-switch",
         required: 8,
+        character_scoped: false,
         destination: Position {
             x: 33367,
             y: 32805,
@@ -114,6 +116,7 @@ pub const GATES: &[Gate] = &[
         unique: 50137,
         counter_recipe: "oteryn:quest-callback/ancient-tombs-diprath-switch",
         required: 7,
+        character_scoped: false,
         destination: Position {
             x: 33083,
             y: 32568,
@@ -130,7 +133,10 @@ pub const GATES: &[Gate] = &[
         key: "oteryn:quest-callback/ancient-tombs-ashmunrah-switch-gate",
         unique: 50138,
         counter_recipe: "oteryn:quest-callback/ancient-tombs-ashmunrah-switch",
+        // Crystal 201189f8 movements_enter_ashmunrah_teleport_switche_done.lua:9-16
+        // reads the stepping player's value. USE already persists its owning character.
         required: 5,
+        character_scoped: true,
         destination: Position {
             x: 33198,
             y: 32885,
@@ -148,6 +154,7 @@ pub const GATES: &[Gate] = &[
         unique: 40083,
         counter_recipe: "oteryn:quest-callback/ancient-tombs-diprath-switch",
         required: 7,
+        character_scoped: false,
         destination: Position {
             x: 33092,
             y: 32590,
