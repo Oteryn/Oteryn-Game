@@ -236,8 +236,7 @@ fn scenario() -> TestResult {
             if remaining == 2 {
                 second = Some(seed_pearl(&h, 1, 3, &frame, map, &content).await?);
             }
-            let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
-            let (origin, entered) = {
+            let origin = {
                 let mut runtime = owner.runtime.lock().await;
                 let mut origin = runtime.read_actor_position(actor).map_err(debug)?;
                 let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -285,12 +284,31 @@ fn scenario() -> TestResult {
                 )
                 .map_err(debug)?;
                 assert_eq!(proof.destination(), local(trigger));
-                let entered = runtime.commit_source_step(proof).map_err(debug)?;
-                (origin, entered)
+                origin
             };
-            let after = owner
-                .step_quest_callback(&permit, actor, session, origin, entered)
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(1))
+                .ok_or("advance step clock")?;
+            let (outcome, _) = owner
+                .ordinary_paced_step(
+                    actor,
+                    session,
+                    crate::gameplay_transport::StepDirection::North,
+                    Some(origin),
+                    None,
+                )
                 .await;
+            assert_eq!(
+                outcome.disposition,
+                crate::gameplay_transport::StepDisposition::Moved
+            );
+            let after = owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?;
             assert_eq!(after.position(), local(destination));
             assert_eq!(quantity(&h, &pearl).await?, remaining);
             if let Some(second) = &second {

@@ -245,9 +245,8 @@ fn scenario(circuit: Circuit) -> TestResult {
                 .checked_sub(std::time::Duration::from_secs(1))
                 .ok_or("advance action clock")?;
             let outcome = owner
-                .use_quest_callback(actor, command(revision + 1), map, &target(revision))
-                .await
-                .ok_or("wall callback did not dispatch")?;
+                .use_world_object(actor, command(revision + 1), target(revision))
+                .await;
             assert_eq!(
                 outcome.disposition,
                 UseDisposition::Committed,

@@ -430,21 +430,19 @@ fn scenario() -> TestResult {
                 *gate = Default::default();
             }
             let outcome = owner
-                .use_quest_callback(
+                .use_world_object(
                     actor,
                     UseCommand {
                         game_session_id: session,
                         command_id: u64::try_from(attempt + 1)?,
                         item_fence: Some(fence.item_fence()),
                     },
-                    map,
-                    &WorldObjectTarget {
+                    WorldObjectTarget {
                         placement,
                         expected_revision: map.facts.object_revision(key),
                     },
                 )
-                .await
-                .ok_or("switch callback")?;
+                .await;
             assert_eq!(outcome.disposition, UseDisposition::Committed);
             assert_eq!(item(at)?.1, if attempt < 2 { 2773 } else { 2772 });
             let cues: Vec<_> = map
