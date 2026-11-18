@@ -17,7 +17,8 @@ fn scenario() -> TestResult {
         for (level, points, expected, batch) in [
             (49, 40, 41, false),
             (79, 70, 71, false),
-            (129, 100, 101, false),
+            // TibiaWiki Spoiler (curid 36696, oldid 1206121), Method, Elite Hunter cap.
+            (129, 100, 100, false),
             (129, 20, 24, false),
             (49, 40, 41, true),
         ] {

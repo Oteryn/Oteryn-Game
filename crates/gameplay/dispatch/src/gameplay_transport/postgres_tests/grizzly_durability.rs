@@ -151,6 +151,13 @@ async fn apply(
     gate: &PremiumProbe,
 ) -> TestResult<QuestTransitionOutcome> {
     let label = format!("{action:?} cause={cause:?}");
+    let mut policy = rewards::policy();
+    if action == Action::CompleteTask(42) {
+        policy.thresholds[0].level = 130;
+        policy.thresholds[1].level = 131;
+        policy.thresholds[1].minimum_experience = oteryn_simulation_determinism::ExactI64::new(200_000);
+        policy.terminal_exclusive_experience = oteryn_simulation_determinism::ExactI64::new(400_000);
+    }
     match action {
         Action::EnterBoss(boss) => {
             let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(
@@ -201,7 +208,7 @@ async fn apply(
                 action,
                 Arc::clone(catalogue),
                 gate,
-                Some(&rewards::policy()),
+                Some(&policy),
             )
             .await
             .map_err(|error| format!("{label}: {error:?}").into()),
@@ -694,7 +701,8 @@ fn task_scenario() -> TestResult {
         // owner consumes the durable obligation, independent of the earlier response.
         let rebuilt = CharacterRevisionSequencer::new();
         let mut copy = state(&h, &authority).await?;
-        assert_eq!(copy.xp_obligations().len(), 1);
+        // The Huntsman promotion adds 5,000 XP (TibiaWiki Spoiler, curid 36696, oldid 1206121).
+        assert_eq!(copy.xp_obligations().len(), 2);
         assert!(
             !crate::durability::quest_state::request_pending_quest_experience(
                 &rebuilt,
@@ -711,7 +719,7 @@ fn task_scenario() -> TestResult {
         let (xp, receipts, pending): (i64, i64, i64) = sqlx::query_as(
             "SELECT total_experience,(SELECT count(*) FROM game_character_xp_receipts),(SELECT count(*) FROM game_character_quest_xp_obligations) FROM game_character_progression_state")
             .fetch_one(&h.pool).await?;
-        assert_eq!((xp, receipts, pending), (800, 1, 0));
+        assert_eq!((xp, receipts, pending), (5_800, 2, 0));
         let replay = h
             .root
             .reconcile_character_grizzly_transition(
@@ -1088,7 +1096,9 @@ fn boss_scenario() -> TestResult {
             )?;
         }
         assert_eq!(value(&h, &authority, boss.kill_storage).await?, 2);
-        for (id, base) in [(29, 20), (30, 30)] {
+        // TibiaWiki Spoiler (curid 36696, oldid 1206121), Special Tasks.
+        for (id, base, level) in [(29, 20, 90), (30, 30, 100)] {
+            seed(&h, Some(level), &[]).await?;
             let before_special = boss_death(&h, &authority, id).await?;
             let opened = committed(
                 apply(

@@ -178,7 +178,7 @@
           "alt_storage": null
         }
       ],
-      "experience": 4000,
+      "experience": 5000,
       "points": 3,
       "item": null,
       "completion_storage": null,
@@ -224,7 +224,7 @@
           "alt_storage": null
         }
       ],
-      "experience": 1000,
+      "experience": 2500,
       "points": 2,
       "item": null,
       "completion_storage": null,
@@ -289,7 +289,7 @@
     {
       "id": 11,
       "name": "Gargoyles",
-      "required": 300,
+      "required": 200,
       "minimum_level": 6,
       "maximum_level": 49,
       "premium": true,
@@ -304,7 +304,7 @@
         }
       ],
       "experience": 1500,
-      "points": null,
+      "points": 2,
       "item": null,
       "completion_storage": null,
       "donor_line": 362
@@ -562,7 +562,7 @@
     {
       "id": 22,
       "name": "Mutated Tigers",
-      "required": 300,
+      "required": 250,
       "minimum_level": 50,
       "maximum_level": 79,
       "premium": true,
@@ -577,7 +577,7 @@
         }
       ],
       "experience": 12000,
-      "points": 2,
+      "points": 3,
       "item": null,
       "completion_storage": null,
       "donor_line": 528
@@ -717,7 +717,7 @@
         }
       ],
       "experience": 25000,
-      "points": null,
+      "points": 4,
       "item": null,
       "completion_storage": null,
       "donor_line": 614
@@ -1099,9 +1099,14 @@
           "name": "demon",
           "key": "oteryn:creature.demon",
           "alt_storage": null
+        },
+        {
+          "name": "infernal demon",
+          "key": "oteryn:creature.infernal_demon",
+          "alt_storage": null
         }
       ],
-      "experience": null,
+      "experience": 100000,
       "points": null,
       "item": {
         "source_id": 9388,

@@ -246,8 +246,8 @@ fn grizzly_points_boundaries_follow_pre_reward_caps_and_level_130_bonuses() {
         (130, 41, 3, 4),
         (130, 70, 3, 4),
         (130, 71, 3, 3),
-        // Source dialogue says no points after Elite, but the actual sourced branch adds them.
-        (130, 100, 3, 3),
+        // TibiaWiki Spoiler (curid 36696, oldid 1206121), Method, Elite Hunter cap.
+        (130, 100, 3, 0),
     ] {
         assert_eq!(
             points_reward(level, current, base),
@@ -263,7 +263,7 @@ fn grizzly_completion_uses_post_xp_level_and_refuses_absent_projection()
     for (before, after, points, expected) in [
         (49, 50, 40, 41),
         (79, 80, 70, 71),
-        (129, 130, 100, 101),
+        (129, 130, 100, 100),
         (129, 130, 20, 24),
     ] {
         let mut state = member()?;
@@ -341,7 +341,8 @@ fn grizzly_high_tasks_repeat_and_demons_award_holy_icon_once() -> Result<(), Gri
             count: 1
         })
     );
-    assert_eq!(reward.experience, None);
+    // TibiaWiki Spoiler (curid 36696, oldid 1206121), level 130+ table.
+    assert_eq!(reward.experience, Some(100_000));
     assert_eq!(storage_value(&state, 41300), 1);
     assert_eq!(storage_value(&state, QUEST_STORAGE_BASE + 42), 2);
     assert_eq!(
@@ -467,60 +468,62 @@ fn grizzly_boss_enter_report_recovery_and_achievement_follow_donor_stages()
 }
 
 #[test]
+// TibiaWiki Spoiler (curid 36696, oldid 1206121), Special Tasks.
 fn grizzly_special_tasks_are_sequential_recoverable_and_once_only() -> Result<(), GrizzlyRefusal> {
     let mut state = member()?;
     assert_eq!(
-        plan_action(&state, actor(79), &GrizzlyAction::StartSpecialTask),
+        plan_action(&state, actor(89), &GrizzlyAction::StartSpecialTask),
         Err(GrizzlyRefusal::Level)
     );
     assert_eq!(
-        plan_action(&state, actor(80), &GrizzlyAction::StartSpecialTask),
+        plan_action(&state, actor(90), &GrizzlyAction::StartSpecialTask),
         Err(GrizzlyRefusal::Rank)
     );
     set(&mut state, POINTS_STORAGE, 70);
-    for id in [29, 30] {
+    for (id, level) in [(29, 90), (30, 100)] {
         let boss = boss(id).ok_or(GrizzlyRefusal::InvalidBoss)?;
-        apply(&mut state, 80, GrizzlyAction::StartSpecialTask)?;
+        apply(&mut state, level, GrizzlyAction::StartSpecialTask)?;
         assert_eq!(storage_value(&state, boss.storage), 1);
-        apply(&mut state, 80, GrizzlyAction::EnterBoss(id))?;
-        apply(&mut state, 80, GrizzlyAction::StartSpecialTask)?;
+        apply(&mut state, level, GrizzlyAction::EnterBoss(id))?;
+        apply(&mut state, level, GrizzlyAction::StartSpecialTask)?;
         assert_eq!(storage_value(&state, boss.storage), 1);
-        apply(&mut state, 80, GrizzlyAction::EnterBoss(id))?;
+        apply(&mut state, level, GrizzlyAction::EnterBoss(id))?;
         apply(
             &mut state,
-            80,
+            level,
             GrizzlyAction::BossKill {
                 boss_id: id,
                 observed_revision: 1,
             },
         )?;
-        apply(&mut state, 80, GrizzlyAction::StartSpecialTask)?;
+        apply(&mut state, level, GrizzlyAction::StartSpecialTask)?;
         assert_eq!(storage_value(&state, boss.storage), 3);
     }
     assert_eq!(
-        plan_action(&state, actor(80), &GrizzlyAction::StartSpecialTask),
+        plan_action(&state, actor(100), &GrizzlyAction::StartSpecialTask),
         Err(GrizzlyRefusal::SpecialTasksComplete)
     );
     Ok(())
 }
 
 #[test]
+// TibiaWiki Spoiler (curid 36696, oldid 1206121), Demodras requires level 100.
 fn grizzly_incidental_tiquanda_kill_preserves_source_fallthrough_to_demodras()
 -> Result<(), GrizzlyRefusal> {
     let mut state = member()?;
     set(&mut state, POINTS_STORAGE, 70);
-    apply(&mut state, 80, GrizzlyAction::StartSpecialTask)?;
+    apply(&mut state, 100, GrizzlyAction::StartSpecialTask)?;
     // Boss credit is unconditional: another encounter can credit a player who has not
     // entered their own lair. Crystal's unmatched Tiquanda branch then tries Demodras.
     apply(
         &mut state,
-        80,
+        100,
         GrizzlyAction::BossKill {
             boss_id: 29,
             observed_revision: 1,
         },
     )?;
-    apply(&mut state, 80, GrizzlyAction::StartSpecialTask)?;
+    apply(&mut state, 100, GrizzlyAction::StartSpecialTask)?;
     assert_eq!(
         storage_value(&state, boss(29).ok_or(GrizzlyRefusal::InvalidBoss)?.storage),
         1
@@ -531,14 +534,14 @@ fn grizzly_incidental_tiquanda_kill_preserves_source_fallthrough_to_demodras()
     );
     apply(
         &mut state,
-        80,
+        100,
         GrizzlyAction::BossKill {
             boss_id: 30,
             observed_revision: 1,
         },
     )?;
     assert_eq!(
-        plan_action(&state, actor(80), &GrizzlyAction::StartSpecialTask),
+        plan_action(&state, actor(100), &GrizzlyAction::StartSpecialTask),
         Err(GrizzlyRefusal::BossNotKilled)
     );
     Ok(())

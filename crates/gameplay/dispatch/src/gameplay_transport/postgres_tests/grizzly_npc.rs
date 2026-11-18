@@ -122,8 +122,8 @@ fn postgres_case(case: u8) -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("grizzly-npc", runner)
 }
 
-fn scenario(case: u8) -> TestResult {
-    let reward = case == 1;
+pub(super) fn scenario(case: u8) -> TestResult {
+    let reward = matches!(case, 1 | 12 | 13 | 16 | 17);
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "grizzly_npc_wire", true, false).await?;
@@ -177,6 +177,12 @@ fn scenario(case: u8) -> TestResult {
             130
         } else if case == 4 {
             49
+        } else if case == 10 {
+            50
+        } else if matches!(case, 11 | 14) {
+            80
+        } else if case == 15 {
+            90
         } else {
             8
         };
@@ -466,7 +472,18 @@ fn scenario(case: u8) -> TestResult {
         }
         owner.premium_coordinator = Some(&premium);
         owner.admit_premium(id(40), admitted.game_session_id);
-        if case == 6 {
+        if (7..=17).contains(&case) {
+            super::qcx_killing_in_the_name_of::exercise(
+                case,
+                &mut owner,
+                &mut admitted,
+                npc,
+                &h,
+                &authority,
+                initial_xp,
+            )
+            .await?;
+        } else if case == 6 {
             wire::talk(
                 &mut owner,
                 &mut admitted,
@@ -516,7 +533,7 @@ fn scenario(case: u8) -> TestResult {
     })
 }
 
-async fn value(
+pub(super) async fn value(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     storage: u32,
@@ -532,7 +549,7 @@ async fn value(
 
 /// Only predecessor counters use fixture privileges; client confirmations and rewards
 /// below always pass through the real runtime role, session fences and receipt owners.
-async fn seed(h: &Harness, tracks: &[(u32, i64)]) -> TestResult {
+pub(super) async fn seed(h: &Harness, tracks: &[(u32, i64)]) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -703,7 +720,7 @@ async fn ordinary_tasks(
     Ok(())
 }
 
-async fn holy_icon(
+pub(super) async fn holy_icon(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,

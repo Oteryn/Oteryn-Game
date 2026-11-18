@@ -109,7 +109,8 @@ fn scenario() -> TestResult {
             2
         );
         assert_eq!(value(&h, &authority, 41300).await?, 1);
-        assert!(receipt.experience.is_none());
+        // TibiaWiki Spoiler (curid 36696, oldid 1206121), level 130+ table.
+        assert_eq!(receipt.experience.as_ref().map(|xp| xp.amount), Some(100_000));
         assert_eq!(
             apply(
                 &h,
