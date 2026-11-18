@@ -353,6 +353,8 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
+    use super::super::dream_scar_izcandar_forms;
+    let izcandar = name == dream_scar_izcandar_forms::NAME;
     use super::super::dreamers_wall_portal;
     let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR);
     use super::super::lucifuga_bait_spawn;
@@ -388,6 +390,8 @@ fn scenario_case(
     let zarganash = name == zarganash_linked_boss::NAME;
     let mut callback = if zarganash {
         zarganash_linked_boss::binding()?
+    } else if izcandar {
+        dream_scar_izcandar_forms::binding()?
     } else if faceless_bane {
         faceless_bane_phase::binding()?
     } else if feaster_solo {
@@ -720,6 +724,8 @@ fn scenario_case(
     }
     let world = if zarganash {
         zarganash_linked_boss::world(&callback)?
+    } else if izcandar {
+        dream_scar_izcandar_forms::world(&callback)?
     } else if faceless_bane {
         faceless_bane_phase::world(&callback)?
     } else if feaster_solo {
@@ -1482,7 +1488,8 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
-            zarganash_linked_boss::NAME | faceless_bane_phase::NAME | feaster_solo_rooms::IRGIX
+            dream_scar_izcandar_forms::NAME | faceless_bane_phase::NAME | feaster_solo_rooms::IRGIX
+            | zarganash_linked_boss::NAME
             | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK => Some(250),
             _ => None,
         };
@@ -1850,7 +1857,7 @@ fn scenario_case(
                 name,
             )?);
         }
-        if board_portal || dreamers_wall || stone_exit || zarganash {
+        if board_portal || dreamers_wall || izcandar || stone_exit || zarganash {
             let binding = serde_json::json!({"schema":1,"callbacks":[&callback]}).to_string();
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 oteryn_gameplay_quests::quest::world_callbacks::with_fixture_world_document(
@@ -3064,6 +3071,8 @@ fn scenario_case(
             .await?;
         } else if zarganash {
             Box::pin(zarganash_linked_boss::exercise(&mut owner, &mut admitted)).await?;
+        } else if izcandar {
+            Box::pin(dream_scar_izcandar_forms::exercise(&mut owner, &mut admitted)).await?;
         } else if faceless_bane {
             Box::pin(faceless_bane_phase::exercise(&mut owner, &mut admitted)).await?;
         } else if feaster_solo {
