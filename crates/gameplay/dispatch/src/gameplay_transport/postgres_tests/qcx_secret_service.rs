@@ -27,7 +27,7 @@ fn recruitment_requires_level_and_premium_and_locks_the_faction() -> TestResult 
     }
     super::kill_reward_e2e::scenario_thread::run("secret-service-recruitment", || {
         let world = super::fence(1)?.runtime_scope.world_id();
-        let (controller, _) =
+        let (controller, activation) =
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
         for (level, premium, faction) in [
             (50, true, 1),
@@ -37,7 +37,7 @@ fn recruitment_requires_level_and_premium_and_locks_the_faction() -> TestResult 
             (50, false, 0),
         ] {
             let started = std::time::Instant::now();
-            let result = recruitment(&controller, level, premium, faction);
+            let result = recruitment(&controller, &activation, level, premium, faction);
             eprintln!(
                 "Secret Service recruitment level={level} premium={premium} faction={faction} duration={:?}",
                 started.elapsed()
@@ -50,6 +50,7 @@ fn recruitment_requires_level_and_premium_and_locks_the_faction() -> TestResult 
 
 fn recruitment(
     controller: &crate::content::ContentActivationController,
+    activation: &crate::content::NativeEntryContentPin,
     level: u32,
     premium: bool,
     faction: usize,
@@ -81,8 +82,16 @@ fn recruitment(
             .map_err(debug)?;
         let world = super::fence(1)?.runtime_scope.world_id();
         let deps = Dependencies::with_content_and_capacity(
-            ChannelContentPin::test(world),
-            crate::content::qualify_native_entry_room(world).map_err(debug)?,
+            ChannelContentPin::from_activation(
+                world,
+                activation.activation_sequence(),
+                activation.identity().server_artifact_digest(),
+                activation.identity().client_artifact_digest(),
+                activation.frame_binding().digest(),
+                activation.qualified_room().map_revision_digest(),
+                (6, 1, 7),
+            ),
+            activation.qualified_room().clone(),
             crate::spell::cast::v1_spell_book().map_err(debug)?,
             RECRUITERS.len() + 1,
         )?;

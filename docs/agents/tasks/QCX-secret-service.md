@@ -134,3 +134,22 @@ matched the tracked shards. The World compiler pin check passed and the
 bundle's NPC frame contained the three exact source placements. The
 native QuestState catalogue loaded all three confirmations with the
 level, Premium and faction guards.
+
+PG via shard (pgsplit build files applied on 86180e962a819957e5bc27b58410ce92b6502d93).
+The test build included the activation-pin fixture adjustment committed
+with this report. One live dispatch test passed with five database
+scenarios in 272.35 s including shared setup.
+
+| Scenario | Duration |
+| --- | ---: |
+| Level 50, Premium, TBI recruitment and faction lock | 50.83 s |
+| Level 50, Premium, AVIN recruitment, Secret Agent and faction lock | 43.73 s |
+| Level 50, Premium, CGB recruitment, Secret Agent and faction lock | 39.07 s |
+| Level 49, Premium, recruitment refused | 54.74 s |
+| Level 50, no Premium, recruitment refused | 60.17 s |
+
+The same filter without the admin URL passed one case in 0.01 s and
+exercised only the route-less return. The pre-fix build exited on SIGKILL
+before executing the regression. A baseline gameplay failure was
+therefore unobserved. The two shard build files stayed local during
+validation and were removed before the commit.
