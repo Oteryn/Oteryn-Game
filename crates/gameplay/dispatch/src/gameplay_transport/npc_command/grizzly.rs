@@ -241,6 +241,10 @@ fn dialogue(state: &GrizzlyState, actor: GrizzlyActor, topic: &mut Topic, text: 
             Reply::text("You do not have the points and level required for another promotion.")
         };
     }
+    // Crystal grizzly_adams.lua:760-765 advances rank without an item grant.
+    if matches!(text.as_str(), "backpack" | "demon backpack") {
+        return Reply::text("Sorry, not possible.");
+    }
     if matches!(text.as_str(), "special" | "special task" | "special tasks") {
         // NPC:915-943 resets the topic after every eligible special-task branch.
         if actor.level >= 80 && quest::storage_value(state, quest::POINTS_STORAGE) >= 70 {
