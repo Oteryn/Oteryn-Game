@@ -488,6 +488,9 @@ pub struct SoloRoomTimeout {
     /// Crystal Defiances movements_teleportTo.lua:75-90 checks around the boss spawn.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_radius: Option<u8>,
+    /// Crystal Defiances movements_teleportTo.lua:103-106 resets before the cooldown guard.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub reset_before_admission: bool,
     /// Use the existing Character boss clock for the sole authored monster.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub boss_cooldown_seconds: Option<u32>,
@@ -1121,6 +1124,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || timeout
                         .reset_radius
                         .is_some_and(|radius| timeout.eject_room || !(1..=32).contains(&radius))
+                    || (timeout.reset_before_admission
+                        && (timeout.reset_radius.is_none()
+                            || timeout.boss_cooldown_seconds.is_some()))
                     || timeout.boss_cooldown_seconds.is_some_and(|seconds| {
                         !(1..=30 * 24 * 60 * 60).contains(&seconds)
                             || !encounter.monsters[0]

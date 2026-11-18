@@ -327,9 +327,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     retiring.push(who);
                 }
             }
-            // Crystal Wanted portals:87-106 and Defiances:75-90,108-121.
-            // Preflight tests the reset and replacement without removing live
-            // actors on an entry that the fenced quest writer might refuse.
+            // Crystal Wanted portals:87-96 resets after the cooldown gate.
+            // Defiances movements_teleportTo.lua:103-106 resets before that gate.
             return runtime
                 .project_quest_room_reset(
                     &retiring,
@@ -350,7 +349,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             encounter,
                         )
                     },
-                    |result| !preflight && *result == UseDisposition::Committed,
+                    |result| {
+                        if preflight {
+                            timeout.reset_before_admission
+                        } else {
+                            *result == UseDisposition::Committed
+                        }
+                    },
                 )
                 .unwrap_or(UseDisposition::Rejected);
         }
