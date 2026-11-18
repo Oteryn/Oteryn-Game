@@ -2,7 +2,7 @@
 
 Base `ccbd37016f33b984a98bdd45e422013cc138f877`. Quest `oteryn:quest.the_isle_of_evil_quest`.
 
-Global sources are the [quest page, curid 36716 oldid 843974](https://tibia.fandom.com/?curid=36716&oldid=843974) and [spoiler, curid 36717 oldid 855959](https://tibia.fandom.com/?curid=36717&oldid=855959) from facts commit `460e1d8c2c0e88c438ae5e54910db00822dc0129`. Crystal fallback is [201189f871d23597b82caf88fd611454a2ddefb8](https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global). The spoiler's Method permits asking about the Isle of Evil directly. Its transcript also describes the longer keyword sequence, which remains available.
+The supplied global facts are from commit `460e1d8c2c0e88c438ae5e54910db00822dc0129`. The spoiler's Method permits asking about the Isle of Evil directly. Its transcript also describes the longer keyword sequence, which remains available. Crystal `201189f871d23597b82caf88fd611454a2ddefb8` supplies implementation details. [Quest page, curid 36716 oldid 843974](https://tibia.fandom.com/?curid=36716&oldid=843974) · [Spoiler, curid 36717 oldid 855959](https://tibia.fandom.com/?curid=36717&oldid=855959) · [Crystal source](https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global)
 
 | Part | Global and donor comparison with the base |
 | --- | --- |
@@ -28,13 +28,13 @@ Crystal's corpse table binds the following physical IDs. Each successful claim a
 | Monstor | 9405 | 9381, 9386, 9380, 9396 |
 | Evil Mastermind | 9404 | 9391 |
 
-The checked `world-callbacks-held` files contain no Isle rows to promote. The shared NPC callback registry carries the seven Isle records described above. The loader also registers the exact predecessor definition so characters with an existing quest pin can use the new callbacks. The definition and mission binding artifacts still describe the source projection, whose claim lists are empty. The door selector inventory resolves actions 42529, 42534, 42536 and 42538 to `oteryn:quest-progress/quest/…`, while the dedicated quest writes `oteryn:quest-progress/crystalserver/quest/…`. The NPC tests verify the written flags. World door admission still needs the matching track binding. Mortimer, Scutty, and the three Rapanaio variants have NPC definitions and Crystal spawn evidence (`world/world-npc.xml:558-560,1441-1443,3011-3013,3185-3190)); the native placement family inspected here contains King Tibianus only among these NPCs.
+The checked `world-callbacks-held` files contain no Isle rows to promote. The shared NPC callback registry carries the seven Isle records described above. The live dispatcher selects these before the Isle dialogue fallback. The loader also registers the exact predecessor definition so characters with an existing quest pin can use the new callbacks. The definition and mission binding artifacts still describe the source projection, whose claim lists are empty. The door selector inventory resolves actions 42529, 42534, 42536 and 42538 to `oteryn:quest-progress/quest/…`, while the dedicated quest writes `oteryn:quest-progress/crystalserver/quest/…`. The NPC tests verify the written flags. World door admission still needs the matching track binding. Mortimer, Scutty, and the three Rapanaio variants have NPC definitions and Crystal spawn evidence (`world/world-npc.xml:558-560,1441-1443,3011-3013,3185-3190)); the native placement family inspected here contains King Tibianus only among these NPCs.
 
 ## Blockers
 
 - BLOCKER Mission 1 sewer failure atomic failed-cast nail/energy/temporary outfit effect `data-global/scripts/actions/other/mechanical_fishing.lua:222-237`
 - BLOCKER Missions 2–3 NPC hand-in fluid-subtype-specific transactional intake `data-global/npc/rapanaio.lua:206-235`
-- BLOCKER Mission 4 rotating worm targets and timed carried transformation bound to minigame progress `data-global/scripts/quests/the_isle_of_evil_quest/actions_heat_worm_punisher.lua:8-19`
+- BLOCKER Mission 4 rotating worm targets and timed carried transformation bound to minigame progress `data-global/scripts/quests/the_isle_of_evil_quest/actions_heat_worm_punisher.lua:8-19`, `data-global/scripts/quests/the_isle_of_evil_quest/actions_heated_worm_punisher.lua:13-56`
 - BLOCKER Mission 6 ship exit disjunctive read-only STEP predicate `data-global/scripts/quests/the_isle_of_evil_quest/movements_isle_enter.lua:11-26`
 - BLOCKER Mission 7 corpse rewards six individual boss credits bound to direct corpse-use claims `data-global/scripts/quests/the_isle_of_evil_quest/actions_corpse_bosses.lua:36-72`
 
@@ -48,17 +48,17 @@ Optional book claim, fuel and juice exchanges, worm minigame and reset fee, Naut
 
 ## Verification
 
-PG via shard (pgsplit build files applied on dc4df0331612a96eb30d43d637090a2baf0c3684). The tested worktree included the fixture-only historical snapshot and repeat-command assertions in this commit.
+PG via shard (pgsplit build files applied on dc4df0331612a96eb30d43d637090a2baf0c3684). The tested worktree included the fixture-only historical snapshot and repeat-command assertions committed at `9585995319126eeea4ac8d1e34d6661d34a01963`.
 
-| Dispatch case | PostgreSQL seconds |
-| --- | ---: |
-| Direct introduction | 32.09 |
-| King Tibianus finale | 25.40 |
-| Mechanical fish intake | 23.00 |
-| Machine crate intake | 23.03 |
-| Nautical map intake | 23.87 |
-| Mechanical fishing rod grant | 24.60 |
-| Scutty's machine crate grant | 25.43 |
-| Scutty's Worm Punisher and door flag | 23.36 |
+| Dispatch case | Base seconds, failed | Corrected seconds, passed |
+| --- | ---: | ---: |
+| Direct introduction | 31.64 | 32.09 |
+| King Tibianus finale | 24.45 | 25.40 |
+| Mechanical fish intake | 23.92 | 23.00 |
+| Machine crate intake | 27.26 | 23.03 |
+| Nautical map intake | 23.38 | 23.87 |
+| Mechanical fishing rod grant | 23.05 | 24.60 |
+| Scutty's machine crate grant | 23.08 | 25.43 |
+| Scutty's Worm Punisher and door flag | 21.91 | 23.36 |
 
-Eight PostgreSQL cases passed in 200.80 seconds. Eight route-less cases returned OK in 0.00 seconds. The baseline introduction failed at the missing offer. Quest authoring completed 44 checks. Native registry regeneration and its 56-file check, world pin refresh and check, formatting, and dispatch library Clippy passed.
+Eight PostgreSQL cases passed in 200.80 seconds. Eight route-less cases returned OK in 0.00 seconds. The same eight tests failed at their missing dialogue or progress assertions against the base runtime and data in 198.70 seconds. The baseline replay used the final fixtures and the same two local shard files. Quest authoring completed 44 checks. Native registry regeneration and its 56-file check, world pin refresh and check, formatting, and dispatch library Clippy passed.
