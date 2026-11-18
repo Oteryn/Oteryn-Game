@@ -220,11 +220,67 @@ pub(super) async fn exercise(
             floor: DESTINATION.floor
         }),
     );
-    step(admitted, StepDirection::East, DESTINATION).await?;
+    let fence = admitted.item_fence.ok_or("replica item fence")?;
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_boss_cooldowns(character_id,boss_key,available_at,admission,reset_epoch)
+         VALUES(encode($1,'hex')::uuid,'oteryn:boss.lloyd',
+            floor(extract(epoch FROM statement_timestamp())*1000)::bigint + 60000,encode($2,'hex')::uuid,0)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(super::fixture::id(159).as_slice())
+    .execute(&mut *tx).await?;
+    tx.commit().await?;
+    step(admitted, StepDirection::East, REFUSAL).await?;
+
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_character_boss_cooldowns SET available_at=0 WHERE boss_key='oteryn:boss.lloyd'")
+        .execute(&mut *tx).await?;
+    tx.commit().await?;
+    step(
+        admitted,
+        StepDirection::North,
+        Position {
+            y: PORTAL.y + 1,
+            ..PORTAL
+        },
+    )
+    .await?;
+    step(admitted, StepDirection::North, DESTINATION).await?;
+
     let expires = map
         .facts
         .next_movement_decay_time()
         .ok_or("portal expiry")?;
+    let leftover = owner
+        .runtime
+        .lock()
+        .await
+        .admit_encounter_actor(
+            "oteryn:creature.diamond_servant_replica",
+            100,
+            quest_world_callbacks::local(AT),
+        )
+        .map_err(debug)?;
+    owner
+        .states
+        .test_owner_time
+        .store(expires + 1_000_001, std::sync::atomic::Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(leftover)
+            .is_err()
+    );
     assert_eq!(map.facts.expire_movement_items(expires), 1);
     Ok(())
 }
