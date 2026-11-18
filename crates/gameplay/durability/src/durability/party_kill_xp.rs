@@ -294,19 +294,13 @@ pub async fn commit_in_transaction<const N: usize>(
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
     super::world_event_outcomes::capture_kill(tx, &input).await?;
     super::world_event::capture_kill(tx, &input).await?;
-    let cake_bonus: bool = if input.members.iter().any(|member| member.premium) {
-        sqlx::query_scalar(
-            "SELECT EXISTS (SELECT 1 FROM game_cake_phases
-             WHERE world_id=encode($1,'hex')::uuid
-             AND bonus_activated_at<=statement_timestamp() AND statement_timestamp()<bonus_until)",
+    let cake_bonus = input.members.iter().any(|member| member.premium)
+        && super::cake_event::active_world_bonus_in_transaction(
+            tx,
+            scope.runtime_scope().world_id(),
         )
-        .bind(scope.runtime_scope().world_id().as_bytes().as_slice())
-        .fetch_one(&mut **tx)
-        .await
-        .map_err(DurabilityError::from)?
-    } else {
-        false
-    };
+        .await?
+        .is_some();
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
         let bounty = super::task_board::read_talisman_in_transaction(tx, member.fence).await?;

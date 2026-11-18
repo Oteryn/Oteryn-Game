@@ -218,6 +218,26 @@ impl DurabilityRoot {
 pub struct CakeWorldBonus {
     pub remaining_ms: u64,
 }
+pub(super) async fn active_world_bonus_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+) -> Result<Option<CakeWorldBonus>, DurabilityError> {
+    let remaining: Option<i64> = sqlx::query_scalar(
+        "SELECT floor(extract(epoch FROM (bonus_until-statement_timestamp()))*1000)::bigint
+         FROM game_cake_phases WHERE world_id=encode($1,'hex')::uuid
+         AND bonus_activated_at<=statement_timestamp() AND statement_timestamp()<bonus_until
+         ORDER BY event_year DESC LIMIT 1",
+    )
+    .bind(world.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(remaining) = remaining.filter(|ms| *ms > 0) else {
+        return Ok(None);
+    };
+    let remaining_ms = u64::try_from(remaining).map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(Some(CakeWorldBonus { remaining_ms }))
+}
+
 impl DurabilityRoot {
     /// NPC spawning reads the latest annual occurrence, including the period
     /// after the seasonal catalogue key ends. Only the reset owner changes it.
@@ -235,13 +255,16 @@ impl DurabilityRoot {
         &self,
         world: WorldId,
     ) -> Result<Option<CakeWorldBonus>, DurabilityError> {
-        self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
-            let mut tx=begin_semantic_transaction(holder,deadline).await?;
-            let remaining:Option<i64>=sqlx::query_scalar("SELECT floor(extract(epoch FROM(bonus_until-clock_timestamp()))*1000)::bigint FROM game_cake_phases WHERE world_id=encode($1,'hex')::uuid AND bonus_activated_at<=clock_timestamp() AND clock_timestamp()<bonus_until ORDER BY event_year DESC LIMIT 1")
-                .bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            let bonus=remaining.filter(|ms|*ms>0).map(|ms|u64::try_from(ms).map(|remaining_ms|CakeWorldBonus{remaining_ms}).map_err(|_|DurabilityError::InvalidStoredState)).transpose()?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(bonus)
-        })).await
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let bonus = active_world_bonus_in_transaction(&mut tx, world).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(bonus)
+                })
+            })
+            .await
     }
 }
 
