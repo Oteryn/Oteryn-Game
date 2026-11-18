@@ -302,6 +302,7 @@ pub struct EncounterMonster {
 pub struct Encounter {
     pub minimum_level: u32,
     pub players: Vec<EncounterPlayer>,
+    /// For timed room admission, the first creature owns the shared boss cooldown.
     pub monsters: Vec<EncounterMonster>,
     pub room_min: Position,
     pub room_max: Position,

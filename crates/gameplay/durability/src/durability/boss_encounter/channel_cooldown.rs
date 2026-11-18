@@ -7,8 +7,7 @@ use super::super::db::{
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use super::super::{DurabilityError, DurabilityRoot};
 use super::cooldown_storage::{
-    BossCooldownAdmissionData, BossCooldownChange, BossRewardKey, lock_reward_roots,
-    set_boss_cooldowns_data,
+    BossCooldownAdmissionData, BossCooldownChange, BossRewardKey, set_boss_cooldowns_data,
 };
 
 impl DurabilityRoot {
@@ -57,7 +56,6 @@ impl DurabilityRoot {
                 return Ok(false);
             }
             let keys = [key];
-            lock_reward_roots(&mut tx, &keys).await.map_err(|_| DurabilityError::InvalidStoredState)?;
             let meets_level: bool = sqlx::query_scalar(
                 "SELECT EXISTS(SELECT 1 FROM game_character_progression_state
                  WHERE character_id=encode($1,'hex')::uuid AND level >= $2
