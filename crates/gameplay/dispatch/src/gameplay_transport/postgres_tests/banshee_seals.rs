@@ -946,7 +946,30 @@ async fn exercise_queen(
         super::classic_quests::talk(owner, admitted, queen, command, "yes").await?;
     }
     super::classic_quests::talk(owner, admitted, queen, 20, "kiss").await?;
-    super::classic_quests::talk(owner, admitted, queen, 21, "yes").await?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("talk clock")?;
+    let blocked = owner
+        .npc_talk(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: 21,
+                item_fence: Some(fence.item_fence()),
+            },
+            oteryn_protocol_oteryn::npc_service::NpcTalkIntent {
+                npc_actor: queen,
+                text: "yes".into(),
+            },
+        )
+        .await;
+    assert!(!blocked.unknown);
+    assert_eq!(
+        blocked.disposition,
+        oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Rejected,
+        "a durable kill deadline must refuse the kiss"
+    );
     let after = owner
         .runtime
         .lock()
