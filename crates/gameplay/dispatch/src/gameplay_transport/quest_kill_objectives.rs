@@ -99,36 +99,23 @@ pub(super) fn capture(
         }
     }
     if let Some(rule) = oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature) {
-        // Crystal resolves damage-map entries to present players, including actors
-        // that stay in the world during reconnect grace.
-        let Ok(census) = runtime.positioned_melee_census() else {
+        let Some(damagers) = NativeObjectiveDeath::capture_overlord_damagers(runtime, entry.target)
+        else {
             return;
         };
-        // Eligibility is physical damage plus the bound lease, never a quest-cache read.
-        for (actor, _, session) in census {
-            let Some(session) = session else {
-                continue;
-            };
-            let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
-                continue;
-            };
-            let snapshot = Snapshot {
-                actor,
-                session,
-                character: *lease.character_id().as_bytes(),
-                lease: lease.generation(),
-                revision: 0,
-                phases: Default::default(),
-            };
-            if let Some(source) =
-                NativeObjectiveDeath::capture_overlord(runtime, entry.target, actor, session)
-            {
-                captured.push(CapturedObjective {
-                    snapshot,
-                    transition: &rule.transition,
-                    source,
-                });
-            }
+        for (actor, session, lease, source) in damagers {
+            captured.push(CapturedObjective {
+                snapshot: Snapshot {
+                    actor,
+                    session,
+                    character: *source.character().as_bytes(),
+                    lease,
+                    revision: 0,
+                    phases: Default::default(),
+                },
+                transition: &rule.transition,
+                source,
+            });
         }
     }
     let captured = Arc::new(captured);

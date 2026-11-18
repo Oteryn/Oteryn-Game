@@ -38,37 +38,47 @@ impl NativeObjectiveDeath {
         })
     }
 
-    /// Damage eligibility is sealed independently of the optional quest cache.
-    pub fn capture_overlord(
+    /// Seal all current physical damagers using a single damage-map read.
+    pub fn capture_overlord_damagers(
         runtime: &mut crate::foundation::ChannelRuntimeV1,
         target: crate::foundation::ExactActorRef,
-        actor: crate::foundation::ExactActorRef,
-        session: crate::foundation::GameSessionId,
-    ) -> Option<Self> {
-        let lease = runtime.bound_attacker_lease(actor, session).ok()?;
-        let character = CharacterId::from_bytes(*lease.character_id().as_bytes()).ok()?;
-        if !runtime
-            .all_source_player_damage_shares(target)
-            .ok()?
-            .iter()
-            .any(|share| {
-                share.actor == actor
-                    && share.character.as_bytes() == character.as_bytes()
-                    && share.total > 0
-            })
-        {
-            return None;
-        }
+    ) -> Option<
+        Vec<(
+            crate::foundation::ExactActorRef,
+            crate::foundation::GameSessionId,
+            u64,
+            Self,
+        )>,
+    > {
+        let recipients = runtime.source_player_damage_recipients(target).ok()?;
         let (death, at) = runtime.borrow_combat_death().projected_death(target).ok()?;
-        Some(Self {
-            death: super::super::party_kill_xp::encode_death_key(death),
-            character,
-            position: (at.x, at.y, at.floor),
-            observed_revision: 0,
-            phase: 0,
-            spawn_origin: None,
-            overlord: true,
-        })
+        let death = super::super::party_kill_xp::encode_death_key(death);
+        Some(
+            recipients
+                .into_iter()
+                .filter_map(|(actor, session, lease)| {
+                    let character = CharacterId::from_bytes(*lease.character_id().as_bytes()).ok()?;
+                    Some((
+                        actor,
+                        session,
+                        lease.generation(),
+                        Self {
+                            death: death.clone(),
+                            character,
+                            position: (at.x, at.y, at.floor),
+                            observed_revision: 0,
+                            phase: 0,
+                            spawn_origin: None,
+                            overlord: true,
+                        },
+                    ))
+                })
+                .collect(),
+        )
+    }
+
+    pub const fn character(&self) -> CharacterId {
+        self.character
     }
 
     /// Exact-origin goals additionally bind the immutable native spawn cell.

@@ -676,11 +676,12 @@ impl ChannelRuntimeV1 {
 }
 
 impl ChannelRuntimeV1 {
-    /// Complete physical Player roster; reward attribution retains its independent cap.
-    pub fn all_source_player_damage_shares(
+    /// Resolve the complete physical damage map to exact players still present
+    /// in the runtime, including players in reconnect grace.
+    pub fn source_player_damage_recipients(
         &self,
         actor: ExactActorRef,
-    ) -> Result<Vec<SourcePlayerDamageShare>, CarrierError> {
+    ) -> Result<Vec<(ExactActorRef, GameSessionId, CharacterLease)>, CarrierError> {
         self.owner_fence()?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
@@ -690,6 +691,32 @@ impl ChannelRuntimeV1 {
         else {
             return Err(CarrierError::NotCreature);
         };
-        Ok(damage_contributors.source_players.clone())
+        let mut recipients = Vec::new();
+        for share in &damage_contributors.source_players {
+            let Ok(index) = self.carrier.validate_ref(&self.continuity, share.actor.0) else {
+                continue;
+            };
+            let Slot::Occupied {
+                game_session_id: Some(session),
+                committed: true,
+                position: Some(_),
+                ..
+            } = &self.carrier.slots[index]
+            else {
+                continue;
+            };
+            let Ok(lease) = self.bound_attacker_lease(share.actor, *session) else {
+                continue;
+            };
+            if share.total > 0 && lease.character_id() == share.character {
+                let position = self.read_actor_position(share.actor)?;
+                if position.context() != self.pinned_movement_context() {
+                    return Err(CarrierError::PositionContextMismatch);
+                }
+                recipients.push((share.actor, *session, lease));
+            }
+        }
+        recipients.sort_unstable_by_key(|(actor, _, _)| actor.0.actor_local_id.0);
+        Ok(recipients)
     }
 }
