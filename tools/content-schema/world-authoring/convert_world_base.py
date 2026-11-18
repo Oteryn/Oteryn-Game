@@ -59,6 +59,7 @@ from xml.etree import ElementTree
 
 import convert_world_metadata as metadata
 import edron_rework as edron
+from doomforge_portal import holds_link
 import minimap_draft as draft
 import otbm_reader
 import world_region_codec as codec
@@ -80,7 +81,7 @@ PINNED_TOTALS = {"items": 24925845, "tiles": 19325129}
 PINNED_EXCLUDED_TELEPORTS = {
     "destination_outside_map": 1,
     "destination_tile_absent": 5,
-    "no_transition": 0,
+    "no_transition": 1,
     "unset_destination": 1576,
 }
 ITEM_NAMESPACE = "ots/item_server_id"
@@ -211,7 +212,9 @@ def teleport_links(otbm: bytes) -> tuple[Counter, dict]:
     links: Counter = Counter()
     for tp in facts.teleports:
         link = (tp["from"], tp["item"], tp["to"])
-        if id(tp) not in kept:
+        if holds_link(*link):
+            reasons[link] = "no_transition"
+        elif id(tp) not in kept:
             reasons[link] = (
                 "unset_destination"
                 if tp["to"] == UNSET_DEST
@@ -1202,9 +1205,11 @@ def build(
 
     npcfix2_shared_sources.overlay_outputs(out)
     if quest_access_bindings.CAPTURE not in blobs:
+        import doomforge_portal
         import last_creep_arena
 
         last_creep_arena.overlay_outputs(out, ROOT)
+        doomforge_portal.overlay_outputs(out)
     import m01c_key_doors
 
     m01c_key_doors.overlay_outputs(

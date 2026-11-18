@@ -130,6 +130,7 @@ def binding_plan(choices, events, npc, event_followup, source_choices, source_ev
             'native_reward_delivery_binding': None,
             'runtime_enabled': False,
         })
+    import quest_no_rest_for_the_wicked_followup as wicked
     for quest in source_choices['quests'] + source_choices['overlays']:
         owner = quest['quest']
         event = source_event_rows[owner]
@@ -138,6 +139,8 @@ def binding_plan(choices, events, npc, event_followup, source_choices, source_ev
         for transition in quest['transitions']:
             stage = transition['source']['chosen_stage']
             intent = by_stage[stage['key']]
+            if owner == wicked.QUEST and stage['key'] in wicked.COUNTS:
+                intent = wicked.correct_candidate_intent(stage, intent)
             if intent['kind'] != stage['kind'] or intent['count'] != stage['count']:
                 raise ValueError('Chosen source event/count mismatch')
             rows.append({

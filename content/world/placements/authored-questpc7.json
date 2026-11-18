@@ -4,7 +4,7 @@
   "quest": {
     "key": "oteryn:quest.feaster_of_souls_quest",
     "path": "content/quests/definitions/quests-00100-00199.json",
-    "sha256": "4a6efd3c8288820de7dac1d23661affa962665c62e49c8f91b4fe9dc2facf7f8"
+    "sha256": "5a326936b68df9625c649d1f6982239eb588883d2ebcb38e28bae16444b011ef"
   },
   "sources": [
     "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
