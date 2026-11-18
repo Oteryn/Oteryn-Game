@@ -80,6 +80,7 @@ mod equipment_move;
 mod equipment_reflection;
 mod falcon_chests;
 mod field_removal;
+mod first_dragon_encounter;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
 mod furniture_catalog;

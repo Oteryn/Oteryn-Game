@@ -390,6 +390,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
                 super::echo_warden::step_in(self, actor, session, now / 1000).await;
+                super::first_dragon_encounter::step_in(self, actor, session, snapshot, now / 1000)
+                    .await;
                 if let Some(event) = snowbunny_progress_operation(
                     snow_origin,
                     actor.placement_identity(),

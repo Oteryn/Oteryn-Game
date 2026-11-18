@@ -1975,6 +1975,16 @@ pub fn record_creature_kill(
                 .mark_first_dragon_plant(runtime, target);
         }
     }
+    if let Some(states) = sink.prey
+        && wild
+        && creature
+            .as_ref()
+            .is_ok_and(|key| key == "oteryn:creature.fallen_challenger")
+    {
+        states
+            .encounter_phases
+            .mark_first_dragon_portal(runtime, target, now_ms);
+    }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");
         return;

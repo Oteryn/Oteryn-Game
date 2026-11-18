@@ -23,6 +23,7 @@ pub(super) struct ActivePhase {
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
     first_dragon_plants: Mutex<Vec<ExactActorRef>>,
+    first_dragon_portals: Mutex<Vec<(ExactActorRef, MovementLocalPosition, u64)>>,
 }
 
 impl Registry {
@@ -53,6 +54,55 @@ impl Registry {
                         corpse.position == at
                             && corpse.item.production_key == "oteryn:item.tibia.i2983"
                     })
+            })
+        })
+    }
+
+    // Crystal creaturescripts_death_fallen.lua:3–13. Expiry uses the
+    // original owner death clock even when a reward receipt is retried.
+    pub(super) fn mark_first_dragon_portal(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        now_ms: u64,
+    ) {
+        if !matches!(
+            actor.runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return;
+        }
+        let death = runtime.borrow_combat_death();
+        let Ok((_, at)) = death.projected_death(actor) else {
+            return;
+        };
+        let Ok(Some(died)) = death.projected_death_at_ms(actor) else {
+            return;
+        };
+        let Some(expires) = died.checked_add(30_000).filter(|until| *until > now_ms) else {
+            return;
+        };
+        if let Ok(mut portals) = self.first_dragon_portals.lock() {
+            portals.retain(|(_, _, until)| *until > now_ms);
+            if !portals.iter().any(|(source, _, _)| *source == actor)
+                && portals.try_reserve(1).is_ok()
+            {
+                portals.push((actor, at, expires));
+            }
+        }
+    }
+
+    pub(super) fn first_dragon_portal_at(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        at: MovementLocalPosition,
+        now_ms: u64,
+    ) -> bool {
+        self.first_dragon_portals.lock().is_ok_and(|portals| {
+            portals.iter().any(|(actor, position, expires)| {
+                *position == at
+                    && *expires > now_ms
+                    && runtime.bound_corpse(actor.corpse_identity()).is_some()
             })
         })
     }
