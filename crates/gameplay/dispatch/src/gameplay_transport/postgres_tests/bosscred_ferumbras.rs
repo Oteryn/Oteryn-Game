@@ -51,10 +51,11 @@ pub(super) fn fixture_callback(mut callback: Callback) -> Callback {
 }
 
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    super::quest_world_callbacks::world_with_cells(
+    super::quest_world_callbacks::world_with_native_teleport(
         callback,
         PORTAL,
         &[WEST, BOSS, EXIT, RETREAT, WAIT],
+        WAIT,
     )
 }
 

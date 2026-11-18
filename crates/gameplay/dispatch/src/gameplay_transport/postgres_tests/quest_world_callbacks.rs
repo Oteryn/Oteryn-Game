@@ -331,6 +331,7 @@ fn world_with_extra(
         appearances,
         native_items,
         &[],
+        None,
     )
 }
 
@@ -348,6 +349,18 @@ pub(super) fn world_with_cells(
         &[],
         None,
         cells,
+        None,
+    )
+}
+
+pub(super) fn world_with_native_teleport(
+    callback: &Callback,
+    trigger: Position,
+    cells: &[Position],
+    destination: Position,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_cells(
+        callback, trigger, 1949, 1, &[], &[], None, cells, Some(destination),
     )
 }
 
@@ -367,6 +380,7 @@ fn world_cells(
         &[(Position, u32)],
     )>,
     extra: &[Position],
+    native_teleport: Option<Position>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -649,6 +663,7 @@ fn world_cells(
             palette: 1,
             depth: 0,
             attrs: sector::Attrs {
+                teleport: native_teleport.map(|p| (p.x, p.y, p.floor.to_ne_bytes()[0])),
                 // The source plate starts without its startup UID in the binary map.
                 // Require the production source-binding projection instead of seeding it.
                 unique: if callback.key.ends_with("/thais-lighthouse-plate")
