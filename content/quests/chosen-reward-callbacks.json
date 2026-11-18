@@ -1078,7 +1078,16 @@
       ],
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: chosen once-only Wrath opening; three source nails953 and one wood5901 produce marked crate11328; original source questline and Mission01 retained."
+        "OTERYN_AUTHORED_APPROXIMATION: chosen once-only Wrath opening; three source nails953 and one wood5901 produce marked crate11328; original source questline and Mission01 retained.",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua#L150-L170"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 21,
+          "maximum": 21
+        }
       ]
     },
     {
