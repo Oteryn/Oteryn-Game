@@ -444,12 +444,13 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                     use crate::gameplay_transport::connection::LogoutReply;
                     use oteryn_protocol_oteryn::logout::LogoutResult;
                     assert!(owner.root.is_ready(), "the durability holder starts ready");
+                    let batch_started = std::time::Instant::now();
                     let background = async {
                         // Own the guards here so the foreground can lock the runtime as
                         // soon as this physical pass returns.
                         let (mut runtime, mut states, mut attack) = (runtime, states, attack);
                         let profile_permit = permit;
-                        owner
+                        let result = owner
                             .drive_monster_profiles(
                                 &mut runtime,
                                 &mut states,
@@ -463,7 +464,16 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                                 &names,
                             )
                             .await
-                            .map_err(debug)
+                            .map_err(debug);
+                        let elapsed = batch_started.elapsed();
+                        if matches!(result, Ok((_, _, false))) {
+                            assert!(owner.root.is_ready(), "the batch returned its holder");
+                            assert!(matches!(
+                                owner.root.try_issue_background_semantic_pass(),
+                                Err(crate::durability::DurabilityError::RootUnavailable)
+                            ));
+                        }
+                        (result, elapsed)
                     };
                     let mut background = std::pin::pin!(background);
                     assert!(
@@ -485,9 +495,11 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                     };
                     let (logout, profile) = tokio::join!(biased; foreground, background);
                     let (logout, elapsed) = logout;
+                    let (profile, batch_elapsed) = profile;
                     eprintln!(
-                        "foreground logout elapsed_ms={} reply={logout:?} profile_complete={:?}",
+                        "foreground logout elapsed_ms={} batch_ms={} reply={logout:?} profile_complete={:?}",
                         elapsed.as_millis(),
+                        batch_elapsed.as_millis(),
                         profile.as_ref().map(|(_, _, complete)| *complete),
                     );
                     assert!(elapsed <= bound, "foreground logout exceeded {bound:?}");
