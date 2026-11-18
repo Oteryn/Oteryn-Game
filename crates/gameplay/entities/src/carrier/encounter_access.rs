@@ -5,6 +5,14 @@ use crate::SourceStepCommitProof;
 mod encounter_defenders;
 pub use encounter_defenders::EncounterDefenders;
 
+/// A staged hit reaching the threshold locks subsequent damage even when
+/// another source heals the creature before the shield has been cleared.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum ShieldDamage {
+    Threshold(i64),
+    Protected,
+}
+
 pub type EncounterHealProjection = (Vec<(ExactActorRef, String, u64, u64)>, Vec<usize>);
 
 /// Runtime-owned encounter state. The carrier calls these at the existing damage,
@@ -395,6 +403,70 @@ impl ChannelRuntimeV1 {
                 return Err(CarrierError::PlanConflict);
             }
             Ok(actors)
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
+    /// Set the next exact creature's threshold, or turn the shield off after
+    /// the last break. Admission and the tool owner hold the runtime lock.
+    pub fn set_encounter_shield_threshold(
+        &mut self,
+        actor: ExactActorRef,
+        threshold: Option<i64>,
+    ) -> Result<(), CarrierError> {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let Slot::CreatureOccupied {
+            health,
+            spell_combat,
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if *health <= 0 || threshold.is_some_and(|hp| hp <= 0 || hp >= *health) {
+            return Err(CarrierError::PlanConflict);
+        }
+        spell_combat.shield_damage = threshold.map(ShieldDamage::Threshold);
+        Ok(())
+    }
+
+    pub fn encounter_shield_protected(&self, actor: ExactActorRef) -> bool {
+        self.carrier
+            .validate_ref(&self.continuity, actor.0)
+            .ok()
+            .is_some_and(|index| {
+                matches!(&self.carrier.slots[index], Slot::CreatureOccupied { spell_combat, .. }
+                if spell_combat.shield_damage == Some(ShieldDamage::Protected))
+            })
+    }
+
+    /// A live support and its old boss leave without death or credit. The
+    /// pinned replacement inherits the position, while HP and contributor
+    /// history start with the replacement incarnation.
+    pub fn commit_encounter_terminal_handoff(
+        &mut self,
+        boss: ExactActorRef,
+        support: ExactActorRef,
+        terminal: &str,
+    ) -> Result<ExactActorRef, CarrierError> {
+        if boss == support
+            || !self.contains_live_creature(boss)
+            || !self.contains_live_creature(support)
+        {
+            return Err(CarrierError::CreatureNotActionable);
+        }
+        let position = self.read_actor_position(boss)?.position();
+        let maximum_health = self.companion_policy(terminal)?.maximum_health;
+        let before = self.carrier.clone();
+        let result = (|| {
+            self.remove_encounter_actor(support)?;
+            self.remove_encounter_actor(boss)?;
+            let actor = self.admit_encounter_actor(terminal, maximum_health, position)?;
+            self.install_creature_policy(actor, terminal)?;
+            Ok(actor)
         })();
         if result.is_err() {
             self.carrier = before;

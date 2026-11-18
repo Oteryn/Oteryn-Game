@@ -109,6 +109,7 @@ pub struct ActorCombatState {
     pub(super) party: super::runtime_actor_party::PartyActorState,
     /// Only creature slots use this field; player maxima belong to PlayerSpellState.
     pub maximum_health: i64,
+    pub(super) shield_damage: Option<super::encounter_access::ShieldDamage>,
     pub echo: Option<oteryn_gameplay_domain::domain::echo_warden::EchoVariant>,
     pub soulpit: Option<super::soulpit::SoulpitCreatureTag>,
     /// Additive source reflection on the exact Soul War monster incarnation.

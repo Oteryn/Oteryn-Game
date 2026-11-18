@@ -953,6 +953,22 @@ impl ChannelActorCarrier {
                 },
             }
         }
+        use super::encounter_access::ShieldDamage;
+        let Slot::CreatureOccupied { spell_combat, .. } = &self.slots[index] else {
+            return Err(CarrierError::NotCreature);
+        };
+        let mut shield = spell_combat.shield_damage;
+        match shield {
+            Some(ShieldDamage::Protected) => actual_damage = 0,
+            Some(ShieldDamage::Threshold(floor)) => {
+                let allowed = damage_phase_health.saturating_sub(floor).max(0);
+                if actual_damage >= allowed {
+                    actual_damage = allowed;
+                    shield = Some(ShieldDamage::Protected);
+                }
+            }
+            None => {}
+        }
         let next = damage_phase_health
             .checked_sub(actual_damage)
             .ok_or(CarrierError::DamageOverflow)?
@@ -1074,6 +1090,7 @@ impl ChannelActorCarrier {
         {
             policy.last_hitter = Some(source);
         }
+        spell_combat.shield_damage = shield;
         *health = next;
         // Frozen source Monster::drainHealth removes invisibility on an applied
         // health drain. Retain legacy companion compatibility as well; the
