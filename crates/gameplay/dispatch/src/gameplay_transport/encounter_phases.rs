@@ -26,8 +26,14 @@ pub(super) struct ActivePhase {
 
 #[derive(Debug)]
 enum Fight {
-    Cults(CultsEncounter),
-    Single(SingleBoss, SingleBossMechanic),
+    Cults(Box<CultsEncounter>),
+    Single(Box<SingleFight>),
+}
+
+#[derive(Debug)]
+struct SingleFight {
+    boss: SingleBoss,
+    mechanic: SingleBossMechanic,
 }
 
 #[derive(Debug)]
@@ -40,21 +46,21 @@ impl Fight {
     fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
         match self {
             Self::Cults(fight) => fight.is_current(runtime),
-            Self::Single(fight, _) => fight.is_current(runtime),
+            Self::Single(fight) => fight.boss.is_current(runtime),
         }
     }
 
     fn contains(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains(actor),
-            Self::Single(fight, _) => fight.actor() == actor,
+            Self::Single(fight) => fight.boss.actor() == actor,
         }
     }
 
     fn contains_terminal(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains_terminal(actor),
-            Self::Single(fight, _) => fight.actor() == actor,
+            Self::Single(fight) => fight.boss.actor() == actor,
         }
     }
 
@@ -65,7 +71,7 @@ impl Fight {
     ) -> Result<bool, CarrierError> {
         match self {
             Self::Cults(fight) => fight.projected_death(runtime, actor),
-            Self::Single(fight, _) => fight.projected_death(runtime),
+            Self::Single(fight) => fight.boss.projected_death(runtime),
         }
     }
 
@@ -75,7 +81,7 @@ impl Fight {
     ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
         match self {
             Self::Cults(fight) => fight.victors(runtime),
-            Self::Single(fight, _) => fight.victors(runtime),
+            Self::Single(fight) => fight.boss.victors(runtime),
         }
     }
 
@@ -225,7 +231,10 @@ pub(super) fn bind(
     if let Some((plan, mechanic)) = source {
         return Ok(ActivePhase {
             key,
-            fight: Fight::Single(SingleBoss::bind(runtime, plan, players, actors)?, mechanic),
+            fight: Fight::Single(Box::new(SingleFight {
+                boss: SingleBoss::bind(runtime, plan, players, actors)?,
+                mechanic,
+            })),
             credits,
             frozen: None,
             cells,
@@ -280,9 +289,9 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: Fight::Cults(CultsEncounter::bind(
+        fight: Fight::Cults(Box::new(CultsEncounter::bind(
             runtime, players, pillars, stops, centre,
-        )?),
+        )?)),
         credits,
         frozen: None,
         cells,
@@ -338,12 +347,12 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, 
         } = phase;
         if let Err(error) = fight.advance(runtime, cells).and_then(|()| match fight {
             Fight::Cults(_) => Ok(()),
-            Fight::Single(fight, mechanic) => match mechanic {
+            Fight::Single(fight) => match &mut fight.mechanic {
                 SingleBossMechanic::Ravager(healing) => {
-                    healing.think(runtime, cells, fight.actor(), now_us)
+                    healing.think(runtime, cells, fight.boss.actor(), now_us)
                 }
                 SingleBossMechanic::Shargon(growth) => {
-                    growth.think(runtime, cells, fight.actor(), now_us)
+                    growth.think(runtime, cells, fight.boss.actor(), now_us)
                 }
             },
         }) {
