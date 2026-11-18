@@ -1184,6 +1184,40 @@ mod phase_tests {
         assert_eq!(encoded["phase"], "cults_boss_phase_closures");
         Ok(())
     }
+
+    #[test]
+    fn feaster_unwelcome_phase_accepts_the_shared_landing_and_exact_roles() -> Result<(), String> {
+        let mut callback = serde_json::json!({
+            "key":"oteryn:quest-callback/feaster/unwelcome-lever",
+            "quest":"oteryn:quest.feaster_of_souls_quest",
+            "trigger":"use",
+            "selector":{"position":{"x":33735,"y":31537,"floor":-14}},
+            "effects":{"encounter":{
+                "minimum_level":250,
+                "phase":"unwelcome_brother_worm",
+                "players":[
+                    {"from":{"x":33736,"y":31537,"floor":-14},"to":{"x":33707,"y":31545,"floor":-14}},
+                    {"from":{"x":33737,"y":31537,"floor":-14},"to":{"x":33707,"y":31545,"floor":-14}}
+                ],
+                "monsters":[
+                    {"position":{"x":33708,"y":31539,"floor":-14},"creature":"oteryn:creature.the_unwelcome"},
+                    {"position":{"x":33705,"y":31539,"floor":-14},"creature":"oteryn:creature.brother_worm"}
+                ],
+                "room_min":{"x":33699,"y":31529,"floor":-14},
+                "room_max":{"x":33719,"y":31546,"floor":-14}
+            }},
+            "passages":[],"offerings":[],"storage":[],"reversible":false,
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_the_unwelcome_lever.lua:1-44"]
+        });
+        let packet = |callback| serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
+        super::super::parse(&packet(callback.clone()))?;
+        callback["effects"]["encounter"]["monsters"]
+            .as_array_mut()
+            .ok_or("roles")?
+            .swap(0, 1);
+        assert!(super::super::parse(&packet(callback)).is_err());
+        Ok(())
+    }
 }
 
 #[cfg(test)]
