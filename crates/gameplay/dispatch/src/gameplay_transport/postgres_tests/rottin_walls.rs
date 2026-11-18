@@ -385,11 +385,8 @@ async fn use_hammer(
         .and_then(|i| i.definition_ref("Item", HAMMER, "definition-r1"))
         .ok_or("hammer reference")?;
     let payload = encode_item_use_intent(&UseIntent {
-        target: if from_handle {
-            UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?)
-        } else {
-            UseTarget::ItemByDefinition(reference)
-        },
+        // exchange resolves the real inventory snapshot handle when requested.
+        target: UseTarget::ItemByDefinition(reference),
         use_with: None,
         use_with_position: None,
         use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
