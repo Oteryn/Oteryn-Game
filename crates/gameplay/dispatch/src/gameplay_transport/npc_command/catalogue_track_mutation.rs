@@ -1,4 +1,4 @@
-//! Keep complete atomic track writes whenever any source value actually changes.
+//! Admit complete atomic writes for changed values and fresh draws.
 use oteryn_gameplay_quests::quest::npc_rules::NpcRulePlan;
 
 pub(super) fn has_mutation(plan: &NpcRulePlan) -> bool {

@@ -593,7 +593,7 @@ fn npc_draw_can_request_the_same_repair_part_again() -> Result<(), NpcRuleError>
     )]);
     let catalog = fixture_catalog(&document)?;
     let mut facts = Facts::empty();
-    for (seed, expected) in [([7; 16], 4), ([1; 16], 6), ([8; 16], 4)] {
+    for (seed, expected) in [([7; 16], 4), ([8; 16], 4), ([1; 16], 6)] {
         let plan = catalog
             .plan_storage_with_draw_seed(&facts.input("oteryn:npc.test", "mission", 0), seed)?
             .ok_or_else(|| NpcRuleError::Invalid("missing repair request".into()))?;
