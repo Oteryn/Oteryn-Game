@@ -82,19 +82,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     PeriodicBossPlacement::Exact => {
                         spawn_one(self, runtime, map, &spawn.creature, spawn.position)
                     }
-                    PeriodicBossPlacement::ExtendedForced => {
-                        let health = runtime
-                            .companion_policy(&spawn.creature)
-                            .ok()
-                            .map(|policy| policy.maximum_health);
-                        health.and_then(|health| {
-                            let at = extended_forced_position(self, runtime, map, native, spawn)?;
-                            runtime
-                                .commit_quest_creature_spawn(&[(&spawn.creature, health, at)])
-                                .ok()?
-                                .pop()
-                        })
-                    }
+                    PeriodicBossPlacement::ExtendedForced => spawn_forced(
+                        self,
+                        runtime,
+                        map,
+                        native,
+                        &spawn.creature,
+                        spawn.position,
+                        true,
+                    ),
                 }
             {
                 occurrence.live = Some(actor);
@@ -104,16 +100,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-fn extended_forced_position(
+pub(super) fn spawn_forced(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    map: &BundleMap,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    creature: &str,
+    position: Position,
+    extended: bool,
+) -> Option<ExactActorRef> {
+    let health = runtime.companion_policy(creature).ok()?.maximum_health;
+    let at = forced_position(owner, runtime, map, native, creature, position, extended)?;
+    runtime
+        .commit_quest_creature_spawn(&[(creature, health, at)])
+        .ok()?
+        .pop()
+}
+
+fn forced_position(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &ChannelRuntimeV1,
     map: &BundleMap,
     native: &crate::content::native_gameplay::NativeGameplayState,
-    spawn: &world_callbacks::EncounterMonster,
+    creature: &str,
+    position: Position,
+    extended: bool,
 ) -> Option<MovementLocalPosition> {
     let cells = owner.movement_cells();
     let lookup = |at| cells.spell_tiles().lookup(cells.scope(), logical_cell(at));
-    let center = local(spawn.position);
+    let center = local(position);
     match lookup(center) {
         // Crystal globalevents_pits_of_inferno_bosses.lua:14 passes extended=true
         // and force=true. Map::placeCreature (map.cpp:243-254) keeps an existing
@@ -122,7 +137,7 @@ fn extended_forced_position(
         Err(SpellTileLookupError::Absent) => {}
         Err(_) => return None,
     }
-    let plan = SourcePlacementPlan::prepare(center, true, true, |bound| {
+    let plan = SourcePlacementPlan::prepare(center, extended, true, |bound| {
         random_below(bound).unwrap_or(bound)
     })
     .ok()?;
@@ -171,7 +186,7 @@ fn extended_forced_position(
         |at| match lookup(at) {
             Ok(tile) => {
                 let occupancy = runtime
-                    .current_native_source_occupancy(native, &spawn.creature, at, None)
+                    .current_native_source_occupancy(native, creature, at, None)
                     .ok()?;
                 let teleport = crate::map::floor::is_teleport(cells, logical_cell(at));
                 let protection_zone = tile.flags().protection_zone;
@@ -240,7 +255,7 @@ pub(super) fn random_below(bound: u32) -> Option<u32> {
     }
 }
 
-pub(super) fn spawn_one(
+fn spawn_one(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
     map: &BundleMap,

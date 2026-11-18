@@ -58,12 +58,15 @@ pub(super) fn publish(
     {
         for creature in wave {
             if let Some(index) = super::periodic_bosses::random_below(plan.positions.len() as u32) {
-                let _ = super::periodic_bosses::spawn_one(
+                // Crystal actions_demon_oak.lua:106-118 passes extended=false, force=true.
+                let _ = super::periodic_bosses::spawn_forced(
                     owner,
                     runtime,
                     map,
+                    native,
                     creature,
                     plan.positions[index as usize],
+                    false,
                 );
             }
         }

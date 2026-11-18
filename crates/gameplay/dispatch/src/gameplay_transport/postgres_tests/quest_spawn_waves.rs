@@ -435,16 +435,27 @@ fn scenario(admin: String, case: Case) -> TestResult {
             // Crystal globalevents_pits_of_inferno_bosses.lua:12-14,23. This
             // fixture uses a nonzero cooldown to prove the shared owner gate.
             let (placement, choices): (_, &[_]) = match case {
-                Case::PeriodicMissingCenter => (PeriodicBossPlacement::ExtendedForced, &[(row(10), RAT, 1)]),
-                Case::PeriodicOccupiedCenter => (PeriodicBossPlacement::ExtendedForced, &[(START, RAT, 1)]),
-                _ => (PeriodicBossPlacement::Exact, &[(FIRST, RAT, 1), (SECOND, CAVE_RAT, 3)]),
+                Case::PeriodicMissingCenter => (
+                    PeriodicBossPlacement::ExtendedForced,
+                    &[(row(10), RAT, 1)],
+                ),
+                Case::PeriodicOccupiedCenter => (
+                    PeriodicBossPlacement::ExtendedForced,
+                    &[(START, RAT, 1)],
+                ),
+                _ => (
+                    PeriodicBossPlacement::Exact,
+                    &[(FIRST, RAT, 1), (SECOND, CAVE_RAT, 3)],
+                ),
             };
             let plan = PeriodicBoss {
                 key: "oteryn:periodic-boss/fixture".into(),
                 interval_ms: 1_000,
                 cooldown_ms: 4_000,
                 placement,
-                choices: choices.iter().map(|&(position, creature, weight)| WeightedBoss {
+                choices: choices
+                    .iter()
+                    .map(|&(position, creature, weight)| WeightedBoss {
                         weight,
                         spawn: EncounterMonster {
                             creature: creature.into(),
@@ -483,7 +494,11 @@ fn scenario(admin: String, case: Case) -> TestResult {
             Case::PeriodicMissingCenter | Case::PeriodicOccupiedCenter => {
                 // Crystal map.cpp:243-307. A player occupies START. The other
                 // layout ends at row(8), two tiles from the missing row(10).
-                let expected = if matches!(case, Case::PeriodicMissingCenter) { row(8) } else { START };
+                let expected = if matches!(case, Case::PeriodicMissingCenter) {
+                    row(8)
+                } else {
+                    START
+                };
                 tokio::time::pause();
                 owner.drain_quest_encounter_deadlines().await;
                 advance(&owner, 1_000).await;
@@ -673,12 +688,15 @@ async fn retaliation_scenario(
         Ok(states.get(&runtime, player, session).ok_or("axe player vitals")?.vitals().health)
     };
     let before = health().await?;
+    // Forced retaliation can spawn at a selected position occupied by a player.
+    let blocker = position_session_before_lease(owner, FIRST).await?;
     assert_eq!(use_room(owner, admitted, 1).await?, UseDisposition::Committed);
     let actors = creatures(owner).await?;
     let [(last, at)] = actors.as_slice() else {
         return Err("the last blow must spawn exactly one retaliation".into());
     };
     assert_eq!(*at, local(FIRST));
+    assert_eq!(position(owner, blocker).await?, local(FIRST));
     {
         let runtime = owner.runtime.lock().await;
         assert_eq!(
