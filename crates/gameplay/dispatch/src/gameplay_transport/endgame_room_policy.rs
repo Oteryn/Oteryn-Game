@@ -20,6 +20,7 @@ fn matches_lore_keeper(
 ) -> bool {
     policy.minimum_players == 1
         && policy.maximum_players == 15
+        && policy.minimum_level == 0
         && policy.cooldown_ms == LORE_KEEPER_COOLDOWN_MS
         && policy.time_limit_ms == LORE_KEEPER_LIMIT_MS
         && policy.lever_positions.len() == 15
@@ -62,7 +63,8 @@ mod tests {
         policy.time_limit_ms += 1;
         assert!(!matches_lore_keeper(&policy));
         policy.time_limit_ms -= 1;
-        policy.lever_positions.swap(0, 1);
+        assert!(policy.lever_positions.remove(&(32018, 32844, 14)));
+        assert!(policy.lever_positions.insert((32018, 32843, 14)));
         assert!(!matches_lore_keeper(&policy));
     }
 
