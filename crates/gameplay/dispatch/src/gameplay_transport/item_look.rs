@@ -467,16 +467,19 @@ async fn observe_look_item(
         }
     {
         let item_fence = fence
-            .filter(|fence| {
-                fence.game_session_id == session
-                    && fence.runtime_scope == runtime.binding().runtime_scope()
-                    && fence.scope_ownership_generation == runtime.binding().scope_generation()
-            })
+            .filter(|fence| fence.game_session_id == session)
             .ok_or(unavailable)?;
-        if !runtime
-            .player_control_facts(actor, session)
-            .is_ok_and(|facts| facts.control_loss.is_none())
-        {
+        // Prove the same scope owner and actor before the durable read and before replying.
+        let owner_is_current = |runtime: &ChannelRuntimeV1| {
+            let binding = runtime.binding();
+            item_fence.runtime_scope == binding.runtime_scope()
+                && item_fence.scope_ownership_generation == binding.scope_generation()
+                && runtime.owner_fence().is_ok()
+                && runtime
+                    .player_control_facts(actor, session)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+        };
+        if !owner_is_current(&runtime) {
             return Err(unavailable);
         }
         let pin = content_generation(&runtime);
@@ -496,10 +499,7 @@ async fn observe_look_item(
         let runtime = admission.runtime.lock().await;
         if current != (definition, count, distance)
             || content_generation(&runtime) != pin
-            || runtime.owner_fence().is_err()
-            || !runtime
-                .player_control_facts(actor, session)
-                .is_ok_and(|facts| facts.control_loss.is_none())
+            || !owner_is_current(&runtime)
         {
             return Err(unavailable);
         }
