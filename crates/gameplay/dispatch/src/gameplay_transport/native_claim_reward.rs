@@ -306,4 +306,64 @@ mod tests {
         assert!(callback(None, &claim, &claim.placements[0]).is_none());
         Ok(())
     }
+
+    #[test]
+    fn nrwicked_native_claim_resolves_active_catalogue_callback() -> Result<(), String> {
+        let report =
+            crate::content::world_reward_claims::bind_embedded_reward_claims(&Base, &|_| true)
+                .map_err(|error| error.to_string())?;
+        let mut claim = report
+            .served
+            .into_iter()
+            .find(|claim| claim.key.as_str().ends_with("kingdom_of_kormarak.corpse"))
+            .ok_or("corpse claim")?;
+        let placement = claim.placements.first_mut().ok_or("placement")?;
+        let mut authored = reward_callbacks::load()?
+            .into_iter()
+            .find(|callback| Some(&callback.key) == placement.reward_callback.as_ref())
+            .ok_or("source callback")?;
+        authored.key = "oteryn:quest-reward/nrwicked-catalogue-fixture".into();
+        placement.reward_callback = Some(authored.key.clone());
+        let tracks = authored
+            .storage
+            .iter()
+            .map(|storage| {
+                serde_json::json!({
+                    "key": storage.track, "initial": storage.minimum,
+                    "minimum": storage.minimum, "maximum": storage.maximum.max(storage.set)
+                })
+            })
+            .chain(authored.requires.iter().map(|required| {
+                serde_json::json!({
+                    "key": required.track, "initial": required.minimum,
+                    "minimum": required.minimum, "maximum": required.maximum,
+                })
+            }))
+            .collect::<Vec<_>>();
+        let document = serde_json::json!({
+            "schema": 1,
+            "quests": [{
+                "quest": authored.quest,
+                "recipe_sha256": "1".repeat(64),
+                "sources": ["native chest catalogue test fixture"],
+                "tracks": tracks,
+                "stages": [{
+                    "key": "claim", "completes": authored.completes,
+                    "trigger": {"kind": "npc_dialogue", "callback": authored}
+                }]
+            }]
+        });
+        let bindings = oteryn_gameplay_quests::quest::authored_bindings::Bindings::parse(
+            &serde_json::to_vec(&document).map_err(|error| error.to_string())?,
+        )?;
+        let base = QuestStateCatalogue::empty("content-1").ok_or("base catalogue")?;
+        let catalogue = bindings.attach(&base)?;
+        let placement = claim.placements.first().ok_or("placement")?;
+        assert!(callback(None, &claim, placement).is_none());
+        assert_eq!(
+            callback(Some(&catalogue), &claim, placement),
+            Some(authored)
+        );
+        Ok(())
+    }
 }
