@@ -7,7 +7,8 @@ use crate::durability::{
 use oteryn_gameplay_quests::quest::reward_callbacks;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    // Crystal 201189f8 actions_mission03_the_keeper.lua:17–21.
+    // Crystal 201189f8 actions_mission03_the_keeper.lua:19–23 uses the corpse
+    // item itself. A Browse Field handle refers to the same death-owned item.
     pub(in crate::gameplay_transport) async fn use_direct_quest_corpse(
         &self,
         actor: ExactActorRef,
@@ -15,7 +16,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         source: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        if source.is_some_and(|key| !matches!(key, ItemKey::Entity(_))) {
+        if source.is_some_and(|key| !matches!(key, ItemKey::Entity(_) | ItemKey::Instance(_))) {
             return Ok(None);
         }
         let (Some(item_fence), Some(catalogue)) = (command.item_fence, &self.quest_catalogue)
@@ -60,7 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Rejected
             }));
         }
-        let Some(ItemKey::Entity(identity)) = source else {
+        let Some(source) = source else {
             return Ok(None);
         };
         let Some(fence) = self.current_quest_fence(session).await? else {
@@ -71,7 +72,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut revision = self.revision_sequencer.acquire(fence.character_id).await;
         let runtime = self.runtime.lock().await;
-        let Some(body) = runtime.bound_corpse(identity) else {
+        let body = match source {
+            ItemKey::Entity(identity) => runtime.bound_corpse(identity),
+            ItemKey::Instance(item) => runtime
+                .visible_corpses()
+                .into_iter()
+                .find(|body| body.item.item_instance_id == item),
+            _ => None,
+        };
+        let Some(body) = body else {
             return Ok(None);
         };
         let mut selected = callbacks.iter().filter(|callback| {
@@ -99,7 +108,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command_ref,
             callback,
             intent,
-            identity,
+            body.identity,
         ) else {
             return Ok(outcome(UseDisposition::Rejected));
         };

@@ -253,7 +253,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     {
         let source = item_view.as_ref().and_then(|view| view.resolve(handle));
         // A vanished corpse can still replay its exact committed ingress.
-        if source.is_none_or(|key| matches!(key, ItemKey::Entity(_)))
+        if (source.is_none_or(|key| matches!(key, ItemKey::Entity(_)))
+            || source.is_some_and(|key| {
+                matches!(key, ItemKey::Instance(_))
+                    && container_views.as_ref().is_some_and(|views| views.shows_browsed_item(key))
+            }))
             && let Some(outcome) = tokio::time::timeout(
                 std::time::Duration::from_secs(10),
                 authority.use_quest_tool(

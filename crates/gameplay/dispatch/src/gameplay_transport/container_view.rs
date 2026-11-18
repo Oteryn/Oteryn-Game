@@ -208,6 +208,12 @@ impl ContainerViewState {
         self.views.get(&id).map(|view| view.container)
     }
 
+    pub(super) fn shows_browsed_item(&self, key: ItemKey) -> bool {
+        self.views.values().any(|view| {
+            view.browse.is_some() && view.page_entries().iter().any(|entry| entry.key == key)
+        })
+    }
+
     #[cfg(test)]
     pub fn open_views(&self) -> usize {
         self.views.len()

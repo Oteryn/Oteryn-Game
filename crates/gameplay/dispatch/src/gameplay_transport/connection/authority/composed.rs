@@ -1192,11 +1192,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             && intent.use_with_position.is_none()
         {
             if let oteryn_protocol_oteryn::world_object::UseTarget::Item(_) = intent.target
-                && source.is_none_or(|key| matches!(key, item_view::ItemKey::Entity(_)))
-            {
-                return self
+                && let Some(outcome) = self
                     .use_direct_quest_corpse(actor, command, &intent, source)
-                    .await;
+                    .await?
+            {
+                return Ok(Some(outcome));
             }
             return self
                 .use_carried_item_disguise(actor, command, &intent, source)

@@ -237,7 +237,7 @@ pub(super) async fn replay(
     Ok(())
 }
 
-async fn snapshot(client: &mut DuplexStream) -> TestResult<CharacterInventory> {
+pub(in super::super) async fn snapshot(client: &mut DuplexStream) -> TestResult<CharacterInventory> {
     let mut inventory = None;
     loop {
         let bytes = read_frame(client).await?;
@@ -257,14 +257,14 @@ async fn snapshot(client: &mut DuplexStream) -> TestResult<CharacterInventory> {
     }
 }
 
-async fn send(client: &mut DuplexStream, command_id: u64, command_type: u32, payload: &[u8]) -> TestResult {
+pub(in super::super) async fn send(client: &mut DuplexStream, command_id: u64, command_type: u32, payload: &[u8]) -> TestResult {
     let frame = protocol::encode_client_command(1, &protocol::ClientCommandValue { command_id, command_type, payload }).map_err(debug)?;
     client.write_u32(u32::try_from(frame.len())?).await?;
     client.write_all(&frame).await?;
     Ok(())
 }
 
-async fn result(client: &mut DuplexStream, command_id: u64) -> TestResult<Vec<u8>> {
+pub(in super::super) async fn result(client: &mut DuplexStream, command_id: u64) -> TestResult<Vec<u8>> {
     loop {
         let bytes = read_frame(client).await?;
         let envelope = protocol::decode_wire_envelope(&bytes).map_err(debug)?;
@@ -277,7 +277,7 @@ async fn result(client: &mut DuplexStream, command_id: u64) -> TestResult<Vec<u8
     }
 }
 
-async fn views(client: &mut DuplexStream) -> TestResult<ContainerViews> {
+pub(in super::super) async fn views(client: &mut DuplexStream) -> TestResult<ContainerViews> {
     loop {
         let bytes = read_frame(client).await?;
         let envelope = protocol::decode_wire_envelope(&bytes).map_err(debug)?;
@@ -290,7 +290,7 @@ async fn views(client: &mut DuplexStream) -> TestResult<ContainerViews> {
     }
 }
 
-async fn browse(client: &mut DuplexStream, command_id: u64, intent: BrowseFieldIntent) -> TestResult {
+pub(in super::super) async fn browse(client: &mut DuplexStream, command_id: u64, intent: BrowseFieldIntent) -> TestResult {
     send(client, command_id, COMMAND_TYPE_BROWSE_FIELD_INTENT, &encode_browse_field_intent(&intent).map_err(debug)?).await?;
     assert_eq!(decode_container_view_result(&result(client, command_id).await?).map_err(debug)?, ContainerViewOutcome::Opened);
     Ok(())

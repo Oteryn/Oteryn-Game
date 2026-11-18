@@ -953,7 +953,7 @@ fn scenario_case(
             || name == super::super::qewrath_incarnation::NAME
             || name == super::super::qewrath_incarnation_remains::NAME
             || name == super::super::qewrath_keeper_summon::NAME
-            || name == super::super::qewrath_keeper_tail::NAME
+            || matches!(name, super::super::qewrath_keeper_tail::NAME | super::super::qewrath_keeper_tail::BROWSE_NAME)
             || name == "qewrath-npc-handoff-dragon"
             || name.starts_with(super::super::qewrath_prison_release::PREFIX)
             || name == "srv7-reliable-ram"
@@ -2490,8 +2490,8 @@ fn scenario_case(
             Box::pin(super::super::qewrath_prison_release::exercise(&mut owner, &mut admitted, &h, name.ends_with("-with-crate"))).await?;
         } else if name == super::super::qewrath_keeper_summon::NAME {
             Box::pin(super::super::qewrath_keeper_summon::exercise(&mut owner, &mut admitted, &h)).await?;
-        } else if name == super::super::qewrath_keeper_tail::NAME {
-            Box::pin(super::super::qewrath_keeper_tail::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if matches!(name, super::super::qewrath_keeper_tail::NAME | super::super::qewrath_keeper_tail::BROWSE_NAME) {
+            Box::pin(super::super::qewrath_keeper_tail::exercise(&mut owner, &mut admitted, &h, name == super::super::qewrath_keeper_tail::BROWSE_NAME)).await?;
         } else if name == super::super::qewrath_incarnation_remains::NAME {
             Box::pin(super::super::qewrath_incarnation_remains::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qewrath_incarnation::NAME {

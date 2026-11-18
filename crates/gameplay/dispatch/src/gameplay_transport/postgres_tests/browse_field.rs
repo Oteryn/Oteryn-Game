@@ -3,7 +3,7 @@
 #[path = "browse_field/fixture.rs"]
 mod fixture;
 #[path = "browse_field/wire.rs"]
-mod wire;
+pub(super) mod wire;
 
 use super::TestResult;
 
