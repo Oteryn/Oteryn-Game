@@ -1,7 +1,10 @@
 //! The final authored lever starts the room deadline on the existing encounter scheduler.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
-use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
+use crate::map::{
+    facts::{MovementSpeech, QuestCallbackProjection},
+    view::EntryFacts,
+};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 fn lever(map: &BundleMap, position: Position, appearances: [u16; 2]) -> Option<(u64, EntryFacts)> {
@@ -107,6 +110,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(&projection),
             )
         };
+        // Crystal 201189f8 actions_lord_of_elements_lever.lua:156-184 and
+        // src/utils/utils_definitions.hpp:390-391 (monster SAY and YELL).
+        let announce_wall = || {
+            if let Some(speech) = &selected.wall_speech {
+                map.facts.emit_movement_speech(MovementSpeech {
+                    speaker: actor,
+                    position: tile(speech.position),
+                    talk_type: 36,
+                    text: speech.text.clone(),
+                    captured_name: None,
+                });
+            }
+        };
         let mut switches = Vec::with_capacity(window.switches.len());
         for switch in &window.switches {
             let Some((key, before)) = lever(map, switch.lever, appearances) else {
@@ -136,6 +152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if switches.len() != window.switches.len() {
             return if publish() {
+                announce_wall();
                 UseDisposition::Committed
             } else {
                 UseDisposition::Rejected
@@ -215,6 +232,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         memo.bind_spawns(spawned);
         pending.push(memo);
         states.owner_wake.notify_one();
+        announce_wall();
+        if let Some(speech) = &window.start_speech {
+            map.facts.emit_movement_speech(MovementSpeech {
+                speaker: actor,
+                position: tile(speech.position),
+                talk_type: 37,
+                text: speech.text.clone(),
+                captured_name: None,
+            });
+        }
+        for magic in &window.start_magic {
+            map.facts
+                .emit_movement_effect(tile(magic.position), magic.effect);
+        }
         UseDisposition::Committed
     }
 }

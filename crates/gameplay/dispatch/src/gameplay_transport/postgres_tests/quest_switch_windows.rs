@@ -379,6 +379,7 @@ pub(super) async fn lord(
             at(33275, 31834, -12),
             at(33275, 31838, -12),
             5072,
+            at(33275, 31836, -12),
         ),
         (
             at(33262, 31840, -12),
@@ -386,6 +387,7 @@ pub(super) async fn lord(
             at(33266, 31843, -12),
             at(33270, 31843, -12),
             5071,
+            at(33268, 31843, -12),
         ),
         (
             at(33262, 31831, -12),
@@ -393,6 +395,7 @@ pub(super) async fn lord(
             at(33260, 31834, -12),
             at(33260, 31838, -12),
             5072,
+            at(33260, 31836, -12),
         ),
         (
             at(33273, 31831, -12),
@@ -400,19 +403,27 @@ pub(super) async fn lord(
             at(33266, 31828, -12),
             at(33270, 31828, -12),
             5071,
+            at(33268, 31828, -12),
         ),
     ];
     let window: Vec<_> = switches
         .iter()
-        .map(|&(lever, station, from, to, appearance)| {
+        .map(|&(lever, station, from, to, appearance, sound)| {
             serde_json::json!({
                 "lever": lever, "station": station, "wall_from": from, "wall_to": to,
-                "wall_appearance": appearance
+                "wall_appearance": appearance,
+                "wall_speech": {"position":sound, "text":"ZOOOOOOOOM"}
             })
         })
         .collect();
     let mut callbacks = Vec::new();
-    for (index, &(lever, _, _, _, _)) in switches.iter().enumerate() {
+    // Crystal lines 31-60 list these two diagonals in this order.
+    let start_magic: Vec<_> = (0..14)
+        .map(|i| at(33261 + i, 31829 + i, -12))
+        .chain((0..14).map(|i| at(33274 - i, 31829 + i, -12)))
+        .map(|position| serde_json::json!({"position":position, "effect":12}))
+        .collect();
+    for (index, &(lever, _, _, _, _, _)) in switches.iter().enumerate() {
         callbacks.push(serde_json::from_value::<Callback>(serde_json::json!({
             "key": format!("oteryn:quest-callback/lord-of-elements-switch-{}", index + 1),
             "quest": "oteryn:quest.elemental_spheres_quest",
@@ -432,6 +443,11 @@ pub(super) async fn lord(
                 },
                 "timed_group_transfer": {
                     "after_ms": 600_000, "destination": LORD_EXIT, "switches": window,
+                    "start_speech": {
+                        "position":at(33267,31836,-12),
+                        "text":"You have 10 minutes from now on until you get teleported out."
+                    },
+                    "start_magic": start_magic,
                     "warning": {
                         "after_ms": 300_000, "position": at(33266,31835,-13),
                         "room_min": at(33261,31829,-12), "room_max": at(33274,31842,-12),
@@ -482,7 +498,7 @@ pub(super) async fn lord(
     for (turn, (which_switch, which_member)) in
         [(2, 0), (3, 1), (1, 1), (0, 0)].into_iter().enumerate()
     {
-        let (lever, station, wall, _, _) = switches[which_switch];
+        let (lever, station, wall, _, _, sound) = switches[which_switch];
         let member = &mut members[which_member];
         {
             let actor = member.runtime_actor.ok_or("actor")?;
@@ -524,6 +540,23 @@ pub(super) async fn lord(
             owner.states.quest_callbacks.next_encounter_due_us(),
             (turn == 3).then_some(403_000_000)
         );
+        let speech = map.facts.movement_speech_since(0);
+        assert_eq!(speech.len(), turn + 1 + usize::from(turn == 3));
+        assert_eq!(speech[turn].1.talk_type, 36);
+        assert_eq!(speech[turn].1.text, "ZOOOOOOOOM");
+        assert_eq!(speech[turn].1.position, TilePos {x:sound.x,y:sound.y,floor:sound.floor});
+        let magic = map.facts.movement_effects_since(0);
+        if turn == 3 {
+            assert_eq!(speech[4].1.talk_type, 37);
+            assert_eq!(speech[4].1.text, "You have 10 minutes from now on until you get teleported out.");
+            assert_eq!(speech[4].1.position, TilePos {x:33267,y:31836,floor:-12});
+            let diagonal: Vec<_> = (0..14).map(|i| (33261+i,31829+i,-12,12))
+                .chain((0..14).map(|i| (33274-i,31829+i,-12,12))).collect();
+            assert_eq!(magic.iter().map(|(_,at,effect)| (at.x,at.y,at.floor,*effect))
+                .collect::<Vec<_>>(), diagonal);
+        } else {
+            assert!(magic.is_empty());
+        }
     }
     assert_eq!(
         owner
@@ -540,7 +573,7 @@ pub(super) async fn lord(
         .test_owner_time
         .store(403_000_000, Ordering::Relaxed);
     owner.drain_quest_encounter_deadlines().await;
-    assert!(map.facts.movement_speech_since(0).is_empty());
+    assert_eq!(map.facts.movement_speech_since(0).len(), 5);
     owner
         .states
         .test_owner_time
@@ -548,18 +581,18 @@ pub(super) async fn lord(
     owner.drain_quest_encounter_deadlines().await;
     owner.drain_quest_encounter_deadlines().await;
     let speech = map.facts.movement_speech_since(0);
-    assert_eq!(speech.len(), 1);
+    assert_eq!(speech.len(), 6);
     assert_eq!(
-        speech[0].1.position,
+        speech[5].1.position,
         TilePos {
             x: 33266,
             y: 31835,
             floor: -13
         }
     );
-    assert_eq!(speech[0].1.talk_type, 37);
+    assert_eq!(speech[5].1.talk_type, 37);
     assert_eq!(
-        speech[0].1.text,
+        speech[5].1.text,
         "You have 5 minutes from now on until you get teleported out."
     );
     assert_eq!(
@@ -584,7 +617,7 @@ pub(super) async fn lord(
     }
     assert!(runtime.visible_entities().creatures.is_empty());
     assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
-    for (lever, _, wall, _, _) in switches {
+    for (lever, _, wall, _, _, _) in switches {
         assert_eq!(target_for(lever)?.expected_revision, 2);
         let wall = TilePos {
             x: wall.x,

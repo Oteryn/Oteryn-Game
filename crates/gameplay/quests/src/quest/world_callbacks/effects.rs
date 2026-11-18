@@ -352,6 +352,21 @@ pub struct TimedGroupTransfer {
     pub switches: Vec<GroupSwitch>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub warning: Option<GroupTransferWarning>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start_speech: Option<GroupTransferSpeech>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub start_magic: Vec<MagicEffect>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct GroupTransferSpeech {
+    pub position: Position,
+    pub text: String,
+}
+
+fn valid_group_speech_text(text: &str) -> bool {
+    !text.is_empty() && text.len() <= 256 && !text.contains(['\n', '\r', '\0'])
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -372,6 +387,8 @@ pub struct GroupSwitch {
     pub wall_from: Position,
     pub wall_to: Position,
     pub wall_appearance: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wall_speech: Option<GroupTransferSpeech>,
 }
 
 impl GroupSwitch {
@@ -422,6 +439,12 @@ fn valid_group_switches(callback: &Callback, room: &Encounter, switches: &[Group
             && (from.x == to.x || from.y == to.y)
             && from.x.abs_diff(to.x) + from.y.abs_diff(to.y) < 8
             && switch.wall_appearance != 0
+            && switch.wall_speech.as_ref().is_none_or(|speech| {
+                valid_group_speech_text(&speech.text)
+                    && switch
+                        .wall_positions()
+                        .any(|position| position == speech.position)
+            })
             && switch.wall_positions().all(|at| {
                 !levers.contains(&at)
                     && !stations.contains(&at)
@@ -429,6 +452,27 @@ fn valid_group_switches(callback: &Callback, room: &Encounter, switches: &[Group
                     && walls.insert(at)
             })
     })
+}
+
+fn valid_group_start_cues(room: &Encounter, transfer: &TimedGroupTransfer) -> bool {
+    if transfer.start_speech.is_none() && transfer.start_magic.is_empty() {
+        return true;
+    }
+    let in_room = |p: Position| {
+        p.floor == room.room_min.floor
+            && (room.room_min.x..=room.room_max.x).contains(&p.x)
+            && (room.room_min.y..=room.room_max.y).contains(&p.y)
+    };
+    !transfer.switches.is_empty()
+        && transfer
+            .start_speech
+            .as_ref()
+            .is_none_or(|speech| in_room(speech.position) && valid_group_speech_text(&speech.text))
+        && transfer.start_magic.len() <= 32
+        && transfer
+            .start_magic
+            .iter()
+            .all(|magic| in_room(magic.position) && (1..=255).contains(&magic.effect))
 }
 
 /// A source rite transports the exact players on bounded stations. The initiator
@@ -991,14 +1035,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     !valid_group_switches(callback, encounter, &transfer.switches)
                 }) || encounter.timing.is_some()
                     || encounter.phase.is_some()
+                    || !valid_group_start_cues(encounter, transfer)
                     || transfer.warning.as_ref().is_some_and(|warning| {
                         let (min, max) = (warning.room_min, warning.room_max);
                         warning.after_ms == 0
                             || warning.after_ms >= transfer.after_ms
                             || !pos(warning.position)
-                            || warning.text.is_empty()
-                            || warning.text.len() > 256
-                            || warning.text.contains(['\n', '\r', '\0'])
+                            || !valid_group_speech_text(&warning.text)
                             || min.floor != encounter.room_min.floor
                             || max.floor != encounter.room_max.floor
                             || !(encounter.room_min.x <= min.x
