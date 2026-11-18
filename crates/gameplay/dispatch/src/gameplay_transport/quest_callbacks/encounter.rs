@@ -325,7 +325,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(EncounterPhase::GraveDangerDukeKrule { .. }) => "oteryn:creature.duke_krule",
                 Some(EncounterPhase::GraveDangerEarlOsam { .. }) => "oteryn:creature.earl_osam",
                 Some(EncounterPhase::GraveDangerLordAzaram { .. }) => "oteryn:creature.lord_azaram",
-                Some(EncounterPhase::GraveDangerSirs { .. }) => "oteryn:creature.sir_baeloc",
+                // Crystal's Sirs BossLever uses Nictros for the shared cooldown.
+                Some(EncounterPhase::GraveDangerSirs { .. }) => "oteryn:creature.sir_nictros",
                 Some(EncounterPhase::GraveDangerZelos { .. }) => "oteryn:creature.king_zelos",
                 _ => return UseDisposition::Rejected,
             };
