@@ -393,7 +393,7 @@ fn jerom(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Op
 }
 
 pub fn queen_kiss_confirmation(text: &str, topic: Topic) -> bool {
-    topic == Topic::Queen(8) && contains(text, "yes")
+    topic == Topic::Queen(8) && !contains(text, "seventh seal") && contains(text, "yes")
 }
 
 fn queen(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Option<Choice> {

@@ -24,7 +24,7 @@ fn banshee_logic_use_flips_lever_without_overwriting_a_discordant_campfire() -> 
 }
 
 #[test]
-fn banshee_sacrifice_step_refuses_without_a_blood_splash() -> TestResult {
+fn banshee_sacrifice_step_consumes_only_blood_and_commits_both_flags() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -80,6 +80,7 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
         (
             flame,
             vec![
+                (32243, 31892, -14, 0, 431),
                 (32250, 31892, -14, 35016, 1959),
                 (32261, 31849, -15, 0, 1959),
             ],
@@ -339,6 +340,196 @@ async fn exercise_sacrifice(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(receipts, 0);
+    pour_sacrifice_fluids(owner, h, &admitted, start).await?;
+
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("step clock")?;
+    let (outcome, _) = owner
+        .paced_step(actor, admitted.game_session_id, StepDirection::East)
+        .await;
+    assert_eq!(
+        outcome.disposition,
+        oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
+    );
+    let after = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
+    assert_eq!(
+        after.position(),
+        MovementLocalPosition {
+            x: 32261,
+            y: 31849,
+            floor: 15
+        }
+    );
+    let committed: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_tracks WHERE quest_key=$1 AND track_key IN ($2,$3) AND value=1",
+    ).bind(QUEST).bind(TRACK).bind(DOOR).fetch_one(&h.pool).await?;
+    assert_eq!(committed, 2);
+    let remaining = sqlx::query_scalar::<_, i16>(
+        "SELECT fluid_subtype FROM game_item_fluid_splashes ORDER BY fluid_subtype LIMIT 3",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(remaining, [1], "water stays when the StepIn consumes blood");
+    Ok(())
+}
+
+async fn pour_sacrifice_fluids(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: &super::AdmittedSession,
+    start: NativeEntryStart,
+) -> TestResult {
+    use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
+    use crate::gameplay_transport::{item_ref_admission::NativeItemWeights, item_view::ItemKey};
+
+    let session = admitted.game_session_id;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?
+        .item_fence();
+    let generation = owner.active_generation.ok_or("generation")?;
+    let native = generation.native_gameplay().ok_or("native policies")?;
+    let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+    h.root
+        .initialize_admission_equipment(
+            owner.character,
+            &h.node,
+            &fence,
+            generation.identity().server_artifact_digest(),
+            fresh.operation(),
+        )
+        .await
+        .map_err(debug)?;
+    let backpack = h
+        .root
+        .grant_starter_items(
+            owner.character,
+            &h.node,
+            &fence,
+            &NativeItemWeights(native),
+            &StarterTemplate::main(),
+        )
+        .await
+        .map_err(debug)?;
+    let StarterGrantOutcome::Minted(backpack) = backpack else {
+        return Err(format!("starter backpack: {backpack:?}").into());
+    };
+
+    // A filled vial is a precondition. The only splash writes use the native USE_WITH owner.
+    const VIAL: &str = "oteryn:item.tibia.i2874";
+    let revision = native
+        .item_index()
+        .and_then(|index| index.revision(VIAL))
+        .ok_or("vial")?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    for (n, fluid) in [(130_u8, 1_i16), (134, 5)] {
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
+            .bind(id(n).as_slice()).bind(id(42).as_slice()).bind(VIAL).bind(revision).bind(id(n+1).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
+            .bind(id(n).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(backpack.as_slice()).bind(if fluid==1 { 1_i32 } else { 2 }).bind(id(n+2).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid)")
+            .bind(id(n).as_slice()).bind(id(42).as_slice()).bind(fluid).bind(id(n+3).as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+
+    let map = owner.bundle_map().ok_or("map")?;
+    let key = oteryn_world_bundle::bundle::placement_key(-14, 32243, 31892, 1).ok_or("altar")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let spot = MovementLocalPosition {
+        x: 32244,
+        y: start.y,
+        floor: start.floor,
+    };
+    let origin = MovementLocalPosition {
+        x: start.x,
+        y: start.y,
+        floor: start.floor,
+    };
+    for (n, command_id, expected_before) in [(130, 20, vec![1]), (134, 21, vec![1, 5])] {
+        move_fixture(owner, admitted, spot).await?;
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("pour clock")?;
+        let outcome = owner
+            .use_fluid_on_map(
+                actor,
+                UseCommand {
+                    game_session_id: session,
+                    command_id,
+                    item_fence: Some(fence),
+                },
+                ItemKey::Instance(id(n)),
+                WorldObjectTarget {
+                    placement: placement.clone(),
+                    expected_revision: 0,
+                },
+            )
+            .await
+            .ok_or("typed pour onto altar terrain")?;
+        assert_eq!(outcome.disposition, UseDisposition::Committed);
+        let before = sqlx::query_scalar::<_, i16>(
+            "SELECT fluid_subtype FROM game_item_fluid_splashes ORDER BY fluid_subtype LIMIT 3",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(before, expected_before);
+        move_fixture(owner, admitted, origin).await?;
+        if n == 130 {
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(2))
+                .ok_or("step clock")?;
+            owner.paced_step(actor, session, StepDirection::East).await;
+            let at = owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?;
+            assert_eq!(at.position(), origin, "water cannot admit the player");
+        }
+    }
+    Ok(())
+}
+
+async fn move_fixture(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &super::AdmittedSession,
+    destination: MovementLocalPosition,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let mut runtime = owner.runtime.lock().await;
+    let expected = runtime.read_actor_position(actor).map_err(debug)?;
+    let map = owner.bundle_map().ok_or("map")?;
+    let doors = crate::map::floor::BundleDoors(map.facts.doors());
+    let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
+        &runtime,
+        owner.movement_cells(),
+        actor,
+        admitted.game_session_id,
+        expected,
+        destination,
+        false,
+        &doors,
+        None,
+    )
+    .map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
     Ok(())
 }
 

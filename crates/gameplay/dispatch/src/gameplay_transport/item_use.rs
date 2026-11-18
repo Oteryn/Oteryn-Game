@@ -895,24 +895,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let tile =
                 crate::map::view::compose_tile(&at.map.overlay, &facts, resolved.pos).ok()??;
-            tile.entries
-                .iter()
-                .find(|entry| {
-                    entry.source.key()
-                        == crate::map::view::MapEntryKey::Base(resolved.placement_key)
-                })
-                .and_then(|entry| match entry.facts.definition {
-                    MapDefinition::Item(reference) => {
-                        let index = native.item_index()?;
-                        let definition = super::item_look::typed_definition(index, reference)?;
-                        definition
-                            .production_key
-                            .strip_prefix("oteryn:item.tibia.i")?
-                            .parse::<u32>()
-                            .ok()
-                    }
-                    _ => None,
-                })
+            let entry = tile.entries.iter().find(|entry| {
+                entry.source.key() == crate::map::view::MapEntryKey::Base(resolved.placement_key)
+            })?;
+            match entry.facts.definition {
+                MapDefinition::Item(reference) => {
+                    let index = native.item_index()?;
+                    let definition = super::item_look::typed_definition(index, reference)?;
+                    definition
+                        .production_key
+                        .strip_prefix("oteryn:item.tibia.i")?
+                        .parse::<u32>()
+                        .ok()
+                }
+                MapDefinition::Terrain(_) => None,
+            }
         };
         // Only read durable splash objects after the complete map target/range validation.
         // Refused USE_WITH commands must not mutate (or otherwise refresh) map state.
@@ -929,12 +926,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .find(|splash| splash.placement == placement)
             .map(|splash| splash.splash_item_id)
-            .or(base_target_item)?;
+            .or(base_target_item);
+        let fill_subtype = target_item.and_then(fluid_source_subtype);
         let before = inventory.fluids.get(&source).copied().unwrap_or(0);
         let (after, splash) = if before == 0 {
-            (fluid_source_subtype(target_item)?, None)
+            (fill_subtype?, None)
         } else {
-            if fluid_source_subtype(target_item).is_some() {
+            if fill_subtype.is_some() {
                 return Some(UseOutcome {
                     disposition: UseDisposition::NothingToUse,
                     ..UseOutcome::rejected()
