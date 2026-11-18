@@ -1,6 +1,8 @@
 //! Crystal ff7ede59 data-global/lib/quests/svargrond_arena.lua and
 //! data-global/startup/tables/chest.lua:2307-2419; Canary 99902524 agrees.
 pub const FEES: [u64; 3] = [1_000, 5_000, 10_000];
+/// Crystal 201189f8 data-global/lib/core/storages.lua:853 and npc/halvar.lua:100-102.
+pub const PIT_DOOR_STORAGE: u16 = 41152;
 pub const PIT_SECONDS: u32 = 600;
 pub const CENTERS: [(i32, i32); 10] = [
     (32210, 31098),

@@ -133,10 +133,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn use_bundle_door(
         &self,
         actor: ExactActorRef,
-        session: GameSessionId,
+        command: UseCommand,
         map: &crate::map::boot::BundleMap,
         target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
+        let session = command.game_session_id;
+        let placement_key = target.placement.get(32..40).and_then(|bytes| {
+            let bytes: [u8; 8] = bytes.try_into().ok()?;
+            Some(u64::from_be_bytes(bytes))
+        });
+        let action = placement_key.and_then(|key| map.facts.action_at(key));
+        // Crystal storages.lua:853 and halvar.lua:100-102. Serialize the
+        // existing door toggle with Halvar payment and arena entry.
+        let (_arena_gate, arena_fence, arena_paid) = if action
+            == Some(crate::durability::arena_match::donor::PIT_DOOR_STORAGE)
+            && placement_key.is_some_and(|key| map.facts.doors().contains(key))
+        {
+            let gate = self.states.arena_matches.command.lock().await;
+            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                return UseOutcome::rejected();
+            };
+            if command.item_fence != Some(fence.item_fence()) {
+                return UseOutcome::rejected();
+            }
+            let Ok(paid) = self
+                .root
+                .read_arena_paid_door(self.character, self.holder, fence)
+                .await
+            else {
+                return UseOutcome::rejected();
+            };
+            (Some(gate), Some(fence), Some(paid))
+        } else {
+            (None, None, None)
+        };
         let mut runtime = self.runtime.lock().await;
         // Read the canonical actor-local Character facts through their owner, after taking the
         // runtime lock. `ChannelSpellStates::get` re-proves this exact actor/session against the
@@ -153,6 +183,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !runtime
             .player_control_facts(actor, session)
             .is_ok_and(|facts| facts.control_loss.is_none())
+            || arena_fence.is_some_and(|fence| {
+                runtime.owner_fence().is_err()
+                    || runtime.binding().runtime_scope() != fence.runtime_scope
+                    || runtime.binding().scope_generation() != fence.scope_ownership_generation
+                    || !runtime.bound_attacker_lease(actor, session).is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    })
+            })
         {
             return UseOutcome::rejected();
         }
@@ -161,21 +200,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let actor_level = spell_states
             .get(&runtime, actor, session)
             .map_or(0, |state| state.character_facts().level);
-        // Quest doors read only this admitted session's copy of the durable quest owner. A
-        // missing/failed copy cannot grant access. The action id is authored in the bundle.
-        let quest_storage_met = map
-            .facts
-            .action_at(
-                target
-                    .placement
-                    .get(32..40)
-                    .and_then(|bytes| {
-                        let bytes: [u8; 8] = bytes.try_into().ok()?;
-                        Some(u64::from_be_bytes(bytes))
-                    })
-                    .unwrap_or_default(),
-            )
-            .is_some_and(|action| {
+        // Other quest doors read this session's admitted quest copy.
+        let quest_storage_met = arena_paid.unwrap_or_else(|| {
+            action.is_some_and(|action| {
                 self.states
                     .quest_sessions
                     .lock()
@@ -186,7 +213,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .and_then(|quest| quest.copy.as_ref())
                             .is_some_and(|copy| copy.meets_door_storage(action))
                     })
-            });
+            })
+        });
         // Admission is taken under the owner lock that also covers the commit below, and the
         // owner pass resets the turn cap under the same lock, so an act is counted in the turn
         // that commits it and its order is the owner lock's.
@@ -437,7 +465,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return outcome;
             }
             return self
-                .use_bundle_door(actor, command.game_session_id, map, &target)
+                .use_bundle_door(actor, command, map, &target)
                 .await;
         }
         if let Some(chest) = Self::chest_target(self.chest, &target.placement) {

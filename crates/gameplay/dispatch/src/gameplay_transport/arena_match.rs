@@ -68,7 +68,7 @@ struct ArenaCaller {
 
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct Matches {
-    command: tokio::sync::Mutex<()>,
+    pub(super) command: tokio::sync::Mutex<()>,
     halvar_prompts: Mutex<HashMap<GameSessionId, halvar::Prompt>>,
     live: Mutex<HashMap<GameSessionId, LiveMatch>>,
     victory_poll: Mutex<Option<(u64, u64)>>,

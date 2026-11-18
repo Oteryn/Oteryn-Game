@@ -192,6 +192,35 @@ pub struct MatchTransition {
 }
 
 impl DurabilityRoot {
+    /// Halvar's payment supplies the native PitDoor storage predicate.
+    pub async fn read_arena_paid_door(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+    ) -> Result<bool, CharacterProgressionError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                        return Ok(Err(error));
+                    }
+                    let state = load_state(&mut tx, fence).await?;
+                    let paid = state.phase == 0 && (1..=3).contains(&state.paid_rank);
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(paid))
+                })
+            })
+            .await?
+    }
+
     pub async fn read_arena_match(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
