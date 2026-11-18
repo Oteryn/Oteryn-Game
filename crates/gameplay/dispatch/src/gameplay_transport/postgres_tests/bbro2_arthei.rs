@@ -274,6 +274,11 @@ pub(super) async fn exercise(
         use_with_position: None,
     })
     .map_err(debug)?;
+    first.item_fence = Some(fence.item_fence());
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
     let (admitted, result, _) = super::item_craft::exchange(
         owner,
         *first,
