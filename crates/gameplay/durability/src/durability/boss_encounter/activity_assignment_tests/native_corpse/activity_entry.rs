@@ -330,6 +330,7 @@ pub(super) async fn enter(h: &fixture::Harness, scope: RuntimeScopeRefV1) -> Tes
                 y: 201,
                 floor: 7,
             },
+            use_exit_cell: None,
             exit_position: LastPositionRecord {
                 cell: LastPositionCell {
                     x: 102,

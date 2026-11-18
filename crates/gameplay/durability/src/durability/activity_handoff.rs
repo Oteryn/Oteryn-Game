@@ -55,7 +55,9 @@ pub use retirement::RetiringActivity;
 pub(crate) use retirement::read_retiring_activity_in_transaction;
 pub mod boss_room;
 mod native_step;
+mod native_use;
 pub use native_step::ActivityNativeStepExit;
+pub use native_use::ActivityNativeUseExit;
 
 /// Existing boss group storage ceiling, not a client-controlled allocation size.
 pub const ACTIVITY_PARTICIPANTS_MAX: usize = 15;
@@ -103,6 +105,8 @@ pub struct ActivityParticipant {
     /// Content-authored return anchor in the original Channel. Its interpretation
     /// is retained independently from the Instance map and item-content digest.
     pub exit_position: LastPositionRecord,
+    /// Additional boss-room USE exit in the same retained Channel interpretation.
+    pub use_exit_cell: Option<LastPositionCell>,
 }
 
 #[derive(Debug, Clone)]
@@ -351,7 +355,18 @@ impl ActivityHandoffOwner {
         request: ActivityReturnRequest,
         movement: ActivityNativeStepExit,
     ) -> Result<ActivityReturnOutcome> {
-        self.return_inner(authority, node, request, false, None, Some(movement))
+        self.return_inner(authority, node, request, false, None, Some(ActivityReturnProof::Step(Box::new(movement))))
+            .await
+    }
+
+    pub async fn return_participant_for_native_use(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ActivityReturnRequest,
+        proof: ActivityNativeUseExit,
+    ) -> Result<ActivityReturnOutcome> {
+        self.return_inner(authority, node, request, false, None, Some(ActivityReturnProof::Use(proof)))
             .await
     }
 
@@ -395,7 +410,7 @@ impl ActivityHandoffOwner {
         request: ActivityReturnRequest,
         recovering: bool,
         terminal_trigger: Option<ActivityReturnReason>,
-        movement: Option<ActivityNativeStepExit>,
+        proof: Option<ActivityReturnProof>,
     ) -> Result<ActivityReturnOutcome> {
         if request.command_id == Some(0)
             || matches!(request.reason, ActivityReturnReason::Abandoned { .. } | ActivityReturnReason::StaffKick { .. }
@@ -406,14 +421,15 @@ impl ActivityHandoffOwner {
                 && (request.command_id.is_some()
                     || request.destination_transport.is_none()
                     || recovering))
-            || (movement.is_some()
-                && (recovering
-                    || !movement
-                        .as_ref()
-                        .is_some_and(|proof| proof.matches_request(&request))))
+            || proof.as_ref().is_some_and(|proof| {
+                recovering || match proof {
+                    ActivityReturnProof::Step(step) => !step.matches_request(&request),
+                    ActivityReturnProof::Use(action) => !action.matches_request(&request),
+                }
+            })
             || (request.command_id.is_none()
                 && request.reason == ActivityReturnReason::Exit
-                && movement.is_none())
+                && proof.is_none())
             || (request.reason == ActivityReturnReason::SoulpitTerminal
                 && (request.command_id.is_some() || recovering))
             || matches!(request.reason, ActivityReturnReason::Death { occurrence } if !uuid_v7(&occurrence) || request.command_id.is_some())
@@ -449,7 +465,7 @@ impl ActivityHandoffOwner {
                         &request,
                         recovering,
                         terminal_trigger,
-                        movement.as_ref(),
+                        proof.as_ref(),
                     )
                     .await?;
                     if !matches!(result, ActivityReturnOutcome::Refused(_)) {
@@ -460,6 +476,11 @@ impl ActivityHandoffOwner {
             })
             .await
     }
+}
+
+enum ActivityReturnProof {
+    Step(Box<ActivityNativeStepExit>),
+    Use(ActivityNativeUseExit),
 }
 
 fn uuid_v7(id: &[u8; 16]) -> bool {

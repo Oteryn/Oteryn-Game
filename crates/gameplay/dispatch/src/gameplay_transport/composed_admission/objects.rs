@@ -389,10 +389,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.open_daily_shrine(actor, command, &target).await {
             return outcome;
         }
-        if let Some(outcome) = self.use_soulpit_exit(actor, command, &target).await {
+        if let Some(outcome) = self.use_source_boss_exit(actor, command, &target).await {
             return outcome;
         }
-        if let Some(outcome) = self.use_vanguard_exit(actor, command, &target).await {
+        if let Some(outcome) = self.use_soulpit_exit(actor, command, &target).await {
             return outcome;
         }
         if let Some(outcome) = self.use_cake_world_object(actor, command, &target).await {

@@ -523,6 +523,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         y: i32::from(cell.y),
                         floor: 8,
                     },
+                    use_exit_cell: None,
                     exit_position: exit.record,
                 });
                 facts.push(SoulpitParticipantFact {

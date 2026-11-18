@@ -223,6 +223,7 @@ pub(super) async fn prepare_activity_fixture(
                 y: 201,
                 floor: 7,
             },
+            use_exit_cell: None,
             exit_position: LastPositionRecord {
                 cell: LastPositionCell {
                     x: 102,

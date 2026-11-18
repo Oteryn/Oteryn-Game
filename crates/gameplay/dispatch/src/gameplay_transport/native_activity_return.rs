@@ -11,7 +11,9 @@ use super::native_activity::{
     NativeActivityCommit, NativeActivityOutcome, activity_continuity, finish_activity_kills,
     seal_activity_kills,
 };
-use super::source_boss_exit::SourceBossUseExit;
+use super::source_boss_exit::{
+    SourceBossExitProof, SourceBossStepExitProof, SourceBossUseExitProof,
+};
 use super::{ComposedFreshAdmission, SecureIdentifiers};
 use crate::durability::activity_handoff::{
     ActivityHandoffOwner, ActivityRefusal, ActivityReturnOutcome, ActivityReturnPlacement,
@@ -38,8 +40,7 @@ pub(super) struct ActivityReturnAttemptKey {
 
 pub(super) struct NativeActivityReturnAttempt<'a> {
     source: RegisteredRuntime<'a>,
-    source_exit: Option<super::source_boss_exit::SourceBossExitProof>,
-    use_exit: Option<SourceBossUseExit>,
+    source_exit: Option<SourceBossExitProof>,
     exit_effect_start: Option<u64>,
     destination: RegisteredRuntime<'a>,
     admitted: AdmittedSession,
@@ -146,7 +147,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 ActivityRefusal::InvalidInput,
             ));
         }
-        self.prepare_native_activity_return(admitted, Some(command_id), reason, None, None)
+        self.prepare_native_activity_return(admitted, Some(command_id), reason, None)
             .await
     }
 
@@ -174,7 +175,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 ActivityRefusal::InvalidInput,
             ));
         }
-        self.prepare_native_activity_return(admitted, None, reason, None, None)
+        self.prepare_native_activity_return(admitted, None, reason, None)
             .await
     }
 
@@ -196,7 +197,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .collect::<Vec<_>>();
         for attempt in attempts {
             let held = attempt.lock().await;
-            if let Some(proof) = &held.source_exit {
+            if let Some(SourceBossExitProof::Step(proof)) = &held.source_exit {
                 return Some(proof.movement());
             }
         }
@@ -206,14 +207,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     pub(super) async fn return_source_boss_exit(
         &self,
         admitted: AdmittedSession,
-        proof: super::source_boss_exit::SourceBossExitProof,
+        proof: SourceBossStepExitProof,
     ) -> Result<NativeActivityOutcome, ()> {
         self.prepare_native_activity_return(
             admitted,
             None,
             ActivityReturnReason::Exit,
-            Some(proof),
-            None,
+            Some(SourceBossExitProof::Step(Box::new(proof))),
         )
         .await
     }
@@ -221,15 +221,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     pub(super) async fn return_source_boss_use_exit(
         &self,
         admitted: AdmittedSession,
-        command_id: u64,
-        proof: SourceBossUseExit,
+        proof: SourceBossUseExitProof,
     ) -> Result<NativeActivityOutcome, ()> {
         self.prepare_native_activity_return(
             admitted,
-            Some(command_id),
+            Some(proof.command),
             ActivityReturnReason::Exit,
-            None,
-            Some(proof),
+            Some(SourceBossExitProof::Use(proof)),
         )
         .await
     }
@@ -317,11 +315,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         admitted: AdmittedSession,
         command: Option<u64>,
         reason: ActivityReturnReason,
-        source_exit: Option<super::source_boss_exit::SourceBossExitProof>,
-        use_exit: Option<SourceBossUseExit>,
+        source_exit: Option<SourceBossExitProof>,
     ) -> Result<NativeActivityOutcome, ()> {
         let refuse = |reason| Ok(NativeActivityOutcome::Refused(reason));
-        if command == Some(0) || matches!(reason, ActivityReturnReason::OwnerLost) {
+        if matches!(reason, ActivityReturnReason::OwnerLost) {
             return refuse(ActivityRefusal::InvalidInput);
         }
         let Some(fence) = admitted.item_fence else {
@@ -355,7 +352,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     _ => return refuse(ActivityRefusal::InvalidInput),
                 }
             },
-            native_step_occurrence: source_exit.as_ref().map(|proof| proof.movement().binding()),
+            native_step_occurrence: match &source_exit {
+                Some(SourceBossExitProof::Step(proof)) => Some(proof.movement().binding()),
+                _ => None,
+            },
             death_occurrence: match reason {
                 ActivityReturnReason::Death { occurrence } => Some(occurrence),
                 _ => None,
@@ -378,7 +378,6 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let held = pending.lock().await;
             if held.trigger_reason != reason
                 || held.source_exit != source_exit
-                || held.use_exit != use_exit
                 || held.admitted.controller != admitted.controller
                 || held.admitted.item_fence != admitted.item_fence
             {
@@ -521,11 +520,6 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     .read_death_return_placement(self.character, self.holder, fence, occurrence)
                     .await
             }
-            ActivityReturnReason::Exit if command.is_some() => {
-                owner
-                    .read_use_return_placement(self.character, self.holder, fence)
-                    .await
-            }
             _ => {
                 owner
                     .read_return_placement(self.character, self.holder, fence)
@@ -533,7 +527,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             }
         }
         .map_err(|_| ())?;
-        let Some(placement) = placement else {
+        let Some(mut placement) = placement else {
             return refuse(ActivityRefusal::AuthorityRejected);
         };
         let Some(destination) = self.activity_runtimes.get(
@@ -641,7 +635,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return refuse(ActivityRefusal::AuthorityRejected);
         }
-        if let Some(proof) = source_exit.as_ref()
+        if let Some(SourceBossExitProof::Step(proof)) = source_exit.as_ref()
             && matches!(reason, ActivityReturnReason::Exit)
         {
             let target = proof.destination();
@@ -655,15 +649,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 return refuse(ActivityRefusal::AuthorityRejected);
             }
         }
-        if let Some(proof) = use_exit.as_ref() {
-            let target = proof.destination();
-            let landing = placement.exit_position.cell;
-            if !proof.matches(&source_view, &from, actor)
-                || (landing.x, landing.y, i32::from(landing.floor))
-                    != (target.x, target.y, target.z)
+        if let Some(SourceBossExitProof::Use(proof)) = source_exit.as_ref()
+            && matches!(reason, ActivityReturnReason::Exit)
+        {
+            if !proof.matches(&source_view, &from, admitted)
+                || placement.use_exit_cell != Some(proof.destination)
             {
                 return refuse(ActivityRefusal::AuthorityRejected);
             }
+            placement.exit_position.cell = proof.destination;
         }
         let exit = placement.exit_position;
         if exit.coordinate_frame_digest != to.content_pin().frame_binding_digest()
@@ -817,7 +811,6 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let pending = Arc::new(tokio::sync::Mutex::new(NativeActivityReturnAttempt {
                 source: source.clone(),
                 source_exit,
-                use_exit,
                 exit_effect_start: None,
                 destination: destination.clone(),
                 admitted,
@@ -906,7 +899,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         attempt.trigger_reason,
                     )
                     .await
-            } else if let Some(proof) = attempt.source_exit.as_ref()
+            } else if let Some(SourceBossExitProof::Step(proof)) = attempt.source_exit.as_ref()
                 && matches!(attempt.request.reason, ActivityReturnReason::Exit)
             {
                 owner
@@ -915,6 +908,17 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         self.holder,
                         attempt.request.clone(),
                         proof.native_step(),
+                    )
+                    .await
+            } else if let Some(SourceBossExitProof::Use(proof)) = attempt.source_exit.as_ref()
+                && matches!(attempt.request.reason, ActivityReturnReason::Exit)
+            {
+                owner
+                    .return_participant_for_native_use(
+                        self.character,
+                        self.holder,
+                        attempt.request.clone(),
+                        proof.native_use.clone(),
                     )
                     .await
             } else {
@@ -1020,6 +1024,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     return Err(());
                 }
                 attempt.moved = moved.first().copied();
+                if let Some(SourceBossExitProof::Use(proof)) = &attempt.source_exit
+                    && matches!(attempt.request.reason, ActivityReturnReason::Exit)
+                {
+                    source_view.emit_source_boss_use_exit_effect(proof.origin);
+                }
             }
             let moved = attempt.moved.ok_or(())?;
             if let Some(mark) = loss {
@@ -1077,7 +1086,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         drop(_slot);
         drop(_second_lane);
         drop(_first_lane);
-        if attempt.source_exit.is_some()
+        if matches!(attempt.source_exit, Some(SourceBossExitProof::Step(_)))
             && matches!(attempt.request.reason, ActivityReturnReason::Exit)
             && attempt.exit_effect_start.is_none()
         {

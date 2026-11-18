@@ -126,6 +126,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         y: i32::from(target.y),
                         floor: 8,
                     },
+                    use_exit_cell: None,
                     exit_position: exit.record,
                 });
                 facts.push(SoulpitParticipantFact {

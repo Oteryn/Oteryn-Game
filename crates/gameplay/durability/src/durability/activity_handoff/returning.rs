@@ -22,7 +22,7 @@ impl PreviousReturn {
     }
 }
 
-fn binding(r: &ActivityReturnRequest, movement: Option<&ActivityNativeStepExit>) -> [u8; 32] {
+fn binding(r: &ActivityReturnRequest, proof: Option<&ActivityReturnProof>) -> [u8; 32] {
     let mut hash = Sha256::new();
     hash_field(&mut hash, b"native-activity-return-v1");
     hash_field(&mut hash, &r.handoff_id);
@@ -60,8 +60,11 @@ fn binding(r: &ActivityReturnRequest, movement: Option<&ActivityNativeStepExit>)
     if r.command_id.is_none() {
         hash_field(&mut hash, &r.return_id);
     }
-    if let Some(movement) = movement {
-        movement.bind(&mut hash);
+    if let Some(proof) = proof {
+        match proof {
+            ActivityReturnProof::Step(step) => step.bind(&mut hash),
+            ActivityReturnProof::Use(action) => action.bind(&mut hash),
+        }
     }
     hash.finalize().into()
 }
@@ -73,7 +76,7 @@ pub(super) async fn return_in_transaction(
     r: &ActivityReturnRequest,
     recovering: bool,
     terminal_trigger: Option<ActivityReturnReason>,
-    movement: Option<&ActivityNativeStepExit>,
+    proof: Option<&ActivityReturnProof>,
 ) -> Result<ActivityReturnOutcome> {
     // Match Soulpit progress's advisory-before-Character lock order. This
     // bounded lookup grants nothing; the return receipt below remains authority.
@@ -130,11 +133,11 @@ pub(super) async fn return_in_transaction(
         let mut terminal = r.clone();
         terminal.reason = trigger;
         let mut hash = Sha256::new();
-        hash_field(&mut hash, &binding(r, movement));
-        hash_field(&mut hash, &binding(&terminal, movement));
+        hash_field(&mut hash, &binding(r, proof));
+        hash_field(&mut hash, &binding(&terminal, proof));
         hash.finalize().into()
     } else {
-        binding(r, movement)
+        binding(r, proof)
     };
     if let Some(PreviousReturn {
         request_binding: old_binding,
@@ -285,11 +288,11 @@ pub(super) async fn return_in_transaction(
         vitals: r.current_vitals,
         rest: r.current_rest,
     };
-    if r.command_id.is_some()
-        && r.reason == ActivityReturnReason::Exit
-        && let Some(cell) = manual_exit_cell(&row)?
-    {
-        exit.cell = cell;
+    if let Some(ActivityReturnProof::Use(action)) = proof {
+        if decode_use_exit(row.try_get("use_exit_cell")?)? != Some(action.destination) {
+            return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::AuthorityRejected));
+        }
+        exit.cell = action.destination;
     }
     if recovering {
         exit.vitals = match (
@@ -377,8 +380,8 @@ pub(super) async fn return_in_transaction(
         },
     )
     .await?;
-    sqlx::query("INSERT INTO game_activity_runtime_returns(return_id,handoff_id,character_id,source_game_session_id,source_connection_generation,source_lease_generation,command_id,request_binding,destination_game_session_id,destination_ownership_generation,returned_at,reason,destination_transport_ref,death_occurrence_id,return_x,return_y,return_floor,return_coordinate_frame_digest,return_map_revision_digest,return_server_artifact_digest,release_transport_ref,release_loss_epoch,native_step_exit) \
-        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,$8,encode($9,'hex')::uuid,$10::text::numeric,$11,$12,$13,encode($14,'hex')::uuid,$15,$16,$17,$18,$19,$20,$21,$22::text::numeric,$23)")
+    sqlx::query("INSERT INTO game_activity_runtime_returns(return_id,handoff_id,character_id,source_game_session_id,source_connection_generation,source_lease_generation,command_id,request_binding,destination_game_session_id,destination_ownership_generation,returned_at,reason,destination_transport_ref,death_occurrence_id,return_x,return_y,return_floor,return_coordinate_frame_digest,return_map_revision_digest,return_server_artifact_digest,release_transport_ref,release_loss_epoch,native_step_exit,native_use_exit) \
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,$8,encode($9,'hex')::uuid,$10::text::numeric,$11,$12,$13,encode($14,'hex')::uuid,$15,$16,$17,$18,$19,$20,$21,$22::text::numeric,$23,$24)")
         .bind(r.return_id.as_slice()).bind(r.handoff_id.as_slice()).bind(r.source.character_id.as_bytes().as_slice()).bind(r.source.game_session_id.as_bytes().as_slice())
         .bind(r.source.connection_generation.get().to_string()).bind(r.source.character_lease_generation.to_string()).bind(r.command_id.map(|id|id.to_string())).bind(request_binding.as_slice())
         .bind(r.destination_game_session_id.as_bytes().as_slice()).bind(r.destination_generation.get().to_string()).bind(now).bind(r.reason.stored())
@@ -388,7 +391,8 @@ pub(super) async fn return_in_transaction(
         .bind(exit.map_revision_digest.as_slice()).bind(exit.server_artifact_digest.as_slice())
         .bind(match r.reason { ActivityReturnReason::Abandoned { transport } | ActivityReturnReason::StaffKick { transport } => Some(transport.to_bytes().to_vec()), _ => None })
         .bind(match r.reason { ActivityReturnReason::CapabilityMismatch { epoch } | ActivityReturnReason::StaffKickLost { epoch } => Some(epoch.get().to_string()), _ => None })
-        .bind(movement.map(|proof|proof.proof().clone()))
+        .bind(match proof { Some(ActivityReturnProof::Step(step)) => Some(step.proof().clone()), _ => None })
+        .bind(matches!(proof, Some(ActivityReturnProof::Use(_))))
         .execute(&mut **tx).await?;
     if soulpit {
         super::super::soulpit::shared_returning(tx, r, recovering).await?;
@@ -530,6 +534,7 @@ pub struct ActivityReturnPlacement {
     pub destination_scope: RuntimeScopeRefV1,
     pub destination_generation: ScopeOwnershipGeneration,
     pub exit_position: LastPositionRecord,
+    pub use_exit_cell: Option<LastPositionCell>,
     /// Only a retained boss-room record authorizes its donor forced exit.
     pub boss_room: bool,
 }
@@ -541,17 +546,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         source: CurrentCharacterItemFence,
     ) -> Result<Option<ActivityReturnPlacement>> {
-        self.read_return_placement_inner(authority, node, source, None, false)
-            .await
-    }
-
-    pub async fn read_use_return_placement(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        source: CurrentCharacterItemFence,
-    ) -> Result<Option<ActivityReturnPlacement>> {
-        self.read_return_placement_inner(authority, node, source, None, true)
+        self.read_return_placement_inner(authority, node, source, None)
             .await
     }
 
@@ -565,7 +560,7 @@ impl ActivityHandoffOwner {
         if !uuid_v7(&occurrence) {
             return Ok(None);
         }
-        self.read_return_placement_inner(authority, node, source, Some(occurrence), false)
+        self.read_return_placement_inner(authority, node, source, Some(occurrence))
             .await
     }
 
@@ -575,7 +570,6 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         source: CurrentCharacterItemFence,
         death: Option<[u8; 16]>,
-        use_exit: bool,
     ) -> Result<Option<ActivityReturnPlacement>> {
         let RuntimeScopeRefV1::Instance {
             world_id,
@@ -594,8 +588,8 @@ impl ActivityHandoffOwner {
             assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
             if retained_participant(&mut tx,&root,source).await?.is_none() || assert_item_only_fence(&mut tx,&source,&node).await?.is_err(){return Ok(None);}
             let row=sqlx::query("SELECT uuid_send(g.handoff_id) AS handoff,uuid_send(p.account_id) AS account,uuid_send(p.origin_channel_id) AS origin,a.ownership_generation::text AS generation, \
-                q.exit_x,q.exit_y,q.exit_floor,q.exit_coordinate_frame_digest,q.exit_map_revision_digest,q.exit_server_artifact_digest,q.use_exit_cell, \
-                EXISTS(SELECT 1 FROM game_boss_room_activities b WHERE b.admission=g.handoff_id) AS boss_room \
+                q.exit_x,q.exit_y,q.exit_floor,q.exit_coordinate_frame_digest,q.exit_map_revision_digest,q.exit_server_artifact_digest, \
+                q.use_exit_cell, EXISTS(SELECT 1 FROM game_boss_room_activities b WHERE b.admission=g.handoff_id) AS boss_room \
                 FROM game_activity_handoff_groups g JOIN game_activity_handoff_participants p USING(handoff_id) JOIN game_activity_runtime_placements q USING(handoff_id,character_id) \
                 JOIN game_runtime_scope_assignments a ON a.scope_key='\\x01'::bytea || uuid_send(p.world_id) || uuid_send(p.origin_channel_id) \
                 WHERE g.world_id=encode($1,'hex')::uuid AND g.instance_id=encode($2,'hex')::uuid AND g.ownership_generation=$3::text::numeric AND g.state=2 \
@@ -609,7 +603,7 @@ impl ActivityHandoffOwner {
             let destination_scope=RuntimeScopeRefV1::channel(world_id,channel);
             let destination_generation=ScopeOwnershipGeneration::new(parse_u64(row.try_get("generation")?)?).map_err(|_|DurabilityError::InvalidStoredState)?;
             if !assert_runtime_scope_fence(&mut tx,destination_scope,destination_generation,&node).await? {return Ok(None);}
-            let mut result=ActivityReturnPlacement{handoff_id:bytes16(row.try_get("handoff")?)?,account_id:bytes16(row.try_get("account")?)?,destination_scope,destination_generation,boss_room:row.try_get("boss_room")?,
+            let mut result=ActivityReturnPlacement{handoff_id:bytes16(row.try_get("handoff")?)?,account_id:bytes16(row.try_get("account")?)?,destination_scope,destination_generation,boss_room:row.try_get("boss_room")?,use_exit_cell:decode_use_exit(row.try_get("use_exit_cell")?)?,
                 exit_position:LastPositionRecord{world_id,cell:LastPositionCell{x:row.try_get("exit_x")?,y:row.try_get("exit_y")?,floor:row.try_get("exit_floor")?},
                     coordinate_frame_digest:bytes32(row.try_get("exit_coordinate_frame_digest")?)?,map_revision_digest:bytes32(row.try_get("exit_map_revision_digest")?)?,
                     server_artifact_digest:bytes32(row.try_get("exit_server_artifact_digest")?)?,vitals:None,rest:None}};
@@ -617,26 +611,23 @@ impl ActivityHandoffOwner {
                 let Some(cell)=death_return_cell(&mut tx,source,occurrence).await? else{return Ok(None);};
                 result.exit_position.cell=cell;
                 result.boss_room=false;
-            } else if use_exit && let Some(cell) = manual_exit_cell(&row)? {
-                result.exit_position.cell = cell;
             }
             commit_semantic_transaction(tx,deadline).await?;Ok(Some(result))
         })).await
     }
 }
 
-fn manual_exit_cell(row: &sqlx::postgres::PgRow) -> Result<Option<LastPositionCell>> {
-    let Some(cell) = row.try_get::<Option<Vec<i32>>, _>("use_exit_cell")? else {
-        return Ok(None);
-    };
-    let [x, y, floor] = cell.as_slice() else {
-        return Err(DurabilityError::InvalidStoredState);
-    };
-    Ok(Some(LastPositionCell {
-        x: *x,
-        y: *y,
-        floor: i16::try_from(*floor).map_err(|_| DurabilityError::InvalidStoredState)?,
-    }))
+fn decode_use_exit(value: Option<Vec<i32>>) -> Result<Option<LastPositionCell>> {
+    value.map(|coordinates| {
+        let [x, y, floor] = coordinates.as_slice() else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        Ok(LastPositionCell {
+            x: *x,
+            y: *y,
+            floor: i16::try_from(*floor).map_err(|_| DurabilityError::InvalidStoredState)?,
+        })
+    }).transpose()
 }
 
 /// The existing death receipt and pending row own this placement; the return

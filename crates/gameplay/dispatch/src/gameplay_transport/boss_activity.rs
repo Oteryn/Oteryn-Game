@@ -327,6 +327,20 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let Some((destination, allocation)) = selected else {
             return refusal(ActivityRefusal::NoCapacity);
         };
+        let use_exit_cell = self
+            .activity_runtimes
+            .template(&definition.room_template_key, &definition.template_revision)
+            .and_then(|template| template.use_exit())
+            .and_then(|exit| {
+                let destination = exit.destination();
+                Some(
+                    crate::durability::character_last_position::LastPositionCell {
+                        x: destination.x,
+                        y: destination.y,
+                        floor: i16::try_from(destination.z).ok()?,
+                    },
+                )
+            });
         let mut participants = Vec::new();
         {
             let runtime = self.runtime.lock().await;
@@ -404,6 +418,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     source_position_write_sequence: saved.write_sequence,
                     destination_cell: *definition.entry_positions.get(ordinal)?,
                     exit_position: exit.record,
+                    use_exit_cell,
                 });
             }
         }
