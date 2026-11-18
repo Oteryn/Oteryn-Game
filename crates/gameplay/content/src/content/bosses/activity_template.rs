@@ -24,6 +24,7 @@ mod soul_war_entry_gate;
 #[path = "activity_template/soul_war_spawns.rs"]
 mod soul_war_spawns;
 pub use soul_war_spawns::QualifiedAmbientXmlSpawns;
+pub mod wanted;
 
 pub const CRYSTAL_REVISION: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
 pub use crate::content::project::native_spell_world::PinnedActivitySourceRoom;
@@ -279,7 +280,8 @@ pub fn captured_boss_levers() -> Result<Vec<BossLeverCandidate>, ActivityTemplat
     }
     let mut records = document.records;
     records.push(first_dragon::candidate()?);
-    records.sort_by(|left, right| left.path.cmp(&right.path));
+    records.extend(wanted::candidates());
+    records.sort_by(|left, right| (&left.path, left.line).cmp(&(&right.path, right.line)));
     Ok(records)
 }
 
@@ -634,7 +636,7 @@ impl ContentActivationController {
         let exit = project(exit)?;
         let galthen = galthen::exact_closure(candidate);
         if (candidate.source_callback_closure.is_some()
-            || candidate.source_exit_teleporter.is_some())
+            || (candidate.source_exit_teleporter.is_some() && candidate.path != wanted::PATH))
             && !galthen
         {
             return Err(R::SourceHookUnavailable);
@@ -745,7 +747,11 @@ impl ContentActivationController {
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect();
-        if candidate.native_profile_sha256.as_deref() != Some(fingerprint.as_str()) {
+        // Wanted keys are bound to the active native pack by the template's artifact pin.
+        // Their source portal capture contains geometry, not a creature profile hash.
+        if candidate.path != wanted::PATH
+            && candidate.native_profile_sha256.as_deref() != Some(fingerprint.as_str())
+        {
             return Err(R::SourceProfileChanged);
         }
         // The native death dispatcher captures its descendants from this exact

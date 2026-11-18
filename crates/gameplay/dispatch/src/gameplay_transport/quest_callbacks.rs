@@ -1693,6 +1693,11 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
         let Some(map) = self.map else {
             return false;
         };
+        if crate::content::bosses::activity_template::wanted::boss_at([cell.x, cell.y, cell.z])
+            .is_some()
+        {
+            return true;
+        }
         let Some(at) = native(MovementLocalPosition {
             x: cell.x,
             y: cell.y,

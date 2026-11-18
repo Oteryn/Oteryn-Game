@@ -21,7 +21,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         kind: u32,
         payload: &[u8],
     ) -> BossActivityResult {
-        self.boss_activity_action(admitted, id, kind, payload, false)
+        self.boss_activity_action(admitted, id, kind, payload, false, false)
             .await
     }
 
@@ -31,8 +31,107 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         id: u64,
         payload: &[u8],
     ) -> BossActivityResult {
-        self.boss_activity_action(admitted, id, wire::COMMAND_TYPE_BOSS_LEVER, payload, true)
+        self.boss_activity_action(
+            admitted,
+            id,
+            wire::COMMAND_TYPE_BOSS_LEVER,
+            payload,
+            true,
+            false,
+        )
+        .await
+    }
+
+    pub(super) async fn wanted_entry_after_step(
+        &self,
+        admitted: AdmittedSession,
+        moved_to: Option<oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation>,
+    ) {
+        use crate::content::bosses::activity_template::wanted;
+        let Some(actor) = admitted.runtime_actor else {
+            return;
+        };
+        if !matches!(actor.runtime_scope(), RuntimeScopeRefV1::Channel { .. }) || moved_to.is_none()
+        {
+            return;
+        }
+        let session = admitted.game_session_id;
+        let (movement, boss) = {
+            let runtime = self.runtime.lock().await;
+            let Ok(Some(movement)) = runtime.committed_movement_occurrence(actor) else {
+                return;
+            };
+            let position = movement.after().position();
+            if runtime.read_actor_position(actor) != Ok(movement.after())
+                || self.wire_observation(&runtime, position) != moved_to
+            {
+                return;
+            }
+            let Some(boss) = wanted::boss_at([position.x, position.y, i32::from(position.floor)])
+            else {
+                return;
+            };
+            (movement, boss)
+        };
+        let Some(command) = super::quest_callbacks::step_command(
+            actor,
+            session,
+            movement.after().revision(),
+            self.reset_epoch,
+        ) else {
+            return;
+        };
+        let Ok(payload) = wire::encode_boss_key(boss) else {
+            return;
+        };
+        let Some((CommandStatus::Rejected, reply)) = self
+            .boss_activity_action(
+                admitted,
+                command.command_id().get(),
+                wire::COMMAND_TYPE_BOSS_LEVER,
+                &payload,
+                true,
+                true,
+            )
             .await
+        else {
+            return;
+        };
+        let Ok(wire::BossActivityReply::Refused(reason)) = wire::decode_boss_activity_reply(&reply)
+        else {
+            return;
+        };
+        // A refusal sends the exact mover back to the cell they entered from.
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return;
+        };
+        let Some(map) = self.bundle_map() else { return };
+        let mut runtime = self.runtime.lock().await;
+        if runtime.committed_movement_occurrence(actor) != Ok(Some(movement)) {
+            return;
+        }
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let previous = movement.before().position();
+        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
+            &runtime,
+            self.movement_cells(),
+            actor,
+            session,
+            movement.after(),
+            previous,
+            false,
+            &closed,
+            None,
+        ) && runtime.commit_source_step(proof).is_ok()
+        {
+            let text = match reason {
+                wire::BossActivityRefusal::Cooldown => "You must wait 10 hours between attempts.",
+                wire::BossActivityRefusal::Level => "You need to be level 250 or higher.",
+                wire::BossActivityRefusal::NoCapacity => "The room is occupied.",
+                _ => "Sorry, not possible.",
+            };
+            self.states.chat.push_quest_feedback(session, text);
+        }
     }
 
     async fn boss_activity_action(
@@ -42,6 +141,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         kind: u32,
         payload: &[u8],
         difficulty_start: bool,
+        source_step: bool,
     ) -> BossActivityResult {
         let malformed = || Some((CommandStatus::Rejected, Vec::new()));
         if id == 0
@@ -63,6 +163,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         };
         if let Some(canonical) = super::endgame_entry::canonical_boss_key(&intent.boss_key) {
             intent.boss_key = canonical;
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && crate::content::bosses::activity_template::wanted::is_wanted_boss(&intent.boss_key)
+                != source_step
+        {
+            return refusal(ActivityRefusal::Position);
         }
         let outburst = super::outburst_entry::is_outburst(&intent.boss_key);
         if outburst {

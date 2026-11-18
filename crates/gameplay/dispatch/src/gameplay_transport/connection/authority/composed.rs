@@ -926,6 +926,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         moved_to: Option<oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation>,
     ) {
+        self.wanted_entry_after_step(admitted, moved_to).await;
         if let Some(actor) = admitted.runtime_actor {
             self.source_boss_exit_after_movement(actor, admitted.game_session_id, moved_to)
                 .await;
