@@ -1885,6 +1885,21 @@ impl DurabilityRoot {
                     if native.is_some() {changes.retain(|change|change.before!=change.after);}
                     if let Some(rule) = source_death.as_ref() {
                         super::source_deaths::apply_delivery(&mut tx, fence, &request, rule, &changes).await?;
+                        if let Some(cooldown) = &rule.cooldown {
+                            use super::{native_kills::NativeDeathSource, native_observation::NativeQuestObservation};
+                            let Some(NativeQuestObservation::Death(death)) = native.as_ref() else {
+                                return Err(DurabilityError::InvalidStoredState);
+                            };
+                            let NativeDeathSource::Source(source) = &death.source else {
+                                return Err(DurabilityError::InvalidStoredState);
+                            };
+                            let Some(observed_ms) = source.cooldown_death_ms else {
+                                return Err(DurabilityError::InvalidStoredState);
+                            };
+                            super::super::boss_encounter::cooldown_storage::extend_quest_death_cooldown(
+                                &mut tx, fence, &cooldown.boss, cooldown.seconds, request.cause.key().0, observed_ms,
+                            ).await?;
+                        }
                     }
                     if !super::rotten_blood_access::validate_access_changes(
                         &request.transition_key,&changes,state.try_get("level")?,

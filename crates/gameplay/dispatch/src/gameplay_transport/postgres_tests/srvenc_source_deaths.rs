@@ -317,6 +317,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, catalogue: Option<Que
                 lease_generation: fence.character_lease_generation,
                 position,
                 dealt_damage: true,
+                cooldown_death_ms: rule.cooldown.as_ref().map(|_| 1_000),
                 top_damage_character: rule
                     .top_damage_only
                     .then_some(*fence.character_id.as_bytes()),
@@ -550,9 +551,11 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, catalogue: Option<Que
             .iter()
             .find(|(track, _)| track == &effect.track)
             .map_or(effect.default, |(_, value)| *value);
-        let expected = effect
-            .set
-            .unwrap_or(before + effect.add.unwrap_or(0) * i64::try_from(kills)?);
+        let expected = match (effect.set, effect.increment_to) {
+            (Some(value), _) => value,
+            (None, Some(maximum)) => before.max((before + i64::try_from(kills)?).min(maximum)),
+            (None, None) => before + effect.add.unwrap_or(0) * i64::try_from(kills)?,
+        };
         assert_eq!(
             value,
             Some(expected),

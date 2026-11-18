@@ -242,6 +242,8 @@ pub enum QuestEffectKind {
     },
     /// Checked `i64` addition.
     Add(i64),
+    /// Increment only while the locked value is below this completed value.
+    IncrementTo(i64),
     /// Checked addition, then a floor; used by source counters with an unset sentinel.
     AddAtLeast {
         delta: i64,
@@ -302,6 +304,10 @@ impl QuestEffectKind {
             Self::Add(value) => {
                 out.push(2);
                 out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::IncrementTo(maximum) => {
+                out.push(15);
+                out.extend_from_slice(&maximum.to_be_bytes());
             }
             Self::SetIf { equals, value } => {
                 out.push(6);
@@ -712,12 +718,21 @@ impl QuestStateCatalogue {
         &self,
         transition: QuestTransition,
     ) -> Result<Self, QuestCatalogueError> {
+        self.with_fixture_transition_and_tracks(transition, Vec::new())
+    }
+
+    #[cfg(any(test, feature = "test-support"))]
+    fn with_fixture_transition_and_tracks(
+        &self,
+        transition: QuestTransition,
+        tracks: Vec<QuestTrack>,
+    ) -> Result<Self, QuestCatalogueError> {
         let changed_quest = transition.quest.clone();
         let mut transitions: Vec<_> = self.transitions.values().cloned().collect();
         transitions.push(transition);
         let mut updated = Self::new(
             self.content_revision.clone(),
-            self.tracks.values().cloned().collect(),
+            self.tracks.values().cloned().chain(tracks).collect(),
             transitions,
         )?;
         updated.hashes.extend(
@@ -862,6 +877,9 @@ impl QuestStateCatalogue {
                     }
                     QuestEffectKind::Add(delta) | QuestEffectKind::AddWithBinding { delta, .. } => {
                         before.checked_add(delta)
+                    }
+                    QuestEffectKind::IncrementTo(maximum) => {
+                        Some(if before < maximum { before + 1 } else { before })
                     }
                     QuestEffectKind::AddAtLeast { delta, minimum } => {
                         before.checked_add(delta).map(|value| value.max(minimum))

@@ -180,6 +180,7 @@ impl HeartAction {
                             position,
                             dealt_damage: false,
                             top_damage_character: None,
+                            cooldown_death_ms: None,
                         }),
                     },
                 },

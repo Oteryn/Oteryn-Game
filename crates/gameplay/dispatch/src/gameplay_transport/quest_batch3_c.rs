@@ -97,6 +97,10 @@ pub(super) fn capture(
                         lease_generation: snapshot.lease_generation,
                         position,
                         dealt_damage: damaged,
+                        cooldown_death_ms: rule
+                            .cooldown
+                            .as_ref()
+                            .map(|_| entry.facts.died_at_unix_ms),
                         top_damage_character: rule
                             .top_damage_only
                             .then_some(*principal.character.as_bytes()),

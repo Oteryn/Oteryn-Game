@@ -250,3 +250,36 @@ pub(crate) async fn admit_solo_quest_room(
     })?;
     Ok(outcome == BossCooldownChange::Applied)
 }
+
+/// A donor death can extend the same cooldown booked on entry. The Character
+/// root and death receipt are already guarded by the Quest writer.
+pub(crate) async fn extend_quest_death_cooldown(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+    boss: &str,
+    seconds: u64,
+    occurrence: [u8; 16],
+    observed_ms: u64,
+) -> Result<(), DurabilityError> {
+    let observed = i64::try_from(observed_ms / 1000 * 1000)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let available =
+        reward_deadline(observed, seconds).map_err(|_| DurabilityError::InvalidStoredState)?;
+    sqlx::query(
+        "INSERT INTO game_character_boss_cooldowns(character_id,boss_key,available_at,admission,reset_epoch)
+         VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,
+                coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($5,'hex')::uuid),0))
+         ON CONFLICT(character_id,boss_key) DO UPDATE
+           SET available_at=EXCLUDED.available_at, admission=EXCLUDED.admission,
+               reset_epoch=greatest(game_character_boss_cooldowns.reset_epoch,EXCLUDED.reset_epoch)
+         WHERE game_character_boss_cooldowns.available_at < EXCLUDED.available_at",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(boss)
+    .bind(available)
+    .bind(occurrence.as_slice())
+    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}

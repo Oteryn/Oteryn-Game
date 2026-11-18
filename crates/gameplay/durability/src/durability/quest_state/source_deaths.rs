@@ -16,6 +16,7 @@ pub struct SourceDeathContext {
     pub dealt_damage: bool,
     /// Present most-damage identity frozen by the native lethal owner, if required.
     pub top_damage_character: Option<[u8; 16]>,
+    pub cooldown_death_ms: Option<u64>,
 }
 
 impl SourceDeathContext {
@@ -47,6 +48,10 @@ impl SourceDeathContext {
             digest.update(b"source-top-damage-v1");
             digest.update(character);
         }
+        if let Some(died_at) = self.cooldown_death_ms {
+            digest.update(b"source-boss-cooldown-v1");
+            digest.update(died_at.to_be_bytes());
+        }
         binding[1..].copy_from_slice(&digest.finalize());
     }
     pub(super) async fn admit(
@@ -65,6 +70,8 @@ impl SourceDeathContext {
             || self.character != *fence.character_id.as_bytes()
             || self.session != fence.game_session_id
             || self.lease_generation != fence.character_lease_generation
+            || self.cooldown_death_ms.is_some_and(|died_at| died_at < 1000)
+            || (self.cooldown_death_ms.is_some() != rule.cooldown.is_some())
             || !rule.recipient(self.position, self.dealt_damage)
             || (rule.top_damage_only && self.top_damage_character != Some(self.character))
         {
@@ -73,7 +80,8 @@ impl SourceDeathContext {
         // The root and quest rows are already locked. A mission accepted/reset after
         // the lethal snapshot cannot consume that earlier death, even if its value matches.
         for effect in &rule.effects {
-            if rule
+            if effect.increment_to.is_some()
+                || rule
                 .epoch_tracks
                 .as_ref()
                 .is_some_and(|guards| !guards.contains(&effect.track))
@@ -161,6 +169,7 @@ mod tests {
             position: [33116, 32408, -7],
             dealt_damage: true,
             top_damage_character: None,
+            cooldown_death_ms: None,
         };
         let mut legacy = [0xa5; 33];
         source.bind(&mut legacy);

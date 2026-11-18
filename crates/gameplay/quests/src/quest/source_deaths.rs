@@ -19,6 +19,8 @@ pub struct Effect {
     pub set: Option<i64>,
     #[serde(default)]
     pub add: Option<i64>,
+    #[serde(default)]
+    pub increment_to: Option<i64>,
 }
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct Comparison {
@@ -63,8 +65,30 @@ pub struct Rule {
     pub epoch_tracks: Option<Vec<String>>,
     #[serde(default)]
     pub delivery: Option<DeathDelivery>,
+    #[serde(default)]
+    pub cooldown: Option<DeathCooldown>,
     #[serde(skip)]
     pub quest: String,
+}
+
+/// Crystal 201189f creaturescripts_dream_courts_death.lua:88-97.
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathCooldown {
+    pub boss: String,
+    pub seconds: u64,
+}
+
+impl DeathCooldown {
+    fn valid(&self, rule: &Rule) -> bool {
+        rule.room.is_none()
+            && !rule.top_damage_only
+            && rule.define_transition
+            && rule.delivery.is_none()
+            && self.boss.starts_with("oteryn:creature.")
+            && super::valid_quest_key(&self.boss)
+            && (1..=30 * 24 * 60 * 60).contains(&self.seconds)
+    }
 }
 
 /// Crystal 201189f feaster_of_souls/creaturescripts_pale_worm_death.lua:9-19.
@@ -91,6 +115,7 @@ impl DeathDelivery {
                             && effect.from.kind == "any"
                             && effect.set == Some(1)
                             && effect.add.is_none()
+                            && effect.increment_to.is_none()
                     })
             }
         }
@@ -126,9 +151,10 @@ impl Rule {
                     Ok(QuestEffect {
                         track: e.track.clone(),
                         from: e.from.comparison()?,
-                        effect: match (e.set, e.add) {
-                            (Some(value), None) => QuestEffectKind::Set(value),
-                            (None, Some(value)) => QuestEffectKind::Add(value),
+                        effect: match (e.set, e.add, e.increment_to) {
+                            (Some(value), None, None) => QuestEffectKind::Set(value),
+                            (None, Some(value), None) => QuestEffectKind::Add(value),
+                            (None, None, Some(value)) => QuestEffectKind::IncrementTo(value),
                             _ => return Err("ambiguous source death effect".into()),
                         },
                     })
@@ -215,6 +241,10 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
                     if rule.effects.is_empty()
                         || rule.effects.iter().any(|e| e.from.comparison().is_err())
                         || rule.delivery.is_some_and(|delivery| !delivery.valid(&rule))
+                        || rule
+                            .cooldown
+                            .as_ref()
+                            .is_some_and(|cooldown| !cooldown.valid(&rule))
                         || rules.iter().any(|r: &Rule| r.transition == rule.transition)
                     {
                         return Err("invalid source death rule".into());
@@ -277,13 +307,34 @@ pub fn with_fixture_rule(
 ) -> Result<QuestStateCatalogue, String> {
     let mut rule: Rule = serde_json::from_str(document).map_err(|error| error.to_string())?;
     rule.quest = quest.into();
-    if rule.delivery.is_none_or(|delivery| !delivery.valid(&rule))
+    if !(rule.delivery.is_some_and(|delivery| delivery.valid(&rule))
+        || rule
+            .cooldown
+            .as_ref()
+            .is_some_and(|cooldown| cooldown.valid(&rule)))
         || self::rule(&rule.transition).is_some()
     {
         return Err("invalid fixture source death delivery".into());
     }
+    let tracks = rule
+        .effects
+        .iter()
+        .filter_map(|effect| {
+            let maximum = effect.increment_to?;
+            catalogue
+                .track(&effect.track)
+                .is_none()
+                .then(|| QuestTrack {
+                    key: effect.track.clone(),
+                    quest: rule.quest.clone(),
+                    initial: effect.default,
+                    min: effect.default,
+                    max: maximum,
+                })
+        })
+        .collect();
     let mut with_rule = catalogue
-        .with_fixture_transition(rule.transition()?)
+        .with_fixture_transition_and_tracks(rule.transition()?, tracks)
         .map_err(|error| format!("{error:?}"))?;
     with_rule
         .fixture_source_deaths
