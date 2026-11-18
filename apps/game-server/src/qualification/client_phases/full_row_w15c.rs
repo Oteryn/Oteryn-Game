@@ -36,7 +36,7 @@ const WALKWAY: TilePos = TilePos {
     y: 32770,
     floor: -6,
 };
-// Crystal Global OTBM: the ramp's lower landing, one tile south of its north-facing ascent.
+// Crystal 201189f8 data-global/world/world.otbm: the north-facing ramp at (32694, 32772, 7).
 const RAMP_FOOT: TilePos = TilePos {
     x: 32694,
     y: 32773,
@@ -579,6 +579,10 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         for &direction in &path {
             at = destination(&world, at, direction).ok_or("leg has an invalid landing")?;
             assert!(at.x.abs_diff(from.x) <= 160 && at.y.abs_diff(from.y) <= 160);
+            assert!(
+                !world.facts().doors().blocks(at),
+                "{name} crossed a closed door at {at:?}"
+            );
         }
         eprintln!(
             "{name}: {from:?} -> {at:?}, {} steps, span {}x{}",
