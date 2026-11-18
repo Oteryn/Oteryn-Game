@@ -329,9 +329,13 @@ pub fn overlord_predecessor(
             .values()
             .filter(|transition| {
                 transition.quest == quest
-                    && !transition
-                        .key
-                        .starts_with("oteryn:quest-transition/elemental-spheres/")
+                    && !matches!(
+                        transition.key.as_str(),
+                        "oteryn:quest-transition/elemental-spheres/earth-overlord-death"
+                            | "oteryn:quest-transition/elemental-spheres/energy-overlord-death"
+                            | "oteryn:quest-transition/elemental-spheres/fire-overlord-death"
+                            | "oteryn:quest-transition/elemental-spheres/ice-overlord-death"
+                    )
             })
             .cloned()
             .collect(),
