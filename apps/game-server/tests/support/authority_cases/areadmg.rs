@@ -477,6 +477,7 @@ async fn oak_cut(
         (monsters, actors)
     };
     monsters.sort();
+    assert_spawn_positions(runtime, &actors, actor, session, first).await?;
     let tracks = h
         .root
         .read_character_quest_state(owner.character, fence.character_id)
@@ -547,6 +548,49 @@ async fn oak_cut(
             ]
         );
     }
+    Ok(())
+}
+
+async fn assert_spawn_positions(
+    runtime: &Mutex<ChannelRuntimeV1>,
+    monsters: &[ExactActorRef],
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command: u64,
+) -> TestResult {
+    let points = [
+        (32714, 32348),
+        (32712, 32349),
+        (32711, 32351),
+        (32713, 32354),
+        (32716, 32354),
+        (32719, 32354),
+        (32721, 32351),
+        (32719, 32348),
+    ];
+    let runtime = runtime.lock().await;
+    let mut actual = Vec::new();
+    let mut expected = Vec::new();
+    for (slot, monster) in (1..).zip(monsters) {
+        let at = runtime
+            .read_actor_position(*monster)
+            .map_err(debug)?
+            .position();
+        assert_eq!(at.floor, 7);
+        actual.push((at.x, at.y));
+        let draw = oak_decision(
+            &runtime,
+            actor,
+            session,
+            command,
+            "demon_oak.retaliation",
+            slot,
+        )?;
+        expected.push(points[(draw % 8) as usize]);
+    }
+    actual.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(actual, expected, "one draw per summoned monster");
     Ok(())
 }
 
