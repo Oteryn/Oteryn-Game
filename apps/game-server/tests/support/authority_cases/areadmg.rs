@@ -36,6 +36,17 @@ enum Case {
     OakBonebeasts,
 }
 
+impl Case {
+    const fn initial_cuts(self) -> Option<[i64; 4]> {
+        match self {
+            Self::OakFifth => Some([5, 0, 0, 0]),
+            Self::OakFinal => Some([10, 11, 11, 11]),
+            Self::OakBonebeasts => Some([2, 0, 0, 0]),
+            Self::OakArea | Self::PitsMatching | Self::PitsOther => None,
+        }
+    }
+}
+
 #[test]
 fn areadmg_pits_final_field_matches_base_vocation() -> TestResult {
     run(Case::PitsMatching)
@@ -349,6 +360,14 @@ async fn exercise(h: &fixture::Harness, case: Case) -> TestResult {
         if is_pits { &protections } else { &[] },
     )
     .await?;
+    if let Some(track_values) = case.initial_cuts() {
+        super::engnpc2_live_transport::seed_tool(h, native, rules::AXE).await?;
+        for (track, value) in rules::CUT_TRACKS.into_iter().zip(track_values) {
+            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).bind(track).bind(rules::QUEST).bind(value)
+        .execute(&h.pool).await?;
+        }
+    }
     let fence = composed_test_owner::load_quests(&owner, session).await?;
     match case {
         Case::PitsMatching | Case::PitsOther => {
@@ -361,7 +380,6 @@ async fn exercise(h: &fixture::Harness, case: Case) -> TestResult {
         }
         Case::OakArea => area(&mut owner, &runtime, actor, session).await,
         Case::OakFifth | Case::OakFinal | Case::OakBonebeasts => {
-            super::engnpc2_live_transport::seed_tool(h, native, rules::AXE).await?;
             oak_cut(h, &owner, &runtime, actor, fence, native, case).await
         }
     }
@@ -392,16 +410,7 @@ async fn oak_cut(
     case: Case,
 ) -> TestResult {
     let final_cut = matches!(case, Case::OakFinal);
-    let track_values: [i64; 4] = match case {
-        Case::OakFinal => [10, 11, 11, 11],
-        Case::OakBonebeasts => [2, 0, 0, 0],
-        _ => [5, 0, 0, 0],
-    };
-    for (track, value) in rules::CUT_TRACKS.into_iter().zip(track_values) {
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-            .bind(id(41).as_slice()).bind(track).bind(rules::QUEST).bind(value)
-            .execute(&h.pool).await?;
-    }
+    let track_values = case.initial_cuts().ok_or("cut case")?;
     use oteryn_gameplay_content::content::native_cell_lookup::NativeMovementCollisionIndex;
     let NativeMovementCollisionIndex::Bundle(index) = owner.movement_cells.index() else {
         return Err("bundle movement cells".into());
