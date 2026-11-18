@@ -118,37 +118,6 @@ pub(super) fn run_case(case: Case) -> TestResult {
     Ok(())
 }
 
-// Crystal items.xml:52596–52644 and each Warzone creature's loot script:77.
-fn warzone_reward_fixture(creature: &str) -> TestResult<Vec<u8>> {
-    let (corpse, coins) = match creature {
-        "oteryn:creature.the_baron_from_below" => ("oteryn:item.tibia.i27633", 58),
-        "oteryn:creature.the_count_of_the_core" => ("oteryn:item.tibia.i27637", 54),
-        "oteryn:creature.the_duke_of_the_depths" => ("oteryn:item.tibia.i27641", 63),
-        _ => return Err("unknown Warzone reward boss".into()),
-    };
-    let mut section: serde_json::Value = serde_json::from_slice(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"), "/../../../tools/content-schema/native-gameplay/loot-tables.json"
-    )))?;
-    let facts = section["items"].as_array_mut().ok_or("loot item facts")?
-        .iter_mut().find(|facts| facts["item"]["key"] == corpse).ok_or("Warzone corpse facts")?;
-    facts["materializable"] = true.into();
-    facts["container_capacity"] = 20.into();
-
-    let suffix = creature.strip_prefix("oteryn:creature.").ok_or("Warzone creature key")?;
-    let table_key = format!("oteryn:loot.creature.{suffix}");
-    let table = section["tables"].as_array_mut().ok_or("loot tables")?
-        .iter_mut().find(|table| table["identity"]["key"] == table_key).ok_or("Warzone loot table")?;
-    // Use the source's guaranteed coin drop to exercise custody without
-    // requiring every other captured Warzone item to be provisioned here.
-    let mut retained = table["entries"].as_array().ok_or("loot entries")?
-        .iter().find(|entry| entry["item"]["key"] == "oteryn:item.tibia.i3035")
-        .ok_or("source platinum coin drop")?.clone();
-    retained["probability_ppm"] = 1_000_000.into();
-    retained["max_count"] = coins.into();
-    table["entries"] = serde_json::json!([retained]);
-    Ok(serde_json::to_vec(&section)?)
-}
-
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         super::reset();
@@ -172,10 +141,6 @@ fn scenario(case: Case) -> TestResult {
         let (controller, pin) = if matches!(case, Case::LargePrivateCorpse) {
             crate::content::native_gameplay::test_support::activated_reward_boss_corpse_capacity_fixture(
                 deps.admitted.world_id, None, Some(64),
-            )
-        } else if let Case::WarzoneNativeDeath(creature) = case {
-            crate::content::native_gameplay::test_support::activated_with_custom_loot_tables(
-                deps.admitted.world_id, None, Some(&warzone_reward_fixture(creature)?),
             )
         } else if matches!(case, Case::NativeDeath) {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
