@@ -486,6 +486,8 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qc-programmes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
 ];
@@ -2170,7 +2172,7 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal, Twenty Miles.
-        assert_eq!(load()?.len(), 207 + 59 + 126 + 1 + 1 + 18);
+        assert_eq!(load()?.len(), 207 + 59 + 129 + 1 + 1 + 18);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

@@ -1039,8 +1039,8 @@ pub(crate) mod tests {
             assert_eq!(read(&inactive), vec![432]);
             assert!(day.facts().movement_items(pos).is_empty());
         }
-        assert_eq!(active.items().count(), 14);
-        assert_eq!(apply_items(Some(&day), &active), 14);
+        assert_eq!(active.items().count(), 15);
+        assert_eq!(apply_items(Some(&day), &active), 15);
         for (_, (x, y, z)) in active.items() {
             assert!(
                 day.facts()

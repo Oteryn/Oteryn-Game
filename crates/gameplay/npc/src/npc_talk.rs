@@ -28,6 +28,8 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../content/quests/npc-callbacks/qc-programmes.json"),
     include_str!("../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
@@ -47,6 +49,7 @@ const REWARD_CALLBACKS: &[&str] = &[
 mod m09_rookie_tests;
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/qd-greetings.json"),
     include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
