@@ -41,7 +41,7 @@ fn arena_match_credited_portal_timeout_restores_pillar() -> TestResult {
     Ok(())
 }
 
-async fn command(
+pub(super) async fn command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     action: A,
@@ -122,12 +122,13 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
 }
 
 #[derive(Clone, Copy)]
-enum NativeScenario {
+pub(super) enum NativeScenario {
     Portals,
     RecreatedPillars,
     Departure,
     Timeout,
     ResetMonsters,
+    TrophyLook,
 }
 
 #[test]
@@ -172,7 +173,7 @@ fn m51_postgres_native_entry_resets_only_monsters_inside_source_box() -> TestRes
 fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
     scenario_route(funded, native_portals.then_some(NativeScenario::Portals))
 }
-fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
+pub(super) fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
     scenario_route_with_expiry(funded, route, false)
 }
 fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool) -> TestResult {
@@ -323,6 +324,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 .is_some(),
             "production progression binding"
         );
+        if matches!(route, Some(NativeScenario::TrophyLook)) {
+            return super::barena2_trophy_look::check_trophy_look(&harness, &owner, &mut admitted, deps.actor).await;
+        }
         fixture::train_character(&owner, admitted.game_session_id).await?;
         let build = harness
             .root
