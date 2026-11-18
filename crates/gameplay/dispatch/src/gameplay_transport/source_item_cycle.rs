@@ -102,7 +102,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return;
                 }
                 if let Some(map) = self.bundle_map() {
-                    map.facts.expire_movement_items(self.owner_now().get());
+                    let now = self.owner_now().get();
+                    map.facts.expire_movement_items(now);
+                    self.advance_quest_appearances(map, now);
                 }
                 if let Ok(mut gate) = self.states.world_gate.lock() {
                     gate.begin_turn();

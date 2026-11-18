@@ -54,6 +54,9 @@ pub struct CallbackEffects {
     /// Current native occupants must be absent before a previously started stage commits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clear_area: Option<ClearArea>,
+    /// An automatically cycling base object also guards this source interaction.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cycling_appearance: Option<CyclingAppearanceGuard>,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
@@ -247,6 +250,25 @@ impl Serialize for CallbackEffectSet {
     }
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CyclingAppearanceGuard {
+    pub position: Position,
+    pub ordinal: u8,
+    pub appearances: [u16; 2],
+    pub interval_ms: u32,
+    pub required: u16,
+}
+
+impl CyclingAppearanceGuard {
+    pub fn same_cycle(&self, other: &Self) -> bool {
+        self.position == other.position
+            && self.ordinal == other.ordinal
+            && self.appearances == other.appearances
+            && self.interval_ms == other.interval_ms
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct MagicEffect {
@@ -395,6 +417,21 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 }
 
 pub(super) fn valid(callback: &Callback) -> bool {
+    if callback.effects.cycling_appearance.is_some_and(|guard| {
+        callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !callback.has_state_writes()
+            || callback.reversible
+            || callback.lever.is_some()
+            || !(-15..=0).contains(&guard.position.floor)
+            || guard.appearances.contains(&0)
+            || guard.appearances[0] == guard.appearances[1]
+            || !guard.appearances.contains(&guard.required)
+            || !(1_000..=600_000).contains(&guard.interval_ms)
+    }) {
+        return false;
+    }
     if callback
         .effects
         .refused_tool_effect

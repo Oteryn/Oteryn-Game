@@ -195,7 +195,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
         if !close
-            && (!world_requirements_match(map, callback)
+            && (!super::cycling_appearances::matches(map, callback)
+                || !world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
                 || !super::clear_area::area_is_clear(runtime, callback))
         {

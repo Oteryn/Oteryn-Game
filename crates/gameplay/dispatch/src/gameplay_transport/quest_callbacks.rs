@@ -6,6 +6,7 @@ use super::{
 };
 mod admission;
 mod conditional_cells;
+mod cycling_appearances;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
@@ -974,6 +975,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && c.trigger == Trigger::Use
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
+                    && cycling_appearances::matches(map, c)
                     && c.activation.as_ref().is_none_or(|activation| {
                         self.states
                             .quest_sessions

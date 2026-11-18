@@ -383,6 +383,9 @@ impl BundleFacts {
         ]
         .into_iter()
         .chain(6594..=6608)
+        // Crystal items.xml:24509-24548. A column's alternating appearance need
+        // not be independently placed in the source bundle.
+        .chain(9133..=9140)
         .filter_map(|id| {
             let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
             movement_solidities.insert(id, definition.solid.unwrap_or(true));

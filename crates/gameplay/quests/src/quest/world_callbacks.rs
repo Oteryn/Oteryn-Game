@@ -82,10 +82,10 @@ mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
 pub use effects::{
-    CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
-    EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
-    MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion,
-    RewardDoor, TargetTransform,
+    CallbackEffectSet, CallbackEffects, CyclingAppearanceGuard, Encounter, EncounterMonster,
+    EncounterPhase, EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement,
+    ItemPresence, MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair,
+    QuestCompletion, RewardDoor, TargetTransform,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
@@ -878,6 +878,13 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
                 !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
+                    && !callback
+                        .effects
+                        .cycling_appearance
+                        .zip(peer.effects.cycling_appearance)
+                        .is_some_and(|(left, right)| {
+                            left.same_cycle(&right) && left.required != right.required
+                        })
                     && !(selector_gates::disjoint(peer, callback)
                         && selector_partitions::disjoint(peer, callback))
             })
