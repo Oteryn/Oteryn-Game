@@ -116,14 +116,6 @@ fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::ma
         spawns: Default::default(),
         npcs: Default::default(),
     };
-    if trap == Some(12187) {
-        manifest.palette.push(terrain(
-            "oteryn:terrain.tibia.i10480",
-            10,
-            TerrainKind::Ground,
-            Some(true),
-        ));
-    }
     if repair {
         manifest.palette.push(PaletteEntry {
             key: "oteryn:item.tibia.i12183".into(),
@@ -132,12 +124,26 @@ fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::ma
             terrain: None,
         });
     }
+    let trap_ground = if trap == Some(12187) {
+        let id = u32::try_from(manifest.palette.len())?;
+        manifest.palette.push(terrain(
+            "oteryn:terrain.tibia.i10480",
+            id,
+            TerrainKind::Ground,
+            Some(true),
+        ));
+        Some(id)
+    } else {
+        None
+    };
     let mut tiles = Vec::new();
     for y in 0..=8 {
         for x in 0..=12 {
             let mut palettes = vec![
-                if trap == Some(12187) && matches!((x, y), (3, 2) | (3, 3)) {
-                    10
+                if let Some(id) = trap_ground
+                    && matches!((x, y), (3, 2) | (3, 3))
+                {
+                    id
                 } else if (x, y) == (3, 5) {
                     2
                 } else {
@@ -278,10 +284,10 @@ pub(super) fn scenario(
                         "oteryn:item.tibia.i3945" => 5,
                         "oteryn:item.tibia.i12368" => 6,
                         "oteryn:item.tibia.i12369" => 7,
-                        "oteryn:item.tibia.i12187" => 8,
-                        "oteryn:item.tibia.i12189" => 9,
-                        "oteryn:item.tibia.i3682" => 10,
-                        "oteryn:item.tibia.i12183" => 11,
+                        "oteryn:item.tibia.i12183" => 8,
+                        "oteryn:item.tibia.i12187" => 9,
+                        "oteryn:item.tibia.i12189" => 10,
+                        "oteryn:item.tibia.i3682" => 11,
                         "oteryn:item.tibia.i6474" => 12,
                         _ => return None,
                     })?,
