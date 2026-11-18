@@ -1,11 +1,16 @@
 //! The Isle of Evil introduction and rewards through the live NPC and durable quest writers.
 use super::classic_quests::{install, progress, talk};
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, prepare_current_session};
+use super::{
+    AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
+};
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, CommandId, CommandRef};
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{
+    FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
+};
 use oteryn_gameplay_quests::quest::{isle_of_evil as quest, world_callbacks::Position};
+use oteryn_protocol_oteryn::{npc_service::NpcTalkIntent, world_spatial_entities::EntityRef};
 
 #[derive(Clone, Copy)]
 enum Case {
@@ -278,18 +283,25 @@ fn scenario(case: Case) -> TestResult {
             assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
             drop(slot);
 
+            // Install a historical snapshot with fixture privileges. The
+            // transaction ends before any NPC dispatch or reward writes.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
             // Recorded from origin/main's embedded catalogue at qcx86's base SHA.
             // These characters started the quest before the NPC reward callbacks.
             let old_hash = "573e29f8cffaaffbe4014ccef1b899159e09bfaa39fd2b6486f865c8072dff0d";
             sqlx::query("UPDATE game_character_quest_states SET definition_hash=decode($3,'hex') WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2")
                 .bind(id(41).as_slice()).bind(quest::QUEST).bind(old_hash)
-                .execute(&h.pool).await?;
+                .execute(&mut *tx).await?;
             for (suffix, value, _) in initial {
                 let track = format!("{}{suffix}", quest::PREFIX);
                 sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT (character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
                     .bind(id(41).as_slice()).bind(track).bind(quest::QUEST).bind(value)
-                    .execute(&h.pool).await?;
+                    .execute(&mut *tx).await?;
             }
+            tx.commit().await?;
         }
         let input = match case {
             Case::Introduction => None,
@@ -359,7 +371,7 @@ fn scenario(case: Case) -> TestResult {
                     );
                 }
                 if let Some(item) = exchange.give {
-                    talk(
+                    repeat_without_reward(
                         &mut owner,
                         &admitted,
                         npc,
@@ -389,7 +401,7 @@ fn scenario(case: Case) -> TestResult {
                     progress(&owner, &admitted, &authority, &questline).await?,
                     16
                 );
-                talk(&mut owner, &admitted, npc, 3002, card).await?;
+                repeat_without_reward(&mut owner, &admitted, npc, 3002, card).await?;
                 let after: i64 = sqlx::query_scalar(
                     "SELECT total_experience FROM game_character_progression_state",
                 )
@@ -404,6 +416,43 @@ fn scenario(case: Case) -> TestResult {
         }
         Ok(())
     })
+}
+
+async fn repeat_without_reward(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    npc_actor: EntityRef,
+    command_id: u64,
+    text: &str,
+) -> TestResult {
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let outcome = owner
+        .npc_talk(
+            admitted.runtime_actor.ok_or("actor")?,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor,
+                text: text.into(),
+            },
+        )
+        .await;
+    // The spoiler specifies a single prize. Ordinary NPC speech or refusal
+    // on a later command is immaterial to the durable reward count.
+    assert!(!outcome.unknown);
+    assert!(!outcome.inventory_changed);
+    Ok(())
 }
 
 async fn item_count(h: &Harness, item: &str) -> TestResult<i64> {

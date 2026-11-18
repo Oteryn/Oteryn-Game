@@ -45,3 +45,20 @@ The global facts do not state exact nail loss or shock odds, skeleton duration, 
 ## PARTIAL
 
 Optional book claim, fuel and juice exchanges, worm minigame and reset fee, Nautical Map box, production NPC placement admission, door track bindings, level-35 ship gate and both travel flows, castle trap and boss corpse progression, and parity of the generated definition/claim projection.
+
+## Verification
+
+PG via shard (pgsplit build files applied on dc4df0331612a96eb30d43d637090a2baf0c3684). The tested worktree included the fixture-only historical snapshot and repeat-command assertions in this commit.
+
+| Dispatch case | PostgreSQL seconds |
+| --- | ---: |
+| Direct introduction | 32.09 |
+| King Tibianus finale | 25.40 |
+| Mechanical fish intake | 23.00 |
+| Machine crate intake | 23.03 |
+| Nautical map intake | 23.87 |
+| Mechanical fishing rod grant | 24.60 |
+| Scutty's machine crate grant | 25.43 |
+| Scutty's Worm Punisher and door flag | 23.36 |
+
+Eight PostgreSQL cases passed in 200.80 seconds. Eight route-less cases returned OK in 0.00 seconds. The baseline introduction failed at the missing offer. Quest authoring completed 44 checks. Native registry regeneration and its 56-file check, world pin refresh and check, formatting, and dispatch library Clippy passed.
