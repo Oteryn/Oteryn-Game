@@ -158,6 +158,8 @@ pub(super) async fn exercise(
         .map_err(debug)?)
     };
 
+    let _clock = owner.freeze_owner_clock_for_test();
+    let opened_at = owner.owner_now().get();
     let command = admitted.continuity.next_command_id;
     let before = payload(owner)?;
     let (next, first, _) =
@@ -214,6 +216,7 @@ pub(super) async fn exercise(
         [6686, 7186]
     );
     let due = map.facts.next_movement_decay_time().ok_or("crack reset")?;
+    assert_eq!(due, opened_at + 60_000_000, "Crystal crack cooldown");
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     assert_eq!(map.facts.expire_movement_items(due), 1);
     assert_eq!(
