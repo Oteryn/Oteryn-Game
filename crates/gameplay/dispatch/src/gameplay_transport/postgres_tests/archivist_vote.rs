@@ -38,8 +38,7 @@ fn vote_case(admin: String, database: &'static str, before: i64, after: i64) -> 
         .stack_size(64 << 20)
         .spawn(move || {
             run(async |_| {
-                let h = Harness::create_with_admission_seed(admin, database, false, false)
-                    .await?;
+                let h = Harness::create_with_admission_seed(admin, database, false, false).await?;
                 let result = Box::pin(exercise(&h, before, after)).await;
                 let cleanup = h.cleanup().await;
                 result?;
@@ -144,6 +143,63 @@ pub(super) struct FixtureItem {
     pub stackable: bool,
 }
 
+pub(super) fn install_fixture_item_profiles(
+    input: &mut crate::content::native_gameplay::NativeGameplayInput,
+    items: &[FixtureItem],
+) -> TestResult {
+    use serde_json::{Value, json};
+
+    let mut profiles: Value = serde_json::from_slice(
+        &input
+            .item_profiles
+            .as_ref()
+            .ok_or("native item profiles")?
+            .bytes,
+    )?;
+    let records = profiles["records"]
+        .as_array_mut()
+        .ok_or("profile records")?;
+    for item in items {
+        let key = format!("oteryn:item.tibia.i{}", item.id);
+        let mut record = records
+            .iter()
+            .find(|record| {
+                record["production_definition"]["production_key"]
+                    == if item.stackable {
+                        "oteryn:item.tibia.i3031"
+                    } else {
+                        "oteryn:item.tibia.i123"
+                    }
+            })
+            .ok_or("plain test item profile template")?
+            .clone();
+        record["production_definition"]["production_key"] = json!(key);
+        record["production_binding"]["target"]["key"] = json!(key);
+        record["production_binding"]["external_id"] = json!(item.id.to_string());
+        record["authoring"]["item"]["key"] = json!(format!("candidate:item/{}", item.id));
+        record["semantics"]["presentation"]["value"]["name"] =
+            json!({"state":"KNOWN","value":item.name});
+        record["semantics"]["physical"]["value"]["weight"] =
+            json!({"state":"KNOWN","value":item.weight});
+        records.push(record);
+    }
+    input.item_profiles = Some(pin_fixture_json(&profiles)?);
+    Ok(())
+}
+
+fn pin_fixture_json(
+    document: &serde_json::Value,
+) -> TestResult<crate::content::native_gameplay::PinnedGameplayBytes> {
+    let bytes = serde_json::to_vec(document)?;
+    Ok(crate::content::native_gameplay::PinnedGameplayBytes {
+        sha256: <sha2::Sha256 as sha2::Digest>::digest(&bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect(),
+        bytes,
+    })
+}
+
 pub(super) async fn with_npc_items(
     h: &Harness,
     catalogue: Arc<QuestStateCatalogue>,
@@ -188,58 +244,14 @@ pub(super) async fn with_npc_items_and_loot(
         if items.is_empty() && !corpse_world {
             super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?
         } else {
-            use crate::content::native_gameplay::{PinnedGameplayBytes, test_support};
+            use crate::content::native_gameplay::test_support;
             use serde_json::{Value, json};
             let source = corpse_world.then_some(include_bytes!(
             "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
         ).as_slice());
             let mut input =
                 super::death_ml_loss_composed::production_input_with_source("content-1", source)?;
-            let mut profiles: Value = serde_json::from_slice(
-                &input
-                    .item_profiles
-                    .as_ref()
-                    .ok_or("native item profiles")?
-                    .bytes,
-            )?;
-            let records = profiles["records"]
-                .as_array_mut()
-                .ok_or("profile records")?;
-            for item in items {
-                let key = format!("oteryn:item.tibia.i{}", item.id);
-                let mut record = records
-                    .iter()
-                    .find(|record| {
-                        record["production_definition"]["production_key"]
-                            == if item.stackable {
-                                "oteryn:item.tibia.i3031"
-                            } else {
-                                "oteryn:item.tibia.i123"
-                            }
-                    })
-                    .ok_or("plain test item profile template")?
-                    .clone();
-                record["production_definition"]["production_key"] = json!(key);
-                record["production_binding"]["target"]["key"] = json!(key);
-                record["production_binding"]["external_id"] = json!(item.id.to_string());
-                record["authoring"]["item"]["key"] = json!(format!("candidate:item/{}", item.id));
-                record["semantics"]["presentation"]["value"]["name"] =
-                    json!({"state":"KNOWN","value":item.name});
-                record["semantics"]["physical"]["value"]["weight"] =
-                    json!({"state":"KNOWN","value":item.weight});
-                records.push(record);
-            }
-            let pin = |document: &Value| -> TestResult<PinnedGameplayBytes> {
-                let bytes = serde_json::to_vec(document)?;
-                Ok(PinnedGameplayBytes {
-                    sha256: <sha2::Sha256 as sha2::Digest>::digest(&bytes)
-                        .iter()
-                        .map(|byte| format!("{byte:02x}"))
-                        .collect(),
-                    bytes,
-                })
-            };
-            input.item_profiles = Some(pin(&profiles)?);
+            install_fixture_item_profiles(&mut input, items)?;
             if let Some(corpse) = corpse {
                 let mut loot: Value = serde_json::from_slice(
                     &input
@@ -263,7 +275,7 @@ pub(super) async fn with_npc_items_and_loot(
                     .find(|table| table["identity"]["key"] == corpse.table)
                     .ok_or("fixture creature loot table")?;
                 table["entries"] = json!([]);
-                input.loot_tables = Some(pin(&loot)?);
+                input.loot_tables = Some(pin_fixture_json(&loot)?);
             }
             test_support::try_activate_input(world_id, &input).map_err(debug)?
         };
