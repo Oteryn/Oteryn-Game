@@ -141,15 +141,27 @@ pub(super) async fn exercise(
                 .await;
         }
         let boss = if case == 14 { tiquanda } else { demodras };
-        super::grizzly_npc::wire::talk_refused(owner, admitted, npc, &[(5, "hi"), (6, "special")])
-            .await?;
+        let command = if case == 14 { 3 } else { 5 };
+        super::grizzly_npc::wire::talk_refused(
+            owner,
+            admitted,
+            npc,
+            &[(command, "hi"), (command + 1, "special")],
+        )
+        .await?;
         assert_eq!(value(owner, authority, boss.storage).await?, -1);
         // An already accepted assignment can be turned in after a level loss.
         seed(h, &[(boss.storage, 2), (boss.kill_storage, 1)]).await?;
         owner
             .refresh_quest_session(admitted.game_session_id, false)
             .await;
-        talk(owner, admitted, npc, &[(7, "hi"), (8, "special")]).await?;
+        talk(
+            owner,
+            admitted,
+            npc,
+            &[(command + 2, "hi"), (command + 3, "special")],
+        )
+        .await?;
         assert_eq!(value(owner, authority, boss.storage).await?, 3);
         return Ok(());
     }
