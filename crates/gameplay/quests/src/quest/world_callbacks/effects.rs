@@ -47,9 +47,12 @@ pub struct ItemDisguiseRequirement {
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub board_portal: Option<BoardPortal>,
-    /// Portable supplies minted on the return face of a native reversible lever.
+    /// Portable supplies minted on the declared face of a native source.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ground_supply: Vec<Offering>,
+    /// Supply on first use, then restore the source at its authored deadline.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub ground_supply_on_open: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub offering_portal: Option<OfferingPortal>,
     /// Qualification for a consumed toll, evaluated under the same Character root.
@@ -538,6 +541,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let effects = &callback.effects;
+    if effects.ground_supply_on_open && effects.ground_supply.is_empty() {
+        return false;
+    }
     if !effects.ground_supply.is_empty() {
         let positions: BTreeSet<_> = effects
             .ground_supply
@@ -549,7 +555,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !callback.key.starts_with(GROUND_SUPPLY_PREFIX)
             || !callback.requires_world_admission
             || callback.selector.native.is_none()
-            || !callback.reversible
+            || callback.reversible == effects.ground_supply_on_open
+            || effects.reset_after_ms.is_some() != effects.ground_supply_on_open
+            || effects.magic.as_ref().is_some_and(|magic| {
+                !effects.ground_supply_on_open || !positions.contains(&magic.position)
+            })
             || callback.lever.is_none()
             || callback.opening_only
             || !callback.storage.is_empty()
@@ -573,6 +583,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || **effects
                 != (CallbackEffects {
                     ground_supply: effects.ground_supply.clone(),
+                    ground_supply_on_open: effects.ground_supply_on_open,
+                    reset_after_ms: effects.reset_after_ms,
+                    magic: effects.magic.clone(),
                     ..Default::default()
                 })
         {

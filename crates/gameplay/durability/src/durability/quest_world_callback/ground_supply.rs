@@ -76,7 +76,12 @@ pub(in crate::durability) async fn mint(
     if face.source != source || ![opening, returning].contains(&face.before) {
         return Err(DurabilityError::InvalidStoredState);
     }
-    if face.before == opening {
+    let supply_face = if callback.effects.ground_supply_on_open {
+        opening
+    } else {
+        returning
+    };
+    if face.before != supply_face {
         return Ok(());
     }
 

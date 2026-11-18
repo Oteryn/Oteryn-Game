@@ -193,8 +193,12 @@ DECLARE
                            AND n.created_xact_id=p.created_xact_id AND n.source_binding=NEW.request_binding
                            AND n.source_attributes #>> '{quest_supply,transition}'=p.transition_key)
                         = CASE p.source_face
-                           WHEN (p.callback #>> '{lever,0}')::integer THEN 0
-                           WHEN (p.callback #>> '{lever,1}')::integer THEN jsonb_array_length(p.callback #> '{effects,ground_supply}')
+                           WHEN (p.callback #>> '{lever,0}')::integer THEN
+                               CASE WHEN p.callback #>> '{effects,ground_supply_on_open}'='true'
+                                    THEN jsonb_array_length(p.callback #> '{effects,ground_supply}') ELSE 0 END
+                           WHEN (p.callback #>> '{lever,1}')::integer THEN
+                               CASE WHEN p.callback #>> '{effects,ground_supply_on_open}'='true'
+                                    THEN -1 ELSE jsonb_array_length(p.callback #> '{effects,ground_supply}') END
                            ELSE -1 END
                     AND NOT EXISTS (
                         SELECT 1 FROM game_native_map_item_receipts n
