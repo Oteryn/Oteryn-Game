@@ -284,10 +284,19 @@ async fn exercise(
             .await
             .map_err(debug)?;
         assert_eq!(state.tracks().get(ROTTIN_WALLCOUNT), Some(&count.min(6)));
+        let map = owner.bundle_map().ok_or("map")?;
         if count == 7 {
+            assert_eq!(
+                map.facts
+                    .base_entry(position, 2, source_id)
+                    .ok_or("capped wall")?
+                    .appearance_id,
+                12183,
+                "a capped repair must leave the broken wall unchanged"
+            );
+            assert_eq!(map.facts.object_revision(key), 12);
             break;
         }
-        let map = owner.bundle_map().ok_or("map")?;
         assert_eq!(
             map.facts
                 .base_entry(position, 2, source_id)
@@ -326,6 +335,16 @@ async fn exercise(
     let hammer: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3460' AND lifecycle=1")
         .fetch_one(&h.pool).await?;
     assert_eq!(hammer, 1);
+    let tool_reads: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_world_tool_reads WHERE transition_key = $1",
+    )
+    .bind("oteryn:quest-callback/rottin-repair-42501")
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        tool_reads, 6,
+        "each repair must prove custody of its hammer"
+    );
     Ok(())
 }
 

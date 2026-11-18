@@ -668,6 +668,14 @@ impl SessionItemView {
         self
     }
 
+    /// Whether the map view currently shows this key as a ground item.
+    pub(super) fn shows_ground_item(&self, key: &ItemKey) -> bool {
+        matches!(key, ItemKey::Instance(_))
+            && self.table.by_key.get(key).is_some_and(|slot| {
+                self.table.slots[*slot as usize].views & (1 << View::Map as usize) != 0
+            })
+    }
+
     /// Makes `keys` the handle-bearing entries of domain 17 and returns what `encode` builds from
     /// the updated table. When the keys are over the bound or the view does not encode, the table
     /// is left unchanged.

@@ -1205,13 +1205,36 @@ async fn exercise_rabbit(
         )?,
         ..command
     };
+    let knife_reference = native
+        .item_index()
+        .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i5908", "definition-r1"))
+        .ok_or("obsidian knife definition")?;
+    let target = ItemKey::Instance(corpse);
+    let mut view =
+        crate::gameplay_transport::item_view::SessionItemView::resume(Default::default())
+            .with_map_view();
+    let handle = view
+        .map_view(&[target], |table| Ok(table.handle(&target)))
+        .map_err(debug)?
+        .ok_or("mature rabbit handle")?;
+    let hotkey = UseIntent {
+        target: UseTarget::ItemByDefinition(knife_reference),
+        use_with_map_item: Some(MapUseTarget::Item(handle)),
+        ..intent
+    };
     assert_eq!(
-        attempt(corpse, failure, obsidian_knife)
-            .await
-            .ok_or("Lucky Loop rabbit USE")?
-            .disposition,
+        crate::gameplay_transport::mining::dispatch_map_use(
+            owner,
+            actor,
+            failure,
+            hotkey,
+            Some(&view)
+        )
+        .await
+        .ok_or("Lucky Loop rabbit hotkey USE")?
+        .disposition,
         UseDisposition::Committed,
-        "a failed roll spends the corpse without minting feet"
+        "a failed hotkey roll spends the corpse without minting feet"
     );
     assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
     assert!(matches!(
