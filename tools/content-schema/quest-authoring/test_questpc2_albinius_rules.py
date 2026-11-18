@@ -47,3 +47,25 @@ class AlbiniusRules(unittest.TestCase):
             decline = next(r for r in doc['rules'] if r['key'].endswith('/' + name + '-decline'))
             self.assertEqual(decline['effects'], [])
             self.assertIn('yes', decline['exclude_keywords'])
+
+    def test_ice_requires_both_quests_and_debits_exactly_fifty_fish(self):
+        doc = json.loads(source.outputs(ROOT)[source.OUTPUT])
+        rules = {r['key'].rsplit('/', 1)[-1]: r for r in doc['rules']}
+        tomes = source.TRACK
+        door = 'oteryn:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_door'
+        access = 'oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_ice'
+        fish = 'oteryn:item.tibia.i3578'
+        guard = lambda track, op: dict(kind='storage', track=track, op=op, value=1)
+        self.assertEqual(rules['ice-offer']['guards'], [guard(tomes, 'eq'), guard(door, 'eq')])
+        self.assertEqual(rules['ice-offer']['effects'], [dict(kind='set_topic', value=2)])
+        refusal = ["Sorry, you first need to bring my Heavy Old Tomes or do the quest before continuing."]
+        self.assertEqual(rules['ice-prerequisite']['guards'], [guard(tomes, 'ne')])
+        self.assertEqual(rules['ice-prerequisite']['reply'], refusal)
+        self.assertEqual(rules['ice-contactman']['guards'], [guard(tomes, 'eq'), guard(door, 'ne')])
+        self.assertEqual(rules['ice-contactman']['reply'], refusal)
+        self.assertEqual(rules['ice-accept']['topics'], [2])
+        self.assertEqual(rules['ice-accept']['guards'], [
+            guard(access, 'lt'), dict(kind='item', item=fish, count=50, op='ge')])
+        self.assertEqual(rules['ice-accept']['effects'], [
+            dict(kind='take_item', item=fish, count=50, optional=False),
+            dict(kind='set', track=access, value=1)])

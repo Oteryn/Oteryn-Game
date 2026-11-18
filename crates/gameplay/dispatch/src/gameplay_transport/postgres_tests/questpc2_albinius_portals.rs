@@ -229,5 +229,72 @@ pub(super) async fn exercise(
         if combined { 2 } else { 5 },
         "one receipt per committed command, none for missing/stale/repeated payments"
     );
+    if !combined {
+        exercise_ice(owner, admitted, h, authority, npc).await?;
+    }
+    Ok(())
+}
+
+async fn exercise_ice(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+) -> TestResult {
+    const FISH: &str = "oteryn:item.tibia.i3578";
+    const ACCESS: &str = "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_ice";
+    const CONTACTMAN: &str =
+        "oteryn:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_door";
+
+    talk(owner, admitted, npc, 35300, "bye").await?;
+    talk(owner, admitted, npc, 35301, "hi").await?;
+    give(owner, admitted, FISH, 49, 9400).await?;
+    let denied = talk(owner, admitted, npc, 35302, "ice portal").await?;
+    assert_eq!(
+        denied,
+        ["Sorry, you first need to bring my Heavy Old Tomes or do the quest before continuing."]
+    );
+    talk(owner, admitted, npc, 35303, "yes").await?;
+    assert_eq!(carried(h, FISH).await?, 49);
+    assert_eq!(progress(owner, admitted, authority, ACCESS).await?, 0);
+
+    // Seed the separate Ice Islands prerequisite directly. The dispatch under
+    // test starts at the Albinius offering, with a production quest-state read.
+    let mut prerequisite = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *prerequisite)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
+         SELECT character_id,$2,'oteryn:quest.the_ice_islands_quest',1,character_revision
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+         ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value",
+    )
+    .bind(id(41).as_slice())
+    .bind(CONTACTMAN)
+    .execute(&mut *prerequisite)
+    .await?;
+    prerequisite.commit().await?;
+
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+
+    let offer = talk(owner, admitted, npc, 35304, "ice portal").await?;
+    assert!(
+        offer.iter().any(|line| line.contains("50 fish")),
+        "{offer:?}"
+    );
+    talk(owner, admitted, npc, 35305, "yes").await?;
+    assert_eq!(carried(h, FISH).await?, 49);
+    assert_eq!(progress(owner, admitted, authority, ACCESS).await?, 0);
+
+    give(owner, admitted, FISH, 2, 9401).await?;
+    talk(owner, admitted, npc, 35306, "yes").await?;
+    assert_eq!(carried(h, FISH).await?, 1);
+    assert_eq!(progress(owner, admitted, authority, ACCESS).await?, 1);
+    talk(owner, admitted, npc, 35307, "yes").await?;
+    assert_eq!(carried(h, FISH).await?, 1);
     Ok(())
 }

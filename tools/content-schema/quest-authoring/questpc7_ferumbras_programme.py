@@ -78,9 +78,17 @@ def build(root):
             'sources':[canonical,donor[source],map_source(position(center))]})
     reward=callback('reward','use',position((33388,31409,14)),4073,
         [storage(TRACK,2,2,3),storage(PORTALS,8,8,8,True),storage(track(7),1,1,1,True)],
-        'Ferumbras is defeated. You earn five Silver Tokens, the complete Rift Warrior outfit and Hat Hunter.','actions_reward.lua')
+        None,'actions_reward.lua')
+    reward['sources'].append('https://tibia.fandom.com/index.php?curid=76901&oldid=1110095')
     reward.update(completes=True,reward_bundle=True,achievements=['oteryn:achievement/hat_hunter'],
         outfit_reward={'outfit':'oteryn:outfit.rift_warrior','addons':3},
-        item_reward={'item':'oteryn:item.tibia.i22516','count':5,'contents':[]})
+        item_reward={
+            'item': 'oteryn:item.tibia.i2853',
+            'count': 1,
+            'contents': [
+                {'item': f'oteryn:item.tibia.i{item}', 'count': count}
+                for item, count in [(22731, 1)] * 4 + [(22737, 4), (22775, 1), (3043, 10), (22516, 5)]
+            ],
+        })
     worlds.append(reward)
     return worlds,objectives

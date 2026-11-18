@@ -1,4 +1,4 @@
-"""Pinned Albinius contribution and four portal offerings; no ice or rune rite."""
+"""Pinned Albinius contribution and five portal offerings."""
 import hashlib
 import json
 from pathlib import Path
@@ -13,8 +13,10 @@ PROGRAM = 'oteryn:quest-npc-program.questpc2-albinius-tomes'
 TRACK = 'oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes'
 ITEM = 'oteryn:item.tibia.i23986'
 OUTPUT = 'content/dialogues/quest-rules-supplemental/questpc2-albinius.json'
-UNOWNED = ('buy', 'astral shaper rune', 'ice portal')
+UNOWNED = ('buy', 'astral shaper rune')
+CONTACTMAN = 'oteryn:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_door'
 PORTALS = (
+    ('ice', 'access_ice', 3578, 2, 175),
     ('holy', 'access_golden', 18929, 3, 197),
     ('energy', 'access_violet', 17462, 4, 219),
     ('earth', 'access_earth', 10296, 5, 241),
@@ -64,11 +66,21 @@ def outputs(root):
         storage = lambda op: dict(kind='storage', track=track, op=op, value=1)
         payment = lambda op: dict(kind='item', item=item, count=50, op=op)
         span = f'{line - 3}-{line + 17}'
+        offer_guards = [guard('eq', 1)]
+        if name == 'ice':
+            # The retained Albinius bytes match Crystal 201189f8, lines 172–192.
+            contactman = lambda op: dict(kind='storage', track=CONTACTMAN, op=op, value=1)
+            offer_guards.append(contactman('eq'))
         rules.extend([
             rule(name + '-offer', name + ' portal', [line], [topic(number)],
-                 [guard('eq', 1)], span),
+                 offer_guards, span),
             rule(name + '-prerequisite', name + ' portal', [line + 3], [],
                  [guard('ne', 1)], span),
+        ])
+        if name == 'ice':
+            rules.append(rule('ice-contactman', 'ice portal', [line + 3], [],
+                              [guard('eq', 1), contactman('ne')], span))
+        rules.extend([
             # Failure alternatives precede success so the committed access write
             # cannot make an else branch match later in this same source if.
             rule(name + '-already', 'yes', [line + 13], [],

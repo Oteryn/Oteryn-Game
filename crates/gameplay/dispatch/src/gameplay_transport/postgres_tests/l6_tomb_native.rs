@@ -6,8 +6,8 @@ fn l6_tomb_native_missing_3950_uses_source_branch() -> TestResult {
     run(
         "l6-tomb-native-missing-3950",
         Position {
-            x: 33183,
-            y: 32717,
+            x: 33174,
+            y: 32694,
             floor: -14,
         },
         Position {
@@ -18,12 +18,12 @@ fn l6_tomb_native_missing_3950_uses_source_branch() -> TestResult {
     )
 }
 #[test]
-fn l6_tomb_native_present_3950_uses_source_branch() -> TestResult {
+pub(super) fn l6_tomb_native_present_3950_uses_source_branch() -> TestResult {
     run(
         "l6-tomb-native-present-3950",
         Position {
-            x: 33183,
-            y: 32717,
+            x: 33174,
+            y: 32694,
             floor: -14,
         },
         Position {
@@ -38,9 +38,9 @@ fn l6_tomb_native_missing_3951_uses_source_branch() -> TestResult {
     run(
         "l6-tomb-native-missing-3951",
         Position {
-            x: 33175,
-            y: 32937,
-            floor: -15,
+            x: 33396,
+            y: 32852,
+            floor: -14,
         },
         Position {
             x: 33282,
@@ -50,13 +50,13 @@ fn l6_tomb_native_missing_3951_uses_source_branch() -> TestResult {
     )
 }
 #[test]
-fn l6_tomb_native_present_3951_uses_source_branch() -> TestResult {
+pub(super) fn l6_tomb_native_present_3951_uses_source_branch() -> TestResult {
     run(
         "l6-tomb-native-present-3951",
         Position {
-            x: 33175,
-            y: 32937,
-            floor: -15,
+            x: 33396,
+            y: 32852,
+            floor: -14,
         },
         Position {
             x: 33174,
@@ -70,8 +70,8 @@ fn l6_tomb_native_missing_3952_uses_source_branch() -> TestResult {
     run(
         "l6-tomb-native-missing-3952",
         Position {
-            x: 33127,
-            y: 32594,
+            x: 33191,
+            y: 32959,
             floor: -15,
         },
         Position {
@@ -82,12 +82,12 @@ fn l6_tomb_native_missing_3952_uses_source_branch() -> TestResult {
     )
 }
 #[test]
-fn l6_tomb_native_present_3952_uses_source_branch() -> TestResult {
+pub(super) fn l6_tomb_native_present_3952_uses_source_branch() -> TestResult {
     run(
         "l6-tomb-native-present-3952",
         Position {
-            x: 33127,
-            y: 32594,
+            x: 33191,
+            y: 32959,
             floor: -15,
         },
         Position {
@@ -149,42 +149,33 @@ pub(super) fn world(
         decay.target.is_none(),
         "source key expires to0, no replacement item"
     );
+    if let Some(crops) = boss_portal_crops(unique) {
+        let world = super::l6_world_pickups::native_scene(native, crops, &[])?;
+        let portal = boss_portal(unique).ok_or("boss portal")?;
+        let key =
+            oteryn_world_bundle::bundle::placement_key(-(portal.2 as i8), portal.0, portal.1, 1)
+                .ok_or("native portal key")?;
+        assert!(
+            !world
+                .facts()
+                .quest_callback_matches(key, Some(unique), None, None)
+        );
+        assert!(
+            world
+                .floors()
+                .teleport(crate::map::overlay::TilePos {
+                    x: portal.0,
+                    y: portal.1,
+                    floor: -(portal.2 as i8),
+                })
+                .is_none(),
+            "native boss-room forcefield relies on the pass callback"
+        );
+        return Ok(world);
+    }
     use super::l6_world_pickups::{ExpectedTeleport, ExpectedTile, NativeCrop, native_scene};
     let (bytes, region, portal, success, missing, raw): (&'static [u8], _, _, _, _, _) =
         match unique {
-            3950 => (
-                include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z14-x129-y127.b3"
-                )),
-                (14, 129, 127),
-                (33183, 32717),
-                (33182, 32714),
-                (33231, 32705),
-                (33231, 32705),
-            ),
-            3951 => (
-                include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z15-x129-y128.b3"
-                )),
-                (15, 129, 128),
-                (33175, 32937),
-                (33174, 32934),
-                (33282, 32744),
-                (33250, 32832),
-            ),
-            3952 => (
-                include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z15-x129-y127.b3"
-                )),
-                (15, 129, 127),
-                (33127, 32594),
-                (33126, 32591),
-                (33250, 32832),
-                (33131, 32566),
-            ),
             3953 => (
                 include_bytes!(concat!(
                     env!("CARGO_MANIFEST_DIR"),
@@ -195,28 +186,6 @@ pub(super) fn world(
                 (33145, 32665),
                 (33025, 32868),
                 (33206, 32592),
-            ),
-            3954 => (
-                include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z14-x129-y128.b3"
-                )),
-                (14, 129, 128),
-                (33042, 32777),
-                (33041, 32774),
-                (33133, 32642),
-                (33133, 32642),
-            ),
-            3955 => (
-                include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z14-x130-y128.b3"
-                )),
-                (14, 130, 128),
-                (33350, 32830),
-                (33349, 32827),
-                (33131, 32566),
-                (33282, 32744),
             ),
             3956 => (
                 include_bytes!(concat!(
@@ -315,4 +284,133 @@ pub(super) fn world(
         "raw native teleport is retained, including its reachable destination"
     );
     Ok(world)
+}
+
+// The Global spoiler requires the forcefield in the boss room. Crystal startup
+// item.lua:4437-4463 supplies the original UID-to-tile join for the retained map.
+fn boss_portal(unique: u16) -> Option<(u16, u16, u8)> {
+    match unique {
+        3950 => Some((33174, 32694, 14)),
+        3951 => Some((33396, 32852, 14)),
+        3952 => Some((33191, 32959, 15)),
+        3954 => Some((33073, 32781, 14)),
+        3955 => Some((33103, 32590, 15)),
+        _ => None,
+    }
+}
+
+macro_rules! region {
+    ($name:literal) => {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z",
+            $name,
+            ".b3"
+        ))
+    };
+}
+
+fn boss_portal_crops(unique: u16) -> Option<Vec<super::l6_world_pickups::NativeCrop>> {
+    use super::l6_world_pickups::{ExpectedTile, NativeCrop};
+    let (x, y, z) = boss_portal(unique)?;
+    type PortalCrops = (
+        &'static [u8],
+        u32,
+        &'static [u32],
+        (u16, u16, u8),
+        &'static [u8],
+        (u16, u16, u8),
+        &'static [u8],
+        u32,
+    );
+    let (
+        portal,
+        portal_ground,
+        north,
+        reward,
+        reward_region,
+        destination,
+        exit_region,
+        exit_ground,
+    ): PortalCrops = match unique {
+        3950 => (
+            region!("14-x129-y127"),
+            417,
+            &[417, 2190],
+            (33182, 32714, 14),
+            region!("14-x129-y127"),
+            (33231, 32705, 8),
+            region!("08-x129-y127"),
+            415,
+        ),
+        3951 => (
+            region!("14-x130-y128"),
+            4397,
+            &[4394],
+            (33174, 32934, 15),
+            region!("15-x129-y128"),
+            (33282, 32744, 8),
+            region!("08-x130-y127"),
+            415,
+        ),
+        3952 => (
+            region!("15-x129-y128"),
+            415,
+            &[422],
+            (33126, 32591, 15),
+            region!("15-x129-y127"),
+            (33250, 32832, 8),
+            region!("08-x129-y128"),
+            415,
+        ),
+        3954 => (
+            region!("14-x129-y128"),
+            423,
+            &[423],
+            (33041, 32774, 14),
+            region!("14-x129-y128"),
+            (33133, 32642, 8),
+            region!("08-x129-y127"),
+            423,
+        ),
+        3955 => (
+            region!("15-x129-y127"),
+            418,
+            &[418, 3521],
+            (33349, 32827, 14),
+            region!("14-x130-y128"),
+            (33131, 32566, 8),
+            region!("08-x129-y127"),
+            415,
+        ),
+        _ => return None,
+    };
+    let tile = |position, ids| ExpectedTile {
+        position,
+        ids,
+        counted_entry: None,
+    };
+    let landing = |(x, y, z), bytes, ground| NativeCrop {
+        bytes,
+        region: (z, x / 256, y / 256),
+        bounds: (x, y, x + 1, y + 1),
+        start: (x, y),
+        expected: vec![tile((x, y), vec![ground])],
+    };
+    Some(vec![
+        // The bundle validator needs a walkable entry. The scenario separately
+        // positions the actor one tile north to exercise the actual forcefield.
+        landing(reward, reward_region, 417),
+        NativeCrop {
+            bytes: portal,
+            region: (z, x / 256, y / 256),
+            bounds: (x, y - 1, x + 1, y + 1),
+            start: (x, y - 1),
+            expected: vec![
+                tile((x, y), vec![portal_ground, 1949]),
+                tile((x, y - 1), north.to_vec()),
+            ],
+        },
+        landing(destination, exit_region, exit_ground),
+    ])
 }

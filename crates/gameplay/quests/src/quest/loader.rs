@@ -375,7 +375,9 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
-    restrict_runtime_scope(lowered, content_revision)
+    let mut lowered = restrict_runtime_scope(lowered, content_revision)?;
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
+    Ok(lowered)
 }
 
 fn restrict_runtime_scope(

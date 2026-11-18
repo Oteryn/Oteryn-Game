@@ -39,7 +39,7 @@
         {
           "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_treasure",
           "minimum": -1,
-          "maximum": 2,
+          "maximum": 9223372036854775807,
           "set": 1,
           "at_least": true
         }
@@ -377,6 +377,246 @@
       ],
       "effects": {
         "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-rahemos-sarcophagus",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33041,
+            "y": 32772,
+            "floor": -14
+          },
+          "ordinal": 1,
+          "appearance": 1994
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/rahemos_sarcophagus_claim",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/?curid=5073&oldid=1174796",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:616"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3227",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-sarcophagus",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33182,
+            "y": 32712,
+            "floor": -14
+          },
+          "ordinal": 1,
+          "appearance": 1994
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_sarcophagus_claim",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/?curid=5073&oldid=1174796",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:624"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3224",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-dipthrah-sarcophagus",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33349,
+            "y": 32825,
+            "floor": -14
+          },
+          "ordinal": 1,
+          "appearance": 1994
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/dipthrah_sarcophagus_claim",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/?curid=5073&oldid=1174796",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:640"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3226",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-mahrdis-sarcophagus",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33126,
+            "y": 32589,
+            "floor": -15
+          },
+          "ordinal": 1,
+          "appearance": 1994
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/mahrdis_sarcophagus_claim",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/?curid=5073&oldid=1174796",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:678"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3222",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-thalas-sarcophagus",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33174,
+            "y": 32932,
+            "floor": -15
+          },
+          "ordinal": 1,
+          "appearance": 1994
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/thalas_sarcophagus_claim",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/?curid=5073&oldid=1174796",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:694"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3223",
+          "count": 1,
+          "contents": []
+        }
       }
     }
   ]
