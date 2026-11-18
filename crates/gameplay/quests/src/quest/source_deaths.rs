@@ -19,6 +19,8 @@ pub struct Effect {
     pub set: Option<i64>,
     #[serde(default)]
     pub add: Option<i64>,
+    #[serde(default)]
+    pub set_now: bool,
 }
 #[derive(Debug, Clone, Deserialize)]
 pub struct Comparison {
@@ -103,9 +105,10 @@ impl Rule {
                     Ok(QuestEffect {
                         track: e.track.clone(),
                         from: e.from.comparison()?,
-                        effect: match (e.set, e.add) {
-                            (Some(value), None) => QuestEffectKind::Set(value),
-                            (None, Some(value)) => QuestEffectKind::Add(value),
+                        effect: match (e.set, e.add, e.set_now) {
+                            (Some(value), None, false) => QuestEffectKind::Set(value),
+                            (None, Some(value), false) => QuestEffectKind::Add(value),
+                            (None, None, true) => QuestEffectKind::SetNow,
                             _ => return Err("ambiguous source death effect".into()),
                         },
                     })
@@ -133,6 +136,7 @@ struct Track {
     max: i64,
 }
 const DOCUMENTS: &[&[u8]] = &[
+    include_bytes!("../../../../../content/quests/native-death-bindings/bosscred-ferumbras.json"),
     include_bytes!(
         "../../../../../content/quests/native-death-bindings/bosscred-inquisition-ungreez.json"
     ),

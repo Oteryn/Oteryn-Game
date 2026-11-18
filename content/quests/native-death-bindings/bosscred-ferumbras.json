@@ -1,0 +1,234 @@
+{
+  "schema": 1,
+  "runtime_enabled": true,
+  "quest": "oteryn:quest.ferumbras_ascension_quest",
+  "rules": [
+    {
+      "creature": "oteryn:creature.ferumbras_mortal_shell",
+      "transition": "oteryn:quest-transition/ferumbras-ascension/defeat/ferumbras_mortal_shell",
+      "define_transition": true,
+      "room": null,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/defeated-at/ferumbras_mortal_shell",
+          "default": 0,
+          "set_now": true,
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:108-134"
+      ]
+    },
+    {
+      "creature": "oteryn:creature.mazoran",
+      "transition": "oteryn:quest-transition/ferumbras-ascension/defeat/mazoran",
+      "define_transition": true,
+      "room": null,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/defeated-at/mazoran",
+          "default": 0,
+          "set_now": true,
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:108-134"
+      ]
+    },
+    {
+      "creature": "oteryn:creature.plagirath",
+      "transition": "oteryn:quest-transition/ferumbras-ascension/defeat/plagirath",
+      "define_transition": true,
+      "room": null,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/defeated-at/plagirath",
+          "default": 0,
+          "set_now": true,
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:108-134"
+      ]
+    },
+    {
+      "creature": "oteryn:creature.ragiaz",
+      "transition": "oteryn:quest-transition/ferumbras-ascension/defeat/ragiaz",
+      "define_transition": true,
+      "room": null,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/defeated-at/ragiaz",
+          "default": 0,
+          "set_now": true,
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:108-134"
+      ]
+    },
+    {
+      "creature": "oteryn:creature.razzagorn",
+      "transition": "oteryn:quest-transition/ferumbras-ascension/defeat/razzagorn",
+      "define_transition": true,
+      "room": null,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/defeated-at/razzagorn",
+          "default": 0,
+          "set_now": true,
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:108-134"
+      ]
+    },
+    {
+      "creature": "oteryn:creature.shulgrax",
+      "transition": "oteryn:quest-transition/ferumbras-ascension/defeat/shulgrax",
+      "define_transition": true,
+      "room": null,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/defeated-at/shulgrax",
+          "default": 0,
+          "set_now": true,
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:108-134"
+      ]
+    },
+    {
+      "creature": "oteryn:creature.tarbaz",
+      "transition": "oteryn:quest-transition/ferumbras-ascension/defeat/tarbaz",
+      "define_transition": true,
+      "room": null,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/defeated-at/tarbaz",
+          "default": 0,
+          "set_now": true,
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:108-134"
+      ]
+    },
+    {
+      "creature": "oteryn:creature.the_lord_of_the_lice",
+      "transition": "oteryn:quest-transition/ferumbras-ascension/defeat/the_lord_of_the_lice",
+      "define_transition": true,
+      "room": null,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/defeated-at/the_lord_of_the_lice",
+          "default": 0,
+          "set_now": true,
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:108-134"
+      ]
+    },
+    {
+      "creature": "oteryn:creature.zamulosh",
+      "transition": "oteryn:quest-transition/ferumbras-ascension/defeat/zamulosh",
+      "define_transition": true,
+      "room": null,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/defeated-at/zamulosh",
+          "default": 0,
+          "set_now": true,
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:108-134"
+      ]
+    }
+  ],
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/ferumbras-ascension/defeated-at/ferumbras_mortal_shell",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807
+    },
+    {
+      "key": "oteryn:quest-progress/ferumbras-ascension/defeated-at/mazoran",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807
+    },
+    {
+      "key": "oteryn:quest-progress/ferumbras-ascension/defeated-at/plagirath",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807
+    },
+    {
+      "key": "oteryn:quest-progress/ferumbras-ascension/defeated-at/ragiaz",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807
+    },
+    {
+      "key": "oteryn:quest-progress/ferumbras-ascension/defeated-at/razzagorn",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807
+    },
+    {
+      "key": "oteryn:quest-progress/ferumbras-ascension/defeated-at/shulgrax",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807
+    },
+    {
+      "key": "oteryn:quest-progress/ferumbras-ascension/defeated-at/tarbaz",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807
+    },
+    {
+      "key": "oteryn:quest-progress/ferumbras-ascension/defeated-at/the_lord_of_the_lice",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807
+    },
+    {
+      "key": "oteryn:quest-progress/ferumbras-ascension/defeated-at/zamulosh",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807
+    }
+  ]
+}

@@ -6,6 +6,8 @@ use crate::durability::{
 };
 use std::sync::Arc;
 
+mod ferumbras_portals;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Recipient {
     pub(super) actor: crate::foundation::ExactActorRef,
@@ -19,6 +21,7 @@ pub(super) async fn settle(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     entry: &PendingKillSettlement,
 ) -> bool {
+    ferumbras_portals::open(owner, entry).await;
     // Encounter-only counters are absent from ordinary creature discovery.
     // Their admitted phase owner already froze exact recipients on this death;
     // the durable writer still revalidates each counter and its full source fence.
