@@ -9,12 +9,12 @@ pub const HUSKY_KILL: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/h
 pub const ACCEPT: &str = "oteryn:quest-transition/ice-islands/iskan-accept";
 pub const REPORT: &str = "oteryn:quest-transition/ice-islands/iskan-report";
 
-pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+pub(super) fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let quest = super::ice_islands_seals::QUEST;
     let previous = catalogue
         .definition_hash(quest)
         .ok_or("missing Ice Islands definition")?;
-    let mut transitions = catalogue.transitions;
+    let mut transitions = Vec::new();
     let set = |track: &str, from, value| QuestEffect {
         track: track.into(),
         from,
@@ -37,31 +37,36 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
                 effect: QuestEffectKind::Add(0),
             });
         }
-        transitions.insert(
-            key.into(),
-            QuestTransition {
-                key: key.into(),
-                quest: super::ice_islands_seals::QUEST.into(),
-                effects,
-                completes: false,
-                experience: None,
-                world_change: None,
-            },
-        );
+        transitions.push(QuestTransition {
+            key: key.into(),
+            quest: quest.into(),
+            effects,
+            completes: false,
+            experience: None,
+            world_change: None,
+        });
     }
-    let mut updated = QuestStateCatalogue::new(
-        catalogue.content_revision,
+    let checked = QuestStateCatalogue::new(
+        catalogue.content_revision.clone(),
         catalogue.tracks.values().cloned().collect(),
-        transitions.into_values().collect(),
+        catalogue
+            .transitions
+            .values()
+            .cloned()
+            .chain(transitions.iter().cloned())
+            .collect(),
     )
     .map_err(|error| format!("{error:?}"))?;
-    let hash = updated
+    let hash = checked
         .definition_hash(quest)
         .ok_or("missing Iskan definition")?;
-    updated.hashes = catalogue.hashes;
-    updated.hashes.insert(quest.into(), hash);
-    updated.npc_legacy = catalogue.npc_legacy;
-    updated.predecessors = catalogue.predecessors;
+    catalogue.hashes.insert(quest.into(), hash);
+    catalogue.transitions.extend(
+        transitions
+            .into_iter()
+            .map(|transition| (transition.key.clone(), transition)),
+    );
+    catalogue.predecessors = catalogue.predecessors;
     updated
         .predecessors
         .entry(quest.into())
@@ -75,8 +80,5 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
                 .map(|track| (track.key.clone(), track.initial))
                 .collect(),
         });
-    updated.completion_sets = catalogue.completion_sets;
-    updated.authored_bindings = catalogue.authored_bindings;
-    updated.native_recipe_evidence = catalogue.native_recipe_evidence;
-    Ok(updated)
+    Ok(catalogue)
 }

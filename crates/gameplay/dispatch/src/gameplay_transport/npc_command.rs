@@ -913,7 +913,8 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
-    if let Some(step) = iskan::prepare(admission, actor, command, &intent, &runtime, iskan_warlord) {
+    if let Some(step) = iskan::prepare(admission, actor, command, &intent, &runtime, iskan_warlord)
+    {
         drop(runtime);
         drop(_trade_permit);
         return quest_dialogue::apply(admission, actor, command, intent, step).await;

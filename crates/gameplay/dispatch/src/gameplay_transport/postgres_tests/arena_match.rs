@@ -482,6 +482,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         };
         if let Some(route @ (NativeScenario::Buddel | NativeScenario::Iskan)) = route {
             btest2_npc::exercise(owner, &deps, &harness, route).await?;
+            drop(authority);
+            drop(seal);
             return harness.cleanup().await;
         }
         let gate_case = matches!(route, Some(NativeScenario::CompletionGate));
@@ -537,6 +539,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 .await?;
         assert_eq!(fee_count, 1);
         if gate_case {
+            drop(owner);
+            drop(authority);
+            drop(seal);
             return harness.cleanup().await;
         }
         let fee: i64 = sqlx::query_scalar(

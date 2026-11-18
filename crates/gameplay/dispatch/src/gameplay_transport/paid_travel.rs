@@ -10,7 +10,9 @@ mod quest_confirmation;
 #[path = "paid_travel/svargrond.rs"]
 mod svargrond;
 
-use crate::durability::npc_travel::svargrond::{BUDDEL, ISKAN, Payment, RING, pays_ring, route as source_route};
+use crate::durability::npc_travel::svargrond::{
+    BUDDEL, ISKAN, Payment, RING, pays_ring, route as source_route,
+};
 
 #[derive(Clone)]
 pub(super) struct Prompt {
@@ -69,7 +71,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Some(match result {
             Some(true) => {
                 let mut outcome = npc_command::NpcConversations::bank_reply(
-                    &intent, if is_iskan { String::new() } else { "Set the sails!".into() },
+                    &intent,
+                    if is_iskan {
+                        String::new()
+                    } else {
+                        "Set the sails!".into()
+                    },
                 );
                 outcome.inventory_changed = inventory_changed;
                 if let Some(conversation) = outcome.conversation.as_mut() {
@@ -150,21 +157,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             prompt
         } else {
             let npc = context.2.as_str();
+            let keyword = if npc == ISKAN
+                && oteryn_gameplay_quests::quest::dark_trails::message_contains(&text, "passage")
+            {
+                "passage"
+            } else {
+                text.as_str()
+            };
             let declined_ring = previous.as_ref().filter(|prompt| {
-                text == "no" && pays_ring(&prompt.route)
+                text == "no"
+                    && pays_ring(&prompt.route)
                     && prompt.matches_confirmation(intent.npc_actor, &context, fence, now)
             });
             if text == "no" && npc == BUDDEL && declined_ring.is_none() && previous.is_some() {
-                return npc_command::NpcConversations::bank_reply(intent, "You will miss the trip.".into());
+                return npc_command::NpcConversations::bank_reply(
+                    intent,
+                    "You will miss the trip.".into(),
+                );
             }
-            let native = svargrond::select(npc, &text, declined_ring);
+            let native = svargrond::select(npc, keyword, declined_ring);
             // Match the complete authored destination, including spaces and apostrophes.
             let (mut route, payment) = if let Some((route, payment)) = native {
                 (route, Some(payment))
             } else {
-                let Some(route) = routes.into_iter()
-                    .find(|route| text == route.keyword || text == route.route.key.replace('_', " "))
-                else { return ordinary; };
+                let Some(route) = routes.into_iter().find(|route| {
+                    text == route.keyword || text == route.route.key.replace('_', " ")
+                }) else {
+                    return ordinary;
+                };
                 (route, None)
             };
             let Ok(Some(current)) = self.current_quest_fence(session).await else {
@@ -173,12 +193,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if current.item_fence() != fence {
                 return ordinary;
             }
-            let quote = |route: TravelRoute| self.root.quote_npc_travel(
-                self.character, self.holder, current, route, &self.premium_coordinator,
-            );
+            let quote = |route: TravelRoute| {
+                self.root.quote_npc_travel(
+                    self.character,
+                    self.holder,
+                    current,
+                    route,
+                    &self.premium_coordinator,
+                )
+            };
             // Iskan first asks even when the mission is unfinished. The durable
             // confirmation will check the unlocked passage and outstanding fine.
             let fare = if npc == ISKAN {
+                let barbarian = self
+                    .root
+                    .read_character_quest_state(self.character, current.character_id)
+                    .await;
+                if !barbarian.is_ok_and(|state| {
+                    state
+                        .tracks()
+                        .get(oteryn_gameplay_quests::quest::iskan::BARBARIAN)
+                        .is_some_and(|stage| *stage >= 8)
+                }) {
+                    return npc_command::NpcConversations::bank_reply(
+                        intent,
+                        "Sorry, not possible.".into(),
+                    );
+                }
                 0
             } else {
                 let mut result = quote(route.clone()).await;
@@ -192,19 +233,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 match result {
                     Ok(Ok(fare)) => fare,
                     Ok(Err(TravelRefusal::UnavailableRoute)) if npc == BUDDEL => {
-                        return npc_command::NpcConversations::bank_reply(intent, "Sorry, not possible.".into());
+                        return npc_command::NpcConversations::bank_reply(
+                            intent,
+                            "Sorry, not possible.".into(),
+                        );
                     }
                     Ok(Err(cause)) => return refusal(intent, cause),
-                    Err(_) => return npc_command::NpcTalkOutcome {
-                        unknown: true,
-                        ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
-                    },
+                    Err(_) => {
+                        return npc_command::NpcTalkOutcome {
+                            unknown: true,
+                            ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                        };
+                    }
                 }
             };
             let line = if payment.is_some() {
                 svargrond::offer(npc, &route, fare)
             } else {
-                format!("Do you seek a passage to {} for {fare} gold?", route.keyword)
+                format!(
+                    "Do you seek a passage to {} for {fare} gold?",
+                    route.keyword
+                )
             };
             if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
                 prompts.insert(
@@ -225,7 +274,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
                 prompts.insert(session, prompt);
             }
-            return npc_command::NpcConversations::bank_reply(intent, "Sorry, not possible.".into());
+            return npc_command::NpcConversations::bank_reply(
+                intent,
+                "Sorry, not possible.".into(),
+            );
         }
         let Some(request) = self
             .paid_travel_request(actor, command, intent, &prompt)
@@ -243,13 +295,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         {
             let mut runtime = self.runtime.lock().await;
-            if self.states.npc_conversations.current_npc(
-                &self.states.chat,
-                &runtime,
-                actor,
-                session,
-                intent,
-            ).as_ref() != Some(&prompt.context)
+            if self
+                .states
+                .npc_conversations
+                .current_npc(&self.states.chat, &runtime, actor, session, intent)
+                .as_ref()
+                != Some(&prompt.context)
             {
                 return refusal(intent, TravelRefusal::StaleQuote);
             }
@@ -305,7 +356,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match self.reconcile_newhaven_travel(actor, session).await {
             Some(true) => {
                 let mut result = npc_command::NpcConversations::bank_reply(
-                    intent, if prompt.context.2 == ISKAN { String::new() } else { "Set the sails!".into() },
+                    intent,
+                    if prompt.context.2 == ISKAN {
+                        String::new()
+                    } else {
+                        "Set the sails!".into()
+                    },
                 );
                 result.inventory_changed = inventory_changed;
                 if let Some(conversation) = result.conversation.as_mut() {
@@ -325,7 +381,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .unwrap_or(TravelRefusal::UnavailableRoute);
                 if cause == TravelRefusal::UnavailableRoute && prompt.context.2 == ISKAN {
                     npc_command::NpcConversations::bank_reply(
-                        intent, "I need you to finish my mission before I can take you there.".into(),
+                        intent,
+                        "I need you to finish my mission before I can take you there.".into(),
                     )
                 } else {
                     refusal(intent, cause)
@@ -420,7 +477,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::foundation::CommandId::new(command.command_id).ok()?,
         );
         let ring = if let Some(key) = ring_key {
-            use crate::durability::npc_trade::{NpcTradeCause, NpcTradeCoins, NpcTradeRequest, NpcTradeSide};
+            use crate::durability::npc_trade::{
+                NpcTradeCause, NpcTradeCoins, NpcTradeRequest, NpcTradeSide,
+            };
             let item = super::super::item_ref_admission::generation_item_facts(
                 native,
                 &crate::durability::item_mint::TypedDefinitionRef {
@@ -428,7 +487,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     production_key: key.into(),
                     revision_ref: native.item_index()?.revision(key)?.into(),
                 },
-            ).ok()?;
+            )
+            .ok()?;
             Some(Box::new(NpcTradeRequest {
                 fluid_subtype: None,
                 full_charges: None,
@@ -448,7 +508,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 event_id: derive(2),
                 occurred_at_unix_ms: super::super::npc_trade_command::unix_ms_now(),
                 output_item_instance_ids: [derive(3), derive(4), derive(5)],
-                coins: NpcTradeCoins { gold: gold.clone(), platinum: platinum.clone(), crystal: crystal.clone() },
+                coins: NpcTradeCoins {
+                    gold: gold.clone(),
+                    platinum: platinum.clone(),
+                    crystal: crystal.clone(),
+                },
                 backpack: backpack.clone(),
             }))
         } else {

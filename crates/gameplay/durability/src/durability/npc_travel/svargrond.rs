@@ -74,7 +74,7 @@ pub fn route(npc: &str, keyword: &str, payment: Payment) -> Option<TravelRoute> 
 }
 
 pub fn pays_ring(route: &TravelRoute) -> bool {
-    route.service == BUDDEL_SERVICE && route.route.key == format!("{}-ring", route.keyword)
+    route.service == BUDDEL_SERVICE && route.route.key.strip_suffix("-ring") == Some(route.keyword.as_str())
 }
 
 async fn track(
@@ -93,17 +93,38 @@ pub(super) async fn permitted(
     route: &TravelRoute,
 ) -> Result<bool, DurabilityError> {
     if route.service == ISKAN_SERVICE {
-        return Ok(track(tx, fence, BARBARIAN).await? >= 8
+        return Ok(self::route(ISKAN, &route.keyword, Payment::Fare).as_ref() == Some(route)
+            && track(tx, fence, BARBARIAN).await? >= 8
             && track(tx, fence, ICE_ISLANDS).await? >= 3
             && track(tx, fence, HUSKY_KILL).await? < 1);
     }
     if route.service != BUDDEL_SERVICE {
         return Ok(true);
     }
+    let payment = if pays_ring(route) {
+        Payment::Ring
+    } else if route.route.key.strip_suffix("-declined-ring") == Some(route.keyword.as_str()) {
+        Payment::DeclinedRing
+    } else {
+        Payment::Fare
+    };
+    let Some(mut expected) = self::route(BUDDEL, &route.keyword, payment) else {
+        return Ok(false);
+    };
+    let to = &route.route.destination;
+    if payment != Payment::Ring
+        && DESTINATIONS.iter().any(|&(_, x, y)| (x, y) == (to.x, to.y))
+    {
+        expected.route.destination.x = to.x;
+        expected.route.destination.y = to.y;
+    }
+    if &expected != route {
+        return Ok(false);
+    }
     if route.keyword == "helheim" && track(tx, fence, ICE_ISLANDS).await? < 30 {
         return Ok(false);
     }
-    if !route.route.key.ends_with("-ring") {
+    if payment == Payment::Fare {
         return Ok(track(tx, fence, BARBARIAN).await? == 8);
     }
     sqlx::query_scalar(

@@ -620,7 +620,10 @@ impl NpcTalkBook {
                     (!lines.is_empty()).then(|| lines.join(" ")),
                     Vec::new(),
                 )
-            } else if matches!(reference.key.as_str(), "oteryn:npc.buddel" | "oteryn:npc.iskan") {
+            } else if matches!(
+                reference.key.as_str(),
+                "oteryn:npc.buddel" | "oteryn:npc.iskan"
+            ) {
                 (
                     format!("Greetings, I am {}.", npc.name),
                     "Farewell.".into(),

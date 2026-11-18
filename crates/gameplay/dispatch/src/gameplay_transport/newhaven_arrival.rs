@@ -130,6 +130,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
                 newhaven_travel::Departure::Paid(request) => {
+                    let _ring_permit = if request.ring.is_some() {
+                        Some(self.spell_lane_permit().await?)
+                    } else {
+                        None
+                    };
                     let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
                     slot.commit_npc_travel(
                         self.root,

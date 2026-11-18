@@ -58,8 +58,24 @@ pub(super) fn prepare(
             let stage = |track: &str| tracks.get(track).copied().unwrap_or(-1);
             let known = stage(source::BARBARIAN) >= 8;
             let killed_husky = stage(source::HUSKY_KILL) >= 1;
-            let text = intent.text.trim().to_ascii_lowercase();
-            let (transition, next, reply) = match text.as_str() {
+            let greeting = oteryn_gameplay_npc::greeting::words(&intent.text)
+                .iter()
+                .any(|word| matches!(word.as_str(), "hi" | "hello" | "hail"));
+            let contains = |keyword| {
+                oteryn_gameplay_quests::quest::dark_trails::message_contains(&intent.text, keyword)
+            };
+            let text = if fresh && greeting {
+                "hi"
+            } else if contains("passage") {
+                "passage"
+            } else if contains("mission") {
+                "mission"
+            } else if contains("yes") {
+                "yes"
+            } else {
+                return None;
+            };
+            let (transition, next, reply) = match text {
                 "hi" | "hello" if fresh => (
                     None,
                     0,
