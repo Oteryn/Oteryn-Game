@@ -594,7 +594,8 @@ async fn companion_melee_credit(
     admitted: &AdmittedSession,
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
-    use crate::foundation::{MovementLocalPosition, owner_timer::SemanticTimeMicros};
+    use crate::foundation::MovementLocalPosition;
+    use oteryn_simulation_determinism::SemanticTimeMicros;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
     use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 

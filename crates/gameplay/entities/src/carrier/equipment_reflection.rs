@@ -230,6 +230,8 @@ impl ChannelRuntimeV1 {
         )
     }
     /// Actual native clock precision, independent of the source stream sequence.
+    /// A live player-owned companion credits its exact current master's lease while
+    /// preserving the companion as the physical damage source.
     #[allow(clippy::too_many_arguments)]
     pub fn commit_source_damage_at_us(
         &mut self,
@@ -274,10 +276,23 @@ impl ChannelRuntimeV1 {
         now_ms: u64,
         enqueue_us: Option<u64>,
     ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
-        let lease = self.bound_attacker_lease(reflector, session)?;
-        // The incoming owner may still hit a player held through disconnect. The bound
-        // lease/session fence is required; a live client connection is not.
-        self.player_control_facts(reflector, session)?;
+        let master = self
+            .companion_snapshot(reflector)
+            .ok()
+            .and_then(|snapshot| snapshot.state.master);
+        let credited_actor = match master {
+            Some(master) if master.session == session => master.actor,
+            Some(_) => return Err(CarrierError::SupersededAttackerSession),
+            None => reflector,
+        };
+        let lease = self.bound_attacker_lease(credited_actor, session)?;
+        let control = self.player_control_facts(credited_actor, session)?;
+        if master.is_some() {
+            if control.control_loss.is_some() {
+                return Err(CarrierError::SupersededAttackerSession);
+            }
+            self.assert_actor_spell_unreserved(reflector)?;
+        }
         let target = self
             .creature_spell_target_atom(source)
             .map_err(|_| CarrierError::NotCreature)?;
@@ -300,6 +315,10 @@ impl ChannelRuntimeV1 {
                     None,
                     super::soul_war_player_source::SoulWarPlayerSourceOrigin::Reflection,
                 )),
+            Slot::CreatureOccupied { .. } if master.is_some() => (
+                None,
+                super::soul_war_player_source::SoulWarPlayerSourceOrigin::Combat,
+            ),
             _ => return Err(CarrierError::CreatureTargetMismatch),
         };
         let mut source_context = self.carrier.soul_war_health_context(
@@ -310,7 +329,9 @@ impl ChannelRuntimeV1 {
             origin,
             self.content_pin(),
         )?;
-        source_context.invoke_health_change = false;
+        // Crystal creature.cpp:587 resolves the reward principal to the master.
+        // Health hooks and literal Player-source queries still see the physical caster.
+        source_context.invoke_health_change = master.is_some();
         let owner = match enqueue_us {
             Some(now) => self.borrow_exact_actor_commit_at_us(now),
             None => self.borrow_exact_actor_commit_at(now_ms),
