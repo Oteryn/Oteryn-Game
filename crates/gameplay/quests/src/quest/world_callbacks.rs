@@ -996,7 +996,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 .teleport_effect
                 .is_some_and(|effect| effect == 0 || effect > 255 || callback.teleport.is_none())
             || (callback.actor_kind == ActorKind::Monster
-                && (callback.selector.position.is_none()
+                && ((callback.selector.position.is_none()
+                    && callback.effects.monster_step.is_none())
                     || callback.trigger == Trigger::Use
                     || callback.has_state()
                     || !callback.offerings.is_empty()

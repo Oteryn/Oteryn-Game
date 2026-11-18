@@ -65,11 +65,11 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
             "key":"oteryn:quest-callback/ferumbras/zamulosh/lovely-frazzlemaw",
             "quest":"oteryn:quest.ferumbras_ascension_quest",
             "trigger":"step_in","actor_kind":"monster",
-            "selector":{"position":PORTAL,"action":34315},
+            "selector":{"action":34315},
             "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
             "effects":{"monster_step":{"creature":FRAZZLEMAW,
                 "retirement_cue":{"text":MATCHED_CUE,"effect":THUNDER}}},
-            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/movements_lovely_monsters.lua:1-28"]
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/movements_lovely_monsters.lua:1-49"]
         })
     };
     let data = serde_json::json!({"schema":1,"callbacks":[row]});
@@ -85,7 +85,7 @@ pub(super) async fn exercise(
     callback: Callback,
 ) -> TestResult {
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-    let position = callback.selector.position.ok_or("source tile")?;
+    let position = callback.selector.position.unwrap_or(PORTAL);
     owner
         .states
         .quest_callbacks

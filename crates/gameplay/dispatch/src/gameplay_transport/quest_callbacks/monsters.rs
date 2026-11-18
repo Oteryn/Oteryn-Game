@@ -3,7 +3,7 @@ use super::*;
 use crate::map::facts::QuestCallbackProjection;
 use crate::map::view::MapFacts;
 
-/// Crystal 201189f8, ferumbras_ascension/movements_lovely_monsters.lua:14-28
+/// Crystal 201189f8, ferumbras_ascension/movements_lovely_monsters.lua:14-49
 /// and the_first_dragon/movements_heaven_blossom.lua:3-14.
 pub(in crate::gameplay_transport) fn settle_monster_step(
     runtime: &mut ChannelRuntimeV1,
@@ -26,15 +26,17 @@ pub(in crate::gameplay_transport) fn settle_monster_step(
     }
     let Some((effect, key, before)) = registry.iter().find_map(|callback| {
         let effect = callback.effects.monster_step.as_ref()?;
-        if callback.selector.position.map(tile) != Some(position)
-            || !runtime.matches_live_creature_identity(step.actor, effect.creature.as_bytes())
+        // The committed tile's own placement keys carry Crystal's AID or UID.
+        if !runtime.matches_live_creature_identity(step.actor, effect.creature.as_bytes())
             || !world_requirements_match(map, callback)
         {
             return None;
         }
-        let &(key, before) = entries
-            .iter()
-            .find(|(key, _)| !map.facts.base_hidden(*key) && matches(map, callback, *key))?;
+        let &(key, before) = entries.iter().find(|(key, _)| {
+            crate::map::view::placement_of(*key).is_some_and(|(at, _)| at == position)
+                && !map.facts.base_hidden(*key)
+                && matches(map, callback, *key)
+        })?;
         Some((effect, key, before))
     }) else {
         // Crystal 201189f8, movements_flower_bowl.lua:3-16.
