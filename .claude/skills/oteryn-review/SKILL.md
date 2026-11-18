@@ -191,6 +191,33 @@ one shared source for a policy plus a parity test), implement that, and report
 to the owner. This is the §5 rule ("a P0/P1 after the second review means the
 design is wrong") applied earlier.
 
+## 9. Two kinds of review: per-PR review and the owner's review loop
+
+The limits in §5 and §8 bind the **per-PR review**: one review after the first
+push, a delta-only second one only after a substantial logic change, never a
+third.
+
+An **owner-requested review loop** is different: the owner asks for a review
+of a whole area or product (for example "review the whole of Oteryn" or the
+Platform r10-fx rounds), and it runs in rounds until it is clean. The per-PR cap
+does not apply to the loop. These rules apply instead:
+
+- **Scope and lenses:** fixed in writing when the loop starts (areas, flows,
+  classes) and not changed between rounds, so counts stay comparable.
+- **Rounds:** each round reviews one exact head of `main` or of the loop's
+  integration branch, with the parallel lenses of `references/batch-review.md`.
+- **Between rounds:** triage per §6. Fix the confirmed P0/P1 and P2 per §7,
+  grouped by area into a few fix PRs, never one per finding. Out-of-scope
+  findings go to their lanes.
+- **Each fix PR** is an ordinary PR. It gets its own per-PR review under §5,
+  which is where a fix regression is caught.
+- **Stop:** two consecutive rounds on the same head with no P0-P2. If a round
+  finds more than the round before, or the same area again, apply §8 to that
+  area (redesign) before the next round.
+- **Who starts it:** only the coordinator starts a loop round, and only for a
+  loop the owner asked for. The owner's request is the authorization for its
+  rounds. A lane never starts one on its own.
+
 ## Sources
 
 Adapted, not copied verbatim: getsentry/skills `find-bugs` (Apache-2.0: full
