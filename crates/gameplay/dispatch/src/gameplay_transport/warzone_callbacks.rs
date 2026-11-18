@@ -1,4 +1,4 @@
-//! Crystal 201189f8, dangerous_depth/creaturescripts_snail_slime_kill.lua.
+//! Crystal 201189f8, dangerous_depth/creaturescripts_{fiery_heart,snail_slime_kill}.lua.
 use super::ComposedFreshAdmission;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, RuntimeScopeRefV1,
@@ -9,10 +9,25 @@ const SLIME: &str = "oteryn:creature.snail_slime";
 const SPECTATOR_RANGE: u32 = 20;
 const SLIME_LIMIT: usize = 3;
 
-pub(super) fn tick(owner: &ComposedFreshAdmission<'_, '_, '_>, runtime: &mut ChannelRuntimeV1) {
+const HEART: &str = "oteryn:creature.fiery_heart";
+const BLOOD: &str = "oteryn:creature.fiery_blood";
+const EMPOWERED_DUKE: &str = "oteryn:creature.the_fire_empowered_duke";
+const DUKE: &str = "oteryn:creature.the_duke_of_the_depths";
+const HEART_TIMEOUT_US: u64 = 20_000_000;
+
+#[derive(Debug, Default)]
+pub(super) struct HeartTimers(Vec<(ExactActorRef, u64)>);
+
+pub(super) fn tick(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    timers: &mut HeartTimers,
+    now_us: u64,
+) {
     let Ok(census) = runtime.current_live_creature_census() else {
         return;
     };
+    tick_hearts(runtime, timers, &census, now_us);
     let Some(count) = census.iter().find_map(|actor| {
         if !matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. }) {
             return None;
@@ -61,6 +76,63 @@ pub(super) fn tick(owner: &ComposedFreshAdmission<'_, '_, '_>, runtime: &mut Cha
             .is_some()
         {
             break;
+        }
+    }
+}
+
+fn tick_hearts(
+    runtime: &mut ChannelRuntimeV1,
+    timers: &mut HeartTimers,
+    census: &[ExactActorRef],
+    now_us: u64,
+) {
+    let hearts: Vec<_> = census
+        .iter()
+        .copied()
+        .filter(|actor| matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. }))
+        .filter_map(|actor| {
+            let snapshot = runtime.companion_snapshot(actor).ok()?;
+            (snapshot.state.policy.definition_key == HEART).then_some(snapshot)
+        })
+        .collect();
+    timers.0.retain(|(actor, _)| hearts.iter().any(|heart| heart.actor == *actor));
+    for heart in hearts {
+        let deadline = match timers.0.iter().find(|(actor, _)| *actor == heart.actor) {
+            Some((_, deadline)) => *deadline,
+            None => {
+                timers.0.push((heart.actor, now_us.saturating_add(HEART_TIMEOUT_US)));
+                continue;
+            }
+        };
+        if now_us >= deadline
+            && let Ok(change) = runtime.prepare_creature_profile_transformation(&heart, BLOOD)
+        {
+            let _ = runtime.commit_creature_profile_transformation(change);
+        }
+    }
+
+    for actor in census.iter().copied() {
+        if !matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. }) {
+            continue;
+        }
+        let Ok(duke) = runtime.companion_snapshot(actor) else {
+            continue;
+        };
+        if duke.state.policy.definition_key != EMPOWERED_DUKE {
+            continue;
+        }
+        let has_heart = census.iter().any(|heart| {
+            runtime.companion_snapshot(*heart).is_ok_and(|heart| {
+                heart.state.policy.definition_key == HEART
+                    && heart.position.floor == duke.position.floor
+                    && heart.position.x.abs_diff(duke.position.x) <= SPECTATOR_RANGE
+                    && heart.position.y.abs_diff(duke.position.y) <= SPECTATOR_RANGE
+            })
+        });
+        if !has_heart
+            && let Ok(change) = runtime.prepare_creature_profile_transformation(&duke, DUKE)
+        {
+            let _ = runtime.commit_creature_profile_transformation(change);
         }
     }
 }

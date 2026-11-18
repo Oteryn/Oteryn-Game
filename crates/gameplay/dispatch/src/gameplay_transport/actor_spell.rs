@@ -204,6 +204,7 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) monster_composed:
         crate::creature_damage_spell::composed::ComposedOwner,
     pub(in crate::gameplay_transport) next_monster_ai_pass_us: u64,
+    pub(super) warzone_hearts: super::warzone_callbacks::HeartTimers,
     pub(in crate::gameplay_transport) monster_ai_sequence: u64,
     pub(in crate::gameplay_transport) monster_ai_cursor: usize,
     pub(in crate::gameplay_transport) pvp_locks: Vec<(
@@ -377,6 +378,7 @@ impl Default for ChannelSpellStates {
             source_death_action_reservation: None,
             rotten_waves: Default::default(),
             next_monster_ai_pass_us: Default::default(),
+            warzone_hearts: Default::default(),
             monster_ai_sequence: Default::default(),
             monster_ai_cursor: Default::default(),
             pvp_locks: Vec::new(),
