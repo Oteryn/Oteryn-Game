@@ -3,7 +3,7 @@ use super::*;
 use std::collections::BTreeSet;
 
 impl NpcRuleCatalog {
-    /// A source NPC may require eight plain item types and grant twenty types.
+    /// A source NPC may require eleven plain item types and grant twenty types.
     /// Outfit effects use the shared appearance participant; money and optional removals stay closed.
     pub fn item_exchange_keys(&self, npc: &str) -> Option<Vec<String>> {
         let mut keys = BTreeSet::new();
@@ -69,7 +69,7 @@ impl NpcRuleCatalog {
                     _ => return None,
                 }
             }
-            if grants > 20 || keys.len() > 8 {
+            if grants > 20 || keys.len() > 11 {
                 return None;
             }
         }

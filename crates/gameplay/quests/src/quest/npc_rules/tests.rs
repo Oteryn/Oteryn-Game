@@ -1564,6 +1564,31 @@ fn live_eligibility_guards_refuse_below_level_wrong_vocation_and_expired_premium
 }
 
 #[test]
+fn elemental_spheres_exchange_can_read_eleven_item_identities() -> Result<(), NpcRuleError> {
+    let mut rule = fixture_rule(
+        "elemental-spheres-exchange",
+        serde_json::json!([
+            {"kind":"take_item", "item":"oteryn:item.tibia.i954", "count":1}
+        ]),
+    );
+    rule["guards"] = serde_json::json!([940, 941, 942, 944, 945, 946, 947, 948, 949, 950].map(
+        |id| {
+            serde_json::json!({
+                "kind":"item", "item":format!("oteryn:item.tibia.i{id}"), "op":"lt", "count":1
+            })
+        }
+    ));
+    let catalog = fixture_catalog(&fixture_document(vec![rule]))?;
+    assert_eq!(
+        catalog
+            .item_exchange_keys("oteryn:npc.test")
+            .map(|keys| keys.len()),
+        Some(11)
+    );
+    Ok(())
+}
+
+#[test]
 fn elemental_spheres_live_eligibility_selects_each_source_vocation_reward()
 -> Result<(), NpcRuleError> {
     let catalog = NpcRuleCatalog::runtime()?;
