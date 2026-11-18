@@ -15,6 +15,7 @@ pub(in crate::gameplay_transport) mod rotten_area;
 pub(super) mod rotten_waves;
 pub(super) mod source_heals;
 mod source_items;
+mod tile_heal;
 
 pub(super) fn publish_native_facing(
     runtime: &mut ChannelRuntimeV1,
@@ -710,6 +711,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let next_due = table.earliest_due().into_iter().chain(next_step).min();
                 if !pending.heals_known() {
                     source_heals::execute(runtime, &mut states.native_self_heals, &mut states.native_self_heal_content, native, &proposals);
+                    tile_heal::think(runtime, native, &mut map, batch.occurrences(), &native_actors).await;
                     pending.finish_heals();
                 }
                 if !pending.fields_known() {

@@ -252,7 +252,39 @@ pub struct CreatureProfileRecord {
     /// Owner decision 22: explicit provenance limitation retained in the pinned generation.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_qualification: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tile_self_heal: Option<NativeTileSelfHeal>,
 }
+
+/// Crystal dark_trails/creaturescripts_think_the_ravager_heal.lua:3-13 uses
+/// the creature's current tile and HP on its normal think occurrence.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativeTileSelfHeal {
+    pub required_item_id: u16,
+    pub below_health_ppm: u32,
+    pub minimum: u32,
+    pub maximum: u32,
+    pub speech: String,
+    pub source: String,
+}
+
+impl NativeTileSelfHeal {
+    fn valid(&self) -> bool {
+        self.required_item_id != 0
+            && (1..=1_000_000).contains(&self.below_health_ppm)
+            && self.minimum > 0
+            && self.minimum <= self.maximum
+            && !self.speech.is_empty()
+            && self.speech.len() <= 255
+            && !self.speech.chars().any(char::is_control)
+            && self
+                .source
+                .starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/")
+            && self.source.len() <= 256
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NativeMonsterAttackDefinitions {
@@ -1919,6 +1951,13 @@ fn creature_policies(
         if !seen.insert(record.profile.target.key.clone()) {
             return Err(invalid("native gameplay duplicate creature"));
         }
+        if record
+            .tile_self_heal
+            .as_ref()
+            .is_some_and(|heal| record.behavior.is_none() || !heal.valid())
+        {
+            return Err(invalid("invalid native creature tile heal"));
+        }
         let ProjectV2AuthoringProfileData::Creature(value) = &record.profile.data else {
             return Err(invalid("native gameplay creature profile kind"));
         };
@@ -2172,9 +2211,10 @@ pub mod test_support {
     mod activation_fixture;
     pub use activation_fixture::{
         activated_boss_slot_loot_fixture, activated_loop_monster,
-        activated_loop_monster_missing_child, activated_reward_boss_corpse_capacity_fixture,
-        activated_reward_boss_fixture, activated_with_custom_loot_tables,
-        activated_with_loot_tables, loop_monster_inner_digest, try_activate_input,
+        activated_loop_monster_missing_child, activated_loop_monster_tile_heal,
+        activated_reward_boss_corpse_capacity_fixture, activated_reward_boss_fixture,
+        activated_with_custom_loot_tables, activated_with_loot_tables, loop_monster_inner_digest,
+        try_activate_input,
     };
 }
 

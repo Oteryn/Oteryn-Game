@@ -140,12 +140,13 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
             "Clusters delivered.",
         ),
     ];
-    let source = json!({
-        "schema":1,"quest":QUEST,"tracks":[(MORTAR,3), (FRAZZLEMAWS,2), (SILENCERS,1), (GOLD,500)].map(|(key, initial)| json!({
-            "key":key,"quest":QUEST,"initial":initial,"min":-1,"max":i64::MAX,"sources":[SOURCE]
-        })),
-        "rules":rules,
-    }).to_string();
+    let tracks =
+        [(MORTAR, 3), (FRAZZLEMAWS, 2), (SILENCERS, 1), (GOLD, 500)].map(|(key, initial)| {
+            json!({
+                "key":key,"quest":QUEST,"initial":initial,"min":-1,"max":i64::MAX,"sources":[SOURCE]
+            })
+        });
+    let source = json!({"schema":1,"quest":QUEST,"tracks":tracks,"rules":rules}).to_string();
     let base = QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(debug)?;
     Ok(NpcRuleCatalog::from_json_documents(&[&source])?.with_fixture_npc_rules(base)?)
 }

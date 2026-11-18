@@ -743,6 +743,26 @@ pub fn activated_loop_monster(
 ) {
     activate(world, &loop_monster_input(summons))
 }
+pub fn activated_loop_monster_tile_heal(
+    world: oteryn_protocol_oteryn::WorldId,
+    heal: NativeTileSelfHeal,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
+    let mut supplied = loop_monster_input(false);
+    let mut creatures: CreatureProfilesDocument =
+        serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
+    let rat = creatures
+        .records
+        .iter_mut()
+        .find(|record| record.profile.target.key == "oteryn:creature.rat")
+        .expect("admitted fixture rat");
+    rat.tile_self_heal = Some(heal);
+    supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
+    activate(world, &supplied)
+}
+
 fn loop_monster_input(summons: bool) -> NativeGameplayInput {
     let mut supplied = manifest_input();
     supplied.source_world = Some(pinned(include_bytes!(
