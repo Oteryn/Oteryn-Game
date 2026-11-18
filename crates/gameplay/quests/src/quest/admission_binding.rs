@@ -128,6 +128,7 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
                 | QuestEffectKind::AddWithBinding { .. }
                 | QuestEffectKind::RaiseToWithBinding { .. }
                 | QuestEffectKind::SetNowWithBinding { .. }
+                | QuestEffectKind::Draw { .. }
         ) || registry.protected_tracks.contains(&effect.track)
     }) {
         return Err("unregistered write to bound track".into());

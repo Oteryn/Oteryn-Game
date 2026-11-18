@@ -18,6 +18,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
         && callback.state_operations.iter().all(|operation| {
             !matches!(operation.effect, StateMutation::AddAtLeast { .. })
         })
+        && callback.operations().filter(|op| matches!(op.effect, StateMutation::Draw { .. })).count() <= 1
+        && callback.operations().all(|op| {
+            !matches!(op.effect, StateMutation::Draw { .. })
+                || (callback.requires_world_admission
+                    && callback.trigger == super::Trigger::StepIn
+                    && callback.state_ops.is_empty()
+                    && callback.storage.iter().all(|state| state.preserve)
+                    && callback.state_operations.iter().all(|other| other == op || !mutates(other)))
+        })
         && (callback.operation_count() == 0 || callback.native_rule.is_none())
 }
 pub(super) fn extend_tracks(
@@ -53,6 +62,10 @@ pub(super) fn append_effects(
             && let Some(value) = binding.take()
         {
             effect.effect = match operation.effect {
+                StateMutation::Draw { sides } => QuestEffectKind::Draw {
+                    sides,
+                    binding: Some(value),
+                },
                 StateMutation::SetNow => QuestEffectKind::SetNowWithBinding { binding: value },
                 StateMutation::Add { value: delta } => QuestEffectKind::AddWithBinding {
                     delta,

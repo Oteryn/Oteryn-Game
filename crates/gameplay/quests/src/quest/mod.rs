@@ -258,6 +258,11 @@ pub enum QuestEffectKind {
     SetNowWithBinding {
         binding: [u8; 32],
     },
+    /// Uniform inclusive draw, supplied by the fenced writer after receipt lookup.
+    Draw {
+        sides: u8,
+        binding: Option<[u8; 32]>,
+    },
     /// A source `computed: expression` effect with no closed kind yet: its transition is
     /// `NOT_SUPPORTED` until an amendment adds one (§4).
     Computed,
@@ -318,6 +323,12 @@ impl QuestEffectKind {
                 // Tag 11 already belongs to SetWhenAtLeast on this published base.
                 out.push(12);
                 out.extend_from_slice(&binding);
+            }
+            Self::Draw { sides, binding } => {
+                out.extend_from_slice(&[14, sides, u8::from(binding.is_some())]);
+                if let Some(binding) = binding {
+                    out.extend_from_slice(&binding);
+                }
             }
             Self::Computed => out.push(4),
             Self::Native(rule) => {
@@ -544,6 +555,12 @@ impl QuestStateCatalogue {
                         usize::from(other_effect) < transition.effects.len()
                             && usize::from(other_effect) != index
                             && (track.min..=track.max).contains(&value)
+                    }
+                    QuestEffectKind::Draw { sides, binding } => {
+                        binding.is_some()
+                            && sides >= 2
+                            && track.min <= 1
+                            && track.max >= i64::from(sides)
                     }
                     QuestEffectKind::AddAtLeast { minimum, .. } => {
                         (track.min..=track.max).contains(&minimum)
@@ -821,6 +838,9 @@ impl QuestStateCatalogue {
                     QuestEffectKind::SetIf { equals, value } => {
                         Some(if before == equals { value } else { before })
                     }
+                    QuestEffectKind::Draw { sides, .. } => roll
+                        .filter(|value| (1..=sides).contains(value))
+                        .map(i64::from),
                     QuestEffectKind::Computed => None,
                     QuestEffectKind::SetWhenAtLeast {
                         other_effect,

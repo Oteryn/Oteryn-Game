@@ -16,6 +16,7 @@ pub enum StateCondition {
 pub enum StateMutation {
     Add { value: i64 },
     AddAtLeast { value: i64, minimum: i64 },
+    Draw { sides: u8 },
     SetNow,
 }
 
@@ -48,11 +49,13 @@ impl<'de> Deserialize<'de> for StateMutation {
         enum Wire {
             Add { value: i64 },
             AddAtLeast { value: i64, minimum: i64 },
+            Draw { sides: u8 },
             SetNow {},
         }
         Ok(match Wire::deserialize(deserializer)? {
             Wire::Add { value } => Self::Add { value },
             Wire::AddAtLeast { value, minimum } => Self::AddAtLeast { value, minimum },
+            Wire::Draw { sides } => Self::Draw { sides },
             Wire::SetNow {} => Self::SetNow,
         })
     }
@@ -77,6 +80,7 @@ impl StateOperation {
             }
         };
         condition
+            && !matches!(self.effect, StateMutation::Draw { sides: 0 | 1 })
             && self.track.len() <= 128
             && self.track.strip_prefix("oteryn:").is_some_and(|tail| {
                 !tail.is_empty()
@@ -122,6 +126,10 @@ impl StateOperation {
                 StateMutation::AddAtLeast { value, minimum } => QuestEffectKind::AddAtLeast {
                     delta: value,
                     minimum,
+                },
+                StateMutation::Draw { sides } => QuestEffectKind::Draw {
+                    sides,
+                    binding: None,
                 },
                 StateMutation::SetNow => QuestEffectKind::SetNow,
             },

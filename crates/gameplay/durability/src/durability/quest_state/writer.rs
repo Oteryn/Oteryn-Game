@@ -1788,7 +1788,18 @@ impl DurabilityRoot {
                     // M47: historical receipts returned above. Draw only in this fenced
                     // transaction; the resulting complete snapshot is persisted in its
                     // existing Quest receipt, atomically with all four source tracks.
-                    let roll = if transition.effects.iter().any(|effect| matches!(
+                    let draw_sides = transition.effects.iter().find_map(|effect| {
+                        match effect.effect {
+                            oteryn_gameplay_quests::quest::QuestEffectKind::Draw { sides, .. } => Some(sides),
+                            _ => None,
+                        }
+                    });
+                    let roll = if let Some(sides) = draw_sides {
+                        let draw: i16 = sqlx::query_scalar("SELECT (1 + floor(random() * $1::smallint))::smallint")
+                            .bind(i16::from(sides))
+                            .fetch_one(&mut *tx).await?;
+                        Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
+                    } else if transition.effects.iter().any(|effect| matches!(
                         effect.effect,
                         oteryn_gameplay_quests::quest::QuestEffectKind::Native(
                             oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead
