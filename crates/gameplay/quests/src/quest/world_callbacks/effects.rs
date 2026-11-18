@@ -163,6 +163,8 @@ pub struct DeathWindow {
     pub area: Option<crate::quest::authored_bindings::kills::DeathArea>,
     pub required_deaths: u8,
     pub duration_ms: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub open_appearance: Option<u16>,
     /// Crystal 201189f8 movements_teleport_main.lua:191-196 consumes
     /// the shared boss state only when a player advances EnterTeleport.
     #[serde(default, skip_serializing_if = "is_false")]
@@ -170,10 +172,28 @@ pub struct DeathWindow {
 }
 
 impl DeathWindow {
+    pub(super) fn visual_source(&self, callback: &super::Callback) -> bool {
+        let mut effects = callback.effects.clone();
+        effects.death_window = None;
+        callback.selector.position.is_some()
+            && callback.selector.position_aliases.is_empty()
+            && callback.selector.appearance.is_some()
+            && callback.selector.appearance != self.open_appearance
+            && callback.lever.is_none()
+            && callback.passages.is_empty()
+            && callback.remote_teleport.is_none()
+            && callback.offerings.is_empty()
+            && callback.item_on_target.is_none()
+            && callback.item_reward().is_none()
+            && !callback.requires_durable_commit()
+            && effects.is_empty()
+    }
+
     pub(super) fn valid(&self) -> bool {
         (1..=8).contains(&self.creatures.len())
             && (1..=8).contains(&self.required_deaths)
             && (1..=3_600_000).contains(&self.duration_ms)
+            && self.open_appearance != Some(0)
             && self.area.is_none_or(|area| area.valid())
             && self.creatures.iter().enumerate().all(|(index, key)| {
                 key.starts_with("oteryn:creature.")

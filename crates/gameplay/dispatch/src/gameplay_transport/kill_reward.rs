@@ -1971,9 +1971,12 @@ pub fn record_creature_kill(
         return;
     };
     if wild && let Ok(mut cache) = sink.queue.1.lock() {
-        cache
+        let projected = cache
             .death_windows
             .observe(runtime, target, &creature, now_ms);
+        if projected && let Some(states) = sink.prey {
+            states.owner_wake.notify_one();
+        }
     }
     // Retain room victory independently of loot admission. If a personal reward
     // plan is admitted, its existing atomic settlement consumes the room death;

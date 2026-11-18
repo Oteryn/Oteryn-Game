@@ -915,6 +915,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || !callback.return_on_failure
                     || callback.reversible
                     || (window.consume_on_progress && !callback.has_state_writes())
+                    || (window.open_appearance.is_some() && !window.visual_source(callback))
             })
             || (callback.key == super::dreamer_fire_bug::IGNITE
                 && !super::dreamer_fire_bug::callbacks().contains(callback))

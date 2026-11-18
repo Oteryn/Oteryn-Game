@@ -499,7 +499,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(mut cache) = attack.kills().1.lock() else {
             return;
         };
-        cache.death_windows.install(self.callback_content());
+        cache
+            .death_windows
+            .install(self.callback_content(), self.movement_cells().index());
         if !cache.hits.install(runtime, session, hit_snapshot) {
             super::operator_event("quest_hit_snapshot_capacity_refused");
         }
