@@ -1517,6 +1517,18 @@ impl BundleFacts {
             })
     }
 
+    /// Bare native counterparts start ready. A timed removal of their action
+    /// remains authoritative until the existing callback deadline restores it.
+    pub fn quest_callback_action_ready(&self, key: u64, action: u16) -> bool {
+        let dynamic = self.callbacks.lock().ok()
+            .map(|state| state.actions.get(&key).copied());
+        match dynamic {
+            Some(Some(current)) => current == Some(action),
+            Some(None) => self.action_at(key).is_none_or(|current| current == action),
+            None => false,
+        }
+    }
+
     /// Match an exact authored counterpart only while the retained base object is bare.
     /// Sparse placements and plain palette entries share the same original appearance proof.
     pub fn quest_callback_native_object(&self, key: u64, id: u32, appearance: u16) -> bool {

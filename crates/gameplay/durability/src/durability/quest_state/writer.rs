@@ -1952,7 +1952,16 @@ impl DurabilityRoot {
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,(&reward_root,&recovery),&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
-                    if let Some(world) = &callback
+                    let award_roll_reward = callback.as_ref().and_then(|world| {
+                        world.effects.roll_reward.as_ref().map(|roll| (world, roll))
+                    }).map_or(Ok(true), |(world, roll)| {
+                        let (QuestCause::Use(command), Some((_, world_context, _))) = (request.cause, &context)
+                            else { return Err(DurabilityError::InvalidStoredState); };
+                        Ok(roll.succeeds(&world.key, command.game_session_id().as_bytes(),
+                            command.command_id().get(), &world_context.actor_placement,
+                            world_context.movement_revision))
+                    })?;
+                    if award_roll_reward && let Some(world) = &callback
                         && world.item_reward.is_none() && world.state_operations.is_empty()
                         && !world.storage.iter().any(|storage| storage.add.is_some())
                         && let Some(reward) = &world.effects.item_reward
@@ -1973,7 +1982,7 @@ impl DurabilityRoot {
                                         .ok_or(DurabilityError::InvalidStoredState)?.after
                                 } else { stored.get(track).copied().unwrap_or(initial) },
                             }
-                        } else if world.effects.item_reward_per_use {
+                        } else if world.effects.item_reward_per_use || world.effects.roll_reward.is_some() {
                             super::super::reward_claim_mint::quest::QuestMintClaim::WorldUse
                         } else { super::super::reward_claim_mint::quest::QuestMintClaim::Once };
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)

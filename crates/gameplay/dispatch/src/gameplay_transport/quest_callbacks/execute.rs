@@ -212,6 +212,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if close && callback.lever.is_some() && !callback.reversible {
             return UseDisposition::NothingToUse;
         }
+        if let Some(roll) = &callback.effects.roll_reward
+            && !map.facts.quest_callback_action_ready(key, roll.source_action)
+        {
+            if let Some(message) = &callback.failure_message {
+                self.states.chat.push_quest_feedback(session, message);
+            }
+            return UseDisposition::NothingToUse;
+        }
         if oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(callback)
             && !self.personal_trial_ready(runtime, callback, key)
         {
@@ -1053,6 +1061,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !callback.is_read_only()
             && !(close && callback.opening_only);
         let mut fresh_effects = !durable;
+        let mut failed_roll = None;
+        let mut roll_spawn = None;
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
@@ -1175,6 +1185,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let (context, selected_tool) = context;
+            let roll = if let Some(roll) = &callback.effects.roll_reward {
+                let QuestCause::Use(command) = cause else { return UseDisposition::Rejected; };
+                let won = roll.succeeds(&callback.key, command.game_session_id().as_bytes(),
+                    command.command_id().get(), &context.actor_placement, context.movement_revision);
+                if !won {
+                    roll_spawn = match self.prepare_roll_failure(runtime,map,pos,&roll.failure_creature) {
+                        Ok(spawn) => spawn,
+                        Err(result) => return result,
+                    };
+                    failed_roll = Some(roll);
+                }
+                Some(roll)
+            } else {
+                None
+            };
             let context = if let Some((source, intent)) = selected_tool {
                 let Some(context) = context.with_selected_tool(source, intent) else {
                     return UseDisposition::Rejected;
@@ -1335,6 +1360,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
+                    if let Some(roll) = roll {
+                        let Some(due) = self.owner_now().get().checked_add(u64::from(roll.rearm_ms)*1_000) else {
+                            return UseDisposition::Exhausted;
+                        };
+                        projection = Some(crate::map::facts::QuestCallbackProjection::TimedAction {
+                            due, restore: before, action: roll.source_action,
+                        });
+                    }
                     if callback.effects.offering_portal.is_some() {
                         let QuestCause::Use(command) = cause else { return UseDisposition::Rejected; };
                         let Ok(count) = self.root.read_quest_offering_count(
@@ -1348,6 +1381,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
+                        if let Some(roll) = failed_roll {
+                            success_message = Some(roll.failure_text.clone());
+                        }
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.
                         if callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
                             && committed.changes.iter().any(|change|
@@ -1623,15 +1659,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
-            {
-                return UseDisposition::Rejected;
+            } else if !callback.is_read_only() && !personal_gift_preserves_object {
+                if let Some(spawn) = roll_spawn {
+                    if runtime.commit_quest_creature_spawn_with_projection(&[spawn], apply_scene).is_err() {
+                        return UseDisposition::Rejected;
+                    }
+                } else if !apply_scene() {
+                    return UseDisposition::Rejected;
+                }
             }
+        }
+        if fresh_effects && let Some(roll) = failed_roll {
+            map.facts.emit_movement_effect(pos, roll.failure_effect);
         }
         if matches!(
             projection,
             Some(
                 crate::map::facts::QuestCallbackProjection::TimedTransform { .. }
+                    | crate::map::facts::QuestCallbackProjection::TimedAction { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedRemoteTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedEntrance { .. }
             )

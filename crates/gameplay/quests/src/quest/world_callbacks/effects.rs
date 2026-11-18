@@ -52,6 +52,8 @@ pub struct CallbackEffects {
     /// Qualification for a consumed toll, evaluated under the same Character root.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ranked_toll: Option<RankedToll>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub roll_reward: Option<RollReward>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -510,6 +512,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let effects = &callback.effects;
+    if effects.roll_reward.as_ref().is_some_and(|roll| !roll.valid(callback)) {
+        return false;
+    }
     if effects
         .offering_portal
         .as_ref()
@@ -740,6 +745,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         (callback.trigger != Trigger::Use && !callback.has_fenced_step_reward())
             || !callback.has_personal_state()
             || (!effects.item_reward_per_use
+                && effects.roll_reward.is_none()
                 && !callback.has_fenced_regrowth_reward()
                 && (callback
                     .storage

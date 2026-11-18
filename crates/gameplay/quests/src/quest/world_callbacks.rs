@@ -82,6 +82,8 @@ pub mod phase;
 mod questpc7_compat;
 mod ranked_toll;
 pub use ranked_toll::RankedToll;
+mod roll_reward;
+pub use roll_reward::RollReward;
 #[cfg(test)]
 mod scripted_teleport_tests;
 #[cfg(test)]
@@ -1054,7 +1056,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
-                && ((!callback.has_state_writes() && !callback.uses_empty_world_transition())
+                && ((!callback.has_state_writes() && !callback.uses_empty_world_transition()
+                        && callback.effects.roll_reward.is_none())
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use

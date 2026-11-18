@@ -30,6 +30,7 @@ mod phase;
 mod rafzane_elevator;
 mod reward_door;
 mod rewards;
+mod roll_reward;
 mod rotten_flame;
 mod scene;
 mod scene_actors;
