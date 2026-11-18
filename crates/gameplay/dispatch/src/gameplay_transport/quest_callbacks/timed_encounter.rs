@@ -7,6 +7,19 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(super) const MAX_TIMED_ENCOUNTERS: usize = 64;
 
+fn draw_below(upper: u16) -> Option<u16> {
+    if upper == 0 || upper > 256 {
+        return None;
+    }
+    loop {
+        let [byte] = crate::gameplay_transport::SecureIdentifiers::random::<1>()?;
+        let roll = u16::from(byte);
+        if roll < 256 - 256 % upper {
+            return Some(roll % upper);
+        }
+    }
+}
+
 pub(super) struct TimedEncounter {
     callback: Callback,
     key: u64,
@@ -89,21 +102,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let health = policy.maximum_health;
         let [minimum, maximum] = summon.cooldown_minutes.map(u16::from);
-        let span = maximum - minimum + 1;
-        let random = loop {
-            let Some([byte]) = crate::gameplay_transport::SecureIdentifiers::random::<1>() else {
-                return UseDisposition::Rejected;
-            };
-            let roll = u16::from(byte);
-            if roll < 256 - 256 % span {
-                break minimum + roll % span;
-            }
+        let Some(roll) = draw_below(maximum - minimum + 1) else {
+            return UseDisposition::Rejected;
         };
-        let Some(reset_at) = now.checked_add(u64::from(random) * 60_000_000) else {
+        let Some(reset_at) = now.checked_add(u64::from(minimum + roll) * 60_000_000) else {
             return UseDisposition::Exhausted;
         };
         // The source AID cools down even if native monster admission refuses.
-        let _ = runtime.commit_quest_creature_spawn(&[(summon.creature.as_str(), health, at)]);
+        if let Some(landing) = self.quest_step_summon_landing(runtime, map, at) {
+            let _ =
+                runtime.commit_quest_creature_spawn(&[(summon.creature.as_str(), health, landing)]);
+        }
         pending.push(TimedEncounter {
             callback: callback.clone(),
             key,
@@ -118,6 +127,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         });
         states.owner_wake.notify_one();
         UseDisposition::Committed
+    }
+
+    /// Crystal Map::placeCreature retries the eight neighbouring cells in random
+    /// order when the arriving player occupies the requested spawn cell.
+    fn quest_step_summon_landing(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        at: MovementLocalPosition,
+    ) -> Option<MovementLocalPosition> {
+        let base = map.overlay.base();
+        let origin = native(at)?;
+        if base
+            .tile(origin.x, origin.y, origin.floor)?
+            .protection_zone()
+        {
+            return None;
+        }
+        let census = runtime.positioned_melee_census().ok()?;
+        let cells = self.movement_cells();
+        let candidates: Vec<_> = [
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+            (-1, 0),
+            (1, 0),
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+        ]
+        .into_iter()
+        .filter_map(|(dx, dy)| {
+            let landing = MovementLocalPosition {
+                x: at.x.checked_add(dx)?,
+                y: at.y.checked_add(dy)?,
+                floor: at.floor,
+            };
+            let pos = native(landing)?;
+            let cell = LogicalCell {
+                x: landing.x,
+                y: landing.y,
+                z: i32::from(landing.floor),
+            };
+            (!base.tile(pos.x, pos.y, pos.floor)?.protection_zone()
+                && !map.floors.contains(pos)
+                && !crate::map::floor::is_teleport(cells, cell)
+                && cells.index().lookup(cells.scope(), cell) == Ok(CollisionClass::Walkable)
+                && !map.facts.quest_callback_blocked(base, pos, false)
+                && !census
+                    .iter()
+                    .any(|(_, snapshot, _)| snapshot.position() == landing))
+            .then_some(landing)
+        })
+        .collect();
+        let index = draw_below(u16::try_from(candidates.len()).ok()?)?;
+        candidates.get(usize::from(index)).copied()
     }
 
     #[allow(

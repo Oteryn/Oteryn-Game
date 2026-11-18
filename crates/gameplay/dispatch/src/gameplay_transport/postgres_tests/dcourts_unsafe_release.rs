@@ -208,14 +208,12 @@ async fn exercise(h: &Harness) -> TestResult {
         let [spider] = census.as_slice() else {
             return Err(format!("expected one spider, got {census:?}").into());
         };
-        assert_eq!(
-            runtime
-                .read_actor_position(*spider)
-                .map_err(debug)?
-                .position()
-                .x,
-            2
-        );
+        let landing = runtime
+            .read_actor_position(*spider)
+            .map_err(debug)?
+            .position();
+        assert_eq!(landing.x.abs_diff(2), 1);
+        assert_eq!((landing.y, landing.floor), (0, 7));
         runtime.remove_encounter_actor(*spider).map_err(debug)?;
     }
     assert_eq!(

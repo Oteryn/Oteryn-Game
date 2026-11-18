@@ -103,7 +103,7 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
-    /// Spawn at the entered tile, then cool down that placement without clearing its creatures.
+    /// Request a spawn at StepIn and cool down the trigger without clearing creatures.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub step_summon: Option<StepSummon>,
 }
