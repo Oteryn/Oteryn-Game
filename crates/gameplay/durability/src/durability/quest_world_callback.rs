@@ -1208,6 +1208,7 @@ pub(super) async fn party_is_current(
     initiator: CurrentCharacterGameplayFence,
     callback: &Callback,
     context: &QuestWorldContext,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
 ) -> Result<bool, DurabilityError> {
     use crate::foundation::{ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
     let Some(party) = &callback.effects.party_transfer else {
@@ -1271,6 +1272,42 @@ pub(super) async fn party_is_current(
         };
         if base != station.vocation {
             return Ok(false);
+        }
+        if let Some(item) = &station.carried_item {
+            let carried: Option<i64> = sqlx::query_scalar(
+                "SELECT i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+                 JOIN game_item_instances i ON i.item_instance_id=c.item
+                 WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$3 AND i.quantity>0
+                 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
+            )
+            .bind(member.character.as_slice())
+            .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+            .bind(item)
+            .fetch_optional(&mut **tx)
+            .await?;
+            if carried.is_none() {
+                return Ok(false);
+            }
+            for guard in &callback.storage {
+                let Some(track) = catalogue
+                    .track(&guard.track)
+                    .filter(|track| track.quest == callback.quest)
+                else {
+                    return Ok(false);
+                };
+                let value: Option<i64> = sqlx::query_scalar(
+                    "SELECT value FROM game_character_quest_tracks
+                     WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
+                )
+                .bind(member.character.as_slice())
+                .bind(&guard.track)
+                .bind(&callback.quest)
+                .fetch_optional(&mut **tx)
+                .await?;
+                if !(guard.minimum..=guard.maximum).contains(&value.unwrap_or(track.initial)) {
+                    return Ok(false);
+                }
+            }
         }
     }
     Ok(true)

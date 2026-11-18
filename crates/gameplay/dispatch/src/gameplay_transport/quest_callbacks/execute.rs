@@ -904,8 +904,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             match self.prepare_party_transfer(runtime, states, &closed, callback, session) {
                 Ok(plan) => Some(plan),
+                Err(refusal)
+                    if party
+                        .stations
+                        .iter()
+                        .any(|station| station.carried_item.is_some()) =>
+                {
+                    return refusal;
+                }
                 Err(refusal) => {
-                    // Source toggles before validating the rite. Refusal changes
+                    // The ground-offering rite toggles before validating. Refusal changes
                     // only that appearance; no participant or offering changes.
                     return if map.facts.apply_quest_callback(
                         key,

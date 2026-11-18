@@ -343,7 +343,10 @@ pub struct PartyStation {
     pub to: Position,
     /// Base vocation; promoted members retain their base eligibility.
     pub vocation: String,
-    pub offering: Position,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offering: Option<Position>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_item: Option<String>,
 }
 
 fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
@@ -357,7 +360,12 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
             .is_some_and(|pair| pair.contains(&party.activation_appearance))
         && callback.reversible
         && !callback.storage.is_empty()
-        && callback.offerings.len() == party.stations.len()
+        && callback.offerings.len()
+            == party
+                .stations
+                .iter()
+                .filter(|s| s.offering.is_some())
+                .count()
         && callback.item_on_target.is_none()
         && callback.minimum_level.is_none()
         && callback.experience.is_none()
@@ -372,22 +380,28 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
         && (1..=8).contains(&party.stations.len())
         && unique(party.stations.iter().map(|s| s.from).collect())
         && unique(party.stations.iter().map(|s| s.to).collect())
-        && unique(party.stations.iter().map(|s| s.offering).collect())
+        && unique(party.stations.iter().filter_map(|s| s.offering).collect())
         && party.stations.iter().all(|station| {
             pos(station.from)
                 && pos(station.to)
-                && pos(station.offering)
                 && station.from != station.to
                 && matches!(
                     station.vocation.as_str(),
                     "druid" | "sorcerer" | "paladin" | "knight" | "monk"
                 )
-                && callback
-                    .offerings
-                    .iter()
-                    .filter(|o| o.position == station.offering && o.count == 1)
-                    .count()
-                    == 1
+                && match (station.offering, &station.carried_item) {
+                    (Some(offering), None) => {
+                        pos(offering)
+                            && callback
+                                .offerings
+                                .iter()
+                                .filter(|o| o.position == offering && o.count == 1)
+                                .count()
+                                == 1
+                    }
+                    (None, Some(item)) => item.starts_with("oteryn:item."),
+                    _ => false,
+                }
         })
 }
 
@@ -937,6 +951,31 @@ mod reward_door_tests {
 #[cfg(test)]
 mod party_transfer_tests {
     use super::*;
+
+    #[test]
+    fn party_transfer_carried_stations_replace_ground_offerings() -> Result<(), String> {
+        let mut callback = super::super::load()?
+            .into_iter()
+            .find(|row| row.key.ends_with("desert-dungeon-party-rite"))
+            .ok_or("source rite")?;
+        let party = callback.effects.party_transfer.as_mut().ok_or("party")?;
+        for (station, item) in party.stations.iter_mut().zip([947, 946, 948, 942]) {
+            station.offering = None;
+            station.carried_item = Some(format!("oteryn:item.tibia.i{item}"));
+        }
+        callback.offerings.clear();
+        assert!(valid(&callback));
+
+        callback
+            .effects
+            .party_transfer
+            .as_mut()
+            .ok_or("party")?
+            .stations[0]
+            .carried_item = None;
+        assert!(!valid(&callback));
+        Ok(())
+    }
 
     #[test]
     fn source_party_rite_is_bounded_and_exclusive() -> Result<(), String> {
