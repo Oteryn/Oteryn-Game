@@ -37,6 +37,13 @@ pub const MAX_NPC_TRACK_CHANGES: usize = super::QUESTSTATE0_RL_02;
 pub const MAX_NPC_EFFECTS: usize = 128;
 const SOURCE_PIN: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:";
 
+#[cfg(feature = "test-support")]
+thread_local! {
+    static RUNTIME_FIXTURE: std::cell::Cell<Option<&'static NpcRuleCatalog>> = const {
+        std::cell::Cell::new(None)
+    };
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NpcRuleError {
     Json(String),
@@ -501,8 +508,32 @@ impl NpcRuleCatalog {
             .map_err(Clone::clone)
     }
 
+    /// Use a parsed program catalogue on the current PostgreSQL scenario thread.
+    /// The dispatch and durable writers still require the ordinary program digest binding.
+    #[cfg(feature = "test-support")]
+    pub fn install_runtime_fixture(&'static self) -> impl Drop {
+        struct Restore {
+            previous: Option<&'static NpcRuleCatalog>,
+            thread: std::marker::PhantomData<std::rc::Rc<()>>,
+        }
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                RUNTIME_FIXTURE.set(self.previous);
+            }
+        }
+        Restore {
+            previous: RUNTIME_FIXTURE.replace(Some(self)),
+            thread: std::marker::PhantomData,
+        }
+    }
+
     /// A..M programs with read-compatible legacy definitions, plus the already active Stag.
     pub fn runtime() -> Result<&'static Self, NpcRuleError> {
+        #[cfg(feature = "test-support")]
+        if let Some(fixture) = RUNTIME_FIXTURE.get() {
+            return Ok(fixture);
+        }
+
         static RUNTIME: std::sync::OnceLock<Result<NpcRuleCatalog, NpcRuleError>> =
             std::sync::OnceLock::new();
         RUNTIME

@@ -34,7 +34,7 @@ fn banshee_sacrifice_step_consumes_only_blood_and_commits_both_flags() -> TestRe
 }
 
 #[test]
-fn banshee_queen_dialogue_refuses_a_pz_locked_kiss_and_clears_confirmation() -> TestResult {
+fn banshee_queen_dialogue_gates_the_kiss_and_commits_arrival_with_all_three_flags() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -86,6 +86,11 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
                 (32250, 31892, -14, 35016, 1959),
                 (32261, 31849, -15, 0, 1959),
             ],
+        )
+    } else if matches!(seal_case, Seal::Queen) {
+        (
+            (32260, 31866, -14),
+            vec![(32260, 31867, -14, 0, 431), (32202, 31812, -8, 0, 431)],
         )
     } else {
         (
@@ -649,11 +654,78 @@ async fn exercise_queen(
     const KEY: &str = "oteryn:quest-transition/test/banshee-kiss-prerequisites";
     const QUEST: &str = "oteryn:quest.the_queen_of_the_banshees_quest";
     const PREFIX: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/";
-    let catalogue = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+    const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_queen_of_the_banshees.lua:137-149";
+    const KISS: &str = "oteryn:quest-npc/test/banshee-kiss";
+    use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleError};
+
+    let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
         .map_err(debug)?;
+    let catalogue = loaded.catalogue();
+    let seal_tracks =
+        ["last_seal", "last_seal_door", "banshee_door"].map(|key| format!("{PREFIX}{key}"));
+    let tracks = seal_tracks
+        .iter()
+        .map(|key| {
+            let track = catalogue.track(key).ok_or("Queen seal track")?;
+            Ok(serde_json::json!({
+                "key": key, "quest": QUEST, "initial": track.initial,
+                "min": track.min, "max": track.max, "sources": [SOURCE],
+            }))
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    let mut effects = seal_tracks
+        .iter()
+        .map(|track| {
+            serde_json::json!({
+                "kind": "set", "track": track, "value": 1,
+            })
+        })
+        .collect::<Vec<_>>();
+    effects.push(serde_json::json!({
+        "kind": "teleport", "position": { "x": 32202, "y": 31812, "floor": -8 },
+    }));
+    effects.push(serde_json::json!({ "kind": "set_topic", "value": 0 }));
+    let fixture = serde_json::json!({
+        "schema": 1, "quest": QUEST, "tracks": tracks,
+        "rules": [{
+            "key": KISS, "quest": QUEST, "npc": QUEEN, "trigger": "say",
+            "keywords": ["yes"], "topics": [8], "sources": [SOURCE],
+            "guards": [
+                { "kind": "level", "op": "ge", "value": 50 },
+                { "kind": "storage", "track": seal_tracks[0], "op": "lt", "value": 1 }
+            ],
+            "effects": effects,
+        }],
+    });
+    static SOURCE_FIXTURE: std::sync::OnceLock<Result<NpcRuleCatalog, NpcRuleError>> =
+        std::sync::OnceLock::new();
+    let source = SOURCE_FIXTURE
+        .get_or_init(|| NpcRuleCatalog::from_json_documents(&[&fixture.to_string()]))
+        .as_ref()
+        .map_err(debug)?;
+    let program = source.program(QUEST).ok_or("Queen program")?;
+    let digest: String = program
+        .digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let catalogue = catalogue
+        .with_fixture_transition(QuestTransition {
+            key: format!("oteryn:quest-npc-pin/{digest}"),
+            quest: QUEST.into(),
+            effects: vec![QuestEffect {
+                track: seal_tracks[0].clone(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Computed,
+            }],
+            completes: false,
+            experience: None,
+            world_change: None,
+        })
+        .map_err(debug)?;
+    let _source_fixture = source.install_runtime_fixture();
     let catalogue = std::sync::Arc::new(
         catalogue
-            .catalogue()
             .with_fixture_transition(QuestTransition {
                 key: KEY.into(),
                 quest: QUEST.into(),
@@ -708,12 +780,45 @@ async fn exercise_queen(
             .any(|line| line.contains("prepared to receive my kiss"))
     );
     let actor = admitted.runtime_actor.ok_or("actor")?;
+    let low_level = owner
+        .npc_talk(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: 10,
+                item_fence: Some(fence.item_fence()),
+            },
+            oteryn_protocol_oteryn::npc_service::NpcTalkIntent {
+                npc_actor: queen,
+                text: "yes".into(),
+            },
+        )
+        .await;
+    assert_eq!(
+        low_level.disposition,
+        oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Rejected
+    );
+    assert!(!low_level.unknown);
+    owner.states.level_refresh.mark([fence.character_id]);
+    Box::pin(owner.refresh_level_up_vitals(actor, session)).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        let spells = owner.states.spell_states.lock().await;
+        assert_eq!(
+            spells
+                .get(&runtime, actor, session)
+                .ok_or("live character")?
+                .character_facts()
+                .level,
+            50
+        );
+    }
     {
         let mut spells = owner.states.spell_states.lock().await;
         crate::gameplay_transport::pvp_live::lock_mut(&mut spells, actor, session)
             .on_aggression(owner.owner_now());
     }
-    let refused = super::classic_quests::talk(owner, admitted, queen, 10, "yes").await?;
+    let refused = super::classic_quests::talk(owner, admitted, queen, 11, "yes").await?;
     assert!(
         refused
             .iter()
@@ -737,5 +842,45 @@ async fn exercise_queen(
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(arrivals, 0);
+
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(75))
+        .ok_or("PZ lock clock")?;
+    super::classic_quests::talk(owner, admitted, queen, 13, "seventh seal").await?;
+    for command in 14..=19 {
+        super::classic_quests::talk(owner, admitted, queen, command, "yes").await?;
+    }
+    super::classic_quests::talk(owner, admitted, queen, 20, "kiss").await?;
+    super::classic_quests::talk(owner, admitted, queen, 21, "yes").await?;
+    let at = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
+    assert_eq!(
+        at.position(),
+        MovementLocalPosition {
+            x: 32202,
+            y: 31812,
+            floor: 8
+        }
+    );
+    let committed: (i64, i64) = sqlx::query_as(
+        "SELECT count(*), count(DISTINCT committed_character_revision)
+         FROM game_character_quest_tracks WHERE track_key IN ($1,$2,$3) AND value=1",
+    )
+    .bind(&seal_tracks[0])
+    .bind(&seal_tracks[1])
+    .bind(&seal_tracks[2])
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(committed, (3, 1));
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_npc_teleport_receipts
+         WHERE transition_key=$1 AND quest_changed AND tile_x=32202 AND tile_y=31812 AND tile_floor=8",
+    ).bind(KISS).fetch_one(&h.pool).await?;
+    assert_eq!(receipts, 1);
     Ok(())
 }
