@@ -4286,6 +4286,82 @@
       ]
     },
     {
+      "npc": "oteryn:npc.ongulf",
+      "keywords": [
+        "mission",
+        "project"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Well, it's a long story but you really should listen to understand what is going on here. You can also hear a short version of the story, but then don't blame me if you mess something up due to your undwarfish impatience. ...",
+        "So what would you like to hear, the {long} story or the {short} version?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ongulf",
+      "keywords": [
+        "long"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "After centuries the resources beneath and around the Big Old One became alarmingly short. Some decades ago, the imperial mining guild financed a project to search and establish new mines far away from Kazordoon. ...",
+        "After several tries with mixed success, the project of the technomancers proved the most successful. Their steamships studied and mapped the great underwater rivers deep beneath the earth. ...",
+        "With the help of certain apparatuses, they tracked deposits of ore and compiled ship routes to reach them. These mining bases had some obvious advantages and disadvantages. ...",
+        "The suitable spots had no connection to the surface. On the one hand, this meant that the new mines were safe from most kinds of beasts. On the other hand, it meant that all food and material had to be brought there by ship. ...",
+        "Special, heavy ships were built to carry ore and supplies back and forth. The only limitation for such bases had been the range of the steamships. ...",
+        "Recently, the technomancers with the help of the temples of fire and earth made some crucial discoveries that allowed the ships to extend their cruising range almost limitlessly. ...",
+        "The survey ships of the technomancers were once again sent out to find new, promising resources. ...",
+        "Sadly some of the ships never returned and others only found minor deposits of ore, not worth the effort. But one of the ships made some groundbreaking discovery - a cave that had a connection to the surface. ...",
+        "As far as the explorers could tell, the area had been unknown to dwarfhood and mankind so far. ...",
+        "What was more, the said cave system had an abundance of rare ores. The imperial mining guild agreed to fund a new project and to name it 'project far far away'. ...",
+        "Don't look at me, I'm not the one who came up with that name! Those technomancers are such an imaginative bunch. But where have we been? Oh, yes, the new project! ...",
+        "Well, some ships were sent to establish a first base. ...",
+        "It became painfully obvious that the number of workers needed there could not easily be supplied by the ships alone. Also such a base would require an amount of money, expertise and manpower that the guild could not provide. ...",
+        "We would need help and additional resources. That's were you come into play. If you are interested, let's talk about possible missions."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ongulf",
+      "keywords": [
+        "short"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "<grumbles> Well, we have found this place here full of promising resources and plan to create a new mining outpost. Of course this takes a lot of effort and organisation. ...",
+        "For some of the tasks at hand we need help, even from outsiders like you. So if you are interested in some missions, let me know."
+      ]
+    },
+    {
       "npc": "oteryn:npc.ottokar",
       "keywords": [
         "medicine",

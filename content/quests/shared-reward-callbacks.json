@@ -8629,6 +8629,136 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/qcx51-frontier-finish",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "npc": "oteryn:npc.ongulf",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 28,
+          "maximum": 28,
+          "set": 29
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10/magic_carpet_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Oh, my! That sounds like a real mess. For now this dragon empire seems otherwise engaged, but we will be on guard thanks to you my friend. We will continue to fortify the base. ...",
+        "This leaves not much to do for you down here. I recommend you continue to explore this strange new land. ...",
+        "I'm pretty sure there are several opportunities at hand for an adventurer like you. ...",
+        "Perhaps you can help the primitives you encountered. Who knows, maybe even those minotaurs give you a chance to fortify this fragile peace between us. ...",
+        "Even some of the people here in the base might offer you some tasks sooner or later. If you prefer, you can also do some exploring, hunting and good ol' plundering on your own of course. ...",
+        "This new land is yours to be taken, so to say. Go out and make your fortune! With Farmine you have always a safe haven to return to. ...",
+        "Oh and one last thing: We convinced a carpet pilot to join us here. You'll find him on top of our lift in the mountains. I think he can offer you fast access to some cities back home."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:235-248:sha256:707bcd4bee3727dc0a0af77d4e67f562835689bd2976041c0864d8381c458f61",
+        "https://tibia.fandom.com/?curid=41756&oldid=1099208"
+      ],
+      "experience": 8000,
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/qcx51-frontier-report-victory",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "npc": "oteryn:npc.chrak",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 28
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission09_1",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have done ze impozzible and beaten ze champion. Your mazter will be pleazed. Hereby I cleanze ze poizon from your body. You are now allowed to leave. ...",
+        "For now ze mazter will zee zat you and your alliez are zpared of ze wraz of ze dragon emperor az you are unimportant for hiz goalz. ...",
+        "You may crawl back to your alliez and warn zem of ze gloriouz might of ze dragon emperor and hiz minionz."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chrak.lua:72-80:sha256:c750161e3e48bf3921fc85535d3dafb0ee722f1dde6b2bcfea306c4e07f578c9",
+        "https://tibia.fandom.com/?curid=41756&oldid=1099208"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qcx51-frontier-start",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "npc": "oteryn:npc.ongulf",
+      "keywords": [
+        "mission",
+        "missions"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission01",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Listen, I can handle the organisation down here and my boys will handle the construction of the base fine enough. Actually, all you do down here is to stand in the workers' way. ...",
+        "But there might be something for you to do outside the base. We need to learn more about the land up there. Take the lift and do some exploring. Find a passage leading out of the mountains. ...",
+        "Do not explore any further though. You never know whom you might be messing with."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:104-111:sha256:707bcd4bee3727dc0a0af77d4e67f562835689bd2976041c0864d8381c458f61",
+        "https://tibia.fandom.com/?curid=41756&oldid=1099208"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/sam-backpack",
       "quest": "oteryn:quest.sam_s_old_backpack_quest",
       "npc": "oteryn:npc.sam",

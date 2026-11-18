@@ -88,9 +88,53 @@ def sha(value):
     return hashlib.sha256(value).hexdigest()
 
 
+def frontier_ongulf(add, callbacks, offers):
+    """Import Ongulf's opening and finale from the retained Crystal dialogue capture."""
+    capture = json.loads((ROOT / 'content/dialogues/quests-2/emperor-donor-dialogues.json').read_bytes())
+    npc = next(row for row in capture['npcs'] if row['npc'] == 'ongulf')
+    replies = {row['line']: row['literal_messages'] for row in npc['replies']}
+    quest = 'the_new_frontier_quest'
+    track = 'oteryn:quest-progress/quest/u8_54/the_new_frontier/'
+
+    def state(name, before, after):
+        return {'track': track + name, 'minimum': before, 'maximum': before, 'set': after}
+
+    # TibiaWiki spoiler (curid 41756, oldid 1099208), Mission 01: accept
+    # "mission" as the opening keyword from the transcript as well as "project".
+    for words, topic, next_topic, line in [
+        (['mission', 'project'], 0, 1, 70),
+        (['long'], 1, 2, 75),
+        (['short'], 1, 2, 95),
+    ]:
+        offers.append({'npc': 'oteryn:npc.ongulf', 'keywords': words, 'topic': topic,
+                       'next_topic': next_topic,
+                       'storage': [{**state('questline', 0, 0), 'preserve': True}],
+                       'reply': replies[line]})
+    add('qcx51-frontier-start', quest, 'ongulf', ['mission', 'missions'],
+        [state('questline', 0, 1), state('mission01', 0, 1)], topic=2)
+    callbacks[-1].update(reply=replies[104], sources=[
+        f"crystal:{capture['source_revision']}:{npc['path']}:104-111:sha256:{npc['blob_sha256']}",
+        'https://tibia.fandom.com/?curid=41756&oldid=1099208',
+    ])
+    chrak = next(row for row in capture['npcs'] if row['npc'] == 'chrak')
+    add('qcx51-frontier-report-victory', quest, 'chrak', ['mission'],
+        [state('questline', 27, 28), state('mission09_1', 2, 3), state('mission10_1', 0, 1)])
+    callbacks[-1].update(reply=next(row['literal_messages'] for row in chrak['replies'] if row['line'] == 72),
+        sources=[f"crystal:{capture['source_revision']}:{chrak['path']}:72-80:sha256:{chrak['blob_sha256']}",
+                 'https://tibia.fandom.com/?curid=41756&oldid=1099208'])
+    # Mission 10 of the same spoiler gives 8,000 XP and carpet access.
+    add('qcx51-frontier-finish', quest, 'ongulf', ['mission'],
+        [state('questline', 28, 29), state('mission10_1', 1, 2),
+         state('mission10/magic_carpet_door', 0, 1)])
+    callbacks[-1].update(reply=replies[235], experience=8000, completes=True, sources=[
+        f"crystal:{capture['source_revision']}:{npc['path']}:235-248:sha256:{npc['blob_sha256']}",
+        'https://tibia.fandom.com/?curid=41756&oldid=1099208',
+    ])
+
+
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'rock_steady', *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
+        'morgan', 'navigator', 'rock_steady', 'ongulf', 'chrak', *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
@@ -1037,6 +1081,7 @@ def build():
     engoutfit_m36.append(add, storage, callbacks, offers, declarations,
         f'crystal:{PIN}:data-global/npc/rock_steady.lua:56-98:sha256:{sha(inputs["data-global/npc/rock_steady.lua"])}')
     qmech_m39.append(add, callbacks, offers, declarations, inputs, PIN)
+    frontier_ongulf(add, callbacks, offers)
     m39_keys = ('l2-cael-tome-', 'l2-zalamon-tome', 'l2-alliance-finish', 'l2-bone-', 'bone-pit-lost-sample')
     m39_callbacks = [callback for callback in callbacks if callback['key'].split('/')[-1].startswith(m39_keys)]
     callbacks = [callback for callback in callbacks if callback not in m39_callbacks]

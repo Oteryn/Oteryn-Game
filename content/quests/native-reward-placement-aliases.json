@@ -12,6 +12,54 @@
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
         "Committed region-z14-x127-y125.b3: ground351 and chest2472 at32591,32097,14; both entries have no retained unique tag. Original source identity, reward and claim policy are unchanged."
       ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.gold_ingot",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6098,
+      "project_position": {
+        "x": 33055,
+        "y": 31029,
+        "z": 7
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1332",
+        "content/world/placements/region-z07-x129-y121.b3: top-level item IDs [8308, 2472] at (33055, 31029, 7), with no retained unique attributes."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.pig_bank",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6099,
+      "project_position": {
+        "x": 33053,
+        "y": 31029,
+        "z": 7
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1339",
+        "content/world/placements/region-z07-x129-y121.b3: top-level item IDs [8308, 2472] at (33053, 31029, 7), with no retained unique attributes."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.potions",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6097,
+      "project_position": {
+        "x": 33057,
+        "y": 31029,
+        "z": 7
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1324",
+        "content/world/placements/region-z07-x129-y121.b3: top-level item IDs [8309, 2472] at (33057, 31029, 7), with no retained unique attributes."
+      ]
     }
   ]
 }
