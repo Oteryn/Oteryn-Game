@@ -27,7 +27,8 @@ const BEGIN: &str = "oteryn:quest-transition/haunted-tomb-fixture/start";
 const MUMMY: &str = "oteryn:creature.mummy";
 const SARCOPHAGUS: Position = Position {x:33081,y:32355,floor:-8};
 // The existing test generation can mint this native fixture Item. Production
-// authoring binds the donor's i29351 temporal key.
+// authoring binds i29351. Its XML duration has no decay target. See Crystal
+// src/items/items.hpp:302 and src/items/item.cpp:3377-3380.
 const FIXTURE_ITEM: &str = "oteryn:item.tibia.i3585";
 
 pub(super) fn binding() -> TestResult<Callback> {
@@ -129,6 +130,9 @@ pub(super) async fn exercise(
     let rewards:i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1")
         .bind(FIXTURE_ITEM).fetch_one(&harness.pool).await?;
     assert_eq!(rewards,i64::from(won));
+    let scheduled:i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_temporal_schedules WHERE definition_production_key=$1")
+        .bind(FIXTURE_ITEM).fetch_one(&harness.pool).await?;
+    assert_eq!(scheduled,0);
     assert_eq!(map.facts.expire_movement_items(due-1),0);
     assert_eq!(map.facts.expire_movement_items(due),1);
     assert!(map.facts.quest_callback_action_ready(source,23104));

@@ -62,17 +62,33 @@ impl RollReward {
         actor_placement: &[u8; 16],
         movement_revision: u64,
     ) -> bool {
-        let digest = Sha256::new()
-            .chain_update(b"oteryn:quest-world-reward-roll:v1")
-            .chain_update(session)
-            .chain_update(ordinal.to_be_bytes())
-            .chain_update(actor_placement)
-            .chain_update(movement_revision.to_be_bytes())
-            .chain_update(callback.as_bytes())
-            .finalize();
-        let mut bytes = [0u8; 8];
-        bytes.copy_from_slice(&digest[..8]);
-        let draw = 1 + u64::from_be_bytes(bytes) % u64::from(self.sides.max(1));
+        let draw = 1 + draw(
+            callback,
+            session,
+            ordinal,
+            actor_placement,
+            movement_revision,
+        ) % u64::from(self.sides.max(1));
         draw >= u64::from(self.minimum_success)
     }
+}
+
+pub(super) fn draw(
+    callback: &str,
+    session: &[u8; 16],
+    ordinal: u64,
+    actor_placement: &[u8; 16],
+    movement_revision: u64,
+) -> u64 {
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:quest-world-reward-roll:v1")
+        .chain_update(session)
+        .chain_update(ordinal.to_be_bytes())
+        .chain_update(actor_placement)
+        .chain_update(movement_revision.to_be_bytes())
+        .chain_update(callback.as_bytes())
+        .finalize();
+    let mut bytes = [0u8; 8];
+    bytes.copy_from_slice(&digest[..8]);
+    u64::from_be_bytes(bytes)
 }
