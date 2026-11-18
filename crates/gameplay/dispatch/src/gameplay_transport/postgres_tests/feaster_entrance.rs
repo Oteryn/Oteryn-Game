@@ -14,7 +14,7 @@ fn feaster_entrance_checks_level_without_quest_state() -> TestResult {
     };
     assert!(!admin.is_empty());
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run_async(|admin| exercise(admin, false));
+    let result = super::kill_reward_e2e::scenario_thread::run_async(|admin| exercise(admin, None));
     eprintln!(
         "POSTGRES_CASE_COMPLETED feaster_entrance duration={:?} success={}",
         started.elapsed(),
@@ -29,10 +29,21 @@ fn feaster_timed_room_admits_two_players_and_ejects_both() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(|admin| exercise(admin, true))
+    super::kill_reward_e2e::scenario_thread::run_async(|admin| exercise(admin, Some(5)))
 }
 
-async fn exercise(admin: String, timed: bool) -> TestResult {
+#[test]
+fn feaster_solo_room_refuses_second_player_and_ejects_entrant() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::kill_reward_e2e::scenario_thread::run_async(|admin| exercise(admin, Some(1)))
+}
+
+async fn exercise(admin: String, capacity: Option<u8>) -> TestResult {
+    let timed = capacity.is_some();
+    let solo = capacity == Some(1);
     let h = Harness::create_with_admission_seed(admin, "feaster_level", true, false).await?;
     prepare_current_session(&h).await?;
     if timed {
@@ -143,7 +154,7 @@ async fn exercise(admin: String, timed: bool) -> TestResult {
                 .states
                 .quest_callbacks
                 .fixture
-                .set(vec![portal(timed)?])
+                .set(vec![portal(capacity)?])
                 .is_ok()
         );
         let session = deps.admitted.game_session_id;
@@ -214,7 +225,7 @@ async fn exercise(admin: String, timed: bool) -> TestResult {
                     .map_err(debug)?
                     .position()
                     .x,
-                3
+                if solo { 1 } else { 3 }
             );
             owner.clock_origin = owner
                 .clock_origin
@@ -247,7 +258,7 @@ async fn exercise(admin: String, timed: bool) -> TestResult {
                         .map_err(debug)?
                         .position()
                         .x,
-                    7
+                    if solo && player == observer { 1 } else { 7 }
                 );
             }
         }
@@ -261,16 +272,23 @@ async fn exercise(admin: String, timed: bool) -> TestResult {
     assert_eq!(rows, (0, 0));
     if timed {
         let cooldowns: i64 = sqlx::query_scalar(
-            "SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key='oteryn:boss.brain_head'"
-        ).fetch_one(&h.pool).await?;
-        assert_eq!(cooldowns, 2);
+            "SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key=$1",
+        )
+        .bind(if solo {
+            "oteryn:boss.the_fear_feaster"
+        } else {
+            "oteryn:boss.brain_head"
+        })
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(cooldowns, if solo { 1 } else { 2 });
     }
     drop(authority);
     drop(seal);
     h.cleanup().await
 }
 
-fn portal(timed: bool) -> TestResult<Callback> {
+fn portal(capacity: Option<u8>) -> TestResult<Callback> {
     let mut callback = serde_json::json!({
         "key": "oteryn:quest-callback/feaster-level-entrance-fixture",
         "quest": "oteryn:quest.feaster_of_souls_quest",
@@ -288,16 +306,22 @@ fn portal(timed: bool) -> TestResult<Callback> {
         "failure_message": "You need at least level 250 to enter.",
         "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:17-33"]
     });
-    if timed {
+    if let Some(capacity) = capacity {
+        let solo = capacity == 1;
+        let defender = if solo {
+            "oteryn:creature.the_fear_feaster"
+        } else {
+            "oteryn:creature.brain_head"
+        };
         callback["effects"]["encounter"] = serde_json::json!({
             "minimum_level": 250,
             "players": [],
-            "monsters": [{"position":{"x":1,"y":0,"floor":-7},"creature":"oteryn:creature.brain_head"}],
+            "monsters": [{"position":{"x":1,"y":0,"floor":-7},"creature":defender}],
             "room_min":{"x":1,"y":0,"floor":-7},
             "room_max":{"x":3,"y":0,"floor":-7},
             "timing":{
-                "spawn_after_ms":50,"reset_after_ms":300_000,
-                "admission":{"capacity":5,"join_for_ms":30_000,"cooldown_s":36_000,"exit":{"x":7,"y":0,"floor":-7}}
+                "spawn_after_ms":if solo { 0 } else { 50 },"reset_after_ms":300_000,
+                "admission":{"capacity":capacity,"join_for_ms":if solo { 0 } else { 30_000 },"cooldown_s":if solo { 72_000 } else { 36_000 },"exit":{"x":7,"y":0,"floor":-7}}
             }
         });
     }
