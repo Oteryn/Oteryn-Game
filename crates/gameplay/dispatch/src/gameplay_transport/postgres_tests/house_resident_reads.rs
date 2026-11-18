@@ -5,7 +5,8 @@ use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     connection::{
-        AdmittedSession, ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+        AdmittedSession, ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, LivenessPolicy,
+        serve_admitted,
     },
 };
 use oteryn_protocol_oteryn::{
@@ -39,6 +40,62 @@ fn house_resident_mail_without_inscription_postgres() -> TestResult {
 #[test]
 fn house_resident_equip_moves_helmet_postgres() -> TestResult {
     run_case(Case::ResidentEquip)
+}
+
+#[test]
+fn house_resident_energy_ring_expires_postgres() -> TestResult {
+    run_case(Case::ResidentTimedEquip)
+}
+
+#[test]
+fn house_resident_revoked_appearance_postgres() -> TestResult {
+    run_case(Case::ResidentAppearanceRevoked)
+}
+
+pub(super) async fn appearance_revoked(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("guest actor")?;
+    let entity = entities::EntityRef {
+        identity: actor.placement_identity(),
+        generation: actor.actor_local_generation(),
+    };
+    let observe = || owner.appearance_observation(actor, admitted.game_session_id, vec![entity]);
+    assert_eq!(observe().await.ok_or("guest appearance")?.bindings.len(), 1);
+    let house = super::house_balloon::HOUSE;
+    for operation in [Some(id(201)), None] {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        let changed = sqlx::query("UPDATE game_house_properties SET content_fence_operation=encode($3,'hex')::uuid WHERE world_id=encode($1,'hex')::uuid AND house_key=$2")
+            .bind(id(42).as_slice()).bind(house).bind(operation.as_ref().map(|id| id.as_slice()))
+            .execute(&mut *tx).await?;
+        assert_eq!(changed.rows_affected(), 1);
+        tx.commit().await?;
+        assert_eq!(
+            observe().await.is_none(),
+            operation.is_some(),
+            "property content fence gates appearance"
+        );
+    }
+    let mut tx = h.pool.begin().await?;
+    // Model the committed ACL change while retaining the already admitted actor.
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let deleted = sqlx::query("DELETE FROM game_house_acl_entries WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND list_key='guest' AND character_id=encode($3,'hex')::uuid")
+        .bind(id(42).as_slice()).bind(house).bind(id(41).as_slice())
+        .execute(&mut *tx).await?;
+    assert_eq!(deleted.rows_affected(), 1);
+    tx.commit().await?;
+    assert!(
+        observe().await.is_none(),
+        "revoked guest still receives appearance"
+    );
+    Ok(())
 }
 
 #[test]
@@ -234,7 +291,7 @@ pub(super) async fn select_mount(
 
 pub(super) async fn exchange(
     h: &Harness,
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     letter: std::num::NonZeroU32,
     case: Case,
@@ -272,19 +329,24 @@ pub(super) async fn exchange(
     .bind(id(41).as_slice())
     .execute(&mut *tx)
     .await?;
+    if case == Case::ResidentTimedEquip {
+        // The native ring requires an eligible vocation before its clock can start.
+        sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'monk',10,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET vocation='monk'")
+            .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
+    }
     if case == Case::ResidentExpiryTick {
         let house = super::house_balloon::HOUSE;
         let position = [32310_i32, 32804, 7].map(i32::to_be_bytes).concat();
         sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
             .bind(id(42).as_slice()).bind(house).bind(&position).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i35949','definition-r1',1,1,encode($1,'hex')::uuid)")
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i35950','definition-r1',1,1,encode($1,'hex')::uuid)")
             .bind(id(80).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_house_interior_locations VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,1,encode($1,'hex')::uuid)")
             .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(house).bind(&position).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($1,'hex')::uuid,1)")
             .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(house).bind(id(101).as_slice()).execute(&mut *tx).await?;
         sqlx::query(
-            "INSERT INTO game_item_timed_states VALUES(encode($1,'hex')::uuid,NULL,200000,1,1)",
+            "INSERT INTO game_item_timed_states VALUES(encode($1,'hex')::uuid,NULL,1000,floor(extract(epoch FROM clock_timestamp())*1000)::bigint,1)",
         )
         .bind(id(80).as_slice())
         .execute(&mut *tx)
@@ -306,30 +368,80 @@ pub(super) async fn exchange(
         assert!(!emblems.ok_or("House emblems while writer is busy")?.is_empty());
         writer.rollback().await?;
     }
+    let shared = &*owner;
+    let expiry = case == Case::ResidentExpiryTick;
+    let policy = if expiry {
+        LivenessPolicy {
+            interval: std::time::Duration::from_millis(200),
+            missed_limit: 1,
+        }
+    } else {
+        IDLE_LIVENESS
+    };
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let observe = async move {
         let mut writer = None;
         let mut capacity = false;
         let mut emblem = false;
         let mut letter_handle = None;
+        let mut ack_after_tick = false;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let read = super::item_look::read_frame(&mut client);
+            let raw = if expiry && writer.is_some() {
+                tokio::time::timeout(std::time::Duration::from_millis(900), read)
+                    .await
+                    .map_err(|_| "House expiry stalled liveness with a locked registration")??
+            } else {
+                read.await?
+            };
             let envelope = decode_wire_envelope(&raw).map_err(debug)?;
             match envelope.message_type() {
                 MessageType::SnapshotCommit if tick => {
                     let mut lock = h.pool.begin().await?;
-                    sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
-                        .execute(&mut *lock)
-                        .await?;
                     if case == Case::ResidentExpiryTick {
+                        sqlx::query("SELECT node_id FROM game_node_registrations WHERE node_id=encode($1,'hex')::uuid FOR UPDATE")
+                            .bind(shared.holder.fact().node_id().as_bytes().as_slice())
+                            .fetch_one(&mut *lock).await?;
                         let house = crate::durability::house_scope_handoff::HouseId::new(
                             admitted.world_id,
                             super::house_balloon::HOUSE,
                         )
                         .ok_or("fixture House")?;
-                        assert!(owner.root.observe_due_house_furniture(&house).await?);
+                        assert!(shared.root.observe_due_house_furniture(&house).await?);
+                    } else {
+                        sqlx::query(
+                            "LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE",
+                        )
+                        .execute(&mut *lock)
+                        .await?;
                     }
                     writer = Some((lock, tokio::time::Instant::now()));
+                }
+                MessageType::LivenessProbe if expiry => {
+                    let probe = oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())
+                        .map_err(debug)?;
+                    let ack = oteryn_protocol_oteryn::encode_liveness_ack(
+                        admitted.continuity.connection_generation,
+                        probe,
+                        0,
+                    )
+                    .map_err(debug)?;
+                    crate::gameplay_transport::tcp_tls::write_frame(&mut client, &ack).await?;
+                    if capacity && emblem {
+                        if ack_after_tick && let Some((lock, _)) = writer.take() {
+                            // With a one-miss limit, this probe proves ingress handled the
+                            // previous ACK after the service tick, while the writer was held.
+                            assert_eq!(decoration_phase(h).await?, "oteryn:item.tibia.i35950");
+                            lock.rollback().await?;
+                        }
+                        ack_after_tick = true;
+                        if writer.is_none()
+                            && decoration_phase(h).await? == "oteryn:item.tibia.i35951"
+                        {
+                            client.shutdown().await?;
+                            return Ok(());
+                        }
+                    }
                 }
                 MessageType::SnapshotCommit
                     if case == Case::ResidentMail && letter_handle.is_none() =>
@@ -354,7 +466,10 @@ pub(super) async fn exchange(
                 MessageType::SnapshotChunk
                     if matches!(
                         case,
-                        Case::ResidentLetter | Case::ResidentMail | Case::ResidentEquip
+                        Case::ResidentLetter
+                            | Case::ResidentMail
+                            | Case::ResidentEquip
+                            | Case::ResidentTimedEquip
                     ) =>
                 {
                     let (_, domains) =
@@ -366,7 +481,7 @@ pub(super) async fn exchange(
                         }
                         let inventory = item_view::decode_character_inventory_with_equip_drop(
                             domain.payload,
-                            case == Case::ResidentEquip,
+                            matches!(case, Case::ResidentEquip | Case::ResidentTimedEquip),
                         )
                         .map_err(debug)?;
                         let handle = inventory
@@ -385,14 +500,18 @@ pub(super) async fn exchange(
                                 })
                                 .map_err(debug)?,
                             )
-                        } else if case == Case::ResidentEquip {
+                        } else if matches!(case, Case::ResidentEquip | Case::ResidentTimedEquip) {
                             (
                                 item_view::COMMAND_TYPE_ITEM_MOVE_INTENT,
                                 item_view::encode_item_move_intent_with_equip_drop(
                                     &item_view::ItemMoveIntent {
                                         source: handle,
                                         destination: item_view::ItemMoveDestination::Equipment(
-                                            item_view::EquipmentSlot::Head,
+                                            if case == Case::ResidentTimedEquip {
+                                                item_view::EquipmentSlot::Ring
+                                            } else {
+                                                item_view::EquipmentSlot::Head
+                                            },
                                         ),
                                     },
                                     true,
@@ -423,7 +542,10 @@ pub(super) async fn exchange(
                     }
                 }
                 MessageType::CommandResult
-                    if matches!(case, Case::ResidentMail | Case::ResidentEquip) =>
+                    if matches!(
+                        case,
+                        Case::ResidentMail | Case::ResidentEquip | Case::ResidentTimedEquip
+                    ) =>
                 {
                     let reply = decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(reply.command_id, 1);
@@ -500,7 +622,7 @@ pub(super) async fn exchange(
                         }
                         _ => (),
                     }
-                    if capacity && emblem {
+                    if capacity && emblem && !expiry {
                         let (lock, started) =
                             writer.take().ok_or("writer held during House tick")?;
                         assert!(
@@ -534,7 +656,7 @@ pub(super) async fn exchange(
     let (end, result) = tokio::time::timeout(std::time::Duration::from_secs(12), async {
         tokio::join!(
             async move {
-                let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+                let end = serve_admitted(&mut server, admitted, shared, policy).await;
                 drop(server);
                 end
             },
@@ -543,7 +665,7 @@ pub(super) async fn exchange(
     })
     .await?;
     result?;
-    if tick {
+    if case == Case::ResidentTick {
         assert!(
             matches!(
                 end,
@@ -572,6 +694,14 @@ pub(super) async fn exchange(
         .fetch_optional(&h.pool)
         .await?;
         assert_eq!(slot, Some(1));
+    }
+    if case == Case::ResidentTimedEquip {
+        owner.clock_origin -= std::time::Duration::from_secs(601);
+        owner.tick_timed_items().await;
+        let lifecycle: i16 = sqlx::query_scalar(
+            "SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+        ).bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(lifecycle, 2, "the owner tick burns the worn energy ring");
     }
     // A retained session with the wrong named House cannot authorize any of these reads.
     let mut tx = h.pool.begin().await?;
@@ -604,4 +734,9 @@ pub(super) async fn exchange(
             .is_none()
     );
     Ok(())
+}
+
+async fn decoration_phase(h: &Harness) -> TestResult<String> {
+    Ok(sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(id(80).as_slice()).fetch_one(&h.pool).await?)
 }

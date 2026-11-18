@@ -15,9 +15,14 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         | Case::ResidentLetter
         | Case::ResidentMail
         | Case::ResidentMount
+        | Case::ResidentAppearanceRevoked
         | Case::ResidentQuest => (
             "oteryn:item.tibia.i3505".into(),
             "oteryn:item.tibia.i3505".into(),
+        ),
+        Case::ResidentTimedEquip => (
+            "oteryn:item.tibia.i3051".into(),
+            "oteryn:item.tibia.i3051".into(),
         ),
         Case::ResidentEquip => (
             "oteryn:item.tibia.i3375".into(),
@@ -89,7 +94,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
-    } else if matches!(case, Case::ResidentMount | Case::ResidentTick) {
+    } else if matches!(
+        case,
+        Case::ResidentMount | Case::ResidentTick | Case::ResidentAppearanceRevoked
+    ) {
         super::super::house_wrap::walkable_house_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
@@ -105,7 +113,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     use crate::content::native_gameplay::test_support::cosmetics_fixture::{
         activated_with_optional_cosmetics, cosmetics_test_packet,
     };
-    let cosmetics = if matches!(case, Case::ResidentMount | Case::ResidentTick) {
+    let cosmetics = if matches!(
+        case,
+        Case::ResidentMount | Case::ResidentTick | Case::ResidentAppearanceRevoked
+    ) {
         let mut packet = cosmetics_test_packet();
         packet["authoring"]["document"]["content_revision"] = "content-1".into();
         let mount = packet["authoring"]["document"]["mounts"][0]["key"].as_str().ok_or("mount key")?.to_owned();
@@ -182,14 +193,20 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::ResidentLetter
             | Case::ResidentMail
             | Case::ResidentEquip
+            | Case::ResidentTimedEquip
             | Case::ResidentMount
             | Case::ResidentTick
+            | Case::ResidentAppearanceRevoked
     ) {
         super::super::tutorial_vitals_fixture::publish_native_activation(h, &native_pin).await?;
     }
     if matches!(
         case,
-        Case::ResidentEquip | Case::ResidentMount | Case::ResidentTick
+        Case::ResidentEquip
+            | Case::ResidentTimedEquip
+            | Case::ResidentMount
+            | Case::ResidentTick
+            | Case::ResidentAppearanceRevoked
     ) {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
             .bind(id(41).as_slice()).execute(&h.pool).await?;
@@ -307,14 +324,17 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::ResidentExpiryTick => &[3, 4, 6, 15, 49, 51, 86, 115, 165, 508, 509, 511],
         Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511],
         Case::ResidentMail => &[4, 6, 86, 115],
-        Case::ResidentEquip => &[4, 6, 12, 15, 86],
-        Case::ResidentMount => &[6, 13, 25, 49, 86, 502],
+        Case::ResidentEquip | Case::ResidentTimedEquip => &[4, 6, 12, 15, 86],
+        Case::ResidentMount | Case::ResidentAppearanceRevoked => &[6, 13, 25, 49, 86, 502],
         Case::ResidentQuest => &[6, 49, 86, 500],
         Case::Carried | Case::Foreign => &[4, 6, 15, 49, 86],
     };
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
         owner.offered_capabilities(),
-        matches!(case, Case::ResidentMount | Case::ResidentTick),
+        matches!(
+            case,
+            Case::ResidentMount | Case::ResidentTick | Case::ResidentAppearanceRevoked
+        ),
     );
     let offered = crate::gameplay_transport::server_info::offered(&offered, true);
     admitted.continuity.selected_capabilities =
@@ -360,7 +380,9 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::ResidentLetter
             | Case::ResidentMail
             | Case::ResidentEquip
+            | Case::ResidentTimedEquip
             | Case::ResidentMount
+            | Case::ResidentAppearanceRevoked
             | Case::ResidentQuest
             | Case::Decoration(_, _)
             | Case::NativeNoop(_)
@@ -428,6 +450,9 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
                 .bind(id(42).as_slice()).bind(HOUSE).bind(position).execute(&h.pool).await?;
         }
     }
+    if case == Case::ResidentAppearanceRevoked {
+        return super::super::house_resident_reads::appearance_revoked(h, &owner, admitted).await;
+    }
     if matches!(case, Case::ResidentQuest | Case::ResidentMount) {
         return super::super::house_resident_reads::presentation_exchange(&owner, admitted, case).await;
     }
@@ -438,9 +463,12 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::ResidentLetter
             | Case::ResidentMail
             | Case::ResidentEquip
+            | Case::ResidentTimedEquip
     ) {
-        return super::super::house_resident_reads::exchange(h, &owner, admitted, before_ref, case)
-            .await;
+        return super::super::house_resident_reads::exchange(
+            h, &mut owner, admitted, before_ref, case,
+        )
+        .await;
     }
     let actor_position = {
         let runtime = owner.runtime.lock().await;
