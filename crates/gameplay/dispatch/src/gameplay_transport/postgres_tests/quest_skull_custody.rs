@@ -38,11 +38,12 @@ fn rows() -> [Value; 2] {
         json!({
             "key":"oteryn:quest-callback/fixture-skull-pile",
             "quest":unnatural_selection::QUEST, "trigger":"use",
-            "selector":{"unique":9259},
+            "selector":{"unique":9259,"appearance":10205},
             "lever":null,"reversible":false,"passages":[],"teleport":null,"offerings":[],
             "item_on_target":null,"return_on_failure":false,"failure_message":null,
             "storage":[{"track":MISSION01,"minimum":1,"maximum":1,"set":2}],
-            "effects":{"item_reward":{"item":SKULL,"count":1}},
+            "effects":{"item_reward":{"item":SKULL,"count":1},
+                "player_speech":"You dig out a skull from the pile of bones. That must be the skull Lazaran talked about."},
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:119-127"]
         }),
         json!({

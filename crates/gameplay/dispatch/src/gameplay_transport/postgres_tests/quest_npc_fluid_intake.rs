@@ -338,7 +338,8 @@ pub(super) async fn exercise(
                 command_id += 1;
             }
             if accept {
-                assert_eq!(reply, intake.accepted);
+                let lines = reply.iter().map(String::as_str).collect::<Vec<_>>();
+                assert_eq!(lines.as_slice(), intake.accepted);
             } else {
                 assert_eq!(reply, [intake.missing]);
             }
