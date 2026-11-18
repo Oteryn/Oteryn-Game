@@ -98,9 +98,15 @@ pub(super) async fn talk(
     let nupi = oteryn_gameplay_npc::greeting::words(&intent.text)
         .iter()
         .any(|word| word == FISH_RECIPE.keyword);
+    let chat = &admission.states.chat;
+    let fish_default_message = nupi
+        && chat
+            .npc_talk()
+            .and_then(|book| book.get(sinatuki_exchange::NPC))
+            .is_none_or(|entry| !entry.matches_focus_or_dialogue(&intent.text));
     // Exact durable replay precedes the live NPC, inventory and conversation. A removed
     // source or ended dialogue cannot make a committed exchange run a second time.
-    if (yes || nupi)
+    if (yes || fish_default_message)
         && let Some(fence) = command.item_fence
     {
         match admission
@@ -188,8 +194,11 @@ pub(super) async fn talk(
     } else {
         None
     };
+    let fish_callback = fish_exchange
+        && fish_default_message
+        && chat.engaged(command.game_session_id) == Some(npc.actor);
     let ordinary = admission.states.npc_conversations.talk_in(
-        &admission.states.chat,
+        chat,
         &runtime,
         actor,
         command.game_session_id,
@@ -197,7 +206,7 @@ pub(super) async fn talk(
         admission.owner_now(),
         super::super::item_ref_admission::pinned_index(&runtime, admission.active_generation),
     );
-    if ordinary.disposition != NpcIntentDisposition::Ok {
+    if ordinary.disposition != NpcIntentDisposition::Ok || (fish_exchange && !fish_callback) {
         return Some(ordinary);
     }
     let Some(recipe) = recipe else {

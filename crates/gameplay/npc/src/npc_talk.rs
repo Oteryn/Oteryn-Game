@@ -219,6 +219,25 @@ impl NpcTalkEntry {
         &self.offers
     }
 
+    /// Whether a focus message or an admitted dialogue keyword takes precedence over a default callback.
+    pub fn matches_focus_or_dialogue(&self, text: &str) -> bool {
+        let said = words(text);
+        self.greetings
+            .iter()
+            .any(|greeting| contains_words(&said, &words(greeting)))
+            || says_any(&said, &FAREWELLS)
+            || self.dialogue_keyword(&said).is_some()
+    }
+
+    fn dialogue_keyword(
+        &self,
+        said: &[String],
+    ) -> Option<&crate::content::ProjectV2DialogueKeyword> {
+        self.dialogue_keywords
+            .iter()
+            .find(|keyword| contains_words(said, &keyword.triggers))
+    }
+
     /// The line that ends a conversation.
     pub fn farewell(&self) -> &str {
         &self.farewell_reply
@@ -565,19 +584,33 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
-            } else if reference.key == "oteryn:npc.sinatuki" {
-                // Sinatuki uses Crystal's default focus messages and authored Chuqua reply.
+            } else if matches!(
+                reference.key.as_str(),
+                "oteryn:npc.frodo" | "oteryn:npc.mordecai" | "oteryn:npc.sinatuki"
+            ) {
+                // Use the pinned focus messages where supplied, with Crystal's defaults
+                // for Sinatuki. Only literal, single-line keywords are supported here.
                 let Some(dialogue) = &npc.bank_dialogue else {
                     continue;
                 };
                 (
-                    "Greetings, |PLAYERNAME|.".into(),
-                    "Good bye, |PLAYERNAME|.".into(),
+                    dialogue
+                        .greet
+                        .first()
+                        .cloned()
+                        .unwrap_or_else(|| "Greetings, |PLAYERNAME|.".into()),
+                    dialogue
+                        .farewell
+                        .first()
+                        .cloned()
+                        .unwrap_or_else(|| "Good bye, |PLAYERNAME|.".into()),
                     None,
                     dialogue
                         .keywords
                         .iter()
-                        .filter(|keyword| literal_keyword(keyword))
+                        .filter(|keyword| {
+                            literal_keyword(keyword) && !keyword.reply[0].contains("|TIME|")
+                        })
                         .cloned()
                         .collect(),
                 )
@@ -774,6 +807,8 @@ impl NpcTalkBook {
                         || matches!(
                             reference.key.as_str(),
                             "oteryn:npc.al_dee"
+                                | "oteryn:npc.frodo"
+                                | "oteryn:npc.mordecai"
                                 | "oteryn:npc.seymour"
                                 | "oteryn:npc.sinatuki"
                                 | "oteryn:npc.uzgod"
@@ -928,12 +963,7 @@ pub fn talk<K: Copy + PartialEq>(
                 text: npc.entry.farewell_reply.clone(),
             });
         }
-        if let Some(keyword) = npc
-            .entry
-            .dialogue_keywords
-            .iter()
-            .find(|keyword| contains_words(&said, &keyword.triggers))
-        {
+        if let Some(keyword) = npc.entry.dialogue_keyword(&said) {
             return Some(NpcReply {
                 id: npc.id,
                 text: keyword.reply[0].clone(),
@@ -1269,6 +1299,64 @@ mod tests {
         assert!(!asks_to_trade("ariki"));
         assert!(asks_to_trade_for("oteryn:npc.sam", "trade"));
         assert!(!asks_to_trade_for(YASIR, "marikina"));
+        Ok(())
+    }
+
+    #[test]
+    fn frodo_and_mordecai_trade_offers_reach_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        for (key, items) in [
+            ("oteryn:npc.frodo", &[3577][..]),
+            (
+                "oteryn:npc.mordecai",
+                &[3180, 3165, 3174, 3152, 3177, 3178][..],
+            ),
+        ] {
+            let entry = book
+                .get(key)
+                .ok_or_else(|| format!("{key} missing from talk book"))?;
+            for item in items {
+                let item_key = format!("oteryn:item.tibia.i{item}");
+                assert!(
+                    entry
+                        .offers()
+                        .iter()
+                        .any(|offer| offer.item.key == item_key),
+                    "{key}: {item_key}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn sinatuki_focus_and_dialogue_messages_preempt_default_callback() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let entry = book.get("oteryn:npc.sinatuki").ok_or("Sinatuki missing")?;
+        for text in ["CHUQUA, nupi!", "hi nupi", "bye nupi"] {
+            assert!(entry.matches_focus_or_dialogue(text), "{text}");
+        }
+        for text in ["nupi", "this nupi", "ochuqua nupi", "byebye nupi"] {
+            assert!(!entry.matches_focus_or_dialogue(text), "{text}");
+        }
         Ok(())
     }
 

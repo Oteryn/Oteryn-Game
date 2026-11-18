@@ -144,7 +144,30 @@ fn scenario() -> TestResult {
             item_fence: Some(fence),
         };
         seed(&h).await?;
-        let greeted = talk(&mut owner, deps.actor, command(1), npc, "hi").await?;
+        for (id, text, expected) in [
+            (1, "hi nupi", Some(("Greetings, Fixture Hero.", true))),
+            (2, "chuqua nupi", Some(("Chuqua jamjam!! Tiyopa Sinatuki?", true))),
+            (3, "hi nupi", None),
+            (4, "bye nupi", Some(("Good bye, Fixture Hero.", false))),
+        ] {
+            let outcome = talk(&mut owner, deps.actor, command(id), npc, text).await?;
+            assert_eq!(outcome.conversation.is_some(), expected.is_some(), "{text}");
+            if let Some((reply, open)) = expected {
+                let conversation = outcome.conversation.ok_or("missing ordinary reply")?;
+                assert_eq!(conversation.lines, [reply], "{text}");
+                assert_eq!(conversation.open.is_some(), open, "{text}");
+            }
+            assert!(!outcome.inventory_changed, "{text}");
+            assert_inventory(&h, [100, 99, 0]).await?;
+            let has_receipt: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM game_npc_trades WHERE npc_key=$1)",
+            )
+            .bind(NPC)
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(!has_receipt, "{text}");
+        }
+        let greeted = talk(&mut owner, deps.actor, command(5), npc, "hi").await?;
         assert!(
             greeted.conversation.is_some(),
             "Sinatuki must open focus from the production talk book"
@@ -154,7 +177,7 @@ fn scenario() -> TestResult {
             let outcome = talk(
                 &mut owner,
                 deps.actor,
-                command(2 + u64::try_from(index)?),
+                command(6 + u64::try_from(index)?),
                 npc,
                 "nupi",
             )
@@ -166,20 +189,20 @@ fn scenario() -> TestResult {
         }
         for (id, reply, changed, expected) in [
             (
-                4,
+                8,
                 "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>",
                 true,
                 [0, 99, 5],
             ),
             (
-                5,
+                9,
                 "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>",
                 true,
                 [0, 0, 10],
             ),
-            (6, "Kisavuta! <giggles>", false, [0, 98, 10]),
+            (10, "Kisavuta! <giggles>", false, [0, 98, 10]),
         ] {
-            if id == 6 {
+            if id == 10 {
                 let mut fixture = h.pool.begin().await?;
                 sqlx::query("SET LOCAL session_replication_role=replica")
                     .execute(&mut *fixture)

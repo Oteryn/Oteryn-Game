@@ -49,27 +49,27 @@ pub(super) fn plan(
     entries: &[Entry],
 ) -> Result<(Plan, TypedDefinitionRef, u32)> {
     // The donor tries rainbow trout first, including its 99-fish fallback.
-    let (fish, count) = FISH
+    let (fish, count, stacks) = FISH
         .into_iter()
         .map(definition)
         .find_map(|fish| {
-            let available: u32 = entries
+            let mut stacks = entries
                 .iter()
                 .filter(|e| eligible(e, &fish))
-                .map(|e| e.quantity)
+                .collect::<Vec<_>>();
+            stacks.sort_by_key(|entry| std::cmp::Reverse(entry.quantity));
+            stacks.truncate(MAX_INPUT_STACKS);
+            let available: u32 = stacks
+                .iter()
+                .map(|entry| entry.quantity.min(100))
                 .sum();
-            (available >= 99).then_some((fish, available.min(100)))
+            (available >= 99).then_some((fish, available.min(100), stacks))
         })
         .ok_or(NpcTradeError::ItemNotFound)?;
     let mut remaining = count;
     let mut freed = 0;
     let mut lines = Vec::new();
-    let mut stacks = entries
-        .iter()
-        .filter(|e| eligible(e, &fish))
-        .collect::<Vec<_>>();
-    stacks.sort_by_key(|entry| std::cmp::Reverse(entry.quantity));
-    for entry in stacks.into_iter().take(MAX_INPUT_STACKS) {
+    for entry in stacks {
         let taken = remaining.min(entry.quantity);
         let after = entry.quantity - taken;
         freed += usize::from(after == 0);
@@ -86,7 +86,7 @@ pub(super) fn plan(
             break;
         }
     }
-    if remaining != 0 || entries.len() - freed >= capacity {
+    if entries.len() - freed >= capacity {
         return Err(NpcTradeError::DoesNotFit);
     }
     let ordinal = entries

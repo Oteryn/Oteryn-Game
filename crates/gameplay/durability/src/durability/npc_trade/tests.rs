@@ -675,3 +675,74 @@ fn sinatuki_fixed_exchange_mints_five_shards() {
     value.offer_count = 4;
     assert!(priced(&value).is_err());
 }
+
+#[test]
+fn sinatuki_fixed_exchange_skips_species_that_exceeds_burn_line_limit() {
+    use sinatuki_exchange::{NPC, SHARD, plan};
+
+    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+    value.cause.npc_key = NPC.into();
+    value.item.definition = TypedDefinitionRef {
+        revision_ref: "definition-r1".into(),
+        ..definition("Item", SHARD)
+    };
+    value.offer_count = 5;
+    let trout = TypedDefinitionRef {
+        production_key: "oteryn:item.tibia.i7158".into(),
+        ..value.item.definition.clone()
+    };
+    let perch = TypedDefinitionRef {
+        production_key: "oteryn:item.tibia.i7159".into(),
+        ..trout.clone()
+    };
+    let stacks = [
+        entry(10, 1, trout.clone(), 25),
+        entry(11, 2, trout.clone(), 25),
+        entry(12, 3, trout.clone(), 25),
+        entry(13, 4, trout.clone(), 25),
+        entry(14, 5, perch.clone(), 100),
+    ];
+
+    let (result, input, taken) = plan(&value, 5, &stacks).unwrap();
+    assert_eq!((input, taken), (perch, 100));
+    assert_eq!(result.lines.len(), 2);
+    assert_eq!(result.lines[0].kind, NpcTradeLineKind::ItemBurn);
+    assert_eq!(result.lines[0].item_instance_id, id(14));
+    assert_eq!(result.lines[0].quantity_after, 0);
+    assert_eq!(result.lines[1].kind, NpcTradeLineKind::ItemMint);
+    assert_eq!(result.lines[1].quantity_after, 5);
+}
+
+#[test]
+fn sinatuki_fixed_exchange_accepts_99_from_three_largest_stacks() {
+    use sinatuki_exchange::{NPC, SHARD, plan};
+
+    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+    value.cause.npc_key = NPC.into();
+    value.item.definition = TypedDefinitionRef {
+        revision_ref: "definition-r1".into(),
+        ..definition("Item", SHARD)
+    };
+    value.offer_count = 5;
+    let trout = TypedDefinitionRef {
+        production_key: "oteryn:item.tibia.i7158".into(),
+        ..value.item.definition.clone()
+    };
+    let stacks = [
+        entry(10, 1, trout.clone(), 1),
+        entry(11, 2, trout.clone(), 33),
+        entry(12, 3, trout.clone(), 33),
+        entry(13, 4, trout.clone(), 33),
+    ];
+
+    let (result, input, taken) = plan(&value, 4, &stacks).unwrap();
+    assert_eq!((input, taken), (trout, 99));
+    assert_eq!(result.lines.len(), 4);
+    for (line, tag) in result.lines[..3].iter().zip(11..=13) {
+        assert_eq!(line.kind, NpcTradeLineKind::ItemBurn);
+        assert_eq!(line.item_instance_id, id(tag));
+        assert_eq!((line.quantity_before, line.quantity_after), (33, 0));
+    }
+    assert_eq!(result.lines[3].kind, NpcTradeLineKind::ItemMint);
+    assert_eq!(result.lines[3].quantity_after, 5);
+}
