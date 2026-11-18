@@ -130,6 +130,16 @@ pub(super) fn prepare(
         previous.as_ref().map(|p| p.topic),
         &tracks,
     )?;
+    if choice.transition == Some(quest::NIGHTMARE_REPORT)
+        && admission
+            .quest_catalogue
+            .as_ref()?
+            .transition(quest::NIGHTMARE_REPORT)
+            .is_none()
+    {
+        state.threatened_dreams = None;
+        return Some(Step::Reply(quest::reply(&context.2, 105)?.to_vec()));
+    }
     let reply = choice
         .branches
         .iter()
@@ -301,6 +311,16 @@ pub(super) async fn apply(
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
             response(&intent, reply)
+        }
+        Ok(QuestTransitionOutcome::Refused(
+            oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch,
+        )) if transition == quest::NIGHTMARE_REPORT => {
+            install_topic(admission, command.game_session_id, None);
+            admission
+                .refresh_quest_session(command.game_session_id, false)
+                .await;
+            quest::reply(&context.2, 105)
+                .map_or_else(rejected, |lines| response(&intent, lines.to_vec()))
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,

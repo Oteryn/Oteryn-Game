@@ -293,6 +293,7 @@ fn scenario_case(
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
+    use super::super::nightmare_intruders_turn_in;
     let classic_npc = shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
@@ -342,6 +343,7 @@ fn scenario_case(
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
+                | nightmare_intruders_turn_in::NAME
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
         );
@@ -1695,6 +1697,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if name == nightmare_intruders_turn_in::NAME {
+            owner.quest_catalogue = Some(nightmare_intruders_turn_in::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
+            )?);
+        }
         if draconia_escape {
             owner.quest_catalogue =
                 Some(super::super::draconia_escape::catalogue(&callback, name)?);
@@ -2878,7 +2885,7 @@ fn scenario_case(
             )
             .await?;
         } else if outfit_world
-            || callback.effects != Default::default()
+            || callback.effects != Default::default() && !dreamers_wall
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
         {
             Box::pin(super::super::qengine_access::exercise(
@@ -3052,6 +3059,14 @@ fn scenario_case(
             .await?;
         } else if name == "conditional-quest-greetings" {
             Box::pin(super::super::conditional_quest_greetings::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            ))
+            .await?;
+        } else if name == nightmare_intruders_turn_in::NAME {
+            Box::pin(nightmare_intruders_turn_in::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,

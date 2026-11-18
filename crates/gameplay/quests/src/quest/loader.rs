@@ -184,6 +184,7 @@ struct Tagged {
     #[serde(alias = "kind")]
     op: String,
     value: Option<i64>,
+    other_effect: Option<u8>,
 }
 
 #[derive(Deserialize)]
@@ -407,6 +408,7 @@ fn restrict_runtime_scope(
     .map_err(QuestLoadError::Catalogue)?;
     lowered.catalogue.npc_legacy = npc_legacy;
     lowered.catalogue.predecessors = predecessors;
+    super::threatened_dreams::retain_report_predecessor(&mut lowered.catalogue);
     lowered
         .source_tracks
         .retain(|key, _| lowered.catalogue.track(key).is_some());
@@ -510,6 +512,9 @@ pub fn parse_quest_state(
 }
 
 fn comparison(from: &Tagged) -> Option<QuestComparison> {
+    if from.other_effect.is_some() {
+        return None;
+    }
     Some(match (from.op.as_str(), from.value) {
         ("ANY", None) => QuestComparison::Any,
         ("EQ", Some(value)) => QuestComparison::Eq(value),
@@ -523,13 +528,21 @@ fn comparison(from: &Tagged) -> Option<QuestComparison> {
 }
 
 fn effect_kind(effect: &Tagged) -> Option<QuestEffectKind> {
-    Some(match (effect.op.as_str(), effect.value) {
-        ("SET", Some(value)) => QuestEffectKind::Set(value),
-        ("ADD", Some(value)) => QuestEffectKind::Add(value),
-        ("SET_NOW", None) => QuestEffectKind::SetNow,
-        ("COMPUTED", None) => QuestEffectKind::Computed,
-        _ => return None,
-    })
+    Some(
+        match (effect.op.as_str(), effect.value, effect.other_effect) {
+            ("SET", Some(value), None) => QuestEffectKind::Set(value),
+            ("ADD", Some(value), None) => QuestEffectKind::Add(value),
+            ("SET_NOW", None, None) => QuestEffectKind::SetNow,
+            ("COMPUTED", None, None) => QuestEffectKind::Computed,
+            ("REQUIRE_SUM_GE", Some(minimum), Some(other_effect)) => {
+                QuestEffectKind::RequireSumAtLeast {
+                    minimum,
+                    other_effect,
+                }
+            }
+            _ => return None,
+        },
+    )
 }
 
 #[cfg(test)]

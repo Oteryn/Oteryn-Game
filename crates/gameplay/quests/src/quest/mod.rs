@@ -263,6 +263,12 @@ pub enum QuestEffectKind {
     Computed,
     /// A source-specific bounded rule over its complete locked snapshot.
     Native(native_rules::NativeRule),
+    /// Preserve this track and require its locked value plus a second effect's
+    /// locked value to reach the threshold before any transition writes.
+    RequireSumAtLeast {
+        other_effect: u8,
+        minimum: i64,
+    },
     /// Preserve this track until another effect's original locked value reaches a threshold.
     /// Reused from questpc3 262618b3; the index remains inside this transition.
     SetWhenAtLeast {
@@ -323,6 +329,13 @@ impl QuestEffectKind {
             Self::Native(rule) => {
                 out.push(5);
                 rule.encode(out);
+            }
+            Self::RequireSumAtLeast {
+                other_effect,
+                minimum,
+            } => {
+                out.extend_from_slice(&[14, other_effect]);
+                out.extend_from_slice(&minimum.to_be_bytes());
             }
             Self::SetWhenAtLeast {
                 other_effect,
@@ -544,6 +557,10 @@ impl QuestStateCatalogue {
                         usize::from(other_effect) < transition.effects.len()
                             && usize::from(other_effect) != index
                             && (track.min..=track.max).contains(&value)
+                    }
+                    QuestEffectKind::RequireSumAtLeast { other_effect, .. } => {
+                        usize::from(other_effect) < transition.effects.len()
+                            && usize::from(other_effect) != index
                     }
                     QuestEffectKind::AddAtLeast { minimum, .. } => {
                         (track.min..=track.max).contains(&minimum)
@@ -822,6 +839,18 @@ impl QuestStateCatalogue {
                         Some(if before == equals { value } else { before })
                     }
                     QuestEffectKind::Computed => None,
+                    QuestEffectKind::RequireSumAtLeast {
+                        other_effect,
+                        minimum,
+                    } => {
+                        let (_, other) = current
+                            .get(usize::from(other_effect))
+                            .ok_or(QuestRefusal::NotSupported)?;
+                        if i128::from(before) + i128::from(*other) < i128::from(minimum) {
+                            return Err(QuestRefusal::StageMismatch);
+                        }
+                        Some(before)
+                    }
                     QuestEffectKind::SetWhenAtLeast {
                         other_effect,
                         minimum,

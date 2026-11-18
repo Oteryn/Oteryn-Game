@@ -25,6 +25,8 @@ const BASE: &str = "oteryn:quest-progress/quest/u11_40/threatened_dreams/";
 const COUPLE: &str = "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission03_1";
 const COUPLE_PROGRESS: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission03/unlikely_couple";
+pub const NIGHTMARE_REPORT: &str =
+    "oteryn:quest-transition/threatened-dreams/maelyrra-nightmare-report";
 const NIGHTMARE: &str = "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders";
 const FAIRIES: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairies_counter";
@@ -326,9 +328,8 @@ pub fn choose(
             }
         }
         "oteryn:npc.maelyrra" => {
-            // Crystal npc/maelyrra.lua:61-170. Deferred sum/item/final reward
-            // predicates require the excluded owners; no success text or flag
-            // substitutes for them (PR2844 ANSWER6589521017, point5).
+            // Crystal 201189f npc/maelyrra.lua:93-105. The Quest writer
+            // admits the turn-in before this success reply can be published.
             let nightmare = value(NIGHTMARE);
             if contains(text, "mission") {
                 return Some(match nightmare {
@@ -353,20 +354,8 @@ pub fn choose(
                     if nightmare == 2 {
                         return Some(answer(102, 3, None));
                     }
-                    let enfeebled = value(
-                        "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/enfeebled_count",
-                    );
-                    let frazzlemaws = value(
-                        "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/frazzlemaws_count",
-                    );
-                    let kroazur = value(
-                        "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_kill",
-                    );
-                    if nightmare == 1
-                        && kroazur >= 1
-                        && i128::from(enfeebled) + i128::from(frazzlemaws) >= 200
-                    {
-                        return None;
+                    if nightmare == 1 {
+                        return Some(answer(98, 3, Some(NIGHTMARE_REPORT)));
                     }
                     return Some(answer(105, 0, None));
                 }
@@ -622,6 +611,26 @@ pub(super) fn extend(
         transitions.into_values().collect(),
     )
     .map_err(|e| format!("{e:?}"))
+}
+
+/// This additive report uses already-published tracks and their existing
+/// defaults. Characters with the previous definition can keep their saved pin.
+pub(super) fn retain_report_predecessor(catalogue: &mut super::QuestStateCatalogue) {
+    let Some(report) = catalogue.transition(NIGHTMARE_REPORT) else {
+        return;
+    };
+    let quest = report.quest.clone();
+    let mut previous = catalogue.transitions.clone();
+    previous.remove(NIGHTMARE_REPORT);
+    let hash = super::definition_hash(&quest, &catalogue.tracks, &previous);
+    catalogue
+        .predecessors
+        .entry(quest)
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: BTreeMap::new(),
+        });
 }
 
 #[cfg(test)]
@@ -976,7 +985,7 @@ mod tests {
     }
 
     #[test]
-    fn threatened_expansion_does_not_claim_held_inventory_or_sum_kill_completion()
+    fn threatened_expansion_previews_the_sum_turn_in_and_retains_inventory_holds()
     -> Result<(), String> {
         let npc = "oteryn:npc.maelyrra";
         let tracks=BTreeMap::from([
@@ -985,7 +994,11 @@ mod tests {
             ("oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/frazzlemaws_count".into(),50),
             ("oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_kill".into(),1),
         ]);
-        for step in [2, 7, 8] {
+        let report = choose(npc, "yes", Some(Topic { npc, step: 2 }), &tracks)
+            .ok_or("nightmare report preview")?;
+        assert_eq!(report.transition, Some(NIGHTMARE_REPORT));
+        assert_eq!(report.branches, vec![98]);
+        for step in [7, 8] {
             assert!(
                 choose(npc, "yes", Some(Topic { npc, step }), &tracks).is_none(),
                 "no atomic source guard or inventory owner for this completion"
