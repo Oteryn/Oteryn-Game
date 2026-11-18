@@ -343,7 +343,7 @@ async fn case(h: &Harness) -> TestResult {
     Ok(())
 }
 
-async fn admit_member(
+pub(super) async fn admit_member(
     h: &Harness,
     evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     member: u8,
