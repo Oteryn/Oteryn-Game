@@ -26,15 +26,20 @@ const BOSS: &str = "oteryn:creature.ascending_ferumbras";
 const DEMON: &str = "oteryn:creature.enthralled_demon";
 const DESTABILIZED: &str = "oteryn:creature.destabilized_ferumbras";
 const ESSENCE: &str = "oteryn:creature.ferumbras_essence";
+const RIFT_INVADER: &str = "oteryn:creature.rift_invader";
 const SHELL: &str = "oteryn:creature.ferumbras_mortal_shell";
 const SPLINTER: &str = "oteryn:creature.ferumbras_soul_splinter";
+const DORMANT_CRYSTAL: u16 = 14955;
+const CHARGED_CRYSTAL: u16 = 14961;
+const CHARGE_COUNT: u16 = 10;
+const CRYSTAL_EFFECT: u16 = 74; // Crystal src/utils/utils_definitions.hpp:129.
 
 const fn at(x: u16, y: u16) -> Position {
     Position { x, y, floor: -14 }
 }
 
 #[test]
-fn ferumbras_lever_resets_crystals_and_later_phase_deaths_replace_exact_actors() -> TestResult {
+fn ferumbras_last_crystal_charge_replaces_the_boss_and_later_deaths_advance_phases() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -61,8 +66,17 @@ pub(super) fn callback() -> TestResult<Callback> {
         .map(|position| serde_json::json!({"creature": DEMON, "position": position})),
     );
     let edits = CRYSTALS.map(|position| serde_json::json!({
-        "position": position, "remove": 14961, "create": 14955, "passable": false, "allow_missing": true
+        "position": position, "remove": CHARGED_CRYSTAL, "create": DORMANT_CRYSTAL, "passable": false, "allow_missing": true
     }));
+    // Crystal creaturescripts_rift_invader_death.lua:2-9,26-32,45: count starts at 0 and
+    // the transform occurs when the previous count is > 8, on the tenth death.
+    let crystals = CRYSTALS.map(|position| {
+        serde_json::json!({
+            "position":position,"area":{
+                "minimum":at(position.x-1,position.y-1),"maximum":at(position.x+1,position.y+1)
+            }
+        })
+    });
     let late_area = serde_json::json!({"minimum":ROOM_MIN,"maximum":ROOM_MAX});
     let document = serde_json::json!({"schema":1,"callbacks":[{
         "key":"oteryn:quest-callback/ferumbras/final-fight",
@@ -75,7 +89,12 @@ pub(super) fn callback() -> TestResult<Callback> {
             "encounter":{
                 "minimum_level":0,"players":players,"monsters":monsters,
                 "room_min":ROOM_MIN,"room_max":ROOM_MAX,"shared_staging":true,
-                "death_phases":{"terminal":SHELL,"replacements":[
+                "death_phases":{"terminal":SHELL,"crystal_circuit":{
+                    "defeated":RIFT_INVADER,"charges_per_crystal":CHARGE_COUNT,
+                    "dormant_appearance":DORMANT_CRYSTAL,"charged_appearance":CHARGED_CRYSTAL,
+                    "crystals":crystals,"retire":BOSS,"spawn":SPLINTER,
+                    "boss_position":BOSS_AT,"charged_effect":CRYSTAL_EFFECT
+                },"replacements":[
                     {"defeated":SPLINTER,"observe_deaths_in":late_area,"spawn":[{"creature":ESSENCE}]},
                     {"defeated":DESTABILIZED,"observe_deaths_in":late_area,"spawn":[{"creature":SHELL,"position":BOSS_AT}]}
                 ]}
@@ -83,6 +102,7 @@ pub(super) fn callback() -> TestResult<Callback> {
         },
         "sources":[
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_ferumbras_lever.lua:1-62",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_rift_invader_death.lua:1-10,23-45",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_soul_splinter.lua:3-9",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_mortal_shell_death.lua:5-16"
         ]
@@ -94,12 +114,17 @@ pub(super) fn callback() -> TestResult<Callback> {
 }
 
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    let mut cells: Vec<_> = CRYSTALS
+        .iter()
+        .map(|position| at(position.x + 1, position.y))
+        .collect();
+    cells.push(OUTSIDE);
     super::quest_world_callbacks::world_with_scene_cells(
         callback,
         LEVER,
-        &CRYSTALS.map(|position| (position, 14961)),
-        &[14955],
-        &[OUTSIDE],
+        &CRYSTALS.map(|position| (position, CHARGED_CRYSTAL)),
+        &[DORMANT_CRYSTAL],
+        &cells,
     )
 }
 
@@ -211,64 +236,88 @@ pub(super) async fn exercise(
     }
     drop(runtime);
     let map = owner.bundle_map().ok_or("bundle map")?;
-    for pos in CRYSTALS {
+    let has_crystal = |pos: Position, appearance| {
         let pos = crate::map::overlay::TilePos {
             x: pos.x,
             y: pos.y,
             floor: pos.floor,
         };
-        let tile = map
-            .overlay
+        map.overlay
             .base()
             .tile(pos.x, pos.y, pos.floor)
-            .ok_or("crystal tile")?;
-        assert!(
-            tile.ids()
-                .iter()
-                .zip(tile.depths())
-                .filter(|(_, depth)| **depth == 0)
-                .enumerate()
-                .any(|(ordinal, (id, _))| u8::try_from(ordinal)
-                    .ok()
-                    .and_then(|ordinal| map.facts.base_entry(pos, ordinal, *id))
-                    .is_some_and(|facts| facts.appearance_id == 14955))
-        );
-    }
-    let local = super::quest_world_callbacks::local;
-    let [first, second, outside, destabilized] = {
-        let mut runtime = owner.runtime.lock().await;
-        let spawns = [
-            (SPLINTER, BOSS_AT),
-            (SPLINTER, ARRIVAL),
-            (SPLINTER, OUTSIDE),
-            (DESTABILIZED, ARRIVAL),
-        ]
-        .map(|(key, at)| {
-            runtime
-                .companion_policy(key)
-                .map(|policy| (key, policy.maximum_health, local(at)))
-        });
-        let [first, second, outside, destabilized] = spawns;
-        // The preceding Rift Invader and vortex callbacks own these summons.
-        runtime
-            .commit_quest_creature_spawn(&[
-                first.map_err(debug)?,
-                second.map_err(debug)?,
-                outside.map_err(debug)?,
-                destabilized.map_err(debug)?,
-            ])
-            .map_err(debug)?
-            .try_into()
-            .map_err(|_| "four later Ferumbras actors")?
+            .is_some_and(|tile| {
+                tile.ids()
+                    .iter()
+                    .zip(tile.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .enumerate()
+                    .any(|(ordinal, (id, _))| {
+                        u8::try_from(ordinal)
+                            .ok()
+                            .and_then(|ordinal| map.facts.base_entry(pos, ordinal, *id))
+                            .is_some_and(|facts| facts.appearance_id == appearance)
+                    })
+            })
     };
-    super::engenc2_cults::kill(owner, admitted, outside, SPLINTER, 100).await?;
-    super::engenc2_cults::kill(owner, admitted, first, SPLINTER, 101).await?;
+    assert!(
+        CRYSTALS
+            .into_iter()
+            .all(|pos| has_crystal(pos, DORMANT_CRYSTAL))
+    );
+    let mut command = 100;
+    let mut sites = vec![ARRIVAL];
+    sites.extend(
+        CRYSTALS
+            .into_iter()
+            .flat_map(|pos| std::iter::repeat_n(at(pos.x + 1, pos.y), usize::from(CHARGE_COUNT))),
+    );
+    for site in sites {
+        let invader = spawn_late(owner, RIFT_INVADER, site).await?;
+        super::engenc2_cults::kill(owner, admitted, invader, RIFT_INVADER, command).await?;
+        let credited = command - 100;
+        let charged = CRYSTALS
+            .into_iter()
+            .filter(|&pos| has_crystal(pos, CHARGED_CRYSTAL))
+            .count();
+        assert_eq!(charged as u64, credited / u64::from(CHARGE_COUNT));
+        if charged != CRYSTALS.len() {
+            assert_eq!(actors(owner, BOSS).await?.len(), 1);
+            assert!(actors(owner, SPLINTER).await?.is_empty());
+        }
+        command += 1;
+    }
+    assert!(actors(owner, BOSS).await?.is_empty());
+    let splinters = actors(owner, SPLINTER).await?;
+    assert_eq!(splinters.len(), 8);
+    assert_eq!(
+        map.facts
+            .movement_effects_since(0)
+            .iter()
+            .filter(|(_, _, effect)| *effect == CRYSTAL_EFFECT)
+            .count(),
+        8
+    );
+    let local = super::quest_world_callbacks::local;
+    let [first, second] = [splinters[0], splinters[1]];
+    let outside = spawn_late(owner, SPLINTER, OUTSIDE).await?;
+    // The preceding vortex callback owns this summon.
+    let destabilized = spawn_late(owner, DESTABILIZED, ARRIVAL).await?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let expected = runtime.read_actor_position(second).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(second, expected, local(ARRIVAL))
+            .map_err(debug)?;
+    }
+    super::engenc2_cults::kill(owner, admitted, outside, SPLINTER, command).await?;
+    super::engenc2_cults::kill(owner, admitted, first, SPLINTER, command + 1).await?;
     {
         let runtime = owner.runtime.lock().await;
         assert!(runtime.contains_live_creature(second));
     }
-    super::engenc2_cults::kill(owner, admitted, second, SPLINTER, 102).await?;
-    super::engenc2_cults::kill(owner, admitted, destabilized, DESTABILIZED, 103).await?;
+    super::engenc2_cults::kill(owner, admitted, second, SPLINTER, command + 2).await?;
+    super::engenc2_cults::kill(owner, admitted, destabilized, DESTABILIZED, command + 3).await?;
     {
         let runtime = owner.runtime.lock().await;
         let positions = |key: &str| -> TestResult<Vec<_>> {
@@ -292,4 +341,39 @@ pub(super) async fn exercise(
         assert_eq!(positions(SHELL)?, vec![local(BOSS_AT)]);
     }
     Ok(())
+}
+
+async fn actors(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    creature: &str,
+) -> TestResult<Vec<crate::foundation::ExactActorRef>> {
+    let runtime = owner.runtime.lock().await;
+    Ok(runtime
+        .current_live_creature_census()
+        .map_err(debug)?
+        .into_iter()
+        .filter(|actor| runtime.matches_live_creature_identity(*actor, creature.as_bytes()))
+        .collect())
+}
+
+async fn spawn_late(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    creature: &str,
+    position: Position,
+) -> TestResult<crate::foundation::ExactActorRef> {
+    let mut runtime = owner.runtime.lock().await;
+    let health = runtime
+        .companion_policy(creature)
+        .map_err(debug)?
+        .maximum_health;
+    let [actor] = runtime
+        .commit_quest_creature_spawn(&[(
+            creature,
+            health,
+            super::quest_world_callbacks::local(position),
+        )])
+        .map_err(debug)?
+        .try_into()
+        .map_err(|_| "one late Ferumbras actor")?;
+    Ok(actor)
 }
