@@ -212,7 +212,6 @@ impl Bindings {
                         if callback.quest != quest.quest
                             || !transitions.insert(&callback.key)
                             || callback.carried_item.is_some()
-                            || !callback.participants.is_empty()
                             || callback
                                 .state_ops
                                 .iter()
@@ -403,6 +402,10 @@ impl Bindings {
                     },
                 )?;
             }
+        }
+        // A participant may write an already declared track of another quest,
+        // independently of the order of the bound quests in this document.
+        for quest in &self.quests {
             if let Some(occurrence) = &quest.occurrence {
                 transitions.push(occurrence.transition()?);
             }
@@ -415,6 +418,13 @@ impl Bindings {
                         occurrence.qualify(&mut transition);
                     }
                     transitions.push(transition);
+                }
+                if let Trigger::NpcDialogue { .. } = &stage.trigger {
+                    for callback in stage.trigger.reward_callbacks() {
+                        transitions.extend(super::reward_callbacks::participant_transitions(
+                            callback, &tracks,
+                        )?);
+                    }
                 }
             }
         }

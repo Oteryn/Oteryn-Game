@@ -1134,6 +1134,74 @@ pub fn participant_key(callback: &str, index: usize) -> String {
     format!("{callback}/participant/{index}")
 }
 
+/// Lower the same bounded cross-quest receipt participants for embedded and
+/// explicit NPC bindings. Crystal npc/marvin.lua:77-85 debits Oramond while
+/// granting Dark Trails progress in the same confirmation.
+pub(super) fn participant_transitions(
+    callback: &RewardCallback,
+    tracks: &[QuestTrack],
+) -> Result<Vec<QuestTransition>, String> {
+    let mut transitions = Vec::with_capacity(callback.participants.len());
+    for (index, participant) in callback.participants.iter().enumerate() {
+        for state in &participant.storage {
+            let Some(track) = tracks.iter().find(|t| t.key == state.track) else {
+                return Err(format!("unknown participant track {}", state.track));
+            };
+            if track.quest != participant.quest
+                || state.minimum < track.min
+                || state.maximum > track.max
+                || !(track.min..=track.max).contains(&state.set)
+            {
+                return Err(format!(
+                    "foreign or unbounded participant track {}",
+                    state.track
+                ));
+            }
+        }
+        if participant.state_ops.iter().any(|op| {
+            tracks
+                .iter()
+                .find(|t| t.key == op.track)
+                .is_none_or(|t| t.quest != participant.quest)
+        }) {
+            return Err(format!("foreign participant operation {}", callback.key));
+        }
+        transitions.push(QuestTransition {
+            world_change: None,
+            key: participant_key(&callback.key, index),
+            quest: participant.quest.clone(),
+            effects: participant
+                .storage
+                .iter()
+                .map(|s| QuestEffect {
+                    track: s.track.clone(),
+                    from: QuestComparison::Between(s.minimum, s.maximum),
+                    effect: if callback
+                        .counter
+                        .as_ref()
+                        .is_some_and(|counter| counter.track == s.track)
+                    {
+                        QuestEffectKind::Add(1)
+                    } else if s.preserve {
+                        QuestEffectKind::Add(0)
+                    } else {
+                        QuestEffectKind::Set(s.set)
+                    },
+                })
+                .chain(
+                    participant
+                        .state_ops
+                        .iter()
+                        .map(StateOperation::quest_effect),
+                )
+                .collect(),
+            completes: false,
+            experience: None,
+        });
+    }
+    Ok(transitions)
+}
+
 fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
     let legacy = serde_json::to_vec(&(
         &callback.key,
@@ -1296,63 +1364,7 @@ fn extend_callbacks(
                 ));
             }
         }
-        for (index, participant) in callback.participants.iter().enumerate() {
-            for state in &participant.storage {
-                let Some(track) = tracks.iter().find(|t| t.key == state.track) else {
-                    return Err(format!("unknown participant track {}", state.track));
-                };
-                if track.quest != participant.quest
-                    || state.minimum < track.min
-                    || state.maximum > track.max
-                    || !(track.min..=track.max).contains(&state.set)
-                {
-                    return Err(format!(
-                        "foreign or unbounded participant track {}",
-                        state.track
-                    ));
-                }
-            }
-            if participant.state_ops.iter().any(|op| {
-                tracks
-                    .iter()
-                    .find(|t| t.key == op.track)
-                    .is_none_or(|t| t.quest != participant.quest)
-            }) {
-                return Err(format!("foreign participant operation {}", callback.key));
-            }
-            transitions.push(QuestTransition {
-                world_change: None,
-                key: participant_key(&callback.key, index),
-                quest: participant.quest.clone(),
-                effects: participant
-                    .storage
-                    .iter()
-                    .map(|s| QuestEffect {
-                        track: s.track.clone(),
-                        from: QuestComparison::Between(s.minimum, s.maximum),
-                        effect: if callback
-                            .counter
-                            .as_ref()
-                            .is_some_and(|counter| counter.track == s.track)
-                        {
-                            QuestEffectKind::Add(1)
-                        } else if s.preserve {
-                            QuestEffectKind::Add(0)
-                        } else {
-                            QuestEffectKind::Set(s.set)
-                        },
-                    })
-                    .chain(
-                        participant
-                            .state_ops
-                            .iter()
-                            .map(StateOperation::quest_effect),
-                    )
-                    .collect(),
-                completes: false,
-                experience: None,
-            });
-        }
+        transitions.extend(participant_transitions(callback, &tracks)?);
         for requirement in &callback.required_receipts {
             if !catalogue
                 .transition(&requirement.transition)
