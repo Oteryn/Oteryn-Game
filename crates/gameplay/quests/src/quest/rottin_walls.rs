@@ -95,6 +95,21 @@ mod tests {
                 .iter()
                 .all(|callback| catalogue.transition(&callback.key).is_some())
         );
+        let reset = catalogue
+            .transition("oteryn:quest-transition/classic/rottin-wood/start-disrepair")
+            .ok_or("wall counter reset")?;
+        let validate = |transition| {
+            super::super::admission_binding::validate_resolved_world(
+                catalogue,
+                transition,
+                false,
+                &registered,
+            )
+        };
+        validate(reset)?;
+        let mut alias = reset.clone();
+        alias.key.push_str("-alias");
+        assert!(validate(&alias).is_err());
         Ok(())
     }
 }
