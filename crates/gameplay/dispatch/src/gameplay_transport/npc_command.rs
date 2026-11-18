@@ -375,7 +375,9 @@ impl NpcConversations {
                 && chat
                     .npc_talk()
                     .and_then(|book| book.get(&npc.key))
-                    .is_some_and(|entry| entry.matches_dialogue_keyword(text.as_str()))
+                    .is_some_and(|entry| {
+                        entry.dialogue_keyword_preempts_trade(&npc.key, text.as_str())
+                    })
             {
                 return None;
             }

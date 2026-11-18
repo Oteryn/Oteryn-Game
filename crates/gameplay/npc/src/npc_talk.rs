@@ -231,9 +231,19 @@ impl NpcTalkEntry {
             || self.dialogue_keyword(&said).is_some()
     }
 
-    /// Whether the focused NPC's authored dialogue consumes the message.
-    pub fn matches_dialogue_keyword(&self, text: &str) -> bool {
-        self.dialogue_keyword(&words(text)).is_some()
+    /// Whether the focused NPC's authored dialogue consumes the message before its shop: an
+    /// authored keyword that is not itself `npc_key`'s trade request (`news trade`, not Yasir's
+    /// `trade` or `ariki` keywords, which reply and open the window).
+    pub fn dialogue_keyword_preempts_trade(&self, npc_key: &str, text: &str) -> bool {
+        let said = words(text);
+        self.dialogue_keywords.iter().any(|keyword| {
+            let trigger: Vec<_> = keyword
+                .triggers
+                .iter()
+                .flat_map(|part| words(part))
+                .collect();
+            contains_words(&said, &trigger) && !asks_to_trade_for(npc_key, &trigger.join(" "))
+        })
     }
 
     fn dialogue_keyword(
@@ -1351,6 +1361,31 @@ mod tests {
                 );
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn only_non_trade_authored_keywords_preempt_the_shop() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let yasir = book.get(YASIR).ok_or("Yasir missing")?;
+        for text in ["trade", "ariki", "offers"] {
+            assert!(
+                !yasir.dialogue_keyword_preempts_trade(YASIR, text),
+                "{text}"
+            );
+        }
+        let frodo = book.get("oteryn:npc.frodo").ok_or("Frodo missing")?;
+        assert!(frodo.dialogue_keyword_preempts_trade("oteryn:npc.frodo", "news trade"));
+        assert!(!frodo.dialogue_keyword_preempts_trade("oteryn:npc.frodo", "trade"));
         Ok(())
     }
 
