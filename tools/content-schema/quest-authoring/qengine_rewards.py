@@ -634,9 +634,13 @@ def build():
         [storage(backpack,2,3),storage(mission,2,4)],outfit=('citizen',1))
     callbacks[-1]['state_ops']=[{'track':timer,'from':{'kind':'elapsed_at_least','seconds':7201},'effect':{'kind':'add','value':0}}]
     callbacks[-1]['participants']=[{'quest':'oteryn:quest.outfit_and_addon_quests','storage':[storage(rook_ref,0,0,2147483647)]}]
+    offers.append({'npc':'oteryn:npc.amber','keywords':['addon','outfit'],'topic':0,'next_topic':0,
+        'storage':[storage(backpack,3,3)],
+        'reply':["Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."]})
     hat=citizen_rook+'addon_hat_rook'
     hat_mission=citizen_rook+'mission_hat_rook'
-    states=[storage(hat,-1,1,0),storage(hat_mission,0,1)]
+    # Crystal reoffers the recipe when the mission returns to zero after hand-in.
+    states=[storage(hat,-1,1,2),storage(hat_mission,0,1)]
     add('l6-citizen-rook-hat-start','citizen_outfits_quest_on_rook','norma',['yes'],states,topic=1)
     offers.append({'npc':'oteryn:npc.norma','keywords':['addon','outfit','hat'],'topic':0,'next_topic':1,
         'storage':states,'reply':['Shall I teach you how to make a feather hat?']})

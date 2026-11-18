@@ -1198,17 +1198,34 @@ const MAIN_OUTFIT_DEFINITION: [u8; 32] = [
     0x69, 0xae, 0x32, 0xea, 0xdd, 0x91, 0x87, 0x72, 0x7e, 0x78, 0x82, 0xe4, 0xc9, 0x0e, 0x3c, 0xcf,
 ];
 
+// The published Rookgaard definition before Norma's mission-zero restart.
+const ROOK_CITIZEN_BEFORE_NORMA_RESTART: [u8; 32] = [
+    0xb7, 0xfb, 0x18, 0x3d, 0x7d, 0xfa, 0x0a, 0xd8, 0x8b, 0x80, 0x6e, 0xcc, 0xb3, 0xcf, 0xc7, 0xdb,
+    0x3b, 0x94, 0x9b, 0x19, 0x08, 0x96, 0x3c, 0x93, 0x5a, 0x57, 0xfb, 0x99, 0x24, 0x4d, 0xef, 0x4a,
+];
+
 pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
-    // QB extends the existing track schema without changing any track defaults.
-    catalogue
-        .predecessors
-        .entry("oteryn:quest.outfit_and_addon_quests".into())
-        .or_default()
-        .push(super::NpcDefinitionPredecessor {
-            hash: MAIN_OUTFIT_DEFINITION,
-            defaults: BTreeMap::new(),
-        });
+    // These changes preserve every track default.
+    for (quest, hash) in [
+        (
+            "oteryn:quest.outfit_and_addon_quests",
+            MAIN_OUTFIT_DEFINITION,
+        ),
+        (
+            "oteryn:quest.citizen_outfits_quest_on_rook",
+            ROOK_CITIZEN_BEFORE_NORMA_RESTART,
+        ),
+    ] {
+        catalogue
+            .predecessors
+            .entry(quest.into())
+            .or_default()
+            .push(super::NpcDefinitionPredecessor {
+                hash,
+                defaults: BTreeMap::new(),
+            });
+    }
     extend_document(catalogue, document)
 }
 

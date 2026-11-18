@@ -579,6 +579,112 @@ fn qb_citizen_free_account_refuses_mainland_exchange_without_consuming() -> Test
     super::qengine_rewards::scenario("qengine-rewards-qb-free-account")
 }
 
+#[test]
+fn qb_crystal_citizen_lubo_completed_reply() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-crystal-lubo-completed")
+}
+
+#[test]
+fn qb_crystal_citizen_amber_completed_reply() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-crystal-amber-completed")
+}
+
+#[test]
+fn qb_crystal_citizen_lubo_uses_character_progress() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-crystal-lubo-progress")
+}
+
+#[test]
+fn qb_crystal_citizen_lubo_accepts_free_character() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-crystal-lubo-free-account")
+}
+
+#[test]
+fn qb_crystal_citizen_norma_can_restart_at_mission_zero() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-crystal-norma-restart")
+}
+
+async fn crystal_citizen(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    name: &str,
+) -> TestResult {
+    use super::classic_quests::{install, talk};
+    let (npc, key) = match name {
+        "qengine-rewards-qb-crystal-lubo-completed" => ("lubo", "qb-citizen-backpack"),
+        "qengine-rewards-qb-crystal-amber-completed" => ("amber", "l6-citizen-rook-backpack"),
+        "qengine-rewards-qb-crystal-lubo-progress"
+        | "qengine-rewards-qb-crystal-lubo-free-account" => ("lubo", "qb-citizen-backpack"),
+        "qengine-rewards-qb-crystal-norma-restart" => ("norma", "l6-citizen-rook-hat"),
+        _ => return Err("unknown Citizen parity case".into()),
+    };
+    let npc_key = format!("oteryn:npc.{npc}");
+    let [npc] = install(owner, admitted, [npc_key.as_str()]).await?;
+    let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
+    let key = format!("oteryn:quest-reward/{key}");
+    let reward = callbacks
+        .iter()
+        .find(|row| row.key == key)
+        .ok_or("Citizen reward")?;
+    let mut progress = reward.storage.iter().map(|row| (row.track.clone(), row.set)).collect::<Vec<_>>();
+
+    let lubo_payment = matches!(
+        name,
+        "qengine-rewards-qb-crystal-lubo-progress" | "qengine-rewards-qb-crystal-lubo-free-account"
+    );
+    if name.ends_with("lubo-progress") {
+        let addon_key = reward.outfit.as_ref().ok_or("backpack reward")?.grant_key(1);
+        sqlx::query("WITH receipt AS (INSERT INTO game_account_appearance_unlock_receipts(grant_occurrence_id,account_id,unlock_key,content_revision,granting_character_id,source_kind,source_event_id) SELECT game_character_uuid_v7(),account_id,$1,$2,character_id,'quest',$3 FROM game_character_roots RETURNING grant_occurrence_id,account_id,unlock_key) INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) SELECT account_id,unlock_key,grant_occurrence_id FROM receipt")
+            .bind(addon_key)
+            .bind(oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE)
+            .bind(b"qb-rook-backpack-fixture".as_slice()).execute(&h.pool).await?;
+    }
+    if lubo_payment {
+        for (_, value) in &mut progress {
+            *value = 1;
+        }
+        let materials = callbacks.iter()
+            .find(|row| row.key == "oteryn:quest-reward/qb-citizen-backpack-materials")
+            .ok_or("leather payment")?;
+        let leather = materials.take.first().ok_or("leather")?;
+        let mut bags = Vec::new();
+        let mut occurrence = 500;
+        supply(owner, admitted, h, leather, &mut bags, &mut occurrence).await?;
+    }
+    seed_quest_prerequisites(h, owner, admitted, &progress, 106).await?;
+    if name.ends_with("norma-restart") {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) SELECT character_id,$1,'content-1',decode('b7fb183d7dfa0ad88b806eccb3cfc7db3b949b1908963c935a57fb99244def4a','hex'),character_revision,character_revision FROM game_character_roots")
+            .bind(&reward.quest).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    talk(owner, admitted, npc, 110, "hi").await?;
+    let before = counts(h).await?;
+    let leather = "oteryn:item.tibia.i5878";
+    let leather_before = quantity(h, leather).await?;
+    let lines = talk(owner, admitted, npc, 111, "addon").await?;
+    if name.ends_with("completed") {
+        assert!(lines.iter().any(|line| line.contains("I can only make one backpack per person")), "{lines:?}");
+        assert_eq!(counts(h).await?, before);
+        assert_eq!(quantity(h, leather).await?, leather_before);
+    } else {
+        talk(owner, admitted, npc, 112, "yes").await?;
+        if lubo_payment {
+            assert_eq!(quantity(h, leather).await?, leather_before - 100);
+            assert_eq!(counts(h).await?.3, before.3);
+        } else {
+            let value: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind(&progress[0].0).fetch_one(&h.pool).await?;
+            assert_eq!(value, 1, "Norma reopens the quest when the mission counter is zero");
+        }
+    }
+    Ok(())
+}
+
 fn select_outfit_capabilities(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -698,6 +804,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-qb-crystal-") {
+        return Box::pin(crystal_citizen(owner, admitted, h, name)).await;
+    }
     if matches!(
         name,
         "qengine-rewards-qb-main-predecessor"

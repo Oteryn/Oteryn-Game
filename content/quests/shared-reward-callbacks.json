@@ -5521,7 +5521,7 @@
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
           "minimum": -1,
-          "maximum": 0,
+          "maximum": 2,
           "set": 1
         },
         {
@@ -9258,13 +9258,6 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
       ],
-      "requires_premium": true,
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.citizen",
-          "addons": 1
-        }
-      ],
       "state_ops": [
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
@@ -9317,13 +9310,6 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
       ],
-      "requires_premium": true,
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.citizen",
-          "addons": 1
-        }
-      ],
       "state_ops": [
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
@@ -9368,13 +9354,6 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
-      ],
-      "requires_premium": true,
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.citizen",
-          "addons": 1
-        }
       ]
     },
     {

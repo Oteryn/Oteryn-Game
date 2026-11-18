@@ -349,6 +349,26 @@
       "npc": "oteryn:npc.amber",
       "keywords": [
         "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "addon",
         "outfit",
         "backpack",
         "leather"
@@ -3778,6 +3798,26 @@
       "npc": "oteryn:npc.lubo",
       "keywords": [
         "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
         "outfit",
         "backpack",
         "leather"
@@ -4817,7 +4857,7 @@
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
           "minimum": -1,
-          "maximum": 0,
+          "maximum": 2,
           "set": 1
         },
         {

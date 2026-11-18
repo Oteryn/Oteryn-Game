@@ -15,9 +15,10 @@ TWO_HOURS = 7201
 
 
 def append(add, storage, offers, callbacks, prefix):
-    def callback(name, npc, words, states, *, citizen_addon=None, **kwargs):
+    def callback(name, npc, words, states, *, citizen_addon=None, requires_premium=True, **kwargs):
         add("qb-" + name, "outfit_and_addon_quests", npc, words, states, **kwargs)
-        callbacks[-1]["requires_premium"] = True
+        if requires_premium:
+            callbacks[-1]["requires_premium"] = True
         if citizen_addon is not None:
             callbacks[-1]["forbids_addons"] = [
                 {"outfit": "oteryn:outfit.citizen", "addons": citizen_addon}
@@ -74,7 +75,7 @@ def append(add, storage, offers, callbacks, prefix):
         "is hard to come by these days. Are you willing to put some work into this?",
     )
     callback(
-        "citizen-backpack-start", "lubo", ["yes"], states, topic=2, citizen_addon=1
+        "citizen-backpack-start", "lubo", ["yes"], states, topic=2, requires_premium=False
     )
     states = [storage(backpack, 1, 2), storage(mission, 1, 2)]
     offer(
@@ -93,7 +94,7 @@ def append(add, storage, offers, callbacks, prefix):
         states,
         take=[(5878, 100)],
         topic=3,
-        citizen_addon=1,
+        requires_premium=False,
     )
     timer_set(timer)
     callback(
@@ -102,9 +103,17 @@ def append(add, storage, offers, callbacks, prefix):
         ["addon", "outfit", "backpack"],
         [storage(backpack, 2, 3), storage(mission, 2, 0)],
         outfit=("citizen", 1),
-        citizen_addon=1,
+        requires_premium=False,
     )
     timer_elapsed(timer)
+    offer(
+        "lubo",
+        ["addon", "outfit"],
+        0,
+        0,
+        [storage(backpack, 3, 3)],
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory.",
+    )
 
     hat, hat_mission = citizen + "addon_hat", citizen + "mission_hat"
     states = [storage(hat, 0, 1), storage(hat_mission, 0, 1)]

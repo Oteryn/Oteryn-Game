@@ -1650,7 +1650,7 @@ fn scenario_case(
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,
             };
-            let premium_account = if name == "qengine-rewards-qb-free-account" {
+            let premium_account = if name.ends_with("-free-account") {
                 id(41)
             } else {
                 id(40)
@@ -1680,7 +1680,7 @@ fn scenario_case(
                     .session_premium_gate(deps.admitted.game_session_id)
                     .await
                     .premium_current(),
-                name != "qengine-rewards-qb-free-account"
+                !name.ends_with("-free-account")
             );
         }
 
