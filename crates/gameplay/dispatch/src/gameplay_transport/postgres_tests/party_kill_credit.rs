@@ -20,6 +20,10 @@ const TRACK: &str = "oteryn:quest-progress/qcredit-fixture/kills";
 const PHASE: &str = "oteryn:quest-progress/qcredit-fixture/phase";
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const EXIT: &str = "oteryn:quest-progress/qcredit-fixture/exit";
+const PREOWNED_OUTFIT_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/preowned-outfit";
+// Crystal 201189f8 arbaziloth_death.lua:38-41.
+const FIRST_DEFEAT_MESSAGE: &str =
+    "You have defeated Arbaziloth for the first time. You have won the Fiend Slayer Outfit.";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
@@ -335,6 +339,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             counter["set_to_maximum"] = json!(true);
             if case == Case::FirstDefeatOutfit {
                 counter["first_defeat_outfit"] = json!({"outfit":"oteryn:outfit.fiend_slayer","addons":0});
+                counter["first_defeat_outfit_message"] = json!(FIRST_DEFEAT_MESSAGE);
                 "Crystal 201189f8 arbaziloth_death.lua:29-41"
             } else {
                 "Crystal201189f the_new_frontier/creaturescripts_shard_of_corruption_kill.lua:5-10"
@@ -374,10 +379,15 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
     };
     let stage = |name: &str, counter: &Value| json!({"key":name, "completes":false, "trigger":{"kind":"kill","counter":counter}});
     let mut stages = vec![stage("rat", &counter)];
-    if case == Case::Ordered {
+    if matches!(case, Case::Ordered | Case::FirstDefeatOutfit) {
         counter["key"] = json!("oteryn:quest-transition/native-kills/qcredit-fixture-cave-rat");
         counter["creature"] = json!(CAVE_RAT);
-        counter["maximum"] = json!(3);
+        if case == Case::Ordered {
+            counter["maximum"] = json!(3);
+        } else {
+            counter["track"] = json!(PREOWNED_OUTFIT_TRACK);
+            counter["gate"] = json!(PREOWNED_OUTFIT_TRACK);
+        }
         stages.push(stage("cave-rat", &counter));
     }
     if case.has_outcome() {
@@ -422,6 +432,12 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         ],
         "stages":stages
     }]});
+    if case == Case::FirstDefeatOutfit {
+        definition["quests"][0]["tracks"]
+            .as_array_mut()
+            .ok_or("outfit fixture tracks")?
+            .push(json!({"key":PREOWNED_OUTFIT_TRACK,"initial":0,"minimum":0,"maximum":1}));
+    }
     if case.has_reset() {
         let tracks = definition["quests"][0]["tracks"]
             .as_array_mut()
@@ -1267,6 +1283,9 @@ async fn exercise_first_defeat_outfit(
     pool: &sqlx::PgPool,
 ) -> TestResult {
     const GRANT: &str = "oteryn:outfit.fiend_slayer/quest-grant/0";
+    for player in players {
+        owner.states.chat.admit(player.session, "Adventurer", owner.owner_now());
+    }
     // Interrupt the actual quest track write after the outfit insert. The
     // nontransactional sequence proves the writer reached that boundary.
     sqlx::raw_sql(
@@ -1300,6 +1319,7 @@ async fn exercise_first_defeat_outfit(
         .await?;
     assert!(reached, "the outfit was inserted before the injected track failure");
     assert_tracks(pool, [0, 0, 0]).await?;
+    assert_first_defeat_messages(owner, players, [0, 0, 0]);
     let grants: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key=$1",
     )
@@ -1322,10 +1342,41 @@ async fn exercise_first_defeat_outfit(
         .map_err(debug)?;
     assert_tracks(pool, [1, 1, 0]).await?;
     assert_first_defeat_outfits(pool).await?;
+    assert_first_defeat_messages(owner, players, [1, 1, 0]);
 
     death(owner, players, RAT, position, case, 201).await?;
     assert_tracks(pool, [1, 1, 0]).await?;
+    assert_first_defeat_messages(owner, players, [0, 0, 0]);
+
+    // A separate first-defeat transition still credits existing outfit owners.
+    death(owner, players, CAVE_RAT, position, case, 202).await?;
+    let credited: Vec<i64> = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE track_key=$1 ORDER BY character_id",
+    )
+    .bind(PREOWNED_OUTFIT_TRACK)
+    .fetch_all(pool)
+    .await?;
+    assert_eq!(credited, [1, 1]);
+    assert_first_defeat_messages(owner, players, [0, 0, 0]);
     assert_first_defeat_outfits(pool).await
+}
+
+fn assert_first_defeat_messages(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: &[Player],
+    expected: [usize; 3],
+) {
+    use oteryn_protocol_oteryn::chat::ChatLine;
+
+    assert_eq!(players.len(), expected.len());
+    for (player, count) in players.iter().zip(expected) {
+        let lines = owner.states.chat.drain(player.session);
+        assert_eq!(
+            lines.iter().filter(|line| matches!(line, ChatLine::Private { speaker_name, text }
+                if speaker_name == "Game" && text == FIRST_DEFEAT_MESSAGE)).count(),
+            count
+        );
+    }
 }
 
 async fn assert_first_defeat_outfits(pool: &sqlx::PgPool) -> TestResult {
