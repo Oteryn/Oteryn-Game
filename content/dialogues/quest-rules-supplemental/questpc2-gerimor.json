@@ -14,6 +14,16 @@
       ]
     },
     {
+      "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/access_door",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:373-377"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
       "quest": "oteryn:quest.cults_of_tibia_quest",
       "initial": 0,
@@ -1501,6 +1511,1144 @@
         "mission",
         "yes"
       ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/report-minotaurs",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "minotaurs"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Thank you for your report."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "value": 6
+        },
+        {
+          "kind": "experience",
+          "amount": 25000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:256-266"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/reported-minotaurs",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "minotaurs"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "op": "gt",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "You have already reported on that cult."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:402-404"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/report-prosperity",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "prosperity"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "op": "eq",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "Thank you for your report."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "value": 15
+        },
+        {
+          "kind": "experience",
+          "amount": 50000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:268-279"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/reported-prosperity",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "prosperity"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "op": "gt",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "You have already reported on that cult."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:402-404"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/report-barkless",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "barkless"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "Thank you for your report."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "value": 7
+        },
+        {
+          "kind": "experience",
+          "amount": 50000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:281-292"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/reported-barkless",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "barkless"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "op": "gt",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "You have already reported on that cult."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:402-404"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/report-orcs",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "orcs"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Thank you for your report."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "value": 3
+        },
+        {
+          "kind": "experience",
+          "amount": 25000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:294-303"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/reported-orcs",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "orcs"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "op": "gt",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You have already reported on that cult."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:402-404"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/report-life",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "life"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "Thank you for your report."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "value": 10
+        },
+        {
+          "kind": "experience",
+          "amount": 50000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:305-315"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/reported-life",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "life"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "op": "gt",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "You have already reported on that cult."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:402-404"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/report-misguided",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "misguided"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Thank you for your report."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "value": 5
+        },
+        {
+          "kind": "experience",
+          "amount": 50000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:317-327"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/reported-misguided",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "misguided"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "op": "gt",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "You have already reported on that cult."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:402-404"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/report-humans",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "humans"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Thank you for your report."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "value": 3
+        },
+        {
+          "kind": "experience",
+          "amount": 25000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:329-339"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/reported-humans",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "humans"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "op": "gt",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You have already reported on that cult."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:402-404"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-access",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "op": "eq",
+          "value": 6
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "op": "eq",
+          "value": 15
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "op": "eq",
+          "value": 7
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "op": "eq",
+          "value": 10
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "op": "eq",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "The way to the final source is open."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/access_door",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:356-378"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-in-progress",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/minotaurs/mission",
+          "op": "eq",
+          "value": 6
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+          "op": "eq",
+          "value": 15
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "op": "eq",
+          "value": 7
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "op": "eq",
+          "value": 10
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/misguided/mission",
+          "op": "eq",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "The final source still awaits you."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:359-378"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-offer",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Are you ready to receive your reward?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:379-386"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-decline",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [],
+      "reply": [
+        "Return when you are ready."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:449-452"
+      ],
+      "topics": [
+        4
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-completed",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "gt",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You have already claimed your reward."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:356-358"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-reward-none",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.none"
+        }
+      ],
+      "reply": [
+        "Thank you. Here is your reward."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i26186",
+          "count": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 50000
+        },
+        {
+          "kind": "achievement",
+          "name": "Corruption Contained"
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:425-447"
+      ],
+      "topics": [
+        4
+      ],
+      "inventory_failure_reply": [
+        "Please make room for your reward."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-reward-druid",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.druid"
+        }
+      ],
+      "reply": [
+        "Thank you. Here is your reward."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i26187",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i26186",
+          "count": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 50000
+        },
+        {
+          "kind": "achievement",
+          "name": "Corruption Contained"
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:425-447"
+      ],
+      "topics": [
+        4
+      ],
+      "inventory_failure_reply": [
+        "Please make room for your reward."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-reward-knight",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.knight"
+        }
+      ],
+      "reply": [
+        "Thank you. Here is your reward."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i26188",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i26186",
+          "count": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 50000
+        },
+        {
+          "kind": "achievement",
+          "name": "Corruption Contained"
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:425-447"
+      ],
+      "topics": [
+        4
+      ],
+      "inventory_failure_reply": [
+        "Please make room for your reward."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-reward-monk",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.monk"
+        }
+      ],
+      "reply": [
+        "Thank you. Here is your reward."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i50313",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i26186",
+          "count": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 50000
+        },
+        {
+          "kind": "achievement",
+          "name": "Corruption Contained"
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:425-447"
+      ],
+      "topics": [
+        4
+      ],
+      "inventory_failure_reply": [
+        "Please make room for your reward."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-reward-paladin",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.paladin"
+        }
+      ],
+      "reply": [
+        "Thank you. Here is your reward."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i26189",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i26186",
+          "count": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 50000
+        },
+        {
+          "kind": "achievement",
+          "name": "Corruption Contained"
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:425-447"
+      ],
+      "topics": [
+        4
+      ],
+      "inventory_failure_reply": [
+        "Please make room for your reward."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/cults_of_tibia/gerimor/finale-reward-sorcerer",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "npc": "oteryn:npc.gerimor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.sorcerer"
+        }
+      ],
+      "reply": [
+        "Thank you. Here is your reward."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i26190",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i26186",
+          "count": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 50000
+        },
+        {
+          "kind": "achievement",
+          "name": "Corruption Contained"
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/final_boss/mission",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gerimor.lua:425-447"
+      ],
+      "topics": [
+        4
+      ],
+      "inventory_failure_reply": [
+        "Please make room for your reward."
+      ]
     }
   ],
   "source_files": [
@@ -1508,6 +2656,11 @@
       "path": "data-global/npc/gerimor.lua",
       "sha256": "bf0fba86d07bb8a70d6242c2cc748fbb137cc7b583b47f0886530b6b5c584b2f",
       "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    },
+    {
+      "path": "data-global/npc/gerimor.lua",
+      "sha256": "bf0fba86d07bb8a70d6242c2cc748fbb137cc7b583b47f0886530b6b5c584b2f",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
     }
   ]
 }

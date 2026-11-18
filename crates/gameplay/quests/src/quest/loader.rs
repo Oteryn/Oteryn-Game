@@ -247,6 +247,8 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::npc_rules::questpc2_gerimor_source::retain_predecessor(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     super::world_callbacks::cooldmech_pits::retain_predecessor(&mut lowered.catalogue);
     Ok(lowered)
 }

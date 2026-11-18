@@ -1,4 +1,4 @@
-"""Pinned Gerimor assignment starts; cult boss reports and rewards stay unqualified."""
+"""Pinned Gerimor assignments, reports and finale settlement."""
 import hashlib
 import json
 from pathlib import Path
@@ -13,6 +13,9 @@ PROGRAM = 'oteryn:quest-npc-program.questpc2-gerimor-assignments'
 PREFIX = 'oteryn:quest-progress/quest/u11_40/cults_of_tibia/'
 OUTPUT = 'content/dialogues/quest-rules-supplemental/questpc2-gerimor.json'
 CULTS = ('minotaurs', 'prosperity', 'barkless', 'orcs', 'life', 'misguided', 'humans')
+FINALE_REV = '201189f871d23597b82caf88fd611454a2ddefb8'
+CROWNS = {'druid': 26187, 'knight': 26188, 'monk': 50313,
+          'paladin': 26189, 'sorcerer': 26190}
 
 
 def outputs(root):
@@ -40,6 +43,7 @@ def outputs(root):
     # A selected topic encodes the Lua's volatile per-player storage[playerId].
     # No selected cult is persisted until the source confirmation commits.
     selected = []
+    reports = []
     for index, cult in enumerate(CULTS):
         begin = next(i for i, line in enumerate(lines) if f'["{cult}"] = {{' in line)
         end = next(i for i in range(begin, len(lines)) if 'rewardExp =' in lines[i])
@@ -51,6 +55,8 @@ def outputs(root):
         # Only the first text array is the assignment offer, never completeText.
         offer_end = next(i for i in range(begin + 2, end) if lines[i].strip() == '},')
         quotes = [i for i in quotes if i <= offer_end]
+        reward = int(re.search(r'rewardExp = (\d+)', lines[end]).group(1))
+        reports.append((cult, track, goal, reward, f'{begin + 1}-{end + 1}'))
         chosen = 300 + index
         selected.append(chosen)
         rule('menu-' + cult, 'mission', [388], [topic(2)],
@@ -66,16 +72,64 @@ def outputs(root):
     # Topic 2 enters the table lookup branch, including for the word "no".
     rule('decline', 'no', [450], [topic(0)], [], '449-452', [0, *selected])
     rules[-1]['exclude_keywords'] = ['mission', 'yes']
+    def finale_rule(name, word, reply, effects, guards, span, topics=None, exact=False):
+        rules.append(dict(
+            key='oteryn:quest-npc/cults_of_tibia/gerimor/' + name,
+            quest=QUEST, npc='oteryn:npc.gerimor', trigger='say', keywords=[word],
+            keyword_mode='exact' if exact else 'msg_contains', guards=guards,
+            reply=[reply], effects=effects,
+            sources=[f'crystal:{FINALE_REV}:{SOURCE}:{span}'],
+            **({'topics': topics} if topics is not None else {}),
+        ))
+
+    completed_reports = []
+    for cult, track, goal, reward, span in reports:
+        completed_reports.append(guard(track, 'eq', goal + 1))
+        finale_rule('report-' + cult, cult, 'Thank you for your report.',
+                    [write(track, goal + 1), dict(kind='experience', amount=reward), topic(0)],
+                    [guard(track, 'eq', goal)], span, [2], exact=True)
+        finale_rule('reported-' + cult, cult, 'You have already reported on that cult.',
+                    [topic(2)], [guard(track, 'gt', goal)], '402-404', [2], exact=True)
+
+    mission = 'final_boss/mission'
+    door = 'final_boss/access_door'
+    finale_rule('finale-access', 'mission', 'The way to the final source is open.',
+                [write(mission, 1), write(door, 1), topic(0)],
+                [*completed_reports, guard(mission, 'lt', 1)], '356-378')
+    finale_rule('finale-in-progress', 'mission', 'The final source still awaits you.',
+                [topic(0)], [*completed_reports, guard(mission, 'eq', 1)], '359-378')
+    finale_rule('finale-offer', 'mission', 'Are you ready to receive your reward?',
+                [topic(4)], [guard(mission, 'eq', 2)], '379-386')
+    finale_rule('finale-decline', 'no', 'Return when you are ready.',
+                [topic(0)], [], '449-452', [4])
+    finale_rule('finale-completed', 'mission', 'You have already claimed your reward.',
+                [topic(0)], [guard(mission, 'gt', 2)], '356-358')
+    for vocation, crown in [('none', None), *CROWNS.items()]:
+        gifts = [dict(kind='give_item', item='oteryn:item.tibia.i26186', count=1)]
+        if crown is not None:
+            gifts.insert(0, dict(kind='give_item', item=f'oteryn:item.tibia.i{crown}', count=1))
+        finale_rule('finale-reward-' + vocation, 'yes', 'Thank you. Here is your reward.',
+                    gifts + [dict(kind='experience', amount=50_000),
+                             dict(kind='achievement', name='Corruption Contained'),
+                             write(mission, 3), topic(0)],
+                    [guard(mission, 'eq', 2),
+                     dict(kind='vocation', value='oteryn:vocation.' + vocation)],
+                    '425-447', [4])
+        rules[-1]['inventory_failure_reply'] = ['Please make room for your reward.']
+
     state = json.loads((root / 'content/quests/missions/quest-state.json').read_bytes())
-    wanted = {PREFIX + 'questline', PREFIX + 'final_boss/mission',
+    wanted = {PREFIX + 'questline', PREFIX + 'final_boss/mission', PREFIX + door,
               *(PREFIX + ('mot_a' if cult == 'prosperity' else cult) + '/mission' for cult in CULTS)}
     tracks = [{**{k: t[k] for k in ('key', 'quest', 'initial', 'min', 'max')},
-               'sources': [cite('255-452')]} for q in state['quests'] if q['quest'] == QUEST
+               'sources': [f'crystal:{FINALE_REV}:{SOURCE}:373-377']
+                           if t['key'] == PREFIX + door else [cite('255-452')]}
+              for q in state['quests'] if q['quest'] == QUEST
               for t in q['tracks'] if t['key'] in wanted]
     if len(tracks) != len(wanted):
         raise ValueError('GERIMOR_TRACK_SET')
     document = dict(schema=1, program_key=PROGRAM, quest=QUEST, tracks=tracks, rules=rules,
-                    source_files=[dict(path=SOURCE, sha256=SHA, revision=REV)])
+                    source_files=[dict(path=SOURCE, sha256=SHA, revision=revision)
+                                  for revision in (REV, FINALE_REV)])
     return {OUTPUT: json.dumps(document, ensure_ascii=False, indent=2) + '\n'}
 
 

@@ -15,7 +15,7 @@ mod keyword;
 mod marlin_trophy;
 mod player_name;
 mod questpc2_albinius_source;
-mod questpc2_gerimor_source;
+pub(super) mod questpc2_gerimor_source;
 mod questpc2_gnomus_source;
 mod questpc2_henricus_source;
 mod questpc2_oldrak_source;
