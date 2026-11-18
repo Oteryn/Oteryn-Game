@@ -21,6 +21,7 @@ use super::consume_transform_audit as audit;
 mod cake;
 pub use cake::CakeBakerContext;
 mod dispenser;
+pub mod mind;
 #[path = "consume_transform_ground.rs"]
 mod ground;
 #[path = "consume_transform_planting.rs"]
@@ -87,6 +88,7 @@ enum ActionContext<'a> {
     Carried,
     CakeBaker(&'a CakeBakerContext),
     Ground(&'a GroundActionContext),
+    Mind(mind::MindAction),
     DispenserTarget(&'a GroundActionContext),
     DispenserHouseTarget(&'a HouseActionContext),
 }
@@ -219,7 +221,8 @@ impl DurabilityRoot {
                         && cake::is_baker(&caller.npc_key)
                         && effects.get("npc_key").and_then(Value::as_str)==Some(caller.npc_key.as_str())
                         && effects.get("reset_epoch").and_then(Value::as_str)==Some(caller.expected_epoch.to_string().as_str()),
-                    _ => recipe!=cake::RECIPE,
+                    ActionContext::Mind(action) => recipe == action.recipe(),
+                    _ => recipe!=cake::RECIPE && !mind::is_recipe(&recipe),
                 };
                 let result = if caller_matches && intent == request.intent && character == fence.character_id.as_bytes() {
                     ConsumeTransformResult { disposition: UseDisposition::Committed, fresh: false, effects, recipe: Some(recipe.clone()) }
@@ -274,6 +277,15 @@ async fn write<C: ItemLoopContent>(
     let permit =
         (!matches!(ground, ActionContext::DispenserHouseTarget(_))).then_some(ground_fences.permit);
     let world = fence.runtime_scope.world_id();
+    let selected_request = if matches!(ground, ActionContext::Mind(mind::MindAction::Field)) {
+        let Some(source) = mind::select_shard(tx, fence, request.command).await? else {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::NothingToUse));
+        };
+        Some(ConsumeTransformRequest { source, ..request.clone() })
+    } else {
+        None
+    };
+    let request = selected_request.as_ref().unwrap_or(request);
     // The full Character fence/root lock precedes item locks. The only equipment
     // source admitted here is the unchanged party hat in the actual head slot.
     let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(coalesce(e.parent_item_instance_id,n.parent_item_instance_id)) AS parent,coalesce(e.placement_ordinal,n.placement_ordinal,h.slot,1)::text AS ordinal,CASE WHEN h.item_instance_id IS NOT NULL THEN 2 WHEN n.item_instance_id IS NOT NULL THEN 4 ELSE 1 END AS custody,CASE WHEN h.item_instance_id IS NOT NULL THEN to_jsonb(h) WHEN n.item_instance_id IS NOT NULL THEN to_jsonb(n) ELSE to_jsonb(e) END AS source_location FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid LEFT JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id LEFT JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) owner ON n.item_instance_id IS NOT NULL LEFT JOIN game_character_equipment_slots h ON h.item_instance_id=i.item_instance_id AND h.character_id=encode($2,'hex')::uuid AND (h.slot=1 OR $4) AND h.world_id=i.world_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND ((e.world_id=i.world_id AND b.world_id=i.world_id) OR h.item_instance_id IS NOT NULL OR (n.world_id=i.world_id AND owner.owner_character=encode($2,'hex')::uuid AND owner.depth BETWEEN 0 AND 7)) FOR UPDATE OF i")
@@ -288,7 +300,12 @@ async fn write<C: ItemLoopContent>(
     };
     // Seed use keeps its exact operand in the already proven extra-input slot, so
     // main and nested leaves share the same custody proof without widening rust.
-    let cake_plan = if let ActionContext::CakeBaker(context) = ground {
+    let cake_plan = if let ActionContext::Mind(action) = ground {
+        let Some(plan) = mind::prepare(tx, fence, request, &definition, action).await? else {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+        };
+        Some(plan)
+    } else if let ActionContext::CakeBaker(context) = ground {
         match cake::prepare(
             tx,
             fence,

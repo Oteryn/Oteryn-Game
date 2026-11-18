@@ -8,6 +8,7 @@ pub(super) mod drome_cube;
 
 #[path = "item_use_gourmet.rs"]
 pub(super) mod gourmet;
+pub(super) mod mind;
 mod rotten_essence;
 mod soul_war_source;
 
@@ -607,6 +608,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return self
                 .use_temple_scroll(actor, command, fence, &inventory, entry)
+                .await;
+        }
+        if entry.item.definition.production_key == mind::POTION {
+            return self
+                .use_mind_potion(&permit, actor, command, fence, native, source)
                 .await;
         }
         let record = record(native, &entry.item.definition);

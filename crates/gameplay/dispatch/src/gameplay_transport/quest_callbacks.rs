@@ -1280,6 +1280,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
+        if entered.position() != origin.position() {
+            self.step_mind_field(permit, actor, session, entered).await;
+        }
         self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
             .await
     }
