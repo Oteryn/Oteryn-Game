@@ -25,6 +25,9 @@ pub(super) struct Ghulosh {
         crate::foundation::RuntimeScopeRefV1,
         crate::foundation::ScopeOwnershipGeneration,
     ),
+    activation: u64,
+    artifact: [u8; 32],
+    map: [u8; 32],
     stage: usize,
     finished: bool,
 }
@@ -51,13 +54,21 @@ impl Ghulosh {
             book: Book::Tome(book),
             book_position: runtime.read_actor_position(book)?.position(),
             scope: runtime.encounter_owner_scope(),
+            activation: runtime.content_pin().activation_sequence(),
+            artifact: runtime.content_pin().server_artifact_digest(),
+            map: runtime.content_pin().map_revision_digest(),
             stage: 0,
             finished: false,
         })
     }
 
     pub(super) fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
-        self.scope == runtime.encounter_owner_scope() && runtime.owner_fence().is_ok()
+        let pin = runtime.content_pin();
+        self.scope == runtime.encounter_owner_scope()
+            && self.activation == pin.activation_sequence()
+            && self.artifact == pin.server_artifact_digest()
+            && self.map == pin.map_revision_digest()
+            && runtime.owner_fence().is_ok()
     }
 
     pub(super) fn contains_terminal(&self, actor: ExactActorRef) -> bool {
@@ -79,15 +90,21 @@ impl Ghulosh {
         actor: ExactActorRef,
         now_ms: u64,
     ) -> Result<(), CarrierError> {
-        runtime.borrow_combat_death().projected_death(actor)?;
+        if !self.is_current(runtime) {
+            return Err(CarrierError::ContentPinWorldMismatch);
+        }
+        let deaths = runtime.borrow_combat_death();
+        let (_, position) = deaths.projected_death(actor)?;
         if self.boss == actor {
             self.finished = true;
         } else if matches!(self.book, Book::Tome(book) if book == actor) {
-            self.book =
-                Book::SpawnDeath(runtime.companion_snapshot_including_dead(actor)?.position);
+            self.book = Book::SpawnDeath(position);
         } else if matches!(self.book, Book::Concentrated(death) if death == actor) {
             self.book = Book::Respawn {
-                next_ms: now_ms.saturating_add(4000),
+                next_ms: deaths
+                    .projected_death_at_ms(actor)?
+                    .unwrap_or(now_ms)
+                    .saturating_add(4000),
                 warnings_left: 4,
             };
         }
