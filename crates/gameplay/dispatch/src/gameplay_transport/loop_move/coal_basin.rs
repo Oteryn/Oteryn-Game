@@ -83,18 +83,25 @@ pub(super) async fn prepare(
     }
     let occupant = {
         let runtime = admission.runtime.lock().await;
-        let census = runtime
-            .positioned_melee_census()
+        // Crystal movements_all_teleports_tombs_coal_basin.lua:44-45.
+        // A creature above a player also prevents that player from receiving the transfer.
+        let top = runtime
+            .current_top_actor_on_cell(local(binding.flame))
             .map_err(|_| LoopMoveResult::Unknown)?;
-        census
-            .into_iter()
-            .rev()
-            .find(|(_, snapshot, _)| snapshot.position() == local(binding.flame))
-            .and_then(|(actor, _, session)| {
-                let session = session?;
-                let lease = runtime.bound_attacker_lease(actor, session).ok()?;
-                Some((actor, session, lease))
-            })
+        if let Some(top) = top {
+            runtime
+                .positioned_melee_census()
+                .map_err(|_| LoopMoveResult::Unknown)?
+                .into_iter()
+                .find(|(actor, _, _)| *actor == top)
+                .and_then(|(actor, _, session)| {
+                    let session = session?;
+                    let lease = runtime.bound_attacker_lease(actor, session).ok()?;
+                    Some((actor, session, lease))
+                })
+        } else {
+            None
+        }
     };
     let recipient = if let Some((actor, session, lease)) = occupant {
         let catalogue = admission.quest_catalogue.clone().ok_or(refused)?;
@@ -108,11 +115,7 @@ pub(super) async fn prepare(
         let states = admission.states.spell_states.lock().await;
         if lease.character_id().as_bytes() != fence.character_id.as_bytes()
             || runtime.bound_attacker_lease(actor, session).ok() != Some(lease)
-            || runtime
-                .read_actor_position(actor)
-                .ok()
-                .map(|snapshot| snapshot.position())
-                != Some(local(binding.flame))
+            || runtime.current_top_actor_on_cell(local(binding.flame)).ok() != Some(Some(actor))
             || states.is_dead(actor)
         {
             return Err(refused);

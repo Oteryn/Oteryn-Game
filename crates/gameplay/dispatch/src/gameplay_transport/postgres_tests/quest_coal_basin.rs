@@ -146,5 +146,64 @@ pub(super) async fn exercise(
             && *effect == crate::durability::item_loop_move::COIN_FIRE_EFFECT
     }).count();
     assert_eq!(fire_cues, 1, "rollback and reply replay emit no second fire cue");
+
+    // Crystal uses the true top creature (lines 44-45). The first-admitted
+    // depositor enters the occupied flame last and is now the recipient.
+    relocate(
+        owner,
+        guest_actor,
+        guest.game_session_id,
+        (flame.x, flame.y, 13),
+    )
+    .await?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let expected = runtime
+            .read_actor_position(depositor_actor)
+            .map_err(debug)?;
+        let doors = crate::map::floor::BundleDoors(&map.facts);
+        let proof = crate::map::floor::prepare_quest_encounter_ejection(
+            &runtime,
+            owner.movement_cells(),
+            depositor_actor,
+            depositor.game_session_id,
+            expected,
+            super::quest_world_callbacks::local(flame),
+            &doors,
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+        assert_eq!(
+            runtime
+                .current_top_actor_on_cell(super::quest_world_callbacks::local(flame))
+                .map_err(debug)?,
+            Some(depositor_actor),
+        );
+    }
+    let second_drop = item_move(
+        owner,
+        depositor_actor,
+        UseCommand {
+            command_id: 4508,
+            ..command
+        },
+        &payload,
+        selection,
+        true,
+        &mut view,
+    )
+    .await;
+    assert!(
+        matches!(second_drop, ItemMoveStep::Result(ItemMoveOutcome::Moved, _)),
+        "{second_drop:?}"
+    );
+    assert_eq!(at(owner, depositor_actor).await?, position(destination));
+    assert_eq!(at(owner, guest_actor).await?, position(flame));
+    let paid = owner
+        .root
+        .read_character_quest_state(owner.character, donor.character_id)
+        .await
+        .map_err(debug)?;
+    assert_eq!(paid.tracks().get(coal_basins::START), Some(&1));
     Ok(())
 }

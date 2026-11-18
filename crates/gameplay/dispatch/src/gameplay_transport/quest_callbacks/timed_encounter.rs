@@ -105,7 +105,8 @@ impl TimedEncounter {
             && self.content == runtime.content_pin().server_artifact_digest()
             && self.map == map.overlay.base().digest()
             && self.revision == map.facts.object_revision(self.key)
-            && (self.roster.is_empty() || self.roster.contains(&(actor, session)))
+            && (self.callback.effects.timed_group_transfer.is_none()
+                || self.roster.contains(&(actor, session)))
             && self
                 .participant
                 .is_none_or(|participant| participant == (actor, session))

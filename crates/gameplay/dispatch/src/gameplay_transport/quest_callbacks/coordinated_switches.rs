@@ -192,19 +192,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
-        let roster = window
-            .switches
-            .iter()
-            .filter_map(|switch| {
-                census.iter().find_map(|&(actor, position, session)| {
-                    let session = session?;
-                    (local(switch.station) == position.position()
-                        && !states.is_dead(actor)
-                        && runtime.bound_attacker_lease(actor, session).is_ok())
-                    .then_some((actor, session))
-                })
-            })
-            .collect();
+        // Crystal actions_lord_of_elements_lever.lua:168-174 captures the
+        // top creature at each station. Only captured players are later ejected.
+        let mut roster = Vec::with_capacity(window.switches.len());
+        for switch in &window.switches {
+            let Ok(top) = runtime.current_top_actor_on_cell(local(switch.station)) else {
+                return UseDisposition::Rejected;
+            };
+            if let Some((actor, _, Some(session))) = census
+                .iter()
+                .copied()
+                .find(|(actor, _, _)| Some(*actor) == top)
+                && !states.is_dead(actor)
+                && runtime.bound_attacker_lease(actor, session).is_ok()
+            {
+                roster.push((actor, session));
+            }
+        }
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return UseDisposition::Rejected;
         };
