@@ -1571,19 +1571,22 @@ fn elemental_spheres_exchange_can_read_eleven_item_identities() -> Result<(), Np
             {"kind":"take_item", "item":"oteryn:item.tibia.i954", "count":1}
         ]),
     );
-    rule["guards"] = serde_json::json!([940, 941, 942, 943, 944, 945, 946, 947, 948, 51259].map(
-        |id| {
-            serde_json::json!({
-                "kind":"item", "item":format!("oteryn:item.tibia.i{id}"), "op":"lt", "count":1
-            })
-        }
-    ));
+    let guards = [940, 941, 942, 943, 944, 945, 946, 947, 948, 51259];
+    rule["guards"] = serde_json::json!(guards.map(|id| {
+        serde_json::json!({
+            "kind":"item", "item":format!("oteryn:item.tibia.i{id}"), "op":"lt", "count":1
+        })
+    }));
     let catalog = fixture_catalog(&fixture_document(vec![rule]))?;
+    let mut expected = guards
+        .into_iter()
+        .chain([954])
+        .map(|id| format!("oteryn:item.tibia.i{id}"))
+        .collect::<Vec<_>>();
+    expected.sort_unstable();
     assert_eq!(
-        catalog
-            .item_exchange_keys("oteryn:npc.test")
-            .map(|keys| keys.len()),
-        Some(11)
+        catalog.item_exchange_keys("oteryn:npc.test"),
+        Some(expected)
     );
     Ok(())
 }
