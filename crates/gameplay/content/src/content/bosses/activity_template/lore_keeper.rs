@@ -55,23 +55,23 @@ impl ActiveGeneration {
         let native = self
             .native_gameplay()
             .ok_or(R::CreatureClosureUnavailable)?;
-        for key in [
+        let required = [
             CREATURE,
             "oteryn:creature.a_shielded_astral_glyph",
             "oteryn:creature.an_astral_glyph",
             "oteryn:creature.bound_astral_power",
+            "oteryn:creature.sword_of_vengeance",
             "oteryn:creature.the_astral_source",
             "oteryn:creature.the_distorted_astral_source",
-        ] {
-            let record = native
-                .creature_profiles()
-                .records
+        ];
+        if required.iter().any(|key| {
+            !native
+                .policies()
+                .policies()
                 .iter()
-                .find(|record| record.profile.target.key == key)
-                .ok_or(R::CreatureClosureUnavailable)?;
-            if !super::super::primal_closure::abilities_closed(record) {
-                return Err(R::CreatureClosureUnavailable);
-            }
+                .any(|policy| policy.definition_key == *key)
+        }) {
+            return Err(R::CreatureClosureUnavailable);
         }
         let view = room
             .bundle_activity_view(
