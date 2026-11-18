@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug};
 use super::qengine_rewards::{scenario, wire_conversation};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
@@ -26,6 +27,21 @@ pub(super) async fn exercise(
         .find(|callback| callback.key == KEY)
         .ok_or("authored Eclesius reward")?;
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("NPC quest capabilities")?;
     for ordinal in [801, 802] {
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
