@@ -109,7 +109,7 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
     owner.quest_catalogue = Some(catalogue.clone());
     owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
     let [arkulius] =
-        super::classic_quests::install(&owner, &admitted, ["oteryn:npc.arkulius"]).await?;
+        super::npc_dialogue_fixture::install(&owner, &admitted, ["oteryn:npc.arkulius"]).await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -147,9 +147,9 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
         .await;
     super::item_look::seed_main_backpack(h, &[(NEUTRAL_MATTER, 2)]).await?;
 
-    super::classic_quests::talk(&mut owner, &admitted, arkulius, 700, "hi").await?;
-    super::classic_quests::talk(&mut owner, &admitted, arkulius, 701, "mission").await?;
-    super::classic_quests::talk(&mut owner, &admitted, arkulius, 702, "mission").await?;
+    super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 700, "hi").await?;
+    super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 701, "mission").await?;
+    super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 702, "mission").await?;
     let carried: Vec<(String, i64)> = sqlx::query_as(
         "SELECT i.definition_production_key,i.quantity FROM game_item_instances i
          JOIN game_item_container_entries e USING(item_instance_id)
@@ -165,9 +165,14 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
             (NEUTRAL_MATTER.into(), 1)
         ]
     );
-    assert_eq!(
-        super::classic_quests::progress(&owner, &admitted, &authority, QUEST_LINE).await?,
-        3
-    );
+    let stage: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks
+         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(QUEST_LINE)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(stage, 3);
     Ok(())
 }

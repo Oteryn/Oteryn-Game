@@ -15,7 +15,7 @@ fn espher2_lord_switch_use_closes_its_wall_without_starting_early_postgres() -> 
         return Ok(());
     };
     drop(admin);
-    chamber(false)
+    chamber(ChamberCase::OneSwitch)
 }
 
 #[test]
@@ -24,10 +24,29 @@ fn espher2_lord_two_players_start_and_exit_at_timeout_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    chamber(true)
+    chamber(ChamberCase::Timeout)
 }
 
-fn chamber(two_players: bool) -> TestResult {
+#[test]
+fn espher2_lord_death_loot_window_and_shared_ashes_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    chamber(ChamberCase::Ashes)
+}
+
+#[path = "espher2_lord_chamber/ashes.rs"]
+mod ashes;
+
+#[derive(Clone, Copy)]
+enum ChamberCase {
+    OneSwitch,
+    Timeout,
+    Ashes,
+}
+
+fn chamber(case: ChamberCase) -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("espher2_lord_switch", move || {
         run(async |admin| {
             reset();
@@ -102,7 +121,7 @@ fn chamber(two_players: bool) -> TestResult {
                 .initialize_first_entry_position(deps.actor)
                 .map_err(debug)?;
             deps.runtime = tokio::sync::Mutex::new(runtime);
-            let evidence = if two_players {
+            let evidence = if !matches!(case, ChamberCase::OneSwitch) {
                 Some(super::house_transfer::RecoverySource::start(&h).await?)
             } else {
                 None
@@ -302,6 +321,17 @@ fn chamber(two_players: bool) -> TestResult {
                     1,
                     "all four switches must summon the Lord before ejection"
                 );
+                if matches!(case, ChamberCase::Ashes) {
+                    return ashes::exercise(
+                        &owner,
+                        &h,
+                        [
+                            (deps.actor, fence.item_fence()),
+                            (peer_actor, peer_fence.item_fence()),
+                        ],
+                    )
+                    .await;
+                }
                 owner.states.test_owner_time.store(
                     owner.owner_now().get() + 601_000_001,
                     std::sync::atomic::Ordering::Relaxed,
