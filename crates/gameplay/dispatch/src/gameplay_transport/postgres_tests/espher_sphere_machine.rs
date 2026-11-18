@@ -12,7 +12,9 @@ use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
     elemental_spheres::{MACHINE_GEMS, QUEST},
 };
-use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use oteryn_protocol_oteryn::world_object::{
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+};
 use std::sync::Arc;
 
 const LEFT: TilePos = TilePos {
@@ -22,7 +24,9 @@ const LEFT: TilePos = TilePos {
 };
 const RIGHT: TilePos = TilePos { x: 33269, ..LEFT };
 const START: (i32, i32, i16) = (33268, 31831, 10);
-const SEED: &str = "oteryn:quest-transition/fixture/sphere-machine-gems";
+const SEED: &str = "oteryn:quest-transition/fixture/sphere-machine-mission";
+const EMERALD: &str = "oteryn:item.tibia.i677";
+const RUBY: &str = "oteryn:item.tibia.i676";
 
 #[test]
 fn espher_sphere_machine_toggles_both_halves_and_spends_twenty_gems_postgres() -> TestResult {
@@ -44,6 +48,7 @@ fn espher_sphere_machine_toggles_both_halves_and_spends_twenty_gems_postgres() -
 
 async fn exercise(h: &Harness) -> TestResult {
     prepare_current_session(h).await?;
+    super::item_look::seed_main_backpack(h, &[(EMERALD, 24), (RUBY, 1)]).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -151,9 +156,9 @@ async fn exercise(h: &Harness) -> TestResult {
                 experience: None,
                 world_change: None,
                 effects: vec![QuestEffect {
-                    track: MACHINE_GEMS.into(),
-                    from: QuestComparison::Between(-1, 19),
-                    effect: QuestEffectKind::Set(23),
+                    track: "oteryn:quest-progress/elemental_spheres/quest_line".into(),
+                    from: QuestComparison::Between(-1, 0),
+                    effect: QuestEffectKind::Set(1),
                 }],
             })
             .map_err(debug)?,
@@ -197,31 +202,6 @@ async fn exercise(h: &Harness) -> TestResult {
             .ok_or("druid projection")?;
     }
     super::espher_arkulius::admit_level_80_druid(&owner, &mut admitted, h, &authority).await?;
-    let left = machine_key(&owner, LEFT, 842)?;
-    let right = machine_key(&owner, RIGHT, 843)?;
-    assert_eq!(
-        click(&mut owner, &admitted, 710, left).await?,
-        UseDisposition::Committed
-    );
-    assert_eq!(
-        (
-            machine_appearance(&owner, left)?,
-            machine_appearance(&owner, right)?
-        ),
-        (846, 847)
-    );
-    assert_eq!(gems(h).await?, -1);
-    assert_eq!(
-        click(&mut owner, &admitted, 711, right).await?,
-        UseDisposition::Committed
-    );
-    assert_eq!(
-        (
-            machine_appearance(&owner, left)?,
-            machine_appearance(&owner, right)?
-        ),
-        (842, 843)
-    );
     let fence = super::death_ml_loss_composed::current_fence(&owner, session).await?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let seeded = slot
@@ -247,6 +227,52 @@ async fn exercise(h: &Harness) -> TestResult {
         "{seeded:?}"
     );
     drop(slot);
+    let left = machine_key(&owner, LEFT, 842)?;
+    let right = machine_key(&owner, RIGHT, 843)?;
+    assert_ne!(
+        charge(&owner, &admitted, 714, left, RUBY).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(gems(h).await?, -1);
+    assert_eq!(carried(h, RUBY).await?, 1);
+    assert_eq!(
+        click(&mut owner, &admitted, 710, left).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(
+        (
+            machine_appearance(&owner, left)?,
+            machine_appearance(&owner, right)?
+        ),
+        (846, 847)
+    );
+    assert_eq!(gems(h).await?, -1);
+    assert_ne!(
+        charge(&owner, &admitted, 715, right, EMERALD).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(carried(h, EMERALD).await?, 24);
+    assert_eq!(
+        click(&mut owner, &admitted, 711, right).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(
+        (
+            machine_appearance(&owner, left)?,
+            machine_appearance(&owner, right)?
+        ),
+        (842, 843)
+    );
+    for count in 1..=23 {
+        let key = if count % 2 == 1 { left } else { right };
+        assert_eq!(
+            charge(&owner, &admitted, 720 + count, key, EMERALD).await?,
+            UseDisposition::Committed,
+            "gem {count}"
+        );
+        assert_eq!(gems(h).await?, i64::try_from(count)?);
+        assert_eq!(carried(h, EMERALD).await?, 24 - i64::try_from(count)?);
+    }
     assert_eq!(
         click(&mut owner, &admitted, 713, right).await?,
         UseDisposition::Committed
@@ -337,13 +363,7 @@ async fn click(
     key: u64,
 ) -> TestResult<UseDisposition> {
     owner.clock_origin -= std::time::Duration::from_secs(2);
-    let map = owner.bundle_map().ok_or("machine bundle")?;
-    let mut placement = map.overlay.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    let target = WorldObjectTarget {
-        placement,
-        expected_revision: map.facts.object_revision(key),
-    };
+    let target = target(owner, key)?;
     let fence =
         super::death_ml_loss_composed::current_fence(owner, admitted.game_session_id).await?;
     Ok(owner
@@ -358,4 +378,61 @@ async fn click(
         )
         .await
         .disposition)
+}
+
+async fn carried(h: &Harness, item: &str) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1",
+    )
+    .bind(item)
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+fn target(owner: &ComposedFreshAdmission<'_, '_, '_>, key: u64) -> TestResult<WorldObjectTarget> {
+    let map = owner.bundle_map().ok_or("machine bundle")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    Ok(WorldObjectTarget {
+        placement,
+        expected_revision: map.facts.object_revision(key),
+    })
+}
+
+async fn charge(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    command_id: u64,
+    key: u64,
+    item: &str,
+) -> TestResult<UseDisposition> {
+    let definition = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", item, "definition-r1"))
+        .ok_or("enchanted gem definition")?;
+    let fence =
+        super::death_ml_loss_composed::current_fence(owner, admitted.game_session_id).await?;
+    Ok(owner
+        .tame_mount(
+            admitted.runtime_actor.ok_or("actor")?,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence.item_fence()),
+            },
+            UseIntent {
+                target: UseTarget::ItemByDefinition(definition),
+                use_with: None,
+                use_with_map_item: Some(MapUseTarget::Object(target(owner, key)?)),
+                use_with_position: None,
+            },
+            None,
+            None,
+            true,
+        )
+        .await
+        .map_err(|()| "carried USE")?
+        .map_or(UseDisposition::NothingToUse, |outcome| outcome.disposition))
 }
