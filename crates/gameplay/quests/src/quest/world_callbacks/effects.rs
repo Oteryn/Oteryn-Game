@@ -88,6 +88,8 @@ pub struct DistractionSpawn {
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub creature_capture: Option<super::creature_capture::CreatureCapture>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub distraction: Option<Distraction>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub personal_return: Option<super::personal_return::PersonalReturn>,
@@ -566,6 +568,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
 
+    if effects
+        .creature_capture
+        .as_ref()
+        .is_some_and(|capture| !capture.valid(callback))
+    {
+        return false;
+    }
     if effects.distraction.as_ref().is_some_and(|distraction| {
         callback.trigger != Trigger::Use
             || callback.actor_kind != ActorKind::Player

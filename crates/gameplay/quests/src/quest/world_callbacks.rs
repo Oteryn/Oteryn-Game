@@ -42,6 +42,7 @@ mod asura_authored;
 mod character_requirements;
 pub use character_requirements::CharacterRequirements;
 mod clear_area;
+pub mod creature_capture;
 pub use clear_area::ClearArea;
 mod clock;
 mod completed_quests;
@@ -692,6 +693,11 @@ pub fn fixture_catalogue(
         catalogue = catalogue
             .with_fixture_transition(primary_transition(callback)?)
             .map_err(|error| format!("{error:?}"))?;
+        if let Some(transition) = callback.creature_capture_transition()? {
+            catalogue = catalogue
+                .with_fixture_transition(transition)
+                .map_err(|error| format!("{error:?}"))?;
+        }
         if let Some(transition) = callback.personal_return_transition()? {
             catalogue = catalogue
                 .with_fixture_transition(transition)
@@ -1558,6 +1564,9 @@ fn extend_callbacks(
             });
         }
         transitions.push(primary_transition(callback)?);
+        if let Some(transition) = callback.creature_capture_transition()? {
+            transitions.push(transition);
+        }
         if let Some(transition) = callback.personal_return_transition()? {
             transitions.push(transition);
         }

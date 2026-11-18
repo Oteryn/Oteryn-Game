@@ -927,7 +927,12 @@ impl DurabilityRoot {
             &source_action,
             Some(super::QuestSourceAction::RottenArea(_))
         );
+        let capture_key = request.transition_key
+            .starts_with(oteryn_gameplay_quests::quest::world_callbacks::creature_capture::PREFIX);
+        let capture_input = matches!(&source_action,
+            Some(super::QuestSourceAction::CreatureCapture(input)) if input.current_for(&catalogue));
         if source_key != soul_input
+            || capture_key != capture_input
             || area_key != area_input
             || source_action
                 .as_ref()
@@ -938,7 +943,7 @@ impl DurabilityRoot {
                     if matches!(input.as_ref(), super::soul_war_source::SoulWarSourceAction::Step(_))
             ) && !soul_step
             || matches!(request.cause, QuestCause::SourceStep(_)) != soul_step
-            || matches!(request.cause, QuestCause::SourceThink(_)) && !area_input
+            || matches!(request.cause, QuestCause::SourceThink(_)) != (area_input || capture_input)
             || source_action.is_some()
                 && ((context.is_some() && !soul_step)
                     || payment.is_some()
