@@ -3,7 +3,10 @@ use super::TestResult;
 use super::fixture::{Harness, debug, run};
 use crate::content::bosses::activity_template::{captured_boss_levers, wanted};
 use crate::foundation::MovementLocalPosition;
-use crate::gameplay_transport::{SeamRooms, connection::FreshAdmissionAuthority};
+use crate::gameplay_transport::{
+    ComposedFreshAdmission, SeamRooms,
+    connection::{AdmittedSession, FreshAdmissionAuthority},
+};
 use oteryn_protocol_oteryn::{boss_encounter as boss, world_spatial as movement};
 
 #[test]
@@ -122,18 +125,7 @@ fn exercise(timeout: bool) -> TestResult {
             h.root.set_test_quest_clock(now)?;
         }
         let instance = super::activity_runtime::allocate_ready_instance(&h, 237).await?;
-        let actor = admitted.runtime_actor.ok_or("Wanted player")?;
-        let (step, _) = owner
-            .paced_step(
-                actor,
-                admitted.game_session_id,
-                movement::StepDirection::North,
-            )
-            .await;
-        assert_eq!(step.disposition, movement::StepDisposition::Moved);
-        owner
-            .committed_paced_movement(admitted, step.moved_to)
-            .await;
+        step(&owner, admitted, movement::StepDirection::North).await?;
 
         let entered = owner.activity_runtimes.current_connection(admitted);
         let fence = entered.item_fence.ok_or("Wanted instance item fence")?;
@@ -164,6 +156,19 @@ fn exercise(timeout: bool) -> TestResult {
                 .runtime_scope,
             scope
         );
+        if !timeout {
+            super::activity_runtime::allocate_ready_instance(&h, 238).await?;
+            step(&owner, peer, movement::StepDirection::East).await?;
+            step(&owner, peer, movement::StepDirection::North).await?;
+            assert_eq!(owner.activity_runtimes.current_connection(peer), peer);
+            assert_eq!(
+                position(&owner, peer).await?,
+                start,
+                "occupied portal bounces peer"
+            );
+            step(&owner, peer, movement::StepDirection::West).await?;
+        }
+
         if timeout {
             h.root.advance_test_quest_clock(599)?;
             owner
@@ -188,31 +193,24 @@ fn exercise(timeout: bool) -> TestResult {
                 .get(instance, fence.scope_ownership_generation.get())
                 .ok_or("Wanted instance")?;
             let view = owner.runtime_view(&registered);
-            let actor = entered.runtime_actor.ok_or("Wanted instance player")?;
-            let (step, _) = view
-                .paced_step(
-                    actor,
-                    entered.game_session_id,
-                    movement::StepDirection::North,
-                )
-                .await;
-            assert_eq!(step.disposition, movement::StepDisposition::Moved);
-            view.committed_paced_movement(entered, step.moved_to).await;
+            step(&view, entered, movement::StepDirection::North).await?;
         }
         let returned = owner.activity_runtimes.current_connection(entered);
         let fence = returned.item_fence.ok_or("Wanted return item fence")?;
         assert_eq!(fence.runtime_scope, scope);
-        let actor = returned.runtime_actor.ok_or("Wanted returned player")?;
-        assert_eq!(
-            owner
-                .runtime
-                .lock()
-                .await
-                .read_actor_position(actor)
-                .map_err(debug)?
-                .position(),
-            start
-        );
+        assert_eq!(position(&owner, returned).await?, start);
+        if !timeout {
+            step(&owner, returned, movement::StepDirection::North).await?;
+            assert_eq!(
+                owner.activity_runtimes.current_connection(returned),
+                returned
+            );
+            assert_eq!(
+                position(&owner, returned).await?,
+                start,
+                "cooldown bounces entrant"
+            );
+        }
         assert_eq!(
             owner
                 .activity_runtimes
@@ -225,6 +223,34 @@ fn exercise(timeout: bool) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn step(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: AdmittedSession,
+    direction: movement::StepDirection,
+) -> TestResult {
+    let actor = session.runtime_actor.ok_or("positioned Wanted player")?;
+    let (step, _) = owner
+        .paced_step(actor, session.game_session_id, direction)
+        .await;
+    assert_eq!(step.disposition, movement::StepDisposition::Moved);
+    owner.committed_paced_movement(session, step.moved_to).await;
+    Ok(())
+}
+
+async fn position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: AdmittedSession,
+) -> Result<MovementLocalPosition, Box<dyn std::error::Error>> {
+    let actor = session.runtime_actor.ok_or("positioned Wanted player")?;
+    Ok(owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position())
 }
 
 // The test exercises admission and return without waiting for the production
