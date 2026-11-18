@@ -562,6 +562,14 @@ fn scenario_case(
         )
     {
         callback = super::super::authored_world_rewards::placeholder(trigger)?;
+        if name == "qengine-rewards-world-clock-charge" {
+            callback.selector.action = Some(25030);
+            callback.selector.unique = None;
+        } else if name == "qengine-rewards-world-clock-column" {
+            callback.selector.appearance = Some(9132);
+            callback.selector.action = Some(4969);
+            callback.selector.unique = None;
+        }
     }
     if name.ends_with("-expiry") {
         callback
@@ -925,6 +933,13 @@ fn scenario_case(
                 require_state: false,
             });
         world(&physical, trigger)?
+    } else if name == "qengine-rewards-world-clock-column" {
+        super::world_with_objects(
+            &callback,
+            trigger,
+            &[(super::super::world_callback_clocks::COLUMN, 9133)],
+            &[9137],
+        )?
     } else {
         world(&callback, trigger)?
     };

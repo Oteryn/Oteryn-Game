@@ -54,9 +54,9 @@ fn callback(
     Ok(value)
 }
 
-fn target(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<WorldObjectTarget> {
+fn target(owner: &ComposedFreshAdmission<'_, '_, '_>, at: Position) -> TestResult<WorldObjectTarget> {
     let key =
-        oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1).ok_or("placement")?;
+        oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, 1).ok_or("placement")?;
     let mut placement = owner
         .bundle_map()
         .ok_or("map")?
@@ -83,7 +83,7 @@ async fn use_(
     id: u64,
 ) -> TestResult<UseDisposition> {
     let payload =
-        oteryn_protocol_oteryn::world_object::encode_use_intent(&target(owner)?).map_err(debug)?;
+        oteryn_protocol_oteryn::world_object::encode_use_intent(&target(owner, AT)?).map_err(debug)?;
     let reply = super::quest_world_callbacks::wire(owner, admitted, id, 2, payload).await?;
     oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
 }
@@ -234,5 +234,135 @@ pub(super) async fn exercise(
         atomic, 2,
         "each accepted period owns one atomic MINT/clock transaction"
     );
+    Ok(())
+}
+
+#[test]
+fn world_callback_charge_assignment_is_persisted_once_on_step_in_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::qengine_rewards::scenario("qengine-rewards-world-clock-charge")
+}
+
+pub(super) async fn exercise_charge(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let mut charge = callback(
+        "oteryn:quest-callback/world-charge-assignment",
+        AT,
+        true,
+        serde_json::json!({
+            "track": CLOCK,
+            "from": {"kind": "between", "minimum": -1, "maximum": 0},
+            "effect": {"kind": "set_random", "minimum": 1, "maximum": 6}
+        }),
+    )?;
+    charge["selector"]["action"] = 25030.into();
+    charge["storage"][0]["minimum"] = 1.into();
+    charge["storage"][0]["maximum"] = 3.into();
+    charge["storage"][0]["set"] = 1.into();
+    let document = serde_json::json!({"schema":1,"quests":[{"quest":QUEST,
+        "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
+        "sources":["StepIn charge assignment engine fixture"],
+        "tracks":[{"key":PHASE,"initial":1,"minimum":-1,"maximum":4},
+                  {"key":CLOCK,"initial":-1,"minimum":-1,"maximum":6}],
+        "stages":[{"key":"charge","completes":false,"trigger":{"kind":"step_in","callback":charge}}]}]});
+    let revision = owner.quest_catalogue.as_deref().ok_or("catalogue")?
+        .content_revision().to_owned();
+    let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
+    owner.quest_catalogue = Some(Arc::new(Bindings::parse(&serde_json::to_vec(&document)?)?.attach(&base)?));
+
+    assert_eq!(clock(h).await?, -1);
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    step(owner, admitted, 1, StepDirection::East).await?;
+    let assigned = clock(h).await?;
+    assert!((1..=6).contains(&assigned));
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    step(owner, admitted, 2, StepDirection::West).await?;
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    step(owner, admitted, 3, StepDirection::East).await?;
+    assert_eq!(clock(h).await?, assigned);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind("oteryn:quest-callback/world-charge-assignment")
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, 1);
+    Ok(())
+}
+
+pub(super) const CANNON: Position = Position {
+    x: 32867,
+    y: 31257,
+    floor: -11,
+};
+pub(super) const COLUMN: Position = Position {
+    y: 31253,
+    ..CANNON
+};
+
+#[test]
+fn cycling_column_guards_cannon_use_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::qengine_rewards::scenario("qengine-rewards-world-clock-column")
+}
+
+pub(super) async fn exercise_column(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let mut cannon = super::authored_world_rewards::placeholder(CANNON)?;
+    cannon.key = "oteryn:quest-callback/frost-cannon-column".into();
+    cannon.requires_world_admission = true;
+    cannon.selector.appearance = Some(9132);
+    cannon.selector.action = Some(4969);
+    cannon.selector.unique = None;
+    cannon.storage[0].track = PHASE.into();
+    let mut cannon = serde_json::to_value(cannon)?;
+    cannon["world_requirements"] = serde_json::json!([{"position": COLUMN, "appearance": 9137}]);
+    let document = serde_json::json!({"schema":1,"quests":[{"quest":QUEST,
+        "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
+        "sources":["Cross-object appearance guard engine fixture"],
+        "tracks":[{"key":PHASE,"initial":0,"minimum":0,"maximum":1}],
+        "stages":[{"key":"cannon","completes":false,"trigger":{"kind":"map_use","callback":cannon}}]}]});
+    let revision = owner.quest_catalogue.as_deref().ok_or("catalogue")?
+        .content_revision().to_owned();
+    let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
+    owner.quest_catalogue = Some(Arc::new(Bindings::parse(&serde_json::to_vec(&document)?)?.attach(&base)?));
+
+    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target(owner, CANNON)?)
+        .map_err(debug)?;
+    let reply = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.clone()).await?;
+    assert_eq!(
+        oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+        UseDisposition::Rejected
+    );
+    let map = owner.bundle_map().ok_or("column map")?;
+    assert_eq!(map.facts.expire_movement_items(1), 0);
+    assert_eq!(map.facts.expire_movement_items(10_000_000), 0);
+    assert_eq!(map.facts.expire_movement_items(10_000_001), 1);
+    let reply = super::quest_world_callbacks::wire(owner, admitted, 2, 2, payload).await?;
+    assert_eq!(
+        oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+        UseDisposition::Committed
+    );
+    assert_eq!(map.facts.expire_movement_items(20_000_001), 1);
+    let accepted: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE quest_key=$1 AND track_key=$2",
+    )
+    .bind(QUEST)
+    .bind(PHASE)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(accepted, 1);
     Ok(())
 }

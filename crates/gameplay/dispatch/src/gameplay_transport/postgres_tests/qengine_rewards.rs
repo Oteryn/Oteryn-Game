@@ -28,6 +28,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps::SOURCE
+            } else if name == "qengine-rewards-world-clock-column" {
+                super::world_callback_clocks::CANNON
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -1107,6 +1109,12 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-questpc4-spirit" {
         return Box::pin(super::l6_spirit::exercise(owner, admitted, h, authority)).await;
+    }
+    if name == "qengine-rewards-world-clock-column" {
+        return Box::pin(super::world_callback_clocks::exercise_column(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-world-clock-charge" {
+        return Box::pin(super::world_callback_clocks::exercise_charge(owner, admitted, h)).await;
     }
     if name.starts_with("qengine-rewards-world-clock") {
         return Box::pin(super::world_callback_clocks::exercise(
