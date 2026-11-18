@@ -44,3 +44,15 @@ The original API access issue is superseded by the wikitext supplied on the qfac
 - The quest grants one random Soul Set item once per character from the Brass-Shod Chest, the base Revenant outfit via Flickering Soul, and the Soul Mender achievement under unspecified conditions. Soul Mender is an achievement. The native pool and one-item count match the donor; the capture gives no numeric item IDs. Neither page specifies standalone quest XP or outfit addons. The spoiler also confirms a forcefield to Thais depot; its exact map placement remains to be verified.
 
 OPEN-FACTS for this capture: Soul Mender conditions, numeric global item IDs, standalone XP, and exact map selectors for remaining portals. The cage expiry correction and the already-correct final cooldown have dispatch regressions in `qcx_soul_war.rs`.
+
+
+## Dispatch qualification
+
+PG via shard (pgsplit build files applied on `f698c4af916eeaf583796cd1b232350ce738650d`). With temporary 40-second and 72-hour runtime values, both cases failed at their timer assertions (41.48 seconds total). The 72-hour mutation verifies regression sensitivity because main already had the 68-hour override. With the pushed runtime values, both cases passed (41.30 seconds total).
+
+| PostgreSQL case | Duration |
+| --- | ---: |
+| Malice Cage deadline from actual dispatch callback execution | 27.142 s |
+| Megalomania persisted cooldown from real activity admission | 14.152 s |
+
+Removing the PostgreSQL URL returned `Ok(())` for both cases in 0.00 seconds. That run exercises the route-less path. The shard files and timer mutations were local to validation and were removed. Quest authoring, formatting and world pin checks passed. This main build of the pin compiler required a scratch output directory for `pin-check`.

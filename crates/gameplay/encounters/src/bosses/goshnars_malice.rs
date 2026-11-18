@@ -28,10 +28,10 @@ struct CageTimer {
     due: u64,
     kind: CageTimerKind,
 }
-// Source room duration is20min and each next Cage birth waits23s. These
-// bounds retain every original death/timer, refusing before a new claim.
 // TibiaWiki Soul War Quest/Spoiler, curid 91800, oldid 1213730.
 const CAGE_LIFETIME_MS: u64 = 14_000;
+// Source room duration is20min and each next Cage birth waits23s. These
+// bounds retain every original death/timer, refusing before a new claim.
 const MAX_CAGE_TIMERS: usize = 128;
 const MAX_CAGE_DEATHS: usize = 64;
 
@@ -158,9 +158,8 @@ impl MaliceRoom {
             .filter(|(_, timer)| timer.due <= eligible)
             .min_by_key(|(index, timer)| (timer.due, *index))
             .map(|(index, timer)| (index, *timer));
-        // For equal deadlines a Cage callback (23s/40s delay) was registered
-        // before the white callback (10s delay). Within Cage callbacks the Vec
-        // retains actual insertion order, including older removal handles.
+        // At equal deadlines Cage callbacks precede the white callback.
+        // Cage callbacks retain insertion order, including older removal handles.
         if let Some((index, timer)) = next
             && self
                 .white_revert
