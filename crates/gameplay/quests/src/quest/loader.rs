@@ -408,6 +408,7 @@ fn restrict_runtime_scope(
     .map_err(QuestLoadError::Catalogue)?;
     lowered.catalogue.npc_legacy = npc_legacy;
     lowered.catalogue.predecessors = predecessors;
+    super::npc_rules::retain_myzzi_predecessor(&mut lowered.catalogue);
     super::threatened_dreams::retain_report_predecessor(&mut lowered.catalogue);
     lowered
         .source_tracks

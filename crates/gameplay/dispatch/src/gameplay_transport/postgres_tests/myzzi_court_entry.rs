@@ -6,7 +6,7 @@ use super::quest_world_callbacks::{local, scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue, npc_rules::NpcRuleCatalog, world_callbacks::{self, Callback, Position},
+    QuestStateCatalogue, npc_rules::{MYZZI_PROGRAM, NpcRuleCatalog}, world_callbacks::{self, Callback, Position},
 };
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result, encode_step_intent,
@@ -17,7 +17,6 @@ use std::sync::Arc;
 pub(super) const NAME: &str = "myzzi-court-entry";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const NPC: &str = "oteryn:npc.myzzi";
-const PROGRAM: &str = "oteryn:quest-npc-program.dream-courts-myzzi";
 const TRACK: &str = "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/questline";
 const PIN: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
 const ENTRY: Position = Position { x: 33675, y: 32147, floor: -7 };
@@ -74,7 +73,7 @@ fn program() -> Value {
     fallback["guards"] = guard;
     rules.push(fallback);
     json!({
-        "schema":1, "program_key":PROGRAM, "quest":QUEST,
+        "schema":1, "program_key":MYZZI_PROGRAM, "quest":QUEST,
         "tracks":[{"key":TRACK,"quest":QUEST,"initial":0,"min":0,"max":1,
             "sources":[format!("crystal:{PIN}:data-global/npc/myzzi.lua:67-90")]}],
         "rules":rules,

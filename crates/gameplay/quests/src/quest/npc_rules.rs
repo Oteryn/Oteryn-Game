@@ -36,6 +36,7 @@ use sha2::{Digest, Sha256};
 pub const MAX_NPC_TRACK_CHANGES: usize = super::QUESTSTATE0_RL_02;
 pub const MAX_NPC_EFFECTS: usize = 128;
 const SOURCE_PIN: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:";
+pub const MYZZI_PROGRAM: &str = "oteryn:quest-npc-program.dream-courts-myzzi";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NpcRuleError {
@@ -916,6 +917,34 @@ pub fn legacy_defaults<'a>(
                 .find(|entry| &entry.hash == stored_hash)
                 .map(|entry| &entry.defaults)
         })
+}
+
+/// Crystal data-global/npc/myzzi.lua:67-90 adopts the existing Court questline.
+/// The new programme adds only its own definition marker.
+pub(super) fn retain_myzzi_predecessor(catalogue: &mut super::QuestStateCatalogue) {
+    let Ok(source) = NpcRuleCatalog::runtime() else {
+        return;
+    };
+    if let Some(program) = source.programs().iter().find(|program| {
+        program.document.program_key.as_deref() == Some(MYZZI_PROGRAM)
+    }) {
+        let key = admission::binding_key(program);
+        let Some(marker) = catalogue.transition(&key) else {
+            return;
+        };
+        let quest = marker.quest.clone();
+        let mut previous = catalogue.transitions.clone();
+        previous.remove(&key);
+        let hash = super::definition_hash(&quest, &catalogue.tracks, &previous);
+        catalogue
+            .predecessors
+            .entry(quest)
+            .or_default()
+            .push(super::NpcDefinitionPredecessor {
+                hash,
+                defaults: BTreeMap::new(),
+            });
+    }
 }
 
 /// Source catalogue bounds and predecessor regression tests.
