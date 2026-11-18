@@ -150,9 +150,14 @@ fn scenario(admin: String) -> TestResult {
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
-        for relation in ["game_character_roots", "game_character_progression_state"] {
-            sqlx::query(&format!("UPDATE {relation} SET character_revision=greatest(character_revision,2) WHERE character_id=encode($1,'hex')::uuid"))
-                .bind(id(41).as_slice()).execute(&mut *tx).await?;
+        for sql in [
+            "UPDATE game_character_roots SET character_revision=greatest(character_revision,2) WHERE character_id=encode($1,'hex')::uuid",
+            "UPDATE game_character_progression_state SET character_revision=greatest(character_revision,2) WHERE character_id=encode($1,'hex')::uuid",
+        ] {
+            sqlx::query(sql)
+                .bind(id(41).as_slice())
+                .execute(&mut *tx)
+                .await?;
         }
         for (track, value) in [(QUESTLINE, 17_i64), (MISSION, 5_i64)] {
             sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2)")
