@@ -527,14 +527,17 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
 
 fn embedded_document() -> Result<Document, String> {
     let mut document = base_document()?;
-    document.callbacks.push(archive_vote_callback()?);
+    document.callbacks.extend(dark_trails_vote_callbacks()?);
     Ok(document)
 }
 
-fn archive_vote_callback() -> Result<RewardCallback, String> {
-    let callback = super::dark_trails::vote_callback()?;
-    validate_callbacks(std::slice::from_ref(&callback))?;
-    Ok(callback)
+fn dark_trails_vote_callbacks() -> Result<[RewardCallback; 2], String> {
+    let callbacks = [
+        super::dark_trails::vote_callback()?,
+        super::dark_trails::commoner_callback()?,
+    ];
+    validate_callbacks(&callbacks)?;
+    Ok(callbacks)
 }
 
 fn base_document() -> Result<Document, String> {
@@ -1213,30 +1216,32 @@ pub(crate) fn declare_tracks(
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let base = base_document()?;
     let mut extended = extend_document(catalogue, base)?;
-    let callback = archive_vote_callback()?;
-    // Keep exact pins for Characters who began either quest before the vote was wired.
-    for quest in std::iter::once(&callback.quest).chain(
-        callback
-            .participants
-            .iter()
-            .map(|participant| &participant.quest),
-    ) {
-        let hash = extended
-            .definition_hash(quest)
-            .ok_or("archive vote predecessor")?;
-        let defaults = extended
-            .tracks
-            .values()
-            .filter(|track| &track.quest == quest)
-            .map(|track| (track.key.clone(), track.initial))
-            .collect();
-        extended
-            .predecessors
-            .entry(quest.clone())
-            .or_default()
-            .push(super::NpcDefinitionPredecessor { hash, defaults });
+    for callback in dark_trails_vote_callbacks()? {
+        // Preserve the pins issued before each additive vote transition.
+        for quest in std::iter::once(&callback.quest).chain(
+            callback
+                .participants
+                .iter()
+                .map(|participant| &participant.quest),
+        ) {
+            let hash = extended
+                .definition_hash(quest)
+                .ok_or("Dark Trails vote predecessor")?;
+            let defaults = extended
+                .tracks
+                .values()
+                .filter(|track| &track.quest == quest)
+                .map(|track| (track.key.clone(), track.initial))
+                .collect();
+            extended
+                .predecessors
+                .entry(quest.clone())
+                .or_default()
+                .push(super::NpcDefinitionPredecessor { hash, defaults });
+        }
+        extended = extend_callbacks(extended, vec![callback], Vec::new())?;
     }
-    extend_callbacks(extended, vec![callback], Vec::new())
+    Ok(extended)
 }
 
 #[cfg(test)]

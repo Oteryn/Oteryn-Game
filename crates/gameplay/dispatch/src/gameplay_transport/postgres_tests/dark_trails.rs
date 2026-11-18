@@ -38,6 +38,35 @@ fn dark_trails_marvin_spends_one_oramond_vote_and_credits_archives() -> TestResu
     })
 }
 
+#[test]
+fn dark_trails_sholley_requires_fifty_available_votes_without_spending_them() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("dark-trails-sholley", || {
+        scenario(
+            Some((
+                "oteryn:npc.sholley",
+                "mission12",
+                49,
+                "mission13",
+                &["friend"],
+                49,
+            )),
+        )?;
+        scenario(
+            Some((
+                "oteryn:npc.sholley",
+                "mission12",
+                50,
+                "mission13",
+                &["friend"],
+                50,
+            )),
+        )
+    })
+}
+
 type VoteScenario = (
     &'static str,
     &'static str,
@@ -200,7 +229,7 @@ fn scenario(vote_case: Option<VoteScenario>) -> TestResult {
                 &format!("{}{target}", quest::TRACK_PREFIX),
             )
             .await?;
-            assert_eq!(credit, 1, "{target} credit");
+            assert_eq!(credit, i64::from(votes != 49), "{target} credit");
             assert_eq!(
                 progress(&owner, &admitted, &authority, VOTES).await?,
                 expected_votes

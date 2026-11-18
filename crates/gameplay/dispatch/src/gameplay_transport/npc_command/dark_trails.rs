@@ -22,6 +22,9 @@ pub(super) fn prepare(
             if context.2 == quest::MARVIN {
                 return marvin(&book, &intent.text, topic.number, tracks);
             }
+            if context.2 == quest::SHOLLEY && quest::message_contains(&intent.text, "friend") {
+                return sholley(&book, tracks);
+            }
             let rule = book.select(&context.2, &intent.text, topic.number, tracks)?;
             if rule.greeting_only && !fresh {
                 return None;
@@ -63,5 +66,19 @@ fn marvin(
         transition,
         next_topic: Some(next_topic.into()),
         reply: book.replies.get(line)?.lines.clone(),
+    })
+}
+
+fn sholley(book: &quest::Book, tracks: &std::collections::BTreeMap<String, i64>) -> Option<Choice> {
+    (tracks.get(quest::MISSION12) == Some(&1)
+        && tracks.get(quest::MISSION13).copied().unwrap_or(-1) < 1
+        && tracks
+            .get(quest::VOTES)
+            .is_some_and(|&votes| votes >= quest::COMMONER_MIN_VOTES))
+    .then_some(())?;
+    Some(Choice {
+        transition: Some(quest::COMMONER_CREDIT.into()),
+        next_topic: Some(0.into()),
+        reply: book.replies.get("source-only:sholley:59")?.lines.clone(),
     })
 }
