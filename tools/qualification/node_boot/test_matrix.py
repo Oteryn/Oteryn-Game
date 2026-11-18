@@ -182,7 +182,7 @@ class EvidenceTests(unittest.TestCase):
                 result = matrix.extract(log, name=s["name"], entry="node_boot", exit_code=0, seconds=600)
                 (root / f"{prefix}{s['name']}" / "result.json").write_text(json.dumps(result))
             markdown, problems = matrix.summarize(shards, root, prefix)
-        self.assertIn("| basic | NODE_BOOT_PASS | 0 | 10.0 | 0 | 0 | 0 | 0 | 0 |", markdown)
+        self.assertIn("| basic | journey | NODE_BOOT_PASS | 0 | 10.0 | 0 | 0 | 0 | 0 | 0 |", markdown)
         self.assertIn(f"- `{core}` W20a.full FAIL", markdown)
         self.assertIn(f"{core}: 1 MISSING scenario(s)", problems)
         self.assertIn("g-f4-f5-f6: World shard ran no scenario", problems)
@@ -297,7 +297,7 @@ class EvidenceTests(unittest.TestCase):
             (root / "result.json").write_text(json.dumps(result))
             markdown, problems = matrix.summarize(shards, root, "node-boot-1-1-")
             self.assertEqual(problems, [])
-            self.assertIn(f"| reference | NODE_BOOT_PASS | 0 | 1.0 | {len(scenarios)} | {len(scenarios)} | 0 | 0 | 0 |", markdown)
+            self.assertIn(f"| reference | journey | NODE_BOOT_PASS | 0 | 1.0 | {len(scenarios)} | {len(scenarios)} | 0 | 0 | 0 |", markdown)
             result["shard"] = "other"
             (root / "result.json").write_text(json.dumps(result))
             _, problems = matrix.summarize(shards, root, "node-boot-1-1-")
@@ -331,3 +331,27 @@ class WorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_e2e_mode_defaults_and_validates_shard_override():
+    assert "OTERYN_E2E_MODE" not in matrix.plan("reference")[0]["env"]
+    planned = matrix.plan("custom", rows="1:2", mode="isolated")[0]
+    assert "OTERYN_E2E_MODE=isolated\n" in matrix.export_env(planned)
+    planned["env"]["OTERYN_E2E_MODE"] = "invalid"
+    with unittest.TestCase().assertRaisesRegex(matrix.PlanError, "invalid value"):
+        matrix.export_env(planned)
+
+
+def test_e2e_requirements_cover_registered_rows():
+    path = ROOT / matrix.CLIENT_PHASES.parent / "row_requirements.json"
+    requirements = json.loads(path.read_text())
+    identifiers = {scenario.split(".")[0] for scenario in matrix.indexed_rows().values()}
+    identifiers.update(scenario.split(".")[0] for rows in matrix.GROUP_SCENARIOS.values()
+                       for scenario in rows)
+    assert list(requirements) == sorted(identifiers)
+    nonempty = {"C03", "C13", "C17a", "C17c", "C17d", "C18a", "C20b", "C20c", "E03", "P10", "P16"}
+    assert {row for row, fields in requirements.items() if fields} == nonempty
+    for row in nonempty:
+        for source in requirements[row]["source"].split(";"):
+            file, line = source.rsplit(":", 1)
+            assert 1 <= int(line) <= len((ROOT / file).read_text().splitlines())

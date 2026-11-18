@@ -1017,6 +1017,7 @@ use oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast;
 
 #[cfg(test)]
 mod qualification;
+mod qualification_requirements;
 mod qualification_spell_character;
 #[cfg(any(test, feature = "qualification-spawn"))]
 mod qualification_wild_spawn;

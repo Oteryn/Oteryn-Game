@@ -12,42 +12,29 @@ use std::collections::BTreeSet;
 pub(super) const C17_SETUP_LIMIT: Duration = Duration::from_secs(20 + 35 + 60 + 60 + 30);
 const C17_CLEANUP_LIMIT: Duration = Duration::from_secs(30);
 
-pub(super) async fn spell_fixture(
+// Bootstrap through a real Platform intent so the original Character stays untouched.
+pub(super) async fn fresh_row_character(
     clients: &SeamClients<'_>,
-    profile: &'static str,
-    tag: u8,
-) -> TestResult<([[u8; 16]; 2], DevClientSession)> {
-    c17_lifecycle(C17_SETUP_LIMIT, async {
-        let characters = spell_characters(clients).await?;
-        let row_clients = SeamClients {
-            characters: &characters,
-            ..*clients
-        };
-        let client = provision_c17(&row_clients, profile, tag).await?;
-        Ok((characters, client))
-    })
-    .await
-}
-
-// Each invocation bootstraps a new Character from a real Platform intent. The
-// shared row Characters remain untouched, including their one-shot build fixture.
-pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[u8; 16]; 2]> {
+    index: usize,
+    premium: bool,
+) -> TestResult<(String, [u8; 16])> {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let revisions: (String, String, String, String) = sqlx::query_as(
         "SELECT profile_revision, ruleset_revision, content_revision, starter_template_revision \
          FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid",
     )
-    .bind(clients.characters[1].as_slice())
+    .bind(clients.characters[index].as_slice())
     .fetch_one(&mut database)
     .await?;
     let request = serde_json::json!({
-        "account": clients.accounts[1], "world": uuid_text(&clients.world),
+        "account": clients.accounts[index], "world": uuid_text(&clients.world),
+        "new_account": true, "premium": premium,
         "revisions": [revisions.0, revisions.1, revisions.2, revisions.3],
     })
     .to_string();
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
-    let project = required("WP5_PROJECT")?;
+    let project = required("NODE_BOOT_PLATFORM_PROJECT")?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = c17_output({
@@ -73,18 +60,22 @@ pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[
     if !output.status.success() {
         return Err(c17_subprocess_failure("fresh Platform character bootstrap", &output).into());
     }
-    let name = std::str::from_utf8(&output.stdout)?.trim();
+    #[derive(serde::Deserialize)]
+    struct Bootstrap {
+        account: String,
+        name: String,
+    }
+    let Bootstrap { account, name } = serde_json::from_slice(&output.stdout)?;
     let character: Vec<u8> = sqlx::query_scalar(
         "SELECT uuid_send(character_id) FROM game_character_roots \
          WHERE account_id = $1::uuid AND name = $2 LIMIT 1",
     )
-    .bind(&clients.accounts[1])
+    .bind(&account)
     .bind(name)
     .fetch_one(&mut database)
     .await?;
     database.close().await?;
-    let character = <[u8; 16]>::try_from(character.as_slice())?;
-    Ok([clients.characters[0], character])
+    Ok((account, <[u8; 16]>::try_from(character.as_slice())?))
 }
 
 // Own the child until it is reaped. Dropping a row deadline kills the complete
@@ -238,8 +229,11 @@ fn c17_subprocess_failure(stage: &str, output: &std::process::Output) -> String 
 
 pub(super) async fn apply_fixture(
     client: &mut DevClientSession,
-    profile: &'static str,
+    profile: &str,
 ) -> TestResult {
+    if !E2eMode::from_env()?.permits_profile(profile.as_ref()) {
+        return Err("character profile grant is outside the active E2E row requirements".into());
+    }
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
@@ -278,39 +272,6 @@ pub(super) async fn apply_fixture(
         return Err(c17_subprocess_failure(profile, &output).into());
     }
     Ok(())
-}
-
-pub(super) async fn provision_c17(
-    clients: &SeamClients<'_>,
-    profile: &'static str,
-    tag: u8,
-) -> TestResult<DevClientSession> {
-    let mut client = connect_world(clients, tag).await?;
-    apply_fixture(&mut client, profile).await?;
-    logout(&mut client).await?;
-    drop(client);
-    let mut client = connect_world(clients, tag).await?;
-    let words = match profile {
-        "c17a" => "utani gran hur",
-        "c17d" => "exeta res",
-        "c04" => "exevo vis lux",
-        _ => "utevo res ina",
-    };
-    let spell = native_spell_book()?
-        .spoken(words)
-        .ok_or("C17 fixture spell absent")?
-        .spell;
-    let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
-        return Err("C17 fixture requires fixed mana".into());
-    };
-    if level(&mut client).await? != spell.level
-        || client
-            .actor_vitals()
-            .is_none_or(|vitals| vitals.mana < cost)
-    {
-        return Err("C17 fresh admission lacks source spell level/mana".into());
-    }
-    Ok(client)
 }
 
 const ILLUSION_ACTIONS: &[&str] = &[
@@ -388,13 +349,8 @@ pub(super) async fn support_rows(clients: &SeamClients<'_>, world: &BundleWorld)
             C17_SETUP_LIMIT + Duration::from_secs(limit) + C17_CLEANUP_LIMIT,
             async {
                 let _row = watch.enter();
-                let profile = if id == "C17a" { "c17a" } else { "c17c" };
-                let (characters, mut client) = spell_fixture(clients, profile, tag).await?;
-                let row_clients = SeamClients {
-                    characters: &characters,
-                    ..*clients
-                };
-                let clients = &row_clients;
+                row_clients!(E2eMode::from_env()?, clients, id);
+                let mut client = connect_world(clients, tag).await?;
                 let mut completed = false;
                 let deadline =
                     format!("{id} native journey exceeded {limit}s; remaining actions unproven");
@@ -2494,6 +2450,7 @@ async fn combat_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let deadline = format!("{id} 240s journey deadline; required actions unproven");
         let result: TestResult = watch.bound(Duration::from_secs(240), deadline, async {
+            row_clients!(E2eMode::from_env()?, clients, id);
             let mut client = connect_character(clients, tag, usize::from(id != "C17d")).await?;
             let mut peer_cancelled = false;
                     let result = if id == "C18a" {
@@ -3588,6 +3545,7 @@ async fn companion_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let deadline =
                 format!("{id}: 600s companion journey deadline; required actions unproven");
         let result: TestResult = watch.bound(Duration::from_secs(600), deadline, async {
+            row_clients!(E2eMode::from_env()?, clients, id);
             let mut client = connect_world(clients, tag).await?;
                     let result = if id == "C13" {
                         summons(&mut row, &mut client, clients, world).await
@@ -4827,6 +4785,7 @@ async fn tile_item_row(clients: &SeamClients<'_>, world: &BundleWorld) {
         Duration::from_secs(400),
         "C16d 400s journey deadline; required actions unproven",
         async {
+            row_clients!(E2eMode::from_env()?, clients, "C16d.full");
             let mut client = connect_world(clients, 0xe0).await?;
             let result = tile_items(&mut row, &mut client, clients, world, false).await;
             let cleanup = rune_cleanup(&mut client, world).await;

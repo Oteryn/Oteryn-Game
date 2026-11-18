@@ -1,12 +1,15 @@
 {
     // F4 uses both ordinary starter characters before the profile fixture changes one.
     let mut client = None;
-    let (pending, restored) = full_e2ef4::run(&mut client, clients, world, &metadata.npcs).await;
+    let (pending, restored) = full_e2ef4::run(&mut client, clients, world, &metadata.npcs, mode).await;
     let watch = verdict::Watch::new("E2EF4-lifecycle", verdict::Harness::global());
     let economy_social: TestResult = watch.bound(
         Duration::from_secs(180),
         "E2EF4 terminal release deadline",
         async {
+            if mode == E2eMode::Isolated {
+                return Ok(());
+            }
             let mut client = client.ok_or("E2EF4 lost its final session; logout unproven")?;
             let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
             if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {

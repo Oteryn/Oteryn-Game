@@ -41,6 +41,8 @@ GAME_PLATFORM_RUN = Path("tools/qualification/game_platform/run.sh")
 VERDICT = Path("apps/game-server/src/qualification/client_phases/verdict.rs")
 CLIENT_PHASES = Path("apps/game-server/src/qualification/client_phases")
 
+E2E_MODES = ("journey", "isolated")
+
 SETS = ("reference", "pr", "full", "custom")
 # Rows the default batch (`e2e_row_batch.rs`) runs on one machine today.
 PR_ROW_BATCHES = ((1, 5), (6, 5), (11, 5))
@@ -64,6 +66,12 @@ NODE_BOOT_RESULT = re.compile(r"^NODE_BOOT_RESULT=([A-Z_]{1,40})(?:\s|$)")
 GAME_PLATFORM_RESULT = re.compile(r"^GAME_PLATFORM_RESULT=(PASS|FAIL|BLOCKED)(?:\s|$)")
 INCOMPLETE = re.compile(r"SEAM_EVIDENCE E2EF1_INCOMPLETE(?:\s|$)")
 
+GRANT_EVIDENCE = re.compile(
+    r"SEAM_EVIDENCE e2e_row scenario=[A-Za-z0-9_.-]{1,64} granted: "
+    r"(?:empty|level=[0-9]+ vocation=[a-z_]+ premium=(?:true|false) "
+    r"items=[0-9x,]* equipment=[0-9,]*)"
+)
+MODE_EVIDENCE = re.compile(r"^SEAM_EVIDENCE e2e_mode mode=(journey|isolated)$")
 GROUP_VERDICTS = re.compile(r"^SEAM_EVIDENCE e2e_group name=([a-z0-9_]+) verdicts=([0-9]+)$")
 QUALIFICATION_CASE = re.compile(r"^NODE_BOOT_EVIDENCE qualification_case=(basic|world|spells)$")
 WORLD_SELECTION = re.compile(
@@ -129,7 +137,7 @@ def indexed_rows(root: Path = ROOT) -> dict[int, str]:
         )
     }
     rows = {}
-    for match in re.finditer(r'(?:\be2e_row_selected\((\d+)\)|\bif (\w+))\s*\{\s*(?:'
+    for match in re.finditer(r'(?:\be2e_row_selected\((\d+)\)|\bif (\w+))\s*\{\s*(?:row_clients!\(mode, clients, "[\w.-]+"\);\s*)?(?:'
                              r'verdict::indexed\(\s*"([\w.-]+)"|([a-z0-9_]+)::run_\w+\()', source):
         index, selection, scenario, module = match.groups()
         if index is None:
@@ -252,7 +260,10 @@ def plan(
     spells: bool = False,
     game_platform: bool = False,
     root: Path = ROOT,
+    mode: str = "journey",
 ) -> list[dict]:
+    if mode not in E2E_MODES:
+        raise PlanError(f"invalid E2E mode {mode!r}")
     if set_name not in SETS:
         raise PlanError(f"unknown set {set_name!r}")
     if set_name != "custom" and (groups.strip() or rows.strip()):
@@ -320,6 +331,8 @@ def plan(
         if game_platform:
             shards.append(portal_shard)
     for item in shards:
+        if mode != "journey" and item["entry"] == "node_boot" and item["world"]:
+            item["env"]["OTERYN_E2E_MODE"] = mode
         validate_shard(item, registry)
     if not shards:
         raise PlanError("the set selects no shard")
@@ -355,6 +368,8 @@ def validate_shard(item: dict, registry: list[str] | None = None) -> None:
         elif key == "NODE_BOOT_E2E_ONLY":
             names = value.split(",")
             ok = bool(value) and all(name in groups for name in names) and len(set(names)) == len(names)
+        elif key == "OTERYN_E2E_MODE":
+            ok = value in E2E_MODES
         elif key == "OTERYN_E2E_ROW_BATCH":
             ok = bool(ROW_BATCH.fullmatch(value)) and int(value.split(":")[1]) > 0
         else:
@@ -387,6 +402,8 @@ def log_evidence(log: Path, pattern: re.Pattern) -> dict:
                 result["result"] = match[1]
             if INCOMPLETE.match(line):
                 result["incomplete"] = True
+            if match := MODE_EVIDENCE.fullmatch(line):
+                result["mode"] = match[1]
             if match := GROUP_VERDICTS.fullmatch(line):
                 result["groups"].append((match[1], int(match[2])))
             if match := QUALIFICATION_CASE.fullmatch(line):
@@ -404,6 +421,7 @@ def extract(log: Path, *, name: str, entry: str, exit_code: int, seconds: int) -
         data = log_evidence(log, pattern)
     except OSError:
         data = {"result": "NONE", "incomplete": False, "scenarios": [], "groups": [], "cases": [], "selections": [], "creature_batches": []}
+    data.setdefault("mode", "journey")
     return {**data, "shard": name, "entry": entry, "exit_code": exit_code, "seconds": seconds}
 
 
@@ -469,6 +487,8 @@ def qualification_problems(result: dict, env: dict | None = None, world: bool | 
         expected_cases = cases if cases in (["basic"], ["world"], ["basic", "world"], ["spells"]) else []
         expected_selection = selections if "world" in cases and len(selections) == 1 else []
     problems = []
+    if env is not None and result.get("mode", "journey") != env.get("OTERYN_E2E_MODE", "journey"):
+        problems.append("E2E mode evidence disagrees with the plan")
     if not expected_cases or cases != expected_cases:
         problems.append("qualification test completion mismatch")
     if selections != expected_selection or ("world" in expected_cases and len(selections) != 1):
@@ -495,7 +515,7 @@ def redact(source: Path, destination: Path) -> None:
     with source.open(encoding="utf-8", errors="replace") as input_file:
         with destination.open("w", encoding="utf-8") as output_file:
             for line in input_file:
-                if not SENSITIVE.search(line):
+                if not SENSITIVE.search(line) or GRANT_EVIDENCE.fullmatch(line.rstrip("\n")):
                     output_file.write(line)
 
 
@@ -509,8 +529,8 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
     reported; each shard job already fails on its own NODE_BOOT_RESULT.
     """
     problems: list[str] = []
-    rows = ["| shard | result | exit | minutes | scenarios | PASS | FAIL | MISSING | other |",
-            "|---|---|---|---|---|---|---|---|---|"]
+    rows = ["| shard | mode | result | exit | minutes | scenarios | PASS | FAIL | MISSING | other |",
+            "|---|---|---|---|---|---|---|---|---|---|"]
     details: list[str] = []
     owners: dict[str, list[str]] = {}
     for item in shards:
@@ -525,7 +545,7 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
                 raise ValueError("shard mismatch")
         except (OSError, ValueError):
             problems.append(f"{item['name']}: no result evidence")
-            rows.append(f"| {item['name']} | NO EVIDENCE | - | - | - | - | - | - | - |")
+            rows.append(f"| {item['name']} | - | NO EVIDENCE | - | - | - | - | - | - | - |")
             continue
         counts = {"PASS": 0, "FAIL": 0, "MISSING": 0, "other": 0}
         for scenario in result["scenarios"]:
@@ -539,6 +559,7 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
             problems.append(f"{item['name']}: {counts['MISSING']} MISSING scenario(s)")
         issues = qualification_problems(result, item["env"], item["world"])
         problems.extend(f"{item['name']}: {issue}" for issue in issues)
+        mode = result.get("mode", "journey")
         passed = shard_passed(result, item["env"], item["world"])
         if not passed and not issues:
             problems.append(f"{item['name']}: unsuccessful shard verdict")
@@ -546,7 +567,7 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
             details.append(f"- `{item['name']}` E2EF1_INCOMPLETE")
         verdict = result["result"] + ("" if passed else " (failed)")
         rows.append(
-            f"| {item['name']} | {verdict} | {result['exit_code']} | {result['seconds'] / 60:.1f} | "
+            f"| {item['name']} | {mode} | {verdict} | {result['exit_code']} | {result['seconds'] / 60:.1f} | "
             f"{len(result['scenarios'])} | {counts['PASS']} | {counts['FAIL']} | {counts['MISSING']} | {counts['other']} |"
         )
     overlaps = sorted(f"{sid} ({', '.join(names)})" for sid, names in owners.items() if len(names) > 1)
@@ -575,6 +596,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--groups", default="")
     p.add_argument("--rows", default="")
     p.add_argument("--batch", default="10")
+    p.add_argument("--mode", default=os.environ.get("OTERYN_E2E_MODE", "journey"), choices=E2E_MODES)
     p.add_argument("--basic", default="")
     p.add_argument("--spells", default="")
     p.add_argument("--game-platform", default="")
@@ -605,7 +627,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "plan":
             shards = plan(args.set, groups=args.groups, rows=args.rows, batch=args.batch,
                           basic=truthy(args.basic), spells=truthy(args.spells),
-                          game_platform=truthy(args.game_platform))
+                          game_platform=truthy(args.game_platform), mode=args.mode)
             print(json.dumps(shards, separators=(",", ":")))
         elif args.command == "export-env":
             sys.stdout.write(export_env(json.loads(args.shard_json)))
@@ -616,7 +638,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"NODE_BOOT_SHARD shard={result['shard']} result={result['result']} "
                   f"exit={result['exit_code']} scenarios={len(result['scenarios'])}")
             env = {key: os.environ[key] for key in ("NODE_BOOT_SKIP_BASIC", "NODE_BOOT_SPELLS",
-                   "NODE_BOOT_E2E_ONLY", "OTERYN_E2E_ROW_BATCH") if key in os.environ}
+                   "NODE_BOOT_E2E_ONLY", "OTERYN_E2E_ROW_BATCH", "OTERYN_E2E_MODE") if key in os.environ}
             world = os.environ.get("SHARD_WORLD")
             return 0 if shard_passed(result, env if world is not None else None, world == "1") else 1
         elif args.command == "verify-world":

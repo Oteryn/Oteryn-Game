@@ -35,6 +35,8 @@ require explicit content/source evidence and also leave the suite incomplete.
 `OTERYN_E2E_ROW_BATCH=start:len` still selects their batch. The existing `core`
 and F4–F7 groups run without those indexed rows when selected explicitly.
 Leaving `NODE_BOOT_E2E_ONLY` unset runs every group as before.
+Set `OTERYN_E2E_MODE=journey|isolated`, or use
+`node_boot/matrix.py plan --mode journey|isolated`. The default is `journey`.
 
 MAPBOT-1 adds `client_phases/map_journey.rs` to the real-world journey. Its
 MapModel uses `world::load_world` (the production boot loader), the existing

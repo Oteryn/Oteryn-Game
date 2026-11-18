@@ -42,7 +42,7 @@ class IndexedVerdictTests(unittest.TestCase):
         source = (PHASES / 'world.rs').read_text()
         calls = set(re.findall(r'((?:full|client)_row_\w+)::run_packet', source))
         wrapped = list(re.finditer(
-            r'verdict::indexed\(\s*"([A-Z]\d\d[a-z]?\.(?:full|client))",\s*async \{\s*((?:full|client)_row_\w+)::run_packet',
+            r'verdict::indexed\(\s*"([A-Z]\d\d[a-z]?\.(?:full|client))",\s*async \{\s*row_clients!\(mode, clients, "\1"\);\s*((?:full|client)_row_\w+)::run_packet',
             source,
         ))
         self.assertEqual(calls, {match[2] for match in wrapped})

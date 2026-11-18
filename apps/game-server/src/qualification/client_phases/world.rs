@@ -3453,6 +3453,8 @@ pub(super) async fn journeys(
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
     ));
+    let mode = E2eMode::from_env()?;
+    evidence(&format!("e2e_mode mode={}", mode.name()));
     let groups = verdict::Groups::from_env()?;
     // The required core keeps its ordinary pair; packet journeys own a separate pair.
     let mut client = connect_world(clients, 0x70).await?;
@@ -3496,6 +3498,7 @@ pub(super) async fn journeys(
         let before_starter_capture = journey_verdicts();
         if groups.runs("rows") && e2e_row_selected(146) {
             verdict::indexed("C19a.client", async {
+                row_clients!(mode, clients, "C19a.client");
                 client_row_c19a::run_packet(clients, Box::pin(full_e2ef6::client_starter(clients)))
                     .await;
                 release_row_characters(clients).await
@@ -3511,6 +3514,7 @@ pub(super) async fn journeys(
             release_row_characters(clients).await?;
             if e2e_row_selected(1) {
                 verdict::indexed("C03.full", async {
+                    row_clients!(mode, clients, "C03.full");
                     full_row_c03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3518,6 +3522,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(2) {
                 verdict::indexed("C12.full", async {
+                    row_clients!(mode, clients, "C12.full");
                     full_row_c12::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3525,6 +3530,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(3) {
                 verdict::indexed("C09.full", async {
+                    row_clients!(mode, clients, "C09.full");
                     full_row_c09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3532,6 +3538,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(4) {
                 verdict::indexed("C06.full", async {
+                    row_clients!(mode, clients, "C06.full");
                     full_row_c06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3539,6 +3546,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(5) {
                 verdict::indexed("C02.full", async {
+                    row_clients!(mode, clients, "C02.full");
                     full_row_c02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3546,6 +3554,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(6) {
                 verdict::indexed("C01.full", async {
+                    row_clients!(mode, clients, "C01.full");
                     full_row_c01::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3553,6 +3562,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(7) {
                 verdict::indexed("W22b.full", async {
+                    row_clients!(mode, clients, "W22b.full");
                     full_row_w22b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3560,6 +3570,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(8) {
                 verdict::indexed("C05.full", async {
+                    row_clients!(mode, clients, "C05.full");
                     full_row_c05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3567,6 +3578,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(9) {
                 verdict::indexed("C04.full", async {
+                    row_clients!(mode, clients, "C04.full");
                     full_row_c04::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3574,6 +3586,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(10) {
                 verdict::indexed("W18.full", async {
+                    row_clients!(mode, clients, "W18.full");
                     full_row_w18::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3581,6 +3594,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(11) {
                 verdict::indexed("C11.full", async {
+                    row_clients!(mode, clients, "C11.full");
                     full_row_c11::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3588,6 +3602,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(12) {
                 verdict::indexed("W19a.full", async {
+                    row_clients!(mode, clients, "W19a.full");
                     full_row_w19a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3595,6 +3610,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(13) {
                 verdict::indexed("W01b.full", async {
+                    row_clients!(mode, clients, "W01b.full");
                     full_row_w01b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3602,6 +3618,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(14) {
                 verdict::indexed("W23.full", async {
+                    row_clients!(mode, clients, "W23.full");
                     full_row_w23::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3609,6 +3626,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(15) {
                 verdict::indexed("W15d.full", async {
+                    row_clients!(mode, clients, "W15d.full");
                     full_row_w15d::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3616,6 +3634,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(16) {
                 verdict::indexed("W15a.full", async {
+                    row_clients!(mode, clients, "W15a.full");
                     full_row_w15a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3623,6 +3642,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(17) {
                 verdict::indexed("W10.full", async {
+                    row_clients!(mode, clients, "W10.full");
                     full_row_w10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3630,6 +3650,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(18) {
                 verdict::indexed("W08.full", async {
+                    row_clients!(mode, clients, "W08.full");
                     full_row_w08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3637,6 +3658,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(19) {
                 verdict::indexed("W24.full", async {
+                    row_clients!(mode, clients, "W24.full");
                     full_row_w24::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3644,6 +3666,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(20) {
                 verdict::indexed("W22a.full", async {
+                    row_clients!(mode, clients, "W22a.full");
                     full_row_w22a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3651,6 +3674,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(21) {
                 verdict::indexed("W15b.full", async {
+                    row_clients!(mode, clients, "W15b.full");
                     full_row_w15b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3658,6 +3682,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(22) {
                 verdict::indexed("W11.full", async {
+                    row_clients!(mode, clients, "W11.full");
                     full_row_w11::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3665,6 +3690,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(23) {
                 verdict::indexed("W05a.full", async {
+                    row_clients!(mode, clients, "W05a.full");
                     full_row_w05a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3672,6 +3698,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(24) {
                 verdict::indexed("W03.full", async {
+                    row_clients!(mode, clients, "W03.full");
                     full_row_w03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3679,6 +3706,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(25) {
                 verdict::indexed("W01a.full", async {
+                    row_clients!(mode, clients, "W01a.full");
                     full_row_w01a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3686,6 +3714,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(26) {
                 verdict::indexed("S16b.full", async {
+                    row_clients!(mode, clients, "S16b.full");
                     full_row_s16b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3693,6 +3722,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(27) {
                 verdict::indexed("S15b.full", async {
+                    row_clients!(mode, clients, "S15b.full");
                     full_row_s15b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3700,6 +3730,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(28) {
                 verdict::indexed("S10.full", async {
+                    row_clients!(mode, clients, "S10.full");
                     full_row_s10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3707,6 +3738,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(29) {
                 verdict::indexed("S07.full", async {
+                    row_clients!(mode, clients, "S07.full");
                     full_row_s07::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3714,6 +3746,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(30) {
                 verdict::indexed("S06.full", async {
+                    row_clients!(mode, clients, "S06.full");
                     full_row_s06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3721,6 +3754,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(31) {
                 verdict::indexed("S05.full", async {
+                    row_clients!(mode, clients, "S05.full");
                     full_row_s05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3728,6 +3762,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(32) {
                 verdict::indexed("P07.full", async {
+                    row_clients!(mode, clients, "P07.full");
                     full_row_p07::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3735,6 +3770,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(33) {
                 verdict::indexed("W17.full", async {
+                    row_clients!(mode, clients, "W17.full");
                     full_row_w17::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3742,6 +3778,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(34) {
                 verdict::indexed("W16.full", async {
+                    row_clients!(mode, clients, "W16.full");
                     full_row_w16::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3749,6 +3786,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(35) {
                 verdict::indexed("W13.full", async {
+                    row_clients!(mode, clients, "W13.full");
                     full_row_w13::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3756,6 +3794,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(36) {
                 verdict::indexed("W12.full", async {
+                    row_clients!(mode, clients, "W12.full");
                     full_row_w12::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3763,6 +3802,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(37) {
                 verdict::indexed("W05c.full", async {
+                    row_clients!(mode, clients, "W05c.full");
                     full_row_w05c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3770,6 +3810,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(38) {
                 verdict::indexed("W04.full", async {
+                    row_clients!(mode, clients, "W04.full");
                     full_row_w04::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3777,6 +3818,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(39) {
                 verdict::indexed("W02.full", async {
+                    row_clients!(mode, clients, "W02.full");
                     full_row_w02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3784,6 +3826,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(40) {
                 verdict::indexed("W01c.full", async {
+                    row_clients!(mode, clients, "W01c.full");
                     full_row_w01c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3791,6 +3834,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(41) {
                 verdict::indexed("S13c.full", async {
+                    row_clients!(mode, clients, "S13c.full");
                     full_row_s13c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3798,6 +3842,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(42) {
                 verdict::indexed("S04c.full", async {
+                    row_clients!(mode, clients, "S04c.full");
                     full_row_s04c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3805,6 +3850,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(43) {
                 verdict::indexed("S04a.full", async {
+                    row_clients!(mode, clients, "S04a.full");
                     full_row_s04a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3812,6 +3858,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(44) {
                 verdict::indexed("S02.full", async {
+                    row_clients!(mode, clients, "S02.full");
                     full_row_s02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3819,6 +3866,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(45) {
                 verdict::indexed("P23c.full", async {
+                    row_clients!(mode, clients, "P23c.full");
                     full_row_p23c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3826,6 +3874,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(46) {
                 verdict::indexed("P20.full", async {
+                    row_clients!(mode, clients, "P20.full");
                     full_row_p20::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3833,6 +3882,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(47) {
                 verdict::indexed("P18.full", async {
+                    row_clients!(mode, clients, "P18.full");
                     full_row_p18::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3840,6 +3890,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(48) {
                 verdict::indexed("P17.full", async {
+                    row_clients!(mode, clients, "P17.full");
                     full_row_p17::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3847,6 +3898,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(49) {
                 verdict::indexed("P15.full", async {
+                    row_clients!(mode, clients, "P15.full");
                     full_row_p15::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3854,6 +3906,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(50) {
                 verdict::indexed("P14.full", async {
+                    row_clients!(mode, clients, "P14.full");
                     full_row_p14::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3861,6 +3914,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(51) {
                 verdict::indexed("P13.full", async {
+                    row_clients!(mode, clients, "P13.full");
                     full_row_p13::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3868,6 +3922,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(52) {
                 verdict::indexed("P12c.full", async {
+                    row_clients!(mode, clients, "P12c.full");
                     full_row_p12c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3875,6 +3930,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(53) {
                 verdict::indexed("P12a.full", async {
+                    row_clients!(mode, clients, "P12a.full");
                     full_row_p12a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3882,6 +3938,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(54) {
                 verdict::indexed("P11.full", async {
+                    row_clients!(mode, clients, "P11.full");
                     full_row_p11::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3889,6 +3946,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(55) {
                 verdict::indexed("P09.full", async {
+                    row_clients!(mode, clients, "P09.full");
                     full_row_p09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3896,6 +3954,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(56) {
                 verdict::indexed("P08.full", async {
+                    row_clients!(mode, clients, "P08.full");
                     full_row_p08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3903,6 +3962,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(57) {
                 verdict::indexed("P06.full", async {
+                    row_clients!(mode, clients, "P06.full");
                     full_row_p06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3910,6 +3970,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(58) {
                 verdict::indexed("P05.full", async {
+                    row_clients!(mode, clients, "P05.full");
                     full_row_p05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3917,6 +3978,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(59) {
                 verdict::indexed("P04.full", async {
+                    row_clients!(mode, clients, "P04.full");
                     full_row_p04::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3924,6 +3986,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(60) {
                 verdict::indexed("P03.full", async {
+                    row_clients!(mode, clients, "P03.full");
                     full_row_p03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3931,6 +3994,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(61) {
                 verdict::indexed("P02.full", async {
+                    row_clients!(mode, clients, "P02.full");
                     full_row_p02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3938,6 +4002,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(62) {
                 verdict::indexed("P01.full", async {
+                    row_clients!(mode, clients, "P01.full");
                     full_row_p01::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3945,6 +4010,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(63) {
                 verdict::indexed("E10.full", async {
+                    row_clients!(mode, clients, "E10.full");
                     full_row_e10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3952,6 +4018,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(64) {
                 verdict::indexed("E09.full", async {
+                    row_clients!(mode, clients, "E09.full");
                     full_row_e09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3959,6 +4026,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(65) {
                 verdict::indexed("E08.full", async {
+                    row_clients!(mode, clients, "E08.full");
                     full_row_e08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3966,6 +4034,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(66) {
                 verdict::indexed("E06.full", async {
+                    row_clients!(mode, clients, "E06.full");
                     full_row_e06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3973,6 +4042,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(67) {
                 verdict::indexed("I11.full", async {
+                    row_clients!(mode, clients, "I11.full");
                     full_row_i11::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3980,6 +4050,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(68) {
                 verdict::indexed("I10.full", async {
+                    row_clients!(mode, clients, "I10.full");
                     full_row_i10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3987,6 +4058,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(69) {
                 verdict::indexed("I05.full", async {
+                    row_clients!(mode, clients, "I05.full");
                     full_row_i05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -3994,6 +4066,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(70) {
                 verdict::indexed("M11b.full", async {
+                    row_clients!(mode, clients, "M11b.full");
                     full_row_m11b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4001,6 +4074,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(71) {
                 verdict::indexed("M11a.full", async {
+                    row_clients!(mode, clients, "M11a.full");
                     full_row_m11a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4008,6 +4082,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(72) {
                 verdict::indexed("M08.full", async {
+                    row_clients!(mode, clients, "M08.full");
                     full_row_m08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4015,6 +4090,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(73) {
                 verdict::indexed("C18b.full", async {
+                    row_clients!(mode, clients, "C18b.full");
                     full_row_c18b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4022,6 +4098,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(74) {
                 verdict::indexed("C17b.full", async {
+                    row_clients!(mode, clients, "C17b.full");
                     full_row_c17b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4029,6 +4106,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(75) {
                 verdict::indexed("C10.full", async {
+                    row_clients!(mode, clients, "C10.full");
                     full_row_c10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4036,6 +4114,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(76) {
                 verdict::indexed("C07.full", async {
+                    row_clients!(mode, clients, "C07.full");
                     full_row_c07::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4043,6 +4122,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(77) {
                 verdict::indexed("E12.full", async {
+                    row_clients!(mode, clients, "E12.full");
                     full_row_e12::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4050,6 +4130,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(78) {
                 verdict::indexed("I14.full", async {
+                    row_clients!(mode, clients, "I14.full");
                     full_row_i14::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4057,6 +4138,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(79) {
                 verdict::indexed("I03.full", async {
+                    row_clients!(mode, clients, "I03.full");
                     full_row_i03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4064,6 +4146,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(80) {
                 verdict::indexed("M10.full", async {
+                    row_clients!(mode, clients, "M10.full");
                     full_row_m10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4071,6 +4154,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(81) {
                 verdict::indexed("M09.full", async {
+                    row_clients!(mode, clients, "M09.full");
                     full_row_m09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4078,6 +4162,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(82) {
                 verdict::indexed("M06.full", async {
+                    row_clients!(mode, clients, "M06.full");
                     full_row_m06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4085,6 +4170,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(83) {
                 verdict::indexed("C15.full", async {
+                    row_clients!(mode, clients, "C15.full");
                     full_row_c15::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4092,22 +4178,27 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(84) {
                 verdict::indexed("C08.full", async {
+                    row_clients!(mode, clients, "C08.full");
                     full_row_c08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
                 .await;
             }
             if e2e_row_selected(85) {
+                row_clients!(mode, clients, "S04b.full");
                 full_e2ef19::run_packet(clients).await?;
             }
             if e2e_row_selected(86) {
+                row_clients!(mode, clients, "C14.full");
                 full_e2ef18::run_packet(clients).await?;
             }
             if e2e_row_selected(87) {
+                row_clients!(mode, clients, "E02.full");
                 full_e2ef20::run_packet(clients).await?;
             }
             if e2e_row_selected(88) {
                 verdict::indexed("C01.client", async {
+                    row_clients!(mode, clients, "C01.client");
                     client_row_c01::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4115,6 +4206,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(89) {
                 verdict::indexed("C02.client", async {
+                    row_clients!(mode, clients, "C02.client");
                     client_row_c02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4122,6 +4214,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(90) {
                 verdict::indexed("C03.client", async {
+                    row_clients!(mode, clients, "C03.client");
                     client_row_c03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4129,6 +4222,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(91) {
                 verdict::indexed("C04.client", async {
+                    row_clients!(mode, clients, "C04.client");
                     client_row_c04::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4136,6 +4230,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(92) {
                 verdict::indexed("C05.client", async {
+                    row_clients!(mode, clients, "C05.client");
                     client_row_c05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4143,17 +4238,20 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(93) {
                 verdict::indexed("C06.client", async {
+                    row_clients!(mode, clients, "C06.client");
                     client_row_c06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
                 .await;
             }
             if e2e_row_selected(227) {
+                row_clients!(mode, clients, "C07.client");
                 client_row_c07::run_client_packet(clients).await;
                 release_row_characters(clients).await?;
             }
             if e2e_row_selected(94) {
                 verdict::indexed("C09.client", async {
+                    row_clients!(mode, clients, "C09.client");
                     client_row_c09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4161,6 +4259,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(95) {
                 verdict::indexed("C10.client", async {
+                    row_clients!(mode, clients, "C10.client");
                     client_row_c10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4168,6 +4267,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(96) {
                 verdict::indexed("C11.client", async {
+                    row_clients!(mode, clients, "C11.client");
                     client_row_c11::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4175,6 +4275,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(97) {
                 verdict::indexed("C12.client", async {
+                    row_clients!(mode, clients, "C12.client");
                     client_row_c12::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4182,6 +4283,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(98) {
                 verdict::indexed("C13.client", async {
+                    row_clients!(mode, clients, "C13.client");
                     client_row_c13::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4189,6 +4291,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(99) {
                 verdict::indexed("C14.client", async {
+                    row_clients!(mode, clients, "C14.client");
                     client_row_c14::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4196,6 +4299,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(100) {
                 verdict::indexed("C15.client", async {
+                    row_clients!(mode, clients, "C15.client");
                     client_row_c15::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4203,6 +4307,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(101) {
                 verdict::indexed("C16a.client", async {
+                    row_clients!(mode, clients, "C16a.client");
                     client_row_c16a::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
@@ -4210,6 +4315,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(102) {
                 verdict::indexed("C16b.client", async {
+                    row_clients!(mode, clients, "C16b.client");
                     client_row_c16b::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
@@ -4217,6 +4323,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(103) {
                 verdict::indexed("C16c.client", async {
+                    row_clients!(mode, clients, "C16c.client");
                     client_row_c16c::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
@@ -4224,6 +4331,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(104) {
                 verdict::indexed("C16d.client", async {
+                    row_clients!(mode, clients, "C16d.client");
                     client_row_c16d::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
@@ -4231,6 +4339,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(105) {
                 verdict::indexed("C17a.client", async {
+                    row_clients!(mode, clients, "C17a.client");
                     client_row_c17a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4238,6 +4347,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(106) {
                 verdict::indexed("C17b.client", async {
+                    row_clients!(mode, clients, "C17b.client");
                     client_row_c17b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4245,6 +4355,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(107) {
                 verdict::indexed("C17d.client", async {
+                    row_clients!(mode, clients, "C17d.client");
                     client_row_c17d::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4252,6 +4363,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(108) {
                 verdict::indexed("C18a.client", async {
+                    row_clients!(mode, clients, "C18a.client");
                     client_row_c18a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4259,6 +4371,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(109) {
                 verdict::indexed("C18b.client", async {
+                    row_clients!(mode, clients, "C18b.client");
                     client_row_c18b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4266,6 +4379,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(228) {
                 verdict::indexed("C20a.client", async {
+                    row_clients!(mode, clients, "C20a.client");
                     client_row_c20a::run_packet(clients, world, &metadata.spawns).await;
                     release_row_characters(clients).await
                 })
@@ -4273,6 +4387,7 @@ pub(super) async fn journeys(
             }
             if capture_loss {
                 verdict::indexed("C20b.client", async {
+                    row_clients!(mode, clients, "C20b.client");
                     client_row_c20b::run_packet(async {
                         match full_loss {
                             Some(result) => result,
@@ -4294,6 +4409,7 @@ pub(super) async fn journeys(
             }
             if capture_twist {
                 verdict::indexed("C20c.client", async {
+                    row_clients!(mode, clients, "C20c.client");
                     client_row_c20c::run_packet(async {
                         match full_twist {
                             Some(result) => result,
@@ -4315,6 +4431,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(229) {
                 verdict::indexed("C20d.client", async {
+                    row_clients!(mode, clients, "C20d.client");
                     client_row_c20d::run_packet(clients, world, &metadata.spawns).await;
                     release_row_characters(clients).await
                 })
@@ -4322,6 +4439,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(112) {
                 verdict::indexed("E01.client", async {
+                    row_clients!(mode, clients, "E01.client");
                     client_row_e01::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4329,6 +4447,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(113) {
                 verdict::indexed("I01.client", async {
+                    row_clients!(mode, clients, "I01.client");
                     client_row_i01::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4336,6 +4455,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(114) {
                 verdict::indexed("I03.client", async {
+                    row_clients!(mode, clients, "I03.client");
                     client_row_i03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4343,6 +4463,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(115) {
                 verdict::indexed("I04.client", async {
+                    row_clients!(mode, clients, "I04.client");
                     client_row_i04::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4350,6 +4471,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(116) {
                 verdict::indexed("I05.client", async {
+                    row_clients!(mode, clients, "I05.client");
                     client_row_i05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4357,6 +4479,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(117) {
                 verdict::indexed("I06.client", async {
+                    row_clients!(mode, clients, "I06.client");
                     client_row_i06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4364,6 +4487,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(118) {
                 verdict::indexed("I07.client", async {
+                    row_clients!(mode, clients, "I07.client");
                     client_row_i07::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4371,6 +4495,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(119) {
                 verdict::indexed("I08.client", async {
+                    row_clients!(mode, clients, "I08.client");
                     client_row_i08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4378,6 +4503,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(120) {
                 verdict::indexed("I09.client", async {
+                    row_clients!(mode, clients, "I09.client");
                     client_row_i09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4385,6 +4511,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(121) {
                 verdict::indexed("I10.client", async {
+                    row_clients!(mode, clients, "I10.client");
                     client_row_i10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4392,6 +4519,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(122) {
                 verdict::indexed("I11.client", async {
+                    row_clients!(mode, clients, "I11.client");
                     client_row_i11::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4399,6 +4527,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(123) {
                 verdict::indexed("I12.client", async {
+                    row_clients!(mode, clients, "I12.client");
                     client_row_i12::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4406,6 +4535,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(124) {
                 verdict::indexed("I13.client", async {
+                    row_clients!(mode, clients, "I13.client");
                     client_row_i13::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4413,6 +4543,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(125) {
                 verdict::indexed("I14.client", async {
+                    row_clients!(mode, clients, "I14.client");
                     client_row_i14::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4420,6 +4551,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(126) {
                 verdict::indexed("I15.client", async {
+                    row_clients!(mode, clients, "I15.client");
                     client_row_i15::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4427,6 +4559,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(127) {
                 verdict::indexed("I16.client", async {
+                    row_clients!(mode, clients, "I16.client");
                     client_row_i16::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4434,6 +4567,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(128) {
                 verdict::indexed("M01.client", async {
+                    row_clients!(mode, clients, "M01.client");
                     client_row_m01::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4441,6 +4575,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(129) {
                 verdict::indexed("M02.client", async {
+                    row_clients!(mode, clients, "M02.client");
                     client_row_m02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4448,6 +4583,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(130) {
                 verdict::indexed("M03.client", async {
+                    row_clients!(mode, clients, "M03.client");
                     client_row_m03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4455,6 +4591,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(131) {
                 verdict::indexed("M04.client", async {
+                    row_clients!(mode, clients, "M04.client");
                     client_row_m04::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4462,6 +4599,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(132) {
                 verdict::indexed("M05.client", async {
+                    row_clients!(mode, clients, "M05.client");
                     client_row_m05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4469,6 +4607,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(133) {
                 verdict::indexed("M06.client", async {
+                    row_clients!(mode, clients, "M06.client");
                     client_row_m06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4476,6 +4615,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(134) {
                 verdict::indexed("M07.client", async {
+                    row_clients!(mode, clients, "M07.client");
                     client_row_m07::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4483,6 +4623,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(135) {
                 verdict::indexed("M08.client", async {
+                    row_clients!(mode, clients, "M08.client");
                     client_row_m08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4490,6 +4631,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(136) {
                 verdict::indexed("M09.client", async {
+                    row_clients!(mode, clients, "M09.client");
                     client_row_m09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4497,6 +4639,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(137) {
                 verdict::indexed("M10.client", async {
+                    row_clients!(mode, clients, "M10.client");
                     client_row_m10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4504,6 +4647,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(138) {
                 verdict::indexed("M11a.client", async {
+                    row_clients!(mode, clients, "M11a.client");
                     client_row_m11a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4511,6 +4655,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(139) {
                 verdict::indexed("M11b.client", async {
+                    row_clients!(mode, clients, "M11b.client");
                     client_row_m11b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4518,6 +4663,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(140) {
                 verdict::indexed("N01.client", async {
+                    row_clients!(mode, clients, "N01.client");
                     client_row_n01::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4525,6 +4671,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(141) {
                 verdict::indexed("N02.client", async {
+                    row_clients!(mode, clients, "N02.client");
                     client_row_n02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4532,6 +4679,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(142) {
                 verdict::indexed("N03.client", async {
+                    row_clients!(mode, clients, "N03.client");
                     client_row_n03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4539,6 +4687,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(143) {
                 verdict::indexed("N04.client", async {
+                    row_clients!(mode, clients, "N04.client");
                     client_row_n04::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4546,6 +4695,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(144) {
                 verdict::indexed("C08.client", async {
+                    row_clients!(mode, clients, "C08.client");
                     client_row_c08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4553,6 +4703,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(145) {
                 verdict::indexed("C17c.client", async {
+                    row_clients!(mode, clients, "C17c.client");
                     client_row_c17c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4560,6 +4711,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(147) {
                 verdict::indexed("E02.client", async {
+                    row_clients!(mode, clients, "E02.client");
                     client_row_e02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4567,6 +4719,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(148) {
                 verdict::indexed("E03.client", async {
+                    row_clients!(mode, clients, "E03.client");
                     client_row_e03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4574,6 +4727,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(149) {
                 verdict::indexed("E05.client", async {
+                    row_clients!(mode, clients, "E05.client");
                     client_row_e05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4581,6 +4735,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(150) {
                 verdict::indexed("E06.client", async {
+                    row_clients!(mode, clients, "E06.client");
                     client_row_e06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4588,6 +4743,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(151) {
                 verdict::indexed("E07.client", async {
+                    row_clients!(mode, clients, "E07.client");
                     client_row_e07::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4595,6 +4751,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(152) {
                 verdict::indexed("E08.client", async {
+                    row_clients!(mode, clients, "E08.client");
                     client_row_e08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4602,6 +4759,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(153) {
                 verdict::indexed("E09.client", async {
+                    row_clients!(mode, clients, "E09.client");
                     client_row_e09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4609,6 +4767,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(154) {
                 verdict::indexed("E10.client", async {
+                    row_clients!(mode, clients, "E10.client");
                     client_row_e10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4616,6 +4775,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(155) {
                 verdict::indexed("E12.client", async {
+                    row_clients!(mode, clients, "E12.client");
                     client_row_e12::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4623,6 +4783,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(156) {
                 verdict::indexed("P01.client", async {
+                    row_clients!(mode, clients, "P01.client");
                     client_row_p01::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4630,6 +4791,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(157) {
                 verdict::indexed("P02.client", async {
+                    row_clients!(mode, clients, "P02.client");
                     client_row_p02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4637,6 +4799,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(158) {
                 verdict::indexed("P03.client", async {
+                    row_clients!(mode, clients, "P03.client");
                     client_row_p03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4644,6 +4807,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(159) {
                 verdict::indexed("P04.client", async {
+                    row_clients!(mode, clients, "P04.client");
                     client_row_p04::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4651,6 +4815,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(160) {
                 verdict::indexed("P05.client", async {
+                    row_clients!(mode, clients, "P05.client");
                     client_row_p05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4658,6 +4823,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(161) {
                 verdict::indexed("P06.client", async {
+                    row_clients!(mode, clients, "P06.client");
                     client_row_p06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4665,6 +4831,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(162) {
                 verdict::indexed("P07.client", async {
+                    row_clients!(mode, clients, "P07.client");
                     client_row_p07::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4672,6 +4839,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(163) {
                 verdict::indexed("P08.client", async {
+                    row_clients!(mode, clients, "P08.client");
                     client_row_p08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4679,6 +4847,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(164) {
                 verdict::indexed("P09.client", async {
+                    row_clients!(mode, clients, "P09.client");
                     client_row_p09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4686,6 +4855,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(165) {
                 verdict::indexed("P10.client", async {
+                    row_clients!(mode, clients, "P10.client");
                     client_row_p10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4693,6 +4863,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(166) {
                 verdict::indexed("P11.client", async {
+                    row_clients!(mode, clients, "P11.client");
                     client_row_p11::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4700,6 +4871,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(167) {
                 verdict::indexed("P12a.client", async {
+                    row_clients!(mode, clients, "P12a.client");
                     client_row_p12a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4707,6 +4879,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(168) {
                 verdict::indexed("P12c.client", async {
+                    row_clients!(mode, clients, "P12c.client");
                     client_row_p12c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4714,6 +4887,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(169) {
                 verdict::indexed("P13.client", async {
+                    row_clients!(mode, clients, "P13.client");
                     client_row_p13::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4721,6 +4895,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(170) {
                 verdict::indexed("P14.client", async {
+                    row_clients!(mode, clients, "P14.client");
                     client_row_p14::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4728,6 +4903,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(171) {
                 verdict::indexed("P15.client", async {
+                    row_clients!(mode, clients, "P15.client");
                     client_row_p15::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4735,6 +4911,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(172) {
                 verdict::indexed("P16.client", async {
+                    row_clients!(mode, clients, "P16.client");
                     client_row_p16::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4742,6 +4919,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(173) {
                 verdict::indexed("P17.client", async {
+                    row_clients!(mode, clients, "P17.client");
                     client_row_p17::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4749,6 +4927,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(174) {
                 verdict::indexed("P18.client", async {
+                    row_clients!(mode, clients, "P18.client");
                     client_row_p18::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4756,6 +4935,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(175) {
                 verdict::indexed("P19.client", async {
+                    row_clients!(mode, clients, "P19.client");
                     client_row_p19::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4763,6 +4943,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(176) {
                 verdict::indexed("P20.client", async {
+                    row_clients!(mode, clients, "P20.client");
                     client_row_p20::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4770,6 +4951,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(177) {
                 verdict::indexed("P21.client", async {
+                    row_clients!(mode, clients, "P21.client");
                     client_row_p21::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4777,6 +4959,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(178) {
                 verdict::indexed("P23c.client", async {
+                    row_clients!(mode, clients, "P23c.client");
                     client_row_p23c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4784,6 +4967,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(179) {
                 verdict::indexed("S01.client", async {
+                    row_clients!(mode, clients, "S01.client");
                     client_row_s01::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4791,6 +4975,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(180) {
                 verdict::indexed("S02.client", async {
+                    row_clients!(mode, clients, "S02.client");
                     client_row_s02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4798,6 +4983,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(181) {
                 verdict::indexed("S03.client", async {
+                    row_clients!(mode, clients, "S03.client");
                     client_row_s03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4805,6 +4991,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(182) {
                 verdict::indexed("S04a.client", async {
+                    row_clients!(mode, clients, "S04a.client");
                     client_row_s04a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4812,6 +4999,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(183) {
                 verdict::indexed("S04b.client", async {
+                    row_clients!(mode, clients, "S04b.client");
                     client_row_s04b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4819,6 +5007,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(184) {
                 verdict::indexed("S18.client", async {
+                    row_clients!(mode, clients, "S18.client");
                     client_row_s18::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4826,6 +5015,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(185) {
                 verdict::indexed("W01a.client", async {
+                    row_clients!(mode, clients, "W01a.client");
                     client_row_w01a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4833,6 +5023,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(186) {
                 verdict::indexed("W01b.client", async {
+                    row_clients!(mode, clients, "W01b.client");
                     client_row_w01b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4840,6 +5031,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(187) {
                 verdict::indexed("W01c.client", async {
+                    row_clients!(mode, clients, "W01c.client");
                     client_row_w01c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4847,6 +5039,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(188) {
                 verdict::indexed("W02.client", async {
+                    row_clients!(mode, clients, "W02.client");
                     client_row_w02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4854,6 +5047,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(189) {
                 verdict::indexed("W03.client", async {
+                    row_clients!(mode, clients, "W03.client");
                     client_row_w03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4861,6 +5055,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(190) {
                 verdict::indexed("W04.client", async {
+                    row_clients!(mode, clients, "W04.client");
                     client_row_w04::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4868,6 +5063,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(191) {
                 verdict::indexed("W05a.client", async {
+                    row_clients!(mode, clients, "W05a.client");
                     client_row_w05a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4875,6 +5071,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(192) {
                 verdict::indexed("W05c.client", async {
+                    row_clients!(mode, clients, "W05c.client");
                     client_row_w05c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4882,6 +5079,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(193) {
                 verdict::indexed("W10.client", async {
+                    row_clients!(mode, clients, "W10.client");
                     client_row_w10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4889,6 +5087,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(194) {
                 verdict::indexed("W11.client", async {
+                    row_clients!(mode, clients, "W11.client");
                     client_row_w11::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4896,6 +5095,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(195) {
                 verdict::indexed("W12.client", async {
+                    row_clients!(mode, clients, "W12.client");
                     client_row_w12::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4903,6 +5103,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(196) {
                 verdict::indexed("W13.client", async {
+                    row_clients!(mode, clients, "W13.client");
                     client_row_w13::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4910,6 +5111,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(197) {
                 verdict::indexed("S06.client", async {
+                    row_clients!(mode, clients, "S06.client");
                     client_row_s06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4917,6 +5119,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(198) {
                 verdict::indexed("S08.client", async {
+                    row_clients!(mode, clients, "S08.client");
                     client_row_s08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4924,6 +5127,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(199) {
                 verdict::indexed("S13c.client", async {
+                    row_clients!(mode, clients, "S13c.client");
                     client_row_s13c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4931,6 +5135,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(200) {
                 verdict::indexed("S13b.client", async {
+                    row_clients!(mode, clients, "S13b.client");
                     client_row_s13b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4938,6 +5143,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(201) {
                 verdict::indexed("S13a.client", async {
+                    row_clients!(mode, clients, "S13a.client");
                     client_row_s13a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4945,6 +5151,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(202) {
                 verdict::indexed("S15b.client", async {
+                    row_clients!(mode, clients, "S15b.client");
                     client_row_s15b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4952,6 +5159,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(203) {
                 verdict::indexed("S04c.client", async {
+                    row_clients!(mode, clients, "S04c.client");
                     client_row_s04c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4959,6 +5167,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(204) {
                 verdict::indexed("S07.client", async {
+                    row_clients!(mode, clients, "S07.client");
                     client_row_s07::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4966,6 +5175,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(205) {
                 verdict::indexed("S16b.client", async {
+                    row_clients!(mode, clients, "S16b.client");
                     client_row_s16b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4973,6 +5183,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(206) {
                 verdict::indexed("S09.client", async {
+                    row_clients!(mode, clients, "S09.client");
                     client_row_s09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4980,6 +5191,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(207) {
                 verdict::indexed("S05.client", async {
+                    row_clients!(mode, clients, "S05.client");
                     client_row_s05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4987,6 +5199,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(208) {
                 verdict::indexed("S10.client", async {
+                    row_clients!(mode, clients, "S10.client");
                     client_row_s10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -4994,6 +5207,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(209) {
                 verdict::indexed("S16a.client", async {
+                    row_clients!(mode, clients, "S16a.client");
                     client_row_s16a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5001,6 +5215,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(210) {
                 verdict::indexed("S11.client", async {
+                    row_clients!(mode, clients, "S11.client");
                     client_row_s11::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5008,6 +5223,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(211) {
                 verdict::indexed("W15a.client", async {
+                    row_clients!(mode, clients, "W15a.client");
                     client_row_w15a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5015,6 +5231,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(212) {
                 verdict::indexed("W15b.client", async {
+                    row_clients!(mode, clients, "W15b.client");
                     client_row_w15b::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
@@ -5022,6 +5239,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(213) {
                 verdict::indexed("W15d.client", async {
+                    row_clients!(mode, clients, "W15d.client");
                     client_row_w15d::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
@@ -5029,6 +5247,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(214) {
                 verdict::indexed("W16.client", async {
+                    row_clients!(mode, clients, "W16.client");
                     client_row_w16::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5036,6 +5255,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(215) {
                 verdict::indexed("W17.client", async {
+                    row_clients!(mode, clients, "W17.client");
                     client_row_w17::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5043,6 +5263,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(216) {
                 verdict::indexed("W19a.client", async {
+                    row_clients!(mode, clients, "W19a.client");
                     client_row_w19a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5050,6 +5271,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(217) {
                 verdict::indexed("W20a.client", async {
+                    row_clients!(mode, clients, "W20a.client");
                     client_row_w20a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5057,6 +5279,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(218) {
                 verdict::indexed("W20b.client", async {
+                    row_clients!(mode, clients, "W20b.client");
                     client_row_w20b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5064,6 +5287,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(219) {
                 verdict::indexed("W22a.client", async {
+                    row_clients!(mode, clients, "W22a.client");
                     client_row_w22a::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
@@ -5071,6 +5295,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(220) {
                 verdict::indexed("W22b.client", async {
+                    row_clients!(mode, clients, "W22b.client");
                     client_row_w22b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5078,6 +5303,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(221) {
                 verdict::indexed("W23.client", async {
+                    row_clients!(mode, clients, "W23.client");
                     client_row_w23::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
@@ -5085,6 +5311,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(222) {
                 verdict::indexed("W24.client", async {
+                    row_clients!(mode, clients, "W24.client");
                     client_row_w24::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
@@ -5092,6 +5319,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(223) {
                 verdict::indexed("N07a.client", async {
+                    row_clients!(mode, clients, "N07a.client");
                     client_row_n07a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5099,6 +5327,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(224) {
                 verdict::indexed("N07b.client", async {
+                    row_clients!(mode, clients, "N07b.client");
                     client_row_n07b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5106,6 +5335,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(225) {
                 verdict::indexed("N07c.client", async {
+                    row_clients!(mode, clients, "N07c.client");
                     client_row_n07c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5113,6 +5343,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(226) {
                 verdict::indexed("N07d.client", async {
+                    row_clients!(mode, clients, "N07d.client");
                     client_row_n07d::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5149,6 +5380,7 @@ pub(super) async fn journeys(
             let before = journey_verdicts();
             if e2e_row_selected(233) {
                 verdict::indexed("G01.full", async {
+                    row_clients!(mode, clients, "G01.full");
                     full_row_g01::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5156,6 +5388,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(234) {
                 verdict::indexed("G02.full", async {
+                    row_clients!(mode, clients, "G02.full");
                     full_row_g02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5163,6 +5396,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(235) {
                 verdict::indexed("G03.full", async {
+                    row_clients!(mode, clients, "G03.full");
                     full_row_g03::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5170,6 +5404,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(236) {
                 verdict::indexed("G04.full", async {
+                    row_clients!(mode, clients, "G04.full");
                     full_row_g04::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5177,6 +5412,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(237) {
                 verdict::indexed("G05.full", async {
+                    row_clients!(mode, clients, "G05.full");
                     full_row_g05::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5184,6 +5420,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(238) {
                 verdict::indexed("G06.full", async {
+                    row_clients!(mode, clients, "G06.full");
                     full_row_g06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5191,6 +5428,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(239) {
                 verdict::indexed("G07.full", async {
+                    row_clients!(mode, clients, "G07.full");
                     full_row_g07::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5198,6 +5436,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(240) {
                 verdict::indexed("G08.full", async {
+                    row_clients!(mode, clients, "G08.full");
                     full_row_g08::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5205,6 +5444,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(241) {
                 verdict::indexed("G09.full", async {
+                    row_clients!(mode, clients, "G09.full");
                     full_row_g09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5212,6 +5452,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(242) {
                 verdict::indexed("G10.full", async {
+                    row_clients!(mode, clients, "G10.full");
                     full_row_g10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5219,6 +5460,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(243) {
                 verdict::indexed("G11.full", async {
+                    row_clients!(mode, clients, "G11.full");
                     full_row_g11::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5226,6 +5468,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(244) {
                 verdict::indexed("G12.full", async {
+                    row_clients!(mode, clients, "G12.full");
                     full_row_g12::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5233,6 +5476,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(245) {
                 verdict::indexed("G13.full", async {
+                    row_clients!(mode, clients, "G13.full");
                     full_row_g13::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5240,6 +5484,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(246) {
                 verdict::indexed("G14.full", async {
+                    row_clients!(mode, clients, "G14.full");
                     full_row_g14::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5247,6 +5492,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(247) {
                 verdict::indexed("G15.full", async {
+                    row_clients!(mode, clients, "G15.full");
                     full_row_g15::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5254,6 +5500,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(248) {
                 verdict::indexed("G16.full", async {
+                    row_clients!(mode, clients, "G16.full");
                     full_row_g16::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5261,6 +5508,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(249) {
                 verdict::indexed("G17.full", async {
+                    row_clients!(mode, clients, "G17.full");
                     full_row_g17::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5268,6 +5516,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(250) {
                 verdict::indexed("G18.full", async {
+                    row_clients!(mode, clients, "G18.full");
                     full_row_g18::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5275,6 +5524,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(251) {
                 verdict::indexed("G19.full", async {
+                    row_clients!(mode, clients, "G19.full");
                     full_row_g19::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5282,6 +5532,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(252) {
                 verdict::indexed("G20.full", async {
+                    row_clients!(mode, clients, "G20.full");
                     full_row_g20::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5289,6 +5540,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(253) {
                 verdict::indexed("G21.full", async {
+                    row_clients!(mode, clients, "G21.full");
                     full_row_g21::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5296,6 +5548,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(254) {
                 verdict::indexed("G22.full", async {
+                    row_clients!(mode, clients, "G22.full");
                     full_row_g22::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5303,6 +5556,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(255) {
                 verdict::indexed("G23.full", async {
+                    row_clients!(mode, clients, "G23.full");
                     full_row_g23::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5310,6 +5564,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(256) {
                 verdict::indexed("G24.full", async {
+                    row_clients!(mode, clients, "G24.full");
                     full_row_g24::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5317,6 +5572,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(257) {
                 verdict::indexed("G25.full", async {
+                    row_clients!(mode, clients, "G25.full");
                     full_row_g25::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5324,6 +5580,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(258) {
                 verdict::indexed("G26.full", async {
+                    row_clients!(mode, clients, "G26.full");
                     full_row_g26::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5331,6 +5588,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(259) {
                 verdict::indexed("G27.full", async {
+                    row_clients!(mode, clients, "G27.full");
                     full_row_g27::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5338,6 +5596,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(260) {
                 verdict::indexed("G28.full", async {
+                    row_clients!(mode, clients, "G28.full");
                     full_row_g28::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5345,6 +5604,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(261) {
                 verdict::indexed("G29.full", async {
+                    row_clients!(mode, clients, "G29.full");
                     full_row_g29::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5352,6 +5612,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(262) {
                 verdict::indexed("G30.full", async {
+                    row_clients!(mode, clients, "G30.full");
                     full_row_g30::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5359,6 +5620,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(263) {
                 verdict::indexed("G31.full", async {
+                    row_clients!(mode, clients, "G31.full");
                     full_row_g31::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5366,6 +5628,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(264) {
                 verdict::indexed("G32.full", async {
+                    row_clients!(mode, clients, "G32.full");
                     full_row_g32::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5373,6 +5636,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(265) {
                 verdict::indexed("G33.full", async {
+                    row_clients!(mode, clients, "G33.full");
                     full_row_g33::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5380,6 +5644,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(266) {
                 verdict::indexed("G34.full", async {
+                    row_clients!(mode, clients, "G34.full");
                     full_row_g34::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5387,6 +5652,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(267) {
                 verdict::indexed("G35.full", async {
+                    row_clients!(mode, clients, "G35.full");
                     full_row_g35::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5394,6 +5660,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(268) {
                 verdict::indexed("G36.full", async {
+                    row_clients!(mode, clients, "G36.full");
                     full_row_g36::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5401,6 +5668,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(269) {
                 verdict::indexed("C19b.full", async {
+                    row_clients!(mode, clients, "C19b.full");
                     full_row_c19b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5408,6 +5676,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(270) {
                 verdict::indexed("I17a.full", async {
+                    row_clients!(mode, clients, "I17a.full");
                     full_row_i17a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5415,6 +5684,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(271) {
                 verdict::indexed("I17b.full", async {
+                    row_clients!(mode, clients, "I17b.full");
                     full_row_i17b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5422,6 +5692,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(272) {
                 verdict::indexed("I17c.full", async {
+                    row_clients!(mode, clients, "I17c.full");
                     full_row_i17c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5429,6 +5700,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(273) {
                 verdict::indexed("I17d.full", async {
+                    row_clients!(mode, clients, "I17d.full");
                     full_row_i17d::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5436,6 +5708,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(274) {
                 verdict::indexed("I18a.full", async {
+                    row_clients!(mode, clients, "I18a.full");
                     full_row_i18a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5443,6 +5716,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(275) {
                 verdict::indexed("I18b.full", async {
+                    row_clients!(mode, clients, "I18b.full");
                     full_row_i18b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5450,6 +5724,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(276) {
                 verdict::indexed("I18c.full", async {
+                    row_clients!(mode, clients, "I18c.full");
                     full_row_i18c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5457,6 +5732,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(277) {
                 verdict::indexed("I19.full", async {
+                    row_clients!(mode, clients, "I19.full");
                     full_row_i19::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5464,6 +5740,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(278) {
                 verdict::indexed("P12b.full", async {
+                    row_clients!(mode, clients, "P12b.full");
                     full_row_p12b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5471,6 +5748,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(279) {
                 verdict::indexed("P22a.full", async {
+                    row_clients!(mode, clients, "P22a.full");
                     full_row_p22a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5478,6 +5756,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(280) {
                 verdict::indexed("P22b.full", async {
+                    row_clients!(mode, clients, "P22b.full");
                     full_row_p22b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5485,6 +5764,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(281) {
                 verdict::indexed("P22c.full", async {
+                    row_clients!(mode, clients, "P22c.full");
                     full_row_p22c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5492,6 +5772,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(282) {
                 verdict::indexed("P22d.full", async {
+                    row_clients!(mode, clients, "P22d.full");
                     full_row_p22d::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5499,6 +5780,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(283) {
                 verdict::indexed("S14a.full", async {
+                    row_clients!(mode, clients, "S14a.full");
                     full_row_s14a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5506,6 +5788,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(284) {
                 verdict::indexed("S14b.full", async {
+                    row_clients!(mode, clients, "S14b.full");
                     full_row_s14b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5513,6 +5796,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(285) {
                 verdict::indexed("S14c.full", async {
+                    row_clients!(mode, clients, "S14c.full");
                     full_row_s14c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5520,6 +5804,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(286) {
                 verdict::indexed("S15a.full", async {
+                    row_clients!(mode, clients, "S15a.full");
                     full_row_s15a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5527,6 +5812,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(287) {
                 verdict::indexed("S16c.full", async {
+                    row_clients!(mode, clients, "S16c.full");
                     full_row_s16c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5534,6 +5820,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(288) {
                 verdict::indexed("S16d.full", async {
+                    row_clients!(mode, clients, "S16d.full");
                     full_row_s16d::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5541,6 +5828,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(289) {
                 verdict::indexed("S17a.full", async {
+                    row_clients!(mode, clients, "S17a.full");
                     full_row_s17a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5548,6 +5836,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(290) {
                 verdict::indexed("S17b.full", async {
+                    row_clients!(mode, clients, "S17b.full");
                     full_row_s17b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5555,6 +5844,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(291) {
                 verdict::indexed("S17c.full", async {
+                    row_clients!(mode, clients, "S17c.full");
                     full_row_s17c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5562,6 +5852,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(292) {
                 verdict::indexed("S19.full", async {
+                    row_clients!(mode, clients, "S19.full");
                     full_row_s19::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5569,6 +5860,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(293) {
                 verdict::indexed("W05b.full", async {
+                    row_clients!(mode, clients, "W05b.full");
                     full_row_w05b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5576,6 +5868,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(294) {
                 verdict::indexed("W05d.full", async {
+                    row_clients!(mode, clients, "W05d.full");
                     full_row_w05d::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5583,6 +5876,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(295) {
                 verdict::indexed("W06.full", async {
+                    row_clients!(mode, clients, "W06.full");
                     full_row_w06::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5590,6 +5884,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(296) {
                 verdict::indexed("W07.full", async {
+                    row_clients!(mode, clients, "W07.full");
                     full_row_w07::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5597,6 +5892,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(297) {
                 verdict::indexed("W09.full", async {
+                    row_clients!(mode, clients, "W09.full");
                     full_row_w09::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5604,6 +5900,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(298) {
                 verdict::indexed("W15c.full", async {
+                    row_clients!(mode, clients, "W15c.full");
                     full_row_w15c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5611,6 +5908,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(299) {
                 verdict::indexed("W19b.full", async {
+                    row_clients!(mode, clients, "W19b.full");
                     full_row_w19b::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5618,6 +5916,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(300) {
                 verdict::indexed("W19c.full", async {
+                    row_clients!(mode, clients, "W19c.full");
                     full_row_w19c::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5625,6 +5924,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(301) {
                 verdict::indexed("W19d.full", async {
+                    row_clients!(mode, clients, "W19d.full");
                     full_row_w19d::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5632,6 +5932,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(302) {
                 verdict::indexed("W19e.full", async {
+                    row_clients!(mode, clients, "W19e.full");
                     full_row_w19e::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5639,6 +5940,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(303) {
                 verdict::indexed("W21.full", async {
+                    row_clients!(mode, clients, "W21.full");
                     full_row_w21::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5646,6 +5948,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(304) {
                 verdict::indexed("G37.full", async {
+                    row_clients!(mode, clients, "G37.full");
                     full_row_g37::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5653,6 +5956,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(305) {
                 verdict::indexed("G38.full", async {
+                    row_clients!(mode, clients, "G38.full");
                     full_row_g38::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5660,6 +5964,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(306) {
                 verdict::indexed("Q01a.full", async {
+                    row_clients!(mode, clients, "Q01a.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[0]).await;
                     release_row_characters(clients).await
                 })
@@ -5667,6 +5972,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(307) {
                 verdict::indexed("Q01b.full", async {
+                    row_clients!(mode, clients, "Q01b.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[1]).await;
                     release_row_characters(clients).await
                 })
@@ -5674,6 +5980,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(308) {
                 verdict::indexed("Q01c.full", async {
+                    row_clients!(mode, clients, "Q01c.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[2]).await;
                     release_row_characters(clients).await
                 })
@@ -5681,6 +5988,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(309) {
                 verdict::indexed("Q01d.full", async {
+                    row_clients!(mode, clients, "Q01d.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[3]).await;
                     release_row_characters(clients).await
                 })
@@ -5688,6 +5996,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(310) {
                 verdict::indexed("Q01e.full", async {
+                    row_clients!(mode, clients, "Q01e.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[4]).await;
                     release_row_characters(clients).await
                 })
@@ -5695,6 +6004,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(311) {
                 verdict::indexed("Q02.full", async {
+                    row_clients!(mode, clients, "Q02.full");
                     full_row_q02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
@@ -5702,6 +6012,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(312) {
                 verdict::indexed("Q03a.full", async {
+                    row_clients!(mode, clients, "Q03a.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[5]).await;
                     release_row_characters(clients).await
                 })
@@ -5709,6 +6020,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(313) {
                 verdict::indexed("Q03b.full", async {
+                    row_clients!(mode, clients, "Q03b.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[6]).await;
                     release_row_characters(clients).await
                 })
@@ -5716,6 +6028,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(314) {
                 verdict::indexed("Q03c.full", async {
+                    row_clients!(mode, clients, "Q03c.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[7]).await;
                     release_row_characters(clients).await
                 })
@@ -5723,6 +6036,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(315) {
                 verdict::indexed("Q03d.full", async {
+                    row_clients!(mode, clients, "Q03d.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[8]).await;
                     release_row_characters(clients).await
                 })
@@ -5730,6 +6044,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(316) {
                 verdict::indexed("Q03e.full", async {
+                    row_clients!(mode, clients, "Q03e.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[9]).await;
                     release_row_characters(clients).await
                 })
@@ -5737,6 +6052,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(317) {
                 verdict::indexed("Q03f.full", async {
+                    row_clients!(mode, clients, "Q03f.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[10]).await;
                     release_row_characters(clients).await
                 })
@@ -5744,6 +6060,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(318) {
                 verdict::indexed("Q03g.full", async {
+                    row_clients!(mode, clients, "Q03g.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[11]).await;
                     release_row_characters(clients).await
                 })
@@ -5751,6 +6068,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(319) {
                 verdict::indexed("Q03h.full", async {
+                    row_clients!(mode, clients, "Q03h.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[12]).await;
                     release_row_characters(clients).await
                 })
@@ -5758,6 +6076,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(320) {
                 verdict::indexed("Q03i.full", async {
+                    row_clients!(mode, clients, "Q03i.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[13]).await;
                     release_row_characters(clients).await
                 })
@@ -5765,6 +6084,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(321) {
                 verdict::indexed("Q03j.full", async {
+                    row_clients!(mode, clients, "Q03j.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[14]).await;
                     release_row_characters(clients).await
                 })
@@ -5772,6 +6092,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(322) {
                 verdict::indexed("Q03k.full", async {
+                    row_clients!(mode, clients, "Q03k.full");
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[15]).await;
                     release_row_characters(clients).await
                 })
@@ -6206,6 +6527,18 @@ fn fixture_command() -> tokio::process::Command {
 async fn run_fixture_command(
     command: &mut tokio::process::Command,
 ) -> io::Result<std::process::Output> {
+    let mut args = command.as_std().get_args();
+    if args.any(|arg| arg == "--profile") {
+        let mode = E2eMode::from_env().map_err(|error| io::Error::other(error.to_string()))?;
+        if !args
+            .next()
+            .is_some_and(|profile| mode.permits_profile(profile))
+        {
+            return Err(io::Error::other(
+                "character profile grant is outside the active E2E row requirements",
+            ));
+        }
+    }
     let mut child = command.spawn()?;
     let parent_pipe = child
         .stdin

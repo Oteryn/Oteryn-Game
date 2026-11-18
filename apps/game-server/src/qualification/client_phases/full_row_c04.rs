@@ -466,7 +466,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             ChannelId::decode(&clients.channel)?,
         )?;
         c04_phases(
-            full_e2ef5::spell_fixture(clients, "c04", 0xc4),
+            async {
+                let characters = <[[u8; 16]; 2]>::try_from(clients.characters)?;
+                Ok((characters, connect_world(clients, 0xc4).await?))
+            },
             |(characters, client)| {
                 journey(
                     &mut row,

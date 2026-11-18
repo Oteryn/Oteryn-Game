@@ -235,6 +235,10 @@ def main():
     args = parser.parse_args()
     try:
         log = args.log.read_text()
+        modes = set(re.findall(r"^SEAM_EVIDENCE e2e_mode mode=(journey|isolated)$", log, re.MULTILINE))
+        if len(modes) > 1:
+            raise ValueError("mixed E2E modes in one run")
+        mode = next(iter(modes), "journey")
         extra, clients = supplemental_rows(args.supplemental_rows.read_text())
         output, complete = summary(
             matrix_rows(args.matrix.read_text()), results(log),
@@ -243,6 +247,7 @@ def main():
         )
     except (OSError, ValueError) as error:
         parser.exit(1, f"E2E-ALL FAIL: {error}\n")
+    print(f"E2E mode {mode}")
     print(output)
     return 0 if complete else 1
 

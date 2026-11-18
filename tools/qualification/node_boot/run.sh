@@ -11,6 +11,12 @@
 set -Eeuo pipefail
 umask 077
 
+export OTERYN_E2E_MODE="${OTERYN_E2E_MODE-journey}"
+case "$OTERYN_E2E_MODE" in
+  journey|isolated) ;;
+  *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_e2e_mode'; exit 2 ;;
+esac
+
 readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 readonly TOPOLOGY_REVISION=wp5-node-boot-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
@@ -1999,6 +2005,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
     test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
+    if [[ "${OTERYN_E2E_MODE:-journey}" == isolated ]]; then
+      test_env+=("NODE_BOOT_PLATFORM_PROJECT=$WP5_PROJECT-$COMPOSE_OWNER")
+    fi
     if [[ -n "${E2E_ALL_CAPTURE_DIR:-}" ]]; then
       test_env+=("OTERYN_E2E_ROW_BATCH=all")
     else

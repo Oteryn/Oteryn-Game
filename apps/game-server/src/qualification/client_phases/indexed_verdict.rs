@@ -262,8 +262,9 @@ fn indexed_run(
             // `run` restored the previous active Watch, so flushing cannot recapture itself.
             let lines = watch.take_verdicts();
             let all_passed = lines.iter().all(|line| line.contains(" status=PASS "));
+            let mode = super::E2eMode::from_env()?.name();
             for line in lines {
-                evidence(&line);
+                evidence(&format!("{line} mode={mode}"));
             }
             crate::qualification::client_world::await_fixture_workers().await;
             if !report_success && result.is_ok() && !all_passed {

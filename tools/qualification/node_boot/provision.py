@@ -146,13 +146,24 @@ def fresh_character_name(operation):
     return "Spell " + "".join(chr(ord("a") + int(c, 16)) for c in operation.hex[-20:])
 
 
+def valid_profile(profile):
+    return profile in PROFILES or bool(re.fullmatch(r"row-[A-Z][A-Za-z0-9]{1,15}", profile))
+
+
+def profile_argument(profile):
+    if not valid_profile(profile):
+        raise argparse.ArgumentTypeError("unknown qualification profile")
+    return profile
+
+
 def provision(socket_path, session, profile, node_log=None, *, cancel=None):
     offset = node_log_offset(node_log)
     identifier = uuid.UUID(session)
-    if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
+    if identifier.version != 7 or str(identifier) != session or not valid_profile(profile):
         raise ValueError("invalid qualification request")
-    reconcile = profile in ("c17a", "c17c", "c04", "w22b-wealth", "w22b-stamina")
-    line = f"qualify {session} {profile}{'-reconcile' if reconcile else ''}\n"
+    legacy_reconcile = profile in ("c17a", "c17c", "c04", "w22b-wealth", "w22b-stamina")
+    reconcile = legacy_reconcile or profile.startswith("row-")
+    line = f"qualify {session} {profile}{'-reconcile' if legacy_reconcile else ''}\n"
     deadline = time.monotonic() + FIXTURE_RECONCILE_SECONDS if reconcile else None
     attempts = 0
     while True:
@@ -353,11 +364,26 @@ class PlatformIntentWriter:
                     REMOTE_WRITER = None
 
 
+def uuid7():
+    return uuid.UUID(int=(int(time.time() * 1000) << 80)
+                     | (7 << 76) | (secrets.randbits(12) << 64)
+                     | (2 << 62) | secrets.randbits(62))
+
+
 def fresh_character(socket_path, project, request, node_log=None):
     """Issue a real Platform intent, then ask the existing node bootstrap owner."""
-    operation = uuid.UUID(int=(int(time.time() * 1000) << 80)
-                          | (7 << 76) | (secrets.randbits(12) << 64)
-                          | (2 << 62) | secrets.randbits(62))
+    row_account = request.get("new_account", False)
+    if row_account:
+        # A live fixture hello is issued only by the qualification control owner.
+        # Check it before creating an identity or touching the Premium ledger.
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
+            control.settimeout(CONTROL_EXCHANGE_SECONDS)
+            control.connect(socket_path)
+            control.sendall(b"!")
+            if control.recv(1) != b"!":
+                raise RuntimeError("row bootstrap refused outside qualification mode")
+        request.update(operator_account=request["account"], account=str(uuid7()))
+    operation = uuid7()
     name = fresh_character_name(operation)
     request.update(operation=str(operation), name=name)
     containers = run_capture([
@@ -370,11 +396,26 @@ def fresh_character(socket_path, project, request, node_log=None):
 $app=require "bootstrap/app.php";
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 $r=json_decode($argv[1],true,512,JSON_THROW_ON_ERROR);
-$id=Illuminate\Support\Facades\DB::table("identities")->where("account_id",$r["account"])->value("id");
-if (!$id) { fwrite(STDERR,"C17 bootstrap: no Platform identity for requested AccountId\n"); exit(1); }
 $clock=file_get_contents("/proc/uptime");
 if (!is_string($clock) || !preg_match('/^([0-9]+(?:\.[0-9]+)?) /',$clock,$clockMatch)) { fwrite(STDERR,"qualification writer clock unavailable\n"); exit(124); }
 if ((float)$clockMatch[1] >= $r["writer_deadline"]) { exit(124); }
+if ($r["new_account"] ?? false) {
+    Illuminate\Support\Facades\DB::transaction(function () use ($r) {
+        $operator=App\Identity\Models\Identity::where("account_id",$r["operator_account"])->firstOrFail();
+        $id=Illuminate\Support\Facades\DB::table("identities")->insertGetId([
+            "email"=>"nb-".$r["account"]."@example.invalid",
+            "password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),
+            "account_id"=>$r["account"],"native_security_generation"=>1,
+            "created_at"=>now(),"updated_at"=>now()]);
+        if ($r["premium"] ?? false) {
+            $target=App\Identity\Models\Identity::findOrFail($id);
+            $ledger=app(App\ProductsEntitlements\Premium\PremiumTimeLedger::class);
+            $ledger->grant($operator,$target,1,"Disposable isolated E2E row",$r["operation"]);
+        }
+    });
+}
+$id=Illuminate\Support\Facades\DB::table("identities")->where("account_id",$r["account"])->value("id");
+if (!$id) { fwrite(STDERR,"qualification bootstrap: no Platform identity for requested AccountId\n"); exit(1); }
 $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",[
 "--identity-id"=>(string)$id,"--operation-id"=>$r["operation"],
 "--target-world-id"=>$r["world"],"--requested-name"=>$r["name"],"--requested-sex"=>"Female",
@@ -384,7 +425,7 @@ if ($code !== 0) { fwrite(STDERR,Illuminate\Support\Facades\Artisan::output()); 
 exit($code);'''
     PlatformIntentWriter(containers[0], operation).run(php, request)
     commit_character_bootstrap(socket_path, operation, node_log)
-    return name
+    return json.dumps({"name": name, "account": request["account"]}) if row_account else name
 
 
 def commit_character_bootstrap(socket_path, operation, node_log=None):
@@ -463,7 +504,7 @@ if __name__ == "__main__":
     parser.add_argument("--watch-parent-stdin", action="store_true")
     parser.add_argument("--watch-stdin", action="store_true")
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--profile", choices=PROFILES)
+    group.add_argument("--profile", type=profile_argument)
     group.add_argument("--fresh-character")
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--item-handle", type=int)

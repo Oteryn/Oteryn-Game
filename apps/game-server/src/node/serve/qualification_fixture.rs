@@ -60,6 +60,10 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
     let session = parse_operation_id(session.as_bytes())?;
+    if let Some(row) = profile.strip_prefix("row-") {
+        return crate::qualification_requirements::RowRequirements::load(row)
+            .map(|_| (session, profile));
+    }
     matches!(
         profile.strip_suffix("-reconcile").unwrap_or(profile),
         "explorer"
@@ -129,25 +133,27 @@ impl std::fmt::Display for FixtureStepFailure {
 impl std::error::Error for FixtureStepFailure {}
 
 fn fixture_failure_reply(profile: &str, error: &(dyn std::error::Error + 'static)) -> &'static str {
-    if matches!(
-        profile,
-        "c17a-reconcile"
-            | "c17c-reconcile"
-            | "c04-reconcile"
-            | "w22b-wealth-reconcile"
-            | "w22b-stamina-reconcile"
-    ) && error
-        .downcast_ref::<FixtureStepFailure>()
-        .is_some_and(|failure| {
-            matches!(
-                failure.reason,
-                "commit_unknown"
-                    | "post_commit_read_unavailable"
-                    | "fixture_read_unavailable"
-                    | "holder_busy"
-                    | "pass_deadline"
-            )
-        })
+    if (profile.starts_with("row-")
+        || matches!(
+            profile,
+            "c17a-reconcile"
+                | "c17c-reconcile"
+                | "c04-reconcile"
+                | "w22b-wealth-reconcile"
+                | "w22b-stamina-reconcile"
+        ))
+        && error
+            .downcast_ref::<FixtureStepFailure>()
+            .is_some_and(|failure| {
+                matches!(
+                    failure.reason,
+                    "commit_unknown"
+                        | "post_commit_read_unavailable"
+                        | "fixture_read_unavailable"
+                        | "holder_busy"
+                        | "pass_deadline"
+                )
+            })
     {
         "unavailable"
     } else {
@@ -1039,6 +1045,64 @@ async fn prepare_build(
         )
         .await;
     }
+    if let Some(row) = profile.strip_prefix("row-") {
+        let requirements = crate::qualification_requirements::RowRequirements::load(row)
+            .ok_or("unknown qualification row")?;
+        let (vocation, level, _) = requirements.build(native.spell_book())?;
+        let items: Vec<_> = requirements
+            .items
+            .iter()
+            .map(|(&id, &quantity)| (id, quantity))
+            .chain(requirements.equipment.iter().map(|&id| (id, 1)))
+            .collect();
+        // Resolve inventory admission before committing any progression. A
+        // reference-only Item cannot turn a failed setup into a partial build.
+        if !items.is_empty() {
+            let index = native
+                .item_index()
+                .ok_or("qualification Item index missing")?;
+            for &(id, _) in &items {
+                let key = format!("oteryn:item.tibia.i{id}");
+                let revision = index.revision(&key).ok_or("qualification Item absent")?;
+                let definition = crate::durability::item_mint::TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: key.clone(),
+                    revision_ref: revision.into(),
+                };
+                oteryn_gameplay_items::item_ref_admission::generation_item_facts(
+                    native,
+                    &definition,
+                )
+                .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
+            }
+        }
+        if level > 1 || vocation != "none" {
+            prepare_admitted_spell_character(
+                root,
+                authority,
+                proof,
+                &current,
+                qualification_build::QualificationBuildSpec {
+                    vocation,
+                    level,
+                    context,
+                    xp_occurrence: fixture_occurrence(character.as_bytes(), profile, 1),
+                    build_occurrence: fixture_occurrence(character.as_bytes(), profile, 2),
+                },
+                policy,
+                SpellOptions {
+                    budget,
+                    reconcile: true,
+                },
+            )
+            .await?;
+        }
+        if !items.is_empty() {
+            prepare_item_quantities(root, authority, proof, &current, native, budget, &items)
+                .await?;
+        }
+        return Ok(());
+    }
     if matches!(profile, "c17a" | "c17c" | "c04") {
         let (vocation, level) = {
             let words = match profile {
@@ -1211,10 +1275,9 @@ async fn prepare_admitted_spell_character<const N: usize>(
     };
     use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
     let SpellOptions { budget, reconcile } = options;
-    if !matches!(spec.vocation, "sorcerer" | "knight")
-        || !(1..=1000).contains(&spec.level)
-        || policy.context != spec.context
-    {
+    let expected_vocation = crate::spell::Vocation::from_key(spec.vocation)
+        .ok_or("qualification build has an unknown vocation")?;
+    if !(1..=1000).contains(&spec.level) || policy.context != spec.context {
         return Err("C17 requires its source free Sorcerer build and policy".into());
     }
     let character = crate::domain::CharacterId::from_bytes(
@@ -1284,15 +1347,15 @@ async fn prepare_admitted_spell_character<const N: usize>(
         return Err("C17 spell fixture requires an untouched disposable Character".into());
     }
     if let Some(receipt) = build {
-        let Some(xp) = &xp else {
-            return Err("C17 build receipt has no fixture experience".into());
-        };
-        if receipt.character_id != character
+        if (spec.level > 1 && xp.is_none())
+            || receipt.character_id != character
             || receipt.cause != BuildCause::VocationChoice
             || receipt.before != crate::durability::character_build::DurableBuildState::default()
             || receipt.after != before
             || receipt.after.vocation() != spec.vocation
-            || receipt.original_character_revision < xp.committed_character_revision
+            || xp.as_ref().is_some_and(|xp| {
+                receipt.original_character_revision < xp.committed_character_revision
+            })
         {
             return Err("C17 reconciliation build does not match source and current state".into());
         }
@@ -1345,6 +1408,9 @@ async fn prepare_admitted_spell_character<const N: usize>(
         })
         .await?;
     }
+    if expected_vocation == crate::spell::Vocation::None {
+        return Ok(());
+    }
     fence.expected_character_revision = fixture_step(root, budget, "revision_read", async || {
         root.read_current_character(authority, character).await
     })
@@ -1389,7 +1455,7 @@ async fn prepare_admitted_spell_character<const N: usize>(
     };
     if !matches!(facts,
         crate::gameplay_transport::CastFactsLoad::Ready { facts, .. }
-        if facts.level == spec.level && facts.vocation == if spec.vocation == "knight" { crate::spell::Vocation::Knight } else { crate::spell::Vocation::Sorcerer })
+        if facts.level == spec.level && facts.vocation == expected_vocation)
     {
         let reason = if matches!(facts, crate::gameplay_transport::CastFactsLoad::Unavailable) {
             "post_commit_read_unavailable"
@@ -1569,6 +1635,31 @@ async fn prepare_items(
     deadline: tokio::time::Instant,
     items: &[u32],
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let items: Vec<_> = items
+        .iter()
+        .map(|&id| {
+            let quantity = if id == 3147 {
+                u32::from(crate::QUALIFICATION_MAP_SAMPLES_PER_KIND) + 1
+            } else {
+                1
+            };
+            (id, quantity)
+        })
+        .collect();
+    prepare_item_quantities(root, authority, proof, current, native, deadline, &items).await
+}
+
+async fn prepare_item_quantities(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    current: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+    native: &NativeGameplayState,
+    deadline: tokio::time::Instant,
+    items: &[(u32, u32)],
+) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
     use crate::durability::reward_claim_mint::RewardClaimMintRequest;
@@ -1652,7 +1743,7 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    for (ordinal, &id) in items.iter().enumerate() {
+    for (ordinal, &(id, quantity)) in items.iter().enumerate() {
         if matches!(id, 3276 | 3003 | 3457)
             && qualification_build::retry_holder(
                 Some(root),
@@ -1686,14 +1777,16 @@ async fn prepare_items(
                 .ok_or("qualification Item absent")?
                 .into(),
         };
-        if inventory
-            .equipment
-            .iter()
-            .chain(bag.entries.iter().map(|entry| &entry.item))
-            .any(|existing| {
-                existing.definition == definition
-                    && (existing.quantity == 1 || (id == 36727 && existing.quantity >= 1))
-            })
+        if (bag.backpack.definition == definition && quantity == bag.backpack.quantity)
+            || inventory
+                .equipment
+                .iter()
+                .chain(bag.entries.iter().map(|entry| &entry.item))
+                .any(|existing| {
+                    existing.definition == definition
+                        && (existing.quantity == quantity
+                            || (id == 36727 && existing.quantity >= 1))
+                })
         {
             continue;
         }
@@ -1717,11 +1810,7 @@ async fn prepare_items(
             },
             source_placement: "oteryn:qualification.node-boot".into(),
             item,
-            quantity: if id == 3147 {
-                u32::from(crate::QUALIFICATION_MAP_SAMPLES_PER_KIND) + 1
-            } else {
-                1
-            },
+            quantity,
             contents: Vec::new(),
             root_text: None,
             root_fluid_subtype: None,
@@ -1878,7 +1967,7 @@ async fn read_fixture_item_receipt<T>(
 }
 
 #[cfg(test)]
-mod tests {
+pub(in crate::node::serve) mod tests {
     use super::*;
 
     #[test]
@@ -2025,6 +2114,11 @@ mod tests {
             .join()
             .map_err(|_| "C17 recovery test panicked")?
             .map_err(Into::into)
+    }
+
+    #[cfg(feature = "test-support")]
+    pub(crate) fn verify_isolated_row_grant() -> crate::bestiary_postgres_harness::TestResult {
+        admitted_profiles(false, false, &[("row-C17a", 20)])
     }
 
     #[cfg(feature = "test-support")]
@@ -2182,6 +2276,13 @@ mod tests {
                 }
                 let suffix = if reconcile { "-reconcile" } else { "" };
                 let request = format!("qualify {} {profile}{suffix}\n", uuid_text(&fixture::id(fixture::SESSION)));
+                if profile.starts_with("row-") {
+                    let revision = h.root_revision().await?;
+                    config.qualification_fixture = false;
+                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "rejected");
+                    assert_eq!(h.root_revision().await?, revision);
+                    config.qualification_fixture = true;
+                }
                 if reconcile {
                     sqlx::raw_sql("CREATE FUNCTION c17_refuse_build() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'qualification injected build failure'; END $$; CREATE TRIGGER c17_refuse_build BEFORE INSERT OR UPDATE ON game_character_build_state FOR EACH ROW WHEN (NEW.vocation <> 'none') EXECUTE FUNCTION c17_refuse_build();").execute(&h.pool).await?;
                     assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "rejected");
@@ -2215,6 +2316,18 @@ mod tests {
                 assert!(matches!(crate::gameplay_transport::load_character_cast_facts(&h.root, &authority, character).await,
                     crate::gameplay_transport::CastFactsLoad::Ready { facts, .. }
                     if facts.level == level && facts.vocation == crate::spell::Vocation::Sorcerer && facts.max_mana >= 100));
+                if let Some(row) = profile.strip_prefix("row-") {
+                    let requirements = crate::qualification_requirements::RowRequirements::load(row)
+                        .ok_or("row requirements missing")?;
+                    let (_, expected_level, _) = requirements.build(native.spell_book())?;
+                    let policy = native.progression().ok_or("progression absent")?
+                        .policy_for("profile-1", "ruleset-1", "content-1")?;
+                    let threshold = policy.thresholds.iter().find(|threshold| threshold.level == expected_level)
+                        .ok_or("qualification level threshold absent")?;
+                    let stored = h.root.read_character_progression(&authority, character).await?
+                        .ok_or("qualification progression missing after grant")?;
+                    assert_eq!(stored.total_experience, threshold.minimum_experience);
+                }
                 let revision = h.root_revision().await?;
                 if reconcile {
                     let unknown = fixture_step(&h.root, tokio::time::Instant::now() + Duration::from_secs(1), "build", async || {
@@ -2222,7 +2335,7 @@ mod tests {
                     }).await.err().ok_or("lost build acknowledgement became success")?;
                     assert_eq!(fixture_failure_reply(&format!("{profile}-reconcile"), unknown.as_ref()), "unavailable");
                 }
-                assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, if reconcile { "qualified" } else { "rejected" });
+                assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, if reconcile || profile.starts_with("row-") { "qualified" } else { "rejected" });
                 assert_eq!(h.root_revision().await?, revision, "one-shot rejection changed the Character");
                 drop(authority);
                 drop(seal);

@@ -165,7 +165,10 @@ pub(super) async fn run(
         .bound(
             Duration::from_secs(330),
             "temple journey deadline; remaining actions unproven",
-            temple_respawn(&mut temple, clients, world, spawns),
+            async {
+                row_clients!(E2eMode::from_env()?, clients, "C20d.full");
+                temple_respawn(&mut temple, clients, world, spawns).await
+            },
         )
         .await;
     temple.finish(result);
@@ -177,7 +180,10 @@ pub(super) async fn run(
         .bound(
             Duration::from_secs(420),
             "Oressa journey deadline; remaining actions unproven",
-            first_vocation(&mut vocation, clients, world, spawns, npcs),
+            async {
+                row_clients!(E2eMode::from_env()?, clients, "S16a.full");
+                first_vocation(&mut vocation, clients, world, spawns, npcs).await
+            },
         )
         .await;
     vocation.finish(result);
@@ -192,7 +198,10 @@ pub(super) async fn run(
         .bound(
             Duration::from_secs(1100),
             "experience-loss journey deadline; remaining actions unproven",
-            experience_loss(&mut loss, clients, world, spawns, npcs),
+            async {
+                row_clients!(E2eMode::from_env()?, clients, "C20a.full");
+                experience_loss(&mut loss, clients, world, spawns, npcs).await
+            },
         )
         .await;
     match result {
@@ -208,14 +217,18 @@ pub(super) async fn run(
         .bound(
             Duration::from_secs(850),
             "item-loss journey deadline; remaining actions unproven",
-            item_loss(
-                &mut custody,
-                clients,
-                world,
-                spawns,
-                npcs,
-                export_loss.then_some(&mut capture_result),
-            ),
+            async {
+                row_clients!(E2eMode::from_env()?, clients, "C20b.full");
+                item_loss(
+                    &mut custody,
+                    clients,
+                    world,
+                    spawns,
+                    npcs,
+                    export_loss.then_some(&mut capture_result),
+                )
+                .await
+            },
         )
         .await;
     let complete = custody.0.complete();
@@ -233,7 +246,10 @@ pub(super) async fn run(
         .bound(
             Duration::from_secs(1800),
             "blessing services journey deadline; remaining actions unproven",
-            blessing_services(&mut services, clients, world, spawns, npcs),
+            async {
+                row_clients!(E2eMode::from_env()?, clients, "P16.full");
+                blessing_services(&mut services, clients, world, spawns, npcs).await
+            },
         )
         .await;
     finish_blessing_row(services, &result);
@@ -248,14 +264,18 @@ pub(super) async fn run(
         .bound(
             Duration::from_secs(1500),
             "blessing consumption journey deadline; remaining actions unproven",
-            blessing_death(
-                &mut consumption,
-                clients,
-                world,
-                spawns,
-                npcs,
-                &mut twist_death,
-            ),
+            async {
+                row_clients!(E2eMode::from_env()?, clients, "C20c.full");
+                blessing_death(
+                    &mut consumption,
+                    clients,
+                    world,
+                    spawns,
+                    npcs,
+                    &mut twist_death,
+                )
+                .await
+            },
         )
         .await;
     let complete = consumption.0.complete();
@@ -277,7 +297,10 @@ pub(super) async fn run(
         .bound(
             Duration::from_secs(1800),
             "P10 resting journey deadline; remaining actions unproven",
-            resting_bonuses(&mut resting, clients, world, spawns),
+            async {
+                row_clients!(E2eMode::from_env()?, clients, "P10.full");
+                resting_bonuses(&mut resting, clients, world, spawns).await
+            },
         )
         .await;
     finish_resting_row(resting, result);

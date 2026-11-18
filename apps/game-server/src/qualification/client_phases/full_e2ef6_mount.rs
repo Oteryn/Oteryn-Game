@@ -10,8 +10,8 @@
     if groups.runs("f6") {
         let before = journey_verdicts();
         let captures = full_e2ef6::run(clients, world, &metadata.spawns, &metadata.npcs,
-            capture_loss,
-            capture_twist,
+            capture_loss && mode == E2eMode::Journey,
+            capture_twist && mode == E2eMode::Journey,
         ).await;
         journey_group_completed("f6", before);
         captures

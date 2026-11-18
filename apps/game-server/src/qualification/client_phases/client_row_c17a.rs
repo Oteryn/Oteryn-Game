@@ -30,7 +30,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let (_characters, mut client) = full_e2ef5::spell_fixture(clients, "c17a", 0xca).await?;
+    let mut client = connect_world(clients, 0xca).await?;
     let result: TestResult = async {
         let (haste, haste_payload) = cast_and_query(&mut client, "utani hur").await?;
         evidence("E2EF5_CHECK row=C17a.client action=haste-cast-and-condition status=PASS");

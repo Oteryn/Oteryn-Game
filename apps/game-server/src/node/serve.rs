@@ -12,6 +12,9 @@ mod audit_collector;
 mod channel_boot;
 mod public_house_catalogue;
 mod qualification_fixture;
+
+#[cfg(all(test, feature = "test-support"))]
+pub(crate) use qualification_fixture::tests::verify_isolated_row_grant;
 #[cfg(test)]
 #[path = "serve/postgres_tests/readiness.rs"]
 mod readiness_postgres_tests;

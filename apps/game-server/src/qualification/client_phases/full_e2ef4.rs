@@ -98,12 +98,13 @@ pub(super) async fn run(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
+    mode: E2eMode,
 ) -> (Vec<(Row, TestResult)>, TestResult) {
     let mut rows = Vec::new();
     // Each row reports even when another row has missing content or a refused command.
     // Socket waits are bounded; a timed-out session is not evidence of server absence.
     macro_rules! row {
-        ($secs:literal, $id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
+        ($secs:literal, $id:literal, $actions:ident, $journey:ident, $clients:ident $(, $arg:expr)*) => {{
             let mut row = Row::new("E2EF4", $id, $actions).evidence(PASS, FAIL);
             let watch = row.watch();
             let mut reusable = false;
@@ -111,11 +112,20 @@ pub(super) async fn run(
                 Duration::from_secs($secs),
                 "native-journey-deadline;remaining-assertions-unproven",
                 async {
+                    row_clients!(mode, $clients, $id);
+                    if mode == E2eMode::Isolated {
+                        let mut active = connect_character($clients, 0x89, 1).await?;
+                        let result = $journey(&mut row, &mut active, $clients $(, $arg)*).await;
+                        let cleanup = full_e2ef5::logout(&mut active).await;
+                        drop(active);
+                        let released = release_row_characters($clients).await;
+                        return result.and(cleanup).and(released);
+                    }
                     let active = match &mut *client {
                         Some(active) => active,
-                        slot => slot.insert(connect_character(clients, 0x89, 1).await?),
+                        slot => slot.insert(connect_character($clients, 0x89, 1).await?),
                     };
-                    let result = $journey(&mut row, active $(, $arg)*).await;
+                    let result = $journey(&mut row, active, $clients $(, $arg)*).await;
                     // A cancelled or poisoned frame exchange cannot be used by the next row.
                     if let Err(error) = active.service_liveness(Duration::from_millis(1)).await {
                         if result.as_ref().err().is_none_or(|error|
@@ -144,6 +154,9 @@ pub(super) async fn run(
     row!(1500, "S03", S03, guild, clients, world, npcs);
     row!(1500, "S09", S09, logout, clients, world);
     row!(240, "S18", S18, speech, clients, world);
+    if mode == E2eMode::Isolated {
+        return (rows, Ok(()));
+    }
     let Some(client) = client.as_mut() else {
         return (rows, Err("E2EF4 lost its final session".into()));
     };
@@ -1336,9 +1349,11 @@ async fn coins(
         }
         beat(row);
     }
-    provision_converters(client, clients, row, world, npcs, &refs).await?;
-    withdraw_denominations(row, client, world, npcs, &refs, &[100]).await?;
-    make_gold_lot(client, &refs).await?;
+    if E2eMode::from_env()? == E2eMode::Journey {
+        provision_converters(client, clients, row, world, npcs, &refs).await?;
+        withdraw_denominations(row, client, world, npcs, &refs, &[100]).await?;
+        make_gold_lot(client, &refs).await?;
+    }
     if let Err(error) = converter_checks(row, client, clients, &refs).await {
         failures.push(error.to_string());
     }
