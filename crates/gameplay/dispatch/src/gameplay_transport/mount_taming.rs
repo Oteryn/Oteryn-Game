@@ -129,7 +129,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }) else {
             return Ok(None);
         };
-        let Some(required) = &callback.item_on_target else {
+        let Some((required, selected_instance)) = quest_objects::tool(callback) else {
             return Err(());
         };
         let Some(fence) = command.item_fence else {
@@ -146,7 +146,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| {
-                entry.item.definition.production_key == required.item
+                entry.item.definition.production_key == required
                     && quest_objects::matches_source(
                         &intent.target,
                         source,
@@ -174,9 +174,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command,
                 map,
                 target,
-                required
-                    .selected_instance
-                    .then_some((selected.item.item_instance_id, intent)),
+                selected_instance.then_some((selected.item.item_instance_id, intent)),
             )
             .await)
     }

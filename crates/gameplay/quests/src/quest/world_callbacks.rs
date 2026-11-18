@@ -43,6 +43,8 @@ mod character_requirements;
 pub use character_requirements::CharacterRequirements;
 mod clear_area;
 pub use clear_area::ClearArea;
+mod charge_window;
+pub use charge_window::{ChargePhase, ChargeWindow};
 mod clock;
 mod completed_quests;
 mod counter_initials;
@@ -863,6 +865,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             || peers.iter().any(|peer| {
                 !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
+                    && !charge_window::disjoint(peer, callback)
                     && !effects::summon_branches_disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
                     && !(selector_gates::disjoint(peer, callback)

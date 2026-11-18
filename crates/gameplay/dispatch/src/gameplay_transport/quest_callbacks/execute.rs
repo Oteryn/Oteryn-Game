@@ -254,6 +254,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Committed;
             }
         }
+        if callback.effects.charge_window.is_some()
+            && let Some(result) = self
+                .prepare_quest_charge(
+                    permit,
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    pos,
+                    after.appearance_id,
+                    cause,
+                    fence,
+                    selected_tool,
+                )
+                .await
+        {
+            return result;
+        }
         let summon = match self.prepare_callback_summon(runtime, map, callback, pos) {
             Ok(summon) => summon,
             Err(disposition) => return disposition,
@@ -1570,7 +1592,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     return UseDisposition::Rejected;
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
+            } else if !callback.is_read_only()
+                && !personal_gift_preserves_object
+                && callback.effects.charge_window.is_none()
+                && !apply_scene()
             {
                 return UseDisposition::Rejected;
             }
@@ -1707,6 +1732,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(message) = success_preface {
             self.states.chat.push_quest_feedback(session, message);
+        }
+        if fresh_effects
+            && let Some(world_callbacks::ChargeWindow::Spend {
+                announcement,
+                radius,
+                ..
+            }) = &callback.effects.charge_window
+        {
+            self.states.chat.publish_quest_charge_announcement(
+                runtime,
+                actor,
+                session,
+                pos,
+                *radius,
+                announcement,
+            );
         }
         if fresh_effects && let Some(speech) = &callback.effects.player_speech {
             self.states

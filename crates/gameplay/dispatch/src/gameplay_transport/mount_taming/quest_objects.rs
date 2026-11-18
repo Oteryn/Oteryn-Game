@@ -2,17 +2,26 @@
 use oteryn_gameplay_quests::quest::{targuna_ram, world_callbacks::Callback};
 
 pub(crate) fn accepts(callback: &Callback) -> bool {
-    callback.item_on_target.is_some()
-        && (callback.key == targuna_ram::KEY
-            || (callback.effects.use_summon.is_some()
-                && callback
-                    .item_on_target
-                    .as_ref()
-                    .is_some_and(|tool| tool.selected_instance))
-            || matches!(
-                callback.native_rule,
-                Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
-            ))
+    tool(callback).is_some()
+}
+
+pub(super) fn tool(callback: &Callback) -> Option<(&str, bool)> {
+    use oteryn_gameplay_quests::quest::world_callbacks::ChargeWindow;
+    if let Some(ChargeWindow::Charge { tool, .. }) = &callback.effects.charge_window {
+        return Some((tool.as_str(), true));
+    }
+    let tool = callback.item_on_target.as_ref()?;
+    (callback.key == targuna_ram::KEY
+        || (callback.effects.use_summon.is_some() && tool.selected_instance)
+        || matches!(
+            callback.effects.charge_window,
+            Some(ChargeWindow::Spend { .. })
+        )
+        || matches!(
+            callback.native_rule,
+            Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
+        ))
+    .then_some((tool.item.as_str(), tool.selected_instance))
 }
 
 /// Select only the wire subject observed in the fenced inventory snapshot.

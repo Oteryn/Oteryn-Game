@@ -7,6 +7,7 @@ use super::{
 mod admission;
 mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
+mod charge_window;
 mod clear_area;
 mod committed_copy;
 mod cooldown_step;
@@ -256,6 +257,11 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    if let Some(charge) = &callback.effects.charge_window
+        && !charge_window::matches_current(map, pos, ordinal, charge)
+    {
+        return false;
+    }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
     let source_ordinal = match callback.key.as_str() {

@@ -74,6 +74,11 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// Carry the source Item's two decay definitions through the existing scheduler.
+    TimedDecayChain {
+        next: (u64, EntryFacts),
+        reset: (u64, EntryFacts),
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -349,6 +354,39 @@ impl CallbackStates {
                         self.changed.insert(*key, (revision + 1, *after));
                     }
                 }
+            }
+            QuestCallbackProjection::TimedDecayChain { next, reset } => {
+                let Some(revision) = self
+                    .changed
+                    .get(&owner)
+                    .map_or(0, |(revision, _)| *revision)
+                    .checked_add(1)
+                else {
+                    return false;
+                };
+                let Some(ready_revision) = revision.checked_add(1) else {
+                    return false;
+                };
+                if next.0 >= reset.0 || ready_revision == u64::MAX {
+                    return false;
+                }
+                self.movement_decays.retain(|(_, key), _| *key != owner);
+                self.movement_decays.insert(
+                    (next.0, owner),
+                    MovementDecay {
+                        revision,
+                        restore: next.1,
+                        overlay: None,
+                    },
+                );
+                self.movement_decays.insert(
+                    (reset.0, owner),
+                    MovementDecay {
+                        revision: ready_revision,
+                        restore: reset.1,
+                        overlay: None,
+                    },
+                );
             }
             QuestCallbackProjection::TimedTransform { due, restore } => {
                 let Some(revision) = self
@@ -1674,7 +1712,8 @@ impl BundleFacts {
                         }
                     })
                 }
-                QuestCallbackProjection::TimedTransform { .. } => false,
+                QuestCallbackProjection::TimedTransform { .. }
+                | QuestCallbackProjection::TimedDecayChain { .. } => false,
             })
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8

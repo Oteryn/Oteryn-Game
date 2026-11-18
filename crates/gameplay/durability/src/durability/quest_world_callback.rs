@@ -2,6 +2,7 @@
 pub mod carried_step;
 pub(super) mod carrot;
 pub(crate) mod character_requirements;
+pub mod charge_window;
 mod completed_quests;
 pub(super) mod completion;
 mod ground_read;
@@ -482,6 +483,13 @@ pub(super) async fn consume(
         if summon_offering::all_present(tx, fence, context, &branch.altars).await? {
             return Ok(false);
         }
+    }
+    if let Some(oteryn_gameplay_quests::quest::world_callbacks::ChargeWindow::Spend {
+        group, ..
+    }) = &callback.effects.charge_window
+        && !charge_window::spend(tx, fence, context, group).await?
+    {
+        return Ok(false);
     }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
         return Ok(false);

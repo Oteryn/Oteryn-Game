@@ -162,6 +162,8 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub use_chance: Option<UseChance>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub charge_window: Option<super::ChargeWindow>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fluid_relocation: Option<FluidRelocation>,
 }
 
@@ -530,6 +532,13 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .charge_window
+        .as_ref()
+        .is_some_and(|charge| !super::charge_window::valid(callback, charge))
+    {
+        return false;
+    }
     if let Some(damage) = effects.vocation_step_damage {
         let standalone = CallbackEffects {
             vocation_step_damage: Some(damage),

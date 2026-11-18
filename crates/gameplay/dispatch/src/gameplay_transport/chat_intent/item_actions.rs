@@ -240,6 +240,59 @@ impl ChatRuntime {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::gameplay_transport) fn publish_quest_charge_announcement(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: crate::map::overlay::TilePos,
+        radius: u8,
+        announcement: &str,
+    ) {
+        let (Some(generation), Ok(floor), Ok(mut sessions)) = (
+            NonZeroU64::new(actor.actor_local_generation()),
+            u8::try_from(-i16::from(origin.floor)),
+            self.sessions.lock(),
+        ) else {
+            return;
+        };
+        let Some(entry) = sessions.get(&session) else {
+            return;
+        };
+        let name = entry.name.clone();
+        let Ok(text) = ChatText::parse(&format!("{name} {announcement}")) else {
+            return;
+        };
+        let at = ChatPosition {
+            x: i32::from(origin.x),
+            y: i32::from(origin.y),
+            floor,
+        };
+        let speaker = ChatSpeaker {
+            identity: actor.placement_identity(),
+            generation,
+        };
+        for (listener, state) in sessions.iter_mut() {
+            let Some((_, position)) = runtime
+                .positioned_player_for_session(*listener)
+                .ok()
+                .flatten()
+            else {
+                continue;
+            };
+            let position = position.position();
+            if position.floor == i16::from(floor)
+                && position.x.abs_diff(at.x) <= u32::from(radius)
+                && position.y.abs_diff(at.y) <= u32::from(radius)
+            {
+                state
+                    .egress
+                    .push(local_line(speaker, &name, SpeechMode::Yell, &text, at, at));
+            }
+        }
+    }
+
     pub(in crate::gameplay_transport) fn publish_item_speech(
         &self,
         runtime: &ChannelRuntimeV1,
