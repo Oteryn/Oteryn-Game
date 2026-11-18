@@ -150,8 +150,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(outcome(UseDisposition::NoTarget));
         };
         let (from, to) = (from.position(), to.position());
-        if from.floor != to.floor || from.x.abs_diff(to.x) > 1 || from.y.abs_diff(to.y) > 1 {
+        // Crystal 201189f8 fishing.lua:179-182,320-322 and actions.cpp:291-309.
+        if from.floor != to.floor || from.x.abs_diff(to.x) > 7 || from.y.abs_diff(to.y) > 5 {
             return Ok(outcome(UseDisposition::TooFar));
+        }
+        let sight = self.bundle_map().is_some_and(|map| {
+            crate::spell::world_execution::source_sight_steps(from, to).is_ok_and(|steps| {
+                steps.into_iter().all(|(at, exempt)| {
+                    exempt
+                        || map
+                            .spell_tiles
+                            .lookup(crate::content::LogicalCell {
+                                x: at.x,
+                                y: at.y,
+                                z: i32::from(at.floor),
+                            })
+                            .is_ok_and(|tile| !tile.flags().block_projectile)
+                })
+            })
+        });
+        if !sight {
+            return Ok(outcome(UseDisposition::NotPossible));
         }
         let Ok(attack) = self.states.attack.try_lock() else {
             return Ok(outcome(UseDisposition::Rejected));

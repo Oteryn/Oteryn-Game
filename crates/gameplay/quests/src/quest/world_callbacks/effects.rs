@@ -1099,8 +1099,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        let shared_arrival = source_party
+        let source_party = encounter.phase == Some(EncounterPhase::Cults)
             || effects
                 .encounter_outcome
                 .as_ref()
@@ -1131,7 +1130,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
-            || (unique_to.len() != encounter.players.len() && !shared_arrival)
+            || (unique_to.len() != encounter.players.len() && !source_party)
             || unique_monsters.len() != encounter.monsters.len()
             || !unique_to.is_disjoint(&unique_monsters)
             || !pos(encounter.room_min)

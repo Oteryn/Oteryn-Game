@@ -192,3 +192,20 @@ impl Outcomes {
             .cloned()
     }
 }
+
+impl super::super::ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) fn tick_encounter_shields(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        now_ms: u64,
+    ) {
+        if let Some(map) = self.bundle_map()
+            && let Ok(attack) = self.states.attack.try_lock()
+            && let Ok(mut capture) = attack.kills().1.lock()
+        {
+            capture
+                .outcomes
+                .tick_shields(runtime, map, now_ms, self.movement_cells());
+        }
+    }
+}

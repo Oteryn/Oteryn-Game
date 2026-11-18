@@ -235,11 +235,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let tree_reset = oteryn_gameplay_quests::quest::dreamer_death_ring::shared_reset(callback);
+        let shield_party = callback
+            .effects
+            .encounter_outcome
+            .as_ref()
+            .is_some_and(|source| source.shield_handoff.is_some());
         let close = tree_reset
             || callback.trigger == Trigger::StepOut
-            || callback
-                .lever
-                .is_some_and(|pair| after.appearance_id == pair[1]);
+            || (!shield_party
+                && callback
+                    .lever
+                    .is_some_and(|pair| after.appearance_id == pair[1]));
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
@@ -264,7 +270,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let before = after;
         if let Some(pair) = callback.lever {
-            after.appearance_id = pair[usize::from(!close)];
+            let activate = if shield_party {
+                before.appearance_id == pair[0]
+            } else {
+                !close
+            };
+            after.appearance_id = pair[usize::from(activate)];
         }
         if let Some(appearance) = callback.effects.transform {
             let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {

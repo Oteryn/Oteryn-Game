@@ -208,9 +208,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
-                // Cults collects whoever stands on the five source staging tiles.
+                // Crystal 201189f8 boss_lever.lua:68-71,176-183 permits empty stations.
                 if encounter.phase
                     == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
+                    || callback
+                        .effects
+                        .encounter_outcome
+                        .as_ref()
+                        .is_some_and(|source| source.shield_handoff.is_some())
                 {
                     continue;
                 }
