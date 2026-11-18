@@ -60,6 +60,24 @@ pub(super) fn register(
                 });
         }
     }
+    // Children definition captured from origin/main 871c1dec7d9963420d455210e4cddc0c9df80d26
+    // before the source survivor transition and the audit's Zalamon NPC rewards.
+    const CHILDREN: &str = "oteryn:quest.children_of_the_revolution_quest";
+    const PRE_AUDIT: [u8; 32] = [
+        0x42, 0xf1, 0x9e, 0x44, 0x9f, 0x68, 0x10, 0x42, 0x97, 0x6a, 0x39, 0x81, 0x41, 0xa1, 0x47,
+        0xd3, 0xe0, 0xa9, 0xf4, 0x8c, 0x31, 0x2c, 0x7a, 0x75, 0x6f, 0x52, 0x8b, 0x25, 0xfb, 0x75,
+        0x20, 0xb4,
+    ];
+    if active.definition_hash(CHILDREN).is_some() {
+        active
+            .predecessors
+            .entry(CHILDREN.into())
+            .or_default()
+            .push(NpcDefinitionPredecessor {
+                hash: PRE_AUDIT,
+                defaults: BTreeMap::new(),
+            });
+    }
     Ok(())
 }
 

@@ -115,11 +115,12 @@ fn scenario(admin: String) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         let loaded = loader::load_embedded_quest_state("content-1").map_err(debug)?;
-        let before = loaded
-            .catalogue()
-            .definition_hash(QUEST)
-            .ok_or("Children definition")?;
-        eprintln!("COTREV_PRE_AUDIT_PIN {before:02x?}");
+        // Snapshot from the task base before the new bindings.
+        let before: [u8; 32] = [
+            0x42, 0xf1, 0x9e, 0x44, 0x9f, 0x68, 0x10, 0x42, 0x97, 0x6a, 0x39, 0x81, 0x41, 0xa1,
+            0x47, 0xd3, 0xe0, 0xa9, 0xf4, 0x8c, 0x31, 0x2c, 0x7a, 0x75, 0x6f, 0x52, 0x8b, 0x25,
+            0xfb, 0x75, 0x20, 0xb4,
+        ];
         // Model a later addition to the quest without importing the Content lane.
         // The unchanged Tome dialogue still dispatches and writes through its real owner.
         let current_catalogue = loaded
