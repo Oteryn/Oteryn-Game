@@ -68,7 +68,8 @@ fn multi_action_uses_first_ready_spell_through_play_queue_and_persists()
         }
         assert!(commands.try_recv().is_err());
     }
-    let path = std::env::temp_dir().join(format!("multi-action-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("multi-action.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.sync_bar_actions(&link);
     assert_eq!(

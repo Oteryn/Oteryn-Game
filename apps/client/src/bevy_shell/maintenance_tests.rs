@@ -71,7 +71,8 @@ fn click(app: &mut App, choice: Choice) -> TestResult {
 
 #[test]
 fn maintenance_window_checks_then_verifies_offers_repair_and_closes() -> TestResult {
-    let directory = std::env::temp_dir().join(format!("oteryn-maintenance-{}", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture.path().to_path_buf();
     let (mut app, check, outcome) = app(directory.clone());
     assert!(
         shown(&mut app).is_empty(),

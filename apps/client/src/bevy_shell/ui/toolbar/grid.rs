@@ -99,6 +99,19 @@ pub(in crate::bevy_shell) enum ControlButton {
     Logout,
     Manage,
 }
+/// Editable buttons in their catalog order, shared by the sidebar and its editor.
+pub(super) fn entries() -> impl Iterator<Item = (&'static str, &'static str, ControlButton)> {
+    TOOLBAR
+        .iter()
+        .filter(|(_, control)| !FIXED.contains(&control.id()))
+        .map(|&(label, control)| (label, control.id(), ControlButton::Grid(control)))
+        .chain(
+            EXTRA
+                .iter()
+                .map(|&(id, label, extra)| (label, id, ControlButton::Extra(extra))),
+        )
+}
+
 /// The grid that holds the [`ControlButton::Grid`] buttons.
 #[derive(Component)]
 pub(in crate::bevy_shell) struct ControlGrid;
@@ -173,10 +186,7 @@ pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, regio
             },
         ))
         .id();
-    for &(label, control) in TOOLBAR {
-        if FIXED.contains(&control.id()) {
-            continue;
-        }
+    for (label, _, control) in entries() {
         let button = art::spawn(
             commands,
             &skins.font,
@@ -186,21 +196,7 @@ pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, regio
         );
         commands
             .entity(button)
-            .insert((ControlButton::Grid(control), bevy::ui_widgets::Button))
-            .observe(activate);
-        commands.entity(grid).add_child(button);
-    }
-    for &(_, label, extra) in EXTRA {
-        let button = art::spawn(
-            commands,
-            &skins.font,
-            key(label),
-            &short(label),
-            Vec2::splat(BUTTON),
-        );
-        commands
-            .entity(button)
-            .insert((ControlButton::Extra(extra), bevy::ui_widgets::Button))
+            .insert((control, bevy::ui_widgets::Button))
             .observe(activate);
         commands.entity(grid).add_child(button);
     }

@@ -5,7 +5,8 @@ fn action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{PreferenceStore, SettingsState};
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-    let path = std::env::temp_dir().join(format!("cgopt-all-bar-keys-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-all-bar-keys.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut preferences = settings.preferences.clone();
     for slot in 0..36 {
@@ -172,7 +173,8 @@ fn t048_every_action_bar_slot_of_all_rows_has_an_editable_hotkey()
     use crate::play::{PreferenceStore, SettingsState};
     let slots = oteryn_client_runtime::spell::ACTION_BAR_SLOTS;
     assert_eq!(slots, 450);
-    let path = std::env::temp_dir().join(format!("t048-all-rows-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("t048-all-rows.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut preferences = settings.preferences.clone();
     let modifiers = [

@@ -295,7 +295,8 @@ mod session_options_tests {
     #[test]
     fn admission_reads_session_options_from_selected_preference_path()
     -> Result<(), Box<dyn std::error::Error>> {
-        let folder = std::env::temp_dir().join(format!("admission-options-{}", std::process::id()));
+        let fixture = tempfile::tempdir()?;
+        let folder = fixture.path().join("admission-options");
         std::fs::create_dir_all(&folder)?;
         let result = (|| -> Result<(), Box<dyn std::error::Error>> {
             let first = folder.join("isolated.json");
@@ -334,7 +335,7 @@ mod session_options_tests {
             );
             Ok(())
         })();
-        std::fs::remove_dir_all(folder)?;
+        fixture.close()?;
         result
     }
 }

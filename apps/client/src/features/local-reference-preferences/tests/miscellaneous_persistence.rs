@@ -1,31 +1,13 @@
 use crate::play::{MiscellaneousPreferences, PreferenceStore, SettingsState};
-use std::{
-    path::PathBuf,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use std::path::PathBuf;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-static NEXT: AtomicU64 = AtomicU64::new(0);
-struct Temp(PathBuf);
+use crate::play::screenshot::TestDir as Temp;
 impl Temp {
-    fn new() -> std::io::Result<Self> {
-        let path = std::env::temp_dir().join(format!(
-            "miscellaneous-settings-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&path)?;
-        Ok(Self(path))
-    }
     fn preferences(&self) -> PathBuf {
-        self.0.join("client-preferences.json")
+        self.join("client-preferences.json")
     }
     fn sidecar(&self) -> PathBuf {
         self.preferences().with_extension("session-options.json")
-    }
-}
-impl Drop for Temp {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
     }
 }
 
@@ -182,7 +164,7 @@ fn portable_import_then_apply_preserves_session_options() -> TestResult {
     };
     flags.save(&temp.sidecar())?;
     let mut state = SettingsState::new(Some(temp.preferences()));
-    let transfer = temp.0.join("portable.json");
+    let transfer = temp.join("portable.json");
     let mut portable = crate::play::ReferencePreferences::default();
     portable.graphics.fullscreen = true;
     PreferenceStore::export_to(&portable, &transfer)?;

@@ -25,17 +25,14 @@ enum Edit {
 }
 
 fn order(owner: &HostOwner) -> Vec<String> {
-    owner
+    let mut ids = owner
         .settings
         .preferences
         .toolbar_order
         .clone()
-        .unwrap_or_else(|| {
-            super::grid::DEFAULT
-                .iter()
-                .map(|id| (*id).to_owned())
-                .collect()
-        })
+        .unwrap_or_else(|| grid::DEFAULT.iter().map(|id| (*id).to_owned()).collect());
+    ids.retain(|id| grid::entries().any(|(_, entry, _)| entry == id));
+    ids
 }
 fn edit(
     event: On<Activate>,
@@ -182,14 +179,10 @@ pub(in crate::bevy_shell) fn project_manager(
         .id();
     commands.entity(panel).add_child(list);
     let ids = order(&owner);
-    let mut entries: Vec<_> = TOOLBAR.iter().collect();
-    entries.sort_by_key(|(_, control)| {
-        ids.iter()
-            .position(|id| id == control.id())
-            .unwrap_or(usize::MAX)
-    });
-    for (caption, control) in entries {
-        let id = control.id();
+    let mut entries: Vec<_> = grid::entries().collect();
+    entries
+        .sort_by_key(|(_, entry, _)| ids.iter().position(|id| id == entry).unwrap_or(usize::MAX));
+    for (caption, id, _) in entries {
         let visible = ids.iter().any(|entry| entry == id);
         let row = commands
             .spawn(Node {

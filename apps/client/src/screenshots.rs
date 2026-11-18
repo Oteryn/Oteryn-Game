@@ -88,14 +88,7 @@ pub fn save_bmp(path: &Path, width: u32, height: u32, bgra: &[u8], crop: Rect) -
     header[26..28].copy_from_slice(&1u16.to_le_bytes());
     header[28..30].copy_from_slice(&32u16.to_le_bytes());
     header[34..38].copy_from_slice(&size.to_le_bytes());
-    let mut options = std::fs::OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600);
-    }
-    let mut file = options.open(path)?;
+    let mut file = crate::play::screenshot::create_capture_file(path)?;
     file.write_all(&header)?;
     for y in crop.y..crop.y + crop.height {
         let offset = ((u64::from(y) * u64::from(width) + u64::from(crop.x)) * 4) as usize;

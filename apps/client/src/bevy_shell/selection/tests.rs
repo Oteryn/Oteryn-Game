@@ -14,40 +14,57 @@ fn picker_buttons_return_server_channel_through_existing_callback()
     owner.settings.preferences.miscellaneous.confirm_exit = true;
     owner.selection = bridge;
     let mut app = App::new();
-    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
-        .init_asset::<Image>()
-        .init_asset::<Font>()
-        .init_resource::<InputFocus>()
+    app.add_plugins(MinimalPlugins);
+    crate::bevy_shell::ui::window_layout::test_ui_layout(&mut app, UVec2::new(1024, 720));
+    app.add_plugins(bevy::ui_widgets::ScrollAreaPlugin)
         .insert_non_send(owner)
         .add_systems(Startup, setup)
         .add_systems(Update, (poll, project).chain());
-    app.add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Startup, crate::bevy_shell::ui::setup)
-        .add_systems(Update, keyboard);
+    app.add_systems(Startup, crate::bevy_shell::ui::setup)
+        .add_systems(Update, keyboard.before(project))
+        .add_systems(
+            PostUpdate,
+            reveal_selection.after(bevy::ui::UiSystems::PostLayout),
+        );
     crate::bevy_shell::game_ui::modal::install(&mut app);
     crate::bevy_shell::exit::install(&mut app);
     let window = app
         .world_mut()
-        .spawn((Window::default(), bevy::window::PrimaryWindow))
+        .spawn((
+            Window {
+                resolution: (1024, 720).into(),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ))
         .id();
     app.update();
+    // Keep the headless camera from the layout fixture as the sole UI camera.
+    let shell_camera = app
+        .world_mut()
+        .query::<(Entity, &Camera)>()
+        .iter(app.world())
+        .find_map(|(entity, camera)| (camera.order == 1).then_some(entity))
+        .ok_or("shell camera")?;
+    app.world_mut().despawn(shell_camera);
     let account_callback = callback.clone();
     let worker = thread::spawn(move || {
-        callback(
-            &[crate::character_selection::CharacterRow {
-                character: OwnerCharacter {
-                    character_id: "server-character".into(),
-                    world_id: "server-world".into(),
-                    name: "Server character".into(),
-                    availability: CharacterAvailability::Available,
-                },
-                world_name: "Server world".into(),
-                channels: vec![("server-channel".into(), "Server channel".into())],
-                available: true,
-            }],
-            "server-character",
-            CancellationToken::new(),
-        )
+        let row = crate::character_selection::CharacterRow {
+            character: OwnerCharacter {
+                character_id: "server-character".into(),
+                world_id: "server-world".into(),
+                name: "Server character".into(),
+                availability: CharacterAvailability::Available,
+            },
+            world_name: "Server world".into(),
+            channels: vec![("server-channel".into(), "Server channel".into())],
+            available: true,
+        };
+        let mut rows = vec![row; 20];
+        for (index, row) in rows.iter_mut().enumerate().take(19) {
+            row.character.character_id = format!("character-{index}");
+        }
+        callback(&rows, "character-0", CancellationToken::new())
     });
     let deadline = Instant::now() + Duration::from_secs(3);
     while app
@@ -121,6 +138,143 @@ fn picker_buttons_return_server_channel_through_existing_callback()
             .is_some(),
         "quit Escape must not cancel the underlying selector callback"
     );
+    let list = |app: &mut App| -> Result<Entity, &'static str> {
+        app.world_mut()
+            .query_filtered::<(Entity, &Name), With<bevy::ui_widgets::ScrollArea>>()
+            .iter(app.world())
+            .find(|(_, name)| name.as_str() == "selection.list")
+            .map(|(entity, _)| entity)
+            .ok_or("character list")
+    };
+    let scroll = |app: &mut App| -> Result<f32, &'static str> {
+        let entity = list(app)?;
+        Ok(app
+            .world()
+            .get::<ScrollPosition>(entity)
+            .ok_or("scroll")?
+            .0
+            .y)
+    };
+    use bevy::{
+        camera::RenderTarget,
+        picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput},
+    };
+    let center = |app: &App, entity| -> Result<Vec2, &'static str> {
+        Ok(app
+            .world()
+            .get::<UiGlobalTransform>(entity)
+            .ok_or("UI transform")?
+            .translation)
+    };
+    let size = |app: &App, entity| -> Result<Vec2, &'static str> {
+        Ok(app
+            .world()
+            .get::<ComputedNode>(entity)
+            .ok_or("UI geometry")?
+            .size())
+    };
+    let row = |app: &mut App, index| -> Result<Entity, &'static str> {
+        app.world_mut()
+            .query::<(Entity, &Target)>()
+            .iter(app.world())
+            .find_map(|(entity, target)| {
+                matches!(target.choice, Choice::Row(row) if row == index).then_some(entity)
+            })
+            .ok_or("row")
+    };
+    let visible = |app: &mut App, index| -> Result<Vec2, Box<dyn std::error::Error>> {
+        let list = list(app)?;
+        let row = row(app, index)?;
+        let center_y = center(app, list)?.y;
+        let half_height = size(app, list)?.y / 2.;
+        let position = center(app, row)?;
+        let row_half = size(app, row)?.y / 2.;
+        assert!(position.y - row_half >= center_y - half_height - 1.);
+        assert!(position.y + row_half <= center_y + half_height + 1.);
+        Ok(position)
+    };
+    let send = |app: &mut App, position, action| -> Result<(), &'static str> {
+        let target = RenderTarget::default()
+            .normalize(Some(window))
+            .ok_or("primary target")?;
+        app.world_mut().write_message(PointerInput::new(
+            PointerId::Mouse,
+            Location { target, position },
+            action,
+        ));
+        app.update();
+        Ok(())
+    };
+    let entity = list(&mut app)?;
+    let position = center(&app, entity)?;
+    send(
+        &mut app,
+        position,
+        PointerAction::Move { delta: Vec2::ZERO },
+    )?;
+    send(
+        &mut app,
+        position,
+        PointerAction::Scroll {
+            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+            x: 0.,
+            y: -1000.,
+            phase: bevy::input::touch::TouchPhase::Moved,
+        },
+    )?;
+    let offset = scroll(&mut app)?;
+    assert!(offset > 0.);
+    let last = visible(&mut app, 19)?;
+    for action in [
+        PointerAction::Move {
+            delta: last - position,
+        },
+        PointerAction::Press(PointerButton::Primary),
+        PointerAction::Release(PointerButton::Primary),
+    ] {
+        send(&mut app, last, action)?;
+    }
+    assert_eq!(app.world().resource::<PickerState>().selected, Some(19));
+    assert_eq!(scroll(&mut app)?, offset);
+    let channel = find(&mut app, true)?;
+    app.world_mut().trigger(Activate { entity: channel });
+    app.update();
+    assert_eq!(scroll(&mut app)?, offset);
+    let toggle = app
+        .world_mut()
+        .query_filtered::<Entity, With<OutfitToggle>>()
+        .single(app.world())?;
+    app.world_mut()
+        .trigger(bevy::ui_widgets::ValueChange::<bool> {
+            source: toggle,
+            value: true,
+            is_final: true,
+        });
+    app.update();
+    app.update();
+    visible(&mut app, 19)?;
+    for (key, indices) in [
+        (KeyCode::ArrowUp, (11..19).rev().collect::<Vec<_>>()),
+        (KeyCode::ArrowDown, (12..20).collect()),
+    ] {
+        for index in indices {
+            app.world_mut()
+                .write_message(bevy::input::keyboard::KeyboardInput {
+                    key_code: key,
+                    logical_key: bevy::input::keyboard::Key::Unidentified(
+                        bevy::input::keyboard::NativeKey::Unidentified,
+                    ),
+                    state: bevy::input::ButtonState::Pressed,
+                    text: None,
+                    repeat: false,
+                    window,
+                });
+            app.update();
+            app.update();
+            assert_eq!(app.world().resource::<PickerState>().selected, Some(index));
+            visible(&mut app, index)?;
+        }
+    }
     let channel = find(&mut app, true)?;
     app.world_mut().trigger(Activate { entity: channel });
     app.update();

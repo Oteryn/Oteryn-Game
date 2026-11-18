@@ -125,10 +125,9 @@ mod tests {
 
     #[test]
     fn export_keeps_the_pending_draft_edits() -> TestResult {
-        let id = std::process::id();
-        let path = std::env::temp_dir().join(format!("bevy-options-export-draft-{id}.json"));
-        let export =
-            std::env::temp_dir().join(format!("bevy-options-export-draft-{id}.export.json"));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("preferences.json");
+        let export = fixture.path().join("export.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::Misc, Some(path.clone()))?;
             app.world_mut()
@@ -165,9 +164,9 @@ mod tests {
 
     #[test]
     fn transfer_exports_resets_imports_and_restores_the_saved_options() -> TestResult {
-        let id = std::process::id();
-        let path = std::env::temp_dir().join(format!("bevy-options-transfer-{id}.json"));
-        let export = std::env::temp_dir().join(format!("bevy-options-transfer-{id}.export.json"));
+        let fixture = tempfile::tempdir()?;
+        let path = fixture.path().join("preferences.json");
+        let export = fixture.path().join("export.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::Misc, Some(path.clone()))?;
             app.world_mut()

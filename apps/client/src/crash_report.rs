@@ -218,10 +218,9 @@ mod tests {
 
     #[test]
     fn startup_failures_are_appended_for_later_diagnosis() -> std::io::Result<()> {
-        let directory =
-            std::env::temp_dir().join(format!("oteryn-startup-log-{}", std::process::id()));
+        let fixture = tempfile::tempdir()?;
+        let directory = fixture.path().join("oteryn-startup-log");
         let path = directory.join("nested").join("startup.log");
-        let _ = std::fs::remove_dir_all(&directory);
         append_startup_at(&path, "launcher", "spawn failed")?;
         append_startup_at(&path, "client", "window creation failed")?;
         assert_eq!(

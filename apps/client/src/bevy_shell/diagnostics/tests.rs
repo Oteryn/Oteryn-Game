@@ -8,21 +8,9 @@ use bevy::{
     utils::prelude::DebugName,
     window::{PrimaryWindow, WindowResolution},
 };
-use std::{
-    sync::atomic::{AtomicU64, Ordering},
-    time::Duration,
-};
+use std::time::Duration;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-static NEXT: AtomicU64 = AtomicU64::new(0);
-
-fn temp_preferences() -> std::path::PathBuf {
-    std::env::temp_dir().join(format!(
-        "oteryn-diagnostics-{}-{}/client-preferences.json",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ))
-}
 
 /// The diagnostics systems over a real host owner, a primary window and real time, without a
 /// renderer or the event loop.
@@ -105,7 +93,8 @@ fn the_overlay_follows_the_saved_option_and_is_hidden_by_default() -> TestResult
 
 #[test]
 fn the_overlay_utility_hotkey_toggles_and_persists_the_choice() -> TestResult {
-    let path = temp_preferences();
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("client-preferences.json");
     let mut owner = HostOwner::new(Some(path.clone()))?;
     let _outbox = play_on(&mut owner)?;
     bind_overlay_hotkey(&mut owner)?;
@@ -129,9 +118,6 @@ fn the_overlay_utility_hotkey_toggles_and_persists_the_choice() -> TestResult {
             .overlay
     );
     drop(owner);
-    if let Some(directory) = path.parent() {
-        std::fs::remove_dir_all(directory)?;
-    }
     Ok(())
 }
 
@@ -310,11 +296,8 @@ fn the_crash_flag_names_the_saved_log() {
 
 #[test]
 fn a_panicking_ecs_error_is_logged_with_its_context_and_still_panics() -> TestResult {
-    let directory = std::env::temp_dir().join(format!(
-        "oteryn-ecs-error-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture.join("logs");
     let file = std::sync::Arc::new(logging::RollingFile::new(
         directory.clone(),
         logging::KEEP_FILES,
@@ -346,7 +329,8 @@ fn a_panicking_ecs_error_is_logged_with_its_context_and_still_panics() -> TestRe
     assert!(text.contains("ECS command `"), "{text}");
     assert!(text.contains("failed: Entity despawned"), "{text}");
     assert!(text.contains(" ERROR "), "{text}");
-    std::fs::remove_dir_all(directory)?;
+    std::fs::remove_dir_all(&directory)?;
+    assert!(!directory.with_added_extension("lock").exists());
     Ok(())
 }
 

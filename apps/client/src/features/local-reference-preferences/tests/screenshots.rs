@@ -16,7 +16,8 @@ fn screenshot_advance_triggers_use_decoded_server_skill_display()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::play_channel;
     use oteryn_client_runtime::skill_display::SkillDisplay;
-    let folder = std::env::temp_dir().join(format!("t071-skills-{}", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let folder = fixture.path().to_path_buf();
     let mut state = SettingsState::new(Some(folder.join("settings.json")));
     let mut preferences = state.preferences.clone();
     preferences.screenshots.folder = folder.to_string_lossy().into_owned();
@@ -72,15 +73,14 @@ fn screenshot_advance_triggers_use_decoded_server_skill_display()
             .is_empty()
     );
     assert!(commands.try_recv().is_err());
-    std::fs::remove_dir_all(folder)?;
     Ok(())
 }
 
 #[test]
 fn manual_screenshot_caller_saves_real_pixels_and_selected_scope()
 -> Result<(), Box<dyn std::error::Error>> {
-    let folder = std::env::temp_dir().join(format!("t070-{}", std::process::id()));
-    std::fs::create_dir_all(&folder)?;
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let folder = fixture.path().to_path_buf();
     let mut state = SettingsState::new(Some(folder.join("settings.json")));
     let mut preferences = state.preferences.clone();
     preferences.screenshots.folder = folder.to_string_lossy().into_owned();
@@ -113,7 +113,6 @@ fn manual_screenshot_caller_saves_real_pixels_and_selected_scope()
             .screenshots
             .game_only
     );
-    std::fs::remove_dir_all(folder)?;
     Ok(())
 }
 
@@ -123,7 +122,8 @@ fn screenshot_backlog_and_death_trigger_follow_server_vitals()
     use crate::play::play_channel;
     use oteryn_session::{ActorVitals, AppliedDelta, SessionEvent};
     use std::time::{Duration, Instant};
-    let folder = std::env::temp_dir().join(format!("t071-{}", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let folder = fixture.path().to_path_buf();
     let mut state = SettingsState::new(Some(folder.join("settings.json")));
     let mut preferences = state.preferences.clone();
     preferences.screenshots.folder = folder.to_string_lossy().into_owned();
@@ -187,7 +187,6 @@ fn screenshot_backlog_and_death_trigger_follow_server_vitals()
             .len(),
         1
     );
-    std::fs::remove_dir_all(folder)?;
     Ok(())
 }
 
@@ -223,12 +222,12 @@ fn screenshot_editors_reconcile_destinations_and_independent_backlog_modes() {
 #[test]
 fn screenshot_alias_manual_capture_uses_the_effective_absolute_directory()
 -> Result<(), Box<dyn std::error::Error>> {
-    let root =
-        std::env::temp_dir().join(format!("effective-manual-capture-{}", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let root = fixture.path().to_path_buf();
     let mut state = SettingsState::new(None);
     let mut preferences = state.preferences.clone();
     preferences.screenshots.directory = root.to_string_lossy().into_owned();
-    preferences.screenshots.folder = format!("ignored-relative-capture-{}", std::process::id());
+    preferences.screenshots.folder = "ignored-relative-capture".into();
     state.apply(preferences);
     state.request_screenshot();
     let path = state
@@ -236,7 +235,6 @@ fn screenshot_alias_manual_capture_uses_the_effective_absolute_directory()
         .ok_or("capture missing")?;
     let actual = path.parent().ok_or("capture directory")?.to_path_buf();
     std::fs::remove_file(path)?;
-    std::fs::remove_dir(&actual)?;
     assert_eq!(actual, root);
     Ok(())
 }
@@ -244,13 +242,10 @@ fn screenshot_alias_manual_capture_uses_the_effective_absolute_directory()
 #[test]
 fn screenshot_alias_pixel_writer_rejects_relative_folders() -> Result<(), Box<dyn std::error::Error>>
 {
-    let folder = format!("relative-pixel-capture-{}", std::process::id());
-    let result = Pixels::new(1, 1, vec![0, 0, 0, 255])?.save(&folder);
-    if let Ok(path) = &result {
-        std::fs::remove_file(path)?;
-        std::fs::remove_dir(&folder)?;
-    }
-    assert!(result.is_err());
-    assert!(!std::path::Path::new(&folder).exists());
-    Ok(())
+    crate::play::screenshot::with_relative_capture_path(|folder, _| {
+        let result = Pixels::new(1, 1, vec![0, 0, 0, 255])?.save(folder);
+        assert!(result.is_err_and(|error| error.kind() == std::io::ErrorKind::InvalidInput));
+        assert!(!std::path::Path::new(folder).exists());
+        Ok(())
+    })
 }

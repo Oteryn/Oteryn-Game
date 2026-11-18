@@ -65,8 +65,8 @@ fn updater_open_check_recovery_and_hide_use_real_buttons() -> TestResult {
 #[test]
 fn failed_launcher_handoff_preserves_client_and_allows_retry() -> TestResult {
     let mut app = app()?;
-    app.world_mut().non_send_mut::<State>().directory =
-        Some(std::env::temp_dir().join(format!("oteryn-no-launcher-{}", std::process::id())));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    app.world_mut().non_send_mut::<State>().directory = Some(fixture.join("no-launcher"));
     click(&mut app, Action::Open)?;
     click(&mut app, Action::Maintain)?;
     assert!(report(&app).contains("Could not open launcher"));
@@ -84,10 +84,8 @@ fn failed_launcher_handoff_preserves_client_and_allows_retry() -> TestResult {
 #[test]
 fn real_worker_failure_releases_pending_operation_for_retry() -> TestResult {
     let mut app = app()?;
-    let file = std::env::temp_dir().join(format!(
-        "oteryn-updater-not-directory-{}",
-        std::process::id()
-    ));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let file = fixture.join("not-an-installation");
     std::fs::write(&file, b"not an installation directory")?;
     for _ in 0..2 {
         let receiver = worker::start(file.clone(), false)?;

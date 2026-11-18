@@ -98,9 +98,8 @@ mod tests {
     #[test]
     fn misc_page_exports_and_imports_the_active_world_minimap()
     -> Result<(), Box<dyn std::error::Error>> {
-        let root =
-            std::env::temp_dir().join(format!("bevy-minimap-transfer-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&root);
+        let fixture = tempfile::tempdir()?;
+        let root = fixture.path().join("bevy-minimap-transfer");
         std::fs::create_dir_all(&root)?;
         let export = root.join("portable.json");
         let mut app = super::super::tests::app(Page::Misc, None)?;
@@ -161,7 +160,6 @@ mod tests {
                 .starts_with("Minimap transfer failed: ")
         );
         app.world_mut().non_send_mut::<HostOwner>().play = None;
-        std::fs::remove_dir_all(root)?;
         Ok(())
     }
 }

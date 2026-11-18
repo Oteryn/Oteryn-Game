@@ -4,7 +4,8 @@ use super::*;
 fn mouse_presets_validate_route_and_survive_restart() -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{PreferenceStore, SettingsState};
     use oteryn_input_actions::{ButtonState, Modifiers, MouseButton, NormalizedInputEvent};
-    let path = std::env::temp_dir().join(format!("cgopt-mouse-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-mouse.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut preferences = settings.preferences.clone();
     preferences.set_mouse_preset(1)?;
@@ -210,7 +211,8 @@ fn interface_scale_changes_hud_geometry_and_rejects_invalid_values()
 #[test]
 fn hotkey_profiles_preserve_routes_across_restart() -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{PreferenceStore, ReferencePreferences};
-    let path = std::env::temp_dir().join(format!("cgopt-profiles-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-profiles.json");
     let mut preferences = ReferencePreferences::default();
     preferences.save_hotkey_profile("arrows")?;
     preferences.general_hotkey_preset(false)?;
@@ -448,10 +450,8 @@ fn duplicate_control_editors_share_mouse_and_rotation_through_real_dispatch()
         };
         assert_eq!(command.payload, [26, 2, 8, 1]);
     }
-    let path = std::env::temp_dir().join(format!(
-        "legacy-control-aliases-{}.json",
-        std::process::id()
-    ));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("legacy-control-aliases.json");
     let legacy = crate::play::ReferencePreferences {
         swap_mouse_buttons: true,
         rotation_modifier: "ALT".into(),

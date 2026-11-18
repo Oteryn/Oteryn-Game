@@ -218,12 +218,13 @@ fn support_delivery_handoff_continues(activity: bool) -> Result<(), String> {
         true,
     )
     .ok_or("valid support submission")?;
+    let fixture = tempfile::tempdir().map_err(|e| e.to_string())?;
     query_handoff_continues(
         CAPABILITY_SUPPORT_INTAKE_V1,
         activity,
         Some(crate::combat_input::PlayCommand::SupportDelivery(
             command,
-            std::path::PathBuf::from("unused-scope-transition-report.txt"),
+            fixture.path().join("scope-transition-report.txt"),
         )),
     )
 }

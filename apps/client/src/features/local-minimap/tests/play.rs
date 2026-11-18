@@ -258,7 +258,8 @@ fn minimap_transfer_round_trips_scoped_memory_and_markers_without_changing_world
         floor: -7,
         label: "Meeting place".into(),
     })?;
-    let root = std::env::temp_dir().join(format!("clientgap-map-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path().join("clientgap-map");
     std::fs::create_dir_all(&root)?;
     let file = root.join("map.json");
     memory.export_new(&file)?;
@@ -327,7 +328,6 @@ fn minimap_transfer_round_trips_scoped_memory_and_markers_without_changing_world
     let mut restarted = SettingsState::new(Some(scoped_path));
     restarted.select_character(Some([1; 16]));
     assert_eq!(restarted.preferences.minimap, remembered);
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 

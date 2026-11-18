@@ -1,7 +1,6 @@
 //! Deferred Bevy pixels feed the same event and bounded backlog owner as native capture.
 use super::*;
 use crate::play::screenshot::CaptureSource;
-use std::time::Instant;
 #[derive(Default)]
 pub(in crate::bevy_shell) struct State {
     generation: Option<u64>,
@@ -56,6 +55,7 @@ pub(in crate::bevy_shell) fn observe(
     viewport: WorldViewport,
     state: &mut State,
     captures: &Query<&Capture>,
+    clock: &Time<Real>,
 ) {
     let generation = owner.play.as_ref().map(|_| owner.generation());
     if state.generation != generation {
@@ -74,7 +74,7 @@ pub(in crate::bevy_shell) fn observe(
     }
     let HostOwner { settings, play, .. } = owner;
     let result = settings.process_screenshots(
-        Instant::now(),
+        clock.last_update().unwrap_or(clock.startup()),
         play.as_ref().map(|p| &p.link),
         &mut Deferred,
     );
@@ -85,7 +85,9 @@ pub(in crate::bevy_shell) fn observe(
     commands
         .spawn((Screenshot::primary_window(), Capture { generation }))
         .observe(
-            move |event: On<ScreenshotCaptured>, mut owner: NonSendMut<HostOwner>| {
+            move |event: On<ScreenshotCaptured>,
+                  mut owner: NonSendMut<HostOwner>,
+                  clock: Res<Time<Real>>| {
                 if owner.generation() != generation
                     || owner.play.is_none()
                     || owner.settings.preferences.screenshots.effective().game_only != scope
@@ -103,7 +105,7 @@ pub(in crate::bevy_shell) fn observe(
                     viewport,
                 };
                 match settings.process_screenshots(
-                    Instant::now(),
+                    clock.last_update().unwrap_or(clock.startup()),
                     play.as_ref().map(|p| &p.link),
                     &mut pixels,
                 ) {

@@ -26,9 +26,16 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
     let Some(assets) = std::env::var_os("OTERYN_BEVY_NATIVE_FIXTURE_ASSETS") else {
         return Ok(());
     };
+    // Use the requested filename within an owned directory and report its full path.
     let output = std::env::var_os("OTERYN_BEVY_NATIVE_FIXTURE_OUTPUT")
         .ok_or("native fixture output path missing")?;
-    let path = PathBuf::from(output);
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let output = PathBuf::from(output);
+    let path = fixture.join(
+        output
+            .file_name()
+            .ok_or("native fixture output filename missing")?,
+    );
     let mut owner = HostOwner::new(Some(path.with_extension("preferences.json")))?;
     let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.set_preference_character([7; 16]);
@@ -112,6 +119,8 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
     if !path.is_file() {
         return Err("native game shell capture missing".into());
     }
+    fixture.keep();
+    println!("Native fixture capture saved to {}", path.display());
     Ok(())
 }
 fn capture(

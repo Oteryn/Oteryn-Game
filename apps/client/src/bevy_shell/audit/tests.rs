@@ -1,19 +1,10 @@
 use super::*;
-use std::sync::atomic::{AtomicU64, Ordering};
+use crate::play::screenshot::TestDir;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-static NEXT: AtomicU64 = AtomicU64::new(0);
-struct File(PathBuf);
-impl Drop for File {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.0);
-    }
-}
-fn app() -> Result<(App, File), Box<dyn std::error::Error>> {
-    let path = std::env::temp_dir().join(format!(
-        "oteryn-public-audit-{}-{}.json",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
+
+fn app() -> Result<(App, TestDir), Box<dyn std::error::Error>> {
+    let fixture = TestDir::new()?;
+    let path = fixture.join("audit.json");
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
         .insert_non_send(HostOwner::new(None)?)
@@ -22,7 +13,7 @@ fn app() -> Result<(App, File), Box<dyn std::error::Error>> {
     let mut window = Window::default();
     window.resolution.set_scale_factor_override(Some(2.));
     app.world_mut().spawn((window, PrimaryWindow));
-    Ok((app, File(path)))
+    Ok((app, fixture))
 }
 fn node(app: &mut App, name: &str, parent: Option<Entity>, position: Vec2, size: Vec2) -> Entity {
     let entity = app
@@ -40,9 +31,11 @@ fn node(app: &mut App, name: &str, parent: Option<Entity>, position: Vec2, size:
     }
     entity
 }
-fn read(app: &mut App, path: &File) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+fn read(app: &mut App, path: &TestDir) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     app.update();
-    Ok(serde_json::from_slice(&std::fs::read(&path.0)?)?)
+    Ok(serde_json::from_slice(&std::fs::read(
+        path.join("audit.json"),
+    )?)?)
 }
 #[test]
 fn named_public_bounds_filter_hidden_zero_unknown_and_private_widget_contents() -> TestResult {
@@ -233,7 +226,7 @@ fn named_public_bounds_filter_hidden_zero_unknown_and_private_widget_contents() 
             .iter()
             .all(|entry| entry.get("text_metrics").is_none())
     );
-    let bytes = std::fs::read_to_string(&path.0)?;
+    let bytes = std::fs::read_to_string(path.join("audit.json"))?;
     assert!(!bytes.contains("PRIVATE_WIDGET_CONTENT"));
     assert!(!bytes.contains("PRIVATE_NAME_CONTENT"));
     Ok(())

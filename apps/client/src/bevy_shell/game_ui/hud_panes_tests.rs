@@ -56,9 +56,6 @@ fn playing_app_with(
     app.update();
     Ok(app)
 }
-fn preferences(name: &str) -> std::path::PathBuf {
-    std::env::temp_dir().join(format!("oteryn-widgets-{name}-{}.json", std::process::id()))
-}
 fn entity_with<C: Component>(
     app: &mut App,
     found: impl Fn(&C) -> bool,
@@ -115,7 +112,8 @@ fn pointer(app: &mut App) -> Result<Pointer, Box<dyn std::error::Error>> {
 
 #[test]
 fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestResult {
-    let path = preferences("default");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("default.json");
     let _ = std::fs::remove_file(&path);
     let mut app = playing_app(path.clone())?;
     let sidebar = *app.world().resource::<super::super::Sidebar>();
@@ -231,7 +229,8 @@ fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestRes
 
 #[test]
 fn title_buttons_minimise_to_the_header_and_close_the_widget() -> TestResult {
-    let path = preferences("chrome");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("chrome.json");
     let _ = std::fs::remove_file(&path);
     let mut app = playing_app(path.clone())?;
     let minimise = entity_with::<TitleButton>(&mut app, |button| {
@@ -284,7 +283,8 @@ fn title_buttons_minimise_to_the_header_and_close_the_widget() -> TestResult {
 
 #[test]
 fn sidebar_arrows_add_a_sidebar_and_removing_it_returns_its_widgets() -> TestResult {
-    let path = preferences("arrows");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("arrows.json");
     let _ = std::fs::remove_file(&path);
     let mut app = playing_app(path.clone())?;
     let sidebar = *app.world().resource::<super::super::Sidebar>();
@@ -367,7 +367,8 @@ fn widgets_reorder_before_another_widget_or_at_the_end_of_a_dock() {
 
 #[test]
 fn the_bottom_edge_resizes_the_content_within_bounds() -> TestResult {
-    let path = preferences("resize");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("resize.json");
     let _ = std::fs::remove_file(&path);
     let mut app = playing_app(path.clone())?;
     let body = entity_with::<Body>(&mut app, |body| body.0 == Widget::BattleList)?;
@@ -406,7 +407,8 @@ fn the_bottom_edge_resizes_the_content_within_bounds() -> TestResult {
 #[test]
 fn control_buttons_toggle_the_sidebar_widgets() -> TestResult {
     use crate::bevy_shell::ui::{Control, toolbar::grid::ControlButton};
-    let path = preferences("controls");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("controls.json");
     let _ = std::fs::remove_file(&path);
     let mut app = playing_app(path.clone())?;
     let skills = entity_with::<ControlButton>(&mut app, |button| {
@@ -438,7 +440,8 @@ fn control_buttons_toggle_the_sidebar_widgets() -> TestResult {
 #[test]
 fn tibia_control_buttons_open_their_oteryn_windows() -> TestResult {
     use crate::bevy_shell::ui::toolbar::grid::{ControlButton, Extra};
-    let path = preferences("extra-controls");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("extra-controls.json");
     let _ = std::fs::remove_file(&path);
     let mut app = playing_app(path.clone())?;
     let press = |app: &mut App, extra: Extra| -> TestResult {
@@ -486,7 +489,8 @@ fn tibia_control_buttons_open_their_oteryn_windows() -> TestResult {
 
 #[test]
 fn dragging_a_module_title_drops_it_into_the_other_column() -> TestResult {
-    let path = preferences("drag-column");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("drag-column.json");
     let mut app = playing_app(path.clone())?;
     app.world_mut()
         .resource_mut::<SidebarWidgets>()
@@ -548,7 +552,8 @@ fn moved_dock() -> SidebarWidgets {
 
 #[test]
 fn the_dock_layout_round_trips_through_its_file_and_drops_bad_entries() -> TestResult {
-    let path = preferences("dock-file");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("dock-file.json");
     let _ = std::fs::remove_file(&path);
     assert_eq!(SidebarWidgets::load(&path)?, SidebarWidgets::default());
     let state = moved_dock();
@@ -578,7 +583,8 @@ fn the_dock_layout_round_trips_through_its_file_and_drops_bad_entries() -> TestR
 
 #[test]
 fn each_character_loads_its_own_dock_layout() -> TestResult {
-    let path = preferences("dock-characters");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("dock-characters.json");
     let mut app = playing_app(path.clone())?;
     let (first, second) = ([1; 16], [2; 16]);
     let files = [first, second].map(|character| {
@@ -626,7 +632,8 @@ fn each_character_loads_its_own_dock_layout() -> TestResult {
 
 #[test]
 fn reset_window_layout_restores_and_saves_the_default_dock() -> TestResult {
-    let path = preferences("dock-reset");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("dock-reset.json");
     let mut app = playing_app(path.clone())?;
     app.world_mut()
         .non_send_mut::<HostOwner>()
@@ -654,7 +661,8 @@ fn reset_window_layout_restores_and_saves_the_default_dock() -> TestResult {
 #[test]
 fn module_zoom_scales_the_content_and_the_title_within_bounds() -> TestResult {
     use crate::bevy_shell::ui::window_layout::{MAX_ZOOM, MIN_ZOOM, WindowLayouts};
-    let path = preferences("dock-zoom");
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("dock-zoom.json");
     let mut app = playing_app(path.clone())?;
     crate::bevy_shell::ui::window_layout::install(&mut app);
     app.update();
@@ -721,7 +729,8 @@ pub(in crate::bevy_shell::game_ui) fn laid_out_app_with(
             ui_surface::UiSurface, update::propagate_ui_target_cameras,
         },
     };
-    let mut app = playing_app_with(preferences("fit"), (width, height), |app| {
+    let fixture = tempfile::tempdir()?;
+    let mut app = playing_app_with(fixture.path().join("fit.json"), (width, height), |app| {
         configure(app);
         app.add_plugins((
             oteryn_client_ui_bevy::GlobalUiPlugin,
@@ -760,6 +769,7 @@ pub(in crate::bevy_shell::game_ui) fn laid_out_app_with(
             ),
         );
     })?;
+    app.insert_non_send(fixture);
     for mut camera in app
         .world_mut()
         .query::<&mut Camera>()
@@ -870,7 +880,8 @@ mod floating;
 
 #[test]
 fn logout_retries_failed_dock_save() -> TestResult {
-    let mut app = playing_app(preferences("dock-retry"))?;
+    let fixture = tempfile::tempdir()?;
+    let mut app = playing_app(fixture.path().join("dock-retry.json"))?;
     app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
         std::time::Duration::from_secs(2),
     ));

@@ -15,8 +15,8 @@ fn click(app: &mut App, predicate: impl Fn(&Edit) -> bool) -> TestResult {
 #[test]
 fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResult {
     use bevy::{asset::AssetPlugin, input_focus::InputFocus};
-    let folder = std::env::temp_dir().join(format!("gap23-toolbar-{}", std::process::id()));
-    std::fs::create_dir_all(&folder)?;
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let folder = fixture.path().to_path_buf();
     let path = folder.join("preferences.json");
     let mut owner = HostOwner::new(Some(path.clone()))?;
     let (link, _commands, _outbox) = crate::play::play_channel();
@@ -51,6 +51,18 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
     click(&mut app, |action| {
         matches!(action, Edit::Move("shell.market", true))
     })?;
+    for &(id, _, _) in super::super::grid::EXTRA {
+        click(
+            &mut app,
+            |action| matches!(action, Edit::Toggle(entry) if *entry == id),
+        )?;
+    }
+    assert!(
+        !app.world_mut()
+            .query::<&Edit>()
+            .iter(app.world())
+            .any(|e| matches!(e, Edit::Toggle("shell.options" | "store")))
+    );
     let expected = order(app.world().non_send::<HostOwner>());
     assert!(!expected.iter().any(|id| id == "battle"));
     assert_eq!(
@@ -142,6 +154,21 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
     let mut owner = app.world_mut().non_send_mut::<HostOwner>();
     owner.route_input(&[event], false);
     assert!(owner.play.as_ref().ok_or("play")?.link.market_panel().open);
-    std::fs::remove_dir_all(folder)?;
+    for (hidden, moving, up, expected) in [
+        ("store", "vip", true, ["vip", "battle"]),
+        ("shell.options", "battle", false, ["vip", "battle"]),
+    ] {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let mut preferences = owner.settings.preferences.clone();
+        preferences.toolbar_order = Some(["battle", hidden, "vip"].map(str::to_owned).into());
+        owner.settings.apply(preferences);
+        app.world_mut().resource_mut::<Manager>().open = true;
+        app.update();
+        click(
+            &mut app,
+            |action| matches!(action, Edit::Move(id, direction) if *id == moving && *direction == up),
+        )?;
+        assert_eq!(order(app.world().non_send::<HostOwner>()), expected);
+    }
     Ok(())
 }

@@ -48,7 +48,8 @@ fn docked_bars_lock_swaps_scroll_and_persist_all_rows() -> Result<(), Box<dyn st
         "layout edits must never trigger actions"
     );
     assert!(link.bar_gesture(BarGesture::Scroll { bar: 2, by: 1 }));
-    let path = std::env::temp_dir().join(format!("bar-layout-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("bar-layout.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.sync_bar_actions(&link);
     settings.sync_archive_bindings(&link);
@@ -144,7 +145,8 @@ fn fifty_button_count_is_configurable_persisted_and_keeps_hidden_assignments()
     assert!(!link.bar_gesture(BarGesture::Cast { slot: 49 }));
     assert!(!link.bar_gesture(BarGesture::Count { bar: 0, count: 51 }));
     assert!(!link.bar_gesture(BarGesture::Count { bar: 0, count: 0 }));
-    let path = std::env::temp_dir().join(format!("bar-count-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("bar-count.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.sync_bar_actions(&link);
     let saved = SettingsState::new(Some(path.clone()));

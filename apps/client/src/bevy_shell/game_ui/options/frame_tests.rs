@@ -7,8 +7,8 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
 fn graphics_frame_limit_and_fps_indicator_apply_and_pace_frames() -> TestResult {
-    let path =
-        std::env::temp_dir().join(format!("bevy-options-frames-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("bevy-options-frames.json");
     let result = (|| -> TestResult {
         let mut app = super::tests::app(Page::Graphics, Some(path.clone()))?;
         let slider = app
@@ -74,6 +74,6 @@ fn graphics_frame_limit_and_fps_indicator_apply_and_pace_frames() -> TestResult 
         assert_eq!(node.display, Display::Flex);
         Ok(())
     })();
-    let _ = std::fs::remove_file(&path);
+    fixture.close()?;
     result
 }

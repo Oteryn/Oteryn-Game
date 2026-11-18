@@ -2,12 +2,18 @@
 use super::*;
 
 fn floating_app(name: &str) -> Result<App, Box<dyn std::error::Error>> {
-    let mut app = playing_app_with(preferences(name), (1280, 720), |app| {
-        app.init_resource::<ButtonInput<KeyCode>>()
-            .init_resource::<bevy::input_focus::InputFocus>();
-        super::super::super::minimap::install(app);
-        crate::bevy_shell::ui::window_layout::install(app);
-    })?;
+    let fixture = tempfile::tempdir()?;
+    let mut app = playing_app_with(
+        fixture.path().join(format!("{name}.json")),
+        (1280, 720),
+        |app| {
+            app.init_resource::<ButtonInput<KeyCode>>()
+                .init_resource::<bevy::input_focus::InputFocus>();
+            super::super::super::minimap::install(app);
+            crate::bevy_shell::ui::window_layout::install(app);
+        },
+    )?;
+    app.insert_non_send(fixture);
     let panels = &mut app
         .world_mut()
         .non_send_mut::<HostOwner>()

@@ -1,7 +1,5 @@
 use super::*;
-use std::sync::atomic::{AtomicU64, Ordering};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-static NEXT: AtomicU64 = AtomicU64::new(0);
 
 /// Tibia Global binds Ctrl+M to ToggleShowServermessagesInCurrentChannel
 /// (docs/reference/tibia-manual/controls.md:93); the Market opens from the depot locker.
@@ -121,26 +119,7 @@ fn taskboard_shortcut_opens_the_portable_owner_only_outside_blocked_input() -> T
     Ok(())
 }
 
-struct Temp(PathBuf);
-impl Temp {
-    fn new() -> std::io::Result<Self> {
-        let path = std::env::temp_dir().join(format!(
-            "oteryn-bevy-host-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&path)?;
-        Ok(Self(path))
-    }
-    fn preferences(&self) -> PathBuf {
-        self.0.join("preferences.json")
-    }
-}
-impl Drop for Temp {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
+use crate::play::screenshot::TestDir as Temp;
 fn admitted_view(character: [u8; 16]) -> Result<(PlayView, PlayLink), Box<dyn std::error::Error>> {
     // Test-only fixture. Production install_play is reached solely from Reentry::poll.
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
@@ -151,7 +130,7 @@ fn admitted_view(character: [u8; 16]) -> Result<(PlayView, PlayLink), Box<dyn st
 #[test]
 fn apply_refreshes_accepted_draft_and_reloads_existing_store_cancel_discards() -> TestResult {
     let temp = Temp::new()?;
-    let path = temp.preferences();
+    let path = temp.join("preferences.json");
     let mut host = HostOwner::new(Some(path.clone()))?;
     let before = host.accepted();
     host.open_graphics();
@@ -182,7 +161,7 @@ fn apply_refreshes_accepted_draft_and_reloads_existing_store_cancel_discards() -
 #[test]
 fn blocked_save_accepts_live_settings_and_preserves_exact_owner_feedback() -> TestResult {
     let temp = Temp::new()?;
-    let path = temp.preferences();
+    let path = temp.join("preferences.json");
     let mut host = HostOwner::new(Some(path.clone()))?;
     // A directory at the destination reliably refuses the existing owner's atomic save.
     std::fs::create_dir(&path)?;
@@ -203,7 +182,7 @@ fn blocked_save_accepts_live_settings_and_preserves_exact_owner_feedback() -> Te
 #[test]
 fn admission_and_disconnect_discard_drafts_and_restore_actual_character_scope() -> TestResult {
     let temp = Temp::new()?;
-    let mut host = HostOwner::new(Some(temp.preferences()))?;
+    let mut host = HostOwner::new(Some(temp.join("preferences.json")))?;
     host.open_graphics();
     host.edit(|d| d.fullscreen = !d.fullscreen);
     let old = host.draft.take().ok_or("old draft")?;
@@ -248,7 +227,7 @@ fn same_character_new_admission_generation_rejects_old_draft_even_without_storag
 #[test]
 fn real_restore_projects_graphics_to_play_scene_and_actual_bevy_window() -> TestResult {
     let temp = Temp::new()?;
-    let mut host = HostOwner::new(Some(temp.preferences()))?;
+    let mut host = HostOwner::new(Some(temp.join("preferences.json")))?;
     let (view, link) = admitted_view([4; 16])?;
     host.install_play(view, link);
     let mut p = host.settings.preferences.clone();
@@ -345,8 +324,8 @@ fn native_widget_events_reach_owner_apply_cancel_and_public_audit() -> TestResul
         .init_asset::<Image>()
         .init_asset::<Font>()
         .init_resource::<InputFocus>()
-        .insert_non_send(HostOwner::new(Some(temp.preferences()))?)
-        .insert_resource(audit::AuditOutput::new(Some(temp.0.join("ui-audit.json"))))
+        .insert_non_send(HostOwner::new(Some(temp.join("preferences.json")))?)
+        .insert_resource(audit::AuditOutput::new(Some(temp.join("ui-audit.json"))))
         .add_systems(Startup, ui::setup)
         .add_systems(Update, ui::project);
     app.update();
@@ -441,7 +420,7 @@ fn existing_input_owners_turn_before_walk_and_clear_all_held_mappings_on_modal_r
 #[test]
 fn full_preferences_draft_cancels_applies_and_preserves_invalid_edits() -> TestResult {
     let temp = Temp::new()?;
-    let path = temp.preferences();
+    let path = temp.join("preferences.json");
     let mut host = HostOwner::new(Some(path.clone()))?;
     let original = host.settings.preferences.interface_scale;
     host.open_graphics();

@@ -3,6 +3,7 @@
 //! The shared module layout state registers and persists these entries; until
 //! then the entries live here and every window derives its sizes from them.
 use bevy::{
+    ecs::message::MessageCursor,
     input::mouse::AccumulatedMouseScroll,
     picking::{hover::HoverMap, pointer::PointerId},
     prelude::*,
@@ -22,7 +23,7 @@ pub(in crate::bevy_shell) use stack::{OpenWindows, WindowLayer, WindowStack};
 pub(in crate::bevy_shell) fn install(app: &mut App) {
     app.init_resource::<WindowLayouts>()
         .init_resource::<WindowStack>()
-        .init_resource::<LoadedLayoutTick>()
+        .init_resource::<SavedBaseline>()
         .add_observer(stack::raise_on_press)
         .add_observer(menu::open)
         .add_observer(menu::dismiss)
@@ -107,6 +108,8 @@ pub(in crate::bevy_shell) struct Layout {
     pub geometry: Geometry,
     /// `None` until the user resizes a content-sized window.
     pub size: Option<Vec2>,
+    /// Preferred size at the first grip drag, before a content-sized window had a saved size.
+    first_resize_origin: Option<Vec2>,
     pub zoom: f32,
     /// The user's move from the window's laid-out position, in UI pixels.
     pub offset: Vec2,
@@ -119,6 +122,7 @@ impl Layout {
             size: geometry
                 .height
                 .map(|height| Vec2::new(geometry.width, height)),
+            first_resize_origin: None,
             zoom: 1.,
             offset: Vec2::ZERO,
         }
@@ -144,6 +148,9 @@ impl Layout {
         } else {
             1.
         };
+        if zoom == self.zoom {
+            return;
+        }
         let ratio = zoom / self.zoom;
         self.zoom = zoom;
         if let Some(size) = self.size {
@@ -278,9 +285,24 @@ impl WindowLayouts {
     }
     /// Writes beside the target and renames, so a crash never leaves half a file.
     pub(in crate::bevy_shell) fn save(&self, path: &Path) -> io::Result<()> {
+        Self::locked(path, || self.publish(path))
+    }
+
+    fn locked(path: &Path, write: impl FnOnce() -> io::Result<()>) -> io::Result<()> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
+        let lock = std::fs::File::options()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(path.with_extension("json.lock"))?;
+        lock.try_lock().map_err(io::Error::from)?;
+        write()
+    }
+
+    fn publish(&self, path: &Path) -> io::Result<()> {
         let bytes = serde_json::to_vec_pretty(self)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         let staging = path.with_extension("json.tmp");
@@ -450,16 +472,20 @@ type Fonts<'w, 's> = Query<
 
 /// How long the layout must stay unchanged before it is written, so a drag writes once.
 const SAVE_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
+const EXIT_SAVE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(1);
 
 #[derive(Resource, Default)]
-struct LoadedLayoutTick(Option<bevy::ecs::change_detection::Tick>);
+struct SavedBaseline {
+    layouts: Option<WindowLayouts>,
+    reset_pending: bool,
+}
 
 fn load_layouts(
     owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
     mut layouts: ResMut<WindowLayouts>,
-    mut loaded: ResMut<LoadedLayoutTick>,
+    mut loaded: ResMut<SavedBaseline>,
 ) {
-    if loaded.0.is_some() {
+    if loaded.layouts.is_some() {
         return;
     }
     let Some(path) = owner.and_then(|owner| owner.window_layouts_path()) else {
@@ -469,7 +495,26 @@ fn load_layouts(
         Ok(saved) => *layouts = saved,
         Err(error) => eprintln!("Could not load window layouts: {error}"),
     }
-    loaded.0 = Some(layouts.last_changed());
+    loaded.layouts = Some(layouts.clone());
+}
+
+#[derive(Default)]
+struct ExitSave {
+    reader: MessageCursor<AppExit>,
+    deferred: Option<AppExit>,
+    deadline: Option<std::time::Duration>,
+}
+
+impl ExitSave {
+    fn retain(&mut self, exits: &mut Messages<AppExit>) {
+        for exit in exits.drain() {
+            if self.deferred.is_none()
+                || (exit.is_error() && self.deferred.as_ref().is_some_and(AppExit::is_success))
+            {
+                self.deferred = Some(exit);
+            }
+        }
+    }
 }
 
 /// Observe edits after the final resize correction, including on the exit frame.
@@ -477,21 +522,98 @@ fn persist(
     owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
     time: Res<Time<Real>>,
     layouts: Res<WindowLayouts>,
-    loaded: Res<LoadedLayoutTick>,
+    mut loaded: ResMut<SavedBaseline>,
     mut pending: Local<Option<std::time::Duration>>,
-    mut exits: MessageReader<AppExit>,
+    mut exits: ResMut<Messages<AppExit>>,
+    mut exit_save: Local<ExitSave>,
 ) {
-    let exiting = exits.read().count() > 0;
-    if layouts.is_changed() && Some(layouts.last_changed()) != loaded.0 {
-        *pending = Some(time.elapsed());
+    let new_exit = exit_save.reader.read(&exits).count() > 0;
+    let exiting = new_exit || exit_save.deferred.is_some();
+    if exit_save.deferred.is_some() {
+        exit_save.retain(&mut exits);
     }
-    if pending.is_some_and(|since| exiting || time.elapsed().saturating_sub(since) >= SAVE_DELAY)
+    let deadline_reached = exit_save
+        .deadline
+        .is_some_and(|deadline| time.elapsed() >= deadline);
+    if let Some(baseline) = loaded.layouts.as_ref()
+        && (loaded.reset_pending || baseline != &*layouts)
         && let Some(path) = owner.and_then(|owner| owner.window_layouts_path())
     {
-        *pending = None;
-        if let Err(error) = layouts.save(&path) {
-            leprintln!("Could not save window layout: {error}", error = error);
+        if layouts.is_changed() || pending.is_none() {
+            *pending = Some(time.elapsed());
         }
+        if !exiting
+            && pending.is_some_and(|since| time.elapsed().saturating_sub(since) < SAVE_DELAY)
+        {
+            return;
+        }
+        let result = WindowLayouts::locked(&path, || {
+            if loaded.reset_pending {
+                return layouts.publish(&path);
+            }
+            let mut latest = match WindowLayouts::load(&path) {
+                Err(error) if error.kind() == io::ErrorKind::InvalidData => baseline.clone(),
+                result => result?,
+            };
+            for (&id, layout) in &layouts.0 {
+                let (Some(before), Some(saved)) = (baseline.0.get(id), latest.0.get_mut(id)) else {
+                    continue;
+                };
+                if layout.size != before.size {
+                    saved.size = match (
+                        before.size.or(layout.first_resize_origin),
+                        layout.size,
+                        saved.size,
+                    ) {
+                        (Some(before), Some(edited), Some(latest)) => {
+                            Some(Vec2::select(edited.cmpne(before), edited, latest))
+                        }
+                        _ => layout.size,
+                    };
+                }
+                if layout.zoom != before.zoom {
+                    saved.zoom = layout.zoom;
+                }
+                saved.offset = Vec2::select(
+                    layout.offset.cmpne(before.offset),
+                    layout.offset,
+                    saved.offset,
+                );
+            }
+            latest.publish(&path)
+        });
+        match result {
+            Ok(()) => {
+                loaded.layouts = Some(layouts.clone());
+                loaded.reset_pending = false;
+                *pending = None;
+            }
+            Err(error) => {
+                *pending = Some(time.elapsed());
+                if error.kind() == io::ErrorKind::WouldBlock {
+                    if deadline_reached {
+                        bevy::log::warn!(
+                            "Could not save window layout before exit: layout lock is still held"
+                        );
+                    } else if exiting {
+                        exit_save
+                            .deadline
+                            .get_or_insert(time.elapsed() + EXIT_SAVE_TIMEOUT);
+                        // The runner reads AppExit after this schedule.
+                        exit_save.retain(&mut exits);
+                        return;
+                    }
+                } else {
+                    leprintln!("Could not save window layout: {error}", error = error);
+                }
+            }
+        }
+    } else {
+        *pending = None;
+    }
+    exit_save.deadline = None;
+    if let Some(exit) = exit_save.deferred.take() {
+        exits.write(exit);
     }
 }
 
@@ -511,17 +633,7 @@ pub(in crate::bevy_shell) fn project(
 ) {
     let viewport = viewport(&screens, scale.as_deref());
     let screen_changed = viewport != *seen;
-    if let Some(viewport) = viewport
-        && screen_changed
-    {
-        *seen = Some(viewport);
-        let mut next = layouts.0.clone();
-        next.values_mut().for_each(|layout| layout.fit(viewport));
-        if next != layouts.0 {
-            // Fitting the viewport is a projection, not a player edit.
-            layouts.bypass_change_detection().0 = next;
-        }
-    }
+    *seen = viewport;
     let changed = layouts.is_changed();
     for (entity, id, mut node, transform) in &mut roots {
         let Some(layout) = layouts.0.get(id.0).copied() else {
@@ -545,7 +657,11 @@ pub(in crate::bevy_shell) fn project(
             }
         }
         if changed || screen_changed || id.is_added() {
-            layout.apply(&mut node, *seen);
+            let mut projected = layout;
+            if let Some(viewport) = viewport {
+                projected.fit(viewport);
+            }
+            projected.apply(&mut node, viewport);
         }
     }
     for (entity, base, mut node) in &mut scaled {
@@ -588,3 +704,5 @@ pub(in crate::bevy_shell) fn project(
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(in crate::bevy_shell) use tests::stacking::ui_layout as test_ui_layout;

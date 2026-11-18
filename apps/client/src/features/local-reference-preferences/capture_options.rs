@@ -65,10 +65,11 @@ impl ScreenshotPreferences {
         capture.policy.death = self.on_death;
         capture.policy.achievement = self.on_achievement;
     }
+    /// Uses the same configured or platform screenshot destination as F12.
     pub fn save_frame(
         &self,
         capture: &mut CaptureController,
-        fallback: &Path,
+        _fallback: &Path,
         frame: Frame<'_>,
     ) -> io::Result<PathBuf> {
         if !self.valid() {
@@ -78,21 +79,12 @@ impl ScreenshotPreferences {
             ));
         }
         let effective = self.effective();
-        let directory = if effective.directory.is_empty() {
-            fallback
-        } else {
-            Path::new(&effective.directory)
-        };
-        std::fs::create_dir_all(directory)?;
+        let directory = super::screenshot::screenshot_directory(Path::new(&effective.directory))?;
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(io::Error::other)?
             .as_nanos();
-        let path = directory.join(format!(
-            "oteryn-{stamp}-{}.bmp",
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
         let crop = if self.game_only {
             frame.game
         } else {
@@ -103,8 +95,14 @@ impl ScreenshotPreferences {
                 height: frame.height,
             }
         };
-        capture.save(&path, frame.width, frame.height, frame.bgra, crop)?;
-        Ok(path)
+        super::screenshot::retry_capture_name(|| {
+            let path = directory.join(format!(
+                "oteryn-{stamp}-{}.bmp",
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            capture.save(&path, frame.width, frame.height, frame.bgra, crop)?;
+            Ok(path)
+        })
     }
 }
 
@@ -127,33 +125,27 @@ mod audit_tests {
     #[test]
     fn screenshot_alias_frame_writer_rejects_relative_folders()
     -> Result<(), Box<dyn std::error::Error>> {
-        let folder = format!("relative-frame-capture-{}", std::process::id());
-        let preferences = ScreenshotPreferences {
-            folder: folder.clone(),
-            ..Default::default()
-        };
-        let frame = Frame {
-            width: 1,
-            height: 1,
-            bgra: &[0, 0, 0, 255],
-            game: Rect {
-                x: 0,
-                y: 0,
+        crate::play::screenshot::with_relative_capture_path(|folder, fixture| {
+            let preferences = ScreenshotPreferences {
+                folder: folder.to_owned(),
+                ..Default::default()
+            };
+            let frame = Frame {
                 width: 1,
                 height: 1,
-            },
-        };
-        let result = preferences.save_frame(
-            &mut CaptureController::default(),
-            &std::env::temp_dir(),
-            frame,
-        );
-        if let Ok(path) = &result {
-            std::fs::remove_file(path)?;
-            std::fs::remove_dir(&folder)?;
-        }
-        assert!(result.is_err());
-        assert!(!Path::new(&folder).exists());
-        Ok(())
+                bgra: &[0, 0, 0, 255],
+                game: Rect {
+                    x: 0,
+                    y: 0,
+                    width: 1,
+                    height: 1,
+                },
+            };
+            let result =
+                preferences.save_frame(&mut CaptureController::default(), fixture, frame);
+            assert!(result.is_err_and(|error| error.kind() == io::ErrorKind::InvalidInput));
+            assert!(!Path::new(folder).exists());
+            Ok(())
+        })
     }
 }

@@ -7,7 +7,8 @@ fn custom_text_keys_persist_and_do_not_repeat_or_steal_chat_letters()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, outbox) = play_channel();
     outbox.chat_initialize(true);
-    let path = std::env::temp_dir().join(format!("custom-keys-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("custom-keys.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.sync_bar_actions(&link);
     assert!(link.assign_bar_action(

@@ -18,7 +18,8 @@ fn frame_limits_select_focus_and_reject_zero() -> Result<(), Box<dyn std::error:
         1_000_000_000 / 144
     );
     assert_eq!(preferences.frame_interval(false).as_nanos(), 200_000_000);
-    let path = std::env::temp_dir().join(format!("frame-limit-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("frame-limit.json");
     // Foreground zero now means unlimited; background zero remains invalid.
     preferences.foreground_fps = 0;
     preferences.frames.foreground = 0;

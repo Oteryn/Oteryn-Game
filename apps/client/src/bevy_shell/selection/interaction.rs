@@ -135,6 +135,7 @@ pub(in crate::bevy_shell) fn keyboard(
         };
         if let Some(next) = next {
             state.selected = Some(next);
+            state.reveal_selection = true;
             state.channel = None;
             state.last_click = None;
             state.revision = state.revision.wrapping_add(1);

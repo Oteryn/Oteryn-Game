@@ -7,7 +7,8 @@ fn chat_hotkey_presets_follow_the_live_composer_context() -> Result<(), Box<dyn 
     use oteryn_client_ui::chat::ComposerMode;
     use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
     let (link, _, _) = play_channel();
-    let path = std::env::temp_dir().join(format!("cgopt-chat-context-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-chat-context.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.apply_chat_preset(false)?;
     settings.sync_chat_context(&link);
@@ -73,8 +74,8 @@ fn loaded_hotkey_profile_preserves_manual_routes_in_live_chat_context()
     use oteryn_client_ui::chat::ComposerMode;
     use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
     let (link, _, _) = play_channel();
-    let path =
-        std::env::temp_dir().join(format!("cgopt-profile-context-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-profile-context.json");
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut manual = settings.preferences.clone();
     manual.general_hotkey_preset(false)?;
@@ -229,7 +230,8 @@ fn chosen_chat_mode_persists_per_character_and_restores_next_session()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::SettingsState;
     use oteryn_client_ui::chat::ComposerMode;
-    let path = std::env::temp_dir().join(format!("cgopt-chat-mode-{}.json", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let path = fixture.join("cgopt-chat-mode.json");
     let _ = std::fs::remove_file(&path);
     let (link, _, _) = play_channel();
     let mut settings = SettingsState::new(Some(path.clone()));

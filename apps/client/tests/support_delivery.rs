@@ -5,16 +5,16 @@ use oteryn_client::{
 };
 #[test]
 fn support_consent_reaches_real_play_queue() -> Result<(), Box<dyn std::error::Error>> {
-    let dir = std::env::temp_dir().join(format!("oteryn-support-{}", std::process::id()));
-    std::fs::create_dir_all(&dir)?;
+    let fixture = tempfile::tempdir()?;
+    let dir = fixture.path();
     let crash = dir.join("pending.txt");
     let approved = dir.join("approved-crash.txt");
     CrashReport::capture(Some("private/path/client.rs"), 42).save(&crash, true)?;
     let (link, mut queue, _) = play_channel();
-    link.queue_support_at(&dir);
+    link.queue_support_at(dir);
     assert!(queue.try_recv().is_err());
     assert!(!review_pending_at(&crash, &approved, |_| false)?);
-    link.queue_support_at(&dir);
+    link.queue_support_at(dir);
     assert!(queue.try_recv().is_err());
     CrashReport::capture(Some("private/path/client.rs"), 42).save(&crash, true)?;
     assert!(review_pending_at(&crash, &approved, |preview| {
@@ -24,11 +24,10 @@ fn support_consent_reaches_real_play_queue() -> Result<(), Box<dyn std::error::E
     assert!(review_survey_at(&dir.join("approved-survey.txt"), |_| {
         true
     })?);
-    link.queue_support_at(&dir);
+    link.queue_support_at(dir);
     assert!(queue.try_recv().is_ok());
     assert!(queue.try_recv().is_ok());
     assert!(queue.try_recv().is_err());
-    std::fs::remove_dir_all(dir)?;
     Ok(())
 }
 
@@ -91,19 +90,16 @@ fn support_play_delivery_acknowledges_only_durable_success() -> Result<(), Strin
             oteryn_client_runtime::ClientRuntime::new()
                 .map_err(|e| format!("{e:?}"))?
                 .block_on(async {
-                    for (index, selected, status, reply, removed, kind) in [
-                        (0, true, CommandStatus::Accepted, vec![1], true, 6144),
-                        (5, true, CommandStatus::Accepted, vec![1], true, 6145),
-                        (1, true, CommandStatus::DuplicateReplay, vec![1], true, 6145),
-                        (2, true, CommandStatus::Accepted, vec![0], false, 6145),
-                        (3, true, CommandStatus::Rejected, vec![1], false, 6145),
-                        (4, false, CommandStatus::Accepted, vec![1], false, 6145),
+                    for (selected, status, reply, removed, kind) in [
+                        (true, CommandStatus::Accepted, vec![1], true, 6144),
+                        (true, CommandStatus::Accepted, vec![1], true, 6145),
+                        (true, CommandStatus::DuplicateReplay, vec![1], true, 6145),
+                        (true, CommandStatus::Accepted, vec![0], false, 6145),
+                        (true, CommandStatus::Rejected, vec![1], false, 6145),
+                        (false, CommandStatus::Accepted, vec![1], false, 6145),
                     ] {
-                        let dir = std::env::temp_dir().join(format!(
-                            "oteryn-support-play-{}-{index}",
-                            std::process::id()
-                        ));
-                        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+                        let fixture = tempfile::tempdir().map_err(|e| e.to_string())?;
+                        let dir = fixture.path();
                         let path = dir.join(if kind == 6144 {
                             "approved-crash.txt"
                         } else {
@@ -123,7 +119,7 @@ fn support_play_delivery_acknowledges_only_durable_success() -> Result<(), Strin
                         }
                         let preview = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
                         let (link, commands, outbox) = play_channel();
-                        link.queue_support_at(&dir);
+                        link.queue_support_at(dir);
                         let (sent, mut received) = tokio::sync::mpsc::unbounded_channel();
                         let task = tokio::spawn(run_session(
                             Peer {
@@ -161,7 +157,6 @@ fn support_play_delivery_acknowledges_only_durable_success() -> Result<(), Strin
                             .map_err(|e| e.to_string())?;
                         assert_eq!(path.exists(), !removed);
                         assert!(received.try_recv().is_err());
-                        std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
                     }
                     Ok(())
                 })

@@ -3,14 +3,12 @@ use super::*;
 use oteryn_client_assets::tibia_graphics::GraphicsPins;
 use oteryn_client_assets::tibia_graphics::fixture::{self, ADVANCE, GLYPH_HEIGHT, GLYPH_WIDTH};
 
-fn bundle_root(label: &str) -> std::io::Result<(std::path::PathBuf, GraphicsPins)> {
-    let root = std::env::temp_dir().join(format!(
-        "oteryn-client-names-{label}-{}",
-        std::process::id()
-    ));
+fn bundle_root() -> std::io::Result<(tempfile::TempDir, GraphicsPins)> {
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path();
     let files = root.join("content/assets/files");
     std::fs::create_dir_all(&files)?;
-    Ok((root, fixture::write(&files)?))
+    Ok((fixture, fixture::write(&files)?))
 }
 
 fn creature(name: &str) -> Result<VisibleAppearance, BatchError> {
@@ -46,12 +44,13 @@ fn creature(name: &str) -> Result<VisibleAppearance, BatchError> {
 #[test]
 fn creature_names_draw_the_tibia_game_font_from_the_asset_bundle()
 -> Result<(), Box<dyn std::error::Error>> {
-    let (root, pins) = bundle_root("font")?;
+    let (fixture, pins) = bundle_root()?;
+    let root = fixture.path();
     let tile = TileCoord::new(100, 200);
     let mut scene =
         Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
     scene.cache.graphics_pins = Some(pins);
-    scene.set_presentations_from(&[creature("Rat")?], 0, Some(root.clone()))?;
+    scene.set_presentations_from(&[creature("Rat")?], 0, Some(root.to_path_buf()))?;
     let quads = scene.sprites.instances();
     let name = &quads[quads.len() - 3..];
     let atlas = scene.atlas();
@@ -79,7 +78,7 @@ fn creature_names_draw_the_tibia_game_font_from_the_asset_bundle()
         }
     }
     // A character the bundle font lacks keeps the builtin glyph.
-    scene.set_presentations_from(&[creature("Rat!")?], 0, Some(root.clone()))?;
+    scene.set_presentations_from(&[creature("Rat!")?], 0, Some(root.to_path_buf()))?;
     let quads = scene.sprites.instances();
     let last = quads[quads.len() - 1];
     assert_eq!(last.size, [8.0, 12.0]);
@@ -88,6 +87,5 @@ fn creature_names_draw_the_tibia_game_font_from_the_asset_bundle()
         f32::from(ADVANCE) + 1.0,
         "the builtin glyph follows the last bundle glyph's advance"
     );
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }

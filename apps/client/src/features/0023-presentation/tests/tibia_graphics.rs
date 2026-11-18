@@ -12,14 +12,12 @@ use std::time::Instant;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-fn bundle_root(label: &str) -> std::io::Result<(std::path::PathBuf, GraphicsPins)> {
-    let root = std::env::temp_dir().join(format!(
-        "oteryn-client-overlays-{label}-{}",
-        std::process::id()
-    ));
+fn bundle_root() -> std::io::Result<(tempfile::TempDir, GraphicsPins)> {
+    let fixture = tempfile::tempdir()?;
+    let root = fixture.path();
     let files = root.join("content/assets/files");
     std::fs::create_dir_all(&files)?;
-    Ok((root, fixture::write(&files)?))
+    Ok((fixture, fixture::write(&files)?))
 }
 
 /// Glyph pixels of `text` laid out with the font's advances, relative to the first pixel.
@@ -62,9 +60,10 @@ fn normalised(pixels: BTreeSet<(i32, i32)>) -> BTreeSet<(i32, i32)> {
 
 #[test]
 fn value_numbers_draw_the_tibia_game_font_outlined_in_their_colour() -> TestResult {
-    let (root, pins) = bundle_root("numbers")?;
+    let (fixture, pins) = bundle_root()?;
+    let root = fixture.path();
     let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
-    view.scene.prime_tibia_graphics(root.clone(), pins);
+    view.scene.prime_tibia_graphics(root.to_path_buf(), pins);
     let base = view.scene().sprites().len();
     let now = Instant::now();
     view.receive_presentation(
@@ -90,19 +89,19 @@ fn value_numbers_draw_the_tibia_game_font_outlined_in_their_colour() -> TestResu
     assert_eq!(drawn_pixels(quads), normalised(expected_pixels("70")));
     let colours: BTreeSet<_> = quads.iter().map(|quad| quad.uv[0].to_bits()).collect();
     assert_eq!(colours.len(), 2, "black outline and the green fill");
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
 #[test]
 fn spell_words_draw_the_tibia_game_font_without_a_length_cap() -> TestResult {
-    let (root, pins) = bundle_root("words")?;
+    let (fixture, pins) = bundle_root()?;
+    let root = fixture.path();
     // Wider than the former 64-character cap, narrower than the view.
     let words = format!("{}utevo lux", "exura gran mas res ".repeat(3));
     assert!(words.len() > 64, "longer than the former cap");
     let (link, _commands, outbox) = play_channel();
     let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
-    view.scene.prime_tibia_graphics(root.clone(), pins);
+    view.scene.prime_tibia_graphics(root.to_path_buf(), pins);
     outbox.spell_catalog_initialize(
         true,
         Some(
@@ -151,15 +150,15 @@ fn spell_words_draw_the_tibia_game_font_without_a_length_cap() -> TestResult {
         .filter(|quad| quad.size == [1.0, 1.0])
         .collect();
     assert_eq!(drawn_pixels(&quads), normalised(expected_pixels(&words)));
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
 #[test]
 fn skull_and_party_shield_marks_draw_the_tibia_flag_artwork() -> TestResult {
-    let (root, pins) = bundle_root("flags")?;
+    let (fixture, pins) = bundle_root()?;
+    let root = fixture.path();
     let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
-    view.scene.prime_tibia_graphics(root.clone(), pins);
+    view.scene.prime_tibia_graphics(root.to_path_buf(), pins);
     let entity = oteryn_session::WorldSpatialEntity {
         motion: None,
         entity: EntityRef {
@@ -214,7 +213,6 @@ fn skull_and_party_shield_marks_draw_the_tibia_flag_artwork() -> TestResult {
     let (shield_at, skull_at) = (at(&shield).ok_or("shield icon")?, at(&skull).ok_or("skull icon")?);
     assert_eq!(skull_at[1], shield_at[1]);
     assert!(skull_at[0] - shield_at[0] >= ICON_PX as f32, "side by side");
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -239,10 +237,11 @@ fn guild_member() -> oteryn_session::WorldSpatialEntity {
 #[test]
 fn server_guild_emblems_draw_the_tibia_flag_artwork_beside_the_party_marks() -> TestResult {
     use oteryn_session::guild_emblem::{Emblem, GuildEmblem};
-    let (root, pins) = bundle_root("emblems")?;
+    let (fixture, pins) = bundle_root()?;
+    let root = fixture.path();
     let (link, _commands, outbox) = play_channel();
     let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
-    view.scene.prime_tibia_graphics(root.clone(), pins);
+    view.scene.prime_tibia_graphics(root.to_path_buf(), pins);
     let entity = guild_member();
     view.entities = vec![entity];
     outbox.push(vec![SessionEvent::GuildEmblems(AppliedDelta {
@@ -296,7 +295,6 @@ fn server_guild_emblems_draw_the_tibia_flag_artwork_beside_the_party_marks() -> 
     for other in [0, 2, 3, 4] {
         assert!(at(fixture::guild_color(other).to_vec()).is_none());
     }
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 

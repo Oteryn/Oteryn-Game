@@ -1,8 +1,6 @@
 use super::*;
 use bevy::ui_widgets::{Activate, ValueChange};
-use std::sync::atomic::{AtomicU64, Ordering};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-static NEXT: AtomicU64 = AtomicU64::new(0);
 
 pub(super) fn app(
     page: Page,
@@ -49,11 +47,8 @@ fn native_checkbox_edits_only_the_draft_and_cancel_discards_it() -> TestResult {
 }
 #[test]
 fn native_slider_apply_reaches_the_existing_persistence_owner() -> TestResult {
-    let path = std::env::temp_dir().join(format!(
-        "bevy-options-{}-{}.json",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("bevy-options.json");
     let result = (|| -> TestResult {
         let mut app = app(Page::Sound, Some(path.clone()))?;
         let slider = app
@@ -93,7 +88,7 @@ fn native_slider_apply_reaches_the_existing_persistence_owner() -> TestResult {
         assert_eq!(restored.preferences.audio.master_volume, 37);
         Ok(())
     })();
-    let _ = std::fs::remove_file(&path);
+    fixture.close()?;
     result
 }
 #[test]
@@ -256,19 +251,8 @@ fn active_options_escape_does_not_require_a_focused_child() -> TestResult {
 
 #[test]
 fn ask_before_exit_checkbox_round_trips_through_the_existing_settings_owner() -> TestResult {
-    struct Directory(std::path::PathBuf);
-    impl Drop for Directory {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
-    let directory = Directory(std::env::temp_dir().join(format!(
-        "bevy-options-exit-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    )));
-    std::fs::create_dir_all(&directory.0)?;
-    let path = directory.0.join("preferences.json");
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("preferences.json");
     let mut app = app(Page::Misc, Some(path.clone()))?;
     let checkbox = app
         .world_mut()
@@ -315,19 +299,8 @@ fn ask_before_exit_checkbox_round_trips_through_the_existing_settings_owner() ->
 
 #[test]
 fn remember_device_checkbox_keeps_the_session_and_persists_the_login_choices() -> TestResult {
-    struct Directory(std::path::PathBuf);
-    impl Drop for Directory {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
-    let directory = Directory(std::env::temp_dir().join(format!(
-        "bevy-options-remember-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    )));
-    std::fs::create_dir_all(&directory.0)?;
-    let path = directory.0.join("preferences.json");
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("preferences.json");
     let mut app = app(Page::Misc, Some(path.clone()))?;
     let set = |app: &mut App, id: &'static str, value: bool| {
         let checkbox = app
@@ -428,10 +401,8 @@ fn page_reset_restores_the_section_editors_of_its_page() -> TestResult {
 }
 #[test]
 fn hud_resource_toggles_edit_apply_and_save_each_display() -> TestResult {
-    let path = std::env::temp_dir().join(format!(
-        "bevy-options-resource-hud-{}.json",
-        std::process::id()
-    ));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("bevy-options-resource-hud.json");
     let result = (|| -> TestResult {
         let mut app = app(Page::Hud, Some(path.clone()))?;
         for (id, value) in [
@@ -468,7 +439,7 @@ fn hud_resource_toggles_edit_apply_and_save_each_display() -> TestResult {
         );
         Ok(())
     })();
-    let _ = std::fs::remove_file(&path);
+    fixture.close()?;
     result
 }
 

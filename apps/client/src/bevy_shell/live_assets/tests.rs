@@ -1,32 +1,14 @@
 //! Actual login-owner callers with an explicit asset lookup, without process-environment mutation.
 use super::*;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::{cell::Cell, ffi::OsString};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-static NEXT: AtomicU64 = AtomicU64::new(0);
-struct Temp(PathBuf);
-impl Temp {
-    fn new() -> std::io::Result<Self> {
-        let path = std::env::temp_dir().join(format!(
-            "bevy-live-assets-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&path)?;
-        Ok(Self(path))
-    }
-}
-impl Drop for Temp {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
+use crate::play::screenshot::TestDir as Temp;
 fn valid_login(temp: &Temp) -> Result<HostOwner, Box<dyn std::error::Error>> {
     let certificate = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
-    let root = temp.0.join("root.der");
+    let root = temp.join("root.der");
     std::fs::write(&root, certificate.cert.der())?;
     let mut host = HostOwner::new(None)?;
-    host.configure_login(Some(temp.0.join("login.json")), |_| None);
+    host.configure_login(Some(temp.join("login.json")), |_| None);
     host.login.form.settings = crate::native_login::LoginSettings {
         platform_url: "http://127.0.0.1:18564".into(),
         gateway_url: "http://127.0.0.1:18565".into(),
@@ -40,9 +22,9 @@ fn valid_login(temp: &Temp) -> Result<HostOwner, Box<dyn std::error::Error>> {
 #[test]
 fn valid_login_without_explicit_live_metadata_never_requests_admission() -> TestResult {
     let temp = Temp::new()?;
-    let file = temp.0.join("not-directory");
+    let file = temp.join("not-directory");
     std::fs::write(&file, b"not an asset directory")?;
-    let metadata_root = temp.0.join("pinned-metadata");
+    let metadata_root = temp.join("pinned-metadata");
     let manifest = metadata_root.join(oteryn_client_assets::world::MANIFEST_PATH);
     std::fs::create_dir_all(manifest.parent().ok_or("manifest parent")?)?;
     std::fs::copy(
@@ -54,9 +36,9 @@ fn valid_login_without_explicit_live_metadata_never_requests_admission() -> Test
     for asset_root in [
         None,
         Some(OsString::new()),
-        Some(temp.0.join("missing").into_os_string()),
+        Some(temp.join("missing").into_os_string()),
         Some(file.into_os_string()),
-        Some(temp.0.clone().into_os_string()),
+        Some(temp.path().to_path_buf().into_os_string()),
         Some(metadata_root.into_os_string()),
     ] {
         let mut host = valid_login(&temp)?;

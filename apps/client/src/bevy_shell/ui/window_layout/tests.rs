@@ -114,7 +114,7 @@ fn a_smaller_screen_or_larger_ui_scale_clamps_every_window() -> TestResult {
     let layouts = app.world().resource::<WindowLayouts>();
     assert_eq!(
         layouts.0.get("market").ok_or("market")?.size,
-        Some(Vec2::new(960., 540.))
+        Some(Vec2::new(1000., 634.))
     );
     assert_eq!(
         layouts.0.get("options").ok_or("options")?.size,
@@ -159,6 +159,24 @@ fn ctrl_wheel_over_a_window_zooms_it_and_ctrl_0_resets() -> TestResult {
             .collect(),
     );
     app.insert_resource(keys).insert_resource(hover);
+    let preferred_size = Vec2::new(2400., 600.);
+    app.world_mut()
+        .resource_mut::<WindowLayouts>()
+        .0
+        .get_mut("market")
+        .ok_or("market")?
+        .size = Some(preferred_size);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Digit0);
+    app.update();
+    assert_eq!(
+        app.world().resource::<WindowLayouts>().0["market"].size,
+        Some(preferred_size)
+    );
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset(KeyCode::Digit0);
     for _ in 0..5 {
         app.insert_resource(AccumulatedMouseScroll {
             unit: MouseScrollUnit::Line,
@@ -212,11 +230,13 @@ fn every_edge_and_corner_resizes_and_keeps_the_opposite_edge() -> TestResult {
     for ((name, side, _), (label, position, size)) in SIDES.into_iter().zip(expected) {
         assert_eq!(name, label);
         let mut market = layout("market")?;
+        market.size = Some(origin.1);
         let top_left = reshape(&mut market, side, origin, drag, screen);
         assert_eq!((top_left, market.size), (position, Some(size)), "{name}");
     }
     // The minimum holds and the right edge stays put while the left edge stops.
     let mut market = layout("market")?;
+    market.size = Some(origin.1);
     let top_left = reshape(
         &mut market,
         IVec2::new(-1, 0),
@@ -372,9 +392,9 @@ fn zoom_150_scales_window_text() -> TestResult {
 
 #[test]
 fn layouts_save_and_load_position_size_and_zoom() -> TestResult {
-    let folder = std::env::temp_dir().join(format!("oteryn-window-layouts-{}", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let folder = fixture.join("layout");
     let path = folder.join("windows.json");
-    let _ = std::fs::remove_dir_all(&folder);
     assert_eq!(WindowLayouts::load(&path)?, WindowLayouts::default());
     let screen = Vec2::new(1920., 1080.);
     let mut layouts = WindowLayouts::default();
@@ -397,7 +417,6 @@ fn layouts_save_and_load_position_size_and_zoom() -> TestResult {
     assert_eq!(sanitized.0.len(), WINDOWS.len());
     std::fs::write(&path, "not json")?;
     assert!(WindowLayouts::load(&path).is_err());
-    std::fs::remove_dir_all(&folder)?;
     Ok(())
 }
 
@@ -435,12 +454,31 @@ fn a_window_reopens_where_the_user_moved_it() -> TestResult {
     Ok(())
 }
 
+fn install_close(app: &mut App) {
+    if !app.is_plugin_added::<bevy::asset::AssetPlugin>() {
+        app.add_plugins(bevy::asset::AssetPlugin::default());
+    }
+    app.init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<bevy::input_focus::InputFocus>()
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    crate::bevy_shell::game_ui::modal::install(app);
+    crate::bevy_shell::exit::install(app);
+    app.world_mut()
+        .non_send_mut::<crate::bevy_shell::owner::HostOwner>()
+        .settings
+        .preferences
+        .miscellaneous
+        .confirm_exit = false;
+}
+
 #[test]
 fn layouts_load_beside_the_preferences_and_save_once_settled() -> TestResult {
     use crate::bevy_shell::owner::HostOwner;
     use bevy::time::TimeUpdateStrategy;
-    let folder = std::env::temp_dir().join(format!("oteryn-window-persist-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&folder);
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let folder = fixture.join("layout");
     std::fs::create_dir_all(&folder)?;
     let owner = HostOwner::new(Some(folder.join("client-preferences.json")))?;
     let path = owner.window_layouts_path().ok_or("layout path")?;
@@ -460,6 +498,18 @@ fn layouts_load_beside_the_preferences_and_save_once_settled() -> TestResult {
         .init_resource::<WindowLayouts>()
         .insert_non_send(owner);
     install(&mut app);
+    install_close(&mut app);
+    let screen = app
+        .world_mut()
+        .spawn((
+            Window {
+                resolution: (1920, 1080).into(),
+                ..default()
+            },
+            PrimaryWindow,
+        ))
+        .id();
+    let options = app.world_mut().spawn(window("options", default())).id();
     app.update();
     app.update();
     assert_eq!(*app.world().resource::<WindowLayouts>(), saved);
@@ -484,24 +534,20 @@ fn layouts_load_beside_the_preferences_and_save_once_settled() -> TestResult {
         Some(Vec2::new(12., 34.))
     );
     app.world_mut()
-        .resource_mut::<WindowLayouts>()
-        .0
-        .get_mut("options")
+        .get_mut::<UiTransform>(options)
         .ok_or("options")?
-        .offset = Vec2::ZERO;
-    app.world_mut().write_message(AppExit::Success);
+        .translation = Val2::px(0., 0.);
+    app.world_mut()
+        .write_message(bevy::window::WindowCloseRequested { window: screen });
     app.update();
     assert_eq!(WindowLayouts::load(&path)?.0["options"].offset, Vec2::ZERO);
-    std::fs::remove_dir_all(&folder)?;
     Ok(())
 }
 
 fn saved_market(
-    name: &str,
+    dir: &std::path::Path,
 ) -> Result<(App, std::path::PathBuf, WindowLayouts), Box<dyn std::error::Error>> {
     use crate::bevy_shell::owner::HostOwner;
-    let dir = std::env::temp_dir().join(format!("oteryn-layout-{name}-{}", std::process::id()));
-    std::fs::create_dir_all(&dir)?;
     let owner = HostOwner::new(Some(dir.join("preferences.json")))?;
     let path = owner.window_layouts_path().ok_or("layout path")?;
     let mut saved = WindowLayouts::default();
@@ -515,7 +561,9 @@ fn saved_market(
 
 #[test]
 fn idle_exit_preserves_another_clients_save() -> TestResult {
-    let (mut app, path, mut saved) = saved_market("idle")?;
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, mut saved) = saved_market(&directory)?;
     app.update();
     app.update();
     saved.0.get_mut("market").ok_or("market")?.size = Some(Vec2::new(1300., 600.));
@@ -523,13 +571,14 @@ fn idle_exit_preserves_another_clients_save() -> TestResult {
     app.world_mut().write_message(AppExit::Success);
     app.update();
     assert_eq!(WindowLayouts::load(&path)?, saved);
-    std::fs::remove_dir_all(path.parent().ok_or("fixture directory")?)?;
     Ok(())
 }
 
 #[test]
 fn smoke_exit_preserves_wide_layout() -> TestResult {
-    let (mut app, path, saved) = saved_market("smoke")?;
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, saved) = saved_market(&directory)?;
     app.world_mut().spawn((
         Window {
             resolution: (1024, 768).into(),
@@ -542,22 +591,89 @@ fn smoke_exit_preserves_wide_layout() -> TestResult {
         app.update();
     }
     assert_eq!(WindowLayouts::load(&path)?, saved);
-    std::fs::remove_dir_all(path.parent().ok_or("fixture directory")?)?;
+    Ok(())
+}
+
+fn drag_grip(app: &mut App, panel: Entity, side: IVec2, distance: Vec2) -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::{PointerDrag, PointerDragEnd, PointerDragStart},
+        pointer::PointerButton,
+    };
+    let entity = app
+        .world()
+        .get::<Children>(panel)
+        .ok_or("grips")?
+        .iter()
+        .find(|e| {
+            app.world()
+                .get::<resize::ResizeGrip>(*e)
+                .is_some_and(|g| g.side == side)
+        })
+        .ok_or("resize grip")?;
+    let button = PointerButton::Primary;
+    app.world_mut().trigger(PointerDragStart {
+        entity,
+        button,
+        pointer: stacking::pointer(),
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+    });
+    app.world_mut().trigger(PointerDrag {
+        entity,
+        button,
+        pointer: stacking::pointer(),
+        distance,
+        delta: distance,
+    });
+    app.world_mut().trigger(PointerDragEnd {
+        entity,
+        button,
+        pointer: stacking::pointer(),
+        distance,
+    });
     Ok(())
 }
 
 #[test]
 fn exit_after_panel_despawn_saves_resize_anchor() -> TestResult {
-    let (mut app, path, _) = saved_market("anchor")?;
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, _) = saved_market(&directory)?;
+    stacking::ui_layout(&mut app, UVec2::new(1600, 900));
+    install_close(&mut app);
+    let screen = app
+        .world_mut()
+        .spawn((
+            Window {
+                resolution: (1600, 900).into(),
+                ..default()
+            },
+            PrimaryWindow,
+        ))
+        .id();
+    let container = app
+        .world_mut()
+        .spawn(Node {
+            width: px(1600.),
+            height: px(900.),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            ..default()
+        })
+        .id();
+    let panel = app
+        .world_mut()
+        .spawn((window("market", default()), ChildOf(container)))
+        .id();
     app.update();
-    let panel = app.world_mut().spawn(window("market", default())).id();
-    app.update();
-    // The left edge moved 46px. Centered layout already accounts for half.
-    let mut layouts = app.world_mut().resource_mut::<WindowLayouts>();
-    layouts.0.get_mut("market").ok_or("market")?.size = Some(Vec2::new(1354., 600.));
-    app.world_mut()
-        .entity_mut(panel)
-        .insert(resize::ResizeAnchor(Vec2::new(23., 0.)));
+    assert_eq!(
+        app.world()
+            .get::<ComputedNode>(panel)
+            .ok_or("initial layout")?
+            .size(),
+        Vec2::new(1400., 600.)
+    );
+    drag_grip(&mut app, panel, IVec2::NEG_X, Vec2::new(46., 0.))?;
     app.update();
     assert_eq!(
         app.world()
@@ -567,12 +683,70 @@ fn exit_after_panel_despawn_saves_resize_anchor() -> TestResult {
         Val2::px(23., 0.)
     );
     app.world_mut().despawn(panel);
-    app.world_mut().write_message(AppExit::Success);
+    app.world_mut()
+        .write_message(bevy::window::WindowCloseRequested { window: screen });
     app.update();
     let market = WindowLayouts::load(&path)?.0["market"];
     assert_eq!(market.size, Some(Vec2::new(1354., 600.)));
     assert_eq!(market.offset, Vec2::new(23., 0.));
-    std::fs::remove_dir_all(path.parent().ok_or("fixture directory")?)?;
+    Ok(())
+}
+
+#[test]
+fn vertical_grip_preserves_clipped_preferred_width() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, _) = saved_market(&directory)?;
+    stacking::ui_layout(&mut app, UVec2::new(1024, 900));
+    install_close(&mut app);
+    let screen = app
+        .world_mut()
+        .spawn((
+            Window {
+                resolution: (1024, 900).into(),
+                ..default()
+            },
+            PrimaryWindow,
+        ))
+        .id();
+    let container = app
+        .world_mut()
+        .spawn(Node {
+            width: px(1024.),
+            height: px(900.),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            ..default()
+        })
+        .id();
+    let panel = app
+        .world_mut()
+        .spawn((window("market", default()), ChildOf(container)))
+        .id();
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<ComputedNode>(panel)
+            .ok_or("initial layout")?
+            .size(),
+        Vec2::new(1024., 600.)
+    );
+    drag_grip(&mut app, panel, IVec2::Y, Vec2::new(0., 46.))?;
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<UiTransform>(panel)
+            .ok_or("panel")?
+            .translation,
+        Val2::px(0., 23.)
+    );
+    app.world_mut().despawn(panel);
+    app.world_mut()
+        .write_message(bevy::window::WindowCloseRequested { window: screen });
+    app.update();
+    let market = WindowLayouts::load(&path)?.0["market"];
+    assert_eq!(market.size, Some(Vec2::new(1400., 646.)));
+    assert_eq!(market.offset, Vec2::new(0., 23.));
     Ok(())
 }
 
@@ -595,7 +769,8 @@ fn zoom_stops_at_75_and_200_percent_and_a_saved_zoom_is_clamped() -> TestResult 
 
 #[test]
 fn reset_window_layout_restores_global_position_size_and_zoom_and_saves() -> TestResult {
-    let folder = std::env::temp_dir().join(format!("oteryn-window-reset-{}", std::process::id()));
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let folder = fixture.join("layout");
     let path = folder.join("windows.json");
     let mut app = app(1920, 1080, 1.);
     let root = app
@@ -626,11 +801,10 @@ fn reset_window_layout_restores_global_position_size_and_zoom_and_saves() -> Tes
     let node = app.world().get::<Node>(root).ok_or("node")?;
     assert_eq!(node.width, px(1000.));
     assert_eq!(node.height, px(634.));
-    std::fs::remove_dir_all(folder)?;
     Ok(())
 }
 
-mod stacking {
+pub(super) mod stacking {
     use super::super::{
         MAX_ZOOM, MIN_ZOOM, WINDOWS, WindowId, WindowLayer, WindowLayouts, WindowStack, install,
         menu, resize::ResizeGrip, stack::BAND,
@@ -734,7 +908,7 @@ mod stacking {
             .is_some_and(|node| node.display != Display::None)
     }
 
-    fn pointer() -> Pointer {
+    pub(super) fn pointer() -> Pointer {
         Pointer::new(
             PointerId::Mouse,
             Location {
@@ -885,13 +1059,14 @@ mod stacking {
         app.update();
     }
 
-    fn menu_layout(app: &mut App) {
+    pub(in crate::bevy_shell) fn ui_layout(app: &mut App, size: UVec2) {
         use bevy::camera::{ComputedCameraValues, RenderTargetInfo};
 
         app.add_plugins((
             AssetPlugin::default(),
             WindowPlugin {
                 primary_window: None,
+                close_when_requested: false,
                 ..default()
             },
             bevy::input::InputPlugin,
@@ -912,7 +1087,7 @@ mod stacking {
             Camera {
                 computed: ComputedCameraValues {
                     target_info: Some(RenderTargetInfo {
-                        physical_size: UVec2::new(301, 201),
+                        physical_size: size,
                         scale_factor: 1.,
                     }),
                     ..default()
@@ -1011,10 +1186,98 @@ mod stacking {
     }
 
     #[test]
+    fn reset_menu_publishes_once_before_another_client_edit() -> TestResult {
+        let fixture_dir = crate::play::screenshot::TestDir::new()?;
+        let directory = fixture_dir.join("layout");
+        let (mut app, path, mut saved) = super::saved_market(&directory)?;
+        app.insert_resource(skins());
+        ui_layout(&mut app, UVec2::new(800, 600));
+        app.world_mut().spawn((
+            Window {
+                resolution: (800, 600).into(),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ));
+        let panel = app
+            .world_mut()
+            .spawn(super::super::window("market", default()))
+            .id();
+        app.update();
+        right_click(&mut app, panel);
+        let current_zoom = app
+            .world_mut()
+            .query::<(Entity, &menu::Entry)>()
+            .iter(app.world())
+            .find_map(|(entity, entry)| matches!(entry, menu::Entry::Zoom(_, 1.)).then_some(entity))
+            .ok_or("current zoom")?;
+        app.world_mut().trigger(bevy::ui_widgets::Activate {
+            entity: current_zoom,
+        });
+        assert_eq!(
+            app.world().resource::<WindowLayouts>().0["market"].size,
+            saved.0["market"].size
+        );
+        right_click(&mut app, panel);
+        let entry = app
+            .world_mut()
+            .query::<(Entity, &menu::Entry)>()
+            .iter(app.world())
+            .find_map(|(entity, entry)| matches!(entry, menu::Entry::Reset(_)).then_some(entity))
+            .ok_or("reset")?;
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: entry });
+        assert_eq!(WindowLayouts::load(&path)?, WindowLayouts::default());
+        saved.0.get_mut("market").ok_or("market")?.offset.x = 200.;
+        saved.save(&path)?;
+        app.world_mut().write_message(AppExit::Success);
+        app.update();
+        assert_eq!(WindowLayouts::load(&path)?, saved);
+        Ok(())
+    }
+
+    #[test]
+    fn character_frame_menu_is_above_the_picker() -> TestResult {
+        let mut app = app();
+        app.insert_resource(skins());
+        ui_layout(&mut app, UVec2::new(301, 201));
+        app.world_mut().spawn((
+            Window {
+                resolution: (301, 201).into(),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ));
+        app.add_systems(Startup, crate::bevy_shell::selection::setup);
+        app.update();
+        let overlay = app
+            .world_mut()
+            .query_filtered::<Entity, With<crate::bevy_shell::selection::Picker>>()
+            .single(app.world())?;
+        show(&mut app, overlay)?;
+        let panel = app
+            .world_mut()
+            .spawn((WindowId("selection"), Node::default(), ChildOf(overlay)))
+            .id();
+        right_click(&mut app, panel);
+        let z = app
+            .world_mut()
+            .query_filtered::<&GlobalZIndex, With<menu::WindowMenu>>()
+            .single(app.world())?;
+        assert!(z.0 > depth(&app, overlay)?);
+        click_menu_row(&mut app, 0)?;
+        assert_eq!(
+            app.world().resource::<WindowLayouts>().0["selection"].zoom,
+            0.75
+        );
+        Ok(())
+    }
+
+    #[test]
     fn the_window_menu_zooms_75_to_200_percent_and_resets_the_layout() -> TestResult {
         let mut app = app();
         app.insert_resource(skins());
-        menu_layout(&mut app);
+        ui_layout(&mut app, UVec2::new(301, 201));
         app.world_mut().spawn((
             Window {
                 resolution: (301, 201).into(),
@@ -1225,5 +1488,500 @@ fn prey_auto_height_fits_remaining_width() -> TestResult {
     let node = app.world().get::<Node>(prey).ok_or("prey")?;
     assert_eq!(node.width, px(736.));
     assert_eq!(node.height, Val::Auto);
+    Ok(())
+}
+
+#[test]
+fn enlarge_viewport_restores_preferred_size() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, _) = saved_market(&directory)?;
+    let screen = app
+        .world_mut()
+        .spawn((
+            Window {
+                resolution: (1024, 768).into(),
+                ..default()
+            },
+            PrimaryWindow,
+        ))
+        .id();
+    let market = app.world_mut().spawn(window("market", default())).id();
+    let prey = app.world_mut().spawn(window("prey", default())).id();
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(market).ok_or("market")?.width,
+        px(1024.)
+    );
+    app.world_mut()
+        .get_mut::<UiTransform>(prey)
+        .ok_or("prey")?
+        .translation = Val2::px(12., 34.);
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    let saved = WindowLayouts::load(&path)?;
+    assert_eq!(saved.0["market"].width(), 1400.);
+    assert_eq!(saved.0["prey"].offset, Vec2::new(12., 34.));
+    app.world_mut()
+        .get_mut::<Window>(screen)
+        .ok_or("screen")?
+        .resolution
+        .set(1600., 900.);
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(market).ok_or("market")?.width,
+        px(1400.)
+    );
+    Ok(())
+}
+
+#[test]
+fn moving_prey_preserves_other_clients_market_edit() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, _) = saved_market(&directory)?;
+    let (mut first, _, _) = saved_market(&directory)?;
+    let prey = app.world_mut().spawn(window("prey", default())).id();
+    app.update();
+    let market = first.world_mut().spawn(window("market", default())).id();
+    first.update();
+    first
+        .world_mut()
+        .get_mut::<UiTransform>(market)
+        .ok_or("market")?
+        .translation = Val2::px(22., 44.);
+    first.world_mut().write_message(AppExit::Success);
+    first.update();
+    let other = WindowLayouts::load(&path)?;
+    assert_eq!(other.0["market"].offset, Vec2::new(22., 44.));
+    app.world_mut()
+        .get_mut::<UiTransform>(prey)
+        .ok_or("prey")?
+        .translation = Val2::px(12., 34.);
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    let saved = WindowLayouts::load(&path)?;
+    assert_eq!(saved.0["market"], other.0["market"]);
+    assert_eq!(saved.0["prey"].offset, Vec2::new(12., 34.));
+    Ok(())
+}
+
+#[test]
+fn save_failure_retries_on_exit() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, _) = saved_market(&directory)?;
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_secs(1),
+    ));
+    let panel = app.world_mut().spawn(window("market", default())).id();
+    app.update();
+    let parent = path.parent().ok_or("directory")?;
+    let backup = parent.with_extension("backup");
+    std::fs::rename(parent, &backup)?;
+    std::fs::write(parent, b"blocked")?;
+    app.world_mut()
+        .get_mut::<UiTransform>(panel)
+        .ok_or("panel")?
+        .translation = Val2::px(14., 20.);
+    for _ in 0..4 {
+        app.update();
+    }
+    std::fs::remove_file(parent)?;
+    std::fs::rename(backup, parent)?;
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    assert_eq!(
+        WindowLayouts::load(&path)?.0["market"].offset,
+        Vec2::new(14., 20.)
+    );
+    Ok(())
+}
+
+#[test]
+fn simultaneous_publications_are_complete_documents() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (_, path, layouts) = saved_market(&directory)?;
+    let barrier = std::sync::Barrier::new(4);
+    std::thread::scope(|scope| {
+        let workers: Vec<_> = (0..4)
+            .map(|index| {
+                let mut layouts = layouts.clone();
+                let barrier = &barrier;
+                let path = &path;
+                scope.spawn(move || -> std::io::Result<()> {
+                    layouts
+                        .0
+                        .get_mut("market")
+                        .ok_or_else(|| std::io::Error::other("market"))?
+                        .offset
+                        .x = index as f32;
+                    barrier.wait();
+                    for _ in 0..20 {
+                        let deadline =
+                            std::time::Instant::now() + std::time::Duration::from_secs(1);
+                        loop {
+                            match layouts.save(path) {
+                                Err(error)
+                                    if error.kind() == io::ErrorKind::WouldBlock
+                                        && std::time::Instant::now() < deadline =>
+                                {
+                                    std::thread::yield_now();
+                                }
+                                result => {
+                                    result?;
+                                    break;
+                                }
+                            }
+                        }
+                        WindowLayouts::load(path)?;
+                    }
+                    Ok(())
+                })
+            })
+            .collect();
+        for worker in workers {
+            worker.join().map_err(|_| "writer panic")??;
+        }
+        Ok::<_, Box<dyn std::error::Error>>(())
+    })?;
+    Ok(())
+}
+
+#[test]
+fn moving_market_preserves_concurrent_resize() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, mut saved) = saved_market(&directory)?;
+    let panel = app.world_mut().spawn(window("market", default())).id();
+    app.update();
+    saved.0.get_mut("market").ok_or("market")?.size = Some(Vec2::new(1300., 500.));
+    saved.save(&path)?;
+    app.world_mut()
+        .get_mut::<UiTransform>(panel)
+        .ok_or("panel")?
+        .translation = Val2::px(12., 34.);
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    let latest = WindowLayouts::load(&path)?.0["market"];
+    assert_eq!(latest.offset, Vec2::new(12., 34.));
+    assert_eq!(latest.size, saved.0["market"].size);
+    Ok(())
+}
+
+#[test]
+fn moving_prey_recovers_malformed_layout_on_exit() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, _) = saved_market(&directory)?;
+    std::fs::write(&path, b"{")?;
+    let panel = app.world_mut().spawn(window("prey", default())).id();
+    app.update();
+    app.world_mut()
+        .get_mut::<UiTransform>(panel)
+        .ok_or("panel")?
+        .translation = Val2::px(12., 34.);
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    assert_eq!(
+        WindowLayouts::load(&path)?.0["prey"].offset,
+        Vec2::new(12., 34.)
+    );
+    Ok(())
+}
+
+#[test]
+fn held_layout_lock_does_not_block_exit_schedule() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, saved) = saved_market(&directory)?;
+    let panel = app.world_mut().spawn(window("market", default())).id();
+    app.update();
+    app.world_mut()
+        .get_mut::<UiTransform>(panel)
+        .ok_or("panel")?
+        .translation = Val2::px(12., 34.);
+    let lock = std::fs::File::options()
+        .read(true)
+        .write(true)
+        .open(path.with_extension("json.lock"))?;
+    lock.lock()?;
+    let (finished, wait) = std::sync::mpsc::channel();
+    let guard = std::thread::spawn(move || {
+        let result = wait.recv_timeout(std::time::Duration::from_secs(1));
+        drop(lock);
+        result
+    });
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    let still_saved = WindowLayouts::load(&path)?;
+    finished.send(())?;
+    guard.join().map_err(|_| "lock holder panicked")??;
+    assert_eq!(still_saved, saved);
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    assert_eq!(
+        WindowLayouts::load(&path)?.0["market"].offset,
+        Vec2::new(12., 34.)
+    );
+    Ok(())
+}
+
+#[test]
+fn bottom_grip_preserves_width_under_market_percentage_cap() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, _) = saved_market(&directory)?;
+    WindowLayouts::default().save(&path)?;
+    stacking::ui_layout(&mut app, UVec2::new(1024, 900));
+    let screen = app
+        .world_mut()
+        .spawn((
+            Window {
+                resolution: (1024, 900).into(),
+                ..default()
+            },
+            PrimaryWindow,
+        ))
+        .id();
+    let panel = app
+        .world_mut()
+        .spawn(window(
+            "market",
+            Node {
+                max_width: percent(96.),
+                max_height: percent(94.),
+                ..default()
+            },
+        ))
+        .id();
+    app.update();
+    let width = app
+        .world()
+        .get::<ComputedNode>(panel)
+        .ok_or("panel")?
+        .size()
+        .x;
+    assert!((982. ..=984.).contains(&width), "{width}");
+    drag_grip(&mut app, panel, IVec2::Y, Vec2::new(0., 66.))?;
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    assert_eq!(
+        WindowLayouts::load(&path)?.0["market"].size,
+        Some(Vec2::new(1000., 700.))
+    );
+    app.world_mut()
+        .get_mut::<Window>(screen)
+        .ok_or("screen")?
+        .resolution
+        .set(1400., 900.);
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(panel).ok_or("panel")?.width,
+        px(1000.)
+    );
+    Ok(())
+}
+
+#[test]
+fn concurrent_market_resizes_and_moves_merge_each_axis() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut first, path, _) = saved_market(&directory)?;
+    let (mut second, _, _) = saved_market(&directory)?;
+    WindowLayouts::default().save(&path)?;
+    for (app, side, distance, offset) in [
+        (
+            &mut first,
+            IVec2::X,
+            Vec2::new(100., 0.),
+            Vec2::new(12., 0.),
+        ),
+        (
+            &mut second,
+            IVec2::Y,
+            Vec2::new(0., 66.),
+            Vec2::new(0., 34.),
+        ),
+    ] {
+        stacking::ui_layout(app, UVec2::new(1600, 900));
+        app.world_mut().spawn((
+            Window {
+                resolution: (1600, 900).into(),
+                ..default()
+            },
+            PrimaryWindow,
+        ));
+        let panel = app.world_mut().spawn(window("market", default())).id();
+        app.update();
+        drag_grip(app, panel, side, distance)?;
+        app.update();
+        app.world_mut()
+            .get_mut::<UiTransform>(panel)
+            .ok_or("panel")?
+            .translation = Val2::px(offset.x, offset.y);
+    }
+    for app in [&mut first, &mut second] {
+        app.world_mut().write_message(AppExit::Success);
+        app.update();
+    }
+    let market = WindowLayouts::load(&path)?.0["market"];
+    assert_eq!(
+        (market.size, market.offset),
+        (Some(Vec2::new(1100., 700.)), Vec2::new(12., 34.))
+    );
+    Ok(())
+}
+
+fn assert_window_close_saves_pending_move(next_frame: std::time::Duration) -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, saved) = saved_market(&directory)?;
+    install_close(&mut app);
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::ZERO,
+    ));
+    let screen = app
+        .world_mut()
+        .spawn((Window::default(), PrimaryWindow))
+        .id();
+    let panel = app.world_mut().spawn(window("market", default())).id();
+    app.update();
+    app.world_mut()
+        .get_mut::<UiTransform>(panel)
+        .ok_or("panel")?
+        .translation = Val2::px(12., 34.);
+    let lock = std::fs::File::options()
+        .read(true)
+        .write(true)
+        .open(path.with_extension("json.lock"))?;
+    lock.lock()?;
+    app.world_mut()
+        .write_message(bevy::window::WindowCloseRequested { window: screen });
+    app.update();
+    assert_eq!(app.should_exit(), None);
+    assert_eq!(WindowLayouts::load(&path)?, saved);
+    lock.unlock()?;
+    drop(lock);
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(next_frame));
+    app.update();
+    assert_eq!(app.should_exit(), Some(AppExit::Success));
+    assert_eq!(
+        WindowLayouts::load(&path)?.0["market"].offset,
+        Vec2::new(12., 34.)
+    );
+    Ok(())
+}
+
+#[test]
+fn window_close_waits_for_pending_move_to_be_saved() -> TestResult {
+    assert_window_close_saves_pending_move(std::time::Duration::ZERO)
+}
+
+#[test]
+fn window_close_saves_pending_move_when_next_frame_is_past_deadline() -> TestResult {
+    assert_window_close_saves_pending_move(std::time::Duration::from_secs(5))
+}
+
+#[test]
+fn window_close_exits_even_if_layout_lock_stays_held() -> TestResult {
+    let fixture_dir = crate::play::screenshot::TestDir::new()?;
+    let directory = fixture_dir.join("layout");
+    let (mut app, path, saved) = saved_market(&directory)?;
+    install_close(&mut app);
+    let screen = app
+        .world_mut()
+        .spawn((Window::default(), PrimaryWindow))
+        .id();
+    let panel = app.world_mut().spawn(window("market", default())).id();
+    app.update();
+    app.world_mut()
+        .get_mut::<UiTransform>(panel)
+        .ok_or("panel")?
+        .translation = Val2::px(12., 34.);
+    let lock = std::fs::File::options()
+        .read(true)
+        .write(true)
+        .open(path.with_extension("json.lock"))?;
+    lock.lock()?;
+    app.world_mut()
+        .write_message(bevy::window::WindowCloseRequested { window: screen });
+    app.update();
+    assert_eq!(app.should_exit(), None);
+    app.world_mut()
+        .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            std::time::Duration::from_secs(5),
+        ));
+    app.update();
+    assert_eq!(app.should_exit(), Some(AppExit::Success));
+    assert_eq!(WindowLayouts::load(&path)?, saved);
+    drop(lock);
+    Ok(())
+}
+
+#[test]
+fn concurrent_first_bosstiary_resizes_merge_each_axis() -> TestResult {
+    for horizontal_first in [true, false] {
+        let fixture_dir = crate::play::screenshot::TestDir::new()?;
+        let directory = fixture_dir.join("layout");
+        let (mut first, path, _) = saved_market(&directory)?;
+        let (mut second, _, _) = saved_market(&directory)?;
+        WindowLayouts::default().save(&path)?;
+        for (app, horizontal) in [
+            (&mut first, horizontal_first),
+            (&mut second, !horizontal_first),
+        ] {
+            stacking::ui_layout(app, UVec2::new(1600, 900));
+            app.world_mut().spawn((
+                Window {
+                    resolution: (1600, 900).into(),
+                    ..default()
+                },
+                PrimaryWindow,
+            ));
+            let panel = app.world_mut().spawn(window("bosstiary", default())).id();
+            app.update();
+            assert_eq!(
+                app.world().resource::<WindowLayouts>().0["bosstiary"].size,
+                None
+            );
+            let side = if horizontal { IVec2::X } else { IVec2::Y };
+            drag_grip(app, panel, side, side.as_vec2() * 100.)?;
+        }
+        for app in [&mut first, &mut second] {
+            app.world_mut().write_message(AppExit::Success);
+            app.update();
+        }
+        assert_eq!(
+            WindowLayouts::load(&path)?.0["bosstiary"].size,
+            Some(Vec2::new(750., 400.)),
+            "horizontal first: {horizontal_first}"
+        );
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn delayed_close_fixture_preserves_previous_process_directory() -> TestResult {
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let occupied = fixture.join("previous-close-run");
+    std::fs::create_dir(&occupied)?;
+    std::fs::write(occupied.join("sentinel"), b"untouched")?;
+    let child = std::process::Command::new(std::env::current_exe()?)
+        .args([
+            "--exact",
+            "bevy_shell::ui::window_layout::tests::window_close_saves_pending_move_when_next_frame_is_past_deadline",
+        ])
+        .env("TMPDIR", fixture.path())
+        .output()?;
+    let entries = std::fs::read_dir(fixture.path())?.collect::<Result<Vec<_>, _>>()?;
+    assert_eq!(entries.len(), 1);
+    assert_eq!(
+        std::fs::read(entries[0].path().join("sentinel"))?,
+        b"untouched"
+    );
+    crate::play::screenshot::assert_one_test_passed(&child);
     Ok(())
 }

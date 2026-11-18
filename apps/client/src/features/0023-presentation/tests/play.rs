@@ -132,7 +132,8 @@ fn audio_synthetic_flow_keeps_sources_secondary_cues_and_bounds_pending_events()
 fn audio_mapping_rejects_unsafe_paths_and_catalog_verifies_audio_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
     use std::fs;
-    let dir = std::env::temp_dir().join(format!("oteryn-c28-{}", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let dir = fixture.path().join("oteryn-c28");
     fs::create_dir_all(&dir)?;
     let metadata = b"synthetic metadata";
     let audio = b"synthetic audio placeholder";
@@ -160,7 +161,6 @@ fn audio_mapping_rejects_unsafe_paths_and_catalog_verifies_audio_bytes()
     invalid["sound_cues"]["41"] = serde_json::json!(["../a.ogg"]);
     assert!(decode_mapping(&serde_json::to_vec(&invalid)?).is_err());
     assert!(decode_mapping(b"{").is_err());
-    fs::remove_dir_all(dir)?;
     Ok(())
 }
 

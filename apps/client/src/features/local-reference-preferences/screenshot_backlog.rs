@@ -1,10 +1,10 @@
 //! One frame per second, bounded by age, count and 64 MiB, scoped to the current session.
-use super::{CaptureSource, Pixels, SettingsState};
+use super::{CaptureSource, Pixels, SettingsState, screenshot_directory};
 use crate::play::PlayLink;
 use std::{
     collections::VecDeque,
     io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::{Duration, Instant},
 };
 #[derive(Default)]
@@ -99,10 +99,11 @@ impl SettingsState {
             // An asynchronous renderer may not have supplied this frame yet. Do not save
             // or consume retained frames until capture succeeds.
             let current = source.capture(preferences.game_only)?;
+            let folder = screenshot_directory(Path::new(&preferences.directory))?;
             for (_, frame) in &runtime.frames {
-                paths.push(frame.save(&preferences.folder)?);
+                paths.push(frame.save_to(&folder)?);
             }
-            paths.push(current.save(&preferences.folder)?);
+            paths.push(current.save_to(&folder)?);
             runtime.frames.clear();
             runtime.last_frame = Some(now);
             self.screenshot_requested = false;

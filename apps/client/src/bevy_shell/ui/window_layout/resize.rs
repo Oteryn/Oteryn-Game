@@ -101,8 +101,13 @@ pub(super) fn reshape(
         size,
         (size + side * distance).min(room),
     );
+    let preferred = layout.size.unwrap_or(Vec2::new(layout.width(), size.y));
+    if layout.size.is_none() {
+        layout.first_resize_origin = Some(preferred);
+    }
     layout.resize(requested, viewport);
     let next = layout.size.unwrap_or(size);
+    layout.size = Some(Vec2::select(side.cmpeq(Vec2::ZERO), preferred, next));
     Vec2::select(side.cmplt(Vec2::ZERO), position + size - next, position)
 }
 
@@ -153,15 +158,10 @@ fn drag(
     }
 }
 
-fn end(
-    mut event: On<PointerDragEnd>,
-    mut commands: Commands,
-    mut grips: Query<(&ChildOf, &mut ResizeGrip)>,
-) {
+fn end(mut event: On<PointerDragEnd>, mut grips: Query<&mut ResizeGrip>) {
     event.propagate(false);
-    if let Ok((parent, mut grip)) = grips.get_mut(event.entity) {
+    if let Ok(mut grip) = grips.get_mut(event.entity) {
         grip.start = None;
-        commands.entity(parent.parent()).remove::<ResizeAnchor>();
     }
 }
 
@@ -173,16 +173,19 @@ pub(super) fn correction(anchor: Vec2, laid_out: Vec2) -> Option<Vec2> {
 
 /// After layout, keeps the edge opposite the dragged handle in place.
 pub(in crate::bevy_shell) fn anchor(
+    mut commands: Commands,
     mut layouts: ResMut<WindowLayouts>,
     mut windows: Query<(
         &WindowId,
+        Entity,
         &ResizeAnchor,
         &ComputedNode,
         &UiGlobalTransform,
         &mut UiTransform,
     )>,
 ) {
-    for (id, anchor, node, global, mut transform) in &mut windows {
+    for (id, entity, anchor, node, global, mut transform) in &mut windows {
+        commands.entity(entity).remove::<ResizeAnchor>();
         let value = |value| match value {
             Val::Px(value) => Some(value),
             Val::Auto => Some(0.),

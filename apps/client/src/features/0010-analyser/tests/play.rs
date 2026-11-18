@@ -148,13 +148,8 @@ fn merged_analyser_controls_keep_selectors_prices_resolve_and_reset_distinct()
 fn analyser_session_export_writes_confirmed_report_through_native_action()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, _, outbox) = play_channel();
-    let path = std::env::temp_dir().join(format!(
-        "oteryn-hunt-{}-{}.txt",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos()
-    ));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("oteryn-hunt.txt");
     assert!(link.analyser_save_session(&path).is_err());
     assert!(!path.exists());
     outbox.analyser_initialize(true);

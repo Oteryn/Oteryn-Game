@@ -29,13 +29,8 @@ fn hotkeys_list() {
 }
 #[test]
 fn hotkey_text_macro_auto_send() -> Result<(), Box<dyn std::error::Error>> {
-    let path = std::env::temp_dir().join(format!(
-        "oteryn-hotkeys-{}-{}.json",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos()
-    ));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("oteryn-hotkeys.json");
     let mut store = crate::play::PreferenceStore::defaults(path.clone());
     for send in [false, true] {
         let a = action(0, "hello", send, "", "").ok_or("missing text action")?;
