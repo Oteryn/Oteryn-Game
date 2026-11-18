@@ -457,6 +457,7 @@ fn scenario() -> TestResult {
                     .map_err(debug)?;
                 Ok(position.position())
             };
+        assert_eq!(step_onto(&mut owner, FLAME).await?, local(approach(FLAME)));
         for attempt in 0..=6 {
             let index = match attempt {
                 0 => 0,
@@ -541,7 +542,13 @@ fn scenario() -> TestResult {
             .movement_effects_since(0)
             .last()
             .map_or(0, |cue| cue.0);
-        for plate in [EAST_PLATE, PLATE] {
+        for (plate, spawned) in [(EAST_PLATE, true), (PLATE, true), (EAST_PLATE, false)] {
+            if !spawned {
+                let mut runtime = owner.runtime.lock().await;
+                for creature in runtime.current_live_creature_census().map_err(debug)? {
+                    runtime.remove_encounter_actor(creature).map_err(debug)?;
+                }
+            }
             assert_eq!(step_onto(&mut owner, plate).await?, local(plate));
             let runtime = owner.runtime.lock().await;
             let mut positions = runtime
@@ -556,7 +563,11 @@ fn scenario() -> TestResult {
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             positions.sort_by_key(|position| position.y);
-            assert_eq!(positions, SPAWNS.map(local));
+            let expected = if spawned { SPAWNS.as_slice() } else { &[] };
+            assert_eq!(
+                positions,
+                expected.iter().copied().map(local).collect::<Vec<_>>()
+            );
         }
         let cues: Vec<_> = map
             .facts
