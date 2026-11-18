@@ -129,7 +129,8 @@ pub(super) async fn reversible_passage(
     let mut close = authored.clone();
     close["key"] = "oteryn:quest-callback/fixture-trapdoor-step".into();
     close["trigger"] = "step_in".into();
-    close["selector"] = serde_json::json!({"position": {"x":33224,"y":31671,"floor":-13}});
+    close["selector"] =
+        serde_json::json!({"position": {"x":33224,"y":31671,"floor":-13}, "ordinal": 0});
     close["lever"] = serde_json::Value::Null;
     close["reversible"] = false.into();
     close["effects"] = serde_json::json!({"close_passages_after_ms": 3_000});

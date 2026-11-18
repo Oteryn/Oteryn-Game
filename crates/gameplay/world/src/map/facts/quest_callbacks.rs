@@ -948,7 +948,13 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
-            .chain(states.timed_displays.keys().next().map(|(due, _)| *due))
+            .chain(
+                states
+                    .timed_displays
+                    .iter()
+                    .find(|(_, (position, _))| !states.position_reserved(*position))
+                    .map(|((due, _), _)| *due),
+            )
             .min()
     }
 
@@ -972,11 +978,14 @@ impl BundleFacts {
         }
         // Each display expires by its own added-entry identity. Another use of the
         // same source cannot inherit (or be deleted by) an earlier display's timer.
-        while let Some((&(due, sequence), &(pos, id))) = states.timed_displays.first_key_value() {
-            if due > now || states.position_reserved(pos) {
-                break;
-            }
-            states.timed_displays.remove(&(due, sequence));
+        let displays: Vec<_> = states
+            .timed_displays
+            .range(..=(now, u64::MAX))
+            .filter(|(_, (position, _))| !states.position_reserved(*position))
+            .map(|(key, &entry)| (*key, entry))
+            .collect();
+        for (key, (pos, id)) in displays {
+            states.timed_displays.remove(&key);
             if let Some(entries) = states.movement_items.get_mut(&pos) {
                 let before = entries.len();
                 entries.retain(|entry| entry.source != view::EntrySource::Added(id));
