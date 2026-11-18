@@ -42,6 +42,39 @@ pub(super) async fn exercise(
         view.wire_observation(&runtime, tile)
             .ok_or("exit position")?
     };
+    let map = view.bundle_map().ok_or("published Instance map")?;
+    let key =
+        oteryn_world_bundle::bundle::placement_key(-11, 34068, 31418, 1).ok_or("exit object")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = encode_use_intent(&WorldObjectTarget {
+        placement,
+        expected_revision: map.facts.object_revision(key),
+    })
+    .map_err(debug)?;
+    let command_id = participant.continuity.next_command_id;
+    let (_, reply, barrier, _) = super::guild_wire::exchange_capture(
+        view,
+        &mut participant,
+        command_id,
+        COMMAND_TYPE_USE_INTENT,
+        |_| Ok(payload.clone()),
+        false,
+        &mut Vec::new(),
+    )
+    .await?;
+    assert_eq!(
+        decode_use_result(&reply).map_err(debug)?,
+        UseDisposition::TooFar
+    );
+    assert!(barrier.is_none());
+    assert_eq!(
+        participant
+            .item_fence
+            .ok_or("unchanged fence")?
+            .runtime_scope,
+        scope
+    );
     let mut route = view
         .item_walk_route(
             actor,
@@ -65,16 +98,6 @@ pub(super) async fn exercise(
             oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
         );
     }
-    let map = view.bundle_map().ok_or("published Instance map")?;
-    let key =
-        oteryn_world_bundle::bundle::placement_key(-11, 34068, 31418, 1).ok_or("exit object")?;
-    let mut placement = map.overlay.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    let payload = encode_use_intent(&WorldObjectTarget {
-        placement,
-        expected_revision: map.facts.object_revision(key),
-    })
-    .map_err(debug)?;
     let source = participant;
     let command_id = participant.continuity.next_command_id;
     let (_, reply, barrier, _) = super::guild_wire::exchange_capture(
@@ -120,13 +143,18 @@ pub(super) async fn exercise(
             floor: 11
         }
     );
-    let receipt: (i32, i32, i16, i16, Option<String>) = sqlx::query_as(
-        "SELECT return_x,return_y,return_floor,reason,command_id::text FROM game_activity_runtime_returns
+    let receipt: (i32, i32, i16, i16, Option<String>, bool) = sqlx::query_as(
+        "SELECT return_x,return_y,return_floor,reason,command_id::text,native_use_exit
+         FROM game_activity_runtime_returns
          WHERE source_game_session_id=encode($1,'hex')::uuid",
     )
     .bind(source.game_session_id.as_bytes().as_slice())
-    .fetch_one(&h.pool).await?;
-    assert_eq!(receipt, (34053, 31431, 11, 1, Some(command_id.to_string())));
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        receipt,
+        (34053, 31431, 11, 1, Some(command_id.to_string()), true)
+    );
     let returns: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_runtime_returns")
         .fetch_one(&h.pool)
         .await?;
