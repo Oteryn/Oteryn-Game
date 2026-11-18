@@ -64,15 +64,17 @@ impl DurabilityRoot {
                 EquipmentError::Rejected(_) => DurabilityError::CommitRejected,
             })?;
             lock_cause(&mut tx, command).await?;
-            let previous: Option<(Vec<u8>, Vec<u8>, Vec<u8>, String)> = sqlx::query_as(
-                "SELECT uuid_send(character_id),map_digest,placement,source_revision::text
+            let previous: Option<bool> = sqlx::query_scalar(
+                "SELECT uuid_send(character_id)=$3 AND map_digest=$4 AND placement=$5 AND source_revision=$6::text::numeric
                  FROM game_haunted_tomb_uses WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(command.game_session_id().as_bytes().as_slice())
                 .bind(command.command_id().get().to_string())
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(source.map_digest.as_slice()).bind(source.placement.as_slice())
+                .bind(source.expected_revision.to_string())
                 .fetch_optional(&mut **tx).await?;
-            if let Some((character, map, key, revision)) = previous {
-                if character != fence.character_id.as_bytes() || map != source.map_digest
-                    || key != source.placement || revision != source.expected_revision.to_string() {
+            if let Some(matches) = previous {
+                if !matches {
                     return Err(DurabilityError::CommitRejected);
                 }
                 tx.commit(deadline).await?;
