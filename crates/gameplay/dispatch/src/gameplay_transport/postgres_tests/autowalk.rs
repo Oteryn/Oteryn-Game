@@ -1150,7 +1150,7 @@ async fn result_at_rest(
                         value.actor_position.y,
                         value.actor_position.floor
                     ),
-                    (at.x, at.y, -7)
+                    (at.x, at.y, at.floor)
                 );
             }
         }

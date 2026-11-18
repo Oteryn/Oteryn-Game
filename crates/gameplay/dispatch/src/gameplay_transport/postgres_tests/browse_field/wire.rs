@@ -110,20 +110,22 @@ async fn transfers(
     let before = custody(harness).await?;
     let bag_before = bag_custody(harness).await?;
     assert_eq!(bag_before, (0, 1, 0, 1));
-    // The same durable owner retains its nonempty-container-drop refusal.
-    if case == Case::Nested {
-        move_command(client, 4, &move_payload(bag, ItemMoveDestination::Ground(FIELD))?, ItemMoveOutcome::NotSupported).await?;
-        assert_eq!(bag_custody(harness).await?, bag_before);
-        assert_eq!(custody(harness).await?, before);
-        assert_eq!(receipts(harness).await?, 2);
-    }
     // Crystal Container::queryAdd refuses its locked browse destination.
     let field = picked_up.views.first().ok_or("field after pickup")?;
-    let command_id = if case == Case::Nested { 5 } else { 4 };
-    move_command(client, command_id, &move_payload(bag, ItemMoveDestination::Container(field.container_handle, None))?, ItemMoveOutcome::NotSupported).await?;
+    move_command(client, 4, &move_payload(bag, ItemMoveDestination::Container(field.container_handle, None))?, ItemMoveOutcome::NotSupported).await?;
     assert_eq!(bag_custody(harness).await?, bag_before);
     assert_eq!(custody(harness).await?, before);
     assert_eq!(receipts(harness).await?, 2);
+    if case == Case::Nested {
+        move_command(client, 5, &move_payload(bag, ItemMoveDestination::Ground(FIELD))?, ItemMoveOutcome::Moved).await?;
+        let dropped = views(client).await?;
+        let field = dropped.views.first().ok_or("field after dropping a full bag")?;
+        assert_eq!(field.browse.ok_or("browse metadata")?.total, 1);
+        assert_eq!(field.entries.len(), 1);
+        assert_eq!(bag_custody(harness).await?, (1, 0, 0, 1));
+        assert_eq!(custody(harness).await?, before);
+        assert_eq!(receipts(harness).await?, 3);
+    }
     Ok(payload)
 }
 

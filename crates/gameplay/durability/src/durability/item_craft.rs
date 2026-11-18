@@ -235,7 +235,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
         revision_ref: source.try_get("definition_revision_ref")?,
     };
     if nested_source.is_some()
-        && oteryn_gameplay_items::reward_bag::event_containers::event_container_rule(
+        && oteryn_gameplay_items::reward_bag::event_containers::legacy_conversion_rule(
             &definition.production_key,
         )
         .is_none()

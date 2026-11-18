@@ -92,7 +92,7 @@ pub fn event_container_rule(key: &str) -> Option<&'static EventContainerRule> {
     })
 }
 
-pub(crate) fn legacy_conversion_rule(key: &str) -> Option<&'static EventContainerRule> {
+pub fn legacy_conversion_rule(key: &str) -> Option<&'static EventContainerRule> {
     // Generated bags own the rewards; the captured rule still owns source metadata.
     if super::playable_bag(super::reward_bags()?, key).is_some() {
         return None;
@@ -267,10 +267,6 @@ pub fn consumes_whole_stack(recipe: &str) -> bool {
             | "oteryn:event-container.39705"
             | "oteryn:event-container.39706"
             | "oteryn:event-container.39710"
-            | "oteryn:reward-bag.event_39704"
-            | "oteryn:reward-bag.event_39705"
-            | "oteryn:reward-bag.event_39706"
-            | "oteryn:reward-bag.event_39710"
     )
 }
 
@@ -515,9 +511,9 @@ mod tests {
     }
 
     #[test]
-    fn generated_anniversary_recipes_consume_whole_stacks() {
+    fn sp04_anniversary_receipts_consume_one_unit() {
         for id in [39704, 39705, 39706, 39710] {
-            assert!(consumes_whole_stack(&format!(
+            assert!(!consumes_whole_stack(&format!(
                 "oteryn:reward-bag.event_{id}"
             )));
         }
