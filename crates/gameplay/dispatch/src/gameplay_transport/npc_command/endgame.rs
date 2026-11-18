@@ -139,7 +139,8 @@ fn choose(npc: &str, text: &str, topic: Option<Topic>) -> Option<(Option<Topic>,
             _ => None,
         },
         "oteryn:npc.torkada" => match text {
-            "time" => Some((
+            // Rotten Blood Quest/Spoiler, curid 102953, oldid 1107075, Method.
+            "expedition" | "time" => Some((
                 Some(Topic::TorkadaTime),
                 Action::Torkada(Some(Topic::TorkadaTime)),
             )),
