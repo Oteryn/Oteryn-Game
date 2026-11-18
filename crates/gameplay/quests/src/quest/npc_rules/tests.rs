@@ -1234,10 +1234,10 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        28
+        29
     );
-    // Canonical main adds the exact source cohort checked above; schema2
-    // Mystery has no fabricated legacy definition or absent-value mapping.
+    // The source census includes Myzzi as a separate Dream Courts programme.
+    // Schema2 Mystery has no fabricated legacy definition or absent-value mapping.
     assert_eq!(
         active
             .npc_legacy
