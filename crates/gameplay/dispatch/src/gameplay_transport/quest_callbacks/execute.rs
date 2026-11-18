@@ -1522,6 +1522,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         ) || callback.effects.reset_after_ms.is_some()
             || callback.effects.passages_reset_after_ms.is_some()
+            || callback.effects.passages_close_after_ms.is_some()
             || callback.effects.target_transform.is_some()
             || callback
                 .effects

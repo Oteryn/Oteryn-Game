@@ -279,6 +279,7 @@ fn scenario(circuit: Circuit) -> TestResult {
             let (origin, entered) = {
                 let mut runtime = owner.runtime.lock().await;
                 let origin = runtime.read_actor_position(actor).map_err(debug)?;
+                let closed = crate::map::floor::BundleDoors(&map.facts);
                 let proof = crate::map::floor::prepare_quest_callback_teleport(
                     &runtime,
                     owner.movement_cells(),
@@ -287,7 +288,7 @@ fn scenario(circuit: Circuit) -> TestResult {
                     origin,
                     local(plate),
                     false,
-                    &crate::map::floor::BundleDoors(&map.facts),
+                    &closed,
                 )
                 .map_err(debug)?;
                 let entered = runtime.commit_source_step(proof).map_err(debug)?;
