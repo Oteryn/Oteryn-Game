@@ -191,7 +191,7 @@ fn chamber(two_players: bool) -> TestResult {
             );
             if let Some(source) = &evidence {
                 let character =
-                    super::desert_party_rite::create_peer(&h, &authority, &source.evidence, 0)
+                    super::party_peer_bootstrap::create_peer(&h, &authority, &source.evidence, 0)
                         .await?;
                 let peer = super::activity_deadline_paging::admit_created_member(
                     &h,
