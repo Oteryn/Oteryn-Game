@@ -4916,6 +4916,7 @@ dependencies = [
  "oteryn-session-tcp",
  "rcgen",
  "rodio",
+ "rustix 1.1.6",
  "rustls",
  "semver",
  "serde",

@@ -587,21 +587,23 @@ fn audit_f12_replaces_png_with_private_capture() -> TestResult {
 
 #[cfg(unix)]
 #[test]
-fn f12_restricts_existing_capture_directory() -> TestResult {
+fn f12_restricts_legacy_capture_in_existing_directory() -> TestResult {
     use std::os::unix::fs::PermissionsExt;
     let root = std::env::temp_dir().join(format!("oteryn-legacy-captures-{}", std::process::id()));
     std::fs::create_dir(&root)?;
     std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o755))?;
-    let legacy = root.join("legacy.bmp");
+    let legacy = root.join("oteryn-1-2.bmp");
     std::fs::write(&legacy, b"BM legacy capture")?;
     std::fs::set_permissions(&legacy, std::fs::Permissions::from_mode(0o644))?;
     capture(&mut app(&root, false)?)?;
     let mode = root.metadata()?.permissions().mode() & 0o777;
+    let legacy_mode = legacy.metadata()?.permissions().mode() & 0o777;
     let data = std::fs::read(legacy);
     let entries = std::fs::read_dir(&root)?.count();
     std::fs::remove_dir_all(root)?;
     assert_eq!(entries, 2);
-    assert_eq!(mode, 0o700);
+    assert_eq!(mode, 0o755);
+    assert_eq!(legacy_mode, 0o600);
     assert_eq!(data?, b"BM legacy capture");
     Ok(())
 }
@@ -631,7 +633,20 @@ fn audit_capture_after_json(
         "oteryn.bevy-ui-audit.v1"
     );
     std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(parent_mode))?;
+    let legacy = folder.join("oteryn-1-2-3.bmp");
+    let unrelated = folder.join("unrelated.bmp");
+    if parent_mode & 0o1000 != 0 {
+        for file in [&legacy, &unrelated] {
+            std::fs::write(file, b"BM previous file")?;
+            std::fs::set_permissions(file, std::fs::Permissions::from_mode(0o644))?;
+        }
+    }
     capture(&mut app)?;
+    if parent_mode & 0o1000 != 0 {
+        assert_eq!(legacy.metadata()?.permissions().mode() & 0o777, 0o600);
+        assert_eq!(std::fs::read(legacy)?, b"BM previous file");
+        assert_eq!(unrelated.metadata()?.permissions().mode() & 0o777, 0o644);
+    }
     let path = output.with_extension("png");
     let saved = std::fs::read(&path);
     let png_mode = path
@@ -643,20 +658,20 @@ fn audit_capture_after_json(
     assert_eq!(&saved?[..8], b"\x89PNG\r\n\x1a\n");
     assert_eq!(png_mode?, 0o600);
     assert_eq!(mode, expected_mode);
-    assert_eq!(entries, 2);
+    assert_eq!(entries, if parent_mode & 0o1000 != 0 { 4 } else { 2 });
     Ok(())
 }
 
 #[cfg(unix)]
 #[test]
-fn audit_f12_after_json_restricts_capture_directory() -> TestResult {
-    audit_capture_after_json("normal", "audit", 0o755, 0o700)
+fn audit_f12_after_json_preserves_existing_directory() -> TestResult {
+    audit_capture_after_json("normal", "audit", 0o755, 0o755)
 }
 
 #[cfg(unix)]
 #[test]
 fn audit_f12_accepts_maximum_audit_staging_basename() -> TestResult {
-    audit_capture_after_json("long", &"a".repeat(244), 0o755, 0o700)
+    audit_capture_after_json("long", &"a".repeat(244), 0o755, 0o755)
 }
 
 #[cfg(unix)]
@@ -751,6 +766,69 @@ fn fallback_captures_from_two_processes_use_distinct_directories() -> TestResult
 
 #[cfg(unix)]
 #[test]
+fn audit_f12_preserves_group_writable_directory() -> TestResult {
+    audit_capture_after_json("group", "audit", 0o775, 0o775)
+}
+
+#[cfg(unix)]
+#[test]
+fn configured_bmps_preserve_group_writable_directory() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+    let root = std::env::temp_dir().join(format!("oteryn-bmp-group-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o775))?;
+    capture(&mut app(&root, false)?)?;
+    capture_death(&root, false)?;
+    let mode = root.metadata()?.permissions().mode() & 0o777;
+    let files = std::fs::read_dir(&root)?.collect::<Result<Vec<_>, _>>()?;
+    std::fs::remove_dir_all(root)?;
+    assert_eq!(mode, 0o775);
+    assert_eq!(files.len(), 2);
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn f12_and_death_save_in_write_and_search_only_directory() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+    let root = std::env::temp_dir().join(format!("oteryn-write-search-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    let mut manual = app(&root, false)?;
+    std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o300))?;
+    let can_read = std::fs::read_dir(&root).is_ok();
+    let manual_result = capture(&mut manual);
+    let death_result = capture_death(&root, false);
+    let mode = root.metadata()?.permissions().mode() & 0o777;
+    std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o700))?;
+    let files = std::fs::read_dir(&root)?.collect::<Result<Vec<_>, _>>()?;
+    let file_modes = files
+        .iter()
+        .map(|file| {
+            file.metadata()
+                .map(|entry| entry.permissions().mode() & 0o777)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    std::fs::remove_dir_all(root)?;
+    manual_result?;
+    death_result?;
+    assert_eq!(mode, 0o300);
+    assert!(
+        manual
+            .world()
+            .non_send::<HostOwner>()
+            .status
+            .starts_with("Screenshot saved:")
+    );
+    assert_eq!(
+        file_modes,
+        [0o600, 0o600],
+        "directory listing permitted: {can_read}"
+    );
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
 fn audit_f12_skips_stale_staging_files_from_reused_pid() -> TestResult {
     const FIXTURE: &str = "OTERYN_TEST_AUDIT_STAGING_FIXTURE";
     const TEST: &str =
@@ -797,5 +875,68 @@ fn audit_f12_skips_stale_staging_files_from_reused_pid() -> TestResult {
         "{}",
         String::from_utf8_lossy(&output.stdout)
     );
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn read_only_legacy_destination_does_not_block_fallback_capture() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+    let root = std::env::temp_dir().join(format!("oteryn-readonly-legacy-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    let legacy = root.join("LOCALAPPDATA/Oteryn/screenshots");
+    std::fs::create_dir_all(&legacy)?;
+    std::fs::set_permissions(&legacy, std::fs::Permissions::from_mode(0o755))?;
+    std::fs::write(legacy.join("oteryn-1-2-3.bmp"), b"BM legacy capture")?;
+    // Return EROFS from chmod in the child, as on a read-only mount. The test
+    // needs no mount privileges and still uses the real F12 and death callers.
+    let output = std::process::Command::new("python3")
+        .args([
+            "-I",
+            "-c",
+            r#"
+import ctypes
+import errno
+import os
+import sys
+
+lib = ctypes.CDLL("libseccomp.so.2")
+lib.seccomp_init.restype = ctypes.c_void_p
+lib.seccomp_rule_add.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_int, ctypes.c_uint]
+lib.seccomp_syscall_resolve_name.argtypes = [ctypes.c_char_p]
+lib.seccomp_load.argtypes = [ctypes.c_void_p]
+ctx = lib.seccomp_init(0x7fff0000)
+assert ctx
+for syscall in (b"chmod", b"fchmod", b"fchmodat", b"fchmodat2"):
+    number = lib.seccomp_syscall_resolve_name(syscall)
+    if number >= 0:
+        assert lib.seccomp_rule_add(ctx, 0x00050000 | errno.EROFS, number, 0) == 0
+assert lib.seccomp_load(ctx) == 0
+os.execv(sys.argv[1], sys.argv[1:])
+"#,
+        ])
+        .arg(std::env::current_exe()?)
+        .args(["--exact", CAPTURE_DESTINATION_TEST])
+        .env(CAPTURE_DESTINATION_CASE, "default")
+        .env("LOCALAPPDATA", root.join("LOCALAPPDATA"))
+        .env("TMPDIR", &root)
+        .env_remove("HOME")
+        .env_remove("XDG_CONFIG_HOME")
+        .output();
+    let entries = std::fs::read_dir(&root)?.count();
+    let legacy_mode = legacy.metadata()?.permissions().mode() & 0o777;
+    std::fs::remove_dir_all(root)?;
+    let output = output?;
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        entries, 2,
+        "expected the legacy tree and the private fallback"
+    );
+    assert_eq!(legacy_mode, 0o755);
     Ok(())
 }

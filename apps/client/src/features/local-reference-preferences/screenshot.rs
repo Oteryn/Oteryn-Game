@@ -3,6 +3,8 @@ use super::{PreferenceStore, SettingsState};
 #[path = "screenshot_backlog.rs"]
 mod backlog;
 pub(super) use backlog::ScreenshotRuntime;
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
 use std::{
     fs::{DirBuilder, File},
     io::{self, BufWriter, Write},
@@ -130,41 +132,83 @@ pub(crate) fn create_capture_file(path: &Path) -> io::Result<File> {
         directory.mode(0o700);
         options.mode(0o600);
     }
-    if let Some(parent) = path
+    let parent = path
         .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-    {
+        .filter(|parent| !parent.as_os_str().is_empty());
+    if let Some(parent) = parent {
         directory.create(parent)?;
-        #[cfg(unix)]
-        if parent.file_name().is_some() {
-            // Older clients and the audit JSON writer can leave this directory public.
-            let directory = File::open(parent.join("."))?;
-            restrict_capture_directory(&directory, directory.metadata()?.permissions())?;
+    }
+    let file = options.open(path)?;
+    #[cfg(unix)]
+    {
+        let folder = parent.unwrap_or_else(|| Path::new("."));
+        if let Ok(entry) = folder.metadata()
+            && entry.mode() & 0o011 != 0
+            && let Ok(created) = file.metadata()
+        {
+            restrict_legacy_bmps(folder, created.uid());
         }
     }
-    options.open(path)
+    Ok(file)
 }
 
 #[cfg(unix)]
-fn restrict_capture_directory(
-    directory: &File,
-    mut permissions: std::fs::Permissions,
-) -> io::Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-    let mode = permissions.mode();
-    // Sticky directories such as /tmp are explicitly shared by their owner.
-    if mode & 0o1000 == 0 && mode & 0o077 != 0 {
-        permissions.set_mode(mode & !0o077);
-        directory.set_permissions(permissions)?;
+fn restrict_legacy_bmps(folder: &Path, owner: u32) {
+    use rustix::fs::{Mode, OFlags, open};
+    use std::{io::Read, os::unix::fs::PermissionsExt};
+
+    let Ok(entries) = std::fs::read_dir(folder) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let Some(stem) = name.to_str()
+            .and_then(|name| name.strip_prefix("oteryn-"))
+            .and_then(|name| name.strip_suffix(".bmp"))
+        else {
+            continue;
+        };
+        // Both retained BMP writers used this prefix and two or three numeric fields.
+        let mut fields = stem.split('-');
+        if !(2..=3).contains(&fields.clone().count())
+            || !fields.all(|field| {
+                !field.is_empty() && field.bytes().all(|byte| byte.is_ascii_digit())
+            })
+        {
+            continue;
+        }
+        let Ok(before) = entry.metadata() else {
+            continue;
+        };
+        if !before.is_file() || before.uid() != owner || before.nlink() != 1 || before.mode() & 0o077 == 0 {
+            continue;
+        }
+        // Check the exact open inode before changing permissions in a shared directory.
+        let Ok(fd) = open(entry.path(), OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC, Mode::empty()) else {
+            continue;
+        };
+        let mut file = File::from(fd);
+        let Ok(opened) = file.metadata() else {
+            continue;
+        };
+        let mut signature = [0; 2];
+        if opened.is_file()
+            && opened.uid() == owner
+            && opened.nlink() == 1
+            && (opened.dev(), opened.ino()) == (before.dev(), before.ino())
+            && file.read_exact(&mut signature).is_ok()
+            && &signature == b"BM"
+        {
+            let _ = file.set_permissions(std::fs::Permissions::from_mode(opened.mode() & !0o077));
+        }
     }
-    Ok(())
 }
 
 /// Keep the fallback private and reuse it for all captures in this process.
 #[cfg(unix)]
 fn private_capture_directory() -> io::Result<PathBuf> {
     use std::{
-        os::unix::fs::{DirBuilderExt, MetadataExt},
+        os::unix::fs::{DirBuilderExt, PermissionsExt},
         sync::Mutex,
         time::{SystemTime, UNIX_EPOCH},
     };
@@ -182,25 +226,22 @@ fn private_capture_directory() -> io::Result<PathBuf> {
     let folder =
         std::env::temp_dir().join(format!("oteryn-screenshots-{}-{stamp}", std::process::id()));
     std::fs::DirBuilder::new().mode(0o700).create(&folder)?;
-    let result = (|| {
-        // An earlier client could have saved public BMPs in the shared fallback.
-        // Only restrict that existing directory when it belongs to this account.
-        if let Some(legacy) = local_app_data().map(|root| root.join("Oteryn/screenshots"))
-            && let Ok(entry) = legacy.symlink_metadata()
-            && entry.is_dir()
-            && entry.uid() == folder.metadata()?.uid()
-            && let Ok(legacy) = File::open(legacy.join("."))
+    // Legacy cleanup is best effort. The new directory already protects fresh captures.
+    if let Some(legacy) = local_app_data().map(|root| root.join("Oteryn/screenshots"))
+        && let Ok(entry) = legacy.symlink_metadata()
+        && entry.is_dir()
+        && folder.metadata().is_ok_and(|created| entry.uid() == created.uid())
+        && let Ok(opened) = File::open(legacy.join("."))
+        && let Ok(actual) = opened.metadata()
+        && (actual.dev(), actual.ino()) == (entry.dev(), entry.ino())
+    {
+        let mode = actual.mode();
+        if mode & 0o1022 != 0
+            || (mode & 0o077 != 0
+                && opened.set_permissions(std::fs::Permissions::from_mode(mode & !0o077)).is_err())
         {
-            let opened = legacy.metadata()?;
-            if (opened.dev(), opened.ino()) == (entry.dev(), entry.ino()) {
-                restrict_capture_directory(&legacy, opened.permissions())?;
-            }
+            restrict_legacy_bmps(&legacy, entry.uid());
         }
-        Ok::<(), io::Error>(())
-    })();
-    if let Err(error) = result {
-        let _ = std::fs::remove_dir(&folder);
-        return Err(error);
     }
     *directory = Some(folder.clone());
     Ok(folder)
