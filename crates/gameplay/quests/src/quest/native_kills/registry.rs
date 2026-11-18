@@ -20,6 +20,7 @@ pub struct CounterRef<'a> {
     pub record_defeat_time: bool,
     pub encounter_source: Option<&'a str>,
     pub first_defeat_outfit: Option<&'a crate::quest::reward_callbacks::OutfitReward>,
+    pub first_defeat_outfit_message: Option<&'a str>,
 }
 
 impl Counter {
@@ -40,6 +41,7 @@ impl Counter {
             record_defeat_time: false,
             encounter_source: None,
             first_defeat_outfit: None,
+            first_defeat_outfit_message: None,
         }
     }
 }

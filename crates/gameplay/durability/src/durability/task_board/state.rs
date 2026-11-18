@@ -375,6 +375,7 @@ pub(super) async fn advance(
         .bind(character).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(body)
         .bind(committed.to_string()).bind(cause.as_slice()).bind(ordinal.to_string()).execute(&mut **tx).await?;
     Ok(CommittedQuestTransition {
+        native_feedback: None,
         character_id: fence.character_id,
         cause: quest_cause,
         transition_key: transition_key.to_owned(),

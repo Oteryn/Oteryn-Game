@@ -91,6 +91,9 @@ pub struct KillCounter {
     /// the first credited defeat. Bind the outfit to a one-way journal write.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub first_defeat_outfit: Option<OutfitReward>,
+    /// Chat feedback for a newly earned outfit after the joint transaction commits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub first_defeat_outfit_message: Option<String>,
 }
 
 impl KillCounter {
@@ -124,6 +127,15 @@ impl KillCounter {
                                 })
                         })
             })
+            || self
+                .first_defeat_outfit_message
+                .as_ref()
+                .is_some_and(|message| {
+                    self.first_defeat_outfit.is_none()
+                        || message.trim().is_empty()
+                        || message.len() > 256
+                        || message.contains(['\n', '\r', '\0'])
+                })
             || self.required_outcome.as_ref().is_some_and(|required| {
                 !required.valid()
                     || self.damage_credit.is_none()
@@ -271,6 +283,7 @@ impl KillCounter {
             record_defeat_time: self.record_defeat_time,
             encounter_source: self.encounter_source.as_deref(),
             first_defeat_outfit: self.first_defeat_outfit.as_ref(),
+            first_defeat_outfit_message: self.first_defeat_outfit_message.as_deref(),
         }
     }
 }

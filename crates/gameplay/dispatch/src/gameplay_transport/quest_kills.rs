@@ -15,6 +15,18 @@ pub(super) struct Recipient {
     pub(super) death: crate::durability::quest_state::native_kills::NativeQuestDeath,
 }
 
+impl Recipient {
+    fn matches_live_session(&self, runtime: &crate::foundation::ChannelRuntimeV1) -> bool {
+        runtime.owner_fence().is_ok()
+            && runtime
+                .bound_attacker_lease(self.actor, self.session)
+                .is_ok_and(|lease| {
+                    lease.character_id().as_bytes() == &self.character
+                        && lease.generation() == self.lease_generation
+                })
+    }
+}
+
 pub(super) async fn settle(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     entry: &PendingKillSettlement,
@@ -63,14 +75,7 @@ pub(super) async fn settle(
         }
         {
             let runtime = owner.runtime.lock().await;
-            if runtime.owner_fence().is_err()
-                || !runtime
-                    .bound_attacker_lease(recipient.actor, recipient.session)
-                    .is_ok_and(|lease| {
-                        lease.character_id().as_bytes() == &recipient.character
-                            && lease.generation() == recipient.lease_generation
-                    })
-            {
+            if !recipient.matches_live_session(&runtime) {
                 continue;
             }
         }
@@ -96,21 +101,30 @@ pub(super) async fn settle(
                 QuestTransitionOutcome::Committed(receipt)
                 | QuestTransitionOutcome::AlreadyCommitted(receipt),
             ) => {
-                if receipt.completes {
+                if receipt.completes || receipt.native_feedback.is_some() {
                     let mut runtime = owner.runtime.lock().await;
-                    if owner
-                        .states
-                        .quest_callbacks
-                        .complete_native_quest(
-                            &mut runtime,
-                            &receipt,
-                            recipient.session,
-                            recipient.death.observed_revision,
-                        )
-                        .is_err()
+                    if receipt.completes
+                        && owner
+                            .states
+                            .quest_callbacks
+                            .complete_native_quest(
+                                &mut runtime,
+                                &receipt,
+                                recipient.session,
+                                recipient.death.observed_revision,
+                            )
+                            .is_err()
                     {
                         runtime.retire_owner_cycle();
                         return false;
+                    }
+                    if let Some(message) = receipt.native_feedback.as_deref()
+                        && recipient.matches_live_session(&runtime)
+                    {
+                        owner
+                            .states
+                            .chat
+                            .push_quest_feedback(recipient.session, message);
                     }
                 }
                 owner.refresh_quest_session(recipient.session, false).await;

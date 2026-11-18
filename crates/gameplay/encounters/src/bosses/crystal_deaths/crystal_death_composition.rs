@@ -994,6 +994,7 @@ mod herald_actual_source_tests {
         // tested on PostgreSQL. No fabricated receipt is used by production composition.
         let mut copy = QuestStateCopy::default();
         assert!(copy.apply(&CommittedQuestTransition {
+            native_feedback: None,
             character_id: character,
             cause: QuestCause::Command(CommandRef::new(session, CommandId::new(1)?)),
             transition_key: start.into(),

@@ -225,6 +225,7 @@ fn the_session_copy_is_read_as_the_projection_facts() {
     id[6] = 0x72;
     id[8] = 0x82;
     let receipt = |completes: bool, after: i64| CommittedQuestTransition {
+        native_feedback: None,
         character_id: CharacterId::from_bytes(id).expect("character"),
         cause: QuestCause::Command(CommandRef::new(
             GameSessionId::decode(&id).expect("session"),

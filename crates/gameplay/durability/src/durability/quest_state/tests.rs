@@ -126,6 +126,7 @@ fn the_copy_applies_receipts_and_settles_obligations() {
     };
     assert_eq!(copy.pending_obligations().count(), 1);
     let committed = CommittedQuestTransition {
+        native_feedback: None,
         character_id: CharacterId::from_bytes(id(1)).expect("character"),
         cause: QuestCause::ClaimObligation(claim),
         transition_key: "oteryn:t/1".into(),
@@ -172,6 +173,7 @@ fn the_copy_applies_receipts_and_settles_obligations() {
 fn monk_copy_derives_count_once_and_reserves_projection_capacity_atomically() {
     use oteryn_gameplay_quests::quest::monk_shrines::{COUNT_TRACK, FLAG_PREFIX};
     let committed = CommittedQuestTransition {
+        native_feedback: None,
         character_id: CharacterId::from_bytes(id(1)).expect("character"),
         cause: QuestCause::Use(command(5, 1)),
         transition_key: "oteryn:quest-callback/monk-guidance".into(),
@@ -219,6 +221,7 @@ fn declared_initials_guide_callbacks_without_opening_unearned_storage_doors() {
     assert!(!copy.meets_door_storage(4500), "virtual progress is not earned storage");
     assert!(copy.project_declared_initials(&catalogue));
     let committed = CommittedQuestTransition {
+        native_feedback: None,
         character_id: CharacterId::from_bytes(id(1)).expect("character"),
         cause: QuestCause::Command(command(5, 1)),
         transition_key: "oteryn:t/initials".into(), quest_key: "oteryn:quest/initials".into(),
@@ -324,6 +327,7 @@ fn qm55_first_save_restart_receipt_requires_scoped_journal_reload() {
     let quest = "oteryn:quest.qm55_first_restart";
     let mut copy = QuestStateCopy::default();
     let mut receipt = CommittedQuestTransition {
+        native_feedback: None,
         character_id: CharacterId::from_bytes(id(1)).expect("character"),
         cause: QuestCause::Command(command(2, 1)),
         transition_key:

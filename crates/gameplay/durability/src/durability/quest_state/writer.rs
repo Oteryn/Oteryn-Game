@@ -1204,8 +1204,12 @@ impl DurabilityRoot {
             &catalogue,
             &request.transition_key,
         )
-        .and_then(|counter| counter.first_defeat_outfit)
-        .cloned();
+        .and_then(|counter| {
+            Some((
+                counter.first_defeat_outfit?.clone(),
+                counter.first_defeat_outfit_message.map(str::to_owned),
+            ))
+        });
         let mut context = (
             context,
             native,
@@ -1978,7 +1982,7 @@ impl DurabilityRoot {
 
                         { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     }
-                    if let Some(reward) = &first_defeat_outfit {
+                    let native_feedback = if let Some((reward, message)) = first_defeat_outfit {
                         // Crystal 201189f8 arbaziloth_death.lua:29-41 awards 1808/1809
                         // with the first clear. Use the same transaction as the journal.
                         let content = match native.as_ref() {
@@ -1989,17 +1993,20 @@ impl DurabilityRoot {
                             content.cosmetics().is_some_and(|cosmetics| {
                                 cosmetics.content_revision() == catalogue.content_revision()
                                     && cosmetics.source_digest() == content.source_digest()
-                            }) && super::super::character_appearance::quest_grants::outfit_compatible(content, reward)
+                            }) && super::super::character_appearance::quest_grants::outfit_compatible(content, &reward)
                         }) else {
                             tx.rollback().await?;
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         };
                         let occurrence = serde_json::to_vec(&(request.cause.key(), &request.transition_key))
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
-                        super::super::character_appearance::grant_content_outfit(
-                            &mut tx, fence.character_id, &occurrence, reward, content,
+                        let granted = super::super::character_appearance::grant_content_outfit(
+                            &mut tx, fence.character_id, &occurrence, &reward, content,
                         ).await?;
-                    }
+                        if granted.is_empty() { None } else { message }
+                    } else {
+                        None
+                    };
                     if let Some(world) = &callback
                         && let Some(reward) = &world.effects.outfit_reward
                     {
@@ -2354,6 +2361,7 @@ impl DurabilityRoot {
                         map_marks::record(&mut tx, fence, callback, committed_revision).await?;
                     }
                     let committed = CommittedQuestTransition {
+                        native_feedback,
                         character_id: character,
                         cause: request.cause,
                         transition_key: request.transition_key,

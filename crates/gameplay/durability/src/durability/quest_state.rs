@@ -243,6 +243,8 @@ pub struct CommittedQuestTransition {
     /// The quest XP obligation the transition wrote and that is still pending; `None` without
     /// `experience` or, on a replay, once the award consumed it.
     pub experience: Option<QuestXpObligation>,
+    /// Presentation from a fresh native kill grant. Loaded receipts carry no feedback.
+    pub native_feedback: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
