@@ -9,6 +9,8 @@ use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
 use std::sync::atomic::{AtomicBool, Ordering};
 
+mod direct_corpse;
+
 // A possibly committed capture cannot leave the target available to another
 // action. Cancellation and an unknown acknowledgement retire this owner turn.
 struct CreatureTurn<'a> {

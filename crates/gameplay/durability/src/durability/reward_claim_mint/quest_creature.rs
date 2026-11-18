@@ -2,7 +2,7 @@
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::quest_state::{QuestCause, QuestTransitionRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef};
-use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent};
+use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent, UseTarget};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 mod capture;
@@ -160,6 +160,46 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         intent: &UseIntent,
         corpse: [u8; 16],
     ) -> Option<Self> {
+        if callback.is_direct_corpse_use()
+            || intent.use_with.is_some()
+            || intent.use_with_position.is_some()
+            || !matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
+        {
+            return None;
+        }
+        Self::read_ground_corpse(runtime, actor, fence, command, callback, intent, corpse)
+    }
+
+    pub fn read_direct_corpse(
+        runtime: &'runtime ChannelRuntimeV1,
+        actor: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+        intent: &UseIntent,
+        identity: [u8; 16],
+    ) -> Option<Self> {
+        if !callback.is_direct_corpse_use()
+            || !matches!(intent.target, UseTarget::Item(_))
+            || intent.use_with.is_some()
+            || intent.use_with_position.is_some()
+            || intent.use_with_map_item.is_some()
+        {
+            return None;
+        }
+        let corpse = runtime.bound_corpse(identity)?.item.item_instance_id;
+        Self::read_ground_corpse(runtime, actor, fence, command, callback, intent, corpse)
+    }
+
+    fn read_ground_corpse(
+        runtime: &'runtime ChannelRuntimeV1,
+        actor: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+        intent: &UseIntent,
+        corpse: [u8; 16],
+    ) -> Option<Self> {
         let at = runtime.read_actor_position(actor).ok()?.position();
         let position = [at.x, at.y, i32::from(at.floor)];
         callback.corpse_target.as_ref()?;
@@ -173,9 +213,6 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             || lease.character_id().as_bytes() != fence.character_id.as_bytes()
             || lease.generation() != fence.character_lease_generation
             || command.game_session_id() != fence.game_session_id
-            || intent.use_with.is_some()
-            || intent.use_with_position.is_some()
-            || !matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
         {
             return None;
         }
@@ -191,6 +228,23 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
                 position,
             },
         })
+    }
+
+    pub(super) fn direct_ingress(
+        &self,
+        fence: CurrentCharacterGameplayFence,
+        request: &QuestTransitionRequest,
+        callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+    ) -> Option<Vec<u8>> {
+        (callback.is_direct_corpse_use()
+            && self.corpse().is_some()
+            && self.fence.item_fence() == fence.item_fence()
+            && request.cause == QuestCause::Command(self.command)
+            && request.transition_key == self.callback
+            && self.key == callback.creature_target
+            && self.intent.use_with_map_item.is_none())
+        .then(|| oteryn_protocol_oteryn::world_object::encode_item_use_intent(&self.intent).ok())
+        .flatten()
     }
     /// Exact server actor checked by the live runtime owner. Capture retirement
     /// can retain this identity instead of reconstructing it from a client handle.

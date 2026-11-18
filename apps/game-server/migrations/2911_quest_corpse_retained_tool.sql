@@ -1,5 +1,13 @@
 -- Crystal 201189f8 actions_mission10_a_message_of_freedom_sceptre.lua:20-32.
 -- An exact retained tool and a current native corpse can drive the existing quest receipt.
+-- Crystal 201189f8 actions_mission03_the_keeper.lua:17-21 uses a corpse
+-- without a carried tool or an additional age constraint.
+ALTER TABLE game_quest_corpse_samples
+ ALTER COLUMN source_item DROP NOT NULL,
+ ALTER COLUMN maximum_age_ms DROP NOT NULL,
+ ADD CONSTRAINT game_quest_corpse_sample_tool_age_match
+ CHECK((source_item IS NULL)=(maximum_age_ms IS NULL));
+
 CREATE OR REPLACE FUNCTION game_quest_corpse_sample_complete() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE source_row RECORD; sample_row RECORD; input_row RECORD; ingress_json JSONB; proof JSONB;
 BEGIN
@@ -29,11 +37,18 @@ BEGIN
    AND (p.race_key=source_row.plan->>'creature_target'
     OR coalesce(source_row.plan #> '{corpse_target,additional_creatures}','[]'::jsonb) ? p.race_key)
    AND r.loot_purpose_key='CORPSE_MATERIALIZATION'
-   AND floor(extract(epoch FROM transaction_timestamp())*1000)::BIGINT-r.occurred_at BETWEEN 0 AND sample_row.maximum_age_ms-1
+   AND (sample_row.maximum_age_ms IS NULL OR floor(extract(epoch FROM transaction_timestamp())*1000)::BIGINT-r.occurred_at BETWEEN 0 AND sample_row.maximum_age_ms-1)
    AND to_jsonb(i)=sample_row.before_item AND to_jsonb(g)=sample_row.before_ground
    AND game_quest_corpse_adjacent(g.spatial_position,sample_row.actor_position))
  THEN RAISE EXCEPTION 'corpse sample lacks unchanged fresh native corpse and adjacency' USING ERRCODE='23514'; END IF;
- IF source_row.plan #> '{corpse_target,retain_tool}'='true'::jsonb THEN
+ IF sample_row.source_item IS NULL THEN
+  IF source_row.plan ? 'carried_item'
+   OR source_row.plan->'take' IS DISTINCT FROM '[]'::jsonb
+   OR coalesce(source_row.plan->'give','null'::jsonb)='null'::jsonb
+  THEN RAISE EXCEPTION 'direct corpse sample has incompatible quest source' USING ERRCODE='23514'; END IF;
+  RETURN NULL;
+ END IF;
+ IF source_row.plan #> '{corpse_target,retain_tool}' ='true'::jsonb THEN
   IF source_row.plan->'take' IS DISTINCT FROM '[]'::jsonb
    OR NOT EXISTS(
     SELECT 1 FROM game_quest_callback_carried(sample_row.character_id,sample_row.world_id) carried

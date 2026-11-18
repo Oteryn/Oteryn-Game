@@ -340,6 +340,10 @@ pub struct RewardCallback {
 }
 
 impl RewardCallback {
+    pub fn is_direct_corpse_use(&self) -> bool {
+        self.corpse_target.is_some() && self.carried_item.is_none()
+    }
+
     /// Syntax-only reset shape. Current save authority is resolved by the writer;
     /// the catalogue separately validates owned tracks and their initial values.
     pub(crate) fn is_save_restart_only(&self) -> bool {
@@ -756,6 +760,7 @@ fn validate_document_with_capacity(
         if c.additive_dialogue_generation.is_some_and(|generation| {
             !(1..=4).contains(&generation)
                 || c.carried_item.is_some()
+                || c.is_direct_corpse_use()
                 || c.world_claim.is_some()
                 || !c.participants.is_empty()
         }) {
@@ -862,7 +867,7 @@ fn validate_document_with_capacity(
             || (c.fresh_corpse && c.creature_target.is_none())
             || (c.capture_creature && (c.fresh_corpse || c.creature_target.is_none()))
             || c.creature_target.as_ref().is_some_and(|key| {
-                c.carried_item.is_none()
+                (c.carried_item.is_none() && !c.is_direct_corpse_use())
                     || c.peer_requires.is_some()
                     || c.give.as_ref().is_some_and(|give| {
                         give.count != 1 || !give.contents.is_empty() || !give.additional.is_empty()
@@ -903,7 +908,7 @@ fn validate_document_with_capacity(
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || match &c.world_claim {
-                None => !slug(&c.npc, "oteryn:npc.", b"_", 128),
+                None => !c.is_direct_corpse_use() && !slug(&c.npc, "oteryn:npc.", b"_", 128),
                 Some(binding) => {
                     !c.npc.is_empty()
                         || !c.keywords.is_empty()
@@ -1067,7 +1072,7 @@ fn validate_document_with_capacity(
                 != c.cosmetic_targets().count()
             || c.cosmetic_targets()
                 .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
-            || (c.keywords.is_empty() && c.world_claim.is_none())
+            || (c.keywords.is_empty() && c.world_claim.is_none() && !c.is_direct_corpse_use())
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
             || c.keywords.iter().any(|s| {
@@ -1095,7 +1100,7 @@ fn validate_document_with_capacity(
             || c.failure_reply.iter().any(|line| {
                 line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
             })
-            || c.reply.is_empty()
+            || (c.reply.is_empty() && !c.is_direct_corpse_use())
             || c.achievement_progress.len() > 8
             || c.achievement_progress
                 .iter()
@@ -1223,7 +1228,9 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
         current
     };
     let current = if let Some(corpse) = callback.corpse_target.as_ref()
-        && (corpse.retain_tool || !corpse.additional_creatures.is_empty())
+        && (callback.is_direct_corpse_use()
+            || corpse.retain_tool
+            || !corpse.additional_creatures.is_empty())
     {
         serde_json::to_vec(&("oteryn:quest-reward-corpse-target-v1", current, corpse))
             .map_err(|error| error.to_string())?

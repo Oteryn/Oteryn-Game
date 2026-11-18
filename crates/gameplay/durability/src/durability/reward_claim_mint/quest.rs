@@ -148,6 +148,8 @@ pub(crate) async fn apply(
         admission.carried_use,
     ) {
         (false, None, _) => {}
+        (true, Some(proof), None)
+            if proof.direct_ingress(fence, request, callback).is_some() => {}
         (true, Some(proof), Some(carried)) if callback.fresh_corpse => {
             if !proof
                 .permits_corpse(
@@ -498,7 +500,7 @@ pub(crate) async fn apply(
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
     if callback.corpse_target.is_some() {
-        let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
+        let Some(proof) = admission.creature_use else {
             return Ok(false);
         };
         if !super::quest_corpse::record(
@@ -506,7 +508,7 @@ pub(crate) async fn apply(
             fence,
             request,
             callback,
-            carried,
+            admission.carried_use,
             proof,
             admission.native,
         )

@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 #[serde(deny_unknown_fields)]
 pub struct CorpseTarget {
     pub appearance: u32,
-    pub maximum_age_ms: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub maximum_age_ms: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub additional_creatures: Vec<String>,
     #[serde(default, skip_serializing_if = "super::is_false")]
@@ -15,10 +16,32 @@ pub struct CorpseTarget {
 impl CorpseTarget {
     pub(super) fn valid(&self, callback: &super::RewardCallback) -> bool {
         self.appearance > 0
-            && (1..=3_600_000).contains(&self.maximum_age_ms)
             && callback.creature_target.is_some()
-            && callback.carried_item.is_some()
             && !callback.capture_creature
+            && !callback.fresh_corpse
+            && (if callback.carried_item.is_some() {
+                self.maximum_age_ms
+                    .is_some_and(|age| (1..=3_600_000).contains(&age))
+            } else {
+                // Crystal 201189f8 actions_mission03_the_keeper.lua:17–21
+                // uses the original corpse directly, with no extra freshness window.
+                self.maximum_age_ms.is_none()
+                    && !self.retain_tool
+                    && callback.npc.is_empty()
+                    && callback.keywords.is_empty()
+                    && callback.topic == 0
+                    && callback.next_topic == 0
+                    && callback.reply.is_empty()
+                    && callback.take.is_empty()
+                    && callback.give.is_some()
+                    && callback.fee.is_none()
+                    && callback.world_claim.is_none()
+                    && callback.placement.is_none()
+                    && callback.participants.is_empty()
+                    && callback.storage.iter().any(|state| {
+                        !state.preserve && !(state.minimum..=state.maximum).contains(&state.set)
+                    })
+            })
             && self.additional_creatures.len() <= 7
             && self
                 .additional_creatures

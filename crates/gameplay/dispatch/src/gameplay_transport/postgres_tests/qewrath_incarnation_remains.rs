@@ -2,7 +2,7 @@
 //! data/items/items.xml:28263-28265.
 use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult,
-    fixture::{Harness, debug},
+    fixture::Harness,
 };
 use crate::gameplay_transport::{
     connection::{FreshAdmissionAuthority, UseCommand},

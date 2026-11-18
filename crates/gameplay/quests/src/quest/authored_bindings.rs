@@ -212,6 +212,7 @@ impl Bindings {
                         if callback.quest != quest.quest
                             || !transitions.insert(&callback.key)
                             || callback.carried_item.is_some()
+                            || callback.is_direct_corpse_use()
                             || !callback.participants.is_empty()
                             || callback
                                 .state_ops
@@ -306,7 +307,8 @@ impl Bindings {
                                         .iter()
                                         .any(|op| !state_operations::valid(quest, op))))
                             || matches!(&stage.trigger, Trigger::NpcDialogue { .. })
-                                != callback.carried_item.is_none()
+                                != (callback.carried_item.is_none()
+                                    && !callback.is_direct_corpse_use())
                         {
                             return Err("authored dialogue/carried trigger mismatch".into());
                         }

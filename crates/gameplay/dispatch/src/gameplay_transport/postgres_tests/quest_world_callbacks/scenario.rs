@@ -946,6 +946,7 @@ fn scenario_case(
             )
             || name == super::super::qewrath_incarnation::NAME
             || name == super::super::qewrath_incarnation_remains::NAME
+            || name == super::super::qewrath_keeper_tail::NAME
             || name == "qewrath-npc-handoff-dragon"
             || name.starts_with(super::super::qewrath_prison_release::PREFIX)
             || name == "srv7-reliable-ram"
@@ -2480,6 +2481,8 @@ fn scenario_case(
             Box::pin(super::super::qewrath_payback_forms::exercise(&mut owner, &mut admitted, name.ends_with("-timeout"))).await?;
         } else if name.starts_with(super::super::qewrath_prison_release::PREFIX) {
             Box::pin(super::super::qewrath_prison_release::exercise(&mut owner, &mut admitted, &h, name.ends_with("-with-crate"))).await?;
+        } else if name == super::super::qewrath_keeper_tail::NAME {
+            Box::pin(super::super::qewrath_keeper_tail::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qewrath_incarnation_remains::NAME {
             Box::pin(super::super::qewrath_incarnation_remains::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qewrath_incarnation::NAME {

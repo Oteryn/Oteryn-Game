@@ -246,6 +246,31 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         }
     }
     if let Ok(intent) = &decoded
+        && intent.use_with.is_none()
+        && intent.use_with_map_item.is_none()
+        && intent.use_with_position.is_none()
+        && let UseTarget::Item(handle) = intent.target
+        && let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            authority.use_quest_tool(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                intent.clone(),
+                item_view.as_ref().and_then(|view| view.resolve(handle)),
+                None,
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?
+    {
+        return Some(Dispatch::Use(outcome));
+    }
+    if let Ok(intent) = &decoded
         && (intent.use_with.is_some()
             || intent.use_with_map_item.is_some()
             || (intent.use_with_position.is_none()
