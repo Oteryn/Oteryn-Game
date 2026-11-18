@@ -344,20 +344,11 @@ pub fn take_unseen_crash(directory: &Path) -> io::Result<Option<PathBuf>> {
 mod tests {
     use super::*;
     use std::time::Duration;
+    use tempfile::TempDir;
 
     type TestResult = Result<(), Box<dyn std::error::Error>>;
     /// The ring is process-global: the tests that fill it or read it back take turns.
     static RING: Mutex<()> = Mutex::new(());
-
-    fn temp(name: &str) -> PathBuf {
-        let directory = std::env::temp_dir().join(format!(
-            "oteryn-crash-{name}-{}-{:?}",
-            std::process::id(),
-            std::thread::current().id()
-        ));
-        let _ = fs::remove_dir_all(&directory);
-        directory
-    }
 
     #[test]
     fn utc_calendar_matches_known_instants() {
@@ -392,7 +383,7 @@ mod tests {
     #[test]
     fn a_crash_file_is_redacted_and_carries_message_context_backtrace_and_log() -> TestResult {
         let _ring = lock(&RING);
-        let directory = temp("crash");
+        let directory = TempDir::new()?;
         record_log_line(LineLevel::Error, "before the crash");
         record_log_line(LineLevel::Warn, PLACEHOLDER);
         set_crash_context(CrashContext {
@@ -407,7 +398,7 @@ mod tests {
             backtrace: &backtrace,
         };
         let redacted = write_crash_file(
-            &directory,
+            directory.path(),
             &Crash {
                 message: "test crash token=abc123 unique-7f3e",
                 ..crash
@@ -417,7 +408,11 @@ mod tests {
         let redacted_text = fs::read_to_string(redacted)?;
         assert_eq!(redacted_text, PLACEHOLDER);
         assert!(!redacted_text.contains("abc123"));
-        let path = write_crash_file(&directory, &crash, UNIX_EPOCH + Duration::from_secs(1))?;
+        let path = write_crash_file(
+            directory.path(),
+            &crash,
+            UNIX_EPOCH + Duration::from_secs(1),
+        )?;
         let name = path
             .file_name()
             .and_then(|name| name.to_str())
@@ -441,29 +436,41 @@ mod tests {
             use std::os::unix::fs::PermissionsExt;
             assert_eq!(fs::metadata(&path)?.permissions().mode() & 0o777, 0o600);
         }
-        fs::remove_dir_all(directory)?;
+        directory.close()?;
         Ok(())
     }
 
     #[test]
     fn a_new_crash_file_is_reported_once_on_the_next_start() -> TestResult {
-        let directory = temp("seen");
-        assert_eq!(take_unseen_crash(&directory)?, None);
+        let directory = TempDir::new()?;
+        assert_eq!(take_unseen_crash(directory.path())?, None);
         let crash = Crash {
             message: "m",
             location: "l",
             thread: "t",
             backtrace: "b",
         };
-        let first = write_crash_file(&directory, &crash, UNIX_EPOCH + Duration::from_secs(10))?;
-        assert_eq!(take_unseen_crash(&directory)?, Some(first));
-        assert_eq!(take_unseen_crash(&directory)?, None);
-        let second = write_crash_file(&directory, &crash, UNIX_EPOCH + Duration::from_secs(20))?;
-        let again = write_crash_file(&directory, &crash, UNIX_EPOCH + Duration::from_secs(20))?;
+        let first = write_crash_file(
+            directory.path(),
+            &crash,
+            UNIX_EPOCH + Duration::from_secs(10),
+        )?;
+        assert_eq!(take_unseen_crash(directory.path())?, Some(first));
+        assert_eq!(take_unseen_crash(directory.path())?, None);
+        let second = write_crash_file(
+            directory.path(),
+            &crash,
+            UNIX_EPOCH + Duration::from_secs(20),
+        )?;
+        let again = write_crash_file(
+            directory.path(),
+            &crash,
+            UNIX_EPOCH + Duration::from_secs(20),
+        )?;
         assert_ne!(second, again, "same instant gets its own file");
-        assert_eq!(take_unseen_crash(&directory)?, Some(again));
-        assert_eq!(take_unseen_crash(&directory)?, None);
-        fs::remove_dir_all(directory)?;
+        assert_eq!(take_unseen_crash(directory.path())?, Some(again));
+        assert_eq!(take_unseen_crash(directory.path())?, None);
+        directory.close()?;
         Ok(())
     }
 }
@@ -669,8 +676,8 @@ fn review_redacts_whole_records() {
         assert_eq!(review_crash_text(message), placeholder, "{message:?}");
     }
     for (message, expected) in [
-        ("rendering resumed\nżółw 🐢", "rendering resumed\nżółw 🐢"),
-        (r#"sample \u0061 and %20"#, r#"sample \u0061 and %20"#),
+        ("rendering resumed\nżółw 🐢", placeholder),
+        (r#"sample \u0061 and %20"#, placeholder),
         ("https://host/maps/a@b", placeholder),
         ("https://alice:pw@host", placeholder),
         ("https://alice:pw%40host", placeholder),
@@ -685,6 +692,7 @@ fn review_redacts_whole_records() {
         "pWd",
         "SECRET",
         "Token",
+        "TiCkEt",
         "AuTh",
         "BEARER",
         "Negotiate",

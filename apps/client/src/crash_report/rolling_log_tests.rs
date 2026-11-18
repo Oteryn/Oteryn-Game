@@ -1,13 +1,32 @@
 use super::{KEEP_FILES, RollingFile, Sink, TOTAL_CAP};
 use bevy::log::tracing_subscriber::fmt::MakeWriter;
-use std::{fs, io::Write, sync::Arc};
+use std::{fs, io::Write, path::Path, sync::Arc};
+use tempfile::TempDir;
+
+fn log_fixture(parent: &Path) -> std::io::Result<TempDir> {
+    TempDir::new_in(parent)
+}
+
+#[test]
+fn rolling_log_fixtures_are_exclusive() -> std::io::Result<()> {
+    let parent = TempDir::new()?;
+    let first = log_fixture(parent.path())?;
+    let marker = first.path().join("marker");
+    fs::write(&marker, "first fixture")?;
+    let second = log_fixture(parent.path())?;
+    assert_ne!(first.path(), second.path());
+    second.close()?;
+    assert_eq!(fs::read_to_string(marker)?, "first fixture");
+    Ok(())
+}
 
 #[test]
 fn rolling_log_applies_lexical_record_redaction() -> Result<(), Box<dyn std::error::Error>> {
-    let directory = std::env::temp_dir().join(format!("oteryn-lexical-log-{}", std::process::id()));
+    let parent = TempDir::new()?;
+    let directory = log_fixture(parent.path())?;
     let sink = Sink {
         file: Some(Arc::new(RollingFile::new(
-            directory.join("logs"),
+            directory.path().join("logs"),
             KEEP_FILES,
             TOTAL_CAP,
         ))),
@@ -15,6 +34,9 @@ fn rolling_log_applies_lexical_record_redaction() -> Result<(), Box<dyn std::err
         ring: false,
     };
     let sensitive = [
+        r#"{"game_login_ticket":"abc123"}"#,
+        "%E2%2584%25AAey=abc",
+        "%252525252525252574oken=abc",
         r#"{"url":"https:\/\/alice:p%2Fw@host"}"#,
         "GET /callback?code:abc",
         "GET /callback?x=1&key:abc",
@@ -38,11 +60,21 @@ fn rolling_log_applies_lexical_record_redaction() -> Result<(), Box<dyn std::err
         "%E2%84%AAEY",
         r"\u0025%33%61\/%2f",
         r"\u0025%37%34%4F%4B%45%4E",
-    ];
-    let clean = [
         "value=%252525252525252520",
         "rendering resumed\nżółw 🐢",
         r"sample \u0061 and %20",
+        r"sample \x61",
+        r"sample \/",
+        r"sample \Z",
+        r"sample \7",
+        "rendering RÉSUMED",
+        "payload %aF\ncontinuation",
+    ];
+    let clean = [
+        "rendering resumed\nnext frame",
+        "progress: 20%",
+        "value=%aG",
+        r"path=\-",
     ];
     let placeholder = "[record redacted: possible credential]";
     let mut failures = Vec::new();
@@ -55,7 +87,7 @@ fn rolling_log_applies_lexical_record_redaction() -> Result<(), Box<dyn std::err
         let mut writer = sink.make_writer();
         writeln!(writer, "{record}")?;
         drop(writer);
-        let path = fs::read_dir(directory.join("logs"))?
+        let path = fs::read_dir(directory.path().join("logs"))?
             .next()
             .ok_or("missing rolling log")??
             .path();
@@ -65,10 +97,10 @@ fn rolling_log_applies_lexical_record_redaction() -> Result<(), Box<dyn std::err
         fs::remove_file(path)?;
     }
 
-    fs::remove_dir_all(directory)?;
     assert!(
         failures.is_empty(),
         "unexpected rolling log output for {failures:?}"
     );
+    directory.close()?;
     Ok(())
 }
