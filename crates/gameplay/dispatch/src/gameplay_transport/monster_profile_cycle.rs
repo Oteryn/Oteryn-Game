@@ -583,9 +583,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.finish_source(primal_due, rotten_due);
                 }
                 let table = &mut states.monster_melee.creature_ai;
+                let run_thinks = !pending.ai_known();
                 let think_start = pending.think_cursor();
                 let think_end = (think_start + PROFILE_ACTORS_PER_PASS).min(batch.occurrences().len());
-                if !pending.ai_known() { for occurrence in &batch.occurrences()[think_start..think_end] {
+                if run_thinks { for occurrence in &batch.occurrences()[think_start..think_end] {
                     if runtime.contains_live_creature(occurrence.actor) {
                         table.refresh_current_native_creature(runtime, native, occurrence.actor)
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
@@ -647,7 +648,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect::<std::collections::BTreeSet<_>>();
                 let summons = &mut states.monster_summons;
                 let waves = &mut states.rotten_waves;
-                if !pending.ai_known() { table
+                if run_thinks { table
                     .run_reserved_current_think_slice(
                         runtime,
                         batch,
@@ -684,6 +685,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if !reader.map.validate_transaction(runtime).await {
                         return Err(crate::durability::DurabilityError::Unavailable);
                     }
+                }
+                if !batch.current_for(runtime) {
+                    return Err(crate::durability::DurabilityError::Unavailable);
+                }
+                if run_thinks {
                     pending.advance_thinks(think_end);
                     if think_end < batch.occurrences().len() {
                         drop(reader);
@@ -691,9 +697,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         **continue_batch = true;
                         return Ok((Some(now), Vec::new(), Vec::new(), false));
                     }
-                }
-                if !batch.current_for(runtime) {
-                    return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 pending.finish_ai().map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                 let (proposals,native_actors)=if let Some(primal)=primal_pending.as_ref() {
