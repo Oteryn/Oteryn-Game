@@ -163,7 +163,10 @@ impl Claim {
                     && valid_quest_key(&milestone.achievement)
                     && milestone.achievement.starts_with("oteryn:achievement/")
                     && callback.storage.iter().any(|track| {
-                        track.track == milestone.track && track.increment && track.set == 1
+                        track.track == milestone.track
+                            && track.increment
+                            && track.set == 1
+                            && (track.minimum..=track.maximum).contains(&(milestone.count - 1))
                     })
             })
     }

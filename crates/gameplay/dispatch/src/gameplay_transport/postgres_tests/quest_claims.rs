@@ -513,10 +513,11 @@ pub(super) async fn exercise(
         }
     } else if name == HOARD {
         tracks.extend([
-            track(LEDGER, 49, 0, 50), track(COUNT, 9, 0, 100),
+            track(LEDGER, 49, 0, 50), track(COUNT, 9, 0, i64::MAX),
             track(CHOICE, 0, 0, 2), track(HUNT_GATE, 0, 0, 0),
         ]);
-        let mut count = storage(COUNT, 0, 99, 1);
+        // Crystal actions_treasure.lua:29-37 keeps counting after the tenth claim.
+        let mut count = storage(COUNT, 0, i64::MAX - 1, 1);
         count["increment"] = json!(true);
         callback["storage"] = json!([storage(LEDGER, 50, 50, 0), count, storage(CHOICE, 0, 2, 0)]);
         callback["failure_message"] = json!(HOARD_REFUSAL);
@@ -578,13 +579,25 @@ pub(super) async fn exercise(
             }}
         }));
     }
-    let bindings = Bindings::parse(&serde_json::to_vec(&json!({"schema":1,"quests":[{
+    let binding = json!({"schema":1,"quests":[{
         "quest":QUEST,
         "recipe_sha256":recipe_sha256,
         "sources":["synthetic dispatch tests exercising the Crystal claim shapes"],
         "tracks":tracks,
         "stages":stages
-    }]}))?)?;
+    }]});
+    if name == HOARD {
+        let mut invalid = binding.clone();
+        invalid["quests"][0]["stages"][0]["trigger"]["callback"]["storage"][1]["maximum"] = json!(8);
+        assert!(Bindings::parse(&serde_json::to_vec(&invalid)?).is_err());
+        invalid["quests"][0]["stages"][0]["trigger"]["callback"]["storage"][1]["maximum"] = json!(9);
+        invalid["quests"][0]["tracks"][1]["maximum"] = json!(9);
+        assert_eq!(
+            Bindings::parse(&serde_json::to_vec(&invalid)?).err().as_deref(),
+            Some("authored claim milestone exceeds track bounds"),
+        );
+    }
+    let bindings = Bindings::parse(&serde_json::to_vec(&binding)?)?;
     let revision = owner.quest_catalogue.as_deref().ok_or("catalogue")?.content_revision();
     let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));

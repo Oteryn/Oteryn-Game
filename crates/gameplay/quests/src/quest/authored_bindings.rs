@@ -322,6 +322,19 @@ impl Bindings {
                         {
                             return Err("authored foreign clock track".into());
                         }
+                        if let Some(milestone) = callback
+                            .effects
+                            .claim
+                            .as_ref()
+                            .and_then(|claim| claim.milestone.as_ref())
+                            && quest
+                                .tracks
+                                .iter()
+                                .find(|track| track.key == milestone.track)
+                                .is_none_or(|track| track.maximum < milestone.count)
+                        {
+                            return Err("authored claim milestone exceeds track bounds".into());
+                        }
                         (&callback.key, &callback.quest, &callback.storage)
                     }
                 };
