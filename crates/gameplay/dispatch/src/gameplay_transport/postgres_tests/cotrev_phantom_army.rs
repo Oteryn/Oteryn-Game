@@ -211,6 +211,15 @@ fn scenario(admin: String) -> TestResult {
             content_pin,
         )
         .map_err(debug)?;
+        runtime
+            .install_companion_policies(native.policies().clone())
+            .map_err(debug)?;
+        for species in [
+            "oteryn:creature.eternal_guardian",
+            "oteryn:creature.lizard_chosen",
+        ] {
+            runtime.companion_policy(species).map_err(debug)?;
+        }
         let reservation = runtime
             .reserve_fresh_session(deps.admitted.game_session_id)
             .map_err(debug)?;
