@@ -323,6 +323,11 @@ fn scenario(charged: bool, drink: bool) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
             let item = ItemKey::Instance(item.try_into().map_err(|_| "fluid item identity")?);
+            let now = owner.owner_now().get();
+            owner
+                .states
+                .test_owner_time
+                .store(now + 1, std::sync::atomic::Ordering::Relaxed);
             let outcome = owner.use_item(deps.actor, command(18), item).await;
             assert_eq!(outcome.disposition, UseDisposition::Committed);
             let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_fluid_states")
