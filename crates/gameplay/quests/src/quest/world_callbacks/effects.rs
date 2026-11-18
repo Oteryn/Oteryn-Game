@@ -778,16 +778,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let guarded_open_spawn = open_spawn
         && callback.trigger == Trigger::Use
         && callback.actor_kind == ActorKind::Player
-        && callback.selector.native.is_some()
+        && callback.selector.native.as_ref().is_some_and(|source| {
+            effects
+                .transform
+                .is_some_and(|appearance| appearance != source.appearance)
+        })
         && callback.has_state_writes()
         && callback.requires_world_admission
         && callback.lever.is_none()
         && !callback.reversible
-        && callback
-            .item_on_target
-            .as_ref()
-            .is_some_and(|tool| tool.selected_instance)
-        && effects.transform.is_some()
+        && callback.item_on_target.as_ref().is_some_and(|tool| {
+            tool.selected_instance && !tool.target_remove && tool.target_replacement.is_none()
+        })
         && effects.reset_after_ms.is_some();
     if open_spawn && !guarded_open_spawn {
         return false;

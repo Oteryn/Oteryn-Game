@@ -1,17 +1,17 @@
 //! Carried-tool callbacks routed through the existing World receipt owner.
-use oteryn_gameplay_quests::quest::world_callbacks::{ActorKind, Callback, Trigger};
+use oteryn_gameplay_quests::quest::{
+    ice_seal_paint,
+    native_rules::NativeRule,
+    world_callbacks::{ActorKind, Callback, Trigger},
+};
 
 pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.actor_kind == ActorKind::Player
         && callback.trigger == Trigger::Use
+        && !ice_seal_paint::historical_only(&callback.key)
         && callback.item_on_target.as_ref().is_some_and(|tool| {
             (tool.selected_instance && callback.requires_world_admission)
-                || matches!(
-                    callback.native_rule,
-                    Some(
-                        oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. }
-                    )
-                )
+                || matches!(callback.native_rule, Some(NativeRule::IceSealPaint { .. }))
         })
 }
 
@@ -45,7 +45,7 @@ pub(crate) fn matches_source(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use oteryn_gameplay_quests::quest::{native_rules::NativeRule, targuna_ram, world_callbacks};
+    use oteryn_gameplay_quests::quest::{targuna_ram, world_callbacks};
 
     #[test]
     fn registered_ice_paint_callbacks_reach_the_carried_tool_owner() -> Result<(), String> {
