@@ -279,9 +279,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Err(disposition) = reservation.publish(runtime, actors) {
                 return disposition;
             }
-            if let Some(magic) = &callback.effects.magic {
-                map.facts
-                    .emit_movement_effect(tile(magic.position), magic.effect);
+            // A spawn-only ambush cues the player on whichever trigger tile they crossed.
+            if let Some(magic) = &callback.effects.magic
+                && let Ok(player) = runtime.read_actor_position(actor)
+                && let Some(at) = native(player.position())
+            {
+                map.facts.emit_movement_effect(at, magic.effect);
             }
             return UseDisposition::Committed;
         }
