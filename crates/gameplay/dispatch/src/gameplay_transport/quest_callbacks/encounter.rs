@@ -304,6 +304,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && *who == actor
                     && *occupant_session == Some(session))
         }) {
+            if preflight && let Some(feedback) = &encounter.boss_feedback {
+                self.states
+                    .chat
+                    .publish_quest_speech(runtime, actor, session, &feedback.occupied);
+            }
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -327,7 +332,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || !states.spell_idle(runtime, who, member_session)
                 || states
                     .get(runtime, who, member_session)
-                    .is_none_or(|state| state.character_facts().level < encounter.minimum_level)
+                    .is_none_or(|state| {
+                        // The fenced solo-boss writer owns the definitive level.
+                        encounter.boss_cooldown_seconds.is_none()
+                            && state.character_facts().level < encounter.minimum_level
+                    })
                 || runtime.bound_attacker_lease(who, member_session).is_err()
                 || !self.states.player_trades.physical(member_session, None)
                 || (self.has_pending_quest_callback(member_session)

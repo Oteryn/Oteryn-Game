@@ -28,6 +28,7 @@ pub mod shared_count;
 mod shared_input;
 pub mod shared_switch;
 mod solo_boss;
+pub use solo_boss::SoloBossStepOutcome;
 
 use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,

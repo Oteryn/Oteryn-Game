@@ -977,6 +977,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if solo_boss {
+            use crate::durability::quest_world_callback::SoloBossStepOutcome;
             let (Some(fence), Some(catalogue), QuestCause::Step(command)) =
                 (fence, self.quest_catalogue.as_ref(), cause)
             else {
@@ -1023,14 +1024,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.character, self.holder, fence, command, &callback.key,
                 std::sync::Arc::clone(catalogue), permit, context,
             ).await {
-                Ok(true) => {}
+                Ok(SoloBossStepOutcome::Admitted) => {}
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
                     // The original STEP is retained for exact cooldown receipt replay.
                     return UseDisposition::Rejected;
                 }
-                Ok(false) | Err(_) => {
+                result => {
                     if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
                         records.remove(&session);
+                    }
+                    let feedback = callback.effects.encounter.as_ref().and_then(|room| room.boss_feedback.as_ref());
+                    let message = match (result, feedback) {
+                        (Ok(SoloBossStepOutcome::BelowLevel), Some(feedback)) => feedback.below_level.as_deref(),
+                        (Ok(SoloBossStepOutcome::OnCooldown), Some(feedback)) => Some(feedback.on_cooldown.as_str()),
+                        _ => None,
+                    };
+                    if let Some(message) = message {
+                        self.states.chat.push_quest_feedback(session, message);
                     }
                     return UseDisposition::Rejected;
                 }

@@ -16,6 +16,14 @@ use oteryn_gameplay_quests::quest::world_callbacks::Trigger;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SoloBossStepOutcome {
+    Admitted,
+    BelowLevel,
+    OnCooldown,
+    Rejected,
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "the admission binds a current player and the loaded physical StepIn"
@@ -31,7 +39,7 @@ impl DurabilityRoot {
         catalogue: Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
         permit: &SpellLanePermit,
         context: QuestWorldContext,
-    ) -> Result<bool, CharacterProgressionError> {
+    ) -> Result<SoloBossStepOutcome, CharacterProgressionError> {
         use CharacterProgressionError as Error;
         if command.game_session_id() != fence.game_session_id {
             return Err(Error::InvalidInput);
@@ -77,23 +85,26 @@ impl DurabilityRoot {
                     return Ok(Err(error));
                 }
                 if !context_is_current(&mut tx, permit, fence, context).await? {
-                    return Ok(Ok(false));
+                    return Ok(Ok(SoloBossStepOutcome::Rejected));
                 }
                 let id = fence.character_id.as_bytes().as_slice();
-                let eligible: bool = sqlx::query_scalar(
-                    "SELECT EXISTS(SELECT 1 FROM game_character_progression_state s
-                     WHERE s.character_id=encode($1,'hex')::uuid AND s.level >= $2
-                       AND s.content_revision=$3 AND NOT EXISTS(
-                       SELECT FROM game_character_pending_respawns p WHERE p.character_id=s.character_id))",
-                ).bind(id).bind(minimum).bind(catalogue.content_revision()).fetch_one(&mut *tx).await?;
-                if !eligible {
-                    return Ok(Ok(false));
+                let level: Option<i64> = sqlx::query_scalar(
+                    "SELECT s.level::bigint FROM game_character_progression_state s
+                     WHERE s.character_id=encode($1,'hex')::uuid
+                       AND s.content_revision=$2 AND NOT EXISTS(
+                       SELECT FROM game_character_pending_respawns p WHERE p.character_id=s.character_id)",
+                ).bind(id).bind(catalogue.content_revision()).fetch_optional(&mut *tx).await?;
+                let Some(level) = level else {
+                    return Ok(Ok(SoloBossStepOutcome::Rejected));
+                };
+                if level < minimum {
+                    return Ok(Ok(SoloBossStepOutcome::BelowLevel));
                 }
                 let old = read_boss_cooldown_data(&mut tx, &key).await
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
                 if old.is_some_and(|old| old.admission == admission && old.reset_epoch == context.reset_epoch) {
                     commit_semantic_transaction(tx, deadline).await?;
-                    return Ok(Ok(true));
+                    return Ok(Ok(SoloBossStepOutcome::Admitted));
                 }
                 let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint")
                     .fetch_one(&mut *tx).await?;
@@ -104,7 +115,11 @@ impl DurabilityRoot {
                     _ => DurabilityError::InvalidStoredState,
                 })?;
                 commit_semantic_transaction(tx, deadline).await?;
-                Ok(Ok(outcome != BossCooldownChange::OnCooldown))
+                Ok(Ok(if outcome == BossCooldownChange::OnCooldown {
+                    SoloBossStepOutcome::OnCooldown
+                } else {
+                    SoloBossStepOutcome::Admitted
+                }))
             })
         }).await?
     }

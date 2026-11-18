@@ -374,6 +374,36 @@ pub struct Encounter {
     /// actions_portal_minis_ancient_feud.lua:105-118 use the spawned boss's cooldown.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub boss_cooldown_seconds: Option<u32>,
+    /// Crystal grimvale/actions_portal_minis_grimvale.lua:104-116 and
+    /// actions_portal_minis_ancient_feud.lua:90-110 qualify distinct refusals.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boss_feedback: Option<SoloBossFeedback>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SoloBossFeedback {
+    pub occupied: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub below_level: Option<String>,
+    pub on_cooldown: String,
+    pub return_effect: u16,
+}
+
+impl SoloBossFeedback {
+    fn valid(&self) -> bool {
+        (1..=255).contains(&self.return_effect)
+            && [&self.occupied, &self.on_cooldown]
+                .into_iter()
+                .chain(self.below_level.iter())
+                .all(|text| {
+                    !text.is_empty()
+                        && text.len() <= 1_020
+                        && text.chars().count() <= 255
+                        && text.trim() == text
+                        && !text.chars().any(char::is_control)
+                })
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -949,6 +979,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
         if encounter
             .boss_cooldown_seconds
             .is_some_and(|seconds| !solo_boss || !(1..=2_592_000).contains(&seconds))
+            || encounter
+                .boss_feedback
+                .as_ref()
+                .is_some_and(|feedback| !solo_boss || !feedback.valid())
             || encounter.ejection.is_some_and(|ejection| {
                 !(personal_encounter || solo_boss)
                     || callback.trigger != Trigger::StepIn
