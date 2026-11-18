@@ -161,7 +161,14 @@ impl Drop for SinkWriter {
         if self.buffer.is_empty() {
             return;
         }
-        let text = redact(&String::from_utf8_lossy(&self.buffer));
+        let record = String::from_utf8_lossy(&self.buffer);
+        let text = if let Some(record) = record.strip_suffix('\n') {
+            let mut text = redact(record);
+            text.push('\n');
+            text
+        } else {
+            redact(&record)
+        };
         if self.sink.stderr {
             let _ = io::stderr().write_all(text.as_bytes());
         }
@@ -572,7 +579,9 @@ mod tests {
             .name("format-test".into())
             .spawn(move || {
                 tracing::subscriber::with_default(subscriber, || {
-                    tracing::warn!(target: "oteryn_test", "login failed password=hunter2");
+                    tracing::warn!(target: "oteryn_test", "window creation failed");
+                    tracing::warn!(target: "oteryn_test", "login failed password=hunter2\nsecond line");
+                    tracing::info!(target: "oteryn_test", "recovered");
                     tracing::debug!(target: "oteryn_test", "hidden at info");
                 });
             })?
@@ -581,13 +590,17 @@ mod tests {
         let text = fs::read_to_string(
             directory.join(format!("client-{}.log", Utc::at(SystemTime::now()).date())),
         )?;
-        let line = text.lines().next().ok_or("one line")?;
+        let mut lines = text.lines();
+        let line = lines.next().ok_or("formatted line")?;
         let stamp = line.split_whitespace().next().ok_or("stamp")?;
         assert!(stamp.ends_with('Z') && stamp.contains('T'), "{line}");
         assert!(line.contains(" WARN "), "{line}");
         assert!(line.contains("format-test"), "{line}");
         assert!(line.contains("oteryn_test:"), "{line}");
-        assert!(line.contains("password=[redacted]") && !line.contains("hunter2"));
+        assert_eq!(lines.next(), Some("[record redacted: possible credential]"));
+        assert!(lines.next().is_some_and(|line| line.ends_with("recovered")));
+        assert_eq!(lines.next(), None);
+        assert!(!text.contains("hunter2"));
         assert!(!text.contains("hidden at info"));
         fs::remove_dir_all(&directory)?;
         assert!(!directory.with_added_extension("lock").exists());
@@ -617,3 +630,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "../../crash_report/rolling_log_tests.rs"]
+mod rolling_log_tests;

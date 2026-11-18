@@ -317,12 +317,13 @@ pub(super) fn project(
 
 /// The overlay text and the last log lines, redacted, for a bug report.
 pub(super) fn clipboard_text(overlay: &str) -> String {
+    let overlay = crate::crash_report::redact(overlay);
     let mut text = format!("Oteryn client diagnostics\n{overlay}\n\nLast log lines:\n");
     for line in crate::crash_report::recent_log_lines(COPIED_LOG_LINES) {
         text.push_str(&line);
         text.push('\n');
     }
-    crate::crash_report::redact(&text)
+    text
 }
 
 /// The platform file browser, with the folder as one argument and no shell.

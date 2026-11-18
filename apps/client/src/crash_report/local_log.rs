@@ -1,5 +1,5 @@
 //! The in-memory log ring, the crash context and the local crash files.
-use super::redact;
+use super::{redact, redaction::PLACEHOLDER};
 use std::{
     collections::VecDeque,
     fs,
@@ -201,7 +201,6 @@ pub struct Crash<'a> {
 
 fn crash_text(crash: &Crash<'_>, now: SystemTime) -> String {
     let context = try_lock(&CONTEXT).map(|context| context.clone());
-    let lines = try_lock(&RECENT).map(|recent| recent.lines.iter().cloned().collect::<Vec<_>>());
     let mut text = format!(
         "Oteryn client crash\nTime: {}\nBuild: {}\nOS: {} {}\nThread: {}\nLocation: {}\nMessage: {}\n",
         Utc::at(now).rfc3339(),
@@ -228,6 +227,12 @@ fn crash_text(crash: &Crash<'_>, now: SystemTime) -> String {
     }
     text.push_str("\nBacktrace:\n");
     text.push_str(crash.backtrace);
+    let mut text = redact(&text);
+    if text == PLACEHOLDER {
+        return text;
+    }
+    // Log events in the ring have already been checked as separate records.
+    let lines = try_lock(&RECENT).map(|recent| recent.lines.iter().cloned().collect::<Vec<_>>());
     text.push_str("\n\nRecent log lines:\n");
     match lines {
         Some(lines) => {
@@ -238,7 +243,7 @@ fn crash_text(crash: &Crash<'_>, now: SystemTime) -> String {
         }
         None => text.push_str("unavailable (log locked)\n"),
     }
-    redact(&text)
+    text
 }
 
 /// Writes `crash-<UTC timestamp>.log` in `directory` with owner-only permissions.
@@ -339,6 +344,7 @@ pub fn take_unseen_crash(directory: &Path) -> io::Result<Option<PathBuf>> {
 mod tests {
     use super::*;
     use std::time::Duration;
+    use tempfile::TempDir;
 
     type TestResult = Result<(), Box<dyn std::error::Error>>;
     /// The ring is process-global: the tests that fill it or read it back take turns.
@@ -363,10 +369,11 @@ mod tests {
             record_log_line(LineLevel::Other, &format!("ring line {index}"));
         }
         record_log_line(LineLevel::Warn, "ring warning");
-        record_log_line(LineLevel::Error, "ring error password=[redacted]");
+        let error = redact("ring error password=value");
+        record_log_line(LineLevel::Error, &error);
         let lines = recent_log_lines(RECENT_LINES);
         assert_eq!(lines.len(), RECENT_LINES);
-        assert!(lines.contains(&"ring error password=[redacted]".to_owned()));
+        assert!(lines.contains(&PLACEHOLDER.to_owned()));
         let after = log_counters();
         assert!(after.warnings > before.warnings);
         assert!(after.errors > before.errors);
@@ -376,23 +383,35 @@ mod tests {
     #[test]
     fn a_crash_file_is_redacted_and_carries_message_context_backtrace_and_log() -> TestResult {
         let _ring = lock(&RING);
-        let fixture = tempfile::tempdir()?;
-        let directory = fixture.path().join("crash");
+        let directory = TempDir::new()?;
         record_log_line(LineLevel::Error, "before the crash");
+        record_log_line(LineLevel::Warn, PLACEHOLDER);
         set_crash_context(CrashContext {
             lifecycle: "playing".into(),
             adapter: Some("Test Adapter (Vulkan)".into()),
         });
         let backtrace = std::backtrace::Backtrace::force_capture().to_string();
-        let path = write_crash_file(
-            &directory,
+        let crash = Crash {
+            message: "test crash unique-7f3e",
+            location: "apps/client/src/crash_report/local_log.rs:1:1",
+            thread: "crash-test",
+            backtrace: &backtrace,
+        };
+        let redacted = write_crash_file(
+            directory.path(),
             &Crash {
                 message: "test crash token=abc123 unique-7f3e",
-                location: "apps/client/src/crash_report/local_log.rs:1:1",
-                thread: "crash-test",
-                backtrace: &backtrace,
+                ..crash
             },
-            SystemTime::now(),
+            UNIX_EPOCH,
+        )?;
+        let redacted_text = fs::read_to_string(redacted)?;
+        assert_eq!(redacted_text, PLACEHOLDER);
+        assert!(!redacted_text.contains("abc123"));
+        let path = write_crash_file(
+            directory.path(),
+            &crash,
+            UNIX_EPOCH + Duration::from_secs(1),
         )?;
         let name = path
             .file_name()
@@ -403,13 +422,13 @@ mod tests {
             "{name}"
         );
         let text = fs::read_to_string(&path)?;
-        assert!(text.contains("Message: test crash token=[redacted] unique-7f3e"));
-        assert!(!text.contains("abc123"));
+        assert!(text.contains("Message: test crash unique-7f3e"));
         assert!(text.contains("Thread: crash-test"));
         assert!(text.contains("Location: apps/client/src/crash_report/local_log.rs"));
         assert!(text.contains("Backtrace:\n") && text.contains("local_log"));
         assert!(text.contains(crate::CLIENT_BUILD));
         assert!(text.contains("before the crash"));
+        assert!(text.contains(PLACEHOLDER));
         // The context is process-global; another test may have replaced it meanwhile.
         assert!(text.contains("Lifecycle: "));
         #[cfg(unix)]
@@ -417,28 +436,41 @@ mod tests {
             use std::os::unix::fs::PermissionsExt;
             assert_eq!(fs::metadata(&path)?.permissions().mode() & 0o777, 0o600);
         }
+        directory.close()?;
         Ok(())
     }
 
     #[test]
     fn a_new_crash_file_is_reported_once_on_the_next_start() -> TestResult {
-        let fixture = tempfile::tempdir()?;
-        let directory = fixture.path().join("seen");
-        assert_eq!(take_unseen_crash(&directory)?, None);
+        let directory = TempDir::new()?;
+        assert_eq!(take_unseen_crash(directory.path())?, None);
         let crash = Crash {
             message: "m",
             location: "l",
             thread: "t",
             backtrace: "b",
         };
-        let first = write_crash_file(&directory, &crash, UNIX_EPOCH + Duration::from_secs(10))?;
-        assert_eq!(take_unseen_crash(&directory)?, Some(first));
-        assert_eq!(take_unseen_crash(&directory)?, None);
-        let second = write_crash_file(&directory, &crash, UNIX_EPOCH + Duration::from_secs(20))?;
-        let again = write_crash_file(&directory, &crash, UNIX_EPOCH + Duration::from_secs(20))?;
+        let first = write_crash_file(
+            directory.path(),
+            &crash,
+            UNIX_EPOCH + Duration::from_secs(10),
+        )?;
+        assert_eq!(take_unseen_crash(directory.path())?, Some(first));
+        assert_eq!(take_unseen_crash(directory.path())?, None);
+        let second = write_crash_file(
+            directory.path(),
+            &crash,
+            UNIX_EPOCH + Duration::from_secs(20),
+        )?;
+        let again = write_crash_file(
+            directory.path(),
+            &crash,
+            UNIX_EPOCH + Duration::from_secs(20),
+        )?;
         assert_ne!(second, again, "same instant gets its own file");
-        assert_eq!(take_unseen_crash(&directory)?, Some(again));
-        assert_eq!(take_unseen_crash(&directory)?, None);
+        assert_eq!(take_unseen_crash(directory.path())?, Some(again));
+        assert_eq!(take_unseen_crash(directory.path())?, None);
+        directory.close()?;
         Ok(())
     }
 }
@@ -465,164 +497,127 @@ fn review_crash_redacts_complete_credentials() {
     ] {
         assert!(!text.contains(secret), "{secret} escaped redaction");
     }
-    assert!(text.contains("next line"));
+    assert_eq!(text, PLACEHOLDER);
 }
 
 #[cfg(test)]
 #[test]
 fn review_crash_redacts_adjacent_urls_and_multiline_json() {
     let cases = [
-        (
-            "https://one.test/,https://user:adjacent-secret@two.test/",
-            "https://one.test/,https://[redacted]@two.test/",
-        ),
-        (
-            "{\"password\"\n:\r\n\t\"json-secret\"}",
-            "{\"password\"\n:\r\n\t\"[redacted]\"}",
-        ),
+        "https://one.test/,https://user:adjacent-secret@two.test/",
+        "{\"password\"\n:\r\n\t\"json-secret\"}",
     ];
-    assert_eq!(
-        cases.map(|(message, expected)| {
-            let text = crash_text(
-                &Crash {
-                    message,
-                    location: "test",
-                    thread: "test",
-                    backtrace: "",
-                },
-                SystemTime::now(),
-            );
-            text.contains(expected)
-        }),
-        [true, true]
-    );
+    for message in cases {
+        assert_eq!(review_crash_text(message), PLACEHOLDER);
+    }
 }
 
 #[cfg(test)]
 #[test]
 fn review_crash_redacts_structured_and_spaced_credentials() {
     let cases = [
-        (
-            r#"{"pass\u0077ord":"example-one"}"#,
-            r#"{"pass\u0077ord":"[redacted]"}"#,
-        ),
-        (
-            r#"{"credentials":["example-two",{"nested":"another-secret"}],"name":"Bob"}"#,
-            r#"{"credentials":"[redacted]","name":"Bob"}"#,
-        ),
-        (
-            r#"{"credentials":{"url":"postgres://example.test/a\"value","value":"secret"}}"#,
-            r#"{"credentials":"[redacted]"}"#,
-        ),
-        ("Bearer  example-three", "Bearer  [redacted]"),
-        ("Bearer\texample-four", "Bearer\t[redacted]"),
+        r#"{"pass\u0077ord":"example-one"}"#,
+        r#"{"credentials":["example-two",{"nested":"another-secret"}],"name":"Bob"}"#,
+        r#"{"credentials":{"url":"postgres://example.test/a\"value","value":"secret"}}"#,
+        "Bearer  example-three",
+        "Bearer\texample-four",
     ];
-    assert_eq!(
-        cases.map(|(message, expected)| {
-            crash_text(
-                &Crash {
-                    message,
-                    location: "test",
-                    thread: "test",
-                    backtrace: "",
-                },
-                SystemTime::now(),
-            )
-            .contains(expected)
-        }),
-        [true; 5]
-    );
+    for message in cases {
+        assert_eq!(review_crash_text(message), PLACEHOLDER);
+    }
 }
+
+#[cfg(test)]
+const EARLIER_REVIEW_CASES: [(&str, &[&str]); 23] = [
+    (
+        "https://alice:hunter2;token=abc@example.test/map",
+        &["alice", "hunter2", "abc"],
+    ),
+    (
+        "HTTPS://user:private%3Bvalue;;ToKeN=private2@example.test",
+        &["private", "user:"],
+    ),
+    (
+        "https://user:comma,secret@example.test/path",
+        &["comma,secret"],
+    ),
+    (
+        r#"{"message":"{\"password\":\"example-one\"}"}"#,
+        &["example-one"],
+    ),
+    (
+        r#"{"message":"{\"PaSs\\u0077oRd\": \"nested\\\" secret\"}"}"#,
+        &[r#"nested\""#, "nested\" secret", " secret\""],
+    ),
+    (r#"{"credentials":["example-two""#, &["example-two"]),
+    (
+        r#"{"CrEdEnTiAlS":["one-secret", {"nested":"two-secret"}"#,
+        &["one-secret", "two-secret"],
+    ),
+    (r#"{"pass\u0077ord":"unicode-secret"}"#, &["unicode-secret"]),
+    (
+        r#"{"credentials":["array-secret",{"nested":"nested-secret"}]}"#,
+        &["array-secret", "nested-secret"],
+    ),
+    (
+        "Bearer  space-secret Bearer\ttab-secret",
+        &["space-secret", "tab-secret"],
+    ),
+    (
+        "https://example.test/?ok=1;;CoDe=query-secret&&%74oKeN=encoded-secret",
+        &["query-secret", "encoded-secret"],
+    ),
+    (
+        "https://example.test/?ok=1, SiG=comma-secret",
+        &["comma-secret"],
+    ),
+    (
+        r#"{"message":"https:\/\/user:escaped-secret@example.test"}"#,
+        &["escaped-secret"],
+    ),
+    (
+        "https://hidden-user:hidden-password;token=abc%40host.test",
+        &["hidden-user", "hidden-password"],
+    ),
+    (
+        "https://one.test/,https://user:adjacent-secret@two.test/",
+        &["adjacent-secret"],
+    ),
+    (
+        "{\"password\"\n:\r\n\t\"multiline-secret\"}",
+        &["multiline-secret"],
+    ),
+    (
+        r#"{"password":"first-secret second-secret\" third-secret"}"#,
+        &["first-secret", "second-secret", "third-secret"],
+    ),
+    (
+        "Cookie: a=first_cookie; b=second_cookie",
+        &["first_cookie", "second_cookie"],
+    ),
+    (
+        r#"{"credentials":{"url":"postgres://example.test/a\"value","value":"structured-secret"}}"#,
+        &["structured-secret", "example.test"],
+    ),
+    (
+        "pAsSwOrD == quoted-secret; &ToKeN = 'another secret'",
+        &["quoted-secret", "another secret"],
+    ),
+    (
+        r#"authorization=Basic "quoted auth secret""#,
+        &["quoted auth secret"],
+    ),
+    ("tOkEn\r\n=\n \twhitespace-secret", &["whitespace-secret"]),
+    (
+        "Bearer %2522encoded leading-quote-secret",
+        &["encoded", "leading-quote-secret"],
+    ),
+];
 
 #[cfg(test)]
 #[test]
 fn review_crash_redacts_credentials_across_formats() {
-    let cases = [
-        (
-            "https://alice:hunter2;token=abc@example.test/map",
-            &["alice", "hunter2", "abc"][..],
-        ),
-        (
-            "HTTPS://user:private%3Bvalue;;ToKeN=private2@example.test",
-            &["private", "user:"],
-        ),
-        (
-            "https://user:comma,secret@example.test/path",
-            &["comma,secret"],
-        ),
-        (
-            r#"{"message":"{\"password\":\"example-one\"}"}"#,
-            &["example-one"],
-        ),
-        (
-            r#"{"message":"{\"PaSs\\u0077oRd\": \"nested\\\" secret\"}"}"#,
-            &[r#"nested\""#, "nested\" secret", " secret\""],
-        ),
-        (r#"{"credentials":["example-two""#, &["example-two"]),
-        (
-            r#"{"CrEdEnTiAlS":["one-secret", {"nested":"two-secret"}"#,
-            &["one-secret", "two-secret"],
-        ),
-        (r#"{"pass\u0077ord":"unicode-secret"}"#, &["unicode-secret"]),
-        (
-            r#"{"credentials":["array-secret",{"nested":"nested-secret"}]}"#,
-            &["array-secret", "nested-secret"],
-        ),
-        (
-            "Bearer  space-secret Bearer\ttab-secret",
-            &["space-secret", "tab-secret"],
-        ),
-        (
-            "https://example.test/?ok=1;;CoDe=query-secret&&%74oKeN=encoded-secret",
-            &["query-secret", "encoded-secret"],
-        ),
-        (
-            "https://example.test/?ok=1, SiG=comma-secret",
-            &["comma-secret"],
-        ),
-        (
-            r#"{"message":"https:\/\/user:escaped-secret@example.test"}"#,
-            &["escaped-secret"],
-        ),
-        (
-            "https://hidden-user:hidden-password;token=abc%40host.test",
-            &["hidden-user", "hidden-password"],
-        ),
-        (
-            "https://one.test/,https://user:adjacent-secret@two.test/",
-            &["adjacent-secret"],
-        ),
-        (
-            "{\"password\"\n:\r\n\t\"multiline-secret\"}",
-            &["multiline-secret"],
-        ),
-        (
-            r#"{"password":"first-secret second-secret\" third-secret"}"#,
-            &["first-secret", "second-secret", "third-secret"],
-        ),
-        (
-            "Cookie: a=first_cookie; b=second_cookie",
-            &["first_cookie", "second_cookie"],
-        ),
-        (
-            r#"{"credentials":{"url":"postgres://example.test/a\"value","value":"structured-secret"}}"#,
-            &["structured-secret", "example.test"],
-        ),
-        (
-            "pAsSwOrD == quoted-secret; &ToKeN = 'another secret'",
-            &["quoted-secret", "another secret"],
-        ),
-        (
-            r#"authorization=Basic "quoted auth secret""#,
-            &["quoted auth secret"],
-        ),
-        ("tOkEn\r\n=\n \twhitespace-secret", &["whitespace-secret"]),
-        (
-            "Bearer %2522encoded leading-quote-secret",
-            &["encoded", "leading-quote-secret"],
-        ),
-    ];
-    let results = cases.map(|(message, secrets)| {
+    let results = EARLIER_REVIEW_CASES.map(|(message, secrets)| {
         let text = crash_text(
             &Crash {
                 message,
@@ -635,4 +630,96 @@ fn review_crash_redacts_credentials_across_formats() {
         secrets.iter().all(|secret| !text.contains(secret))
     });
     assert_eq!(results, [true; 23]);
+}
+
+#[cfg(test)]
+#[test]
+fn review_redacts_whole_records() {
+    let cases = [
+        (
+            "encoded URL and multiline JSON",
+            "{\"url\":\"https:\\/\\/alice:pw@host\",\"password\":\n\"example-one\"}",
+            "example-one",
+        ),
+        (
+            "encoded key and continuation",
+            "%70assword=\nexample-one",
+            "example-one",
+        ),
+        (
+            "apostrophe in URL query",
+            "https://host/?token=first'last",
+            "'last",
+        ),
+        (
+            "literal mask prefix",
+            "password=[redacted]example-two",
+            "example-two",
+        ),
+        (
+            "Negotiate header",
+            "Authorization: Negotiate dGVzdA==",
+            "dGVzdA==",
+        ),
+    ];
+    let placeholder = "[record redacted: possible credential]";
+    let mut failures = Vec::new();
+    for (label, message, leaked) in cases {
+        let text = review_crash_text(message);
+        if text != placeholder {
+            failures.push((label, text.contains(leaked)));
+        }
+    }
+    assert!(failures.is_empty(), "(case, leaked value): {failures:?}");
+
+    for (message, _) in EARLIER_REVIEW_CASES {
+        assert_eq!(review_crash_text(message), placeholder, "{message:?}");
+    }
+    for (message, expected) in [
+        ("rendering resumed\nżółw 🐢", placeholder),
+        (r#"sample \u0061 and %20"#, placeholder),
+        ("https://host/maps/a@b", placeholder),
+        ("https://alice:pw@host", placeholder),
+        ("https://alice:pw%40host", placeholder),
+        (r#"https:\/\/alice:pw@host"#, placeholder),
+        (r#"%68ttps:\u002f%2falice:pw%40host"#, placeholder),
+        (r#"\u0070%61\u0073%73 = value"#, placeholder),
+    ] {
+        assert_eq!(redact(message), expected, "{message:?}");
+    }
+    for trigger in [
+        "PASS",
+        "pWd",
+        "SECRET",
+        "Token",
+        "TiCkEt",
+        "AuTh",
+        "BEARER",
+        "Negotiate",
+        "BaSiC ",
+        "COOKIE",
+        "Session",
+        "CREDENTIAL",
+        "ApiKey",
+        "API_KEY",
+        "api-KEY",
+        "PRIVATE",
+        "OTP",
+    ] {
+        let message = format!("before {trigger}after\ncontinuation");
+        assert_eq!(redact(&message), placeholder, "{trigger:?}");
+    }
+}
+
+#[cfg(test)]
+fn review_crash_text(message: &str) -> String {
+    crash_text(
+        &Crash {
+            message,
+            location: "test",
+            thread: "test",
+            backtrace: "",
+        },
+        UNIX_EPOCH,
+    )
 }
