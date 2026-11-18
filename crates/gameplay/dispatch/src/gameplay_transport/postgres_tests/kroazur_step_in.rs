@@ -346,6 +346,11 @@ async fn exercise(h: &Harness) -> TestResult {
         );
     }
 
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    h.root.set_test_quest_clock(now)?;
     let [first, second] = players;
     let _ = step(&mut owner, first, StepDirection::East).await?;
     let inside = owner.current_activity_connection(first);
@@ -379,20 +384,7 @@ async fn exercise(h: &Harness) -> TestResult {
     );
     assert_eq!(rooms(h).await?, 1);
 
-    // Advance the persisted room clock while preserving the source duration.
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query(
-        "UPDATE game_boss_room_activities SET opened_at=opened_at-600001,deadline=deadline-600001",
-    )
-    .execute(&mut *tx)
-    .await?;
-    sqlx::query("UPDATE game_activity_runtime_entries SET deadline=deadline-600001")
-        .execute(&mut *tx)
-        .await?;
-    tx.commit().await?;
+    h.root.advance_test_quest_clock(600)?;
     owner
         .activity_lifecycle_pass()
         .await
