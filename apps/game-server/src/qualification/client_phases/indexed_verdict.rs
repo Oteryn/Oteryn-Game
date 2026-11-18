@@ -61,24 +61,54 @@ impl Watch {
                 self.harness.fail(Need::Row(self.row), root.clone());
                 line.push_str(&cause.suffix(&root));
             }
-            lines.push(line);
+            lines.push(advisory_line(line, self.advisory));
         }
         lines
     }
 }
 
 /// Enroll the dispatch boundary without changing any row's coverage assertions.
-pub(crate) fn indexed(
+pub(crate) async fn indexed(scenario: &'static str, journey: impl Future<Output = TestResult>) {
+    let _ = indexed_checked(scenario, journey).await;
+}
+
+/// Keep the watchdog's failure available to the enclosing stage.
+pub(crate) fn indexed_checked(
     scenario: &'static str,
     journey: impl Future<Output = TestResult>,
-) -> impl Future<Output = ()> {
+) -> impl Future<Output = TestResult> {
+    indexed_checked_with(Harness::global(), scenario, journey)
+}
+
+pub(crate) fn indexed_advisory(
+    scenario: &'static str,
+    journey: impl Future<Output = TestResult>,
+) -> impl Future<Output = TestResult> {
+    indexed_checked_mode(Harness::global(), scenario, journey, true)
+}
+
+fn indexed_checked_with(
+    harness: &'static Harness,
+    scenario: &'static str,
+    journey: impl Future<Output = TestResult>,
+) -> impl Future<Output = TestResult> {
+    indexed_checked_mode(harness, scenario, journey, false)
+}
+
+fn indexed_checked_mode(
+    harness: &'static Harness,
+    scenario: &'static str,
+    journey: impl Future<Output = TestResult>,
+    advisory: bool,
+) -> impl Future<Output = TestResult> {
     // Each row owns its future on the heap; hundreds of inline row temporaries
     // otherwise accumulate in journeys' debug-build poll frame.
     Box::pin(async move {
-        let mut watch = Watch::new(scenario, Harness::global());
+        let mut watch = Watch::new(scenario, harness);
         watch.scenario = Some(scenario);
+        watch.advisory = advisory;
         let result = watch.run(None, "indexed row", journey).await;
-        if let Err(error) = result {
+        if let Err(error) = &result {
             watch.remember(error.as_ref());
             watch.state().failed_exit = true;
             // The cancelled reporter did not get to serialize its typed failure.
@@ -93,6 +123,7 @@ pub(crate) fn indexed(
         for line in watch.take_verdicts() {
             evidence(&line);
         }
+        result
     })
 }
 
@@ -116,7 +147,15 @@ pub(crate) fn indexed_evidence(line: String) -> Option<String> {
         watch.state().pending.push(line);
         None
     } else {
-        Some(line)
+        Some(advisory_line(line, watch.advisory))
+    }
+}
+
+fn advisory_line(line: String, advisory: bool) -> String {
+    if advisory {
+        line.replacen("e2e_all ", "CREATURE_SWEEP_CALIBRATION ", 1)
+    } else {
+        line
     }
 }
 
@@ -169,6 +208,42 @@ mod tests {
         let mut watch = Watch::new("C03.full", harness);
         watch.scenario = Some("C03.full");
         watch
+    }
+
+    #[test]
+    fn indexed_watchdog_cancellation_reaches_the_stage_caller() -> TestResult {
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(1)))));
+            let result = indexed_checked_with(
+                harness,
+                "REVIEW.cancel.full",
+                std::future::pending::<TestResult>(),
+            )
+            .await;
+            assert!(result.is_err());
+            assert!(
+                harness
+                    .blocked(&[Need::Row("REVIEW.cancel.full")])
+                    .is_some()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn indexed_failure_reaches_the_stage_caller() -> TestResult {
+        runtime()?.block_on(async {
+            assert!(
+                indexed_checked_with(
+                    Box::leak(Box::new(Harness::new(true, None))),
+                    "REVIEW.failure.full",
+                    async { Err("scenario failed".into()) }
+                )
+                .await
+                .is_err()
+            );
+            Ok(())
+        })
     }
 
     #[test]
@@ -269,5 +344,17 @@ mod tests {
             ));
             Ok(())
         })
+    }
+}
+
+#[cfg(test)]
+mod advisory_tests {
+    #[test]
+    fn calibration_verdict_is_not_a_scored_species() {
+        let line =
+            "e2e_all scenario=CS.calibration.cyclops.attempt1.full status=FAIL seconds=0.000"
+                .to_owned();
+        assert!(!super::advisory_line(line.clone(), true).starts_with("e2e_all "));
+        assert_eq!(super::advisory_line(line.clone(), false), line);
     }
 }

@@ -9,6 +9,41 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 };
 use tokio::io::AsyncWriteExt;
 
+fn corpse_reply_complete<T: Eq>(
+    accepted: bool,
+    target: &T,
+    opened: Option<(&T, &std::collections::BTreeMap<u32, u64>)>,
+    expected: &std::collections::BTreeMap<u32, u64>,
+) -> bool {
+    accepted && opened.is_some_and(|(handle, contents)| handle == target && contents == expected)
+}
+
+#[test]
+fn a_use_acknowledgement_does_not_prove_the_container_or_loot() {
+    use std::collections::BTreeMap;
+    let expected = BTreeMap::from([(1, 3)]);
+    let empty = BTreeMap::new();
+    assert!(!corpse_reply_complete(true, &1u8, None, &expected));
+    assert!(!corpse_reply_complete(
+        true,
+        &1,
+        Some((&2, &expected)),
+        &expected
+    ));
+    assert!(!corpse_reply_complete(
+        true,
+        &1,
+        Some((&1, &empty)),
+        &expected
+    ));
+    assert!(corpse_reply_complete(
+        true,
+        &1,
+        Some((&1, &expected)),
+        &expected
+    ));
+}
+
 #[test]
 fn fresh_native_corpse_use_through_real_dispatch_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run(
@@ -22,7 +57,7 @@ pub(super) async fn open(
     mut admitted: AdmittedSession,
 ) -> TestResult {
     let selected = SelectedCapabilities::select(
-        crate::gameplay_transport::capabilities::ITEM_VIEW_OFFERED_CAPABILITIES,
+        crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
         &[4, 6, 7, 12, 14, 15],
     )
     .ok_or("corpse capabilities")?;
@@ -35,13 +70,48 @@ pub(super) async fn open(
             .await
             .map_err(debug)?;
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+    let corpse = owner
+        .runtime
+        .lock()
+        .await
+        .visible_corpses()
+        .into_iter()
+        .next()
+        .ok_or("committed corpse")?;
+    let contents = owner
+        .root
+        .read_corpse_contents(owner.character, corpse.item.item_instance_id)
+        .await
+        .map_err(debug)?
+        .ok_or("live corpse contents")?;
+    let index = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.item_index())
+        .ok_or("pinned Item index")?;
+    let mut expected = std::collections::BTreeMap::<u32, u64>::new();
+    for entry in contents {
+        let definition = entry.item.definition;
+        let reference = index
+            .definition_ref(
+                &definition.family,
+                &definition.production_key,
+                &definition.revision_ref,
+            )
+            .ok_or("exact loot definition")?;
+        *expected.entry(reference.get()).or_default() += u64::from(entry.item.quantity);
+    }
+    assert!(
+        !expected.is_empty(),
+        "the known positive native loot plan is part of this regression"
+    );
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
         let end = Box::pin(serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS)).await;
         drop(server);
         end
     };
-    let driving = async {
+    let driving = async move {
         let mut handle = None;
         loop {
             let frame = read_frame(&mut client).await?;
@@ -84,6 +154,8 @@ pub(super) async fn open(
         )
         .map_err(debug)?;
         write_frame(&mut client, &command).await?;
+        let mut accepted = false;
+        let mut opened = None;
         loop {
             let frame = read_frame(&mut client).await?;
             let env = decode_wire_envelope(&frame).map_err(debug)?;
@@ -99,16 +171,47 @@ pub(super) async fn open(
                         .map_err(debug)?,
                     oteryn_protocol_oteryn::world_object::UseDisposition::Committed
                 );
+                accepted = true;
+            }
+            if env.message_type() == MessageType::StateDelta {
+                let delta =
+                    oteryn_protocol_oteryn::decode_state_delta(env.payload()).map_err(debug)?;
+                if delta.domain_id == 11 {
+                    let container =
+                        oteryn_protocol_oteryn::item_view::decode_open_container(delta.payload)
+                            .map_err(debug)?;
+                    let mut items = std::collections::BTreeMap::<u32, u64>::new();
+                    for entry in container.entries {
+                        *items.entry(entry.item_definition_ref.get()).or_default() +=
+                            u64::from(entry.count.get());
+                    }
+                    opened = container.container_handle.map(|handle| (handle, items));
+                }
+            }
+            if corpse_reply_complete(
+                accepted,
+                &handle,
+                opened.as_ref().map(|(handle, items)| (handle, items)),
+                &expected,
+            ) {
                 break;
             }
         }
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
     };
-    let (_, result) = tokio::time::timeout(
+    let (end, result) = tokio::time::timeout(
         std::time::Duration::from_secs(30),
         super::fixture::join_two(serving, driving),
     )
     .await?;
-    result
+    result?;
+    assert!(
+        matches!(
+            end,
+            crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(_)
+        ),
+        "the real dispatcher completed without a protocol refusal"
+    );
+    Ok(())
 }

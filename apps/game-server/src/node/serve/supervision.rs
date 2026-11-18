@@ -83,6 +83,8 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         &reset_watch,
         reset_epoch,
     ));
+    #[cfg(any(test, feature = "qualification-spawn"))]
+    let qualification_specimens = Mutex::new(Vec::new());
     let mut control_task = Box::pin(control_loop(
         control,
         root,
@@ -95,6 +97,8 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         Some(super::qualification_fixture::SpawnOwners {
             runtime,
             room: spawn_room,
+            #[cfg(any(test, feature = "qualification-spawn"))]
+            specimens: &qualification_specimens,
         }),
         shutdown,
     ));

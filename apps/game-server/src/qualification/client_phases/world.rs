@@ -8,6 +8,9 @@ use std::path::Path;
 #[path = "general_stats.rs"]
 mod general_stats;
 
+#[path = "creature_sweep.rs"]
+mod creature_sweep;
+
 include!("character_core.rs");
 include!("character_release.rs");
 include!("e2e_row_batch.rs");
@@ -2826,14 +2829,12 @@ pub(super) async fn journeys(
         ));
     }
     if groups.runs("creature_sweep") {
-        #[path = "creature_sweep.rs"]
-        mod creature_sweep;
         creature_sweep::run(clients, world, &metadata.spawns).await?;
     }
-    if groups.runs("mp") {
+    if groups.explicitly_runs("mp") {
         #[path = "mp/mount.rs"]
         mod mp;
-        mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
+        mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await?;
     }
     // The core/profile pair has not inherited packet movement, loot or death.
     if !groups.runs("core") {

@@ -1,4 +1,4 @@
-//! MP01: three party members and a separately admitted, unprovisioned victim.
+//! MP01: three party members and a level-100 no-vocation PvP victim.
 use super::*;
 use bots::{Bot, attack_target, party};
 use oteryn_dev_client::{SessionEvent, client_ui::cyclopedia_character as panel};
@@ -37,7 +37,7 @@ pub(super) async fn run(
             (core, 0, Some("knight")),
             (packets, 0, Some("druid")),
             (packets, 1, Some("paladin")),
-            (core, 1, None),
+            (core, 1, Some("victim")),
         ]),
     )
     .await
@@ -182,10 +182,7 @@ async fn profiles(bots: &mut [Bot<'_, '_>]) -> TestResult {
         let expected =
             character::vocation_id(vocation).ok_or("MP01 vocation has no protocol id")?;
         if view.vocation_id != Some(expected)
-            || view
-                .general
-                .as_ref()
-                .is_none_or(|stats| vocation != "none" && stats.level != 100)
+            || view.general.as_ref().is_none_or(|stats| stats.level != 100)
         {
             return Err(format!(
                 "MP01 role={} expected={vocation} vocation_id={:?} stats={:?}",

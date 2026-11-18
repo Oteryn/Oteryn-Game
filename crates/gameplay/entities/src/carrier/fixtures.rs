@@ -158,6 +158,61 @@ impl ChannelRuntimeV1 {
         }
         result
     }
+    /// One-shot qualification encounter. The caller has fenced the exact qualified
+    /// cell; the ordinary masterless owner still enforces pin, policy and occupancy.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn realize_native_qualification_once(
+        &mut self,
+        expected_pin: ChannelContentPin,
+        definition_key: &str,
+        position: MovementLocalPosition,
+    ) -> Result<runtime_actor_companion::CompanionSnapshot, CarrierError> {
+        self.owner_fence()?;
+        if self.content != expected_pin || self.spawn_activation.is_some() {
+            return Err(CarrierError::ContentPinWorldMismatch);
+        }
+        self.positioned_actor_census()?;
+        let policy = self.companion_policy(definition_key)?;
+        if policy.is_familiar {
+            return Err(CarrierError::InvalidCreatureTarget);
+        }
+        let revision = policy.definition_revision.clone();
+        let content = expected_pin.server_artifact_digest();
+        let actor = self
+            .admit_native_masterless_at(
+                definition_key,
+                &revision,
+                content,
+                position,
+                |runtime, at| Some(at == position && runtime.content_pin() == &expected_pin),
+            )
+            .map_err(|error| match error {
+                super::native_encounter::EncounterSpawnError::Native(error) => error,
+                _ => CarrierError::PlanConflict,
+            })?;
+        self.companion_snapshot(actor)
+    }
+
+    /// Remove only the exact live, masterless qualification specimen. A dead
+    /// specimen stays with its death/reward handoff owner until settlement.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn remove_native_qualification_once(
+        &mut self,
+        actor: ExactActorRef,
+        key: &str,
+        content: [u8; 32],
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if !self.borrow_exact_actor_lookup().contains(actor) {
+            return Ok(());
+        }
+        let snapshot = self.companion_snapshot_including_dead(actor)?;
+        if snapshot.health == 0 {
+            return Ok(());
+        }
+        self.remove_native_masterless_subject(actor, key, content)
+    }
+
     /// Test only: one live creature at `position`, under the same synthetic context as
     /// [`Self::initialize_movement_test_position`]. Spawn realization is AI-2's carrier path.
     #[cfg(any(test, feature = "test-support"))]

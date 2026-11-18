@@ -202,7 +202,9 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     policy: FiniteProgressionPolicy<String, N>,
     deadline: tokio::time::Instant,
 ) -> TestResult {
-    if !PLAYABLE_VOCATIONS.contains(&spec.vocation) || !(1..=1000).contains(&spec.level) {
+    if (!PLAYABLE_VOCATIONS.contains(&spec.vocation) && spec.vocation != NO_VOCATION)
+        || !(1..=1000).contains(&spec.level)
+    {
         return Err("qualification requires a base vocation and source level 1..1000".into());
     }
     let xp_occurrence =
@@ -221,55 +223,25 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     // CHAR-REV-SEQ-1: the fixture's revision writes run through one slot of this Character.
     let sequencer = CharacterRevisionSequencer::new();
     let mut slot = sequencer.acquire(character).await;
+    // Capture the root before any independently awaited build/progression read.
+    let initial_revision = retry_holder(Some(root), deadline, authority_busy, async || {
+        root.read_current_character(authority, character).await
+    })
+    .await
+    .map_err(debug)?
+    .revision;
     let before = retry_holder(Some(root), deadline, progression_busy, async || {
         root.read_character_build_state(authority, character).await
     })
     .await
     .map_err(debug)?;
+    #[cfg(test)]
+    observe_fixture_build_read().await;
     let progression = retry_holder(Some(root), deadline, progression_busy, async || {
         root.read_character_progression(authority, character).await
     })
     .await
     .map_err(debug)?;
-    if before.vocation() != NO_VOCATION {
-        return Err("spell fixture vocation is set".into());
-    }
-    if before != DurableBuildState::default() {
-        return Err("spell fixture build is not initial".into());
-    }
-    if let Some(state) = &progression {
-        if state.level != 1
-            || !policy.thresholds.first().is_some_and(|first| {
-                first.level == 1 && state.total_experience == first.minimum_experience
-            })
-        {
-            return Err("spell fixture progression level or XP is not initial".into());
-        }
-        if state.context != policy.context {
-            return Err("spell fixture progression context mismatch".into());
-        }
-        if state.policy_revision != policy.policy_revision {
-            return Err("spell fixture progression policy revision mismatch".into());
-        }
-        if state.reward_revision != policy.reward_revision {
-            return Err("spell fixture progression reward revision mismatch".into());
-        }
-        // Admission/offline settlement and logout advance revisions even with an
-        // unchanged build. Retained XP/death receipts distinguish earned history
-        // from those checkpoints, including XP that later returned to zero.
-        if state.character_revision.get() != 1
-            && retry_holder(Some(root), deadline, progression_busy, async || {
-                root.has_character_experience_or_death_receipts(authority, character)
-                    .await
-            })
-            .await
-            .map_err(debug)?
-        {
-            return Err(
-                "spell fixture noninitial progression revision has XP or death history".into(),
-            );
-        }
-    }
     if policy.context != context {
         return Err("qualification policy context mismatch".into());
     }
@@ -279,6 +251,138 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .find(|threshold| threshold.level == level)
         .ok_or("qualification level absent from the served progression policy")?
         .minimum_experience;
+    let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+        include_bytes!("../../../tools/content-schema/native-gameplay/build-training.json"),
+        &context.content,
+    )
+    .map_err(debug)?;
+    let initial_build = DurableBuildState::default();
+    let after = if vocation == NO_VOCATION {
+        initial_build.clone()
+    } else {
+        convert_vocation(&formula, &initial_build, vocation).map_err(debug)?
+    };
+    let prior_xp = retry_holder(Some(root), deadline, progression_busy, async || {
+        root.reconcile_character_experience(authority, xp_occurrence)
+            .await
+    })
+    .await
+    .map_err(debug)?;
+    let prior_build = retry_holder(Some(root), deadline, progression_busy, async || {
+        root.reconcile_character_build(authority, build_occurrence)
+            .await
+    })
+    .await
+    .map_err(debug)?;
+    let resumed = prior_xp.is_some() || prior_build.is_some();
+    if resumed {
+        let xp_revision = match &prior_xp {
+            Some(receipt)
+                if level > 1
+                    && receipt.character_id == character
+                    && receipt.level_before == 1
+                    && receipt.level_after == level
+                    && receipt.experience_before.get() == 0
+                    && receipt.experience_after == experience
+                    && receipt.experience_awarded == experience =>
+            {
+                receipt.committed_character_revision
+            }
+            None if level == 1 => {
+                prior_build
+                    .as_ref()
+                    .ok_or("fixture continuation missing build")?
+                    .original_character_revision
+            }
+            _ => return Err("fixture continuation XP receipt mismatch".into()),
+        };
+        let expected_revision = if let Some(receipt) = &prior_build {
+            if receipt.character_id != character
+                || receipt.before != initial_build
+                || receipt.after != after
+                || receipt.cause != BuildCause::VocationChoice
+                || receipt.original_character_revision != xp_revision
+                || before != after
+            {
+                return Err("fixture continuation build receipt mismatch".into());
+            }
+            receipt.committed_character_revision
+        } else {
+            if before != initial_build {
+                return Err("fixture continuation build changed".into());
+            }
+            xp_revision
+        };
+        if expected_revision != initial_revision
+            || !progression.as_ref().is_some_and(|state| {
+                state.character_id == character
+                    && state.character_revision == expected_revision
+                    && state.level == level
+                    && state.total_experience == experience
+                    && state.context == policy.context
+                    && state.policy_revision == policy.policy_revision
+                    && state.reward_revision == policy.reward_revision
+            })
+        {
+            return Err("fixture continuation current state changed".into());
+        }
+        // The retained outcome is accepted only with independently current state above.
+        if prior_build.is_some() || vocation == NO_VOCATION {
+            let current_revision = retry_holder(Some(root), deadline, authority_busy, async || {
+                root.read_current_character(authority, character).await
+            })
+            .await
+            .map_err(debug)?
+            .revision;
+            if current_revision != expected_revision {
+                return Err("fixture continuation revision changed during verification".into());
+            }
+            return Ok(());
+        }
+    } else {
+        if before.vocation() != NO_VOCATION {
+            return Err("spell fixture vocation is set".into());
+        }
+        if before != DurableBuildState::default() {
+            return Err("spell fixture build is not initial".into());
+        }
+        if let Some(state) = &progression {
+            if state.level != 1
+                || !policy.thresholds.first().is_some_and(|first| {
+                    first.level == 1 && state.total_experience == first.minimum_experience
+                })
+            {
+                return Err("spell fixture progression level or XP is not initial".into());
+            }
+            if state.context != policy.context {
+                return Err("spell fixture progression context mismatch".into());
+            }
+            if state.policy_revision != policy.policy_revision {
+                return Err("spell fixture progression policy revision mismatch".into());
+            }
+            if state.reward_revision != policy.reward_revision {
+                return Err("spell fixture progression reward revision mismatch".into());
+            }
+            // Admission/offline settlement and logout advance revisions even with an
+            // unchanged build. Retained XP/death receipts distinguish earned history
+            // from those checkpoints, including XP that later returned to zero.
+            if state.character_revision.get() != 1
+                && retry_holder(Some(root), deadline, progression_busy, async || {
+                    root.has_character_experience_or_death_receipts(authority, character)
+                        .await
+                })
+                .await
+                .map_err(debug)?
+            {
+                return Err(
+                    "spell fixture noninitial progression revision has XP or death history".into(),
+                );
+            }
+        }
+    }
+    if policy.context != context {
+        return Err("qualification policy context mismatch".into());
+    }
     let mut fence = CurrentCharacterGameplayFence {
         character_id: character,
         game_session_id: current.current_game_session_id(),
@@ -286,15 +390,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         character_lease_generation: current.current_character_lease().generation(),
         runtime_scope: current.current_runtime_scope(),
         scope_ownership_generation: current.current_scope_generation(),
-        expected_character_revision: retry_holder(
-            Some(root),
-            deadline,
-            authority_busy,
-            async || root.read_current_character(authority, character).await,
-        )
-        .await
-        .map_err(debug)?
-        .revision,
+        expected_character_revision: initial_revision,
     };
     if progression
         .as_ref()
@@ -320,8 +416,8 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .await
         .map_err(debug)?;
     }
-    if level > 1 {
-        retry_holder(Some(root), deadline, progression_busy, async || {
+    if level > 1 && !resumed {
+        let awarded = retry_holder(Some(root), deadline, progression_busy, async || {
             slot.commit_experience(
                 root,
                 authority,
@@ -341,40 +437,43 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         })
         .await
         .map_err(debug)?;
+        fence.expected_character_revision = match awarded {
+            crate::durability::character_progression::ExperienceCommitOutcome::Committed(
+                receipt,
+            )
+            | crate::durability::character_progression::ExperienceCommitOutcome::AlreadyCommitted(
+                receipt,
+            ) => receipt.committed_character_revision,
+        };
     }
-    fence.expected_character_revision =
-        retry_holder(Some(root), deadline, authority_busy, async || {
-            root.read_current_character(authority, character).await
+    if vocation != NO_VOCATION {
+        let built = retry_holder(Some(root), deadline, progression_busy, async || {
+            slot.commit_build(
+                root,
+                authority,
+                node,
+                fence,
+                BuildChangeRequest {
+                    occurrence: build_occurrence,
+                    cause: BuildCause::VocationChoice,
+                    before: before.clone(),
+                    after: after.clone(),
+                    pruned_stance: None,
+                },
+                &formula,
+                None,
+            )
+            .await
         })
         .await
-        .map_err(debug)?
-        .revision;
-    let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
-        include_bytes!("../../../tools/content-schema/native-gameplay/build-training.json"),
-        &context.content,
-    )
-    .map_err(debug)?;
-    let after = convert_vocation(&formula, &before, vocation).map_err(debug)?;
-    retry_holder(Some(root), deadline, progression_busy, async || {
-        slot.commit_build(
-            root,
-            authority,
-            node,
-            fence,
-            BuildChangeRequest {
-                occurrence: build_occurrence,
-                cause: BuildCause::VocationChoice,
-                before: before.clone(),
-                after: after.clone(),
-                pruned_stance: None,
-            },
-            &formula,
-            None,
-        )
-        .await
-    })
-    .await
-    .map_err(debug)?;
+        .map_err(debug)?;
+        fence.expected_character_revision = match built {
+            crate::durability::character_build::BuildCommitOutcome::Committed(receipt)
+            | crate::durability::character_build::BuildCommitOutcome::AlreadyCommitted(receipt) => {
+                receipt.committed_character_revision
+            }
+        };
+    }
     // Verify the requested owned state with typed errors; the cast-facts loader
     // erases holder-busy into Unavailable, which cannot safely be retried.
     let verification_revision = retry_holder(Some(root), deadline, authority_busy, async || {
@@ -399,11 +498,12 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     .await
     .map_err(debug)?
     .revision;
-    if verification_revision != verified_revision
+    if verified_revision != fence.expected_character_revision
+        || verification_revision != verified_revision
         || final_build != after
         || !final_progression.is_some_and(|state| {
             state.character_id == character
-                && state.character_revision <= verified_revision
+                && state.character_revision == verified_revision
                 && state.level == level
                 && state.total_experience == experience
         })
@@ -593,5 +693,33 @@ mod tests {
         }
         assert!(!PLAYABLE_VOCATIONS.contains(&"master_sorcerer"));
         Ok(())
+    }
+}
+
+#[cfg(test)]
+pub(super) struct FixtureBuildReadPause {
+    pub(super) entered: tokio::sync::Notify,
+    pub(super) resume: tokio::sync::Notify,
+}
+#[cfg(test)]
+thread_local! {
+    static FIXTURE_BUILD_READ_PAUSE: std::cell::RefCell<Option<std::sync::Arc<FixtureBuildReadPause>>> = const { std::cell::RefCell::new(None) };
+}
+#[cfg(test)]
+pub(super) fn pause_next_fixture_build_read() -> std::sync::Arc<FixtureBuildReadPause> {
+    let pause = std::sync::Arc::new(FixtureBuildReadPause {
+        entered: tokio::sync::Notify::new(),
+        resume: tokio::sync::Notify::new(),
+    });
+    let previous = FIXTURE_BUILD_READ_PAUSE.with(|slot| slot.replace(Some(pause.clone())));
+    assert!(previous.is_none());
+    pause
+}
+#[cfg(test)]
+async fn observe_fixture_build_read() {
+    let pause = FIXTURE_BUILD_READ_PAUSE.with(|slot| slot.take());
+    if let Some(pause) = pause {
+        pause.entered.notify_one();
+        pause.resume.notified().await;
     }
 }

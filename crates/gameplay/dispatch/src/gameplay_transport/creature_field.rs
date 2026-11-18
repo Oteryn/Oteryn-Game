@@ -31,11 +31,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut plans = Vec::new();
         let mut source_players = Vec::new();
 
-        let creatures = runtime
-            .visible_entities()
-            .creatures
-            .into_iter()
-            .filter(|visible| batch.actors.contains(&visible.actor))
+        // The retained cursor already owns this exact bounded batch. Looking up
+        // each actor directly avoids a whole-world census for every slice.
+        let creatures = batch
+            .actors
+            .iter()
+            .filter_map(|actor| runtime.companion_snapshot(*actor).ok())
             .collect::<Vec<_>>();
         // Passive source creatures are outside the AI table, but still own field conditions.
         let positions = creatures
@@ -45,10 +46,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map.prefetch_empty_tiles(runtime, &positions)
             .await
             .map_err(|_| DurabilityError::Unavailable)?;
-        for visible in creatures {
-            let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
-                continue;
-            };
+        for snapshot in creatures {
+            let visible = &snapshot;
             let read = map
                 .read_items(runtime, visible.position)
                 .await
@@ -111,7 +110,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             });
                     let digest = Sha256::new()
                         .chain_update(visible.actor.placement_identity())
-                        .chain_update(visible.revision.to_be_bytes())
+                        .chain_update(visible.position_revision.to_be_bytes())
                         .chain_update(item.item_instance_id)
                         .finalize();
                     let mut occurrence = [0; 16];

@@ -10,6 +10,21 @@ async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> Tes
         .map_err(|error| harness.fixture_failed(index, error.as_ref()))
 }
 
+async fn wait_scoped_character_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
+    let harness = verdict::Harness::global();
+    harness.fixture_gate_for_character(clients.world, clients.characters[index], index)?;
+    wait_fixture_released(clients, index)
+        .await
+        .map_err(|error| {
+            harness.fixture_failed_for_character(
+                clients.world,
+                clients.characters[index],
+                index,
+                error.as_ref(),
+            )
+        })
+}
+
 async fn wait_fixture_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
     // Existing loss qualification allows 60s for detection and 100s for release.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(160);

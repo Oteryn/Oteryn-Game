@@ -10,10 +10,10 @@ pub(super) async fn run(
     packets: &SeamClients<'_>,
     world: &BundleWorld,
     towns: &oteryn_world_bundle::subarea::Table,
-) {
-    verdict::indexed(
+) -> TestResult {
+    verdict::indexed_checked(
         "MP01.full",
         mp01_party_pvp::run(core, packets, world, towns),
     )
-    .await;
+    .await
 }

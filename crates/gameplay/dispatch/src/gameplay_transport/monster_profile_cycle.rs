@@ -718,9 +718,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let actors = pending.field_batch(runtime).map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                     owner.tick_creature_fields(&mut map, runtime, states, native,
                         super::creature_field::CreatureFieldBatch { observed_at: now, actors: &actors }, native_health_names).await?;
-                    if !map.validate_transaction(runtime).await {
-                        return Err(crate::durability::DurabilityError::Unavailable);
-                    }
+                    // tick_creature_fields validates before synchronous publication.
+                    // Advance the retained cursor in the same turn, with no fallible await.
                     pending.finish_field_batch(&actors).map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                     if !pending.fields_known() {
                         drop(map);

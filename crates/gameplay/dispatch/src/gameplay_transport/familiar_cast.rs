@@ -439,6 +439,26 @@ fn same_familiar_writer(
     current.expected_character_revision = original.expected_character_revision;
     current == original
 }
+// Keep the typed read boundary separate from live runtime publication.
+async fn familiar_login_read<T, E>(
+    budget: &crate::gameplay_transport::AdmissionRetryBudget<'_>,
+    mut read: impl AsyncFnMut() -> Result<T, E>,
+    holder_busy: impl Fn(&E) -> bool,
+) -> Result<T, ()> {
+    budget
+        .retry_unavailable(async || {
+            read().await.map_err(|error| {
+                if holder_busy(&error) {
+                    crate::gameplay_transport::AdmissionRefusal::Unavailable
+                } else {
+                    crate::gameplay_transport::AdmissionRefusal::Rejected
+                }
+            })
+        })
+        .await
+        .map_err(|_| ())
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Source Login composition after the real first-entry owners have been installed.
     /// Reads the actual noncast admission/lifecycle owners with no manufactured cast
@@ -456,15 +476,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if config.source_digest() != content.source_digest() {
             return Err(());
         }
-        let login_fence =
-            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+        let budget = crate::gameplay_transport::AdmissionRetryBudget::for_root(&session, self.root);
+        let login_fence = familiar_login_read(
+            &budget,
+            async || {
+                crate::gameplay_transport::character_gameplay_fence::current_once(
+                    self, session, false,
+                )
                 .await
-                .ok_or(())?;
-        let stored = self
-            .root
-            .read_character_familiar_state(self.character, login_fence.character_id)
-            .await
-            .map_err(|_| ())?;
+            },
+            |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
+        )
+        .await?
+        .ok_or(())?;
+        let stored = familiar_login_read(&budget,
+            async || self.root.read_character_familiar_state(self.character, login_fence.character_id).await,
+            |error| matches!(error, crate::durability::character_progression::CharacterProgressionError::Unavailable(crate::durability::DurabilityError::RootUnavailable)),
+        ).await?;
         let nothing_to_restore =
             stored.state().familiar_definition.is_none()
                 && stored.state().saved_expiry_unix == 0
@@ -2493,5 +2521,51 @@ impl CurrentFamiliarAdministrativeOwner for PersistedFamiliarGroupOwner {
             valid_until_micros: u64::MAX,
             value: self.snapshot.account_at_least_god(),
         })
+    }
+}
+
+#[cfg(test)]
+mod login_read_review_tests {
+    use super::*;
+
+    #[tokio::test(start_paused = true)]
+    async fn familiar_login_busy_reads_retry_but_other_refusals_do_not() {
+        use crate::durability::DurabilityError;
+        let budget = crate::gameplay_transport::AdmissionRetryBudget {
+            deadline: tokio::time::Instant::now() + std::time::Duration::from_secs(1),
+            backoff: crate::gameplay_transport::RECONCILE_BACKOFF,
+            stale_rounds: crate::gameplay_transport::FRESH_ADMISSION_ROUNDS,
+            root: None,
+            _foreground: None,
+            waiter: std::sync::OnceLock::new(),
+        };
+        let mut attempts = 0;
+        let result = familiar_login_read(
+            &budget,
+            async || {
+                attempts += 1;
+                if attempts == 1 {
+                    Err(DurabilityError::RootUnavailable)
+                } else {
+                    Ok(7)
+                }
+            },
+            |error| matches!(error, DurabilityError::RootUnavailable),
+        )
+        .await;
+        assert_eq!(result, Ok(7));
+        assert_eq!(attempts, 2);
+        let mut attempts = 0;
+        let result = familiar_login_read(
+            &budget,
+            async || {
+                attempts += 1;
+                Err::<(), _>(DurabilityError::InvalidStoredState)
+            },
+            |error| matches!(error, DurabilityError::RootUnavailable),
+        )
+        .await;
+        assert!(result.is_err());
+        assert_eq!(attempts, 1);
     }
 }

@@ -161,6 +161,7 @@ struct Rows<'a> {
     kill_seconds: Option<f64>,
     /// The error of a failed setup (logout, release or admission); the sweep recovers from it.
     setup_error: Option<String>,
+    spawn_session: Option<String>,
     dps: Option<f64>,
 }
 
@@ -173,6 +174,7 @@ impl<'a> Rows<'a> {
             counts: Tally::default(),
             kill_seconds: None,
             setup_error: None,
+            spawn_session: None,
             dps,
         }
     }
@@ -254,6 +256,7 @@ struct Definition {
 
 struct LootEntry {
     item: String,
+    revision: String,
     min: u64,
     max: u64,
 }
@@ -299,9 +302,10 @@ const fn calibration_decision(
     attempt: u32,
     seconds: Option<f64>,
     health: u64,
+    passed: bool,
 ) -> CalibrationDecision {
     match seconds {
-        Some(seconds) if seconds.is_finite() && seconds > 0.0 && health > 0 => {
+        Some(seconds) if passed && seconds.is_finite() && seconds > 0.0 && health > 0 => {
             CalibrationDecision::Measured(health as f64 / seconds)
         }
         _ if attempt < 3 => CalibrationDecision::Retry,
@@ -381,6 +385,10 @@ fn loot_tables(root: &Path) -> TestResult<BTreeMap<String, Vec<LootEntry>>> {
                         .as_str()
                         .ok_or("loot entry without an item key")?
                         .to_owned(),
+                    revision: entry["item"]["revision"]
+                        .as_str()
+                        .ok_or("loot entry without an item revision")?
+                        .to_owned(),
                     min: entry["min_count"]
                         .as_u64()
                         .ok_or("loot entry without min_count")?,
@@ -438,8 +446,8 @@ fn far_route(
 fn item_ref(
     items: &crate::content::item_ref::ItemDefinitionIndex,
     key: &str,
+    revision: &str,
 ) -> Option<std::num::NonZeroU32> {
-    let revision = items.revision(key)?;
     items.definition_ref("Item", key, revision)
 }
 
@@ -514,20 +522,21 @@ pub(super) async fn run(
         )
         .into());
     }
-    let calibration = species_of(CALIBRATION_KEY, &definitions, &tables, None);
+    let mut calibration = species_of(CALIBRATION_KEY, &definitions, &tables, None);
     let health = calibration
         .definition
         .as_ref()
         .map_or(0, |found| found.health);
     // Calibration is advisory: preserve its FAIL evidence without failing the selected batch.
     let mut calibration_tally = Tally::default();
+    let mut attempted = 0usize;
     let mut dps = None;
     let mut last = String::new();
     for attempt in 1..=3 {
+        calibration.short = calibration_short("cyclops", attempt);
         last = "no-kill-measurement".to_owned();
         let mut outcome = SweepOutcome::default();
-        let started = std::time::Instant::now();
-        verdict::indexed(
+        let indexed_result = verdict::indexed_advisory(
             Box::leak(format!("CS.{}.full", calibration.short).into_boxed_str()),
             Box::pin(async {
                 let result = sweep_species(
@@ -547,10 +556,17 @@ pub(super) async fn run(
             }),
         )
         .await;
-        seconds.push(started.elapsed().as_secs_f64());
+        calibration_tally.fail = accounted_failures(
+            calibration_tally.fail,
+            outcome.completed,
+            indexed_result.is_err(),
+        );
+        if let Err(error) = indexed_result {
+            last = recover_cause(&error.to_string());
+        }
         let measured = outcome.kill_seconds;
         let setup_error = outcome.setup_error;
-        let decision = calibration_decision(attempt, measured, health);
+        let decision = calibration_decision(attempt, measured, health, outcome.passed);
         evidence(&format!(
             "creature_sweep calibration attempt={attempt} result={}",
             match decision {
@@ -595,14 +611,19 @@ pub(super) async fn run(
         ));
     }
     let long = long_seconds()?;
-    for key in &keys[start..end] {
-        if key.as_str() == CALIBRATION_KEY && dps.is_some() {
-            continue;
-        }
+    for key in selected_batch(&keys, start, end, dps.is_some()) {
         let species = species_of(key, &definitions, &tables, dps);
         let hp = species.definition.as_ref().map_or(0, |found| found.health);
         if long.is_some() && dps.is_some_and(|value| hp <= budget(value)) {
-            // Within the normal budget: the normal sweep owns this species' rows.
+            let mut rows = Rows::new(&species.short, species.dps);
+            for step in STEPS {
+                rows.emit(step, "SKIPPED", "within-normal-sweep-budget", None);
+            }
+            tally.skipped += rows.counts.skipped;
+            evidence(&format!(
+                "e2e_all scenario=CS.{}.full status=SKIPPED seconds=0.000 evidence=within-normal-sweep-budget",
+                species.short
+            ));
             continue;
         }
         if let (Some(value), Some(limit)) = (dps, row_budget(dps, long.unwrap_or(KILL_SECONDS)))
@@ -614,6 +635,10 @@ pub(super) async fn run(
                 rows.emit(step, "SKIPPED", &detail, None);
             }
             tally.skipped += rows.counts.skipped;
+            evidence(&format!(
+                "e2e_all scenario=CS.{}.full status=SKIPPED seconds=0.000 evidence={detail}",
+                species.short
+            ));
             continue;
         }
         if let Some(cause) = &blocked {
@@ -623,13 +648,18 @@ pub(super) async fn run(
                 rows.emit(step, "FAIL", &detail, Some(detail.as_str()));
             }
             tally.fail += rows.counts.fail;
+            evidence(&format!(
+                "e2e_all scenario=CS.{}.full status=FAIL seconds=0.000 evidence={detail} cause=blocked",
+                species.short
+            ));
             continue;
         }
         let scenario: &'static str =
             Box::leak(format!("CS.{}.full", species.short).into_boxed_str());
         let started = std::time::Instant::now();
         let mut outcome = SweepOutcome::default();
-        verdict::indexed(
+        attempted += 1;
+        let indexed_result = verdict::indexed_checked(
             scenario,
             Box::pin(sweep_species(
                 clients,
@@ -642,6 +672,13 @@ pub(super) async fn run(
             )),
         )
         .await;
+        tally.fail = accounted_failures(tally.fail, outcome.completed, indexed_result.is_err());
+        if let Err(error) = indexed_result
+            && !outcome.completed
+            && outcome.setup_error.is_none()
+        {
+            outcome.setup_error = Some(error.to_string());
+        }
         seconds.push(started.elapsed().as_secs_f64());
         let Some(error) = outcome.setup_error else {
             setup_failures = 0;
@@ -687,9 +724,9 @@ pub(super) async fn run(
         tally.skipped,
         calibration_tally.fail
     ));
-    if tally.fail > 0 {
+    if !batch_succeeds(attempted, tally.fail) {
         return Err(format!(
-            "creature sweep: {} FAIL rows (see the CS.* rows above)",
+            "creature sweep: attempted={attempted} failed_rows={} (see the CS.* rows above)",
             tally.fail
         )
         .into());
@@ -714,6 +751,7 @@ fn species_of(
                         .iter()
                         .map(|entry| LootEntry {
                             item: entry.item.clone(),
+                            revision: entry.revision.clone(),
                             min: entry.min,
                             max: entry.max,
                         })
@@ -740,6 +778,8 @@ fn species_of(
 /// Per-species observations consumed by calibration and setup recovery.
 #[derive(Default)]
 struct SweepOutcome {
+    completed: bool,
+    passed: bool,
     kill_seconds: Option<f64>,
     setup_error: Option<String>,
 }
@@ -768,10 +808,33 @@ async fn sweep_species(
         rows.fail(stop.step, stop.cause, &stop.detail);
         rows.block_rest(stop.step);
     }
+    if let Some(spawn_session) = rows.spawn_session.take() {
+        verdict::Harness::global().progress("creature-sweep-cleanup");
+        if let Err(error) = request_spawn(spawn_session, "cleanup".into()).await {
+            rows.counts.fail += 1;
+            evidence(&format!(
+                "creature_sweep cleanup species={} status=FAIL evidence={}",
+                species.short,
+                token(&error)
+            ));
+            if journey_error.is_none() {
+                journey_error = Some(format!("specimen cleanup:{error}").into());
+            }
+        }
+    }
     outcome.kill_seconds = rows.kill_seconds;
     outcome.setup_error = rows.setup_error.take();
     let failed = rows.counts.fail > 0;
-    // The `.full` verdict line is the indexed Watch's own; this line carries the species counts.
+    outcome.passed = !failed;
+    evidence(&format!(
+        "e2e_all scenario=CS.{}.full status={} seconds={:.3} evidence=steps:{}-pass,{}-fail,{}-skipped",
+        species.short,
+        if failed { "FAIL" } else { "PASS" },
+        started.elapsed().as_secs_f64(),
+        rows.counts.pass,
+        rows.counts.fail,
+        rows.counts.skipped
+    ));
     evidence(&format!(
         "creature_sweep species={} seconds={:.3} rows_pass={} rows_fail={} rows_skipped={}",
         species.short,
@@ -782,6 +845,7 @@ async fn sweep_species(
     ));
     tally.pass += rows.counts.pass;
     tally.fail += rows.counts.fail;
+    outcome.completed = true;
     tally.skipped += rows.counts.skipped;
     if let Some(error) = journey_error {
         return Err(error);
@@ -976,6 +1040,169 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
     })
 }
 
+fn named_creature(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> bool {
+    entry.kind == EntityKind::Creature
+        && matches!(
+            entry.detail,
+            EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. }
+        )
+        && entry.display_name.is_some_and(|label| {
+            label
+                .as_str()
+                .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
+        })
+}
+
+fn spawn_candidate(
+    entry: &oteryn_dev_client::WorldSpatialEntity,
+    name: &str,
+    existing: &BTreeSet<oteryn_dev_client::EntityRef>,
+    floor: i16,
+    answer: &str,
+) -> bool {
+    let mut parts = answer.split_whitespace();
+    let identity = parts.next() == Some("spawned")
+        && parts.next().is_some_and(|id| {
+            id == entry
+                .entity
+                .identity
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        })
+        && parts
+            .next()
+            .and_then(|generation| generation.parse::<u64>().ok())
+            == Some(entry.entity.generation)
+        && parts.next().is_none();
+    identity
+        && entry.position.floor == floor
+        && named_creature(entry, name)
+        && !existing.contains(&entry.entity)
+}
+
+fn corpse_candidate(
+    entry: &oteryn_dev_client::WorldSpatialEntity,
+    position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    existing: &BTreeSet<oteryn_dev_client::EntityRef>,
+    expected: [u8; 16],
+) -> bool {
+    entry.kind == EntityKind::Corpse
+        && entry.entity.identity == expected
+        && entry.position == position
+        && !existing.contains(&entry.entity)
+}
+
+fn disappearance_proves_kill(
+    last: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    player: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    _damaged: bool,
+    committed: bool,
+) -> bool {
+    committed
+        && last.floor == player.floor
+        && last.x.abs_diff(player.x).max(last.y.abs_diff(player.y)) <= 2
+}
+
+fn xp_matches(before: u64, after: u64, expected: u64, settled: bool) -> bool {
+    settled && after.checked_sub(before) == Some(expected)
+}
+
+fn selected_batch<'a>(
+    keys: &'a [&'a String],
+    start: usize,
+    end: usize,
+    _calibrated: bool,
+) -> Vec<&'a String> {
+    keys[start..end].to_vec()
+}
+
+fn calibration_short(short: &str, attempt: u32) -> String {
+    format!("calibration.{short}.attempt{attempt}")
+}
+
+fn accounted_failures(recorded: usize, completed: bool, indexed_failed: bool) -> usize {
+    recorded + usize::from(indexed_failed && !completed)
+}
+
+fn batch_succeeds(attempted: usize, failed: usize) -> bool {
+    attempted > 0 && failed == 0
+}
+
+/// Read-only proof of the exact native death and its atomically committed XP member.
+struct DeathSettlement {
+    corpse: [u8; 16],
+    award: u64,
+    total: u64,
+}
+
+fn death_identity(key: &[u8], domain: &[u8]) -> Option<[u8; 16]> {
+    use sha2::{Digest, Sha256};
+    if key.len() != 52 {
+        return None;
+    }
+    let digest = Sha256::new()
+        .chain_update(domain)
+        .chain_update(key)
+        .finalize();
+    let mut identity = [0; 16];
+    identity.copy_from_slice(&digest[..16]);
+    Some(identity)
+}
+
+async fn death_settlement(
+    clients: &SeamClients<'_>,
+    client: &mut DevClientSession,
+    target: oteryn_dev_client::EntityRef,
+) -> TestResult<DeathSettlement> {
+    use sqlx::Row;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    verdict::Harness::global().bounded_wait(deadline, "creature-sweep-death-settlement");
+    let mut connection =
+        tokio::time::timeout_at(deadline, sqlx::PgConnection::connect(clients.url)).await??;
+    loop {
+        verdict::Harness::global().progress("creature-sweep-death-settlement");
+        let rows = tokio::time::timeout_at(deadline, sqlx::query(
+            "SELECT r.death_key,m.xp_awarded,p.total_experience FROM game_party_kill_xp_receipts r \
+             JOIN game_party_kill_xp_members m USING(death_key) \
+             JOIN game_character_progression_state p ON p.character_id=m.character_id \
+             WHERE m.character_id=encode($1,'hex')::uuid \
+             ORDER BY r.death_at_us DESC LIMIT 64")
+            .bind(clients.characters[CORE_CHARACTER].as_slice()).fetch_all(&mut connection)).await??;
+        for row in rows {
+            let key: Vec<u8> = row.try_get("death_key")?;
+            if death_identity(&key, b"oteryn:runtime-player-placement:v1") != Some(target.identity)
+                || key
+                    .get(44..52)
+                    .and_then(|bytes| bytes.try_into().ok())
+                    .map(u64::from_be_bytes)
+                    != Some(target.generation)
+            {
+                continue;
+            }
+            let corpse = death_identity(&key, b"oteryn:runtime-corpse-placement:v1")
+                .ok_or("invalid death key")?;
+            let award = u64::try_from(row.try_get::<i64, _>("xp_awarded")?)?;
+            let total = u64::try_from(row.try_get::<i64, _>("total_experience")?)?;
+            tokio::time::timeout_at(deadline, connection.close()).await??;
+            return Ok(DeathSettlement {
+                corpse,
+                award,
+                total,
+            });
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("no committed receipt for the exact disappeared actor".into());
+        }
+        tokio::time::timeout_at(
+            deadline,
+            client.service_liveness(Duration::from_millis(100)),
+        )
+        .await??;
+        client.take_events();
+    }
+}
+
 async fn hunt(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -1005,18 +1232,7 @@ async fn hunt(
         .map_err(|error| failure("spawn", "precondition", format!("stats:{error}")))?;
 
     let name = definition.name.as_str();
-    let named = |entry: &oteryn_dev_client::WorldSpatialEntity| {
-        entry.kind == EntityKind::Creature
-            && matches!(
-                entry.detail,
-                EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. }
-            )
-            && entry.display_name.is_some_and(|label| {
-                label
-                    .as_str()
-                    .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
-            })
-    };
+    let named = |entry: &oteryn_dev_client::WorldSpatialEntity| named_creature(entry, name);
     // Leftovers of an earlier species never count as this species' spawn.
     let existing: BTreeSet<_> = client
         .world_entities()
@@ -1026,6 +1242,7 @@ async fn hunt(
         .map(|entry| entry.entity)
         .collect();
     let session_id = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    rows.spawn_session = Some(session_id.clone());
     let answer = request_spawn(session_id, species.key.clone())
         .await
         .map_err(|reason| failure("spawn", "precondition", format!("rejected:{reason}")))?;
@@ -1041,11 +1258,7 @@ async fn hunt(
         let found = client.world_entities().and_then(|entities| {
             entities
                 .iter()
-                .filter(|entry| {
-                    entry.position.floor == player.floor
-                        && named(entry)
-                        && !existing.contains(&entry.entity)
-                })
+                .filter(|entry| spawn_candidate(entry, name, &existing, player.floor, &answer))
                 .min_by_key(|entry| {
                     entry
                         .position
@@ -1197,7 +1410,11 @@ async fn hunt(
             ),
         ));
     }
-    if death_distance > 2 {
+    let measured_seconds = first_damage.map(|first| first.elapsed().as_secs_f64());
+    let settlement = death_settlement(clients, client, target.entity)
+        .await
+        .map_err(|error| failure("kill", "unproven_death", error))?;
+    if !disappearance_proves_kill(last_position, player, damaged, true) {
         return Err(failure(
             "kill",
             "vanished",
@@ -1206,10 +1423,11 @@ async fn hunt(
             ),
         ));
     }
-    rows.kill_seconds = first_damage.map(|first| first.elapsed().as_secs_f64());
-    let budget_detail = species.dps.map_or_else(String::new, |dps| {
-        format!("budget:{};dps:{dps:.2}", budget(dps))
-    });
+    rows.kill_seconds = measured_seconds;
+    let budget_detail = species.dps.map_or_else(
+        || "dps=unmeasured budget=none".to_owned(),
+        |dps| format!("budget:{};dps:{dps:.2}", budget(dps)),
+    );
     rows.pass(
         "kill",
         &format!(
@@ -1227,9 +1445,7 @@ async fn hunt(
             entities
                 .iter()
                 .find(|entry| {
-                    entry.kind == EntityKind::Corpse
-                        && entry.position == last_position
-                        && !corpses_before.contains(&entry.entity)
+                    corpse_candidate(entry, last_position, &corpses_before, settlement.corpse)
                 })
                 .copied()
         });
@@ -1262,18 +1478,12 @@ async fn hunt(
     })?;
     let expected = u64::try_from(expected).map_err(|error| failure("xp", "content", error))?;
     let xp_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-    let gained = loop {
+    let xp_after = loop {
         let (xp, _) = read_stats(client)
             .await
             .map_err(|error| failure("xp", "protocol", error))?;
-        let gained = xp.saturating_sub(xp_before);
-        let settled = if expected == 0 {
-            tokio::time::Instant::now() >= xp_deadline - Duration::from_secs(17)
-        } else {
-            gained >= expected
-        };
-        if settled || tokio::time::Instant::now() >= xp_deadline {
-            break gained;
+        if xp == settlement.total || tokio::time::Instant::now() >= xp_deadline {
+            break xp;
         }
         client
             .service_liveness(Duration::from_millis(250))
@@ -1282,11 +1492,17 @@ async fn hunt(
         verdict::Harness::global().progress("creature-sweep-xp");
         client.take_events();
     };
+    let gained = xp_after.saturating_sub(xp_before);
     let xp_detail = format!(
         "authored:{};expected:{expected};gained:{gained};level:{level}",
         definition.experience
     );
-    if gained == expected {
+    if xp_matches(
+        xp_before,
+        xp_after,
+        expected,
+        settlement.award == expected && xp_after == settlement.total,
+    ) {
         rows.pass("xp", &xp_detail);
     } else {
         rows.fail("xp", "xp_mismatch", &xp_detail);
@@ -1383,11 +1599,17 @@ fn judge_loot(
     }
     // Per item: at least one success (its smallest min) up to every entry succeeding (sum of max).
     let mut allowed: BTreeMap<std::num::NonZeroU32, (u64, u64)> = BTreeMap::new();
-    let mut unmapped = 0_usize;
     for entry in entries {
-        let Some(reference) = item_ref(items, &entry.item) else {
-            unmapped += 1;
-            continue;
+        let Some(reference) = item_ref(items, &entry.item, &entry.revision) else {
+            rows.fail(
+                "loot",
+                "content",
+                &format!(
+                    "unmapped exact Item {} revision {}",
+                    entry.item, entry.revision
+                ),
+            );
+            return;
         };
         let range = allowed.entry(reference).or_insert((entry.min, 0));
         range.0 = range.0.min(entry.min);
@@ -1419,7 +1641,7 @@ fn judge_loot(
     rows.pass(
         "loot",
         &format!(
-            "table_entries:{};unmapped_entries:{unmapped};corpse_items:{};{}",
+            "table_entries:{};unmapped_entries:0;corpse_items:{};{}",
             entries.len(),
             got.len(),
             if got.is_empty() {
@@ -1625,48 +1847,236 @@ async fn release(client: &mut DevClientSession) -> TestResult {
     }
 }
 
-// This module is mounted inside journeys(), where #[test] functions cannot register with the
-// lib harness. Compile-time cases still run whenever the lib test target is built, without
-// changing the shared mount or adding a second copy of the qualification module.
+// Preserve the calibration arithmetic cases alongside registered regression tests.
 #[cfg(test)]
 const _: () = {
     let mut attempt = 1;
     while attempt <= 3 {
         assert!(matches!(
-            calibration_decision(attempt, Some(2.0), 260),
+            calibration_decision(attempt, Some(2.0), 260, true),
             CalibrationDecision::Measured(130.0)
         ));
         if attempt < 3 {
             assert!(matches!(
-                calibration_decision(attempt, None, 260),
+                calibration_decision(attempt, None, 260, true),
                 CalibrationDecision::Retry
             ));
         } else {
             assert!(matches!(
-                calibration_decision(attempt, None, 260),
+                calibration_decision(attempt, None, 260, true),
                 CalibrationDecision::Fallback
             ));
         }
         attempt += 1;
     }
     assert!(matches!(
-        calibration_decision(3, Some(0.0), 260),
+        calibration_decision(3, Some(0.0), 260, true),
         CalibrationDecision::Fallback
     ));
     assert!(matches!(
-        calibration_decision(3, Some(-1.0), 260),
+        calibration_decision(3, Some(-1.0), 260, true),
         CalibrationDecision::Fallback
     ));
     assert!(matches!(
-        calibration_decision(3, Some(f64::NAN), 260),
+        calibration_decision(3, Some(f64::NAN), 260, true),
         CalibrationDecision::Fallback
     ));
     assert!(matches!(
-        calibration_decision(3, Some(f64::INFINITY), 260),
+        calibration_decision(3, Some(f64::INFINITY), 260, true),
         CalibrationDecision::Fallback
     ));
     assert!(matches!(
-        calibration_decision(3, Some(2.0), 0),
+        calibration_decision(3, Some(2.0), 0, true),
         CalibrationDecision::Fallback
     ));
 };
+
+#[cfg(test)]
+mod review_tests {
+    use super::*;
+    use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+
+    #[test]
+    fn a_cancelled_indexed_row_counts_even_before_the_reporter_updates_its_tally() {
+        assert_eq!(accounted_failures(0, false, true), 1);
+        assert_eq!(accounted_failures(2, true, true), 2);
+        assert_eq!(accounted_failures(0, true, false), 0);
+    }
+
+    #[test]
+    fn an_unrelated_corpse_on_the_death_tile_cannot_substitute() -> TestResult {
+        let position = ActorPosition {
+            x: 1,
+            y: 1,
+            floor: 7,
+        };
+        let candidate = oteryn_dev_client::WorldSpatialEntity {
+            display_name: None,
+            kind: EntityKind::Corpse,
+            entity: EntityRef {
+                identity: [2; 16],
+                generation: 0,
+            },
+            position,
+            detail: EntityDetail::Object {
+                item_definition_ref: 1,
+                quantity: 1,
+                item_handle: None,
+            },
+        };
+        assert!(!corpse_candidate(
+            &candidate,
+            position,
+            &BTreeSet::new(),
+            [1; 16]
+        ));
+        assert!(corpse_candidate(
+            &candidate,
+            position,
+            &BTreeSet::new(),
+            [2; 16]
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn a_failed_calibration_row_cannot_supply_a_successful_calibration() {
+        assert!(matches!(
+            calibration_decision(1, Some(2.0), 260, false),
+            CalibrationDecision::Retry
+        ));
+        assert!(matches!(
+            calibration_decision(3, Some(2.0), 260, false),
+            CalibrationDecision::Fallback
+        ));
+    }
+
+    #[test]
+    fn selected_calibration_species_is_not_replaced_by_its_advisory_attempt() {
+        let cyclops = CALIBRATION_KEY.to_owned();
+        let keys = [&cyclops];
+        assert_eq!(selected_batch(&keys, 0, 1, true), vec![&cyclops]);
+    }
+
+    #[test]
+    fn calibration_attempts_have_distinct_unscored_identifiers() {
+        let first = calibration_short("cyclops", 1);
+        let second = calibration_short("cyclops", 2);
+        assert_ne!(first, second);
+        assert_ne!(first, "cyclops");
+    }
+
+    #[test]
+    fn a_batch_without_an_attempted_species_cannot_qualify() {
+        assert!(!batch_succeeds(0, 0));
+        assert!(batch_succeeds(1, 0));
+        assert!(!batch_succeeds(1, 1));
+    }
+
+    #[test]
+    fn same_named_variants_do_not_substitute_for_the_returned_spawn() -> TestResult {
+        let candidate = oteryn_dev_client::WorldSpatialEntity {
+            display_name: Some(
+                oteryn_protocol_oteryn::entity_names::EntityDisplayName::new("Orc Warlord")
+                    .map_err(|error| format!("{error:?}"))?,
+            ),
+            kind: EntityKind::Creature,
+            entity: EntityRef {
+                identity: [2; 16],
+                generation: 1,
+            },
+            position: ActorPosition {
+                x: 1,
+                y: 1,
+                floor: 7,
+            },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        let answer = format!("spawned {} 1", "01".repeat(16));
+        assert!(!spawn_candidate(
+            &candidate,
+            "Orc Warlord",
+            &BTreeSet::new(),
+            7,
+            &answer
+        ));
+        let wrong_generation = format!("spawned {} 2", "02".repeat(16));
+        assert!(!spawn_candidate(
+            &candidate,
+            "Orc Warlord",
+            &BTreeSet::new(),
+            7,
+            &wrong_generation
+        ));
+        assert!(spawn_candidate(
+            &candidate,
+            "Orc Warlord",
+            &BTreeSet::new(),
+            7,
+            &format!("spawned {} 1", "02".repeat(16))
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn disappearance_without_death_evidence_is_not_a_kill() {
+        let here = ActorPosition {
+            x: 1,
+            y: 1,
+            floor: 7,
+        };
+        assert!(!disappearance_proves_kill(here, here, false, false));
+        assert!(!disappearance_proves_kill(
+            ActorPosition { floor: 8, ..here },
+            here,
+            true,
+            true
+        ));
+        assert!(disappearance_proves_kill(here, here, true, true));
+        // A single lethal swing need not expose an intermediate HP frame.
+        assert!(disappearance_proves_kill(here, here, false, true));
+    }
+
+    #[test]
+    fn xp_loss_and_unsettled_first_matching_awards_cannot_pass() {
+        assert!(!xp_matches(100, 90, 0, true));
+        assert!(!xp_matches(100, 110, 10, false));
+        assert!(!xp_matches(100, 120, 10, true));
+        assert!(xp_matches(100, 110, 10, true));
+        assert!(xp_matches(100, 100, 0, true));
+    }
+
+    #[test]
+    fn loot_oracle_refuses_unknown_definitions_and_drifted_revisions() -> TestResult {
+        let items = crate::content::item_ref::ItemDefinitionIndex::decode(
+            br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i3031","definition-r1"]]}"#,
+        ).map_err(|error| format!("{error:?}"))?;
+        for (key, revision) in [
+            ("oteryn:item.tibia.i9999999", "definition-r1"),
+            ("oteryn:item.tibia.i3031", "definition-r2"),
+        ] {
+            let mut rows = Rows::new("review", None);
+            judge_loot(
+                &mut rows,
+                &items,
+                &LootBinding::Table(vec![LootEntry {
+                    item: key.into(),
+                    revision: revision.into(),
+                    min: 1,
+                    max: 1,
+                }]),
+                &BTreeMap::new(),
+            );
+            assert!(
+                rows.counts.fail > 0,
+                "unmapped exact definition must fail: {key}/{revision}"
+            );
+        }
+        Ok(())
+    }
+}

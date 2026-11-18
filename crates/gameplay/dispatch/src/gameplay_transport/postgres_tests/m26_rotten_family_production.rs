@@ -196,17 +196,9 @@ pub(super) async fn drive(
         },
         now,
     );
-    let prepared_names = owner
-        .capture_native_health_names(runtime)
-        .map_err(|_| "capture names")?;
-    let read_names = owner
-        .read_prepared_native_health_names(permit, prepared_names)
-        .await;
-    let names = owner
-        .seal_native_health_names(runtime, read_names)
-        .map_err(|_| "seal names")?;
-    owner
-        .drive_monster_profiles(
+    drive_report(
+        ProfileDrive {
+            owner,
             runtime,
             states,
             attack,
@@ -214,11 +206,71 @@ pub(super) async fn drive(
             native,
             permit,
             revisions,
-            &[],
-            now,
-            &names,
-        )
-        .await
-        .map_err(|_| "source-family production drive")?;
+        },
+        now,
+    )
+    .await?;
     Ok(())
+}
+
+pub(super) struct ProfileDrive<'a, 'r, 's, 'p> {
+    pub(super) owner: &'a ComposedFreshAdmission<'r, 's, 'p>,
+    pub(super) runtime: &'a mut ChannelRuntimeV1,
+    pub(super) states: &'a mut ChannelSpellStates,
+    pub(super) attack: &'a mut ChannelAttackStates,
+    pub(super) room: &'a QualifiedNativeEntryRoom,
+    pub(super) native: &'a NativeGameplayState,
+    pub(super) permit: &'a crate::durability::spell_owner_commit::SpellLanePermit,
+    pub(super) revisions: &'a crate::ability::RevisionSet,
+}
+
+pub(super) async fn drive_report(
+    context: ProfileDrive<'_, '_, '_, '_>,
+    now: u64,
+) -> Result<Vec<ExactActorRef>, Box<dyn std::error::Error>> {
+    let ProfileDrive {
+        owner,
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        permit,
+        revisions,
+    } = context;
+    // A logical turn spans bounded physical checkouts. Keep its original time
+    // and all assertions; release the holder between each continuation.
+    let mut actors = Vec::new();
+    for _ in 0..4096 {
+        let prepared_names = owner
+            .capture_native_health_names(runtime)
+            .map_err(|_| "capture names")?;
+        let read_names = owner
+            .read_prepared_native_health_names(permit, prepared_names)
+            .await;
+        let names = owner
+            .seal_native_health_names(runtime, read_names)
+            .map_err(|_| "seal names")?;
+        let (_, reported, complete) = owner
+            .drive_monster_profiles(
+                runtime,
+                states,
+                attack,
+                room,
+                native,
+                permit,
+                revisions,
+                &[],
+                now,
+                &names,
+            )
+            .await
+            .map_err(|_| "source-family production drive")?;
+        actors.extend(reported);
+        if complete {
+            return Ok(actors);
+        }
+        tokio::task::yield_now().await;
+    }
+    Err("profile logical turn exceeded its bounded continuation count".into())
 }

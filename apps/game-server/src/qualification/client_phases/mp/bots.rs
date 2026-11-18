@@ -474,7 +474,7 @@ pub(super) async fn release_all(
     }
     for pair in [core, packets] {
         for index in 0..pair.accounts.len() {
-            if let Err(error) = wait_character_released(pair, index).await {
+            if let Err(error) = wait_scoped_character_released(pair, index).await {
                 failures.push(error.to_string());
             }
         }
