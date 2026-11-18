@@ -197,12 +197,13 @@ fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResu
                 )
                 .await
                 .map_err(debug)?;
-            owner.premium_coordinator = Some(SpellPremiumCoordinator::new(
+            let premium = SpellPremiumCoordinator::new(
                 consumer,
                 Some(clock),
                 Some(activation),
                 Some(h.root.clone()),
-            ));
+            );
+            owner.premium_coordinator = Some(&premium);
             owner.admit_premium(id(40), admitted.game_session_id);
             owner.admit_quest_session(&admitted).await;
             let (other, second) = super::grizzly_boss::vacancy::second_player(
