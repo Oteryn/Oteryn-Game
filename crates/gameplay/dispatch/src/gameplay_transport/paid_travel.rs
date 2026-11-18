@@ -452,7 +452,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-fn route_draw(
+pub(super) fn route_draw(
     digest: [u8; 32],
     command: connection::UseCommand,
     npc: EntityRef,

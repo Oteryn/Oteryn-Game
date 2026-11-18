@@ -62,6 +62,7 @@ fn scenario_case(
     let ice_iskan = name == super::super::qcx62_iskan::NAME;
     let barbarian_sven = name == super::super::qcx62_sven::NAME;
     let barbarian_fine = name == super::super::qcx62_sven_fine::NAME;
+    let barbarian_buddel = name == super::super::qcx62_buddel::NAME;
     let qready_craft = name == super::super::qready1_crafting::NAME;
     let qready_workbench = super::super::qready1_workbenches::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -355,7 +356,7 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if ice_iskan || barbarian_sven || barbarian_fine {
+    let mut callback = if ice_iskan || barbarian_sven || barbarian_fine || barbarian_buddel {
         super::super::authored_world_rewards::placeholder(trigger)?
     } else if m03_use {
         super::super::qengine_m03_use::callback()?
@@ -932,6 +933,8 @@ fn scenario_case(
                 require_state: false,
             });
         world(&physical, trigger)?
+    } else if barbarian_buddel {
+        world_with_cells(&callback, trigger, &super::super::qcx62_buddel::ARRIVAL_CELLS)?
     } else if ice_tools {
         let native = callback.selector.native.ok_or("carried-tool native placement")?;
         world_ordinal(&callback, trigger, native.appearance, native.ordinal)?
@@ -944,6 +947,7 @@ fn scenario_case(
             || ice_iskan
             || barbarian_sven
             || barbarian_fine
+            || barbarian_buddel
             || shared_rewards
             || qengine_reward
             || outfit_world
@@ -2601,6 +2605,10 @@ fn scenario_case(
         } else if barbarian_fine {
             Box::pin(super::super::qcx62_sven_fine::exercise(
                 &mut owner, &mut admitted, &h, &authority, trigger,
+            )).await?;
+        } else if barbarian_buddel {
+            Box::pin(super::super::qcx62_buddel::exercise(
+                &mut owner, &mut admitted, &h, trigger,
             )).await?;
         } else if name == "engitem-native-seal-paint" {
             Box::pin(super::super::engitem_seal_paint::exercise(
