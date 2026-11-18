@@ -3,6 +3,7 @@ use super::quest_dialogue::{self, Choice, Context, Step, Topic};
 use super::*;
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::UseCommand};
+use crate::map::view::MapFacts;
 use oteryn_gameplay_entities::carrier::runtime_actor_companion::ReservedQuestCreatures;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
