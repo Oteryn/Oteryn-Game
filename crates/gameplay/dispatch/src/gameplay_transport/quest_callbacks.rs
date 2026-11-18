@@ -974,7 +974,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
                     && carried_tool.as_ref().is_none_or(|(definition, _, _)| {
-                        quest_objects::accepts(c) && quest_objects::accepts_definition(c, definition)
+                        quest_objects::accepts(c)
+                            && quest_objects::accepts_definition(c, definition)
                     })
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
@@ -1103,7 +1104,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             callback
         };
         let selected_tool = carried_tool.and_then(|(_, item, intent)| {
-            callback.item_on_target.as_ref()
+            callback
+                .item_on_target
+                .as_ref()
                 .is_some_and(|tool| tool.selected_instance)
                 .then_some((item, intent))
         });

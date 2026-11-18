@@ -148,22 +148,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| {
                 candidates.iter().any(|callback| {
-                    quest_objects::accepts_definition(callback, &entry.item.definition.production_key)
-                }) && quest_objects::matches_source(
-                        &intent.target,
-                        source,
-                        entry.item.item_instance_id,
-                        self.active_generation
-                            .and_then(crate::content::ActiveGeneration::native_gameplay)
-                            .and_then(|native| native.item_index())
-                            .and_then(|index| {
-                                index.definition_ref(
-                                    &entry.item.definition.family,
-                                    &entry.item.definition.production_key,
-                                    &entry.item.definition.revision_ref,
-                                )
-                            }),
+                    quest_objects::accepts_definition(
+                        callback,
+                        &entry.item.definition.production_key,
                     )
+                }) && quest_objects::matches_source(
+                    &intent.target,
+                    source,
+                    entry.item.item_instance_id,
+                    self.active_generation
+                        .and_then(crate::content::ActiveGeneration::native_gameplay)
+                        .and_then(|native| native.item_index())
+                        .and_then(|index| {
+                            index.definition_ref(
+                                &entry.item.definition.family,
+                                &entry.item.definition.production_key,
+                                &entry.item.definition.revision_ref,
+                            )
+                        }),
+                )
             });
         let Some(selected) = selected else {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));

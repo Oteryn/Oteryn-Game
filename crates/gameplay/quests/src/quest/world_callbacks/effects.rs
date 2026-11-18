@@ -402,7 +402,10 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
-    let open_spawn = effects.encounter.as_ref().is_some_and(Encounter::is_open_spawn);
+    let open_spawn = effects
+        .encounter
+        .as_ref()
+        .is_some_and(Encounter::is_open_spawn);
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8
@@ -780,7 +783,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
         && callback.requires_world_admission
         && callback.lever.is_none()
         && !callback.reversible
-        && callback.item_on_target.as_ref().is_some_and(|tool| tool.selected_instance)
+        && callback
+            .item_on_target
+            .as_ref()
+            .is_some_and(|tool| tool.selected_instance)
         && effects.transform.is_some()
         && effects.reset_after_ms.is_some();
     if open_spawn && !guarded_open_spawn {
