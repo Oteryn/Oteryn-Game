@@ -188,7 +188,7 @@ async fn exercise(h: &Harness) -> TestResult {
             },
         )
     };
-    owner.states.test_owner_time.store(100, Ordering::Relaxed);
+    owner.states.test_owner_time.store(101, Ordering::Relaxed);
     assert_eq!(
         use_lever(deps.actor, first, 1).await.disposition,
         UseDisposition::Committed

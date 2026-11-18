@@ -153,9 +153,24 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
     super::prepare_current_session(h).await?;
     super::item_look::seed_main_backpack(h, &[(WATER, 1)]).await?;
     if let Some(stage) = scene.stage() {
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        for advance in [
+            "UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
+            "UPDATE game_character_progression_state SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
+        ] {
+            sqlx::query(advance)
+                .bind(id(41).as_slice())
+                .execute(&mut *tx)
+                .await?;
+        }
+        let seeded = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND character_revision=2")
             .bind(id(41).as_slice()).bind(TRACK).bind(QUEST).bind(stage)
-            .execute(&h.pool).await?;
+            .execute(&mut *tx).await?;
+        assert_eq!(seeded.rows_affected(), 1);
+        tx.commit().await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -286,7 +301,7 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
         Ok::<_, Box<dyn std::error::Error>>(())
     };
     if let Some(stage) = scene.stage() {
-        owner.states.test_owner_time.store(100, Ordering::Relaxed);
+        owner.states.test_owner_time.store(101, Ordering::Relaxed);
         let (disposition, creature) = match scene {
             Scene::HauntedRuin => (
                 use_water(1)
@@ -366,7 +381,7 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
                     .then_some(entry.facts.appearance_id)
             })
     };
-    owner.states.test_owner_time.store(100, Ordering::Relaxed);
+    owner.states.test_owner_time.store(101, Ordering::Relaxed);
     assert_eq!(
         use_water(1)
             .await
@@ -390,7 +405,7 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
     owner
         .states
         .test_owner_time
-        .store(30_000_101, Ordering::Relaxed);
+        .store(30_000_102, Ordering::Relaxed);
     assert_eq!(
         use_water(3)
             .await
@@ -406,7 +421,7 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
     owner
         .states
         .test_owner_time
-        .store(60_000_102, Ordering::Relaxed);
+        .store(60_000_103, Ordering::Relaxed);
     assert_eq!(
         use_water(4)
             .await
@@ -421,7 +436,7 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
     owner
         .states
         .test_owner_time
-        .store(90_000_103, Ordering::Relaxed);
+        .store(90_000_104, Ordering::Relaxed);
     assert_eq!(
         use_water(5)
             .await
