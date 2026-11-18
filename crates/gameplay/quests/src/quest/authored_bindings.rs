@@ -410,8 +410,8 @@ impl Bindings {
             for stage in &quest.stages {
                 if stage.is_native_encounter()
                     || stage.is_shared_passage_circuit()
-                    || matches!(&stage.trigger, Trigger::MapUse { callback } | Trigger::StepIn { callback }
-                        if callback.is_read_only())
+                    || matches!(&stage.trigger, Trigger::MapUse { callback }
+                        if callback.guarded_switch())
                 {
                     continue;
                 }
