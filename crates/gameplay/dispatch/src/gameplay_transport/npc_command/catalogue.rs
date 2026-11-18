@@ -55,6 +55,8 @@ pub(super) struct CommitStep {
     request: NpcProgramRequest,
     fallback_lines: Vec<String>,
     teleport: Option<oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition>,
+    teleport_encounter:
+        Option<oteryn_gameplay_quests::quest::npc_rules::teleport::NpcTeleportEncounter>,
     magic: usize,
     supersedes_topic: bool,
 }
@@ -471,6 +473,7 @@ pub(super) fn prepare(
         fallback_lines,
         supersedes_topic,
         magic: teleport.as_ref().map_or(0, |p| p.magic.len()),
+        teleport_encounter: teleport.as_ref().and_then(|p| p.encounter.clone()),
         teleport: teleport.map(|p| p.destination),
     })))
 }
@@ -590,6 +593,7 @@ pub(super) async fn apply(
         request,
         fallback_lines,
         teleport,
+        teleport_encounter,
         magic,
         supersedes_topic,
     } = match step {
@@ -741,6 +745,7 @@ pub(super) async fn apply(
                     intent,
                     context: next.context.clone(),
                     magic,
+                    encounter: teleport_encounter,
                 },
                 destination,
                 &mut runtime,

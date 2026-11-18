@@ -258,6 +258,10 @@ pub enum NpcRuleEffect {
     Teleport {
         position: NpcRulePosition,
     },
+    TeleportEncounter {
+        creature: String,
+        position: NpcRulePosition,
+    },
     MagicEffect {
         effect: String,
     },

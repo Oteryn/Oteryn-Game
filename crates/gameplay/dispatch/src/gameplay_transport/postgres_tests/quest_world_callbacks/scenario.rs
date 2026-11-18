@@ -32,6 +32,7 @@ fn scenario_case(
     let skull_custody = name == super::super::quest_skull_custody::NAME;
     let worm_punisher = name.starts_with(super::super::worm_punisher_progress::NAME);
     let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
+    let armenius_roll = name.starts_with(super::super::armenius_dialogue_roll::NAME);
     let arthei_tear = name == super::super::arthei_ghost_tear::NAME;
     let boreth_cleanup = name == super::super::boreth_death_cleanup::NAME;
     let castle_rite = name == super::super::castle_crystal_rite::NAME;
@@ -306,6 +307,7 @@ fn scenario_case(
         || name == "questpc7-golden"
         || name == "questpc7-friends";
     let classic_npc = shared_rewards
+        || armenius_roll
         || npc_fluid
         || name.starts_with("engoutfit-")
         || qengine_reward
@@ -375,6 +377,8 @@ fn scenario_case(
         callback(super::super::qengine_m02_use::NAME)?
     } else if skull_custody {
         super::super::quest_skull_custody::bone_pile()?
+    } else if armenius_roll {
+        callback("unnatural-selection-ray-of-light")?
     } else if arthei_tear {
         super::super::arthei_ghost_tear::callback()?
     } else if boreth_cleanup {
@@ -956,6 +960,8 @@ fn scenario_case(
                 require_state: false,
             });
         world(&physical, trigger)?
+    } else if armenius_roll {
+        super::super::armenius_dialogue_roll::world(&callback)?
     } else if arthei_tear {
         super::super::arthei_ghost_tear::world(&callback)?
     } else if lersatio_mirrors {
@@ -2566,6 +2572,8 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
+        } else if armenius_roll {
+            Box::pin(super::super::armenius_dialogue_roll::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if npc_fluid {
             Box::pin(super::super::quest_npc_fluid_intake::exercise(
                 &mut owner,

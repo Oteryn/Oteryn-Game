@@ -215,25 +215,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let doors = std::collections::BTreeSet::new();
             let digest = runtime.content_pin().server_artifact_digest();
-            let snapshot = runtime
-                .place_admitted_respawn(actor, session, Some(destination), |cell| {
-                    respawn_cell_admissible(
-                        self.movement_cells().index(),
-                        self.movement_cells().scope(),
-                        self.world_id,
-                        digest,
-                        &doors,
-                        cell,
-                    ) && !self.bundle_map().is_some_and(|map| {
-                        crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
-                            x: cell.x,
-                            y: cell.y,
-                            z: i32::from(cell.floor),
+            let snapshot = if let newhaven_travel::Departure::Quest(proof) = &held.route
+                && let Some(encounter) = &proof.encounter
+            {
+                super::npc_command::catalogue::teleport::place_encounter(
+                    self,
+                    &mut runtime,
+                    actor,
+                    session,
+                    position,
+                    destination,
+                    encounter,
+                )?
+            } else {
+                runtime
+                    .place_admitted_respawn(actor, session, Some(destination), |cell| {
+                        respawn_cell_admissible(
+                            self.movement_cells().index(),
+                            self.movement_cells().scope(),
+                            self.world_id,
+                            digest,
+                            &doors,
+                            cell,
+                        ) && !self.bundle_map().is_some_and(|map| {
+                            crate::content::bundle_spell_tiles::tile_pos(
+                                crate::content::LogicalCell {
+                                    x: cell.x,
+                                    y: cell.y,
+                                    z: i32::from(cell.floor),
+                                },
+                            )
+                            .is_none_or(|tile| map.facts.doors().blocks(tile))
                         })
-                        .is_none_or(|tile| map.facts.doors().blocks(tile))
                     })
-                })
-                .ok()?;
+                    .ok()?
+            };
             if let Some(cooldowns) = cooldowns
                 && let Some(state) = states.get_mut(&runtime, actor, session)
             {

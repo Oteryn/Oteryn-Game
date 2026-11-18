@@ -242,6 +242,7 @@ impl<'a> Staged<'a> {
             NpcRuleEffect::Experience { .. }
             | NpcRuleEffect::Achievement { .. }
             | NpcRuleEffect::Teleport { .. }
+            | NpcRuleEffect::TeleportEncounter { .. }
             | NpcRuleEffect::MagicEffect { .. }
             | NpcRuleEffect::MapMark { .. }
             | NpcRuleEffect::EndConversation { .. } => {}
@@ -424,7 +425,9 @@ fn plan_with_teleport(
                     && !(allow_teleport
                         && matches!(
                             effect,
-                            NpcRuleEffect::Teleport { .. } | NpcRuleEffect::MagicEffect { .. }
+                            NpcRuleEffect::Teleport { .. }
+                                | NpcRuleEffect::TeleportEncounter { .. }
+                                | NpcRuleEffect::MagicEffect { .. }
                         ))
                     && !matches!(
                         effect,

@@ -359,6 +359,15 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                             && (0..=65535).contains(&position.y)
                             && (-15..=0).contains(&position.floor)
                     }
+                    NpcRuleEffect::TeleportEncounter { creature, position } => {
+                        creature.starts_with("oteryn:creature.")
+                            && valid_quest_key(creature)
+                            && (0..=65535).contains(&position.x)
+                            && (0..=65535).contains(&position.y)
+                            && (-15..=0).contains(&position.floor)
+                            && rule.effects.iter().filter(|e| matches!(e, NpcRuleEffect::Teleport { .. })).count() == 1
+                            && rule.effects.iter().filter(|e| matches!(e, NpcRuleEffect::TeleportEncounter { .. })).count() == 1
+                    }
                     NpcRuleEffect::MagicEffect { effect } => effect.starts_with("CONST_ME_"),
                     NpcRuleEffect::EndConversation { delay_ms } => *delay_ms <= 60_000,
                 };

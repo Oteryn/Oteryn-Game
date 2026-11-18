@@ -8,6 +8,8 @@ use crate::gameplay_transport::{
     npc_travel::{FrozenTravel, TravelCapture, TravelHoldSlot},
 };
 use crate::map::view::MapFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_gameplay_quests::quest::npc_rules::teleport::NpcTeleportEncounter;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, npc_rules::NpcRulePosition};
 
 #[derive(Clone)]
@@ -17,6 +19,86 @@ pub(in crate::gameplay_transport) struct DepartureProof {
     pub intent: NpcTalkIntent,
     pub context: Context,
     pub magic: usize,
+    pub encounter: Option<NpcTeleportEncounter>,
+}
+
+fn prepare_encounter<'a>(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    spawn: &'a NpcTeleportEncounter,
+) -> Option<(&'a str, i64, crate::foundation::MovementLocalPosition)> {
+    let cell = NpcTeleportAdmission::runtime_destination(spawn.position)?;
+    let cell = crate::foundation::MovementLocalPosition {
+        x: cell.x,
+        y: cell.y,
+        floor: cell.floor,
+    };
+    let digest = runtime.content_pin().server_artifact_digest();
+    let map = admission.bundle_map()?;
+    let at = crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
+        x: cell.x,
+        y: cell.y,
+        z: i32::from(cell.floor),
+    })?;
+    if !super::super::super::respawn_cell_admissible(
+        admission.movement_cells().index(),
+        admission.movement_cells().scope(),
+        admission.world_id,
+        digest,
+        &std::collections::BTreeSet::new(),
+        cell,
+    ) || map.facts.house_tile(at)
+        || map
+            .facts
+            .quest_callback_blocked(map.overlay.base(), at, false)
+        || runtime
+            .positioned_melee_census()
+            .ok()?
+            .iter()
+            .any(|(_, current, _)| current.position() == cell)
+    {
+        return None;
+    }
+    admission
+        .active_generation?
+        .native_gameplay()?
+        .install_companion_policies(runtime)
+        .ok()?;
+    let health = runtime
+        .companion_policy(&spawn.creature)
+        .ok()?
+        .maximum_health;
+    Some((spawn.creature.as_str(), health, cell))
+}
+
+// Crystal data-global/npc/armenius.lua:94-99 teleports into the basement and summons the boss there.
+pub(in crate::gameplay_transport) fn place_encounter(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    current: crate::foundation::MovementPositionSnapshot,
+    destination: crate::foundation::MovementLocalPosition,
+    spawn: &NpcTeleportEncounter,
+) -> Option<crate::foundation::MovementPositionSnapshot> {
+    let monster = prepare_encounter(admission, runtime, spawn)?;
+    let map = admission.bundle_map()?;
+    let doors = crate::map::floor::BundleDoors(&map.facts);
+    let landing = crate::map::floor::prepare_quest_encounter_ejection(
+        runtime,
+        admission.movement_cells(),
+        actor,
+        session,
+        current,
+        destination,
+        &doors,
+    )
+    .ok()?;
+    runtime
+        .commit_quest_group_spawn(vec![landing], &[monster], || true)
+        .ok()?
+        .into_iter()
+        .next()
 }
 
 pub(super) fn start(
@@ -65,6 +147,10 @@ pub(super) fn start(
         .is_none_or(|tile| map.facts.house_tile(tile) || map.facts.doors().blocks(tile))
     }) {
         return None;
+    }
+    if let Some(encounter) = &proof.encounter {
+        let monster = prepare_encounter(admission, runtime, encounter)?;
+        runtime.preflight_quest_creature_spawn(&[monster]).ok()?;
     }
     let position = runtime.read_actor_position(actor).ok()?;
     let capture = TravelCapture {

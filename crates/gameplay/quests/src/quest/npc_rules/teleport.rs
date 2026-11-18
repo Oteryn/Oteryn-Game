@@ -9,6 +9,13 @@ pub struct NpcTeleportPlan {
     pub source: NpcRulePlan,
     pub destination: NpcRulePosition,
     pub magic: Vec<String>,
+    pub encounter: Option<NpcTeleportEncounter>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NpcTeleportEncounter {
+    pub creature: String,
+    pub position: NpcRulePosition,
 }
 
 impl NpcRuleCatalog {
@@ -34,6 +41,7 @@ impl NpcRuleCatalog {
         };
         let mut destination = None;
         let mut magic = Vec::new();
+        let mut encounter = None;
         for effect in &source.effects {
             match effect {
                 NpcRuleEffect::Teleport { position } => {
@@ -49,6 +57,19 @@ impl NpcRuleCatalog {
                         return Err(NpcRuleError::LimitExceeded);
                     }
                 }
+                NpcRuleEffect::TeleportEncounter { creature, position } => {
+                    if encounter
+                        .replace(NpcTeleportEncounter {
+                            creature: creature.clone(),
+                            position: *position,
+                        })
+                        .is_some()
+                    {
+                        return Err(NpcRuleError::Invalid(
+                            "multiple NPC teleport encounters".into(),
+                        ));
+                    }
+                }
                 NpcRuleEffect::Set { .. }
                 | NpcRuleEffect::Add { .. }
                 | NpcRuleEffect::SetNowPlus { .. }
@@ -62,10 +83,18 @@ impl NpcRuleCatalog {
                 }
             }
         }
+        if encounter.as_ref().is_some_and(|spawn| {
+            destination.is_none_or(|to| to.floor != spawn.position.floor || to == spawn.position)
+        }) {
+            return Err(NpcRuleError::Invalid(
+                "NPC encounter requires separate landing and spawn cells".into(),
+            ));
+        }
         Ok(destination.map(|destination| NpcTeleportPlan {
             source,
             destination,
             magic,
+            encounter,
         }))
     }
 }
