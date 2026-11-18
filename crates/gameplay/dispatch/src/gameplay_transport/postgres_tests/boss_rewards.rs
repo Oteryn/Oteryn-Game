@@ -41,6 +41,7 @@ mod concurrent;
 
 #[derive(Clone, Copy)]
 pub(super) enum Case {
+    AtomicDeathFault,
     LargePrivateCorpse,
     Collection,
     Expiry,
@@ -281,14 +282,25 @@ fn scenario(case: Case) -> TestResult {
         );
         if matches!(
             case,
-            Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse
+            Case::NativeDeath
+                | Case::AtomicDeathFault
+                | Case::ProductionNativeDeath
+                | Case::LargePrivateCorpse
         ) {
-            let creature = if matches!(case, Case::ProductionNativeDeath) {
+            let creature = if matches!(case, Case::ProductionNativeDeath | Case::AtomicDeathFault) {
                 "oteryn:creature.grand_mother_foulscale"
             } else {
                 "oteryn:creature.rat"
             };
-            native_death(&h, &owner, &mut admitted, fence, creature).await?;
+            native_death(
+                &h,
+                &owner,
+                &mut admitted,
+                fence,
+                creature,
+                matches!(case, Case::AtomicDeathFault),
+            )
+            .await?;
             eprintln!("BOSS_REWARDS POSTGRES_NATIVE_DEATH_COMPLETED");
             drop(owner);
             drop(authority);
@@ -307,6 +319,7 @@ fn scenario(case: Case) -> TestResult {
             Case::Collection
             | Case::LargePrivateCorpse
             | Case::NativeDeath
+            | Case::AtomicDeathFault
             | Case::ProductionNativeDeath
             | Case::OfflineReward
             | Case::LivePrivacy
@@ -547,6 +560,7 @@ fn scenario(case: Case) -> TestResult {
             .await
             .map_err(|error| format!("W03 expiry scenario: {error}"))?,
             Case::NativeDeath
+            | Case::AtomicDeathFault
             | Case::ProductionNativeDeath
             | Case::LargePrivateCorpse
             | Case::OrdinaryDamagerAndHealer

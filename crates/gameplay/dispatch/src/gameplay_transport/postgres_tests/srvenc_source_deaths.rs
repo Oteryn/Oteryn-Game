@@ -524,6 +524,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     for batch in (0..actual_kills).step_by(2) {
         owner.refresh_quest_session(session, false).await;
         assert!(owner.refresh_source_party_presence(actor, session).await);
+        let mut crash_replay = None;
         for ordinal in batch..(batch + 2).min(actual_kills) {
             let observed = owner.owner_now();
             let now = observed.get() / 1000;
@@ -668,6 +669,9 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     Some(observed),
                 );
             }
+            if mode == "overlordcr_crash_replay" {
+                crash_replay = Some((target, now, observed));
+            }
             if let Some((other_actor, other_session, other_character, other_lease)) =
                 lesser_contributor
             {
@@ -730,48 +734,6 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 drop(taken); // Leave the real original queue entry for durable settlement below.
             }
         }
-        let crash_replay = if mode == "overlordcr_crash_replay" {
-            let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
-                queue.take(session, 1)
-            else {
-                return Err("retained death before commit".into());
-            };
-            let entry = taken.entry().ok_or("retained death")?.clone();
-            drop(taken);
-            Some(entry)
-        } else {
-            None
-        };
-        if mode == "overlordcr_atomic_chests" {
-            for statement in [
-                "CREATE SEQUENCE overlordcr_chest_fault",
-                "CREATE FUNCTION overlordcr_chest_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NOT EXISTS (SELECT 1 FROM game_character_boss_reward_chests) THEN RAISE EXCEPTION 'chests must precede XP in the same transaction'; END IF; PERFORM nextval('overlordcr_chest_fault'); RAISE EXCEPTION 'fault after chests before XP' USING ERRCODE='23514'; END $$",
-                "CREATE TRIGGER overlordcr_chest_fault BEFORE INSERT ON game_party_kill_xp_receipts FOR EACH ROW EXECUTE FUNCTION overlordcr_chest_fault()",
-            ] {
-                sqlx::query(statement).execute(&h.pool).await?;
-            }
-            assert_eq!(
-                owner.drain_kill_rewards(drain_session).await,
-                DrainOutcome::Deferred
-            );
-            let reached: bool = sqlx::query_scalar("SELECT is_called FROM overlordcr_chest_fault")
-                .fetch_one(&h.pool)
-                .await?;
-            assert!(reached, "fault reached after real chests and before XP");
-            let counts: (i64,i64,i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_party_kill_xp_receipts), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_boss_reward_items), (SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage')").fetch_one(&h.pool).await?;
-            assert_eq!(
-                counts,
-                (0, 0, 0, 0, 0, 0),
-                "chests, XP and storage roll back with the death"
-            );
-            for statement in [
-                "DROP TRIGGER overlordcr_chest_fault ON game_party_kill_xp_receipts",
-                "DROP FUNCTION overlordcr_chest_fault()",
-                "DROP SEQUENCE overlordcr_chest_fault",
-            ] {
-                sqlx::query(statement).execute(&h.pool).await?;
-            }
-        }
         if mode == "overlordcr_atomic" {
             for statement in [
                 "CREATE SEQUENCE overlordcr_second_receipt",
@@ -825,28 +787,52 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             );
         }
         assert_eq!(drained, DrainOutcome::Drained);
-        if let Some(entry) = crash_replay {
+        if let Some((target, now, observed)) = crash_replay {
             let before: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
-            assert_eq!(before.0, 1, "the original durable boss death committed");
-            assert_eq!(before.1, 2, "both damaging characters already have chests");
+            let private_admitted = native.reward_table().row(&rule.creature).is_ok();
+            assert_eq!(before.0, i64::from(private_admitted));
+            assert_eq!(
+                before.1,
+                if private_admitted { 2 } else { 0 },
+                "retained private-loot refusal never invents a chest"
+            );
             assert!(
                 before.2 > 0 && before.3 >= 2,
-                "XP and both quest credits committed before recovery"
+                "XP and both storage credits committed before recovery"
             );
-            let permit = owner
-                .spell_lane_permit()
-                .await
-                .ok_or("recovered death lane")?;
-            let replay = owner
-                .settle_party_experience(&permit, &entry)
-                .await
-                .map_err(debug)?;
-            assert!(
-                replay.xp.is_ok(),
-                "the committed death replays without a new grant"
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let lease = runtime
+                    .bound_attacker_lease(actor, session)
+                    .map_err(debug)?;
+                crate::gameplay_transport::kill_reward::record_creature_kill(
+                    &mut runtime,
+                    KillSink {
+                        prey: None,
+                        activity: &[],
+                        queue: &queue,
+                        rewards: native.reward_table(),
+                        charms: None,
+                    },
+                    target,
+                    crate::combat::CapturedRewardPrincipal {
+                        character: lease.character_id(),
+                        lease_generation: lease.generation(),
+                        session,
+                        actor,
+                    },
+                    now,
+                    Some(observed),
+                );
+                assert!(
+                    queue.has_session(session),
+                    "late native replay reaches the real durable drain"
+                );
+            }
+            assert_eq!(
+                owner.drain_kill_rewards(session).await,
+                DrainOutcome::Drained
             );
-            drop(replay);
-            drop(permit);
             let after: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
             assert_eq!(
                 before, after,

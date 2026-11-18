@@ -89,7 +89,7 @@ fn overlordcr_atomic_chests_before_xp_fault_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::srvenc_source_deaths::scenario("overlordcr_atomic_chests", "earth_overlord")
+    super::boss_rewards::run_case(super::boss_rewards::Case::AtomicDeathFault)
 }
 
 #[test]
