@@ -57,9 +57,14 @@ impl ShargonGrowth {
                 .chain_update(at.x.to_be_bytes())
                 .chain_update(at.y.to_be_bytes())
                 .finalize();
+            let offset = |index| {
+                let mut lane = [0; 8];
+                lane.copy_from_slice(&draw[index..index + 8]);
+                crate::spell::uniform_draw(u64::from_be_bytes(lane), -1, 1) as i32
+            };
             let sampled = MovementLocalPosition {
-                x: at.x.saturating_add(i32::from(draw[0] % 3) - 1),
-                y: at.y.saturating_add(i32::from(draw[1] % 3) - 1),
+                x: at.x.saturating_add(offset(0)),
+                y: at.y.saturating_add(offset(8)),
                 ..at
             };
             if tile(sampled)
@@ -109,7 +114,7 @@ impl ShargonGrowth {
                     *upgrade = None;
                     yell(map, boss, at, "Rise, my minion, and grow stronger!");
                     if let Some(pos) = tile(position) {
-                        map.facts.emit_movement_effect(pos, 17);
+                        map.facts.emit_movement_effect(pos, 18);
                     }
                 }
             }
