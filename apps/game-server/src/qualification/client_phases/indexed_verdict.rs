@@ -208,6 +208,59 @@ mod tests {
     }
 
     #[test]
+    fn rashid_indexed_wait_survives_watchdog_and_reports_the_wall_deadline() -> TestResult {
+        use super::super::super::full_row_s10::{RashidWait, audit_rashid_anchors};
+
+        runtime()?.block_on(async {
+            let today = (30, 40, -7);
+            for watchdog in [Some(Duration::from_secs(3)), None] {
+                let harness = Box::leak(Box::new(Harness::new(true, watchdog)));
+                let mut watch = Watch::new("S10.full", harness);
+                watch.scenario = Some("S10.full");
+                for appears in [true, false] {
+                    let wait = RashidWait::new(harness, Duration::from_secs(12));
+                    let mut probes = 0;
+                    let result = watch
+                        .run(
+                            None,
+                            "indexed row",
+                            wait.run(audit_rashid_anchors(
+                                &mut probes,
+                                today,
+                                [today],
+                                true,
+                                &wait,
+                                async |probes, _| {
+                                    *probes += 1;
+                                    tokio::time::sleep(Duration::from_secs(1)).await;
+                                    Ok((appears && *probes >= 8).then_some(today))
+                                },
+                                async |_, actor| Ok(actor),
+                            )),
+                        )
+                        .await;
+                    if appears {
+                        assert_eq!(result?, today);
+                        assert!(probes >= 8);
+                    } else {
+                        let error = result
+                            .err()
+                            .ok_or("missing Rashid should hit the wall deadline")?;
+                        assert_eq!(
+                            classify(error.as_ref()),
+                            Cause::Deadline {
+                                phase: "rashid-rotation"
+                            }
+                        );
+                        assert!(error.to_string().contains("waiting for live Rashid"));
+                    }
+                }
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
     fn bounded_observation_wait_preserves_its_real_budget_and_idle_watchdog() -> TestResult {
         runtime()?.block_on(async {
             let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(90)))));

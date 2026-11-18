@@ -75,12 +75,54 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(
-        Duration::from_secs(1200),
-        verdict::observe(journey(&mut row, clients)),
-    )
-    .await;
-    row.finish(match result { Ok(result) => result, Err(_) => Err("step deadline: no server reply within 1200s; need the server to complete the pending NPC/travel command".into()) });
+    let wait = RashidWait::new(verdict::Harness::global(), Duration::from_secs(1200));
+    let result = wait.run(journey(&mut row, clients, &wait)).await;
+    row.finish(result);
+}
+
+pub(super) struct RashidWait {
+    harness: &'static verdict::Harness,
+    deadline: tokio::time::Instant,
+    pending_anchor: std::cell::Cell<Option<PlacementCoordinates>>,
+}
+
+impl RashidWait {
+    pub(super) fn new(harness: &'static verdict::Harness, budget: Duration) -> Self {
+        Self {
+            harness,
+            deadline: tokio::time::Instant::now() + budget,
+            pending_anchor: std::cell::Cell::new(None),
+        }
+    }
+
+    pub(super) async fn run<T>(&self, journey: impl Future<Output = TestResult<T>>) -> TestResult<T> {
+        let result = tokio::time::timeout_at(self.deadline, journey)
+            .await
+            .unwrap_or_else(|_| {
+                let (phase, message) = match self.pending_anchor.get() {
+                    Some(anchor) => (
+                        "rashid-rotation",
+                        format!("step rashid-rotation: row deadline expired waiting for live Rashid at {anchor:?}"),
+                    ),
+                    None => ("row", "step deadline: S10 row budget expired".to_owned()),
+                };
+                Err(verdict::HarnessError::boxed(verdict::Cause::Deadline { phase }, message))
+            });
+        if let Err(error) = &result {
+            verdict::record_error(error.as_ref());
+        }
+        result
+    }
+
+    fn pending(&self, anchor: PlacementCoordinates) {
+        self.pending_anchor.set(Some(anchor));
+        self.harness.bounded_wait(self.deadline, "rashid-rotation");
+    }
+
+    fn progress(&self, phase: &'static str) {
+        self.pending_anchor.set(None);
+        self.harness.progress(phase);
+    }
 }
 
 async fn talk(
@@ -260,7 +302,7 @@ async fn earn(
     Ok(())
 }
 
-async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+async fn journey(row: &mut Row, clients: &SeamClients<'_>, wait: &RashidWait) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -342,7 +384,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step rashid-gate: compiled world omitted Rashid")?;
     let (expected_rashid, (expected_rashid_position, trade_position, trade)) =
         observe_consistent_weekday(utc_rashid_destination, async |day| {
-            verify_rashid_trade(&mut client, world, authored_rashid, day, None).await
+            verify_rashid_trade(&mut client, world, authored_rashid, day, None, wait).await
         })
         .await?;
     row.step(
@@ -374,6 +416,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             authored_rashid,
             day,
             Some(expected_rashid),
+            wait,
         )
         .await
     })
@@ -414,6 +457,7 @@ async fn verify_rashid_trade(
     authored: &oteryn_world_bundle::npc::Npc,
     day: RashidDestination,
     audited: Option<RashidDestination>,
+    wait: &RashidWait,
 ) -> TestResult<(PlacementCoordinates, ActorPosition, Vec<String>)> {
     let (_, expected) = weekday_rashid(authored, day)?;
     let (trade_position, trade) = audit_rashid_anchors(
@@ -421,6 +465,7 @@ async fn verify_rashid_trade(
         expected,
         authored.placements.iter().map(|anchor| (anchor.x, anchor.y, anchor.floor)),
         audited != Some(day),
+        wait,
         async |client, coordinates| {
             let found = inspect_rashid_anchor(client, world, coordinates).await?;
             if utc_rashid_destination()? != day {
@@ -440,22 +485,30 @@ async fn verify_rashid_trade(
     Ok((expected, trade_position, trade))
 }
 
-async fn audit_rashid_anchors<C, A, T>(
+pub(super) async fn audit_rashid_anchors<C, A: Copy + PartialEq, T>(
     client: &mut C,
     expected: PlacementCoordinates,
     anchors: impl IntoIterator<Item = PlacementCoordinates>,
     inspect_off_days: bool,
+    wait: &RashidWait,
     mut inspect: impl AsyncFnMut(&mut C, PlacementCoordinates) -> TestResult<Option<A>>,
     trade: impl AsyncFnOnce(&mut C, A) -> TestResult<T>,
 ) -> TestResult<T> {
     // A stalled owner can leave yesterday's actor live. Wait for today's actor
     // within the existing row deadline before treating an off-day actor as a duplicate.
+    wait.progress("rashid-anchor");
     let actor = loop {
         if let Some(actor) = inspect(client, expected).await? {
             break actor;
         }
+        wait.pending(expected);
     };
+    wait.progress("rashid-trade");
     let trade = trade(client, actor).await?;
+    wait.progress("rashid-anchor-after-trade");
+    if inspect(client, expected).await? != Some(actor) {
+        return Err("step rashid-gate: traded Rashid missing or replaced at today's anchor".into());
+    }
     if inspect_off_days {
         for coordinates in anchors {
             if coordinates != expected && inspect(client, coordinates).await?.is_some() {
@@ -711,13 +764,15 @@ async fn rashid_audits_off_day_anchors_only_after_observing_rotation() -> TestRe
     let today = (30, 40, -7);
     let mut probes = Vec::new();
     let mut rotated = false;
+    let traded = std::cell::Cell::new(false);
     let trade = audit_rashid_anchors(
         &mut probes,
         today,
         [yesterday, today],
         true,
+        &RashidWait::new(verdict::Harness::global(), Duration::from_secs(1200)),
         async |probes, anchor| {
-            probes.push(anchor);
+            probes.push((anchor, traded.get()));
             if anchor == today {
                 // First probe sees the owner waiting for the flush. The next sees rotation.
                 return Ok(std::mem::replace(&mut rotated, true).then_some(today));
@@ -726,12 +781,13 @@ async fn rashid_audits_off_day_anchors_only_after_observing_rotation() -> TestRe
         },
         async |_, actor| {
             assert_eq!(actor, today);
+            traded.set(true);
             Ok("trade")
         },
     )
     .await?;
     assert_eq!(trade, "trade");
-    assert_eq!(probes, [today, today, yesterday]);
+    assert_eq!(probes, [(today, false), (today, false), (today, true), (yesterday, true)]);
     Ok(())
 }
 
@@ -740,21 +796,49 @@ async fn rashid_still_rejects_duplicate_off_day_actor_after_trade() {
     let yesterday = (10, 20, -7);
     let today = (30, 40, -7);
     let mut probes = Vec::new();
+    let traded = std::cell::Cell::new(false);
     let result = audit_rashid_anchors(
         &mut probes,
         today,
         [yesterday, today],
         true,
+        &RashidWait::new(verdict::Harness::global(), Duration::from_secs(1200)),
         async |probes, anchor| {
-            probes.push(anchor);
+            probes.push((anchor, traded.get()));
             Ok(Some(anchor))
         },
         async |_, actor| {
             assert_eq!(actor, today);
+            traded.set(true);
             Ok("trade")
         },
     )
     .await;
     assert!(result.is_err_and(|error| error.to_string().contains("live Rashid at off-day anchor")));
-    assert_eq!(probes, [today, yesterday]);
+    assert_eq!(probes, [(today, false), (today, true), (yesterday, true)]);
+}
+
+#[tokio::test]
+async fn rashid_rechecks_for_duplicates_at_todays_anchor_after_trade() {
+    let today = (30, 40, -7);
+    let traded = std::cell::Cell::new(false);
+    let result = audit_rashid_anchors(
+        &mut (),
+        today,
+        [today],
+        false,
+        &RashidWait::new(verdict::Harness::global(), Duration::from_secs(1200)),
+        async |_, anchor| {
+            assert_eq!(anchor, today);
+            if traded.get() {
+                return Err("multiple live Rashid actors at today's anchor".into());
+            }
+            Ok(Some(today))
+        },
+        async |_, _| {
+            traded.set(true);
+            Ok(())
+        },
+    ).await;
+    assert!(result.is_err_and(|error| error.to_string().contains("multiple live Rashid")));
 }
