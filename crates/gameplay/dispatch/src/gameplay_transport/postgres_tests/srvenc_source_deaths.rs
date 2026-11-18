@@ -676,7 +676,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 );
             }
             if matches!(mode, "overlordcr_crash_replay" | "overlordcr_rowless") {
-                crash_replay = Some((target, now, observed));
+                crash_replay = Some((target, observed));
             }
             if let Some((other_actor, other_session, other_character, other_lease)) =
                 lesser_contributor
@@ -793,7 +793,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             );
         }
         assert_eq!(drained, DrainOutcome::Drained);
-        if let Some((target, now, observed)) = crash_replay {
+        if let Some((target, observed)) = crash_replay {
             let canonical: i64 =
                 sqlx::query_scalar("SELECT count(*) FROM game_boss_death_settlements")
                     .fetch_one(&h.pool)
@@ -816,6 +816,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 );
             }
             {
+                let replay_observed = observed.checked_add(1_000).map_err(debug)?;
                 let mut runtime = owner.runtime.lock().await;
                 let lease = runtime
                     .bound_attacker_lease(actor, session)
@@ -836,13 +837,17 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                         session,
                         actor,
                     },
-                    now,
-                    Some(observed),
+                    replay_observed.get() / 1000,
+                    Some(replay_observed),
                 );
-                assert!(
-                    queue.has_session(session),
-                    "late native replay reaches the real durable drain"
-                );
+                let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(replay) =
+                    queue.take(session, lease.generation())
+                else {
+                    return Err("late native replay must reach the real durable drain".into());
+                };
+                let entry = replay.entry().ok_or("retained replay entry")?;
+                assert_eq!(entry.activity_observed_at, Some(observed));
+                drop(replay);
             }
             assert_eq!(
                 owner.drain_kill_rewards(session).await,
