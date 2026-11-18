@@ -39,3 +39,11 @@ ten of the removed modules, including `inspection`,
 therefore a failed type-check measurement, rather than a complete test build.
 The test sources and build script were untouched. All ablations use temporary
 generated mount lists.
+
+A fixture-preserving zero-registration control built successfully. It used
+scratch copies of 249 dependency modules reachable from the ten helper roots
+and disabled the local PostgreSQL `#[test]` functions in those copies.
+With two Cargo jobs, rustc peaked at 11,635,704 KiB (11.10 GiB) and the build
+took 573.102 s. The resulting binary listed 2,102 tests (2,104 output lines)
+and measured 1,132,276,288 bytes. LLD received 241 rlibs (1,487,365,036
+bytes) and 263 objects (1,200,533,024 bytes). These are control counts.
