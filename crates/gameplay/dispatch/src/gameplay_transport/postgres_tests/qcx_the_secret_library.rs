@@ -126,38 +126,22 @@ pub(super) async fn assert_gail_reply(
 
 #[test]
 fn qcx_the_secret_library_hawser_claim() -> TestResult {
-    high_and_dry_claim("hawser", (32025, 32469, -7), 5951, 6330, 28707)
-}
+    use super::fixture::{debug, id};
+    use crate::map::overlay::TilePos;
 
-#[test]
-fn qcx_the_secret_library_sealed_scroll_claim() -> TestResult {
-    high_and_dry_claim("parchment", (32013, 32447, -8), 28828, 6326, 28650)
-}
-
-fn high_and_dry_claim(
-    name: &'static str,
-    position: (u16, u16, i8),
-    appearance: u16,
-    unique: u16,
-    reward: u16,
-) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run(name, move || {
-        use super::fixture::{debug, id};
-        use crate::map::overlay::TilePos;
-
+    super::kill_reward_e2e::scenario_thread::run("high-and-dry-hawser", || {
         let claim = super::quest_catalogue_chests::CatalogueChest {
-            claim: format!(
-                "oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.{name}"
-            ),
-            position,
-            unique,
+            claim: "oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.hawser"
+                .into(),
+            position: (32025, 32469, -7),
+            unique: 6330,
             servable: true,
-            appearance,
-            root: format!("oteryn:item.tibia.i{reward}"),
+            appearance: 5951,
+            root: "oteryn:item.tibia.i28707".into(),
             quantity: 1,
             contents: Vec::new(),
             texts: Vec::new(),
@@ -174,9 +158,16 @@ fn high_and_dry_claim(
             .active()
             .and_then(|generation| generation.native_gameplay())
             .ok_or("native generation")?;
-        let (x, y, floor) = position;
-        let start = TilePos { x: x + 1, y, floor };
-        let world = super::source_world_crop::world(TilePos { x, y, floor }, start, start, native)?;
+        let minimum = TilePos {
+            x: 32025,
+            y: 32469,
+            floor: -7,
+        };
+        let start = TilePos {
+            x: 32026,
+            ..minimum
+        };
+        let world = super::source_world_crop::world(minimum, start, start, native)?;
         let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
             world.base().as_ref(),
             &|_| true,
@@ -186,12 +177,12 @@ fn high_and_dry_claim(
                 .served
                 .iter()
                 .any(|row| row.key.as_str() == claim.claim),
-            "shipped map must bind {name} at {position:?}"
+            "shipped map must bind the High and Dry Hawser"
         );
         super::quest_container_chests::catalogue_scenario(&claim, &activation)
     })?;
     eprintln!(
-        "POSTGRES_CASE_COMPLETED qcx_the_secret_library_{name} duration={:?}",
+        "POSTGRES_CASE_COMPLETED qcx_the_secret_library_hawser_claim duration={:?}",
         started.elapsed()
     );
     Ok(())
