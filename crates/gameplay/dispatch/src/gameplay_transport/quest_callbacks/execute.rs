@@ -1089,8 +1089,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if record.context.is_none() {
                     record.selected_tool = selected_tool.cloned();
                 }
-                let retained_claim = callback.effects.claim.is_some()
-                    && record.context.is_some()
+                let retained_callback = record.context.is_some()
                     && record.cause == cause
                     && record.callback == callback.key
                     && record.key == key
@@ -1098,12 +1097,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (
                     record.context.get_or_insert(context).clone(),
                     record.selected_tool.clone(),
-                    retained_claim,
+                    retained_callback,
                 )
             } else {
                 return UseDisposition::Rejected;
             };
-            let (context, selected_tool, retained_claim) = prepared;
+            let (context, selected_tool, retained_callback) = prepared;
             let context = if let Some((source, intent)) = selected_tool {
                 let Some(context) = context.with_selected_tool(source, intent) else {
                     return UseDisposition::Rejected;
@@ -1326,10 +1325,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     {
                         window.count = repeat.count;
                     }
-                    // An interrupted original USE may still owe the presentation
-                    // selected by its receipt. A later duplicate has no pending projection.
-                    claim_presentation = callback.effects.claim.is_some() && (fresh || retained_claim);
-                    if fresh || claim_presentation {
+                    // Crystal gems.lua:183-184 sends the confirmation with the paid USE.
+                    // An interrupted original may still owe that feedback on publication.
+                    claim_presentation = callback.effects.claim.is_some() && (fresh || retained_callback);
+                    let recovered_presence = retained_callback && callback.effects.timed_presence.is_some();
+                    if fresh || claim_presentation || recovered_presence {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
                     }
                     if fresh {

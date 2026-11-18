@@ -69,6 +69,8 @@ const SOCKET_PHASE: &str = "oteryn:quest-progress/qonce-dispatch/socket-phase";
 const THUNDER: u16 = 73;
 const SOCKET_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/gems.lua:35-89,130-189";
 const ROOM_OPENS: &str = "Something happens at the center of the room ...";
+const RUBY_ACCEPTED: &str = "You place the ruby on the small socket. A red flame begins to burn.";
+const RUBY_EFFECT: u16 = 14;
 
 #[test]
 fn once_only_well_restores_saved_and_live_vitals_and_grants_achievement_postgres() -> TestResult {
@@ -281,7 +283,9 @@ async fn socket_window(
                     "track":LEDGER,"minimum":-1,"maximum":i64::MAX,"set":0,"preserve":true
                 }],"offerings":[],
                 "return_on_failure":false,"sources":[SOCKET_SOURCE],"item_on_target":tool,
-                "effects":{"timed_presence":{"position":position,"appearance":field,
+                "success_message":(index == 0).then_some(RUBY_ACCEPTED),
+                "effects":{"magic":(index == 0).then_some(json!({"position":position,"effect":RUBY_EFFECT})),
+                    "timed_presence":{"position":position,"appearance":field,
                     "spawn_after_ms":2000,"expires_after_ms":60000,"window":{
                         "position":CENTRE,"from":LIONS_SANCTUARY_ROCK,"to":LIONS_FOUNTAIN,
                         "count":4,"effect":THUNDER,"repeat":{"claim_track":LEDGER,"count":3},
@@ -426,21 +430,33 @@ async fn socket_recovery(
     assert_eq!(super::qengine_voucher_stories::quantity(h, gem).await?, before - 1);
 
     let map = owner.bundle_map().ok_or("socket map")?;
+    let ruby_feedback = || owner.states.chat.drain(session).into_iter().filter(|line| matches!(
+        line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == RUBY_ACCEPTED
+    )).count();
+    let tile = crate::map::overlay::TilePos { x: position.x, y: position.y, floor: position.floor };
+    let ruby_effects = || map.facts.movement_effects_since(0).into_iter()
+        .filter(|(_, at, effect)| *at == tile && *effect == RUBY_EFFECT).count();
     assert!(map.facts.next_movement_decay_time().is_none());
+    assert_eq!(ruby_feedback(), 0);
+    assert_eq!(ruby_effects(), 0);
     // The connection recovers after the original spawn deadline. Crystal gems.lua:187-188
     // schedules spawn and expiry from the paid USE, so recovery cannot prolong the field.
     let resumed = paid + 3_000_000;
     owner.states.test_owner_time.store(resumed + 1, Ordering::Relaxed);
     assert!(owner.reconcile_quest_callbacks(session).await);
     assert!(!owner.has_pending_quest_callback(session));
+    // Crystal gems.lua:43-44,183-184 presents the socket confirmation once.
+    assert_eq!(ruby_feedback(), 1);
+    assert_eq!(ruby_effects(), 1);
     assert_eq!(map.facts.next_movement_decay_time(), Some(paid + 2_000_000));
     assert_eq!(map.facts.expire_movement_items(resumed), 1);
-    let tile = crate::map::overlay::TilePos { x: position.x, y: position.y, floor: position.floor };
     assert!(map.facts.movement_items(tile).iter().any(|item| item.facts.appearance_id == field));
     assert_eq!(map.facts.expire_movement_items(paid + 60_000_000), 1);
     assert!(map.facts.movement_items(tile).is_empty());
     assert!(owner.reconcile_quest_callbacks(session).await);
     assert!(map.facts.next_movement_decay_time().is_none());
+    assert_eq!(ruby_feedback(), 0);
+    assert_eq!(ruby_effects(), 1);
     assert_eq!(super::qengine_voucher_stories::quantity(h, gem).await?, before - 1);
     Ok(())
 }
