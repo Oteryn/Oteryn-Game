@@ -2,7 +2,7 @@
 //! Crystal 201189f871d23597b82caf88fd611454a2ddefb8, data-global/scripts/quests:
 //! the_pits_of_inferno_quest/actions_fountain.lua:3-15;
 //! lions_rock/actions_lions_rock.lua:115-139;
-//! the_first_dragon/actions_rewards.lua:43-72;
+//! the_first_dragon/actions_rewards.lua:1-18,43-72;
 //! the_great_dragon_hunt_quest/actions_treasure.lua:19-40 and
 //! the_great_dragon_hunt_quest/creaturescripts_the_great_dragon_hunt.lua:12-25.
 use super::fixture::{Harness, debug};
@@ -59,6 +59,13 @@ const HOARD_ACHIEVEMENT: &str = "oteryn:achievement/hoard_of_the_dragon";
 const DAILY_REFUSAL: &str = "At the moment there is neither a treasure nor anything else in the fountain. Perhaps you might return later.";
 const FOUNTAIN_RED_GEM: &str = "Something sparkles in the fountain's water. You draw out a red gem.";
 const ANNUAL_REFUSAL: &str = "The chest is empty.";
+const ANNUAL_MESSAGE: &str = "You found a backpack.";
+// Crystal actions_rewards.lua:1-18,52-65 and data/items/items.xml.
+const ANNUAL_CONTENTS: [(u16, u16); 16] = [
+    (24390, 1), (11658, 1), (21801, 2), (9660, 2), (22721, 3), (3041, 1),
+    (3037, 1), (3039, 1), (5954, 2), (21194, 2), (23508, 2), (10420, 2),
+    (11703, 2), (14012, 2), (9665, 2), (10304, 2),
+];
 const ANNUAL_INELIGIBLE: &str = "You are not eligible to claim these rewards yet.";
 const FEATHERS: &str = "oteryn:quest-progress/qonce-dispatch/feathers";
 const HOARD_REFUSAL: &str = "You try to pick a treasure, but you hear further dragons approaching. You should kill some more before picking out something.";
@@ -259,6 +266,43 @@ fn hoard_reward(description: &str, items: &[(u16, u16)]) -> Value {
     let mut give = amount(&items[0]);
     give["additional"] = json!(items[1..].iter().map(amount).collect::<Vec<_>>());
     json!({"give":give,"message":format!("{HOARD_MESSAGE}{description}")})
+}
+
+async fn assert_annual_delivery(h: &Harness, claims: usize) -> TestResult {
+    let children: Vec<(i64, String, i64, bool)> = sqlx::query_as(
+        "SELECT claim.command_id::bigint, child.definition_production_key, child.quantity,
+                claim.created_xact_id=quest.created_xact_id
+                AND child.xmin::text=claim.xmin::text AND nested.xmin::text=claim.xmin::text
+         FROM game_reward_claim_mint_receipts claim
+         JOIN game_character_quest_receipts quest ON quest.character_id=claim.character_id
+           AND quest.cause_id=claim.game_session_id AND quest.cause_ordinal=claim.command_id
+         JOIN game_item_instances bag ON bag.item_instance_id=claim.item_instance_id
+         JOIN game_item_nested_entries nested ON nested.parent_item_instance_id=bag.item_instance_id
+         JOIN game_item_instances child ON child.item_instance_id=nested.item_instance_id
+         WHERE quest.transition_key=$1 AND bag.definition_production_key='oteryn:item.tibia.i2854'
+         ORDER BY claim.command_id, nested.placement_ordinal",
+    )
+    .bind(CLAIM)
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(children.len(), claims * ANNUAL_CONTENTS.len());
+    for (index, bag) in children.chunks_exact(ANNUAL_CONTENTS.len()).enumerate() {
+        let command = bag[0].0;
+        if index == 0 {
+            assert!(matches!(command, 21 | 22));
+        } else {
+            assert_eq!(command, 25);
+        }
+        for ((actual_command, item, quantity, atomic), (id, count)) in
+            bag.iter().zip(ANNUAL_CONTENTS)
+        {
+            assert_eq!(*actual_command, command);
+            assert_eq!(*item, format!("oteryn:item.tibia.i{id}"));
+            assert_eq!(*quantity, i64::from(count));
+            assert!(atomic, "backpack item {id} must commit with its claim");
+        }
+    }
+    Ok(())
 }
 
 async fn hoard_inventory(h: &Harness) -> TestResult<Vec<(u16, i64)>> {
@@ -1261,7 +1305,9 @@ pub(super) async fn exercise(
         callback["failure_message"] = json!(refusal);
         let give = match name {
             ANNUAL => json!({"item":"oteryn:item.tibia.i2854","count":1,
-                "contents":[{"item":"oteryn:item.tibia.i3031","count":2}]}),
+                "contents":ANNUAL_CONTENTS.map(|(id, count)| json!({
+                    "item":format!("oteryn:item.tibia.i{id}"),"count":count
+                }))}),
             FOUNTAIN_TRANSFORM => json!({"item":"oteryn:item.tibia.i3039","count":1}),
             FULL_BACKPACK => json!({"item":"oteryn:item.tibia.i2854","count":1,"contents":[
                 {"item":"oteryn:item.tibia.i3039","count":1},
@@ -1278,7 +1324,9 @@ pub(super) async fn exercise(
             DAILY_HEART => vec![heart()],
             _ => vec![json!({"give":give})],
         };
-        if name == FOUNTAIN_TRANSFORM {
+        if name == ANNUAL {
+            rewards[0]["message"] = json!(ANNUAL_MESSAGE);
+        } else if name == FOUNTAIN_TRANSFORM {
             rewards[0]["message"] = json!(FOUNTAIN_RED_GEM);
         }
         effects = json!({"reset":{"kind":"elapsed","track":LEDGER,"seconds":seconds},
@@ -1319,6 +1367,9 @@ pub(super) async fn exercise(
         if well {
             effects["restore_vitals"] = json!(true);
         } else {
+            // A synthetic STEP award exercises the shared owner. Crystal's
+            // dreamers_challenge_quest/movement_teleport.lua:6,12-20 only teleports.
+            callback["sources"] = json!(["synthetic once-only STEP achievement"]);
             callback["trigger"] = json!("step_in");
             callback["selector"]["unique"] = Value::Null;
             callback["selector"]["appearance"] = Value::Null;
@@ -1530,6 +1581,8 @@ pub(super) async fn exercise(
     assert_eq!(receipts(h).await?, 1);
     if hoard {
         assert_hoard_delivery(owner, admitted, h, &hoard_before, hoard_rewards).await?;
+    } else if name == ANNUAL {
+        assert_annual_delivery(h, 1).await?;
     } else {
         assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, before + 2);
     }
@@ -1551,7 +1604,11 @@ pub(super) async fn exercise(
         advance_interaction(owner)?;
         assert_eq!(use_claim(owner, *admitted, 26).await?, UseDisposition::Rejected);
         assert_eq!(receipts(h).await?, 2);
-        assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, before + 4);
+        if name == ANNUAL {
+            assert_annual_delivery(h, 2).await?;
+        } else {
+            assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, before + 4);
+        }
     } else {
         assert_eq!(achievements(h, HOARD_ACHIEVEMENT).await?, 1);
         let (ledger, count): (i64, i64) = sqlx::query_as(
