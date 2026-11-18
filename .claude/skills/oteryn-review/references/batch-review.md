@@ -24,9 +24,9 @@ context and does not see the other runs' output.
 | `authority` | durable value (gold, items, bounties), overflow and `i64::MAX`, checks done by the server and not the client, input bounds |
 | `tests` | tests that pass without testing (skipped PostgreSQL route, no assertion on the outcome, a sleep instead of a wait), missing red case, CI job filters |
 
-The lens list of a PR is fixed when its first round starts and does not
-change for the second: findings of two rounds are then comparable. One
-whole-diff round on the integrated head replaces per-area review loops; per-area
+The lens list of a PR is fixed when its first round starts; the second
+review (delta only) runs the subset of those lenses that had confirmed
+findings. One whole-diff round on the integrated head replaces per-area review loops; per-area
 loops on a package ran 8-9 rounds and did not converge, while the one
 whole-diff round found the cross-cutting P0 the area loops missed (retro
 2026-11-18).
@@ -43,7 +43,10 @@ Choose lenses by diff size and by what the diff touches:
 
 Each lens is one Codex Cloud task (read-only, model `gpt-6.2-astra`, reasoning
 effort `high`), never `codex exec` on the PC. Name the task
-`review-<tag>-<lens>`.
+`review-<tag>-<lens>`. The lens tasks of one round over one head are together
+the one covered review of that head (`OWNER_FUNDED_AI_POLICY.md`, *Owner
+review rule for every PR*), started by the review owner of `SKILL.md` §5.
+The native `@codex review` comment route has no lenses: it is one run.
 
 ## 2. The prompt: all findings, no cap
 
@@ -65,16 +68,19 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
 ## 3. Merge, verify, sweep
 
 1. Merge the lens outputs. Remove duplicates by `path:line` and defect class.
-2. Verify each P0/P1 against the code, as in §6: trace a real caller or input
-   to the failure. For the ones that are hard to call, a second check with
-   the opposite brief helps: a fresh subagent or Codex run told "try to refute
-   this finding; default to refuted when unsure". Keep the finding when the
-   refute attempt fails.
+2. Give every finding a verdict (`SKILL.md` §6). Verify each P0/P1 against
+   the code: trace a real caller or input to the failure. For the ones that
+   are hard to call, a second check with the opposite brief helps: a fresh
+   Claude subagent (not another paid Codex review) told "try to refute this
+   finding; default to refuted when unsure". Keep the finding when the refute
+   attempt fails.
 3. Pattern sweep: for every confirmed finding, grep the whole tree for the
    same class (same call, same lock, same `_ =>`, same unchecked add, same
    literal that an environment knob overrides), and every test in any crate or
-   language that asserts the changed value. Add each instance to the confirmed
-   list. A class fixed at one site and left at another is the main cause of the
+   language that asserts the changed value. Each hit is a candidate,
+   verified as in step 2 before it joins the confirmed list; in a delta review
+   a hit in unchanged code is confirmed only as a P0, otherwise it goes to the
+   backlog. A class fixed at one site and left at another is the main cause of the
    next round: in the retro, rounds that did not converge found one sibling
    per round.
 4. P2/P3 go to the grouped list (§4). They do not start a fix now.
@@ -82,7 +88,9 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
 ## 4. One batch fix, one delta review, one CI cycle
 
 1. Write all confirmed P0/P1 findings, sweep instances included, to one file
-   and run one fix: `codex-review.sh <worktree> <tag> --fix-confirmed <file>`.
+   and run one fix: on the PC `bash ~/oteryn-cache/codex-review.sh <worktree>
+   <tag> --fix-confirmed <file>` (not in this repository), elsewhere one Codex
+   Cloud fix packet with the same list (`SKILL.md` §5).
    Never one fix run per finding. The packet follows `SKILL.md` §7 (numbered
    items with a status each, sweep list, red test through the real caller,
    class guard, forbidden paths).
@@ -93,8 +101,9 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
 
 ## 5. When to stop
 
-The diff is done when two independent lens runs over the current head find no
-P0/P1 (two lenses in the same round count). If the second review still finds a
+The diff is done when every lens run of the last round finished and no
+confirmed P0/P1 is open. A failed or empty lens run means "not reviewed". If
+the second review still finds a
 P0/P1, §5 applies: the design is wrong; stop and report to the owner. Never
 start a third round.
 
@@ -108,5 +117,6 @@ A packet that delegates review or fixing points to this file and states:
 - "do not edit code in the review run; fixes go through `--fix-confirmed`
   after verification".
 
-The report back is the merged, verified list with the sweep instances, not the
-raw lens logs.
+The merged, verified list with the sweep instances goes to a findings file
+(path in the packet), not the raw lens logs; the final report (at most 15
+lines, `CONTEXT_ROUTING.md`) gives the counts by severity and that path.

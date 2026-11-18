@@ -29,7 +29,8 @@ run all of it, and fix every failure of one run in one push.
    locally under `cargo test` and fails in CI; `cargo nextest run -p <package>`
    reproduces CI when nextest is installed.
    Then build the changed package without tests:
-   `cargo build --locked -p <package> --lib --bins --quiet`. Test-only code
+   `cargo build --locked -p <package> --quiet` (its default library and binary
+   targets, no tests; it also works for a binary-only package). Test-only code
    left ungated in a non-test build (an ungated `#[tokio::test]` helper) passes
    every test run and review and fails only in the node-boot build.
 7. Governance, when `docs/agents/`, `tools/agents/`, `.claude/` or `AGENTS.md`
