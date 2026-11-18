@@ -15,7 +15,7 @@ game_platform_retain_test_logs() {
     value="$(sha256sum "$NODE_BOOT_SPELL_MANIFEST")"
     evidence_args+=(--evidence "${value%% *}")
   fi
-  for log in identity-build.log identity.log native_ticket_and_gateway_fail_closed.log native_device_rotation_replay.log native_ticket_gateway_admits.log; do
+  for log in portal-harness.log identity-build.log identity.log native_ticket_and_gateway_fail_closed.log native_device_rotation_replay.log native_ticket_gateway_admits.log; do
     [[ -f "$WORK/$log" ]] || continue
     python3 "$GAME_SOURCE/tools/qualification/game_platform/redact.py" \
       "$WORK/$log" "$NODE_BOOT_FAILURE_LOG_DIR/$log" "${evidence_args[@]}" || return 1
@@ -23,6 +23,11 @@ game_platform_retain_test_logs() {
 }
 game_platform_fail() {
   game_platform_retain_test_logs || set -- "$1" diagnostic_redaction_failed
+  # The node-boot shard captures stdout in qualification-client.log.
+  if [[ "$2" == harness_not_ready && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
+    && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" && -f "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log" ]]; then
+    cat "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log"
+  fi
   if [[ -n "${GAME_PLATFORM_RESULT_FILE:-}" ]]; then
     printf 'GAME_PLATFORM_RESULT=FAIL flow=%s reason=%s\n' "$1" "$2" > "$GAME_PLATFORM_RESULT_FILE"
   else
@@ -50,7 +55,6 @@ game_platform_cleanup() {
   # Preserve private logs before node_boot removes its work directory.
   if [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     [[ ! -f "$node_log" ]] || cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
-    [[ ! -f "$WORK/portal-harness.log" ]] || cp "$WORK/portal-harness.log" "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log"
   fi
   [[ -z "$GP_PG_CONTAINER" ]] || docker rm --force --volumes "$GP_PG_CONTAINER" >/dev/null 2>&1 || true
 }
