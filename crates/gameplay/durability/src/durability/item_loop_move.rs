@@ -39,6 +39,9 @@ pub use floor_assembly::FloorAssemblyTarget;
 mod house;
 mod seed_drop;
 mod subtree;
+mod tomb_basin;
+mod tomb_basin_progress;
+pub use tomb_basin::{TOMB_BASINS, TOMB_BASIN_COIN, TombBasinCommit, TombBasinRule, TombBasinTarget};
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};

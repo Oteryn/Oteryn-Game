@@ -22,6 +22,7 @@ mod house_container;
 mod map_pickup;
 mod map_sources;
 mod seed_drop;
+mod tomb_basin;
 
 use super::ComposedFreshAdmission;
 use super::connection::UseCommand;
@@ -753,7 +754,8 @@ pub(super) async fn committed_loop_move(
         .ok()?;
     // A committed Dreamer offering whose acknowledgement was lost publishes before the replay.
     if replay == LoopMoveReplay::Moved
-        && !dreamer_ring::reconcile(admission, fence.character_id, command).await
+        && (!dreamer_ring::reconcile(admission, fence.character_id, command).await
+            || !tomb_basin::reconcile(admission, fence.character_id, command).await)
     {
         return None;
     }
@@ -1010,6 +1012,30 @@ pub(super) async fn move_loop_item_with_house_capacity(
             ground.as_deref(),
         )
         .await;
+    let basin = if elemental_result.is_none()
+        && let LoopTarget::Ground(to) = request.target
+        && let Some(map) = admission.bundle_map()
+    {
+        tomb_basin::target(map, to)
+    } else {
+        None
+    };
+    let basin_result = match &basin {
+        Some(basin) => {
+            Box::pin(basin.commit(
+                admission,
+                &permit,
+                fence,
+                command_ref,
+                NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                &loop_request,
+            ))
+            .await
+        }
+        None => None,
+    };
+    let ordinary_basin_drop = basin.is_some() && basin_result.is_none();
+    let elemental_result = elemental_result.or(basin_result);
     let mut ring_opened = false;
     let ring_result = match (elemental_result.is_none(), ring_target.as_ref()) {
         (true, Some(prepared)) => {
@@ -1108,6 +1134,14 @@ pub(super) async fn move_loop_item_with_house_capacity(
             .is_some_and(|map| dreamer_ring::publish(map, prepared))
     {
         return LoopMoveResult::Unknown;
+    }
+    if ordinary_basin_drop
+        && committed
+            .as_ref()
+            .is_ok_and(|result| result.as_ref().is_ok_and(|r| !r.replayed))
+        && let (Some(basin), Some(map)) = (basin, admission.bundle_map())
+    {
+        basin.emit_poff(map);
     }
     // Consequence metadata is returned only after the physical transaction commits.
     // Replay and ordinary drops carry none, so neither can repeat source presentation.

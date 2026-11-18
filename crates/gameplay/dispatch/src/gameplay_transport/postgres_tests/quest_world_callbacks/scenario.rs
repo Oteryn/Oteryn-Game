@@ -63,6 +63,7 @@ fn scenario_case(
     let shared_gate = name.starts_with("l6-tomb-gate-");
     let shared_switch = name.starts_with("l6-tomb-switch-");
     let tomb_native = name.starts_with("l6-tomb-native-");
+    let tomb_basin = name.starts_with("tombs-basin-");
     let carried_step = name.starts_with("l6-tomb-carried-") || tomb_native;
     let mead = name == "l6/waterskin-of-mead";
     let spirit = name == "qengine-rewards-questpc4-spirit";
@@ -532,6 +533,12 @@ fn scenario_case(
         callback.teleport = None;
         callback.effects = Default::default();
     }
+    if tomb_basin {
+        callback.selector.position = Some(trigger);
+        callback.selector.unique = Some(9033);
+        callback.selector.action = None;
+        callback.selector.appearance = Some(2114);
+    }
     if carried_step {
         // Geometry supplies the exact source UID and both floor endpoints only.
         // Production callback selection and physical branch ownership are unchanged.
@@ -654,7 +661,14 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name.starts_with("qengine-rewards-rahemos-oasis-") {
+    let world = if tomb_basin {
+        world_with_objects(
+            &callback,
+            trigger,
+            &[(super::super::tombs_basin::ARRIVAL, 100)],
+            &[],
+        )?
+    } else if name.starts_with("qengine-rewards-rahemos-oasis-") {
         world_with_objects(
             &callback,
             trigger,
@@ -2695,6 +2709,10 @@ fn scenario_case(
                 trigger,
             ))
             .await?;
+        } else if tomb_basin {
+            Box::pin(super::super::tombs_basin::exercise(
+                &owner, &mut admitted, &h, fence, name.ends_with("-rollback"),
+            )).await?;
         } else if qengine_reward || shared_rewards {
             Box::pin(super::super::qengine_rewards::exercise(
                 &mut owner,
