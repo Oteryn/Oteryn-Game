@@ -100,11 +100,21 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
             let mut callback = callback()?;
             match scenario {
                 PhaseScenario::Cults { .. } => {}
-                PhaseScenario::DukeKrule => super::gravedg_lich_knights::configure_duke(&mut callback)?,
-                PhaseScenario::EarlOsam => super::gravedg_lich_knights::configure_osam(&mut callback)?,
+                PhaseScenario::DukeKrule => {
+                    super::gravedg_lich_knights::configure_duke(&mut callback)?
+                }
+                PhaseScenario::EarlOsam => {
+                    super::gravedg_lich_knights::configure_osam(&mut callback)?
+                }
                 PhaseScenario::Sirs => super::gravedg_lich_knights::configure(&mut callback)?,
                 PhaseScenario::Zelos => super::gravedg_zelos::configure(&mut callback)?,
             }
+            let sirs_catalogue = match scenario {
+                PhaseScenario::Sirs => {
+                    Some(super::gravedg_lich_knights::credit_catalogue(&callback)?)
+                }
+                _ => None,
+            };
             let trigger = Position {
                 x: 100,
                 y: 100,
@@ -185,12 +195,15 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
-            owner.quest_catalogue = Some(Arc::new(
-                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                    .map_err(debug)?
-                    .catalogue()
-                    .clone(),
-            ));
+            owner.quest_catalogue = Some(Arc::new(match sirs_catalogue {
+                Some(catalogue) => catalogue,
+                None => {
+                    oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                        .map_err(debug)?
+                        .catalogue()
+                        .clone()
+                }
+            }));
             assert!(
                 owner
                     .states
@@ -284,7 +297,9 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 for role in
                     oteryn_gameplay_encounters::bosses::phase_controller::cults::plan().roles
                 {
-                    if party_test { break; }
+                    if party_test {
+                        break;
+                    }
                     runtime.companion_policy(role.creature).map_err(|e| {
                         format!("production phase creature {}: {e:?}", role.creature)
                     })?;
@@ -334,23 +349,42 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 PhaseScenario::Cults { reenter } => reenter,
                 PhaseScenario::DukeKrule => {
                     return super::gravedg_lich_knights::exercise_duke(
-                        &owner, &admitted, second.ok_or("second admitted player")?,
-                    ).await;
+                        &owner,
+                        &admitted,
+                        second
+                            .and_then(|p| p.runtime_actor)
+                            .ok_or("second admitted player")?,
+                    )
+                    .await;
                 }
                 PhaseScenario::EarlOsam => {
                     return super::gravedg_lich_knights::exercise_osam(
-                        &owner, &admitted, second.ok_or("second admitted player")?,
-                    ).await;
+                        &owner,
+                        &admitted,
+                        second
+                            .and_then(|p| p.runtime_actor)
+                            .ok_or("second admitted player")?,
+                    )
+                    .await;
                 }
                 PhaseScenario::Sirs => {
                     return super::gravedg_lich_knights::exercise(
-                        &owner, &admitted, second.ok_or("second admitted player")?,
-                    ).await;
+                        &h,
+                        &owner,
+                        &admitted,
+                        &second.ok_or("second admitted player")?,
+                    )
+                    .await;
                 }
                 PhaseScenario::Zelos => {
                     return super::gravedg_zelos::exercise(
-                        &owner, &admitted, second.ok_or("second admitted player")?,
-                    ).await;
+                        &owner,
+                        &admitted,
+                        second
+                            .and_then(|p| p.runtime_actor)
+                            .ok_or("second admitted player")?,
+                    )
+                    .await;
                 }
             };
             assert_eq!(

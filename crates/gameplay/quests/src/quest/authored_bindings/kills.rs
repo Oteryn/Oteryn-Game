@@ -88,12 +88,16 @@ impl KillCounter {
                 .iter()
                 .filter(|monster| monster.creature == self.creature)
                 .count();
+            let zelos = matches!(
+                encounter.phase,
+                Some(crate::quest::world_callbacks::EncounterPhase::GraveDangerZelos { .. })
+            );
             if self.minimum != 0
                 || encounter.timing.is_some()
                 || encounter.players.is_empty()
-                || encounter.players.len() > 8
+                || encounter.players.len() > if zelos { 10 } else { 8 }
                 || encounter.monsters.is_empty()
-                || encounter.monsters.len() > 8
+                || encounter.monsters.len() > if zelos { 16 } else { 8 }
                 || i64::try_from(defenders) != Ok(self.maximum)
             {
                 return Err("authored encounter counter roster/bounds".into());
