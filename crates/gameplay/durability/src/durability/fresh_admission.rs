@@ -1638,6 +1638,43 @@ pub(super) fn encode_lifecycle(evidence: &AdmissionClaimLifecycleEvidenceV1) -> 
     encode_envelope(&writer.bytes, super::MAX_FRESH_OPERATION_BYTES)
 }
 
+/// Read the loss epoch from a historical terminal-release receipt for this session.
+#[cfg(feature = "test-support")]
+pub fn qualification_release_epoch(encoded: &str, session: [u8; 16]) -> Result<Option<u64>> {
+    let bytes = decode_envelope(encoded, super::MAX_FRESH_OPERATION_BYTES)?;
+    let mut reader = Reader::new(&bytes);
+    if reader.tag()? != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    reader.text()?; // Account
+    if reader.bytes::<16>()? != session {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    reader.take(3 * 16)?; // Initial Character, World and Channel
+    if reader.bytes::<16>()? != session {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    reader.take(3 * 8 + 16)?; // Initial generations and transport
+    if reader.tag()? != 2 {
+        return Ok(None);
+    }
+    reader.u64()?; // Current connection generation
+    if reader.boolean()? {
+        reader.take(16)?;
+    }
+    reader.take(16 + 8)?; // Character lease
+    if reader.boolean()? {
+        reader.take(2 * 16)?;
+    }
+    read_scope(&mut reader)?;
+    reader.u64()?; // Scope generation
+    if reader.boolean()? {
+        Ok(Some(reader.u64()?))
+    } else {
+        Ok(None)
+    }
+}
+
 fn lifecycle_key(evidence: &AdmissionClaimLifecycleEvidenceV1) -> Vec<u8> {
     let mut key = b"claim-lifecycle-v1".to_vec();
     key.extend_from_slice(

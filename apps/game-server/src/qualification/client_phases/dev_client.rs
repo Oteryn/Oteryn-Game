@@ -253,36 +253,80 @@ pub(super) async fn dev_client<'a>(
         .x
         .checked_sub(1)
         .map(|x| ActorPosition { x, ..before });
-    dev_client = client_disconnect_resume::recover(dev_client, clients, after).await?;
-
-    // Dropped here, closing the TLS stream the same silent way the join-only stage did.
-    drop(dev_client);
     let dev_client_session = *dev_client_snapshot.game_session_id.as_bytes();
+    complete_dev_client_continuity(
+        feature_result,
+        client_disconnect_resume::recover(dev_client, clients, after),
+        |resumed| wait_dev_client_release(url, dev_client_session, resumed),
+    )
+    .await
+}
+
+async fn complete_dev_client_continuity<T>(
+    features: TestResult,
+    recovery: impl Future<Output = TestResult<T>>,
+    release: impl AsyncFnOnce(bool) -> TestResult,
+) -> TestResult {
+    let recovery = recovery.await.map(drop);
+    let resumed = recovery.is_ok();
+    if let Err(error) = &recovery {
+        evidence(&format!("dev_client recovery=failed error={error}"));
+    }
+    let released = release(resumed).await;
+    if let Err(error) = &released {
+        evidence(&format!("dev_client release=failed error={error}"));
+    }
+    features.and(recovery).and(released)
+}
+
+#[tokio::test]
+async fn poisoned_recovery_preserves_feature_failure_and_waits() {
+    let waited = std::cell::Cell::new(false);
+    let result = complete_dev_client_continuity(
+        Err("feature protocol error".into()),
+        async { Err::<(), _>("session poisoned".into()) },
+        async |resumed| {
+            assert!(!resumed);
+            waited.set(true);
+            Ok(())
+        },
+    )
+    .await;
+    assert!(waited.get());
+    assert_eq!(
+        result.err().map(|error| error.to_string()).as_deref(),
+        Some("feature protocol error")
+    );
+}
+
+async fn wait_dev_client_release(url: &str, session: [u8; 16], resumed: bool) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-    loop {
-        if let Some((1, epoch, grace, _)) =
-            session_loss_row(url, dev_client_session, deadline).await?
-        {
-            if epoch != "2" || !(58..=62).contains(&grace) {
+    let epoch = loop {
+        let row = session_loss_row(url, session, deadline).await?;
+        if !resumed && terminal_after_grace(row.clone())? {
+            return Ok(());
+        }
+        if let Some((1, epoch, grace, _)) = row {
+            if (epoch != "2" && (resumed || epoch != "1")) || !(58..=62).contains(&grace) {
                 return Err(format!("dev_client loss epoch={epoch} grace={grace}").into());
             }
-            break;
+            break epoch;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("dev_client session never became reconnectable".into());
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
-    }
+    };
     let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
-    while !terminal_after_grace(session_loss_row(url, dev_client_session, deadline).await?)? {
+    while !terminal_after_grace_for_epoch(session_loss_row(url, session, deadline).await?, &epoch)?
+    {
         if tokio::time::Instant::now() >= deadline {
             return Err("dev_client session was not released after grace".into());
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
     evidence("dev_client released=terminal admissions=4");
-
-    feature_result
+    Ok(())
 }
 
 fn expect_initial_pushes(

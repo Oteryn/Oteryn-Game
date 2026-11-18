@@ -22,38 +22,83 @@ fn fresh_replay_requires_the_consumed_grant_refusal() -> TestResult {
     Ok(())
 }
 
-fn silent_close_proven(probes: &[u64], elapsed: Duration, interval: Duration, misses: u32) -> bool {
+fn silent_close_proven(
+    probes: &[u64],
+    timing: &ExchangeTiming,
+    interval: Duration,
+    misses: u32,
+) -> bool {
     probes.iter().copied().eq(1..=u64::from(misses))
-        && elapsed >= interval.saturating_mul(misses.saturating_add(1))
+        && timing.elapsed >= interval.saturating_mul(misses.saturating_add(1))
+        && timing
+            .after_last_probe
+            .is_some_and(|window| window >= interval.saturating_sub(Duration::from_millis(250)))
+}
+
+#[tokio::test(start_paused = true)]
+async fn silent_transport_gives_the_last_probe_a_response_window() -> TestResult {
+    async fn observe(delivery_ms: [u64; 3], closed_ms: u64) -> TestResult<bool> {
+        let (mut client, mut server) = tokio::io::duplex(512);
+        let read = read_raw_exchange(&mut client, Duration::from_secs(25));
+        let write = async move {
+            let start = tokio::time::Instant::now();
+            for (index, at) in delivery_ms.into_iter().enumerate() {
+                tokio::time::sleep_until(start + Duration::from_millis(at)).await;
+                server
+                    .write_all(&framed(&oteryn_protocol_oteryn::encode_liveness_probe(
+                        1,
+                        index as u64 + 1,
+                    )?))
+                    .await?;
+            }
+            tokio::time::sleep_until(start + Duration::from_millis(closed_ms)).await;
+            server.shutdown().await?;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        };
+        let (received, sent) = tokio::join!(read, write);
+        sent?;
+        let (reply, timing) = received?;
+        let Reply::Frames(frames) = reply else {
+            return Err("expected liveness probes".into());
+        };
+        let probes = frames
+            .iter()
+            .map(|frame| {
+                oteryn_protocol_oteryn::decode_liveness_probe(
+                    decode_wire_envelope(frame)?.payload(),
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(silent_close_proven(
+            &probes,
+            &timing,
+            Duration::from_secs(5),
+            3,
+        ))
+    }
+    assert!(!observe([5_000, 10_000, 20_000], 20_000).await?);
+    assert!(observe([5_800, 10_000, 15_000], 20_000).await?);
+    Ok(())
 }
 
 #[test]
 fn silent_transport_requires_unanswered_server_probes_and_elapsed_cadence() {
     let cadence = Duration::from_secs(5);
-    assert!(!silent_close_proven(
-        &[1, 2],
-        Duration::from_secs(20),
-        cadence,
-        3
-    ));
-    assert!(!silent_close_proven(
-        &[1, 2, 3],
-        Duration::from_secs(10),
-        cadence,
-        3
-    ));
-    assert!(!silent_close_proven(
-        &[1, 2, 3],
-        Duration::from_secs(15),
-        cadence,
-        3
-    ));
-    assert!(silent_close_proven(
-        &[1, 2, 3],
-        Duration::from_secs(20),
-        cadence,
-        3
-    ));
+    let proves = |probes: &[u64], elapsed| {
+        silent_close_proven(
+            probes,
+            &ExchangeTiming {
+                elapsed: Duration::from_secs(elapsed),
+                after_last_probe: Some(cadence),
+            },
+            cadence,
+            3,
+        )
+    };
+    assert!(!proves(&[1, 2], 20));
+    assert!(!proves(&[1, 2, 3], 10));
+    assert!(!proves(&[1, 2, 3], 15));
+    assert!(proves(&[1, 2, 3], 20));
 }
 
 pub(super) async fn admission(
@@ -268,15 +313,7 @@ pub(super) async fn concurrent_and_control_loss<'a>(
                 }
             }
             let liveness = crate::gameplay_transport::IDLE_LIVENESS;
-            if !silent_close_proven(
-                &probes,
-                elapsed.elapsed,
-                liveness.interval,
-                liveness.missed_limit,
-            ) || elapsed.after_first_probe.is_none_or(|observed| {
-                observed + Duration::from_millis(250)
-                    < liveness.interval.saturating_mul(liveness.missed_limit)
-            }) {
+            if !silent_close_proven(&probes, elapsed, liveness.interval, liveness.missed_limit) {
                 return Err(format!("server close did not follow the unanswered-probe cadence: {probes:?} elapsed={elapsed:?}").into());
             }
             concurrent.push(id);

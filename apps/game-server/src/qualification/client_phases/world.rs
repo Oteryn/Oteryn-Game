@@ -2489,6 +2489,19 @@ pub(super) async fn logout_retrying_busy_observed(
     }
 }
 
+pub(super) async fn logout_trade_character(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult {
+    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!(
+            "trade logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 pub(super) async fn journeys(
     clients: &SeamClients<'_>,
     packet_clients: &SeamClients<'_>,
@@ -4865,7 +4878,15 @@ pub(super) async fn journeys(
     .fetch_one(&mut connection)
     .await?;
     let mut coverage = client_vip::add(&mut client, &buddy).await;
-    client_player_trade::pair(&mut client, clients).await?;
+    if let Err(error) = client_player_trade::pair(&mut client, clients).await {
+        let logout = logout_trade_character(&mut client).await;
+        drop(client);
+        return finish_after_terminal_release(
+            Err::<(), _>(error).and(logout),
+            wait_character_released(clients, 1),
+        )
+        .await;
+    }
     coverage = coverage.and(client_prey::prey(&mut client).await);
     coverage = coverage.and(client_task_board::task_board(&mut client).await);
     coverage = coverage.and(client_imbue::imbue(&mut client).await);
@@ -5082,7 +5103,16 @@ async fn profile_journey(
     let combat =
         client_combat_journey::combat_journey(&mut client, world, spawns, clients.url).await;
     let outside: TestResult = async {
-        travel_to_spawn_target(&mut client, world, spawns, "oteryn:creature.rat").await?;
+        let from = tile(client.world_spatial().actor_position)?;
+        let path = reach_route(&mut client, world, from, |at| {
+            outside_protection_zone(world, at)
+        })
+        .await?
+        .map_err(|error| format!("profile has no route outside protection: {error}"))?;
+        walk(&mut client, world, &path).await?;
+        if !outside_protection_zone(world, tile(client.world_spatial().actor_position)?) {
+            return Err("profile protection comparison did not reach a non-PZ tile".into());
+        }
         client_spell_journey::protection_zone_probe(
             &mut client,
             ProtectionProbe::Outside,
@@ -5365,6 +5395,104 @@ async fn travel_to_spawn(
         .map(|_| ())
 }
 
+fn spawn_adjacent(at: TilePos, point: TilePos) -> bool {
+    at.floor == point.floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
+}
+
+fn spawn_points_near(points: &BTreeSet<TilePos>, at: TilePos) -> bool {
+    (-1..=1).any(|dx| {
+        (-1..=1).any(|dy| {
+            at.x.checked_add_signed(dx)
+                .zip(at.y.checked_add_signed(dy))
+                .is_some_and(|(x, y)| points.contains(&TilePos { x, y, ..at }))
+        })
+    })
+}
+
+fn outside_protection_zone(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
+        && world.enterable(at)
+}
+
+async fn seek_live_spawn<T>(
+    mut remaining: BTreeSet<TilePos>,
+    mut observe: impl AsyncFnMut(&BTreeSet<TilePos>) -> TestResult<Option<(TilePos, Option<T>)>>,
+) -> TestResult<Option<T>> {
+    while !remaining.is_empty() {
+        let Some((at, live)) = observe(&remaining).await? else {
+            return Ok(None);
+        };
+        if live.is_some() {
+            return Ok(live);
+        }
+        remaining.retain(|point| !spawn_adjacent(at, *point));
+    }
+    Ok(None)
+}
+
+#[tokio::test]
+async fn lethal_modes_do_not_wait_on_an_exhausted_authored_spawn() -> TestResult {
+    let depleted = TilePos {
+        x: 100,
+        y: 100,
+        floor: -7,
+    };
+    let available = TilePos { x: 110, ..depleted };
+    let mut visits = Vec::new();
+    let live = seek_live_spawn(BTreeSet::from([depleted, available]), async |remaining| {
+        let at = *remaining.first().ok_or("missing available point")?;
+        visits.push(at);
+        Ok(Some((at, (at == available).then_some(42))))
+    })
+    .await?;
+    assert_eq!(live, Some(42));
+    assert_eq!(visits, [depleted, available]);
+    Ok(())
+}
+
+async fn wait_visible_species(
+    client: &mut oteryn_dev_client::DevClientSession,
+    species: &str,
+    budget: Duration,
+) -> TestResult<Option<oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity>> {
+    let deadline = tokio::time::Instant::now() + budget;
+    loop {
+        let here = client.world_spatial().actor_position;
+        let target = client
+            .world_entities()
+            .and_then(|entities| {
+                entities
+                    .iter()
+                    .filter(|entry| {
+                        client_hunt::matches_species(
+                            entry.kind,
+                            entry
+                                .display_name
+                                .as_ref()
+                                .and_then(|name| name.as_str().ok()),
+                            species,
+                        ) && entry.position.floor == here.floor
+                    })
+                    .min_by_key(|entry| {
+                        entry
+                            .position
+                            .x
+                            .abs_diff(here.x)
+                            .max(entry.position.y.abs_diff(here.y))
+                    })
+            })
+            .copied();
+        if target.is_some() || tokio::time::Instant::now() >= deadline {
+            return Ok(target);
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+}
+
 pub(super) async fn travel_to_spawn_target(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -5372,7 +5500,6 @@ pub(super) async fn travel_to_spawn_target(
     creature: &str,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     let name = creature_display_name(creature)?;
-    let from = tile(client.world_spatial().actor_position)?;
     let points: Vec<_> = spawns
         .sources
         .iter()
@@ -5395,82 +5522,61 @@ pub(super) async fn travel_to_spawn_target(
     if authored.is_empty() {
         return Err(format!("the served bundle authors no {creature} spawn point").into());
     }
-    let path = reach_route(client, world, from, |at| {
-        !world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_none_or(|tile| tile.protection_zone())
-            && (-1i16..=1).any(|dx| {
-                (-1i16..=1).any(|dy| {
-                    at.x.checked_add_signed(dx)
-                        .zip(at.y.checked_add_signed(dy))
-                        .is_some_and(|(x, y)| {
-                            authored.contains(&TilePos {
-                                x,
-                                y,
-                                floor: at.floor,
-                            })
-                        })
-                })
+    let respawn = points
+        .iter()
+        .map(|(_, point)| point.respawn_ms)
+        .max()
+        .unwrap_or(0);
+    let search_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    let mut approached = false;
+    let first = client_readmission::within_retry_budget(
+        search_deadline,
+        seek_live_spawn(authored, async |remaining| {
+            let from = tile(client.world_spatial().actor_position)?;
+            let Ok(path) = reach_route(client, world, from, |at| {
+                outside_protection_zone(world, at) && spawn_points_near(remaining, at)
             })
-    })
-    .await?
-    .map_err(|searched| {
-        format!(
-            "no walkable route from {from:?} to any of {} authored {creature} spawn points \
-             (searched {searched} tiles, cap {REACH_SEARCH_NODES})",
-            authored.len()
-        )
-    })?;
-    walk(client, world, &path).await?;
-    let live_deadline = tokio::time::Instant::now() + Duration::from_secs(65);
+            .await?
+            else {
+                return Ok(None);
+            };
+            walk(client, world, &path).await?;
+            let at = tile(client.world_spatial().actor_position)?;
+            if !spawn_points_near(remaining, at) {
+                return Err("spawn approach ended away from the planned point".into());
+            }
+            approached = true;
+            let target = wait_visible_species(client, &name, Duration::from_secs(2)).await?;
+            Ok(Some((at, target)))
+        }),
+    )
+    .await?;
+    let respawn_wait =
+        Duration::from_millis(u64::from(respawn)).saturating_add(Duration::from_secs(5));
+    let mut target = match first {
+        Some(target) => target,
+        None if approached => {
+            wait_visible_species(client, &name, respawn_wait.min(Duration::from_secs(120)))
+                .await?
+                .ok_or_else(|| {
+                    format!("no visible {name} at the reachable spawn points or after respawn")
+                })?
+        }
+        None => return Err(format!("no walkable route to an authored {name} spawn point").into()),
+    };
     for _ in 0..32 {
-        let target = loop {
-            let here = client.world_spatial().actor_position;
-            let target = client
-                .world_entities()
-                .and_then(|entities| {
-                    entities
-                        .iter()
-                        .filter(|entry| {
-                            client_hunt::matches_species(
-                                entry.kind,
-                                entry
-                                    .display_name
-                                    .as_ref()
-                                    .and_then(|name| name.as_str().ok()),
-                                &name,
-                            ) && entry.position.floor == here.floor
-                        })
-                        .min_by_key(|entry| {
-                            entry
-                                .position
-                                .x
-                                .abs_diff(here.x)
-                                .max(entry.position.y.abs_diff(here.y))
-                        })
-                })
-                .copied();
-            if let Some(target) = target {
-                break target;
-            }
-            if tokio::time::Instant::now() >= live_deadline {
-                return Err(format!("spawn route has no visible {name} before deadline").into());
-            }
-            client.service_liveness(Duration::from_millis(100)).await?;
-            client.take_events();
-        };
         let here = client.world_spatial().actor_position;
         let identity = target.entity;
-        let target = tile(target.position)?;
-        let path = route(world, tile(here)?, |at| {
-            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
-        })
-        .ok_or("visible creature unreachable")?;
+        let position = tile(target.position)?;
+        let path = route(world, tile(here)?, |at| spawn_adjacent(at, position))
+            .ok_or("visible creature unreachable")?;
         let Some(direction) = path.first() else {
             return Ok(identity);
         };
         walk(client, world, &[*direction]).await?;
+        target = wait_visible_species(client, &name, Duration::from_secs(2))
+            .await?
+            .ok_or_else(|| format!("{name} disappeared during the approach"))?;
     }
     Err("could not approach a live creature within the route budget".into())
 }

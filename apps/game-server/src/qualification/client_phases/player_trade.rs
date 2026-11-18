@@ -104,9 +104,6 @@ pub(super) async fn pair(
     client: &mut oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
 ) -> TestResult<()> {
-    use oteryn_dev_client::{
-        client_runtime::player_trade as runtime, client_ui::player_trade as ui,
-    };
     let Some(item) = client
         .inventory()
         .and_then(|inventory| inventory.entries.first())
@@ -114,19 +111,30 @@ pub(super) async fn pair(
     else {
         return Err("core trade has no carried offer item".into());
     };
-    let mut partner = client_world::connect_character(clients, 0x74, 0).await?;
-    let Some(counter) = partner
+    let partner = client_world::connect_character(clients, 0x74, 0).await?;
+    with_trade_partner(
+        partner,
+        async |partner| exchange_pair(client, partner, clients.url, item).await,
+        client_world::logout_trade_character,
+        client_world::wait_character_released(clients, 0),
+    )
+    .await
+}
+
+async fn exchange_pair(
+    client: &mut oteryn_dev_client::DevClientSession,
+    partner: &mut oteryn_dev_client::DevClientSession,
+    url: &str,
+    item: ItemEntry,
+) -> TestResult {
+    use oteryn_dev_client::{
+        client_runtime::player_trade as runtime, client_ui::player_trade as ui,
+    };
+    let counter = partner
         .inventory()
         .and_then(|inventory| inventory.entries.first())
         .copied()
-    else {
-        let (result, logout, attempts, busy_timed_out) =
-            client_world::logout_retrying_busy(&mut partner).await?;
-        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("trade partner logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
-        }
-        return Err("core trade partner has no carried counter-offer item".into());
-    };
+        .ok_or("core trade partner has no carried counter-offer item")?;
     let own = client
         .world_entities()
         .and_then(|entities| {
@@ -253,16 +261,55 @@ pub(super) async fn pair(
             counter,
         ),
     ];
-    prove_durable_exchange(clients.url, accepts, offered_instances).await?;
+    prove_durable_exchange(url, accepts, offered_instances).await?;
     evidence(
         "mechanic=player_trade completion=committed offered_handles=removed peer_stacks=received durable_item_custody=swapped",
     );
-    let (result, logout, attempts, busy_timed_out) =
-        client_world::logout_retrying_busy(&mut partner).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("trade partner logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
-    }
     Ok(())
+}
+
+async fn with_trade_partner<C>(
+    mut partner: C,
+    body: impl AsyncFnOnce(&mut C) -> TestResult,
+    logout: impl AsyncFnOnce(&mut C) -> TestResult,
+    release: impl Future<Output = TestResult>,
+) -> TestResult {
+    let trade = body(&mut partner).await;
+    let logged_out = logout(&mut partner).await;
+    drop(partner);
+    finish_after_terminal_release(trade.and(logged_out), release).await
+}
+
+#[tokio::test]
+async fn failed_trade_observation_still_releases_partner() {
+    struct Partner<'a>(&'a std::cell::Cell<bool>);
+    impl Drop for Partner<'_> {
+        fn drop(&mut self) {
+            self.0.set(true);
+        }
+    }
+    let dropped = std::cell::Cell::new(false);
+    let logged_out = std::cell::Cell::new(false);
+    let released = std::cell::Cell::new(false);
+    let result = with_trade_partner(
+        Partner(&dropped),
+        async |_| Err("item observation error".into()),
+        async |_| {
+            logged_out.set(true);
+            Err("invalid frame".into())
+        },
+        async {
+            assert!(dropped.get());
+            released.set(true);
+            Ok(())
+        },
+    )
+    .await;
+    assert!(logged_out.get() && released.get());
+    assert_eq!(
+        result.err().map(|error| error.to_string()).as_deref(),
+        Some("item observation error")
+    );
 }
 
 async fn prove_durable_exchange(

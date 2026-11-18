@@ -526,14 +526,7 @@ async fn prepare_items(
         let candidate = qualification_build::retry_holder(
             Some(root),
             deadline,
-            |error| {
-                matches!(
-                    error,
-                    crate::durability::reward_claim_mint::RewardClaimMintError::Unavailable(
-                        DurabilityError::RootUnavailable
-                    )
-                )
-            },
+            fixture_item_holder_busy,
             async || {
                 root.freeze_reward_claim_mint(authority, proof, fence, request.clone())
                     .await
@@ -546,11 +539,13 @@ async fn prepare_items(
             Err(error) => return Err(format!("qualification Item reserve: {error:?}").into()),
         };
         // A frozen, already committed reservation needs no further work unit.
-        if root
-            .read_committed_reward_claim_mint(authority, &candidate)
-            .await
-            .map_err(|error| format!("qualification Item receipt: {error:?}"))?
-            .is_some()
+        if read_fixture_item_receipt(Some(root), deadline, async || {
+            root.read_committed_reward_claim_mint(authority, &candidate)
+                .await
+        })
+        .await
+        .map_err(|error| format!("qualification Item receipt: {error:?}"))?
+        .is_some()
         {
             continue;
         }
@@ -561,9 +556,51 @@ async fn prepare_items(
     Ok(())
 }
 
+fn fixture_item_holder_busy(
+    error: &crate::durability::reward_claim_mint::RewardClaimMintError,
+) -> bool {
+    matches!(
+        error,
+        crate::durability::reward_claim_mint::RewardClaimMintError::Unavailable(
+            DurabilityError::RootUnavailable
+        )
+    )
+}
+
+async fn read_fixture_item_receipt<T>(
+    root: Option<&DurabilityRoot>,
+    deadline: tokio::time::Instant,
+    read: impl AsyncFnMut() -> Result<T, crate::durability::reward_claim_mint::RewardClaimMintError>,
+) -> Result<T, crate::durability::reward_claim_mint::RewardClaimMintError> {
+    qualification_build::retry_holder(root, deadline, fixture_item_holder_busy, read).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn committed_receipt_waits_for_a_busy_holder() {
+        use crate::durability::reward_claim_mint::RewardClaimMintError;
+        let mut attempts = 0;
+        let receipt = read_fixture_item_receipt(
+            None,
+            tokio::time::Instant::now() + Duration::from_secs(1),
+            async || {
+                attempts += 1;
+                if attempts == 1 {
+                    Err(RewardClaimMintError::Unavailable(
+                        DurabilityError::RootUnavailable,
+                    ))
+                } else {
+                    Ok(Some(9))
+                }
+            },
+        )
+        .await;
+        assert!(matches!(receipt, Ok(Some(9))));
+        assert_eq!(attempts, 2);
+    }
 
     fn assert_early_warning(reason: EarlyRefusal, expected: &str) {
         let line = early_refusal_warning(reason);

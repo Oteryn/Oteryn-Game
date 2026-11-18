@@ -873,7 +873,7 @@ enum Reply {
 #[derive(Debug)]
 struct ExchangeTiming {
     elapsed: Duration,
-    after_first_probe: Option<Duration>,
+    after_last_probe: Option<Duration>,
 }
 
 async fn exchange(
@@ -908,24 +908,30 @@ async fn exchange_with_write_end(
         Ok::<_, Box<dyn std::error::Error>>(stream)
     })
     .await??;
+    read_raw_exchange(&mut stream, read_budget).await
+}
+
+async fn read_raw_exchange(
+    stream: &mut (impl tokio::io::AsyncRead + Unpin),
+    read_budget: Duration,
+) -> TestResult<(Reply, ExchangeTiming)> {
     let mut output = Vec::new();
     let read_started = tokio::time::Instant::now();
     tokio::time::timeout(read_budget, async {
         let mut cursor = 0;
-        let mut first_probe = None;
-        while read_exchange_chunk(&mut stream, &mut output).await? {
-            while first_probe.is_none()
-                && let Some(length) = output
-                    .get(cursor..cursor + 4)
-                    .and_then(|bytes| bytes.try_into().ok())
-                    .map(u32::from_be_bytes)
+        let mut last_probe = None;
+        while read_exchange_chunk(stream, &mut output).await? {
+            while let Some(length) = output
+                .get(cursor..cursor + 4)
+                .and_then(|bytes| bytes.try_into().ok())
+                .map(u32::from_be_bytes)
                 && let Some(body) = output.get(cursor + 4..cursor + 4 + length as usize)
             {
                 cursor += 4 + length as usize;
                 if decode_wire_envelope(body)
                     .is_ok_and(|frame| frame.message_type() == MessageType::LivenessProbe)
                 {
-                    first_probe = Some(tokio::time::Instant::now());
+                    last_probe = Some(tokio::time::Instant::now());
                 }
             }
         }
@@ -933,7 +939,7 @@ async fn exchange_with_write_end(
             frames(&output)?,
             ExchangeTiming {
                 elapsed: read_started.elapsed(),
-                after_first_probe: first_probe.map(|probe| probe.elapsed()),
+                after_last_probe: last_probe.map(|probe| probe.elapsed()),
             },
         ))
     })
@@ -2053,6 +2059,9 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         SERVED_CONTENT_REVISION,
     )
     .map_err(|error| format!("quest catalogue: {error:?}"))?;
+    let spell_lane = spell_input
+        .as_ref()
+        .map(|_| crate::durability::spell_owner_commit::SpellLane::for_scope(scope));
     let serve = serve_gameplay(
         &listener,
         GameplayListenerConfig {
@@ -2065,6 +2074,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             entry_deadline: Duration::from_secs(20),
         },
         GameplaySeamOwners {
+            spell_lane: spell_lane.clone(),
             platform_enforcement_enabled: false,
             soulpit_template: None,
         cast: None,
@@ -2142,7 +2152,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         recovery: &recovery_signing,
     };
     let clients = async {
-        if spell_input.is_some() {
+        if let Some(spell_lane) = spell_lane {
             seam_spell_clients(
                 client_config,
                 &root,
@@ -2155,6 +2165,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
                     .ok_or("spell scenario has no active qualified content")?,
                 &room,
                 &runtime_url,
+                &spell_lane,
             )
             .await
         } else {
@@ -2218,6 +2229,7 @@ async fn seam_spell_clients(
     native: &crate::content::native_gameplay::NativeGameplayState,
     room: &crate::content::QualifiedNativeEntryRoom,
     runtime_url: &str,
+    spell_lane: &crate::durability::spell_owner_commit::SpellLane,
 ) -> TestResult {
     let character = config.characters[1];
     let account = &config.accounts[1];
@@ -2555,10 +2567,10 @@ async fn seam_spell_clients(
             if !runtime_reader {
                 return Err("wild spawn collision proof requires actual runtime role".into());
             }
-            crate::gameplay_transport::qualification_observation::enable();
-            let permit = wild_spawn::acquire_qualification_scope_lane(live_runtime)
+            let permit = spell_lane
+                .acquire()
                 .await
-                .map_err(|error| format!("qualification spawn lane: {error:?}"))?;
+                .map_err(|_| "qualification spawn lane is awaiting install")?;
             let tx = sql.begin().await?;
             let rat = wild_spawn::realize_rat_in_transaction(
                 tx,
@@ -3219,6 +3231,59 @@ fn qualification_grace_expiry_requires_a_nonpremature_release_receipt() -> TestR
     Ok(())
 }
 
+fn release_offset_for_loss(
+    session: [u8; 16],
+    epoch: &str,
+    receipt: Option<&str>,
+    offset: Option<i64>,
+) -> TestResult<Option<i64>> {
+    let (Some(receipt), Some(offset)) = (receipt, offset) else {
+        return Ok(None);
+    };
+    let recorded =
+        crate::durability::fresh_admission::qualification_release_epoch(receipt, session)
+            .map_err(|error| format!("invalid terminal release receipt: {error:?}"))?;
+    Ok(recorded
+        .filter(|recorded| epoch.parse() == Ok(*recorded))
+        .map(|_| offset))
+}
+
+#[test]
+fn stale_payload_cannot_prove_latest_epoch() -> TestResult {
+    use base64::Engine;
+    let session = v7(1, 1);
+    let envelope = |receipt_epoch: u64| {
+        let mut bytes = vec![1];
+        bytes.extend_from_slice(&1_u64.to_be_bytes());
+        bytes.push(b'a');
+        for id in [session, v7(1, 2), v7(1, 3), v7(1, 4), session] {
+            bytes.extend_from_slice(&id);
+        }
+        bytes.extend_from_slice(&[0; 3 * 8 + 16]);
+        bytes.push(2);
+        bytes.extend_from_slice(&3_u64.to_be_bytes());
+        bytes.push(0);
+        bytes.extend_from_slice(&[0; 16 + 8]);
+        bytes.push(0);
+        bytes.push(1);
+        bytes.extend_from_slice(&v7(1, 3));
+        bytes.extend_from_slice(&v7(1, 4));
+        bytes.extend_from_slice(&1_u64.to_be_bytes());
+        bytes.push(1);
+        bytes.extend_from_slice(&receipt_epoch.to_be_bytes());
+        let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes);
+        format!(r#"{{"version":1,"payload":"{payload}"}}"#)
+    };
+    let observed = |receipt_epoch| -> TestResult<Option<SessionLossRow>> {
+        let offset =
+            release_offset_for_loss(session, "3", Some(&envelope(receipt_epoch)), Some(0))?;
+        Ok(Some((3, "3".into(), 60, offset)))
+    };
+    assert!(terminal_after_grace_for_epoch(observed(2)?, "3").is_err());
+    assert!(terminal_after_grace_for_epoch(observed(3)?, "3")?);
+    Ok(())
+}
+
 /// Durable session state, current loss epoch and grace seconds counted from that loss's decision.
 async fn session_loss_row(
     url: &str,
@@ -3227,10 +3292,17 @@ async fn session_loss_row(
 ) -> TestResult<Option<SessionLossRow>> {
     within_database_deadline(deadline, async {
         let mut connection = sqlx::PgConnection::connect(url).await?;
-        type RawLossRow = (i16, Option<String>, Option<i64>, Option<i64>);
+        type RawLossRow = (
+            i16,
+            Option<String>,
+            Option<i64>,
+            Option<i64>,
+            Option<String>,
+        );
         let row: Option<RawLossRow> = sqlx::query_as(
             "SELECT s.session_state, s.control_loss_epoch::text, \
-         s.original_grace_deadline - r.decided_at, release.decided_at - s.original_grace_deadline \
+         s.original_grace_deadline - r.decided_at, release.decided_at - s.original_grace_deadline, \
+         CASE WHEN octet_length(release.operation_json) <= 65536 THEN release.operation_json END \
          FROM game_durability_reconnect_sessions s \
          LEFT JOIN game_durability_admission_lifecycle_receipts r \
            ON r.operation_key = 'owning-loss-v1'::bytea || uuid_send(s.game_session_id) \
@@ -3244,14 +3316,12 @@ async fn session_loss_row(
         .fetch_optional(&mut connection)
         .await?;
         connection.close().await?;
-        Ok(row.map(|(state, epoch, grace, offset)| {
-            (
-                state,
-                epoch.unwrap_or_default(),
-                grace.unwrap_or(-1),
-                offset,
-            )
-        }))
+        row.map(|(state, epoch, grace, offset, receipt)| {
+            let epoch = epoch.unwrap_or_default();
+            let offset = release_offset_for_loss(session, &epoch, receipt.as_deref(), offset)?;
+            Ok((state, epoch, grace.unwrap_or(-1), offset))
+        })
+        .transpose()
     })
     .await
 }

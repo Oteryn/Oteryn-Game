@@ -3912,6 +3912,7 @@ async fn boot_and_serve(
         config.store_purchases.as_str()
     );
     let owners = GameplaySeamOwners {
+        spell_lane: None,
         platform_enforcement_enabled: enforcement_clients.is_some(),
         cast,
         activity_templates: &activity_templates,
