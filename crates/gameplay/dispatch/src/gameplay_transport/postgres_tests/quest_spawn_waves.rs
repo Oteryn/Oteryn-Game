@@ -80,6 +80,16 @@ fn quest_step_admits_guarded_survival_trial_and_credits_at_deadline() -> TestRes
 }
 
 #[test]
+fn quest_station_step_starts_waves_without_relocating_staged_players() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-station-step", move || {
+        scenario(admin, Case::Stations)
+    })
+}
+
+#[test]
 fn quest_wave_victory_requires_the_terminal_spawn_and_uses_reward_egress() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -105,6 +115,7 @@ enum Case {
     Waves,
     Victory,
     SurvivalStep,
+    Stations,
     EarthStep,
 }
 
@@ -183,11 +194,9 @@ fn scenario(admin: String, case: Case) -> TestResult {
                     .collect(),
             }),
         });
-        if matches!(case, Case::SurvivalStep) {
-            // Crystal movement_minotaur_boss.lua:7-15,22-40. Enter from the
-            // trigger, wait without spawning a wave, then settle survivor credit.
+        if matches!(case, Case::SurvivalStep | Case::Stations) {
             callback.trigger = Trigger::StepIn;
-            callback.return_on_failure = true;
+            callback.return_on_failure = matches!(case, Case::SurvivalStep);
             callback.storage = initial_storage
                 .into_iter()
                 .map(|storage| Storage {
@@ -198,13 +207,23 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 })
                 .collect();
             let room = callback.effects.encounter.as_mut().ok_or("fixture room")?;
-            room.players = vec![EncounterPlayer {
-                from: TRIGGER,
-                to: LANDING,
-            }];
             let wave = room.wave_run.as_mut().ok_or("fixture wave run")?;
             wave.member_guard = None;
-            wave.waves.clear();
+            if matches!(case, Case::Stations) {
+                // Crystal movements_click.lua:84-117 activates at the stations;
+                // players later cross into the room by their own movement.
+                room.players = [TRIGGER, PEER_START].map(|position| EncounterPlayer {
+                    from: position,
+                    to: position,
+                }).into();
+                wave.stay_at_stations = true;
+                wave.eject_room = true;
+            } else {
+                // Crystal movement_minotaur_boss.lua:7-15,22-40 decrees a
+                // survival deadline without summoning any timed waves.
+                room.players = vec![EncounterPlayer { from: TRIGGER, to: LANDING }];
+                wave.waves.clear();
+            }
         }
         if matches!(case, Case::EarthStep) {
             // Crystal movements_area_damage.lua:3-16. The fixture forces a
@@ -284,7 +303,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        if matches!(case, Case::Waves | Case::Victory | Case::SurvivalStep) {
+        if matches!(case, Case::Waves | Case::Victory | Case::SurvivalStep | Case::Stations) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback)?));
         } else if matches!(case, Case::EarthStep) {
             assert!(
@@ -338,6 +357,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
                     .await?
             }
             Case::SurvivalStep => survival_step_scenario(&owner, &mut admitted, deps.actor).await?,
+            Case::Stations => stations_scenario(&h, &owner, &mut admitted, deps.actor).await?,
             Case::Periodic => periodic_scenario(&owner).await?,
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
         }
@@ -660,6 +680,52 @@ async fn survival_step_scenario(
     admitted: &mut AdmittedSession,
     player: ExactActorRef,
 ) -> TestResult {
+    guarded_wave_step(owner, admitted).await?;
+    assert_eq!(position(owner, player).await?, local(LANDING));
+    advance(owner, 9_999).await;
+    assert_eq!(position(owner, player).await?, local(LANDING));
+    assert!(creatures(owner).await?.is_empty());
+    advance(owner, 1).await;
+    assert_eq!(position(owner, player).await?, local(EXIT));
+    tokio::time::resume();
+
+    let character = admitted.item_fence.ok_or("trial item fence")?.character_id;
+    owner.drain_quest_encounter_deadlines().await;
+    let state = owner
+        .root
+        .read_character_quest_state(owner.character, character)
+        .await
+        .map_err(debug)?;
+    assert_eq!(state.tracks().get(TRACK), Some(&1));
+    Ok(())
+}
+
+async fn stations_scenario(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    player: ExactActorRef,
+) -> TestResult {
+    let peer = stage_peer(h, owner, admitted).await?.runtime_actor.ok_or("staged peer")?;
+    guarded_wave_step(owner, admitted).await?;
+    assert_eq!(position(owner, player).await?, local(TRIGGER));
+    assert_eq!(position(owner, peer).await?, local(PEER_START));
+    advance(owner, 999).await;
+    assert!(creatures(owner).await?.is_empty());
+    advance(owner, 1).await;
+    assert_eq!(creatures(owner).await?.len(), 1);
+    advance(owner, 9_000).await;
+    assert!(creatures(owner).await?.is_empty());
+    assert_eq!(position(owner, player).await?, local(TRIGGER));
+    assert_eq!(position(owner, peer).await?, local(PEER_START));
+    tokio::time::resume();
+    Ok(())
+}
+
+async fn guarded_wave_step(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{
         StepDirection, StepDisposition, decode_step_result, encode_step_intent,
     };
@@ -687,22 +753,6 @@ async fn survival_step_scenario(
         decode_step_result(&reply?).map_err(debug)?,
         StepDisposition::Moved
     );
-    assert_eq!(position(owner, player).await?, local(LANDING));
-    advance(owner, 9_999).await;
-    assert_eq!(position(owner, player).await?, local(LANDING));
-    assert!(creatures(owner).await?.is_empty());
-    advance(owner, 1).await;
-    assert_eq!(position(owner, player).await?, local(EXIT));
-    tokio::time::resume();
-
-    let character = admitted.item_fence.ok_or("trial item fence")?.character_id;
-    owner.drain_quest_encounter_deadlines().await;
-    let state = owner
-        .root
-        .read_character_quest_state(owner.character, character)
-        .await
-        .map_err(debug)?;
-    assert_eq!(state.tracks().get(TRACK), Some(&1));
     Ok(())
 }
 
