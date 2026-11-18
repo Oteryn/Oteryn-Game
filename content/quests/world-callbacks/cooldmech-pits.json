@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/cooldmech/shrine-north",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32791,
+          "y": 32330,
+          "floor": -10
+        },
+        "unique": 2001,
+        "action": null,
+        "appearance": 599,
+        "native": {
+          "position": {
+            "x": 32791,
+            "y": 32330,
+            "floor": -10
+          },
+          "ordinal": 0,
+          "appearance": 599
+        }
+      },
+      "admission": {
+        "premium": true
+      },
+      "requires_world_admission": true,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32791,
+        "y": 32327,
+        "floor": -10
+      },
+      "effects": {
+        "scripted_teleport": true,
+        "teleport_effect": 10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/pits-of-inferno/shrine-crossed",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/pits-of-inferno/shrine-crossed": 0
+      },
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i2836",
+          "count": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "Sorry, not possible.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:1-27",
+        "content/world/placements/region-z10-x128-y126.b3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cooldmech/shrine-south",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32791,
+          "y": 32328,
+          "floor": -10
+        },
+        "unique": 2000,
+        "action": null,
+        "appearance": 599,
+        "native": {
+          "position": {
+            "x": 32791,
+            "y": 32328,
+            "floor": -10
+          },
+          "ordinal": 0,
+          "appearance": 599
+        }
+      },
+      "admission": {
+        "premium": true
+      },
+      "requires_world_admission": true,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32791,
+        "y": 32331,
+        "floor": -10
+      },
+      "effects": {
+        "scripted_teleport": true,
+        "teleport_effect": 10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/pits-of-inferno/shrine-crossed",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/pits-of-inferno/shrine-crossed": 0
+      },
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i2836",
+          "count": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "Sorry, not possible.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:1-27",
+        "content/world/placements/region-z10-x128-y126.b3"
+      ]
+    }
+  ]
+}

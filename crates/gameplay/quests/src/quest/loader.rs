@@ -247,6 +247,7 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::world_callbacks::cooldmech_pits::retain_predecessor(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -636,6 +637,7 @@ mod tests {
             crate::quest::world_callbacks::EMBEDDED,
             // QMECH source cohorts retain their separate registration owners.
             include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
+            include_str!("../../../../../content/quests/world-callbacks/cooldmech-pits.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"),

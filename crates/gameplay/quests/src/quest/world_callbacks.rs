@@ -45,6 +45,7 @@ mod clear_area;
 pub use clear_area::ClearArea;
 mod clock;
 mod completed_quests;
+pub(super) mod cooldmech_pits;
 mod counter_initials;
 #[cfg(test)]
 mod counter_initials_tests;
@@ -676,6 +677,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     )?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/children-grease.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/cooldmech-pits.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m39-stories.json"
