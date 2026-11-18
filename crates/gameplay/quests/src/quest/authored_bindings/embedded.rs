@@ -67,6 +67,7 @@ struct Recipe {
     claim_only_pending: bool,
     minimum_level: Option<u32>,
     requires_premium: Option<bool>,
+    replaces_unknown_premium: bool,
     prerequisites: Option<Vec<String>>,
     repeat: Option<String>,
 }
@@ -140,7 +141,7 @@ impl RecipeEvidence {
                     )
                 ) && !(selected.original_source_gaps
                     && entry["code"].as_str() == Some("reported_source_gap"))
-                    && !selected.resolves_original_level(entry)
+                    && !selected.resolves_original_actor_requirement(entry)
             });
             // A missing legacy delivery owner must not prevent a safe first step.
             // Every other data hold remains authoritative, as do nontrivial actor gates.
@@ -195,6 +196,10 @@ impl RecipeEvidence {
                     claim_only_pending,
                     minimum_level,
                     requires_premium,
+                    replaces_unknown_premium: missing.iter().any(|gap| {
+                        gap["field"] == "premium"
+                            && selected.resolves_original_actor_requirement(gap)
+                    }),
                     prerequisites,
                     repeat: selected
                         .recipe
@@ -248,7 +253,9 @@ impl RecipeEvidence {
                             .as_ref()
                             .map_or(0, |gate| gate.minimum_level),
                     );
-            if (native_observations || quest.admission.is_some()) && !admission_matches {
+            if (native_observations || quest.admission.is_some() || recipe.replaces_unknown_premium)
+                && !admission_matches
+            {
                 return Err(format!(
                     "authored Quest requires its exact native actor admission: {}",
                     quest.quest

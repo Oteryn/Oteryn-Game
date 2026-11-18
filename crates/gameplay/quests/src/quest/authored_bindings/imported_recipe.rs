@@ -8,18 +8,22 @@ pub(super) struct SelectedRecipe<'a> {
 }
 
 impl SelectedRecipe<'_> {
-    /// A selected, explicit Oteryn level replaces an unknown donor level. The
-    /// original gap remains on the record; no other missing fact is resolved.
-    pub(super) fn resolves_original_level(&self, gap: &Value) -> bool {
+    /// Explicit chosen actor requirements may resolve unknown incoming donor gates.
+    /// The canonical definition keeps the original gaps as evidence.
+    pub(super) fn resolves_original_actor_requirement(&self, gap: &Value) -> bool {
         self.original_source_gaps
             && self.complete
             && gap["code"] == "requirement_unknown"
-            && gap["field"] == "min_level"
             && self.recipe.is_some_and(|recipe| {
-                recipe["requirements"]["basis"] == "CHOSEN_OTERYN_APPROXIMATION"
-                    && recipe["requirements"]["min_level"]
-                        .as_u64()
-                        .is_some_and(|level| u32::try_from(level).is_ok())
+                let requirements = &recipe["requirements"];
+                requirements["basis"] == "CHOSEN_OTERYN_APPROXIMATION"
+                    && match gap["field"].as_str() {
+                        Some("min_level") => requirements["min_level"]
+                            .as_u64()
+                            .is_some_and(|level| u32::try_from(level).is_ok()),
+                        Some("premium") => requirements["premium"].is_boolean(),
+                        _ => false,
+                    }
             })
     }
 }

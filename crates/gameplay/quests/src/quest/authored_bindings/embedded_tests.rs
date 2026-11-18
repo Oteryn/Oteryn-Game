@@ -300,7 +300,7 @@ fn typed_prerequisite_admission_must_match_the_chosen_requirement_names() -> Res
 }
 
 #[test]
-fn chosen_level_resolves_only_the_original_unknown_level() -> Result<(), String> {
+fn chosen_actor_requirements_resolve_explicit_original_unknowns() -> Result<(), String> {
     let mut doc: Value = serde_json::from_slice(include_bytes!("fixtures/task_board_use.json"))
         .map_err(|e| e.to_string())?;
     doc["quests"][0]["admission"] = serde_json::json!({"minimum_level":100});
@@ -319,7 +319,28 @@ fn chosen_level_resolves_only_the_original_unknown_level() -> Result<(), String>
             "payload":{"identity":{"key":bindings.quests[0].quest},"recipe":recipe}}
     }}]});
     evidence(&index, &shard)?.verify(&bindings)?;
-    for field in ["premium", "vocation", "unresolved_items"] {
+    let mut premium_gap = shard.clone();
+    premium_gap["records"][0]["definition"]["missing_data"][0]["field"] = "premium".into();
+    evidence(&index, &premium_gap)?.verify(&bindings)?;
+    let mut wrong = bindings.clone();
+    wrong.quests[0]
+        .admission
+        .as_mut()
+        .ok_or("admission")?
+        .premium = true;
+    assert!(evidence(&index, &premium_gap)?.verify(&wrong).is_err());
+    premium_gap["records"][0]["definition"]["oteryn_recipe"]["payload"]["recipe"]["requirements"]
+        .as_object_mut()
+        .ok_or("requirements")?
+        .remove("premium");
+    assert!(
+        evidence(&index, &premium_gap)?
+            .recipes
+            .get(&bindings.quests[0].quest)
+            .ok_or("recipe")?
+            .data_holds
+    );
+    for field in ["vocation", "unresolved_items"] {
         let mut held = shard.clone();
         held["records"][0]["definition"]["missing_data"][0]["field"] = field.into();
         assert!(
