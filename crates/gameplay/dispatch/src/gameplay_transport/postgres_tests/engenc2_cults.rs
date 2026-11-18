@@ -352,6 +352,14 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                     .await?,
                 );
             }
+            let unstaged = if matches!(scenario, PhaseScenario::Zelos { full_party: true }) {
+                Some(
+                    super::gravedg_zelos::admit_party_member(&h, &deps, &owner, &admitted, 10)
+                        .await?,
+                )
+            } else {
+                None
+            };
             let key =
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
@@ -442,6 +450,7 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                         &h,
                         &owner,
                         &party,
+                        &unstaged.ok_or("unstaged player")?,
                         before_admission,
                     )
                     .await?;

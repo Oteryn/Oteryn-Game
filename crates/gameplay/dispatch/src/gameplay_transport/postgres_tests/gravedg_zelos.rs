@@ -179,6 +179,7 @@ pub(super) async fn exercise_full_party(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     party: &[AdmittedSession],
+    unstaged: &AdmittedSession,
     before_admission: u64,
 ) -> TestResult {
     const WINDOW_US: u64 = 24 * 60 * 1_000_000;
@@ -193,6 +194,15 @@ pub(super) async fn exercise_full_party(
                 .position();
             assert_eq!((at.x, at.y, at.floor), expected);
         }
+        let outside = runtime
+            .read_actor_position(unstaged.runtime_actor.ok_or("unstaged actor")?)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (outside.x, outside.y, outside.floor),
+            (102, 100, 7),
+            "the player outside all ten staging tiles stays outside the encounter"
+        );
         Ok(())
     };
     assert_placement((116, 117, 7)).await?;
