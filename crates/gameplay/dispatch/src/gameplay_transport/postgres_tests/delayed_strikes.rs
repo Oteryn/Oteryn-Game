@@ -44,6 +44,7 @@ enum Case {
     Logout,
     DepartedTarget,
     QueuedOrder,
+    ShieldedEcho,
 }
 
 #[test]
@@ -55,6 +56,24 @@ fn delayed_strikes_postgres_death_echo_two_hits() -> TestResult {
         weapon: "oteryn:item.tibia.i3277",
         spells: &[("candidate:spell/death_echo", 120, 150)],
         case: Case::Echo,
+    })
+}
+
+#[test]
+fn death_echo_checks_speech_shield_at_impact_and_emits_one_cue() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    let plan = Plan {
+        tag: "delayed_shielded_echo",
+        vocation: "sorcerer",
+        experience: 30_000_000,
+        weapon: "oteryn:item.tibia.i3277",
+        spells: &[("candidate:spell/death_echo", 120, 150)],
+        case: Case::ShieldedEcho,
+    };
+    super::kill_reward_e2e::scenario_thread::run_async(async move |_| {
+        scenario_inner(admin, plan).await
     })
 }
 
@@ -180,6 +199,11 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     let active = controller.active().ok_or("active")?;
     let native = active.native_gameplay().ok_or("native")?;
     let entry = pin.qualified_room().clone();
+    let shielded_map = if plan.case == Case::ShieldedEcho {
+        Some(super::pvp_live::bundle_fixture::world(world, false)?)
+    } else {
+        None
+    };
     let room = if plan.case == Case::Pz {
         let map = crate::map::spell_tiles::tests::world();
         let cells = map.movement_cells(entry.movement_cells()).map_err(debug)?;
@@ -195,11 +219,25 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 },
             )
             .ok_or("PZ room")?
+    } else if let Some(map) = &shielded_map {
+        let cells = map.movement_cells(entry.movement_cells()).map_err(debug)?;
+        entry
+            .bundle_view(
+                cells,
+                map.frame_binding_digest(world),
+                map.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 1,
+                    y: 11,
+                    floor: -7,
+                },
+            )
+            .ok_or("shielded strike room")?
     } else {
         entry
     };
     // Reuse crosshair_spells' open combat tile; the imported entry is a PZ.
-    let start = if plan.case == Case::Pz {
+    let start = if matches!(plan.case, Case::Pz | Case::ShieldedEcho) {
         room.entry_start()
     } else {
         crate::content::NativeEntryStart {
@@ -246,6 +284,9 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         .map_err(debug)?,
     );
     let mut owner = deps.owner(&h, &authority);
+    if plan.case == Case::ShieldedEcho {
+        owner.movement_cells = deps.room.movement_cells().into();
+    }
     owner.wheel_ruleset = Some(wheel_rules.clone());
     owner.active_generation = Some(active);
     owner.premium_coordinator = Some(&premium);
@@ -821,6 +862,25 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             *mana,
             "{key} exact one-time cast payment before the delayed hit"
         );
+        let shielded_health = if plan.case == Case::ShieldedEcho {
+            assert!(
+                hit < u64::try_from(RAT_HEALTH)?,
+                "first strike lands before shielding"
+            );
+            let mut runtime = deps.runtime.lock().await;
+            let target_before = runtime.companion_snapshot(target).map_err(debug)?;
+            // Crystal 201189f8 grand_master_oberon_immunity.lua:3-7 emits HOLYAREA on impact.
+            runtime
+                .set_boss_speech_shield(&target_before, Some(50))
+                .map_err(debug)?;
+            let health = runtime
+                .live_creature_health(target)
+                .ok_or("shielded target")?;
+            assert_eq!(health, u64::try_from(target_before.maximum_health)?);
+            Some(health)
+        } else {
+            None
+        };
         let expected_echo = if plan.case == Case::Echo {
             let runtime = deps.runtime.lock().await;
             let creature = runtime.companion_snapshot(target).map_err(debug)?;
@@ -922,7 +982,29 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .await
             .live_creature_health(target)
             .ok_or("rat survives delayed")?;
-        if plan.case == Case::Outburst(4) {
+        if let Some(shielded_health) = shielded_health {
+            assert_eq!(echo, shielded_health);
+            assert!(report.receipts[0].batch.applied);
+            let replay = owner.drain_native_ai_timers().await.map_err(debug)?;
+            assert!(replay.receipts.is_empty());
+            assert!(replay.blocked.is_none());
+            let map = owner.bundle_map().ok_or("shield cue map")?;
+            let cues: Vec<_> = map
+                .facts
+                .movement_effects_since(0)
+                .into_iter()
+                .filter(|(_, _, effect)| *effect == 50)
+                .map(|(_, tile, _)| tile)
+                .collect();
+            assert_eq!(
+                cues,
+                [crate::map::overlay::TilePos {
+                    x: u16::try_from(position.x)?,
+                    y: u16::try_from(position.y)?,
+                    floor: i8::try_from(-position.floor)?,
+                }]
+            );
+        } else if plan.case == Case::Outburst(4) {
             assert_eq!(echo, hit);
         } else {
             assert!(echo < hit, "delayed strike damages live area");
@@ -942,7 +1024,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .mana;
         // A surviving target without Prey makes each physical HP loss the
         // independent pre-overkill basis. Round each occurrence separately.
-        let delayed_leech = leech_for_damage(hit - echo)?;
+        let delayed_leech = leech_for_damage(shielded_health.unwrap_or(hit) - echo)?;
         assert_eq!(
             i64::from(after),
             i64::from(mana_after_cast) + delayed_leech,

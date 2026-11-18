@@ -1,6 +1,6 @@
 //! A two-player tile pair through the production bundle writer, loader and map boot.
 use super::*;
-pub(super) fn world(
+pub(in super::super) fn world(
     world: crate::foundation::WorldId,
     no_pvp: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {

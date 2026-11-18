@@ -22,7 +22,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use oteryn_protocol_oteryn::{CommandStatus, actor_spell, attack, decode_command_result};
 use std::time::Duration;
 #[path = "pvp_live/bundle_fixture.rs"]
-mod bundle_fixture;
+pub(super) mod bundle_fixture;
 #[path = "pvp_live/expert_cases.rs"]
 mod expert_cases;
 use tokio::io::{AsyncWriteExt, DuplexStream};
