@@ -7,8 +7,8 @@
     // Keep every remaining ordinary journey before profile fixture provisioning.
     if groups.runs("f6") {
         full_e2ef6::run(clients, world, &metadata.spawns, &metadata.npcs,
-            groups.runs("rows") && e2e_row_selected(110),
-            groups.runs("rows") && e2e_row_selected(111),
+            capture_loss,
+            capture_twist,
         ).await
     } else {
         (None, None)

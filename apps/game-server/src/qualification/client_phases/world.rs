@@ -2586,6 +2586,8 @@ pub(super) async fn journeys(
             })
             .await;
         }
+        let capture_loss = groups.runs("rows") && e2e_row_selected(110);
+        let capture_twist = groups.runs("rows") && e2e_row_selected(111);
         let (full_loss, full_twist) = include!("full_e2ef6_mount.rs");
         if groups.runs("rows") {
             release_row_characters(clients).await?;
@@ -3354,11 +3356,11 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
-            if e2e_row_selected(110) {
+            if capture_loss {
                 verdict::indexed("C20b.client", async {
                     client_row_c20b::run_packet(async {
                         match full_loss {
-                            Some(result) => result.map_err(Into::into),
+                            Some(result) => result,
                             None => {
                                 Box::pin(full_e2ef6::client_item_loss(
                                     clients,
@@ -3375,11 +3377,11 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
-            if e2e_row_selected(111) {
+            if capture_twist {
                 verdict::indexed("C20c.client", async {
                     client_row_c20c::run_packet(async {
                         match full_twist {
-                            Some(result) => result.map_err(Into::into),
+                            Some(result) => result,
                             None => {
                                 Box::pin(full_e2ef6::client_blessing_death(
                                     clients,

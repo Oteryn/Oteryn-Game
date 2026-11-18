@@ -96,11 +96,13 @@ class ClientShardProvenance(unittest.TestCase):
 
     def test_wrap_reconciliation_precedes_house_exit(self):
         source = (PHASES / "client_row_i10.rs").read_text()
-        self.assertLess(source.index("restore_wrapped(&mut client"), source.index("let exit = transfer"))
+        recovery = source.split("async fn recover_on_fresh_session(")[1].split("async fn journey(")[0]
+        self.assertLess(recovery.index("restore_wrapped("), recovery.index("let exit = transfer"))
+        self.assertIn("recover_on_fresh_session(clients", source.split("let proofs =")[1])
 
     def test_shield_denominator_comes_from_control_hit(self):
         source = (PHASES / "client_row_i15.rs").read_text()
-        self.assertIn("let incoming_damage = observe_drowning", source)
+        self.assertIn("observe_drowning(&mut client).await", source)
         self.assertIn("paid, incoming_damage", source)
         self.assertNotIn("const DROWNING_TICK", source)
 
@@ -109,6 +111,60 @@ class ClientShardProvenance(unittest.TestCase):
         self.assertIn("prepare_fixture(&mut db, clients, world", source)
         self.assertIn("assign_house_scope", source)
         self.assertIn("owned_house_fixture.sql", source)
+
+
+class QualificationReReview(unittest.TestCase):
+    def source(self, name):
+        return (PHASES / f"{name}.rs").read_text()
+
+    def test_progression_capacity_is_a_full_row_requirement(self):
+        source = self.source("full_e2ef18")
+        production, journey = source.split("async fn journey(")
+        self.assertIn("require_capacity", production)
+        self.assertNotIn("capacity-field-absent-in-server-frames", journey)
+
+    def test_client_progression_does_not_require_full_capacity_evidence(self):
+        source = (PHASES / "full_e2ef18.rs").read_text()
+        client = source.split("async fn client_progression", 1)[1].split("async fn stats", 1)[0]
+        self.assertIn('action != "level-and-maxima"', client)
+        self.assertIn("row.passed.contains(action)", client)
+
+    def test_amulet_moves_use_the_equipment_protocol(self):
+        item_loss = self.source("full_e2ef6").split("async fn item_loss(")[1].split("const BLESSING_DEATH")[0]
+        self.assertNotIn(".move_item(", item_loss)
+        self.assertEqual(item_loss.count("inventory::send("), 2)
+
+    def test_starter_budget_starts_after_the_prerequisite(self):
+        capture = self.source("client_row_c19a")
+        self.assertNotIn("async fn journey(clients: &SeamClients<'_>, prerequisite", capture)
+        self.assertIn("prerequisite.await?;", capture.split("pub(super) async fn run_packet")[1])
+
+    def test_i15_uses_equipment_codec_and_restores_after_failed_sample(self):
+        source = self.source("client_row_i15")
+        self.assertIn("inventory::send(", source)
+        self.assertNotIn("move_ring(&mut client, handle, false).await?;", source)
+
+    def test_i10_rechecks_assignment_before_entry(self):
+        source = self.source("client_row_i10")
+        journey = source.split("async fn journey(")[1]
+        self.assertIn("ensure_assignment(", journey)
+        self.assertLess(journey.index("ensure_assignment("), journey.index("transfer("))
+
+    def test_i10_prefers_the_existing_housing_slot(self):
+        source = self.source("client_row_i10")
+        self.assertIn("game_account_housing_slots", source)
+        self.assertIn("if owned_house.is_none()", source)
+
+    def test_i10_releases_the_stream_before_ambiguous_recovery(self):
+        source = self.source("client_row_i10")
+        self.assertIn("recover_on_fresh_session", source)
+        self.assertIn("drop(client);", source.split("let proofs =")[1])
+
+    def test_capture_errors_are_retained_separately_from_full_result(self):
+        source = self.source("full_e2ef6")
+        self.assertNotIn("capture_inventory(&mut client)?", source)
+        self.assertNotIn("capture_receipt(&mut client, expected_occurrence).await?", source)
+        self.assertIn("capture_result", source)
 
 
 if __name__ == "__main__":

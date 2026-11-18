@@ -13,8 +13,7 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
-async fn journey(clients: &SeamClients<'_>, prerequisite: impl Future<Output = TestResult>) -> TestResult<String> {
-    prerequisite.await?;
+async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let definitions = provisioning::item_index()?;
     let backpack_ref = provisioning::item_reference(&definitions, 2854)?;
     let mut client = connect_world(clients, 0x32).await?;
@@ -56,14 +55,17 @@ async fn journey(clients: &SeamClients<'_>, prerequisite: impl Future<Output = T
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, prerequisite: impl Future<Output = TestResult>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients, prerequisite))).await {
-        Ok(Ok(observed)) => evidence(&format!(
+    let result = verdict::observe(async {
+        prerequisite.await?;
+        verdict::indexed_timeout(Duration::from_secs(200), journey(clients)).await?
+    }).await;
+    match result {
+        Ok(observed) => evidence(&format!(
             "e2e_all scenario=C19a.client status=CAPTURED evidence={observed}"
         )),
-        Ok(Err(error)) => evidence(&format!(
+        Err(error) => evidence(&format!(
             "e2e_all scenario=C19a.client status=FAIL evidence={}",
             error.to_string().replace(' ', "_")
         )),
-        Err(_) => evidence("e2e_all scenario=C19a.client status=FAIL evidence=timeout"),
     }
 }

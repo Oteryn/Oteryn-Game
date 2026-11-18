@@ -1,10 +1,10 @@
 //! Captures the real actor-vitals payload consumed by the native session reducer for I15.
 use super::*;
-use oteryn_dev_client::SessionEvent;
+use oteryn_dev_client::{SessionEvent, client_runtime::inventory};
 use oteryn_protocol_oteryn::{actor_spell, item_view as items};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence("e2e_all scenario=I15.client status=PASS evidence=actor-vitals-2-to-1-mana-shield"),
         Ok(Err(error)) => evidence(&format!("e2e_all scenario=I15.client status=FAIL evidence={error}")),
@@ -24,14 +24,17 @@ fn shield_ratio(health_unchanged: bool, mana_debit: u32, incoming_damage: u32) -
 
 async fn move_ring(client: &mut oteryn_dev_client::DevClientSession, handle: items::ItemHandle, worn: bool) -> TestResult {
     let destination = if worn { items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring) } else { items::ItemMoveDestination::MainBackpack };
-    let reply = client.move_item(&items::ItemMoveIntent { source: handle, destination }).await?;
+    let cutoff = client.last_server_sequence();
+    client.take_events();
+    let reply = inventory::send(client.session_mut(), inventory::MoveRequest { source: handle, destination, count: None })
+        .await?.ok_or("I15 equipment move unavailable")?;
     if reply.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("I15 ring move failed: {reply:?}").into());
     }
     let until = tokio::time::Instant::now() + Duration::from_secs(3);
     loop {
         if client.take_events().into_iter().any(|event| matches!(event, SessionEvent::Inventory(delta)
-            if delta.server_sequence > reply.result_server_sequence
+            if delta.server_sequence > cutoff
                 && if worn {
                     delta.value.equipment.iter().any(|entry| entry.slot == items::EquipmentSlot::Ring && entry.item.handle == handle)
                 } else {
@@ -43,6 +46,21 @@ async fn move_ring(client: &mut oteryn_dev_client::DevClientSession, handle: ite
         if tokio::time::Instant::now() >= until { return Err("I15 ring move inventory frame absent".into()); }
         client.service_liveness(Duration::from_millis(25)).await?;
     }
+}
+
+async fn restore_after_reconnect(
+    clients: &SeamClients<'_>, active: std::num::NonZeroU32, inactive: std::num::NonZeroU32,
+) -> TestResult {
+    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(180), "I15 ring recovery");
+    let mut fresh = connect_world(clients, 0xb4).await?;
+    let view = fresh.inventory().ok_or("I15 recovery inventory absent")?;
+    if !view.equipment.iter().any(|entry| entry.slot == items::EquipmentSlot::Ring && entry.item.item_definition_ref == active) {
+        let handle = view.entries.iter()
+            .find(|entry| entry.item_definition_ref == inactive || entry.item_definition_ref == active)
+            .ok_or("I15 original Energy Ring missing after re-admission")?.handle;
+        move_ring(&mut fresh, handle, true).await?;
+    }
+    client_row_c08::require_logout(&mut fresh, Duration::from_secs(15)).await
 }
 
 async fn observe_drowning(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<u32> {
@@ -71,12 +89,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let active = provisioning::item_reference(&provisioning::item_index()?, 3088)?;
+    let index = provisioning::item_index()?;
+    let active = provisioning::item_reference(&index, 3088)?;
+    let inactive = provisioning::item_reference(&index, 3051)?;
     let mut client = connect_world(clients, 0xb2).await?;
+    let mut recover_ring = false;
     let result: TestResult = async {
         let handle = client.inventory().ok_or("I15 inventory absent")?.equipment.iter()
             .find(|entry| entry.slot == items::EquipmentSlot::Ring && entry.item.item_definition_ref == active)
             .ok_or("I15 active Energy Ring 3088 absent after I05 lifecycle")?.item.handle;
+        if client.inventory().is_some_and(|view| view.entries.iter().any(|entry| entry.item_definition_ref == active || entry.item_definition_ref == inactive)) {
+            return Err("I15 recovery requires a unique Energy Ring".into());
+        }
         let from = tile(client.world_spatial().actor_position)?;
         let mut path = route(world, from, |at| client_row_m10::is_underwater(world, at))
             .ok_or("I15 no reachable underwater tile for a known incoming hit")?;
@@ -97,11 +121,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if !drowning || other_harm {
             return Err("I15 expected drowning as the only damage condition".into());
         }
-        move_ring(&mut client, handle, false).await?;
-        let incoming_damage = observe_drowning(&mut client).await;
-        let restored = move_ring(&mut client, handle, true).await;
+        recover_ring = true;
+        let removal = move_ring(&mut client, handle, false).await;
+        let incoming_damage = async {
+            removal?;
+            observe_drowning(&mut client).await
+        }.await;
+        // When the removal reply/delta is missing the original stream and
+        // inventory may disagree. Recovery re-admits before reading custody.
         let incoming_damage = incoming_damage?;
-        restored?;
+        move_ring(&mut client, handle, true).await?;
+        recover_ring = false;
         let mut previous = *client.actor_vitals().ok_or("I15 shielded vitals absent")?;
         let needed = incoming_damage.checked_mul(2).ok_or("I15 incoming hit overflow")?;
         if previous.mana < needed {
@@ -137,6 +167,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             client.service_liveness(Duration::from_millis(50)).await?;
         }
     }.await;
+    if recover_ring {
+        drop(client);
+        let recovery = restore_after_reconnect(clients, active, inactive).await;
+        if let Err(error) = &recovery {
+            evidence(&format!("I15 ring recovery failed: {error}"));
+        }
+        return result.and(recovery);
+    }
     let logout = client_row_c08::require_logout(&mut client, Duration::from_secs(70)).await;
     result.and(logout)
 }

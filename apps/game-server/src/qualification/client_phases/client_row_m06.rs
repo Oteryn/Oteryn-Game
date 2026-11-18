@@ -77,22 +77,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xc6).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let keys = matching_key(clients, &client).await?;
-    let candidates = key_doors(&bytes, world)?
-        .into_iter()
-        .find_map(|door| {
-            route(world, from, |at| {
-                at.floor == door.at.floor
-                    && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
-            })
-            .map(|path| {
-                let key = crate::map::view::placement_key(door.at, door.ordinal)
-                    .and_then(|key| world.facts().action_at(key))
-                    .and_then(|number| keys.get(&number).copied());
-                ((door, path), key)
-            })
-        });
-    let ((door, path), carried) = select_key_door(candidates)
-        .ok_or("M06 no reachable authored locked door with a matching carried key")?;
+    let ((door, path), carried) = select_key_door(key_doors(&bytes, world)?, |door| {
+        route(world, from, |at| {
+            at.floor == door.at.floor
+                && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
+        }).map(|path| {
+            let key = crate::map::view::placement_key(door.at, door.ordinal)
+                .and_then(|key| world.facts().action_at(key))
+                .and_then(|number| keys.get(&number).copied());
+            ((door, path), key)
+        })
+    }).ok_or("M06 no reachable authored locked door with a matching carried key")?;
     let mut map = client_row_m05::DoorMap::read(&mut client)?;
     walk_observing(&mut client, world, &path, |event| map.observe(&event)).await?;
     let key = crate::map::view::placement_key(door.at, door.ordinal)
@@ -144,8 +139,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     ));
 }
 
-fn select_key_door<T, K>(candidates: impl IntoIterator<Item = (T, Option<K>)>) -> Option<(T, K)> {
-    candidates.into_iter().find_map(|(door, key)| key.map(|key| (door, key)))
+fn select_key_door<C, T, K>(
+    candidates: impl IntoIterator<Item = C>,
+    evaluate: impl FnMut(C) -> Option<(T, Option<K>)>,
+) -> Option<(T, K)> {
+    candidates.into_iter().filter_map(evaluate).find_map(|(door, key)| key.map(|key| (door, key)))
 }
 
 fn is_door_key(definition: u32, actual: Option<u16>, expected: u16, matching_instances: usize) -> bool {
@@ -158,7 +156,7 @@ mod tests {
 
     #[test]
     fn key_action_must_match_door_and_resolve_one_carried_handle() {
-        assert_eq!(select_key_door([(100, None), (101, Some(101))]), Some((101, 101)));
+        assert_eq!(select_key_door([99, 100, 101], |door| (door != 99).then_some((door, (door == 101).then_some(door)))), Some((101, 101)));
         assert!(!is_door_key(0, Some(100), 100, 1));
         assert!(!is_door_key(121, Some(101), 100, 1));
         assert!(!is_door_key(121, None, 100, 1));

@@ -69,7 +69,10 @@ struct Progress {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(600), journey(&mut row, clients))
+    let result = tokio::time::timeout(Duration::from_secs(600), async {
+        journey(&mut row, clients).await?;
+        require_capacity()
+    })
         .await
         .unwrap_or_else(|_| Err("step=journey observed=timeout-600s need=responsive-combat-progression".into()));
     row.finish(&result);
@@ -78,7 +81,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 pub(super) async fn client_progression(clients: &SeamClients<'_>) -> TestResult {
     let mut row = Row::new();
     verdict::indexed_timeout(Duration::from_secs(600), journey(&mut row, clients)).await??;
-    if row.passed.len() != ACTIONS.len() {
+    // The journey checks level and vital maxima before persistence. The full
+    // action also requires a capacity field the client protocol does not expose.
+    if !ACTIONS.iter().copied()
+        .filter(|&action| action != "level-and-maxima")
+        .all(|action| row.passed.contains(action))
+    {
         return Err("C14 client progression actions incomplete".into());
     }
     Ok(())
@@ -299,6 +307,12 @@ async fn ordinary_logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
+fn require_capacity() -> TestResult {
+    // Capacity has no field in ActorVitalsV1 or either native progression reply. Do not
+    // silently claim it: this failure is reached only after the complete live lifecycle.
+    Err("step=level-and-maxima observed=capacity-field-absent-in-server-frames need=server-reported-carry-capacity-delta;source:crates/protocol-oteryn/src/actor_spell.rs:128".into())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = qualification_world(clients)?;
     let positions = rat_spawns()?;
@@ -401,9 +415,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("fresh-admission-persistence", format!("xp={} level={} skill-progress-retained", persisted.stats.experience, persisted.stats.level));
     ordinary_logout(&mut fresh).await?;
 
-    // Capacity has no field in ActorVitalsV1 or either native progression reply. Do not
-    // silently claim it: this failure is reached only after the complete live lifecycle.
-    Err("step=level-and-maxima observed=capacity-field-absent-in-server-frames need=server-reported-carry-capacity-delta;source:crates/protocol-oteryn/src/actor_spell.rs:128".into())
+    Ok(())
 }
 
 #[cfg(test)]

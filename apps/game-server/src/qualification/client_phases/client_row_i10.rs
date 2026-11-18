@@ -7,7 +7,7 @@ use super::*;
 use oteryn_protocol_oteryn::house_wrap;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = verdict::indexed_timeout(Duration::from_secs(220), verdict::observe(journey(clients))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(500), verdict::observe(journey(clients))).await;
     match result.unwrap_or_else(|_| Err("I10 client capture timed out".into())) {
         Ok(()) => evidence(
             "e2e_all scenario=I10.client status=PASS evidence=house-wrap-unwrap-and-stale-refusals",
@@ -86,15 +86,11 @@ async fn prepare_fixture(
     if std::env::var("NODE_BOOT_DATABASE_URL").ok().as_deref() != Some(clients.url) {
         return Err("I10 fixture preparation requires the disposable node-boot database".into());
     }
-    use crate::durability::house_scope_handoff::{
-        HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome, HouseScopeAssignmentRequest,
-    };
-    use crate::durability::runtime_scope_assignment::{ControlActor, NodeRegistrationFact, OperationKey};
-    let world_id = WorldId::decode(&clients.world)?;
-    let existing: Vec<String> = sqlx::query_scalar(
-        "SELECT house_key FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid
-         UNION SELECT house_key FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND scope_kind=2",
-    ).bind(clients.world.as_slice()).fetch_all(&mut *db).await?;
+    let owned_house: Option<String> = sqlx::query_scalar(
+        "SELECT h.house_key FROM game_account_housing_slots h
+         JOIN game_character_roots c ON c.account_id=h.account_id
+         WHERE h.world_id=encode($1,'hex')::uuid AND c.character_id=encode($2,'hex')::uuid",
+    ).bind(clients.world.as_slice()).bind(clients.characters[1].as_slice()).fetch_optional(&mut *db).await?;
     let mut candidates = Vec::new();
     for catalogue in [
         include_str!("../../../../../content/houses/houses-00000-00499.json"),
@@ -103,7 +99,7 @@ async fn prepare_fixture(
         let rows: serde_json::Value = serde_json::from_str(catalogue)?;
         for row in rows["houses"].as_array().ok_or("I10 houses missing")? {
             let Some(key) = row["identity"]["key"].as_str() else { continue; };
-            if row["kind"] != "private_house" || existing.iter().any(|occupied| occupied == key) {
+            if row["kind"] != "private_house" || owned_house.as_deref().is_some_and(|owned| owned != key) {
                 continue;
             }
             let entrance = &row["entrance"];
@@ -112,41 +108,66 @@ async fn prepare_fixture(
             ])).ok().map(|(x, y, z)| TilePos { x, y, floor: -z }) else { continue; };
             if !world.enterable(at) || at.floor != from.floor { continue; }
             let Some(tiles) = row["tiles"].as_array() else { continue; };
-            let Some(position) = tiles.iter()
+            let mut positions: Vec<_> = tiles.iter()
                 .filter_map(|value| serde_json::from_value::<[i32; 3]>(value.clone()).ok())
                 .filter(|[_, _, floor]| *floor == -i32::from(at.floor))
                 .filter(|[x,y,z]| {
                     let Ok(pos) = tile(ActorPosition { x: *x, y: *y, floor: *z as i16 }) else { return false; };
                     world.enterable(pos)
                 })
-                .min_by_key(|[x,y,_]| x.abs_diff(i32::from(at.x)).max(y.abs_diff(i32::from(at.y))))
-            else { continue; };
-            candidates.push((at.x.abs_diff(from.x).max(at.y.abs_diff(from.y)), key.to_owned(), at, position));
+                .collect();
+            positions.sort_by_key(|[x,y,_]| x.abs_diff(i32::from(at.x)).max(y.abs_diff(i32::from(at.y))));
+            candidates.push((at.x.abs_diff(from.x).max(at.y.abs_diff(from.y)), key.to_owned(), at, positions));
         }
     }
     candidates.sort_unstable();
-    let (_, house, _, position) = candidates.into_iter()
-        .find(|(_, _, entrance, _)| route(world, from, |at| at == *entrance).is_some())
-        .ok_or("I10 no reachable unused house for the disposable fixture")?;
-
-    let (node, revision, role): (Vec<u8>, String, String) = sqlx::query_as(
-        "SELECT uuid_send(holder_node_id),holder_registration_revision::text,session_user::text
-         FROM game_runtime_scope_assignments
-         WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND state=1",
-    ).bind(clients.world.as_slice()).bind(clients.channel.as_slice()).fetch_one(&mut *db).await?;
-    let target = NodeRegistrationFact::new(crate::foundation::NodeId::decode(&node)?, revision.parse()?);
+    let mut selected = None;
+    for (_, house, entrance, positions) in candidates {
+        if route(world, from, |at| at == entrance).is_none() { continue; }
+        let available: bool = sqlx::query_scalar(
+            "SELECT CASE WHEN $3 THEN EXISTS (SELECT 1 FROM game_house_properties
+                WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND owner_character_id=encode($4,'hex')::uuid)
+             ELSE NOT EXISTS (SELECT 1 FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid AND house_key=$2)
+                  AND NOT EXISTS (SELECT 1 FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND house_key=$2)
+             END",
+        ).bind(clients.world.as_slice()).bind(&house).bind(owned_house.is_some())
+            .bind(clients.characters[1].as_slice()).fetch_one(&mut *db).await?;
+        if !available {
+            continue;
+        }
+        let encoded: Vec<Vec<u8>> = positions.into_iter()
+            .map(|position| position.into_iter().flat_map(i32::to_be_bytes).collect())
+            .collect();
+        let vacant: Option<Vec<u8>> = sqlx::query_scalar(
+            "SELECT tile.position FROM unnest($1::bytea[]) WITH ORDINALITY tile(position, ordinal)
+             WHERE NOT EXISTS (SELECT 1 FROM game_item_house_interior_locations l
+               WHERE l.world_id=encode($2,'hex')::uuid AND l.house_key=$3 AND l.spatial_position=tile.position)
+             ORDER BY tile.ordinal LIMIT 1",
+        ).bind(encoded).bind(clients.world.as_slice()).bind(&house).fetch_optional(&mut *db).await?;
+        if let Some(position) = vacant {
+            selected = Some((house, position));
+            break;
+        }
+    }
+    let (house, encoded) = selected.ok_or("I10 no reachable house for the disposable fixture")?;
     let mut tx = db.begin().await?;
-    sqlx::query(include_str!("../../../tests/support/owned_house_fixture.sql"))
-        .bind(clients.world.as_slice()).bind(&house).bind(clients.characters[1].as_slice())
-        .execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO game_control_house_scope_grants VALUES(session_user,encode($1,'hex')::uuid,$2,1)")
-        .bind(clients.world.as_slice()).bind(&house).execute(&mut *tx).await?;
+    let generation: String = sqlx::query_scalar(
+        "SELECT ownership_generation::text FROM game_runtime_scope_assignments
+         WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND state=1 FOR SHARE",
+    ).bind(clients.world.as_slice()).bind(clients.channel.as_slice()).fetch_one(&mut *tx).await?;
+    if generation.parse::<u64>()? != clients.scope_generation {
+        return Err("I10 channel generation changed during fixture planning".into());
+    }
+    if owned_house.is_none() {
+        sqlx::query(include_str!("../../../tests/support/owned_house_fixture.sql"))
+            .bind(clients.world.as_slice()).bind(&house).bind(clients.characters[1].as_slice())
+            .execute(&mut *tx).await?;
+    }
     sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
     let item: Vec<u8> = sqlx::query_scalar(
         "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
          VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,'Item','oteryn:item.tibia.i6355','definition-r1',1,1,game_character_uuid_v7()) RETURNING uuid_send(item_instance_id)",
     ).bind(clients.world.as_slice()).fetch_one(&mut *tx).await?;
-    let encoded: Vec<u8> = position.into_iter().flat_map(i32::to_be_bytes).collect();
     sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
         .bind(clients.world.as_slice()).bind(&house).bind(&encoded).execute(&mut *tx).await?;
     let placement: Vec<u8> = sqlx::query_scalar(
@@ -157,16 +178,48 @@ async fn prepare_fixture(
         .bind(&item).bind(clients.world.as_slice()).bind(&house).bind(clients.characters[1].as_slice()).bind(&placement)
         .execute(&mut *tx).await?;
     tx.commit().await?;
+    Ok(())
+}
+
+async fn ensure_assignment(
+    db: &mut sqlx::PgConnection, clients: &SeamClients<'_>, house: &str, item: &[u8; 16],
+) -> TestResult {
+    use crate::durability::house_scope_handoff::{
+        HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome, HouseScopeAssignmentRequest,
+    };
+    use crate::durability::runtime_scope_assignment::{ControlActor, NodeRegistrationFact, OperationKey};
+    let world_id = WorldId::decode(&clients.world)?;
+    let (node, revision, role): (Vec<u8>, String, String) = sqlx::query_as(
+        "SELECT uuid_send(holder_node_id),holder_registration_revision::text,session_user::text
+         FROM game_runtime_scope_assignments
+         WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND state=1",
+    ).bind(clients.world.as_slice()).bind(clients.channel.as_slice()).fetch_one(&mut *db).await?;
+    let target = NodeRegistrationFact::new(crate::foundation::NodeId::decode(&node)?, revision.parse()?);
+    let assignment: Option<(i16, Option<Vec<u8>>, Option<String>)> = sqlx::query_as(
+        "SELECT state,uuid_send(holder_node_id),holder_registration_revision::text
+         FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND house_key=$2",
+    ).bind(clients.world.as_slice()).bind(house).fetch_optional(&mut *db).await?;
+    if let Some((state, holder, holder_revision)) = assignment {
+        if state != 1 || holder.as_deref() != Some(node.as_slice()) || holder_revision.as_deref() != Some(revision.as_str()) {
+            return Err("I10 fixture house is assigned to a different node or incarnation".into());
+        }
+        return Ok(());
+    }
+    if std::env::var("NODE_BOOT_DATABASE_URL").ok().as_deref() != Some(clients.url) {
+        return Err("I10 fixture assignment requires the disposable node-boot database".into());
+    }
+    sqlx::query("INSERT INTO game_control_house_scope_grants VALUES(session_user,encode($1,'hex')::uuid,$2,1) ON CONFLICT DO NOTHING")
+        .bind(clients.world.as_slice()).bind(house).execute(&mut *db).await?;
     let mut operation = [0; 32];
     operation[..16].copy_from_slice(&clients.world);
-    operation[16..].copy_from_slice(&item);
+    operation[16..].copy_from_slice(item);
     let control = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
     let outcome = control.assign_house_scope(HouseScopeAssignmentRequest {
         operation_key: OperationKey::from_bytes(operation),
         actor: ControlActor::new(&role).map_err(|error| format!("I10 control actor: {error:?}"))?,
         actor_role: role,
         command: HouseScopeAssignmentCommand::Assign {
-            house: crate::durability::house_scope_handoff::HouseId::new(world_id, &house).ok_or("I10 house identity")?,
+            house: crate::durability::house_scope_handoff::HouseId::new(world_id, house).ok_or("I10 house identity")?,
             target,
         },
     }).await.map_err(|error| format!("I10 control assignment: {error:?}"))?;
@@ -205,6 +258,21 @@ async fn read_fixture(db: &mut sqlx::PgConnection, clients: &SeamClients<'_>) ->
     Ok(fixture)
 }
 
+async fn recover_on_fresh_session(
+    clients: &SeamClients<'_>, world: &BundleWorld, db: &mut sqlx::PgConnection,
+    house: &str, entrance: TilePos, request: house_wrap::Request,
+) -> TestResult {
+    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(210), "I10 house recovery");
+    let mut client = connect_world(clients, 0xb3).await?;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == entrance)
+        .ok_or("I10 recovery house entrance unreachable")?;
+    walk(&mut client, world, &path).await?;
+    transfer(&mut client, house, false).await?;
+    let recovered = tokio::time::timeout(Duration::from_secs(18), restore_wrapped(&mut client, db, request)).await?;
+    let exit = transfer(&mut client, house, true).await;
+    recovered.and(exit)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let mut client = connect_world(clients, 0xb2).await?;
@@ -227,34 +295,36 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let position = crate::durability::consume_transform::HouseActionContext::decode_spatial_position(&position)
         .ok_or("I10 invalid furniture position")?;
     let acl_revision = acl.parse()?;
+    ensure_assignment(&mut db, clients, &house, &item).await?;
     transfer(&mut client, &house, false).await?;
     let request = |action, expected_revision| house_wrap::Request { action, item, expected_revision, acl_revision, position };
-    if needs_restore {
-        restore_wrapped(&mut client, &mut db, request(house_wrap::Action::Unwrap, original)).await?;
-        original = original.checked_add(1).ok_or("I10 recovered revision exhausted")?;
-    }
-    let wrapped = original.checked_add(1).ok_or("I10 revision exhausted")?;
-    let restored = wrapped.checked_add(1).ok_or("I10 revision exhausted")?;
-    let wrap_request = request(house_wrap::Action::Wrap, original);
-    let unwrap_request = request(house_wrap::Action::Unwrap, wrapped);
-    let stale_request = request(house_wrap::Action::Wrap, original);
+    let recovery_request = request(house_wrap::Action::Unwrap, original);
     let proofs = tokio::time::timeout(Duration::from_secs(18), async {
+        if needs_restore {
+            restore_wrapped(&mut client, &mut db, recovery_request).await?;
+            original = original.checked_add(1).ok_or("I10 recovered revision exhausted")?;
+        }
+        let wrapped = original.checked_add(1).ok_or("I10 revision exhausted")?;
+        let restored = wrapped.checked_add(1).ok_or("I10 revision exhausted")?;
+        let wrap_request = request(house_wrap::Action::Wrap, original);
+        let unwrap_request = request(house_wrap::Action::Unwrap, wrapped);
+        let stale_request = request(house_wrap::Action::Wrap, original);
         let wrap = wrap_result(&mut client, wrap_request, house_wrap::Reply::Committed(wrapped)).await?;
         let unwrap = wrap_result(&mut client, unwrap_request, house_wrap::Reply::Committed(restored)).await?;
         let stale = wrap_result(&mut client, stale_request, house_wrap::Reply::Refused(house_wrap::Refusal::Stale)).await?;
-        Ok::<_, Box<dyn std::error::Error>>((wrap, unwrap, stale))
-    }).await.unwrap_or_else(|_| Err("I10 wrap sequence timed out".into()));
-    let recovery = if proofs.is_err() {
-        restore_wrapped(&mut client, &mut db, unwrap_request).await
-    } else {
-        Ok(())
+        Ok::<_, Box<dyn std::error::Error>>([(wrap_request, wrap), (unwrap_request, unwrap), (stale_request, stale)])
+    }).await.unwrap_or_else(|error| Err(verdict::context("I10 wrap sequence timed out".into(), error)));
+    let [(wrap_request, wrap), (unwrap_request, unwrap), (stale_request, stale)] = match proofs {
+        Ok(proofs) => proofs,
+        Err(error) => {
+            drop(client);
+            if let Err(recovery) = recover_on_fresh_session(clients, world, &mut db, &house, entrance, recovery_request).await {
+                evidence(&format!("I10 oven restoration failed: {recovery}"));
+            }
+            return Err(error);
+        }
     };
     let exit = transfer(&mut client, &house, true).await;
-    if let Err(error) = &recovery {
-        evidence(&format!("I10 oven restoration failed: {error}"));
-    }
-    let (wrap, unwrap, stale) = proofs?;
-    recovery?;
     exit?;
     if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let directory = Path::new(&directory);

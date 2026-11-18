@@ -100,15 +100,23 @@ pub(super) async fn client_item_loss(
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
     let mut row = Row::new("C20b.client", ITEM_LOSS);
+    let mut capture_result: TestResult = Err("capture point was not reached".into());
     verdict::indexed_timeout(
         Duration::from_secs(850),
-        item_loss(&mut row, clients, world, spawns, npcs, true),
+        item_loss(
+            &mut row,
+            clients,
+            world,
+            spawns,
+            npcs,
+            Some(&mut capture_result),
+        ),
     )
     .await??;
     if !row.0.complete() {
         return Err("C20b client loss actions incomplete".into());
     }
-    Ok(())
+    capture_result
 }
 
 pub(super) async fn client_blessing_death(
@@ -118,18 +126,34 @@ pub(super) async fn client_blessing_death(
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
     let mut row = Row::new("C20c.client", BLESSING_DEATH);
+    let mut capture_result: TestResult = Err("capture point was not reached".into());
     verdict::indexed_timeout(
         Duration::from_secs(1500),
-        blessing_death(&mut row, clients, world, spawns, npcs, true),
+        blessing_death(
+            &mut row,
+            clients,
+            world,
+            spawns,
+            npcs,
+            Some(&mut capture_result),
+        ),
     )
     .await??;
     if !row.0.complete() {
         return Err("C20c client blessing actions incomplete".into());
     }
-    Ok(())
+    capture_result
 }
 
-type ClientEvidence = Option<Result<(), String>>;
+fn client_capture_result(journey: TestResult, complete: bool, capture: TestResult) -> TestResult {
+    journey?;
+    if !complete {
+        return Err("full journey actions incomplete".into());
+    }
+    capture
+}
+
+type ClientEvidence = Option<TestResult>;
 
 pub(super) async fn run(
     clients: &SeamClients<'_>,
@@ -179,20 +203,25 @@ pub(super) async fn run(
     }
 
     let mut custody = Row::new("C20b", ITEM_LOSS).needs(&[Fixture(1)]);
+    let mut capture_result: TestResult = Err("capture point was not reached".into());
     let watch = custody.0.watch();
     let result = watch
         .bound(
             Duration::from_secs(850),
             "item-loss journey deadline; remaining actions unproven",
-            item_loss(&mut custody, clients, world, spawns, npcs, export_loss),
+            item_loss(
+                &mut custody,
+                clients,
+                world,
+                spawns,
+                npcs,
+                export_loss.then_some(&mut capture_result),
+            ),
         )
         .await;
-    let saved_loss = export_loss.then(|| match &result {
-        Ok(()) if custody.0.complete() => Ok(()),
-        Ok(()) => Err("C20b full item-loss actions incomplete".to_owned()),
-        Err(error) => Err(error.to_string()),
-    });
-    custody.finish(result);
+    let complete = custody.0.complete();
+    custody.0.finish(&result);
+    let saved_loss = export_loss.then(|| client_capture_result(result, complete, capture_result));
 
     // Purchase qualification precedes consumption: Character 0 must retain its
     // never-aggressed low-level Adventurer eligibility for both protected deaths.
@@ -205,23 +234,28 @@ pub(super) async fn run(
             blessing_services(&mut services, clients, world, spawns, npcs),
         )
         .await;
-    finish_blessing_row(services, result);
+    finish_blessing_row(services, &result);
 
     let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[Fixture(0), Fixture(1)]);
+    let mut capture_result: TestResult = Err("capture point was not reached".into());
     let watch = consumption.0.watch();
     let result = watch
         .bound(
             Duration::from_secs(1500),
             "blessing consumption journey deadline; remaining actions unproven",
-            blessing_death(&mut consumption, clients, world, spawns, npcs, export_twist),
+            blessing_death(
+                &mut consumption,
+                clients,
+                world,
+                spawns,
+                npcs,
+                export_twist.then_some(&mut capture_result),
+            ),
         )
         .await;
-    let twist = export_twist.then(|| match &result {
-        Ok(()) if consumption.0.complete() => Ok(()),
-        Ok(()) => Err("C20c full Twist actions incomplete".to_owned()),
-        Err(error) => Err(error.to_string()),
-    });
-    finish_blessing_row(consumption, result);
+    let complete = consumption.0.complete();
+    finish_blessing_row(consumption, &result);
+    let twist = export_twist.then(|| client_capture_result(result, complete, capture_result));
 
     let mut resting = Row::new("P10", RESTING_BONUSES)
         .needs(&[Fixture(1)])
@@ -2060,7 +2094,7 @@ async fn item_loss(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
-    export_custody: bool,
+    capture_result: Option<&mut TestResult>,
 ) -> TestResult {
     let mut client = connect_world(clients, 0xc4).await?;
     let result: TestResult = async {
@@ -2076,12 +2110,12 @@ async fn item_loss(
         buy_amulet(&mut client, npc, amulet).await?;
         let purchased = wait_inventory(&mut client, |view| view.entries.iter().any(|item| item.item_definition_ref == amulet), "purchased Amulet of Loss inventory delta absent").await?;
         let owned = purchased.entries.iter().find(|item| item.item_definition_ref == amulet).ok_or("purchased amulet disappeared")?;
-        let refused = client.move_item(&items::ItemMoveIntent { source: owned.handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand) }).await?;
+        let refused = inventory::send(client.session_mut(), inventory::MoveRequest { source: owned.handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand), count: None }).await?.ok_or("C20b equipment move unavailable")?;
         if refused.outcome != items::ItemMoveOutcome::SlotMismatch { return Err(format!("amulet invalid slot did not refuse: {refused:?}").into()); }
         let unchanged = custody(&purchased);
         wait_inventory(&mut client, |view| custody(view) == unchanged, "invalid amulet equip changed custody").await?;
         row.pass("amulet-invalid-slot-refused", refused);
-        let equipped = client.move_item(&items::ItemMoveIntent { source: owned.handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Necklace) }).await?;
+        let equipped = inventory::send(client.session_mut(), inventory::MoveRequest { source: owned.handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Necklace), count: None }).await?.ok_or("C20b equipment move unavailable")?;
         if equipped.outcome != items::ItemMoveOutcome::Moved { return Err(format!("amulet equip refused: {equipped:?}").into()); }
         wait_inventory(&mut client, |view| view.equipment.iter().any(|entry| entry.slot == items::EquipmentSlot::Necklace && entry.item.item_definition_ref == amulet), "amulet necklace native delta absent").await?;
         row.pass("amulet-bought-equipped", client.inventory());
@@ -2117,8 +2151,8 @@ async fn item_loss(
         let saved = custody(&after);
         relog(&mut client, clients, 0xc5).await?;
         if custody(client.inventory().ok_or("unprotected relog inventory absent")?) != saved { return Err("unprotected death custody differs after fresh admission".into()); }
-        if export_custody {
-            client_row_c20b::capture_inventory(&mut client)?;
+        if let Some(capture_result) = capture_result {
+            *capture_result = client_row_c20b::capture_inventory(&mut client);
         }
         row.pass("unprotected-relog-custody", &saved);
         let destination = tile(encounter)?;
@@ -2253,15 +2287,15 @@ impl std::fmt::Display for MissingBlessingRoute {
 }
 impl std::error::Error for MissingBlessingRoute {}
 
-fn finish_blessing_row(row: Row, result: TestResult) {
-    if let Err(error) = &result
+fn finish_blessing_row(row: Row, result: &TestResult) {
+    if let Err(error) = result
         && error.downcast_ref::<MissingBlessingRoute>().is_some()
     {
         let source = "crates/gameplay/content/src/content/npc_catalogue/premium_services.rs:95";
         evidence(&format!("E2EF6_GAP {} {error} source:{source}", row.0.id));
         row.0.finish_missing_server(source);
     } else {
-        row.finish(result);
+        row.0.finish(result);
     }
 }
 
@@ -2690,13 +2724,31 @@ async fn adventurer_journey(
     result.and(cleanup)
 }
 
+async fn durable_death_occurrence(clients: &SeamClients<'_>) -> TestResult<Option<[u8; 16]>> {
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let id: Option<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(death_occurrence_id) FROM game_character_death_receipts
+         WHERE character_id=encode($1,'hex')::uuid AND death_world_id=encode($2,'hex')::uuid
+         ORDER BY committed_character_revision DESC LIMIT 1",
+    )
+    .bind(clients.characters[1].as_slice())
+    .bind(clients.world.as_slice())
+    .fetch_optional(&mut db)
+    .await?;
+    id.map(|id| {
+        id.try_into()
+            .map_err(|_| "invalid durable death occurrence width".into())
+    })
+    .transpose()
+}
+
 async fn blessing_death(
     row: &mut Row,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
-    export_receipt: bool,
+    capture_result: Option<&mut TestResult>,
 ) -> TestResult {
     adventurer_journey(row, clients, world, spawns, npcs, 0xa0).await?;
     let mut client = connect_world(clients, 0xa3).await?;
@@ -2727,19 +2779,32 @@ async fn blessing_death(
         let mut attacker = connect_character(clients, 0xa5, 0).await?;
         let fight: TestResult = async {
             earn_death_prerequisites(&mut attacker, world, spawns, 8, 0).await?;
-            let previous_occurrence = client_row_c20d::death_occurrence(&mut client).await?;
+            let previous_occurrence = if capture_result.is_some() {
+                Some(durable_death_occurrence(clients).await)
+            } else {
+                None
+            };
             let (before, after) = observed_pvp_death(&mut client, &mut attacker, world, spawns).await?;
             let regular = vec![WISDOM.2.to_owned()];
             if after.0 >= before.0 || blessings(&mut client).await? != regular {
                 return Err(format!("Twist PvP must lose XP, consume only Twist and retain Wisdom: before={before:?} after={after:?}").into());
             }
             row.pass("twist-pvp-consumes-only-twist", (&regular, before, after));
-            let expected_occurrence = client_row_c20d::death_occurrence(&mut client).await?
-                .filter(|occurrence| Some(*occurrence) != previous_occurrence)
-                .ok_or("C20c Twist death did not issue a new receipt")?;
+            let expected_occurrence: Option<TestResult<[u8; 16]>> = if let Some(previous) = previous_occurrence {
+                Some(async {
+                    let previous = previous?;
+                    durable_death_occurrence(clients).await?
+                        .filter(|occurrence| Some(*occurrence) != previous)
+                        .ok_or_else(|| "C20c Twist death did not commit a new durable receipt".into())
+                }.await)
+            } else {
+                None
+            };
             saved_blessings(&mut client, clients, 1, 0xa6, &regular, after).await?;
-            if export_receipt {
-                client_row_c20c::capture_receipt(&mut client, expected_occurrence).await?;
+            if let (Some(capture_result), Some(expected_occurrence)) = (capture_result, expected_occurrence) {
+                *capture_result = async {
+                    client_row_c20c::capture_receipt(&mut client, expected_occurrence?).await
+                }.await;
             }
             row.pass("twist-relog", (&regular, after));
             Ok(())
