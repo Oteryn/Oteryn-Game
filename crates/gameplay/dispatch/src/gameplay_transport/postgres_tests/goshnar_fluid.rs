@@ -44,6 +44,15 @@ pub(super) async fn exercise(
     h: &Harness,
 ) -> TestResult {
     assert!(owner.states.quest_callbacks.fixture.set(vec![callback(TARGET)?]).is_ok());
+    sqlx::query(
+        "INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')"
+    ).bind(id(42).as_slice()).execute(&h.pool).await?;
+    sqlx::query(
+        "INSERT INTO game_spell_field_world_policies
+         (world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity)
+         VALUES(encode($1,'hex')::uuid,'policy-1',1,8,60000,'99902524e052f37574194466c2949c576e4ab269',
+                session_user,'goshnar-optional-pvp-fixture')",
+    ).bind(id(42).as_slice()).execute(&h.pool).await?;
     let session = admitted.game_session_id;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let fence = owner.current_quest_fence(session).await

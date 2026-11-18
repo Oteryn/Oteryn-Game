@@ -32,7 +32,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         let session = command.game_session_id;
-        let optional_pvp = self.special_movement_policy(&permit, actor, session).await;
+        use oteryn_gameplay_combat_rules::pvp::WorldPvpType;
+        use oteryn_protocol_oteryn::pvp_expert::ExpertMode;
+        let world = {
+            let runtime = self.runtime.lock().await;
+            self.expert_context(&runtime, actor, session, command.command_id, &permit)
+                .await
+                .map(|(world, _)| world)
+        };
+        let optional_pvp = world.map(|world| world == WorldPvpType::Optional);
         let staging = MovementLocalPosition {
             x: i32::from(target.x) + i32::from(relocation.staging_dx),
             y: i32::from(target.y) + i32::from(relocation.staging_dy),
@@ -87,9 +95,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .filter_map(|&(who, at, member)| member.map(|member| (who, at, member)))
                     .collect()
             };
-            // Open PvP can already have a legal stack (Dove). In Hardcore, the
-            // occupied staging tile supplies at most one current player.
-            let stack = optional_pvp == Some(true) || movers.len() > 1;
+            // Fandom archive The_Pits_of_Inferno_Quest/Spoiler, Goshnar:
+            // Optional PvP and Dove in Open PvP can share the landing.
+            let stack = match world {
+                Some(WorldPvpType::Optional) => true,
+                Some(WorldPvpType::Open) => {
+                    let Ok(attack) = self.states.attack.try_lock() else {
+                        return UseDisposition::Rejected;
+                    };
+                    movers.iter().all(|(who, _, member)| {
+                        attack.expert_modes(*who, *member).expert == ExpertMode::Dove
+                    })
+                }
+                Some(WorldPvpType::Hardcore) | None => false,
+            };
+            if movers.len() > 1 && !stack {
+                return UseDisposition::NotPossible;
+            }
             let mut proofs = Vec::with_capacity(movers.len());
             for &(who, expected, member) in &movers {
                 if states.is_dead(who)
@@ -162,9 +184,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 u16::from(relocation.destination_effect),
             );
             self.states.chat.close_out_of_range(&runtime, member);
-            self.states
-                .chat
-                .push_quest_feedback(member, &relocation.speech);
+            self.states.chat.publish_private_quest_speech(
+                &runtime,
+                who,
+                member,
+                &relocation.speech,
+            );
         }
         UseDisposition::Committed
     }

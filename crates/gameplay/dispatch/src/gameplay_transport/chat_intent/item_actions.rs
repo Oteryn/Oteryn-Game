@@ -295,6 +295,51 @@ impl ChatRuntime {
         }
     }
 
+    pub(in crate::gameplay_transport) fn publish_private_quest_speech(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        speech: &str,
+    ) {
+        let (Ok(position), Some(generation), Ok(text), Ok(mut sessions)) = (
+            runtime.read_actor_position(actor),
+            NonZeroU64::new(actor.actor_local_generation()),
+            ChatText::parse(speech),
+            self.sessions.lock(),
+        ) else {
+            return;
+        };
+        let Some(entry) = sessions.get_mut(&session) else {
+            return;
+        };
+        let position = position.position();
+        let Ok(floor) = u8::try_from(position.floor) else {
+            return;
+        };
+        let at = ChatPosition {
+            x: position.x,
+            y: position.y,
+            floor,
+        };
+        let speaker = ChatSpeaker {
+            identity: actor.placement_identity(),
+            generation,
+        };
+        let mut line = local_line(
+            speaker,
+            &entry.name,
+            SpeechMode::Say,
+            &text,
+            at,
+            Heard::Text,
+        );
+        if let ChatLine::Local { mode, .. } = &mut line {
+            *mode = ChatSpeechMode::MonsterSay;
+        }
+        entry.egress.push(line);
+    }
+
     pub(in crate::gameplay_transport) fn publish_item_speech(
         &self,
         runtime: &ChannelRuntimeV1,

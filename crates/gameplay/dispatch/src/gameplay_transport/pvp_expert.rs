@@ -17,7 +17,7 @@ pub(super) fn effective_mode(mode: ExpertMode, black: bool) -> RuleMode {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    async fn expert_context(
+    pub(in crate::gameplay_transport) async fn expert_context(
         &self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,

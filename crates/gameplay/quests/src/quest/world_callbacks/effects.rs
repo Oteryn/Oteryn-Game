@@ -1027,11 +1027,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || (callback.trigger != Trigger::Use && !callback.has_fenced_step_reward())
                 || !callback.has_personal_state()
                 || (callback.item_on_target.is_none() && !callback.has_fenced_step_reward())
-                || callback
-                    .selector
-                    .native
-                    .as_ref()
-                    .is_none_or(|source| source.position == target.position)
+                || callback.selector.native.as_ref().map_or_else(
+                    || {
+                        effects.use_summon.is_none()
+                            || callback.selector.action.is_none()
+                            || !callback
+                                .item_on_target
+                                .as_ref()
+                                .is_some_and(|item| item.selected_instance)
+                            || callback.selector.position == Some(target.position)
+                    },
+                    |source| source.position == target.position,
+                )
                 || callback.lever.is_some()
                 || callback.reversible
                 || !callback.passages.is_empty()

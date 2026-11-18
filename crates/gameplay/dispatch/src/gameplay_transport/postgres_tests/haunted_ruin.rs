@@ -29,7 +29,7 @@ pub(super) fn callback(at: Position) -> TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
         "key":"oteryn:quest-callback/haunted-ruin-fixture",
         "quest":QUEST, "trigger":"use",
-        "selector":{"native":{"position":at,"ordinal":1,"appearance":100}},
+        "selector":{"position":at,"ordinal":1,"action":2003},
         "requires_world_admission":true,
         "reversible":false, "passages":[], "offerings":[], "return_on_failure":false,
         "storage":[
