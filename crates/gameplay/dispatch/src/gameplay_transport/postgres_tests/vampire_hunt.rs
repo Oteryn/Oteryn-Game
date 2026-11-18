@@ -97,10 +97,13 @@ pub(super) async fn exercise(
     },WorldObjectTarget {placement,expected_revision:map.facts.object_revision(key)}).await;
     assert_eq!(result.disposition,UseDisposition::Committed);
     let runtime = owner.runtime.lock().await;
-    let (_, summoned, _) = runtime.positioned_melee_census().map_err(debug)?
+    let (creature, summoned, _) = runtime.positioned_melee_census().map_err(debug)?
         .into_iter().find(|(_, at, session)| session.is_none() && at.position()==super::quest_world_callbacks::local(TARGET))
         .ok_or("summoned count")?;
     assert_eq!(summoned.position(),super::quest_world_callbacks::local(TARGET));
+    let expected = if all { b"oteryn:creature.the_weakened_count".as_slice() }
+        else { b"oteryn:creature.the_count".as_slice() };
+    assert!(runtime.matches_live_creature_identity(creature, expected));
     drop(runtime);
     let used: (i64,i64) = sqlx::query_as(
         "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),

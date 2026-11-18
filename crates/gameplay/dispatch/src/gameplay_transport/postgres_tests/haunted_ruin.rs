@@ -110,8 +110,17 @@ pub(super) async fn exercise(
         Ok(map.facts.base_entry(door,1,id).ok_or("door appearance")?.appearance_id)
     };
     assert_eq!(door_appearance(owner)?, 7868);
-    assert!(owner.runtime.lock().await.positioned_melee_census().map_err(debug)?.iter()
-        .any(|(_, position, session)| session.is_none() && position.position() == super::quest_world_callbacks::local(TARGET)));
+    let runtime = owner.runtime.lock().await;
+    assert!(runtime.positioned_melee_census().map_err(debug)?.iter().any(|(actor, position, session)| {
+        session.is_none() && position.position() == super::quest_world_callbacks::local(TARGET)
+            && runtime.matches_live_creature_identity(*actor, b"oteryn:creature.pirate_ghost")
+    }));
+    drop(runtime);
+    let consumed: (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+           (SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$2)",
+    ).bind(MISSION).bind(WATER).fetch_one(&h.pool).await?;
+    assert_eq!(consumed, (2,0));
     owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(11)).ok_or("clock")?;
     owner.tick_timed_items().await;
     assert_eq!(door_appearance(owner)?, 7869);

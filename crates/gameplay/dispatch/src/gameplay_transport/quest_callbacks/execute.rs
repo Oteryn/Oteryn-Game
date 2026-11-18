@@ -276,7 +276,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return result;
         }
-        let summon = match self.prepare_callback_summon(runtime, map, callback, pos) {
+        let summon = match self.prepare_callback_summon(runtime, map, callback, pos, cause) {
             Ok(summon) => summon,
             Err(disposition) => return disposition,
         };

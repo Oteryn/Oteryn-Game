@@ -95,7 +95,11 @@ pub fn charge_source(callback: &Callback) -> Option<(super::Position, Option<u8>
     {
         return None;
     }
-    Some((selector.position?, selector.ordinal, selector.appearance?))
+    Some((
+        selector.position?,
+        selector.ordinal.map(u8::try_from).transpose().ok()?,
+        selector.appearance?,
+    ))
 }
 
 pub(super) fn valid(callback: &Callback, charge: &ChargeWindow) -> bool {
