@@ -11,7 +11,7 @@ pub use calendar::NpcUtcCalendar;
 mod evaluate;
 mod hidden_threats;
 mod item_exchange;
-mod keyword;
+pub(super) mod keyword;
 mod marlin_trophy;
 mod player_name;
 mod questpc2_albinius_source;

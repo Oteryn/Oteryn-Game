@@ -25,7 +25,7 @@ pub(super) fn validate(keyword: &str, mode: NpcKeywordMode) -> Result<(), NpcRul
     Ok(())
 }
 
-pub(super) fn matches(
+pub(in crate::quest) fn matches(
     message: &str,
     keyword: &str,
     mode: NpcKeywordMode,
