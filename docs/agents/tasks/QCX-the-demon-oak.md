@@ -21,7 +21,8 @@ additional cross-check indicated below.
 
 | Part | Global and donor facts | Base Oteryn and disposition |
 | --- | --- | --- |
-| Entry | Global requires Premium, level 120, and a Holy Icon (9388). The BR cross-check and Crystal agree on first-entry consumption. Crystal also admits eligible returning players and checks grove occupancy. The demon task is a means of obtaining an icon. | The definition already records Premium and level 120. No entry callback exists in the live or held registry. The projected ground 918 at the donor STEP position (32716,32344,7) lacks startup UID 9000. Admission and re-entry are partial. |
+| Entry | Global requires Premium, level 120, and a Holy Icon (9388), with a recommended level of 130+. The BR cross-check and Crystal agree on first-entry consumption. Crystal also admits eligible returning players and checks grove occupancy. The demon task is a means of obtaining an icon. | The definition already records Premium and level 120. No entry callback exists in the live or held registry. The projected ground 918 at the donor STEP position (32716,32344,7) lacks startup UID 9000. Admission and re-entry are partial. |
+| Journal | Global records this quest under The Ultimate Challenges and displays its discovery message on entering the grove. | The definition is script-only with `shown_in_quest_log: false`, and the QuestState report has `NOT_LOWERED_NO_MISSIONS`. Journal admission remains tied to discovery and combat progression. |
 | Oldrak | Visit the grove, leave, talk to Oldrak, then exchange an Axe (3274) and 1,000 gold for one Hallowed Axe (919). Report the victory to Oldrak to unlock the grave. | The paid exchange and Done 1 → 2 report exist. The NPC start can advance an unvisited character and adds a separate confirmation before the axe instruction. Accurate visited gating remains tied to entry. |
 | Weak points | Global uses four separate hit counts, summons on hits 5 and 10, sometimes summons four Bonebeasts on the other hits, and replaces the last wave with one Demon. A hit deals 300 earth damage to the player. Crystal uses 170–210 earth damage and checks for live unsummoned monsters before key actions. | The inactive recipe substitutes four point checks and ten kills. There is no live attack callback or defender-wave owner. |
 | Area damage | The BR cross-check describes 300 physical and 500 earth damage alternating every 12 steps. Crystal uses a random trigger for area damage. | No live area-damage callback. |
@@ -36,7 +37,7 @@ additional cross-check indicated below.
 - BLOCKER Demon Oak weak points hit-indexed randomized retaliation waves and final-cut encounter ownership data-global/scripts/quests/demon_oak/actions_demon_oak.lua:62-124
 - BLOCKER Demon Oak damage self-damage on each hit and periodic movement-driven area damage data-global/scripts/quests/demon_oak/actions_demon_oak.lua:125 and data-global/scripts/quests/demon_oak/movements_area_damage.lua:3-16
 - OPEN-FACTS: Global grove occupancy rule, exact Global Avar Tar eligibility before claiming a chest, historical pre-9.5 reward exchange eligibility, and random Bonebeast probability. The World coordinates and four chest-to-item assignments are established by the donor startup tables and corroborated by the projected placements.
-- PARTIAL: entry and re-entry, Oldrak's visit gating and dialogue sequence, weak-point combat, area damage, Herbicide on successful exit, Avar Tar timing and inactive recipe parity.
+- PARTIAL: entry and re-entry, journal discovery and reporting, Oldrak's visit gating and dialogue sequence, weak-point combat, area damage, Herbicide on successful exit, Avar Tar timing and inactive recipe parity.
 
 ## Verification
 
@@ -62,3 +63,4 @@ The World pin generator reproduced the pinned bundle digest, and `pin-check`
 verified one World. The installed CLI required an explicit output directory.
 Quest authoring checks passed all 44 commands, including 27 Python tests.
 `cargo fmt --all -- --check` passed.
+`cargo clippy --locked -p oteryn-gameplay-dispatch --all-features --lib -- -D warnings` passed.
