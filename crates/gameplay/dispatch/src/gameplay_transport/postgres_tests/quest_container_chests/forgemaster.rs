@@ -218,18 +218,16 @@ pub(super) async fn use_chest(
         .map_err(|()| "Forgemaster claim fence read failed")?
         .ok_or("Forgemaster claim fence")?;
     let result = owner
-        .use_bundle_chest(
+        .use_world_object(
             actor,
             crate::gameplay_transport::connection::UseCommand {
                 game_session_id: admitted.game_session_id,
                 command_id,
                 item_fence: Some(current.item_fence()),
             },
-            owner.bundle_map().ok_or("Forgemaster map")?,
-            target,
+            target.clone(),
         )
-        .await
-        .ok_or("Forgemaster use did not bind")?;
+        .await;
     Ok(result.disposition)
 }
 

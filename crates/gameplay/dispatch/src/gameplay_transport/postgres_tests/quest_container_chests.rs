@@ -653,18 +653,16 @@ fn scenario_case(
                 .map_err(|()| "Forgemaster claim fence read failed")?
                 .ok_or("Forgemaster claim fence")?;
             let result = owner
-                .use_bundle_chest(
+                .use_world_object(
                     deps.actor,
                     crate::gameplay_transport::connection::UseCommand {
                         game_session_id: admitted.game_session_id,
                         command_id: 1,
                         item_fence: Some(current.item_fence()),
                     },
-                    owner.bundle_map().ok_or("Forgemaster claim map")?,
-                    &target,
+                    target,
                 )
-                .await
-                .ok_or("Forgemaster selector did not bind in production USE")?;
+                .await;
             assert_eq!(result.disposition, UseDisposition::NotPossible);
             let writes: i64 =
                 sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_reservations")
