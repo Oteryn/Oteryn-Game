@@ -1355,6 +1355,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                     pending.remove(&session);
                 }
+                // Crystal mission12_into_fortress.lua:570-573 signals the source
+                // portal as well as the room landing.
+                if let Some(magic) = &callback.effects.magic {
+                    map.facts
+                        .emit_movement_effect(tile(magic.position), magic.effect);
+                }
                 if callback.has_personal_state()
                     && let Some(message) = success_message
                 {

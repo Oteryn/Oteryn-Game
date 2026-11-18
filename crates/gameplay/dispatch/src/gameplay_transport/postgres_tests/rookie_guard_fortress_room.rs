@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{local, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{ExactActorRef, GameSessionId};
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
 use oteryn_protocol_oteryn::attack::{
@@ -91,7 +92,10 @@ fn document() -> serde_json::Value {
          "selector":{"position":ENTRY,"appearance":PORTAL},"requires_world_admission":true,
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":true,
          "storage":[{"track":TRACK,"minimum":11,"maximum":15,"set":12}],
+         "success_message":"You're entering Kraknaknork's throne room. You have 5 minutes to kill him!",
+         "failure_message":"A player is already inside the boss room.",
          "effects":{
+             "magic":{"position":ENTRY,"effect":11},
              "encounter":{"minimum_level":1,"players":[{"from":ENTRY,"to":LANDING}],
                  "monsters":[{"creature":"oteryn:creature.kraknaknork",
                               "position":BOSS}],
@@ -103,12 +107,16 @@ fn document() -> serde_json::Value {
         {"key":"oteryn:quest-callback/rookie-guard-fortress-room-exit","quest":QUEST,
          "trigger":"step_in","selector":{"position":EXIT_TILE,"appearance":PORTAL},
          "storage":[],"passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
-         "teleport":EXIT_LANDING,"effects":{"encounter_exit":ENTER},"sources":[SOURCE,PORTALS_SOURCE]},
+         "teleport":EXIT_LANDING,"success_message":"You backed out of the fight. You may try again at any time.",
+         "effects":{"encounter_exit":ENTER,"magic":{"position":EXIT_TILE,"effect":11},"teleport_effect":11},
+         "sources":[SOURCE,PORTALS_SOURCE]},
         {"key":"oteryn:quest-callback/rookie-guard-fortress-treasure","quest":QUEST,
          "trigger":"step_in","selector":{"position":TREASURE_TILE,"appearance":PORTAL},
          "requires_world_admission":true, "storage":[{"track":TRACK,"minimum":12,"maximum":12,"set":13}],
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":true,
-         "teleport":TREASURE,"effects":{"clear_area":{"minimum":{"x":31929,"y":32165,"floor":-10},
+         "teleport":TREASURE,"failure_message":"You may not use this teleporter yet.",
+         "effects":{"magic":{"position":TREASURE_TILE,"effect":11},"teleport_effect":11,
+             "clear_area":{"minimum":{"x":31929,"y":32165,"floor":-10},
               "maximum":{"x":31945,"y":32175,"floor":-10},"creatures":["oteryn:creature.kraknaknork"]}},
          "sources":[SOURCE,PORTALS_SOURCE]}
     ]})
@@ -179,6 +187,16 @@ pub(super) async fn exercise(
     let east = encode_step_intent(StepDirection::East);
     let west = encode_step_intent(StepDirection::West);
     wire(owner, admitted, 1, 1, east.clone()).await?;
+    let effects = owner.bundle_map().ok_or("map")?.facts.movement_effects_since(0);
+    for expected in [ENTRY, LANDING] {
+        assert!(
+            effects.iter().any(|(_, position, effect)| {
+                *effect == 11 && (position.x, position.y, position.floor)
+                    == (expected.x, expected.y, expected.floor)
+            }),
+            "the committed encounter signals both the portal and the room"
+        );
+    }
     advance_clock(owner, 2)?;
     wire(owner, &mut second, 1, 1, west.clone()).await?;
     {
