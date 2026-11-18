@@ -1024,10 +1024,7 @@ fn scenario_case(
             .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::super::death_ml_loss_composed::production_generation_with_pin(
-                deps.admitted.world_id,
-                "content-1",
-            )?;
+            super::super::quest_claims::generation(name, deps.admitted.world_id)?;
         let generation = controller.active().ok_or("generation")?;
         let world = if m03_use {
             super::super::qengine_m03_use::world(

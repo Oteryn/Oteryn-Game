@@ -144,6 +144,62 @@ fn fountain_replay_projects_the_rock_and_refuses_it_after_cooldown_postgres() ->
     super::qengine_rewards::scenario(FOUNTAIN_TRANSFORM)
 }
 
+pub(super) fn generation(
+    name: &str,
+    world: crate::foundation::WorldId,
+) -> TestResult<(
+    crate::content::ContentActivationController,
+    crate::content::NativeEntryContentPin,
+)> {
+    use crate::content::native_gameplay::{PinnedGameplayBytes, test_support};
+    use super::death_ml_loss_composed::{production_generation_with_pin, production_input_with_source};
+
+    if !matches!(name, DAILY | DAILY_HEART) {
+        return production_generation_with_pin(world, "content-1");
+    }
+    let mut input = production_input_with_source("content-1", None)?;
+    let profiles = input.item_profiles.as_mut().ok_or("native rewards need item profiles")?;
+    let mut packet: Value = serde_json::from_slice(&profiles.bytes)?;
+    let records = packet["records"].as_array_mut().ok_or("native item profiles")?;
+    let key = "oteryn:item.tibia.i21439";
+    if !records.iter().any(|row| row["production_definition"]["production_key"] == key) {
+        // The pinned runtime has the exact identity and taming rule but lacks
+        // a carried policy. Use the canonical semantics and admitted binding
+        // in this fixture. Crystal data/items/items.xml:42733-42738 supplies
+        // the item name, weight and necklace slot.
+        let definitions: Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"), "/../../../content/items/definitions/items-10500-10999.json"
+        )))?;
+        let mut semantics = definitions["records"].as_array().ok_or("item definitions")?
+            .iter().find(|row| row["definition"]["identity"]["key"] == key)
+            .ok_or("Lion's Heart semantics")?["definition"]["semantics"].clone();
+        semantics["physical"]["value"]["movable"] = json!({"state":"KNOWN","value":true});
+        semantics["stack"]["value"]["stack_max"] = json!({"state":"NOT_APPLICABLE"});
+        semantics["container"] = json!({"state":"NOT_APPLICABLE"});
+        let bindings: Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"), "/../../../imports/crystalserver/bindings/items.json"
+        )))?;
+        let binding = bindings["bindings"].as_array().ok_or("item bindings")?
+            .iter().find(|row| row["external_id"] == "21439" && row["target"]["key"] == key)
+            .ok_or("Lion's Heart binding")?;
+        records.push(json!({
+            "authoring":{"item":binding["target"]},
+            "semantics":semantics,
+            "attributes":{"speed_bonus":0,"always_on_top":false,"always_on_top_order":0},
+            "admission":{"materializable":true,"stack_class":"NonStackable",
+                         "legal_destinations":["CharacterInventory","Ground"]},
+            "production_definition":{"family":"Item","production_key":key,"revision_ref":"definition-r1"},
+            "production_binding":binding,
+        }));
+        let bytes = serde_json::to_vec(&packet)?;
+        *profiles = PinnedGameplayBytes {
+            sha256: Sha256::digest(&bytes).iter().map(|byte| format!("{byte:02x}")).collect(),
+            bytes,
+        };
+    }
+    test_support::try_activate_input(world, &input).map_err(debug)
+}
+
 pub(super) fn map_fixture(name: &str, callback: &mut Callback) {
     if name == FOUNTAIN_TRANSFORM {
         callback.selector.appearance = Some(LIONS_FOUNTAIN);
