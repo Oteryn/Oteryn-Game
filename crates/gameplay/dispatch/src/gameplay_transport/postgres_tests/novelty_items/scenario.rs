@@ -14,7 +14,9 @@ fn nurik_catalogue() -> TestResult<oteryn_gameplay_quests::quest::QuestStateCata
     };
     use serde_json::json;
     const CRYSTAL: &str =
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nurik.lua:53-63,105";
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nurik.lua:53-63";
+    const GREETING: &str =
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nurik.lua:105";
     const QUEST: &str = "oteryn:quest.the_thieves_guild_quest";
     const MISSION: &str = "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04";
     let program = json!({
@@ -25,7 +27,7 @@ fn nurik_catalogue() -> TestResult<oteryn_gameplay_quests::quest::QuestStateCata
              "trigger":"greet","keywords":["hi","hello"],
              "guards":[{"kind":"storage","track":MISSION,"op":"eq","value":6},
                        {"kind":"temporary_outfit","look_type":66}],
-             "reply":[NURIK_WELCOME],"sources":[CRYSTAL]},
+             "reply":[NURIK_WELCOME],"sources":[CRYSTAL,GREETING]},
             {"key":"oteryn:quest-npc/thieves-guild/nurik/refusal","quest":QUEST,"npc":NURIK,
              "trigger":"greet","keywords":["hi","hello"],"reply":[NURIK_REFUSAL],
              "effects":[{"kind":"end_conversation","delay_ms":0}],"sources":[CRYSTAL]}
