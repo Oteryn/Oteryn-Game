@@ -920,4 +920,4 @@ mod draconia_source_tests {
 #[cfg(test)]
 mod engnpc_finales;
 
-pub(super) mod completion_predecessors;
+mod completion_predecessors;
