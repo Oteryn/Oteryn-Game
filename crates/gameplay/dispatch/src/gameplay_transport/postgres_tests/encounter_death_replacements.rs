@@ -23,6 +23,8 @@ const STEED: &str = "oteryn:creature.thorn_steed";
 const DRAGON_ESSENCE: &str = "oteryn:creature.dragon_essence";
 const ESSENCE_AREA_MIN: Position = at(33603, 31009);
 const ESSENCE_AREA_MAX: Position = at(33631, 31037);
+const DRAGON_SPAWN: Position = at(33617, 31023);
+const ESSENCE_ANNOUNCEMENT: &str = "BEWARE! THE FIRST DRAGON APROACHES!";
 const ESSENCE_WAVE: [Position; 6] = [
     at(33624, 31028),
     at(33609, 31018),
@@ -322,7 +324,8 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
             json!({"terminal":DRAGON,"replacements":[
                 {"defeated":DRAGON_ESSENCE,"retire_siblings":true,
                  "retire_siblings_in":{"minimum":ESSENCE_AREA_MIN,"maximum":ESSENCE_AREA_MAX},
-                 "spawn":[{"creature":DRAGON,"position":at(33617,31023)}]}
+                 "announcement":{"text":ESSENCE_ANNOUNCEMENT,"position":DRAGON_SPAWN},
+                 "spawn":[{"creature":DRAGON,"position":DRAGON_SPAWN}]}
             ]}),
         )
     };
@@ -838,6 +841,15 @@ pub(super) async fn exercise(
             super::quest_world_callbacks::local(below(31989, 32823))
         );
     } else {
+        let map = owner.bundle_map().ok_or("First Dragon finale map")?;
+        let announcements = || {
+            map.facts
+                .movement_speech_since(0)
+                .into_iter()
+                .filter(|(_, speech)| speech.text == ESSENCE_ANNOUNCEMENT)
+                .map(|(_, speech)| speech)
+                .collect::<Vec<_>>()
+        };
         let cohort = live(owner, DRAGON_ESSENCE).await?;
         let (defeated, outside) = if name == ESSENCE {
             assert!(cohort.is_empty());
@@ -871,6 +883,7 @@ pub(super) async fn exercise(
             };
             super::engenc2_cults::kill(owner, admitted, outside_death, DRAGON_ESSENCE, 100).await?;
             assert!(live(owner, DRAGON).await?.is_empty());
+            assert!(announcements().is_empty());
             assert_eq!(live(owner, DRAGON_ESSENCE).await?.len(), 19);
             (inside, Some(outside_survivor))
         } else {
@@ -883,6 +896,21 @@ pub(super) async fn exercise(
             outside.into_iter().collect::<Vec<_>>()
         );
         assert_eq!(live(owner, DRAGON).await?.len(), 1);
+        let lines = announcements();
+        let [line] = lines.as_slice() else {
+            return Err("one announcement for the committed Essence transition".into());
+        };
+        assert_eq!(line.speaker, defeated);
+        assert_eq!(line.talk_type, 36);
+        assert!(line.captured_name.is_some());
+        assert_eq!(
+            line.position,
+            crate::map::overlay::TilePos {
+                x: DRAGON_SPAWN.x,
+                y: DRAGON_SPAWN.y,
+                floor: DRAGON_SPAWN.floor,
+            }
+        );
         if name == VICTORY {
             let peer =
                 super::ferumbras_crystal_reset::admit_peer(owner, h, at(33622, 31023)).await?;

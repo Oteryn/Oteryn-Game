@@ -542,10 +542,21 @@ pub struct DeathReplacement {
     /// When the source sweeps a whole room, include later arrivals of the defeated species.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub retire_siblings_in: Option<DeathRetirementArea>,
+    /// The defeated creature speaks only after its replacement has been published.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub announcement: Option<DeathAnnouncement>,
     pub spawn: Vec<ReplacementActor>,
     /// Move an existing encounter member only if it still occupies the source tile.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub relocate: Option<DeathRelocation>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathAnnouncement {
+    pub text: String,
+    /// Omit to speak from the sealed death cell.
+    pub position: Option<Position>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -652,8 +663,15 @@ fn valid_death_phases(
             || rule
                 .retire_siblings_in
                 .is_some_and(|area| !rule.retire_siblings || !area.valid())
+            || rule.announcement.as_ref().is_some_and(|speech| {
+                speech.text.trim().is_empty()
+                    || speech.text.len() > 256
+                    || speech.text.chars().any(char::is_control)
+                    || speech.position.is_some_and(|position| !in_room(position))
+            })
             || if let Some(relocate) = &rule.relocate {
                 !rule.spawn.is_empty()
+                    || rule.announcement.is_some()
                     || rule.retire_siblings
                     || !known.contains(relocate.creature.as_str())
                     || relocate.creature == rule.defeated

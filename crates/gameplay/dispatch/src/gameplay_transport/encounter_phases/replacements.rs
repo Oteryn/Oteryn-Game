@@ -338,6 +338,31 @@ impl Replacements {
                 .try_reserve(spawn.len())
                 .map_err(|_| CarrierError::AllocationFailed)?;
             let next = runtime.commit_quest_creature_replacement(&retire, &spawn, || true)?;
+            if let Some(announcement) = &rule.announcement
+                && let NativeMovementCollisionIndex::Bundle(map) = cells.index()
+                && let Some(position) = super::super::quest_callbacks::native(
+                    announcement
+                        .position
+                        .map_or(at, super::super::quest_callbacks::local),
+                )
+                && let Ok(creature) =
+                    runtime.companion_snapshot_including_dead(self.members[index].actor)
+                && let Ok(name) = oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(
+                    &creature.state.policy.display_name,
+                )
+            {
+                // Crystal 201189f8, creaturescripts_death_dragon_essence.lua:11-12
+                // and creaturescripts_thorn_knight_death.lua:13-17.
+                map.map()
+                    .facts
+                    .emit_movement_speech(crate::map::facts::MovementSpeech {
+                        speaker: self.members[index].actor,
+                        position,
+                        talk_type: 36,
+                        text: announcement.text.clone(),
+                        captured_name: Some(name),
+                    });
+            }
             self.members.swap_remove(index);
             if rule.retire_siblings_in.is_some() {
                 self.completed_sweeps.insert(rule.defeated.clone());
