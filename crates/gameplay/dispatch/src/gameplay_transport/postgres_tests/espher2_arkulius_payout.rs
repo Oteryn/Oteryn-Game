@@ -141,7 +141,14 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
             .map_err(debug)?,
     );
     owner.quest_catalogue = Some(catalogue.clone());
-    owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
+    owner.admit_premium(account, admitted.game_session_id);
+    // Production admission settles the latch before dialogue reads its live view.
+    assert!(
+        owner
+            .session_premium_gate(admitted.game_session_id)
+            .await
+            .premium_current()
+    );
     let [arkulius] =
         super::npc_dialogue_fixture::install(&owner, &admitted, ["oteryn:npc.arkulius"]).await?;
     let fence = owner
