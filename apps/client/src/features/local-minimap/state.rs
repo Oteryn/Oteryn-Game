@@ -7,7 +7,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     io,
     path::PathBuf,
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant},
 };
 pub type SharedMinimap = std::sync::Arc<std::sync::Mutex<Minimap>>;
 pub fn lock(shared: &SharedMinimap) -> std::sync::MutexGuard<'_, Minimap> {
@@ -77,22 +77,22 @@ type CellPosition = (i16, i32, i32);
 enum CellChange {
     Discover,
     Set(u8),
-    Clear,
 }
 
-// Clients sharing a cache run on the same host. Record when the tile was observed
-// so a change held by a stale view is ordered by observation, even if saved later.
-fn observation_time() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| {
-            u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX)
-        })
+impl CellChange {
+    fn merge(self, changes: &mut CellChanges, key: CellPosition) {
+        match self {
+            Self::Discover => {
+                changes.entry(key).or_insert(self);
+            }
+            Self::Set(_) => {
+                changes.insert(key, self);
+            }
+        }
+    }
 }
 
-type CellObservation = (u64, CellChange);
-type CellChanges = BTreeMap<CellPosition, CellObservation>;
-
+type CellChanges = BTreeMap<CellPosition, CellChange>;
 type Binding = ([u8; 32], [u8; 32], u64);
 const MAX_CELLS: usize = 1_048_576;
 const MAX_MARKERS: usize = 512;
@@ -116,19 +116,16 @@ pub struct Marker {
 struct Saved {
     version: u8,
     cells: Vec<[i32; 4]>,
-    // Parallel to cells. Older caches and portable exports have no observation times.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    observed_at: Vec<u64>,
-    #[serde(default, skip_serializing_if = "is_zero")]
-    imported_at: u64,
+    // Accept the version 1 fields written by older clients.
+    #[serde(default, rename = "observed_at", skip_serializing)]
+    legacy_observed_at: Vec<u64>,
+    #[serde(default, rename = "imported_at", skip_serializing)]
+    _legacy_imported_at: u64,
     // Keep receipts in the same atomic write as the cells, so a restart
     // between replacing the cache and removing a journal cannot replay it.
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     applied_journals: BTreeSet<String>,
     markers: Vec<Marker>,
-}
-fn is_zero(value: &u64) -> bool {
-    *value == 0
 }
 
 #[derive(Debug)]
@@ -304,56 +301,19 @@ impl Minimap {
                 self.feedback = lfmt!("Could not load minimap: {error}", error = error);
             }
         }
-        // The snapshot is authoritative only within its visible window. Retain distant
-        // exploration, but remove cleared cells and item-only tiles from remembered ground.
-        use oteryn_session::world_map::{
-            VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH, floors_in_view, in_window,
-        };
-        let origin = map.header.origin;
-        let now = observation_time();
-        let has_cache = self.world.is_some() && self.root.is_some();
-        let observed: BTreeSet<_> = map
-            .tiles
-            .iter()
-            .filter(|tile| {
-                tile.ground_speed > 0
-                    && cache_position(
-                        i32::from(tile.position.floor),
-                        tile.position.x,
-                        tile.position.y,
-                    )
-                    && tile.position.floor <= map.header.first_visible_floor
-                    && in_window(origin, tile.position)
-            })
-            .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
-            .collect();
-        if let Some(floors) = floors_in_view(origin.floor) {
-            for floor in floors.filter(|f| *f <= map.header.first_visible_floor) {
-                let shift = i64::from(floor) - i64::from(origin.floor);
-                for y in 0..VIEW_HEIGHT {
-                    for x in 0..VIEW_WIDTH {
-                        let (Ok(x), Ok(y)) = (
-                            i32::try_from(
-                                i64::from(origin.x) - i64::from(VIEW_LEFT) + shift + i64::from(x),
-                            ),
-                            i32::try_from(
-                                i64::from(origin.y) - i64::from(VIEW_TOP) + shift + i64::from(y),
-                            ),
-                        ) else {
-                            continue;
-                        };
-                        let key = (floor, x, y);
-                        if !observed.contains(&key) && cache_position(i32::from(floor), x, y) {
-                            let removed = self.cells.remove(&key).is_some();
-                            if removed || has_cache {
-                                self.cell_changes.insert(key, (now, CellChange::Clear));
-                            }
-                        }
-                    }
-                }
+        // Only visible ground contributes to exploration. Unseen and empty
+        // positions leave remembered terrain intact.
+        use oteryn_session::world_map::in_window;
+        for tile in &map.tiles {
+            let position = tile.position;
+            let key = (position.floor, position.x, position.y);
+            if tile.ground_speed == 0
+                || !cache_position(i32::from(position.floor), position.x, position.y)
+                || position.floor > map.header.first_visible_floor
+                || !in_window(map.header.origin, position)
+            {
+                continue;
             }
-        }
-        for key in observed {
             if self.cells.len() >= MAX_CELLS && !self.cells.contains_key(&key) {
                 self.feedback =
                     tr!("Local exploration limit reached; existing exploration is retained").into();
@@ -361,17 +321,18 @@ impl Minimap {
             }
             if let std::collections::btree_map::Entry::Vacant(entry) = self.cells.entry(key) {
                 entry.insert(55);
-                self.cell_changes.insert(key, (now, CellChange::Discover));
+                self.cell_changes.insert(key, CellChange::Discover);
             }
             if let Some(&colour) = colours.get(&key)
                 && let Some(&current) = self.cells.get(&key)
                 && (current != colour
-                    || matches!(self.cell_changes.get(&key), Some((_, CellChange::Discover))))
+                    || matches!(self.cell_changes.get(&key), Some(CellChange::Discover)))
             {
                 self.set_cell_colour(key, colour);
             }
         }
-        if self.saved_at.elapsed() >= Duration::from_secs(5)
+        if !self.cell_changes.is_empty()
+            && self.saved_at.elapsed() >= Duration::from_secs(5)
             && let Err(error) = self.save()
         {
             self.feedback = lfmt!("Could not save minimap: {error}", error = error);
@@ -380,7 +341,7 @@ impl Minimap {
     fn set_cell_colour(&mut self, key: CellPosition, colour: u8) {
         self.cells.insert(key, colour);
         self.cell_changes
-            .insert(key, (observation_time(), CellChange::Set(colour)));
+            .insert(key, CellChange::Set(colour));
     }
 
     pub fn follow(&mut self, x: i32, y: i32, floor: i16) {
@@ -492,8 +453,15 @@ impl Minimap {
         {
             return Err(io::Error::other("Quest markers are supplied by the server"));
         }
-        self.update_cache(|markers| {
-            let index = markers.iter().position(|m| (m.x, m.y, m.floor) == position);
+        let at_position = |marker: &Marker| (marker.x, marker.y, marker.floor) == position;
+        let current = self.markers.iter().find(|marker| at_position(marker));
+        if self.cell_changes.is_empty()
+            && ((create_only && current.is_some()) || current == replacement.as_ref())
+        {
+            return Ok(false);
+        }
+        self.update_cache(false, |markers| {
+            let index = markers.iter().position(at_position);
             match (index, replacement) {
                 (Some(_), _) if create_only => return Ok(false),
                 (Some(index), Some(marker)) => markers[index] = marker,
@@ -516,7 +484,7 @@ impl Minimap {
 
     pub fn save(&mut self) -> io::Result<()> {
         if !self.cell_changes.is_empty() {
-            self.update_cache(|_| Ok(true))?;
+            self.update_cache(false, |_| Ok(true))?;
         }
         Ok(())
     }
@@ -533,6 +501,7 @@ impl Minimap {
 
     fn update_cache(
         &mut self,
+        recover: bool,
         change: impl FnOnce(&mut Vec<Marker>) -> io::Result<bool>,
     ) -> io::Result<bool> {
         let Some(path) = self.path() else {
@@ -545,80 +514,53 @@ impl Minimap {
             return Err(io::Error::other(tr!("Invalid minimap file")));
         }
         let _lock = Saved::lock_cache(&path)?;
-        // Apply only local changes to the latest cache. The view may have loaded
-        // before another client explored, cleared a cell, or edited a marker.
+        // Merge local observations into the latest cache while holding its lock.
         let Saved {
             cells,
-            observed_at,
-            imported_at,
             applied_journals,
             markers,
             ..
         } = Saved::read_from(&path)?.unwrap_or_default();
         let mut next_markers = markers.clone();
-        if !change(&mut next_markers)? {
+        let changed = change(&mut next_markers)?;
+        let marker_changed = next_markers != markers;
+        if !recover && !marker_changed && self.cell_changes.is_empty() {
             self.markers = next_markers;
-            return Ok(false);
+            return Ok(changed);
         }
         let journals = Saved::staged_names(&path)?;
         let mut unapplied = journals.difference(&applied_journals);
         let mut changes = Saved::staged_changes(&path, unapplied.clone())?;
         for (&key, &change) in &self.cell_changes {
-            if changes
-                .get(&key)
-                .is_none_or(|current| current.0 <= change.0)
-            {
-                changes.insert(key, change);
-            }
+            change.merge(&mut changes, key);
         }
-        let mut cells: BTreeMap<_, _> = cells
-            .into_iter()
-            .zip(observed_at.into_iter().chain(std::iter::repeat(0)))
-            .map(|([f, x, y, c], time)| ((f as i16, x, y), (c as u8, time)))
-            .collect();
-        let mut dirty = next_markers != markers || unapplied.next().is_some();
-        // Clear first so an eligible deletion can make room for a discovery.
-        for (&key, &(time, change)) in &changes {
-            if matches!(change, CellChange::Clear)
-                && time >= imported_at
-                && cells.get(&key).is_some_and(|&(_, saved)| saved <= time)
-            {
-                cells.remove(&key);
-                dirty = true;
-            }
-        }
+        let mut cells = saved_cells(cells);
+        let mut dirty = marker_changed || unapplied.next().is_some();
         let mut limit_reached = false;
-        for (key, (time, change)) in changes {
-            if time < imported_at || matches!(change, CellChange::Clear) {
-                continue;
-            }
+        for (key, change) in changes {
             let current = cells.get(&key).copied();
-            if current.is_some_and(|(_, saved)| saved > time) {
-                continue;
-            }
             if current.is_none() && cells.len() >= MAX_CELLS {
                 limit_reached = true;
                 continue;
             }
             let colour = match change {
                 CellChange::Set(colour) => colour,
-                _ => current.map_or(55, |(colour, _)| colour),
+                CellChange::Discover => current.unwrap_or(55),
             };
-            cells.insert(key, (colour, time));
-            dirty = true;
+            if current != Some(colour) {
+                cells.insert(key, colour);
+                dirty = true;
+            }
         }
         if dirty {
             let mut saved = Saved {
                 cells: Vec::with_capacity(cells.len()),
-                observed_at: Vec::with_capacity(cells.len()),
-                imported_at,
                 applied_journals: journals.clone(),
                 markers: next_markers,
                 ..Saved::default()
             };
-            for (&(f, x, y), &(colour, time)) in &cells {
+            for (&(f, x, y), &colour) in &cells {
                 saved.cells.push([i32::from(f), x, y, i32::from(colour)]);
-                saved.observed_at.push(time);
             }
             saved.validate()?;
             saved.write_to(&path)?;
@@ -631,14 +573,11 @@ impl Minimap {
             self.feedback =
                 tr!("Local exploration limit reached; existing exploration is retained").into();
         }
-        self.cells = cells
-            .into_iter()
-            .map(|(key, (colour, _))| (key, colour))
-            .collect();
+        self.cells = cells;
         self.markers = next_markers;
         self.cell_changes.clear();
         self.saved_at = Instant::now();
-        Ok(true)
+        Ok(changed)
     }
 
     fn load(&mut self) -> io::Result<()> {
@@ -646,7 +585,7 @@ impl Minimap {
             return Ok(());
         };
         if !Saved::staged_names(&path)?.is_empty() {
-            match self.update_cache(|_| Ok(true)) {
+            match self.update_cache(true, |_| Ok(true)) {
                 Ok(_) => return Ok(()),
                 Err(error) if error.kind() == io::ErrorKind::WouldBlock => {}
                 Err(error) => return Err(error),
@@ -655,8 +594,6 @@ impl Minimap {
         let Some(saved) = Saved::read_from(&path)? else {
             return Ok(());
         };
-        // Version 1 uses the same value for old item-only cells and real gray terrain.
-        // Only an authoritative observation can tell which remembered cells to clear.
         self.cells = saved_cells(saved.cells);
         self.markers = saved.markers;
         Ok(())
@@ -675,8 +612,8 @@ impl Default for Saved {
         Self {
             version: 1,
             cells: Vec::new(),
-            observed_at: Vec::new(),
-            imported_at: 0,
+            legacy_observed_at: Vec::new(),
+            _legacy_imported_at: 0,
             applied_journals: BTreeSet::new(),
             markers: Vec::new(),
         }

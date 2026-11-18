@@ -32,7 +32,7 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     };
     map.observe(&snapshot);
     map.edit_marker(100, 200, -7, "Home".into(), 1)?;
-    // A live window clears a legacy item-only cell when it confirms no ground there.
+    // Exploration saved by an older client survives an empty observation.
     map.set_cell_colour((-7, 103, 200), 86);
     map.save()?;
     let binding = map.binding;
@@ -42,7 +42,7 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     restored.observe(&snapshot);
     assert_eq!(restored.markers[0].label, "Home");
     assert!(restored.cells.contains_key(&(-7, 100, 200)));
-    assert!(!restored.cells.contains_key(&(-7, 103, 200)));
+    assert_eq!(restored.cells.get(&(-7, 103, 200)), Some(&86));
     snapshot.header.reset_epoch += 1;
     restored.observe(&snapshot);
     assert!(restored.markers.is_empty());
@@ -74,7 +74,7 @@ fn camera_and_marker_validation_do_not_change_gameplay_positions()
     Ok(())
 }
 #[test]
-fn authoritative_window_clears_ground_but_preserves_distant_exploration() {
+fn empty_and_item_only_observations_preserve_exploration() {
     use oteryn_session::{
         ActorPosition,
         world_map::{MapTile, MapViewHeader, WorldMapViewSnapshot},
@@ -110,9 +110,9 @@ fn authoritative_window_clears_ground_but_preserves_distant_exploration() {
     cleared.tiles.clear();
     map.observe(&cleared);
     assert!(map.cells.contains_key(&(-7, 100, 200)));
-    assert!(!map.cells.contains_key(&(-7, 1000, 200)));
+    assert!(map.cells.contains_key(&(-7, 1000, 200)));
     map.observe(&snapshot(100, 0));
-    assert!(!map.cells.contains_key(&(-7, 100, 200)));
+    assert!(map.cells.contains_key(&(-7, 100, 200)));
 }
 
 #[test]

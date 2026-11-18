@@ -107,7 +107,7 @@ fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(),
     let mut empty = map;
     empty.tiles.clear();
     play.set_live_map(&empty)?;
-    assert_eq!(mini(&play).len(), 31 * 25 + 2); // Creature remains; the authoritative clear removes terrain.
+    assert_eq!(mini(&play).len(), 31 * 25 + 3); // The creature and remembered terrain remain.
     Ok(())
 }
 
