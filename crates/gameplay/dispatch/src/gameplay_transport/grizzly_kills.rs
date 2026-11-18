@@ -3,6 +3,7 @@
 //! Crystal 201189f `creaturescripts_monster_kill.lua:18-56`, `party.lua:129-139`.
 
 use std::sync::Arc;
+mod death_windows;
 mod encounters;
 mod guardians;
 pub(super) mod native_goals;
@@ -109,6 +110,7 @@ impl FrozenGrizzlyDeath {
 /// their first capture, bounded by the carrier's existing pinned/unpinned corpse ceilings.
 #[derive(Debug, Default)]
 pub(super) struct GrizzlyCaptureCache {
+    pub(super) death_windows: death_windows::DeathWindows,
     guardians: Vec<guardians::GuardianSlot>,
     sessions: Vec<TaskSnapshot>,
     deaths: Vec<(ExactActorRef, [u8; 16], Arc<FrozenGrizzlyDeath>)>,
@@ -497,6 +499,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(mut cache) = attack.kills().1.lock() else {
             return;
         };
+        cache.death_windows.install(self.callback_content());
         if !cache.hits.install(runtime, session, hit_snapshot) {
             super::operator_event("quest_hit_snapshot_capacity_refused");
         }

@@ -1970,6 +1970,11 @@ pub fn record_creature_kill(
         refuse("no_loot_binding", "unknown");
         return;
     };
+    if wild && let Ok(mut cache) = sink.queue.1.lock() {
+        cache
+            .death_windows
+            .observe(runtime, target, &creature, now_ms);
+    }
     // Retain room victory independently of loot admission. If a personal reward
     // plan is admitted, its existing atomic settlement consumes the room death;
     // otherwise the nonreward descendant still needs this sealed occurrence.

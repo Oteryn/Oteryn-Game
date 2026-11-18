@@ -54,6 +54,9 @@ pub struct CallbackEffects {
     /// Current native occupants must be absent before a previously started stage commits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clear_area: Option<ClearArea>,
+    /// A shared exit is usable during the window opened by a qualifying death.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub death_window: Option<DeathWindow>,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
@@ -148,6 +151,31 @@ impl From<&str> for QuestCompletion {
 #[serde(deny_unknown_fields)]
 pub struct RewardDoor {
     pub claim: String,
+}
+
+/// Crystal 201189f8 creaturescripts_inquisition_boss.lua:19-29 and
+/// creaturescripts_bosses_kill.lua:126-134 open exits on death.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathWindow {
+    pub creatures: Vec<String>,
+    pub area: crate::quest::authored_bindings::kills::DeathArea,
+    pub required_deaths: u8,
+    pub duration_ms: u32,
+}
+
+impl DeathWindow {
+    pub(super) fn valid(&self) -> bool {
+        (1..=8).contains(&self.creatures.len())
+            && (1..=8).contains(&self.required_deaths)
+            && (1..=3_600_000).contains(&self.duration_ms)
+            && self.area.valid()
+            && self.creatures.iter().enumerate().all(|(index, key)| {
+                key.starts_with("oteryn:creature.")
+                    && crate::quest::valid_quest_key(key)
+                    && !self.creatures[..index].contains(key)
+            })
+    }
 }
 
 impl CallbackEffects {

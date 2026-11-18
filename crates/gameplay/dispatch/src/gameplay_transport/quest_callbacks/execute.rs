@@ -23,6 +23,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
     ) -> UseDisposition {
+        if let Some(window) = &callback.effects.death_window
+            && !self.states.attack.try_lock().is_ok_and(|attack| {
+                attack.kills().1.lock().is_ok_and(|capture| {
+                    capture.death_windows.is_open(
+                        runtime,
+                        &callback.key,
+                        window,
+                        self.owner_now().get() / 1_000,
+                    )
+                })
+            })
+        {
+            return UseDisposition::Rejected;
+        }
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
             && let Some(bindings) = catalogue.authored_bindings()

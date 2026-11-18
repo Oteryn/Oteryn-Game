@@ -82,7 +82,7 @@ mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
 pub use effects::{
-    CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
+    CallbackEffectSet, CallbackEffects, DeathWindow, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
     MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion,
     RewardDoor, TargetTransform,
@@ -907,6 +907,13 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
         let operation_tracks: BTreeSet<_> = callback.operations().map(|s| &s.track).collect();
         let alias_positions: BTreeSet<_> = selector.position_aliases.iter().copied().collect();
         if !completed_quests::valid(callback)
+            || callback.effects.death_window.as_ref().is_some_and(|window| {
+                !window.valid()
+                    || callback.trigger != Trigger::StepIn
+                    || callback.actor_kind != ActorKind::Player
+                    || callback.teleport.is_none()
+                    || callback.reversible
+            })
             || (callback.key == super::dreamer_fire_bug::IGNITE
                 && !super::dreamer_fire_bug::callbacks().contains(callback))
             || (matches!(
