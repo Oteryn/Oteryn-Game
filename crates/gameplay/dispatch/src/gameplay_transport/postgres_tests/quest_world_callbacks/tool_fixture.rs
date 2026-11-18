@@ -20,6 +20,8 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use std::num::NonZeroU64;
 
+mod source_items;
+
 pub(in super::super) fn run_world(
     admin: String,
     name: &'static str,
@@ -100,11 +102,15 @@ pub(in super::super) fn run_bound_world(
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
+        let mut input =
+            super::super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+        source_items::bind(&mut input)?;
         let (controller, activated) =
-            super::super::death_ml_loss_composed::production_generation_with_pin(
+            crate::content::native_gameplay::test_support::try_activate_input(
                 deps.admitted.world_id,
-                "content-1",
-            )?;
+                &input,
+            )
+            .map_err(debug)?;
         let generation = controller.active().ok_or("generation")?;
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
