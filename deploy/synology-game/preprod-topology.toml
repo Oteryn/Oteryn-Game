@@ -43,7 +43,7 @@ route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 runtime_observation_revision = "obs.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-map_revision = "1877fc1213b9c495ed07e01470569fc231088fa2b96d8db0cc123de468b702ff"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+map_revision = "99551c34c15d7627696db98f89d238b2975265416fd2aed574191b0bd98d7509"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
 
@@ -55,7 +55,7 @@ offer_revision = "offer.1"
 # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
 enabled = true
 path = "<BASE>/world/world.otbundle"
-digest = "1877fc1213b9c495ed07e01470569fc231088fa2b96d8db0cc123de468b702ff"
+digest = "99551c34c15d7627696db98f89d238b2975265416fd2aed574191b0bd98d7509"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
 content_revision = "seasonal-cake-creature-20261107-r1"
