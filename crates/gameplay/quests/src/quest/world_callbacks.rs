@@ -1062,7 +1062,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .iter()
                     .any(|r| r.ground.is_some()))
                 && ((!callback.has_state_writes() && !callback.uses_empty_world_transition()
-                        && callback.effects.roll_reward.is_none())
+                        && callback.effects.roll_reward.is_none()
+                        && callback.effects.roll_tool.is_none())
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use
