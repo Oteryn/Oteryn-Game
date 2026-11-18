@@ -4,13 +4,14 @@ use super::classic_quests::{install, talk};
 use super::creature_push::{prepare, reference, scenario, spawn};
 use super::fixture::{Harness, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
-use crate::gameplay_transport::connection::UseCommand;
+use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::overlay::TilePos;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use oteryn_protocol_oteryn::creature_push::{CreaturePushDisposition, CreaturePushIntent};
+use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
@@ -284,11 +285,32 @@ pub(super) async fn exercise_mission(
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     talk(owner, &admitted, npc, 1701, "hi").await?;
-    assert_ne!(
-        talk(owner, &admitted, npc, 1702, "mission").await?,
-        ["Thanks for helping us."]
-    );
     let before_xp = super::rottin_rewards::experience(h).await?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("dialogue clock")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "quest fence")?
+        .ok_or("quest fence")?;
+    let refused = owner
+        .npc_talk(
+            admitted.runtime_actor.ok_or("quest actor")?,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: 1702,
+                item_fence: Some(fence.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor: npc,
+                text: "mission".into(),
+            },
+        )
+        .await;
+    assert_eq!(refused.disposition, NpcIntentDisposition::Rejected);
+    assert_eq!(super::rottin_rewards::experience(h).await?, before_xp);
 
     exercise(None, owner, admitted, Some(h)).await?;
 
