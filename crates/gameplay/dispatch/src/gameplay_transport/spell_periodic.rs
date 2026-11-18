@@ -2,12 +2,20 @@
 //! condition store. A historical field creator is never a current PvP grant.
 use super::super::ComposedFreshAdmission;
 use super::{ChannelSpellStates, qualified_protection_zone};
+use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::content::native_gameplay::NativeGameplayState;
-use crate::content::{ReferenceItemField, ReferenceItemType};
+use crate::content::{
+    LogicalCell, NativeEntryMovementCells, ReferenceItemField, ReferenceItemType,
+};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::spell_item_transaction::StandingTileRead;
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState};
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, MovementLocalPosition,
+};
+use crate::map::boot::BundleCollisionIndexExt;
+use crate::map::overlay::TilePos;
+use crate::map::view::{MapFacts, placement_key};
 use oteryn_gameplay_domain::domain::condition::DotElement;
 use oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget;
 use oteryn_gameplay_foundation::foundation::condition::TickFacts;
@@ -70,11 +78,23 @@ fn fold_static(facts: impl IntoIterator<Item = StaticItemFact>) -> Option<Option
 /// The field a bundle tile carries as a static top Item: the bundle's fields are not
 /// `game_item_ground_locations` rows. Missing metadata is Unknown, so no damage is consumed.
 fn static_element(
-    tile: &crate::content::QualifiedSpellTile,
+    cells: &NativeEntryMovementCells,
+    position: MovementLocalPosition,
     source: &NativeGameplayState,
 ) -> Option<Option<DotElement>> {
-    fold_static(tile.top_source_ids().iter().map(|id| {
-        let Some(policy) = source.item_policy_for_source_id(*id) else {
+    let Ok(tile) = cells.spell_tiles().lookup(
+        cells.scope(),
+        LogicalCell {
+            x: position.x,
+            y: position.y,
+            z: i32::from(position.floor),
+        },
+    ) else {
+        return Some(None);
+    };
+    let top = tile.top_source_ids();
+    let classify = |id| {
+        let Some(policy) = source.item_policy_for_source_id(id) else {
             return StaticItemFact::NoPolicy;
         };
         let record = policy.record();
@@ -94,7 +114,41 @@ fn static_element(
             }
             ReferenceItemField::Unknown | ReferenceItemField::Conflict => StaticItemFact::Unknown,
         }
-    }))
+    };
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return fold_static(top.iter().copied().map(classify));
+    };
+
+    // Crystal 201189f8 data/scripts/runes/destroy_field_rune.lua:14-20 removes
+    // the exact placement. The immutable spell shape retains its source ID.
+    let map = index.map();
+    let pos = TilePos {
+        x: u16::try_from(position.x).ok()?,
+        y: u16::try_from(position.y).ok()?,
+        floor: i8::try_from(position.floor.checked_neg()?).ok()?,
+    };
+    let base = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
+    let ground = base.ground().map(|(ordinal, _)| usize::from(ordinal));
+    let top_count = base.depths().iter().filter(|&&depth| depth == 0).count();
+    if top.len() != top_count - usize::from(ground.is_some()) {
+        return None;
+    }
+    let facts = map.facts.pinned();
+    fold_static(
+        (0..top_count)
+            .filter(|&ordinal| Some(ordinal) != ground)
+            .zip(top.iter().copied())
+            .filter_map(|(ordinal, id)| {
+                let key = u8::try_from(ordinal)
+                    .ok()
+                    .and_then(|o| placement_key(pos, o));
+                match key {
+                    Some(key) if facts.base_hidden(key) => None,
+                    Some(_) => Some(classify(id)),
+                    None => Some(StaticItemFact::Unknown),
+                }
+            }),
+    )
 }
 /// Ground Items and static bundle Items are two sources of the one standing fact: a known field
 /// wins, Unknown on either side stays Unknown (no damage consumed).
@@ -239,22 +293,8 @@ impl ChannelSpellStates {
         let standing_on_field = if in_protection_zone {
             None
         } else {
-            let static_tile = cells
-                .spell_tiles()
-                .lookup(
-                    cells.scope(),
-                    crate::content::LogicalCell {
-                        x: snapshot.position().x,
-                        y: snapshot.position().y,
-                        z: i32::from(snapshot.position().floor),
-                    },
-                )
-                .ok();
             let dynamic = standing_element(read, source);
-            let fixed = match static_tile {
-                Some(tile) => static_element(&tile, source),
-                None => Some(None),
-            };
+            let fixed = static_element(cells, snapshot.position(), source);
             let element = combine_elements(dynamic, fixed);
             let Some(element) = element else {
                 // Missing field semantics cannot consume damage. Non-damage
@@ -488,8 +528,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let read=crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let position=runtime.read_actor_position(actor).map_err(|_|crate::durability::DurabilityError::Unavailable)?.position();
             let pz=qualified_protection_zone(runtime,owner.movement_cells(),actor).ok_or(crate::durability::DurabilityError::Unavailable)?;
-            let static_tile=owner.movement_cells().spell_tiles().lookup(owner.movement_cells().scope(),crate::content::LogicalCell{x:position.x,y:position.y,z:i32::from(position.floor)}).ok();
-            let standing=if pz {None} else {combine_elements(standing_element(&read,source),static_tile.map_or(Some(None),|tile|static_element(&tile,source))).ok_or(crate::durability::DurabilityError::Unavailable)?};
+            let standing=if pz {None} else {combine_elements(standing_element(&read,source),static_element(owner.movement_cells(),position,source)).ok_or(crate::durability::DurabilityError::Unavailable)?};
             let before=states.get(runtime,actor,session).ok_or(crate::durability::DurabilityError::Unavailable)?.clone();
             let cycle=crate::spell::actor_conditions::stage_source_owner_cycle(&before,now,Some(TickFacts{in_protection_zone:pz,standing_on_field:standing}),None).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let Some(cycle)=cycle else {return Ok(None)};
