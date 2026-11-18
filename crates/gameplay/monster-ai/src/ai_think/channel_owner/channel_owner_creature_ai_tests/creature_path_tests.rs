@@ -189,7 +189,7 @@ fn walk_back_installs_and_executes_a_cardinal_detour() {
             z: 7,
         },
     ]);
-    let sources = [Native {
+    let sources = vec![Native {
         actor: creature,
         base: 67,
         pin: channel.runtime.content_pin().server_artifact_digest(),

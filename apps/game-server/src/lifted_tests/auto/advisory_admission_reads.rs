@@ -63,6 +63,20 @@ fn advisory_house_reads_complete_under_exclusive_admission_locks() -> TestResult
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
                 let current = house::request()?.fence;
+                // The shared handoff fixture commits the session but omits the
+                // current guard publications supplied by the node ingress.
+                let mut guards = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *guards).await?;
+                sqlx::query("UPDATE game_durability_admission_character_guards SET lease_generation=$1::text::numeric,holder_game_session_id=encode($2,'hex')::uuid WHERE character_id=encode($3,'hex')::uuid")
+                    .bind(current.character_lease_generation.to_string())
+                    .bind(current.game_session_id.as_bytes().as_slice())
+                    .bind(current.character_id.as_bytes().as_slice())
+                    .execute(&mut *guards).await?;
+                sqlx::query("UPDATE game_durability_admission_account_guards SET holder_game_session_id=encode($1,'hex')::uuid WHERE presence_character_id=encode($2,'hex')::uuid")
+                    .bind(current.game_session_id.as_bytes().as_slice())
+                    .bind(current.character_id.as_bytes().as_slice())
+                    .execute(&mut *guards).await?;
+                guards.commit().await?;
                 let origin = match fixture::scope()? {
                     crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => *channel_id.as_bytes(),
                     _ => return Err("expected a Channel origin".into()),
