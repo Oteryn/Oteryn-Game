@@ -8,7 +8,10 @@ use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 // Quest definition hash from the fetched rblood1 base, with the original non-spending gate.
-const BASE_QUEST_HASH: &str = "d3b144ae3f2a23843835844329a68e21cec90ebcee965cb131185c265d5c793d";
+const BASE_QUEST_HASH: [u8; 32] = [
+    0xd3, 0xb1, 0x44, 0xae, 0x3f, 0x2a, 0x23, 0x84, 0x38, 0x35, 0x84, 0x43, 0x29, 0xa6, 0x8e, 0x21,
+    0xce, 0xc9, 0x0e, 0xbc, 0xee, 0x96, 0x5c, 0xb1, 0x31, 0x18, 0x5c, 0x26, 0x5d, 0x5c, 0x79, 0x3d,
+];
 const COUNTER: &str =
     "oteryn:quest-progress/crystalserver/quest/u13_20/rotten_blood/putrefactory_task";
 const RESERVOIR: TilePos = TilePos {
@@ -155,21 +158,6 @@ async fn exercise(h: &Harness) -> TestResult {
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
         .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    let seeded = sqlx::query(
-        "INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) \
-         SELECT character_id,'oteryn:quest/rotten-blood','content-1',decode($2,'hex'),character_revision,character_revision \
-         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-    )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(BASE_QUEST_HASH)
-    .execute(&mut *tx)
-    .await?;
-    assert_eq!(seeded.rows_affected(), 1);
-    tx.commit().await?;
     owner.admit_progression_session(&mut admitted).await;
     deps.initialize(&owner).await;
     owner.admit_quest_session(&admitted).await;
@@ -254,6 +242,16 @@ async fn exercise(h: &Harness) -> TestResult {
         return Err(format!("first reservoir USE returned {first:?}, expected Committed").into());
     }
     assert_eq!(points().await?, 20);
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    assert!(
+        oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+            catalogue,
+            "oteryn:quest/rotten-blood",
+            &BASE_QUEST_HASH,
+        )
+        .is_some(),
+        "characters pinned to the published definition can use the new gate"
+    );
     assert_eq!(use_at(GATE, 2).await?, UseDisposition::Rejected);
     assert_eq!(
         use_at(SECOND_RESERVOIR, 3).await?,
