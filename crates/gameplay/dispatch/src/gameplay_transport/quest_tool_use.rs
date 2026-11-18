@@ -287,6 +287,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|_| callback.capture_creature)
             .and_then(|proof| proof.target_actor());
         let capture_key = callback.creature_target.clone();
+        // Crystal 201189f8 actions_mission10_a_message_of_freedom_sceptre.lua:20–32
+        // speaks on a fresh banishment and sends a private cue while it is cooling down.
+        let corpse_feedback = callback
+            .corpse_target
+            .as_ref()
+            .filter(|target| target.retain_tool)
+            .map(|_| (callback.reply.as_slice(), callback.failure_reply.as_slice()));
         if callback.capture_creature
             && let Some(turn) = &creature_runtime
         {
@@ -316,6 +323,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(|_| ())?;
+        if let Some((reply, refusal)) = corpse_feedback {
+            if matches!(result, QuestTransitionOutcome::Committed(_))
+                && let Some(turn) = &creature_runtime
+            {
+                for line in reply {
+                    self.states.chat.publish_quest_speech(
+                        &turn.runtime,
+                        actor,
+                        command.game_session_id,
+                        line,
+                    );
+                }
+            } else if matches!(
+                result,
+                QuestTransitionOutcome::Refused(
+                    oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch
+                )
+            ) {
+                for line in refusal {
+                    self.states
+                        .chat
+                        .push_quest_feedback(command.game_session_id, line);
+                }
+            }
+        }
         if let Some(turn) = &mut creature_runtime {
             if matches!(result, QuestTransitionOutcome::Committed(_))
                 && let Some(target) = capture_target

@@ -10,6 +10,7 @@ use oteryn_gameplay_quests::quest::{
     authored_bindings::Bindings,
     world_callbacks::{Offering, Position},
 };
+use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 use serde_json::json;
 use sha2::{Digest, Sha256};
@@ -23,6 +24,9 @@ const STATUS: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/boss
 const COOLDOWN: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/sceptre_last_used";
 const SCEPTRE: &str = "oteryn:item.tibia.i11362";
 const CREATURE: &str = "oteryn:creature.wrath_of_the_emperor";
+const BANISHED: &str =
+    "The sceptre is almost torn from your hand as you banish the presence of the emperor.";
+const WAIT: &str = "You must wait before using this again.";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua:20-32";
 const BODY: Position = Position {
     x: 33050,
@@ -44,7 +48,7 @@ fn fixture() -> TestResult<QuestStateCatalogue> {
     let callback = json!({
         "key":"oteryn:quest-reward/wrath/banish-presence","quest":QUEST,"npc":"oteryn:npc.zalamon",
         "keywords":["sceptre"],"topic":0,"next_topic":0,"take":[],"give":null,"outfit":null,"achievement":null,
-        "reply":["The sceptre is almost torn from your hand as you banish the presence of the emperor."],"sources":[SOURCE], "carried_item":SCEPTRE,"creature_target":"oteryn:creature.fury_of_the_emperor",
+        "reply":[BANISHED],"failure_reply":[WAIT],"sources":[SOURCE], "carried_item":SCEPTRE,"creature_target":"oteryn:creature.fury_of_the_emperor",
         "present":[{"item":SCEPTRE,"count":1}],
         "corpse_target":{"appearance":11361,"retain_tool":true,
             "additional_creatures":[CREATURE,"oteryn:creature.scorn_of_the_emperor","oteryn:creature.spite_of_the_emperor"]},
@@ -158,6 +162,16 @@ pub(super) async fn exercise(
             .map_err(|()| "sceptre USE")?
             .ok_or("sceptre USE not owned")?;
         assert_eq!(outcome.disposition, expected);
+        let lines = owner.states.chat.drain(session);
+        let banishments = lines.iter().filter(|line| matches!(
+            line, ChatLine::Local { mode: ChatSpeechMode::MonsterSay, text, .. } if text == BANISHED
+        )).count();
+        assert_eq!(banishments, usize::from(id == 9200 && target.is_some()));
+        if id == 9201 {
+            assert!(lines.iter().any(|line| matches!(
+                line, ChatLine::Private { text, .. } if text == WAIT
+            )));
+        }
     }
     let counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_corpse_samples WHERE source_item=$1 AND corpse_item=$2 AND maximum_age_ms IS NULL),(SELECT quantity FROM game_item_instances WHERE item_instance_id=$1 AND lifecycle=1),(SELECT count(*) FROM game_quest_callback_consumptions WHERE item_instance_id=$1)")
         .bind(source).bind(corpse).fetch_one(&h.pool).await?;
