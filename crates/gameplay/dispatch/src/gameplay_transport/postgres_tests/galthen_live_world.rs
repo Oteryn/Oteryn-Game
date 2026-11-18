@@ -90,7 +90,6 @@ pub(super) async fn exercise(
     let expected = if refused {
         start
     } else if name == SATCHEL {
-        h.root.set_test_quest_clock(1_700_000_000)?;
         at(32396, 32520, -7)
     } else {
         ROUTES
@@ -176,7 +175,10 @@ async fn exercise_satchel(
             owner, admitted, &[(id, &target)],
         )
         .await?;
-        assert_eq!(outcomes.as_slice(), &[(id, UseDisposition::Committed)]);
+        assert_eq!(
+            outcomes.as_slice(),
+            &[(oteryn_protocol_oteryn::CommandStatus::Accepted, UseDisposition::Committed)],
+        );
         {
             let mut runtime = owner.runtime.lock().await;
             let at = runtime.read_actor_position(actor)?;
