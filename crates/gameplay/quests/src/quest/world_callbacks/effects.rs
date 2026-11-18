@@ -369,6 +369,12 @@ impl Encounter {
     pub fn has_phases(&self) -> bool {
         self.phase.is_some() || self.death_phases.is_some()
     }
+
+    pub fn contains(&self, position: Position) -> bool {
+        (self.room_min.x..=self.room_max.x).contains(&position.x)
+            && (self.room_min.y..=self.room_max.y).contains(&position.y)
+            && (self.room_max.floor..=self.room_min.floor).contains(&position.floor)
+    }
 }
 
 fn valid_death_phases(
@@ -948,11 +954,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     if let Some(encounter) = &effects.encounter {
-        let in_room = |p: Position| {
-            p.floor == encounter.room_min.floor
-                && (encounter.room_min.x..=encounter.room_max.x).contains(&p.x)
-                && (encounter.room_min.y..=encounter.room_max.y).contains(&p.y)
-        };
+        let in_room = |p: Position| encounter.contains(p);
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
@@ -1013,7 +1015,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !unique_to.is_disjoint(&unique_monsters)
             || !pos(encounter.room_min)
             || !pos(encounter.room_max)
-            || encounter.room_min.floor != encounter.room_max.floor
+            // Lore Keeper stages one party against actors on Crystal floors 14 and 15.
+            // actions_the_last_lore_keeper.lua:3-7,51-62 (Crystal 201189f8).
+            || (encounter.room_min.floor != encounter.room_max.floor
+                && (!encounter.shared_staging
+                    || i16::from(encounter.room_min.floor) - i16::from(encounter.room_max.floor)
+                        != 1))
             || encounter.room_min.x > encounter.room_max.x
             || encounter.room_min.y > encounter.room_max.y
             || encounter.players.iter().any(|p| {

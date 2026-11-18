@@ -352,7 +352,7 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let death_replacement = matches!(name, super::super::encounter_death_replacements::EARTH | super::super::encounter_death_replacements::ESSENCE);
+    let death_replacement = matches!(name, super::super::encounter_death_replacements::EARTH | super::super::encounter_death_replacements::ESSENCE | super::super::encounter_death_replacements::LORE);
     let mut callback = if name == super::super::warzone_portal_cooldown::CASE {
         super::super::warzone_portal_cooldown::callback()?
     } else if death_replacement {

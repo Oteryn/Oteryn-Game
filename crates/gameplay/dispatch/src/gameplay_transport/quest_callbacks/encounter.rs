@@ -8,9 +8,13 @@ pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     at: MovementLocalPosition,
 ) -> bool {
-    at.floor == -i16::from(encounter.room_min.floor)
-        && (i32::from(encounter.room_min.x)..=i32::from(encounter.room_max.x)).contains(&at.x)
-        && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y)).contains(&at.y)
+    native(at).is_some_and(|tile| {
+        encounter.contains(Position {
+            x: tile.x,
+            y: tile.y,
+            floor: tile.floor,
+        })
+    })
 }
 
 pub(super) struct EncounterVisit {
