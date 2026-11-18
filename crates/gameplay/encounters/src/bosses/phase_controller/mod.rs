@@ -152,10 +152,6 @@ impl NativePhaseOwner {
         self.actors.get(role).copied().flatten()
     }
 
-    pub fn decoration_actor(&self, role: usize) -> Option<ExactActorRef> {
-        self.decorations.get(role).copied().flatten()
-    }
-
     pub fn dead_roles(&self) -> u64 {
         self.progress.dead()
     }
@@ -234,6 +230,13 @@ impl NativePhaseOwner {
     }
 }
 
+/// A companion actor published in the same owner turn as the phase role.
+pub struct PhaseDecoration<'a> {
+    pub creature: &'a str,
+    pub position: oteryn_gameplay_entities::MovementLocalPosition,
+    pub damage_protected: bool,
+}
+
 impl NativePhaseOwner {
     /// Source phase hooks commit removals and replacement actors under one existing
     /// carrier borrow. A refused map/policy/admission leaves both carrier and phase unchanged.
@@ -243,7 +246,7 @@ impl NativePhaseOwner {
         role: usize,
         position: oteryn_gameplay_entities::MovementLocalPosition,
         remove: Option<ExactActorRef>,
-        decoration: Option<(&str, oteryn_gameplay_entities::MovementLocalPosition)>,
+        decoration: Option<PhaseDecoration<'_>>,
         map_admits: impl Fn(&ChannelRuntimeV1, oteryn_gameplay_entities::MovementLocalPosition) -> bool,
     ) -> Result<ExactActorRef, CarrierError> {
         self.current(runtime)?;
@@ -257,15 +260,21 @@ impl NativePhaseOwner {
             return Err(CarrierError::PlanConflict);
         }
         if !map_admits(runtime, position)
-            || decoration.is_some_and(|(_, at)| !map_admits(runtime, at))
+            || decoration
+                .as_ref()
+                .is_some_and(|decoration| !map_admits(runtime, decoration.position))
         {
             return Err(CarrierError::PlanConflict);
         }
         let policy = runtime.companion_policy(node.creature)?;
         let mut spawns = vec![(node.creature, policy.maximum_health, position)];
-        if let Some((key, at)) = decoration {
-            let policy = runtime.companion_policy(key)?;
-            spawns.push((key, policy.maximum_health, at));
+        if let Some(decoration) = &decoration {
+            let policy = runtime.companion_policy(decoration.creature)?;
+            spawns.push((
+                decoration.creature,
+                policy.maximum_health,
+                decoration.position,
+            ));
         }
         let before = runtime.encounter_parts().0.clone();
         let result = (|| {
@@ -274,8 +283,13 @@ impl NativePhaseOwner {
             }
             let actors = runtime.commit_quest_creature_spawn(&spawns)?;
             let actor = actors[0];
+            let decoration_actor = actors.get(1).copied();
+            if decoration.is_some_and(|decoration| decoration.damage_protected) {
+                let protected = decoration_actor.ok_or(CarrierError::PlanConflict)?;
+                gates::protect(runtime, &[protected])?;
+            }
             self.attach(runtime, role, actor)?;
-            self.decorations[role] = actors.get(1).copied();
+            self.decorations[role] = decoration_actor;
             Ok(actor)
         })();
         if result.is_err() {

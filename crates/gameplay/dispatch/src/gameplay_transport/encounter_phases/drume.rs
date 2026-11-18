@@ -1,7 +1,9 @@
 //! Crystal 201189f8, the_order_of_lion_quest/creaturescripts_commander_kills.lua:1-50.
 use super::*;
 use crate::gameplay_transport::chat_intent::QuestFeedback;
-use oteryn_gameplay_encounters::bosses::phase_controller::{NativePhaseOwner, Plan, Role};
+use oteryn_gameplay_encounters::bosses::phase_controller::{
+    NativePhaseOwner, PhaseDecoration, Plan, Role,
+};
 use oteryn_gameplay_quests::quest::world_callbacks::{Battlefield, Encounter};
 
 const LION: &str = "oteryn:creature.lion_commander";
@@ -126,16 +128,13 @@ impl Skirmish {
                 DRUME,
                 local(self.battlefield.boss),
                 None,
-                Some((KESAR, local(self.battlefield.captain))),
+                // Crystal commander_kills.lua:45-50 makes Kesar immune from spawn.
+                Some(PhaseDecoration {
+                    creature: KESAR,
+                    position: local(self.battlefield.captain),
+                    damage_protected: true,
+                }),
                 |runtime, at| placement(cells, runtime, at),
-            )?;
-        }
-        if let Some(captain) = self.phase.decoration_actor(DRUME)
-            && runtime.contains_live_creature(captain)
-        {
-            oteryn_gameplay_encounters::bosses::phase_controller::gates::protect(
-                runtime,
-                &[captain],
             )?;
         }
         Ok(())

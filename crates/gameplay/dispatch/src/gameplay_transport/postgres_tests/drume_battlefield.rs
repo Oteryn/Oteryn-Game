@@ -3,7 +3,10 @@
 use super::engenc2_cults::{encounter_scenario, kill};
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
-use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
+use crate::foundation::{
+    CarrierError, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
+    OwnerDamageCommand,
+};
 use oteryn_gameplay_entities::carrier::NativeSummonAdmissionSpec;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
@@ -147,7 +150,29 @@ pub(super) async fn exercise(
     assert!(list(owner, species).await?.is_empty());
     if spawn_boss {
         assert_eq!(list(owner, DRUME).await?.len(), 1);
-        assert_eq!(list(owner, KESAR).await?.len(), 1);
+        let captains = list(owner, KESAR).await?;
+        assert_eq!(captains.len(), 1);
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let captain = captains[0];
+            let health = runtime.companion_snapshot(captain).map_err(debug)?.health;
+            let now_ms = owner.owner_now().get() / 1_000;
+            for (actor, session) in [(first, leader.game_session_id), (second, second_session)] {
+                let damage = runtime.borrow_exact_actor_commit_at(now_ms)
+                    .commit_damage_for_bound_attacker(
+                        captain, actor, CommandRef::new(session, CommandId::new(104).map_err(debug)?),
+                        0,
+                        OwnerDamageCommand {
+                            target: KESAR.as_bytes(),
+                            occurrence: b"drume-battlefield",
+                            binding: b"kesar-immortal",
+                            damage: health,
+                        },
+                    );
+                assert_eq!(damage, Err(CarrierError::PlanConflict));
+                assert_eq!(runtime.companion_snapshot(captain).map_err(debug)?.health, health);
+            }
+        }
         assert_positions(owner, actors, LANDING).await?;
         let target = list(owner, DRUME)
             .await?

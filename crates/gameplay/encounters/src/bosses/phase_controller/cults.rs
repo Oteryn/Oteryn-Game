@@ -159,7 +159,11 @@ impl CultsEncounter {
                         role,
                         self.guardians_at[i],
                         Some(self.stops[i]),
-                        Some(("oteryn:creature.destroyed_pillar", self.pillars_at[i])),
+                        Some(super::PhaseDecoration {
+                            creature: "oteryn:creature.destroyed_pillar",
+                            position: self.pillars_at[i],
+                            damage_protected: false,
+                        }),
                         &map_admits,
                     )?;
                 }
