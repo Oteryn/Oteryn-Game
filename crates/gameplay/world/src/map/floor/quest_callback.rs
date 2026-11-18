@@ -12,6 +12,7 @@ struct CallbackTeleport<'a> {
     facing: Option<MovementFacing>,
     player_stack: bool,
     forced: bool,
+    cathedral_descent: bool,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -64,6 +65,44 @@ pub fn prepare_quest_callback_teleport_facing<'a>(
         facing,
         player_stack: false,
         forced: false,
+        cathedral_descent: false,
+    };
+    proof.check(runtime)?;
+    Ok(proof)
+}
+
+/// Dynamic portals use the ordinary landing proof, with the Cathedral's exact
+/// captured marker exception scoped to the donor's scripted entrance pair.
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_quest_portal_teleport<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    source: TilePos,
+    destination: TilePos,
+    pz_blocked: bool,
+    closed: &'a dyn CellBlocker,
+) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+    let cathedral = oteryn_gameplay_quests::quest::stag_cathedral::SOURCE;
+    let proof = CallbackTeleport {
+        cells,
+        actor,
+        session,
+        expected,
+        destination: MovementLocalPosition {
+            x: i32::from(destination.x),
+            y: i32::from(destination.y),
+            floor: -i16::from(destination.floor),
+        },
+        pz_blocked,
+        closed,
+        facing: None,
+        player_stack: false,
+        forced: false,
+        cathedral_descent: (source.x, source.y, source.floor)
+            == (cathedral.x, cathedral.y, cathedral.floor),
     };
     proof.check(runtime)?;
     Ok(proof)
@@ -93,6 +132,7 @@ pub fn prepare_quest_party_teleport<'a>(
         facing: None,
         player_stack,
         forced: false,
+        cathedral_descent: false,
     };
     proof.check(runtime)?;
     Ok(proof)
@@ -120,6 +160,7 @@ pub fn prepare_quest_encounter_ejection<'a>(
         facing: None,
         player_stack: true,
         forced: true,
+        cathedral_descent: false,
     };
     proof.check(runtime)?;
     Ok(proof)
@@ -139,7 +180,15 @@ impl CallbackTeleport<'_> {
         )?;
         let to = self.destination;
         let cell = (to.x, to.y, i32::from(to.floor));
-        if ground_of(self.cells)(cell) != Ground::Walkable
+        let ground = ground_of(self.cells)(cell);
+        if (ground != Ground::Walkable
+            && !(ground == Ground::Blocked
+                && self.cathedral_descent
+                && matches!(self.cells.index(), NativeMovementCollisionIndex::Bundle(index)
+                if pos(cell.0, cell.1, cell.2).is_some_and(|tile| {
+                    let map = index.map();
+                    map.facts.cathedral_landing_clear(map.overlay.base(), tile)
+                }))))
             || !landable_of(self.cells, self.pz_blocked, self.closed)(cell)
             || if self.player_stack {
                 runtime

@@ -966,17 +966,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let mut success_preface = None;
-        if callback.effects.encounter.is_some()
-            && callback.has_personal_state()
-            && !durable
-            && !court_warlock
-        {
+        let personal_encounter =
+            callback.effects.encounter.is_some() && callback.has_personal_state() && !court_warlock;
+        if personal_encounter && !durable {
             return UseDisposition::Rejected;
         }
-        let mut personal_reservation = if callback.effects.encounter.is_some()
-            && callback.has_personal_state()
-            && !court_warlock
-        {
+        let mut personal_reservation = if personal_encounter {
             let (Some(fence), Some(definition)) = (
                 fence,
                 self.quest_catalogue
@@ -1002,7 +997,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        if callback.effects.encounter.is_some() && callback.has_personal_state() && !court_warlock {
+        if personal_encounter {
             let ready = self.preflight_personal_quest_encounter(
                 runtime,
                 states,

@@ -143,10 +143,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let now = self.owner_now().get();
+        if let Ok(states) = self.states.spell_states.try_lock() {
+            states
+                .encounter_phases
+                .tick_court_warlock(&mut runtime, now);
+        }
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };
-        let now = self.owner_now().get();
         let mut index = 0;
         while index < pending.len() {
             let memo = &mut pending[index];

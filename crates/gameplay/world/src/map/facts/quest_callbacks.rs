@@ -1892,6 +1892,43 @@ impl BundleFacts {
         pos: TilePos,
         baseline: bool,
     ) -> bool {
+        self.quest_callback_blocked_except(base, pos, baseline, None)
+    }
+
+    /// The captured ice-room landing includes a solid 29333 marker. Crystal's
+    /// scripted descent lands on this exact cell (bounac_cathedral.lua:92-99).
+    pub(crate) fn cathedral_landing_clear(
+        &self,
+        base: &super::super::WorldBase,
+        pos: TilePos,
+    ) -> bool {
+        let landing = oteryn_gameplay_quests::quest::stag_cathedral::DESTINATION;
+        if (pos.x, pos.y, pos.floor) != (landing.x, landing.y, landing.floor) {
+            return false;
+        }
+        let Some(key) = placement_key(pos, 2) else {
+            return false;
+        };
+        let Some((&id, _)) = base.tile(pos.x, pos.y, pos.floor).and_then(|tile| {
+            tile.ids()
+                .iter()
+                .zip(tile.depths())
+                .filter(|(_, depth)| **depth == 0)
+                .nth(2)
+        }) else {
+            return false;
+        };
+        self.quest_callback_native_object(key, id, 29333)
+            && !self.quest_callback_blocked_except(base, pos, true, Some(key))
+    }
+
+    fn quest_callback_blocked_except(
+        &self,
+        base: &super::super::WorldBase,
+        pos: TilePos,
+        baseline: bool,
+        exact_marker: Option<u64>,
+    ) -> bool {
         let Ok(rotations) = self.rotations.lock().map(|states| Arc::clone(&states)) else {
             return true;
         };
@@ -1917,7 +1954,8 @@ impl BundleFacts {
         let Some(first) = placement_key(pos, 0) else {
             return true;
         };
-        if states.hidden.range(first..=first + 63).next().is_none()
+        if exact_marker.is_none()
+            && states.hidden.range(first..=first + 63).next().is_none()
             && states.passable.range(first..=first + 63).next().is_none()
             && rotations.range(first..=first + 63).next().is_none()
         {
@@ -1934,6 +1972,14 @@ impl BundleFacts {
                 return true;
             };
             ordinal = ordinal.saturating_add(1);
+            if Some(key) == exact_marker
+                && !states.changed.contains_key(&key)
+                && !states.passable.contains_key(&key)
+                && !rotations.contains_key(&key)
+            {
+                changed = true;
+                continue;
+            }
             if let Some(passable) = states.passable.get(&key) {
                 changed = true;
                 blocked |= !passable;

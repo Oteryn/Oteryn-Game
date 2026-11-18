@@ -329,7 +329,7 @@ impl Registry {
     }
 }
 
-pub(super) fn bind(
+pub(super) fn bind_cults(
     runtime: &mut ChannelRuntimeV1,
     callback: &Callback,
     key: u64,

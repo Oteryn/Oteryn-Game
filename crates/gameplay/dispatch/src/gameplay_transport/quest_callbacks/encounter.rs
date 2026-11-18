@@ -370,7 +370,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else { None };
                 credits
                     .map(|credits| {
-                        super::super::encounter_phases::bind(
+                        super::super::encounter_phases::bind_cults(
                             runtime,
                             callback,
                             key,

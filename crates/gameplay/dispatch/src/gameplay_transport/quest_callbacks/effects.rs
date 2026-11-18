@@ -144,7 +144,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(pos) = native(entered.position()) else {
             return entered;
         };
-        self.traverse_dynamic_quest_portal(permit, actor, session, entered, pos)
+        self.traverse_dynamic_quest_portal(permit, actor, session, entered, pos, None)
             .await
     }
 
@@ -155,6 +155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         entered: MovementPositionSnapshot,
         pos: TilePos,
+        click_revision: Option<(u64, u64)>,
     ) -> MovementPositionSnapshot {
         let Some(map) = self.bundle_map() else {
             return entered;
@@ -183,9 +184,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return entered;
         };
         if runtime.read_actor_position(actor) != Ok(entered)
-            || !runtime
-                .player_control_facts(actor, session)
-                .is_ok_and(|facts| facts.control_loss.is_none())
+            || click_revision.is_some_and(|(key, revision)| {
+                map.facts.object_revision(key) != revision
+                    || !super::stag_cathedral::source(map, key)
+                    || !runtime
+                        .player_control_facts(actor, session)
+                        .is_ok_and(|facts| facts.control_loss.is_none())
+            })
             || states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, session)
             || !self.states.player_trades.physical(session, None)
@@ -203,17 +208,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
-        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        let Ok(proof) = crate::map::floor::prepare_quest_portal_teleport(
             &runtime,
             &self.movement_cells,
             actor,
             session,
             entered,
-            local(Position {
-                x: to.x,
-                y: to.y,
-                floor: to.floor,
-            }),
+            pos,
+            to,
             blocked,
             &closed,
         ) else {

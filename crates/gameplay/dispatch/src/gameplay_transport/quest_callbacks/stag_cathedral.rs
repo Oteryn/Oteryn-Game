@@ -155,6 +155,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         pos: TilePos,
+        key: u64,
+        revision: u64,
     ) -> UseOutcome {
         let disposition = async {
             let permit = self
@@ -173,7 +175,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(UseDisposition::TooFar);
             }
             if self
-                .traverse_dynamic_quest_portal(&permit, actor, session, expected, pos)
+                .traverse_dynamic_quest_portal(
+                    &permit,
+                    actor,
+                    session,
+                    expected,
+                    pos,
+                    Some((key, revision)),
+                )
                 .await
                 == expected
             {
