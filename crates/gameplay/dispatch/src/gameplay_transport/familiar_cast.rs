@@ -11,7 +11,7 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::foundation::{ExactActorRef, GameSessionId};
 use crate::spell::cast::PlayerSpellState;
 use crate::spell::combat_batch::SpellAnchor;
-use crate::spell::companion_lifecycle::PreparedFamiliar;
+use crate::spell::companion_lifecycle::{PreparedFamiliar, familiar_login_minimum_level};
 use crate::spell::owned_cast_facts::{
     AccessProjections, CastFactsBinding, CurrentProjection, OwnedCastFacts,
 };
@@ -476,8 +476,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Err(());
         };
-        let minimum_level = crate::spell::companion_lifecycle::familiar_login_minimum_level(profile)
-            .map_err(|_| ())?;
+        let minimum_level = familiar_login_minimum_level(profile).map_err(|_| ())?;
         // Below the login level gate, a Character with no persisted familiar projection
         // has nothing to restore. This includes a newly bootstrapped Character whose
         // policy-bound progression and Premium access are still unavailable.
