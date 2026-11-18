@@ -99,14 +99,62 @@ CREATE TABLE game_warzone_geodes (
     reset_epoch NUMERIC(20,0) NOT NULL CHECK (reset_epoch >= 0),
     fragments SMALLINT NOT NULL CHECK (fragments BETWEEN 1 AND 30),
     opened_at TIMESTAMPTZ,
-    opening_session UUID,
-    opening_command NUMERIC(20,0) CHECK (opening_command > 0),
+    last_session UUID NOT NULL,
+    last_command NUMERIC(20,0) NOT NULL CHECK (last_command BETWEEN 1 AND 18446744073709551615),
+    contribution_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
     PRIMARY KEY (world_id, channel_id, geode_key),
-    CHECK ((fragments = 30) = (opened_at IS NOT NULL)),
-    CHECK ((opened_at IS NULL) = (opening_session IS NULL)),
-    CHECK ((opened_at IS NULL) = (opening_command IS NULL))
+    CHECK ((fragments = 30) = (opened_at IS NOT NULL))
 );
 
 REVOKE ALL ON game_warzone_geodes FROM PUBLIC;
 GRANT SELECT, INSERT, UPDATE ON game_warzone_geodes TO oteryn_game_runtime;
 GRANT SELECT ON game_warzone_geodes TO oteryn_game_control;
+
+-- Geode USE writes a receipt and an exact carried BURN without personal quest progress.
+DO $migration$
+DECLARE predicate TEXT; body TEXT;
+    keys TEXT := $keys$ARRAY[
+        'oteryn:quest-callback/dangerous-depth-geode-iv',
+        'oteryn:quest-callback/dangerous-depth-geode-v',
+        'oteryn:quest-callback/dangerous-depth-geode-vi']$keys$;
+    needle TEXT := 'IF cardinality(NEW.track_keys)<>0 OR NEW.completes THEN RETURN NULL; END IF;';
+BEGIN
+    SELECT pg_get_expr(conbin,conrelid) INTO STRICT predicate FROM pg_constraint
+      WHERE conrelid='game_character_quest_receipts'::regclass
+        AND conname='game_character_quest_receipt_effects_shape';
+    ALTER TABLE game_character_quest_receipts DROP CONSTRAINT game_character_quest_receipt_effects_shape;
+    EXECUTE format($shape$ALTER TABLE game_character_quest_receipts
+      ADD CONSTRAINT game_character_quest_receipt_effects_shape CHECK ((%s) OR (
+        transition_key=ANY(%s) AND quest_key='oteryn:quest.dangerous_depths_quest'
+        AND cause_kind='use' AND NOT completes AND cardinality(track_keys)=0
+        AND cardinality(values_before)=0 AND cardinality(values_after)=0
+        AND level_after=level_before AND experience_after=experience_before))$shape$, predicate, keys);
+
+    body := pg_get_functiondef('game_quest_reward_value_only_complete()'::regprocedure);
+    IF (length(body)-length(replace(body,needle,'')))/length(needle)<>1 THEN
+        RAISE EXCEPTION 'missing or ambiguous canonical value-only quest guard';
+    END IF;
+    body := replace(body,needle,needle || format($arm$
+      IF NEW.transition_key=ANY(%s) THEN
+        IF NEW.quest_key='oteryn:quest.dangerous_depths_quest' AND NEW.cause_kind='use'
+          AND NEW.created_xact_id=pg_current_xact_id()
+          AND EXISTS (
+            SELECT 1 FROM game_quest_callback_consumptions p
+            JOIN game_warzone_geodes g ON g.geode_key=p.transition_key
+              AND g.world_id=(p.before_item->>'world_id')::uuid
+              AND g.last_session=p.cause_id AND g.last_command=p.cause_ordinal
+            WHERE p.character_id=NEW.character_id AND p.cause_id=NEW.cause_id
+              AND p.cause_ordinal=NEW.cause_ordinal AND p.transition_key=NEW.transition_key
+              AND p.created_xact_id=pg_current_xact_id() AND g.contribution_xact_id=pg_current_xact_id()
+              AND p.quantity=1 AND p.replacement IS NULL AND p.location_kind<>'ground'
+              AND p.before_item->>'definition_family'='Item'
+              AND p.before_item->>'definition_production_key'='oteryn:item.tibia.i27509'
+              AND p.before_item->>'definition_revision_ref'='definition-r1'
+              AND convert_from(p.proof,'UTF8')::jsonb #>> '{callback,selector,native,appearance}'='27510'
+              AND convert_from(p.proof,'UTF8')::jsonb #>> '{callback,item_on_target,selected_instance}'='true'
+          ) THEN RETURN NULL; END IF;
+        RAISE EXCEPTION 'Warzone geode receipt lacks contribution and carried fragment' USING ERRCODE='23514';
+      END IF;
+    $arm$, keys));
+    EXECUTE body;
+END $migration$;
