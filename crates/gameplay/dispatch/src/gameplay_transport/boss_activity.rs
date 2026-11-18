@@ -392,9 +392,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     continue;
                 }
 
-                let mut occupants = census.iter().filter(|(_, position, session)| {
+                let mut occupants = census.iter().filter(|(member, position, session)| {
                     let cell = position.position();
-                    session.is_some()
+                    (native_step.is_none() || *member == actor)
+                        && session.is_some()
                         && (cell.x, cell.y, cell.floor)
                             == (lever_cell.x, lever_cell.y, lever_cell.floor)
                 });

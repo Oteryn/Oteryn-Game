@@ -67,6 +67,10 @@ fn nightmare_intruders_requires_combined_kills_and_kroazur_in_live_dialogue() ->
                     assert_eq!(lines, threatened_dreams::reply(NPC, line).ok_or("source reply")?);
                     assert_eq!(super::classic_quests::progress(&owner, &admitted, &authority, NIGHTMARE).await?, stage);
                 }
+                let reports: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1"
+                ).bind(threatened_dreams::REPORT).fetch_one(&h.pool).await?;
+                assert_eq!(reports, 1, "refusal and repeated confirmation write no report");
                 Ok(())
             }.await;
             h.cleanup().await?;
