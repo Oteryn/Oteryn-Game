@@ -1142,15 +1142,13 @@ async fn result_at_rest(
                 // The relocation's revision update is legitimate even after returning to the
                 // same tile. Every observed position must stay at that tile after cancellation.
                 let value = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(delta.payload).map_err(debug)?;
-                // A generic bundle_view carries no pinned activity source role, so
-                // wire_position keeps the legacy +z floor (only source rooms negate).
                 assert_eq!(
                     (
                         value.actor_position.x,
                         value.actor_position.y,
                         value.actor_position.floor
                     ),
-                    (at.x, at.y, at.floor)
+                    (at.x, at.y, -at.floor)
                 );
             }
         }

@@ -116,6 +116,7 @@ async fn transfers(
     assert_eq!(bag_custody(harness).await?, bag_before);
     assert_eq!(custody(harness).await?, before);
     assert_eq!(receipts(harness).await?, 2);
+    // Crystal game.cpp:2215–2238 permits the ordinary bag and its contents on a tile.
     if case == Case::Nested {
         move_command(client, 5, &move_payload(bag, ItemMoveDestination::Ground(FIELD))?, ItemMoveOutcome::Moved).await?;
         let dropped = views(client).await?;
