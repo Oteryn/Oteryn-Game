@@ -117,6 +117,17 @@ fn today() -> TestResult<oteryn_gameplay_entities::rashid_schedule::RashidDestin
     ))
 }
 
+fn destination_tile(
+    destination: oteryn_gameplay_entities::rashid_schedule::RashidDestination,
+) -> TilePos {
+    let placement = destination.placement;
+    TilePos {
+        x: placement.x,
+        y: placement.y,
+        floor: placement.floor,
+    }
+}
+
 fn full_route(world: &BundleWorld, from: TilePos, goal: TilePos) -> Option<Vec<StepDirection>> {
     let mut queue = VecDeque::from([from]);
     let mut parents = BTreeMap::from([(from, None)]);
@@ -306,12 +317,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = qualification_world(clients)?;
-    let destination = today()?.placement;
-    let target = TilePos {
-        x: destination.x,
-        y: destination.y,
-        floor: -destination.floor,
-    };
+    let target = destination_tile(today()?);
     let mut client = connect_world(clients, 0xe5).await?;
     let first_session = client.join_snapshot().game_session_id;
     let actor = approach(&mut client, world, target).await?;
@@ -354,6 +360,20 @@ mod tests {
         assert_eq!(
             compact("step=x observed=timed out"),
             "step=x-observed=timed-out"
+        );
+    }
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+
+    #[test]
+    fn weekday_route_keeps_native_floor() {
+        let destination = oteryn_gameplay_entities::rashid_schedule::destination_at(0);
+        assert_eq!(
+            destination_tile(destination).floor,
+            destination.placement.floor
         );
     }
 }

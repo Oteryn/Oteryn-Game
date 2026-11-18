@@ -77,7 +77,8 @@ impl<S: SessionStream> Session<S> {
         next.install(self);
         self.last_server_sequence = expected;
         self.last_received = tokio::time::Instant::now();
-        self.events.extend(events);
+        self.events
+            .extend(events.into_iter().map(|event| (self.last_received, event)));
         Ok(None)
     }
 }

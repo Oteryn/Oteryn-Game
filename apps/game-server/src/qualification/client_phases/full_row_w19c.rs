@@ -8,8 +8,10 @@
 //! 3. Keep answering liveness; the server's four-second decay must restore the trumpet (6572).
 //! 4. Log out, obtain a fresh admission and assert the durable quantities are unchanged.
 //! 5. A purchase or use that the server refuses reports FAIL with the exact reply.
+use super::full_row_w19a::{carried_entries, purchased_handle};
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_protocol_oteryn::item_view::ItemHandle;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -94,7 +96,7 @@ async fn acquire(
     world: &BundleWorld,
     id: u32,
     amount: u32,
-) -> TestResult<u64> {
+) -> TestResult<(u64, ItemHandle)> {
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
     let index = provisioning::item_index()?;
@@ -181,6 +183,10 @@ async fn acquire(
         })
         .ok_or("live seller omitted requested offer")?;
     let before = quantity(client, reference)?;
+    let handles = carried_entries(client)?
+        .iter()
+        .map(|entry| entry.handle)
+        .collect();
     client.take_events();
     let reply = runtime::buy(
         client.session_mut(),
@@ -202,30 +208,42 @@ async fn acquire(
         .into());
     }
     let expected = before + u64::from(offer.count) * u64::from(amount);
-    wait_quantity(client, reference, expected).await
+    let sequence = wait_quantity(client, reference, expected).await?;
+    Ok((
+        sequence,
+        purchased_handle(carried_entries(client)?, reference, &handles)?,
+    ))
 }
 
 async fn use_one(
     client: &mut DevClientSession,
     reference: std::num::NonZeroU32,
+    handle: ItemHandle,
 ) -> TestResult<(UseDisposition, u64)> {
     let before = quantity(client, reference)?;
-    let handle = client
-        .inventory()
-        .and_then(|inventory| {
-            inventory
-                .entries
-                .iter()
-                .find(|item| item.item_definition_ref == reference)
-        })
-        .map(|item| item.handle)
-        .ok_or("purchased item handle absent")?;
     client.take_events();
     let reply = client.use_item(handle).await?;
     if reply.disposition == UseDisposition::Committed {
         wait_quantity(client, reference, before - 1).await?;
     }
     Ok((reply.disposition, before))
+}
+
+fn require_instance(
+    client: &DevClientSession,
+    handle: ItemHandle,
+    reference: std::num::NonZeroU32,
+) -> TestResult {
+    if !carried_entries(client)?
+        .iter()
+        .any(|item| item.handle == handle && item.item_definition_ref == reference)
+    {
+        return Err(format!(
+            "purchased trumpet handle {handle} did not reach definition {reference}"
+        )
+        .into());
+    }
+    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -252,15 +270,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xe6).await?;
     let trumpet_base = quantity(&client, trumpet)?;
     let played_base = quantity(&client, played)?;
-    let bought = acquire(&mut client, world, TRUMPET, 1).await?;
-    let (reply, _) = use_one(&mut client, trumpet).await?;
+    let (bought, handle) = acquire(&mut client, world, TRUMPET, 1).await?;
+    let (reply, _) = use_one(&mut client, trumpet, handle).await?;
     if reply != UseDisposition::Committed {
         return Err(format!("step=use observed=reply-{reply:?}").into());
     }
     // Source debit and transform credit, then the decay: restored trumpet back, played one gone.
     wait_quantity(&mut client, played, played_base + 1).await?;
+    require_instance(&client, handle, played)?;
     wait_quantity(&mut client, trumpet, trumpet_base + 1).await?;
     wait_quantity(&mut client, played, played_base).await?;
+    require_instance(&client, handle, trumpet)?;
     let durable = quantities(&client)?;
     let session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;

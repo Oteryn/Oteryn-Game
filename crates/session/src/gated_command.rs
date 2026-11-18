@@ -8,6 +8,24 @@ pub mod world_context;
 mod target_move;
 
 impl<S: SessionStream> Session<S> {
+    /// Submit a qualification probe through the sequenced exchange without the local route gate.
+    #[cfg(feature = "test-support")]
+    pub async fn qualification_command(
+        &mut self,
+        command_type: u32,
+        payload: &[u8],
+    ) -> Result<GatedCommandResult, SessionError> {
+        self.ensure_usable()?;
+        let outcome = self.send_and_read_result(command_type, payload).await;
+        let result = self.poison_on_error(outcome)?;
+        Ok(GatedCommandResult {
+            command_id: result.command_id,
+            status: result.status,
+            server_sequence: result.server_sequence,
+            payload: result.payload,
+        })
+    }
+
     /// Sends a command type owned by `capability` and returns its raw `CommandResult`. Refused
     /// before anything is sent when the capability is not selected or does not own the type.
     pub async fn gated_command(

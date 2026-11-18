@@ -162,7 +162,8 @@ impl<S: SessionStream> Session<S> {
         self.last_refusal_detail = None;
         self.vip_presence = None;
         self.last_received = tokio::time::Instant::now();
-        self.events.extend(events);
+        self.events
+            .extend(events.into_iter().map(|event| (self.last_received, event)));
         Ok(Some(SessionError::ActivityScopeChanged))
     }
 

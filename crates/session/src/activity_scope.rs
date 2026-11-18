@@ -181,7 +181,10 @@ impl<S: SessionStream> Session<S> {
         self.last_refusal_detail = None;
         self.vip_presence = None;
         self.last_received = tokio::time::Instant::now();
-        self.events = events;
+        self.events = events
+            .into_iter()
+            .map(|event| (self.last_received, event))
+            .collect();
         Ok(())
     }
 }

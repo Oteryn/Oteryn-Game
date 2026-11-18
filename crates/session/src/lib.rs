@@ -381,7 +381,7 @@ pub struct Session<S> {
     selected_capabilities: Vec<u32>,
     gated_snapshots: Vec<GatedSnapshot>,
     gated_revisions: Vec<(u32, u64)>,
-    events: Vec<SessionEvent>,
+    events: Vec<(tokio::time::Instant, SessionEvent)>,
     /// `Some` exactly when capability 6 is selected.
     entities: Option<WorldEntities>,
     appearance: Option<appearance_state::AppearanceState>,

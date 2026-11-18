@@ -299,7 +299,7 @@ impl<S: SessionStream> Session<S> {
                 limit: MAX_QUEUED_EVENTS,
             });
         }
-        self.events.push(event);
+        self.events.push((self.last_received, event));
         Ok(())
     }
 

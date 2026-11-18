@@ -351,6 +351,27 @@ fn a_pushed_vitals_delta_during_idle_applies_and_is_queued_once() -> Result<(), 
 }
 
 #[test]
+fn idle_vitals_event_keeps_its_receipt_time_through_drain() -> Result<(), BoxError> {
+    block_on(async {
+        let (client, peer) = script_peer(vec![vitals_push(41, 0, 1, 120)?]);
+        let mut session = Session::admit(client, admission()?).await?;
+        let listening = tokio::time::Instant::now();
+        session.service_liveness(Duration::from_millis(100)).await?;
+        let poll_finished = tokio::time::Instant::now();
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        let events = session.take_timed_events();
+        assert_eq!(events.len(), 1);
+        let (received, event) = &events[0];
+        assert!(*received >= listening && *received < poll_finished);
+        assert_eq!(event, &vitals_event(41, 0, 1, 120));
+        assert!(session.take_events().is_empty());
+        drop(session);
+        peer.await??;
+        Ok(())
+    })?
+}
+
+#[test]
 fn a_delta_pushed_before_the_result_applies_and_the_steps_own_delta_still_applies()
 -> Result<(), BoxError> {
     block_on(async {

@@ -24,7 +24,7 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
-const BOSS: &str = "oteryn:boss.faceless_bane";
+pub(super) const BOSS: &str = "oteryn:boss.faceless_bane";
 const LEVERS: &[TilePos] = &[
     TilePos {
         x: 33638,
@@ -55,7 +55,9 @@ const LEVERS: &[TilePos] = &[
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(320), verdict::observe(journey(clients)))
+            .await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=W02.full status=PASS seconds={:.3} evidence=lever-instance-defeat-cooldown-participation-reward-fresh-admission",
@@ -67,7 +69,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             evidence_token(&error.to_string())
         )),
         Err(_) => evidence(&format!(
-            "e2e_all scenario=W02.full status=FAIL seconds={:.3} evidence=step-timeout:240s;need=completed-native-boss-lifecycle",
+            "e2e_all scenario=W02.full status=FAIL seconds={:.3} evidence=step-timeout:320s;need=completed-native-boss-lifecycle",
             started.elapsed().as_secs_f64()
         )),
     }
@@ -107,19 +109,12 @@ async fn cooldowns(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
     Ok(reply.payload)
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xb2).await?;
-    let before = cooldowns(&mut client).await?;
-    if contains_key(&before, BOSS) {
-        return Err(
-            "step-1-fresh-cooldown:observed=faceless-bane-present;need=fresh-node-boot-character"
-                .into(),
-        );
-    }
-    evidence("W02_CHECK step=1 status=PASS observed=accepted-empty-target-cooldown");
-
-    // Make the real walking attempt before operating the lever. `route` uses the
-    // same immutable production map facts and bound as the other full-row phases.
+async fn walk_to_boss_lever(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult {
+    // Route from the live player cell to the authored encounter lever, servicing the
+    // connection during the search for entrances outside the starting town.
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -129,23 +124,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| LEVERS.contains(&at)).ok_or_else(|| {
-        format!("step-2-lever-walk:observed=no-route-from-{from:?};need=walk-to-authored-lever")
-    })?;
-    walk(&mut client, world, &path).await?;
+    let path = reach_route(client, world, from, |at| LEVERS.contains(&at))
+        .await?
+        .map_err(|failure| format!("step-2-lever-walk:observed=no-route-from-{from:?} {failure};need=walk-to-authored-lever"))?;
+    walk(client, world, &path).await
+}
+
+pub(super) async fn fight_boss(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    row: &str,
+) -> TestResult<[u8; 16]> {
+    use oteryn_protocol_oteryn::activity_scope::ActivityScope;
+    walk_to_boss_lever(client, clients).await?;
     let lever_position = client.world_spatial().actor_position;
     let channel_session = client.join_snapshot().game_session_id;
 
     let payload =
         wire::encode_boss_key(BOSS).map_err(|error| format!("step-2-lever-encode:{error:?}"))?;
-    let lever = command(&mut client, wire::COMMAND_TYPE_BOSS_LEVER, &payload).await?;
+    let lever = command(client, wire::COMMAND_TYPE_BOSS_LEVER, &payload).await?;
     let activity = wire::decode_boss_activity_reply(&lever.payload).map_err(|error| {
         format!(
             "step-2-lever-reply:status={:?};decode={error:?}",
             lever.status
         )
     })?;
-    match activity {
+    let handoff = match activity {
         wire::BossActivityReply::Refused(reason) => {
             // This is a real server decision after the native command, not a
             // source-derived verdict. Preserve the exact typed refusal in evidence.
@@ -160,7 +164,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         {
             let instance_session = client.join_snapshot().game_session_id;
             let instance_position = client.world_spatial().actor_position;
-            if instance_session == channel_session || instance_position == lever_position {
+            let linked_instance = client.session_mut().activity_scope().is_some_and(|scope| {
+                scope.handoff == handoff
+                    && scope.source_session == *channel_session.as_bytes()
+                    && scope.session == *instance_session.as_bytes()
+                    && matches!(scope.scope, ActivityScope::Instance { world, .. } if world == clients.world)
+            });
+            if !linked_instance
+                || instance_session == channel_session
+                || instance_position == lever_position
+            {
                 return Err(format!(
                     "step-2-instance-deltas:observed-reply=Accepted-handoff-{handoff:?},session-changed={},position-changed={};need=Instance-scope-and-position-deltas",
                     instance_session != channel_session,
@@ -168,14 +181,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 )
                 .into());
             }
-            evidence(
-                "W02_CHECK step=2 status=PASS observed=accepted-instance-session-and-position-deltas",
-            );
+            evidence(&format!(
+                "{row}_CHECK step=boss-entry status=PASS observed=accepted-instance-session-and-position-deltas"
+            ));
+            handoff
         }
         other => {
             return Err(format!("step-2-lever-entry:observed-status={:?},reply={other:?};need=accepted-consistent-handoff", lever.status).into());
         }
-    }
+    };
     let instance_session = client.join_snapshot().game_session_id;
 
     // The accepted branch must observe a real boss before combat. It deliberately
@@ -183,15 +197,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     // it never substitutes a defeated/timeout control command for a player kill.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     let target = loop {
-        if let Some(entity) = client
-            .world_entities()
-            .and_then(|entities| {
-                entities
-                    .iter()
-                    .find(|entity| entity.kind == oteryn_dev_client::EntityKind::Creature)
-            })
-            .copied()
-        {
+        if let Some(entity) = named_creature(client, "faceless bane").await? {
             break entity;
         }
         if tokio::time::Instant::now() >= deadline {
@@ -200,10 +206,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     };
-    let attack = client
-        .session_mut()
-        .attack_target(Some(&target.entity))
-        .await?;
+    let attack = client.session_mut().attack_target(Some(&target)).await?;
     if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(
             format!("step-3-boss-combat:observed={attack:?};need=accepted-native-attack").into(),
@@ -213,7 +216,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     verdict::Harness::global().bounded_wait(defeat_deadline, "bounded-observation");
     while client
         .world_entities()
-        .is_some_and(|entities| entities.iter().any(|entity| entity.entity == target.entity))
+        .is_some_and(|entities| entities.iter().any(|entity| entity.entity == target))
     {
         if tokio::time::Instant::now() >= defeat_deadline {
             client.session_mut().attack_target(None).await?;
@@ -223,13 +226,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.take_events();
     }
     client.session_mut().attack_target(None).await?;
-    let return_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let (x, y, floor, wait_ms): (i32, i32, i16, i64) = sqlx::query_as(
+        "SELECT q.exit_x, q.exit_y, q.exit_floor, b.after_kill_ms
+         FROM game_activity_runtime_placements q
+         JOIN game_activity_handoff_participants p USING (handoff_id, character_id)
+         JOIN game_boss_room_activities b ON b.admission = q.handoff_id
+         WHERE q.handoff_id = encode($1,'hex')::uuid
+           AND p.destination_game_session_id = encode($2,'hex')::uuid",
+    )
+    .bind(handoff.as_slice())
+    .bind(instance_session.as_bytes().as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    let (return_wait, expected_exit) = return_expectation(
+        ActorPosition { x, y, floor },
+        Duration::from_millis(wait_ms.try_into()?),
+    );
+    let return_deadline = tokio::time::Instant::now() + return_wait;
+    verdict::Harness::global().bounded_wait(return_deadline, "boss-return");
     while client.join_snapshot().game_session_id == instance_session
-        || client.world_spatial().actor_position != lever_position
+        || client.world_spatial().actor_position != expected_exit
     {
         if tokio::time::Instant::now() >= return_deadline {
             return Err(format!(
-                "step-3-return-to-channel:observed-session-changed={},position={:?};need=new-Channel-session-at-{lever_position:?}",
+                "step-3-return-to-channel:observed-session-changed={},position={:?};need=new-Channel-session-at-{expected_exit:?}",
                 client.join_snapshot().game_session_id != instance_session,
                 client.world_spatial().actor_position
             )
@@ -238,7 +259,106 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
-    evidence("W02_CHECK step=3 status=PASS observed=native-boss-removal-and-channel-return");
+    let returned = client.session_mut().activity_scope().is_some_and(|scope| {
+        scope.source_session == *instance_session.as_bytes()
+            && scope.scope
+                == (ActivityScope::Channel {
+                    world: clients.world,
+                    channel: clients.channel,
+                })
+    });
+    if !returned {
+        return Err("step-3-return-to-channel:observed=missing-matching-channel-scope".into());
+    }
+    evidence(&format!(
+        "{row}_CHECK step=boss-return status=PASS observed=native-boss-removal-and-channel-return"
+    ));
+
+    Ok(handoff)
+}
+
+fn return_expectation(exit: ActorPosition, after_kill: Duration) -> (Duration, ActorPosition) {
+    (after_kill.saturating_add(Duration::from_secs(20)), exit)
+}
+
+pub(super) async fn named_creature(
+    client: &mut DevClientSession,
+    name: &str,
+) -> TestResult<Option<oteryn_dev_client::EntityRef>> {
+    let candidates: Vec<_> = client
+        .world_entities()
+        .ok_or("missing creature entity view")?
+        .iter()
+        .filter(|entry| entry.kind == oteryn_dev_client::EntityKind::Creature)
+        .map(|entry| entry.entity)
+        .collect();
+    for target in candidates {
+        use oteryn_protocol_oteryn::item_look::ItemLookResult;
+        let look = actor_look(client, target).await?;
+        if matches!(look, ItemLookResult::Text(_)) && classify_actor_name(look, name)? {
+            return Ok(Some(target));
+        }
+    }
+    Ok(None)
+}
+
+pub(super) async fn actor_look(
+    client: &mut DevClientSession,
+    target: oteryn_dev_client::EntityRef,
+) -> TestResult<oteryn_protocol_oteryn::item_look::ItemLookResult> {
+    use oteryn_protocol_oteryn::item_look as look;
+    let selection = look::ItemLookSelection { extended: true };
+    let payload = look::encode_item_look_intent_for(
+        look::ItemLookIntent {
+            target: look::ItemLookTarget::Creature(target),
+        },
+        selection,
+    )
+    .map_err(|error| format!("creature LOOK encode: {error:?}"))?;
+    let reply = client.session_mut().gated_command(28, 30, &payload).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("creature LOOK refused: {reply:?}").into());
+    }
+    look::decode_item_look_result_for(&reply.payload, selection)
+        .map_err(|error| format!("actor LOOK decode: {error:?}").into())
+}
+
+pub(super) fn classify_actor_name(
+    result: oteryn_protocol_oteryn::item_look::ItemLookResult,
+    name: &str,
+) -> TestResult<bool> {
+    use oteryn_protocol_oteryn::item_look::ItemLookResult;
+    let text = match result {
+        ItemLookResult::Text(text) => text,
+        ItemLookResult::Refused(reason) => {
+            return Err(format!("actor LOOK identity indeterminate: {reason:?}").into());
+        }
+    };
+    if let Some(observed) = text
+        .strip_prefix("You see ")
+        .and_then(|text| text.strip_suffix('.'))
+    {
+        let observed = ["the ", "an ", "a "]
+            .iter()
+            .find_map(|article| observed.strip_prefix(article))
+            .unwrap_or(observed);
+        return Ok(observed.eq_ignore_ascii_case(name));
+    }
+    Err("actor LOOK did not return a recognizable actor description".into())
+}
+
+async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let mut client = connect_world(clients, 0xb2).await?;
+    let before = cooldowns(&mut client).await?;
+    if contains_key(&before, BOSS) {
+        return Err(
+            "step-1-fresh-cooldown:observed=faceless-bane-present;need=fresh-node-boot-character"
+                .into(),
+        );
+    }
+    evidence("W02_CHECK step=1 status=PASS observed=accepted-empty-target-cooldown");
+
+    fight_boss(&mut client, clients, "W02").await?;
 
     let after = cooldowns(&mut client).await?;
     let settled_cooldown = nested_entry(&after, 2, BOSS)?
@@ -279,8 +399,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     evidence("W02_CHECK step=4 status=PASS observed=cooldown-and-personal-reward");
 
+    // The defeated handoff returns at the authored exit. The repeat probe must stand
+    // on a lever square so the cooldown is the reason for refusal.
+    walk_to_boss_lever(&mut client, clients).await?;
     let before_repeat_session = client.join_snapshot().game_session_id;
     let before_repeat_position = client.world_spatial().actor_position;
+    let payload =
+        wire::encode_boss_key(BOSS).map_err(|error| format!("step-5-lever-encode:{error:?}"))?;
     let repeated = command(&mut client, wire::COMMAND_TYPE_BOSS_LEVER, &payload).await?;
     let repeated_reply = wire::decode_boss_activity_reply(&repeated.payload)
         .map_err(|error| format!("step-5-cooldown-refusal-decode:{error:?}"))?;
@@ -424,5 +549,30 @@ mod tests {
     fn cooldown_key_detection_requires_contiguous_wire_text() {
         assert!(contains_key(b"\x0a\x1boteryn:boss.faceless_bane", BOSS));
         assert!(!contains_key(b"oteryn:boss.other", BOSS));
+    }
+}
+
+#[cfg(test)]
+mod delta_review_tests {
+    use super::*;
+    #[test]
+    fn defeated_return_uses_authored_exit_and_wait() {
+        let exit = ActorPosition {
+            x: 33618,
+            y: 32523,
+            floor: 15,
+        };
+        let (budget, goal) = return_expectation(exit, Duration::from_secs(60));
+        assert_eq!(goal, exit);
+        assert!(budget > Duration::from_secs(60));
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn look_refusal_does_not_establish_actor_absence() {
+    use oteryn_protocol_oteryn::item_look::{ItemLookRefusal, ItemLookResult};
+    for refusal in [ItemLookRefusal::RateLimited, ItemLookRefusal::NotAvailable] {
+        assert!(classify_actor_name(ItemLookResult::Refused(refusal), "Rashid").is_err());
     }
 }

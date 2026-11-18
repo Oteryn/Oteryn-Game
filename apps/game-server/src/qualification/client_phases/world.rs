@@ -2542,7 +2542,21 @@ pub(super) async fn reach_route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
-    reach_route_until(client, world, from, goal, None, &BTreeSet::new()).await
+    reach_route_observed(client, world, from, goal, &mut |client| {
+        client.take_events();
+        Ok(())
+    })
+    .await
+}
+
+async fn reach_route_observed(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    observe: &mut impl FnMut(&mut oteryn_dev_client::DevClientSession) -> TestResult,
+) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
+    reach_route_until(client, world, from, goal, None, &BTreeSet::new(), observe).await
 }
 
 #[derive(Debug)]
@@ -2596,6 +2610,7 @@ async fn reach_route_until(
     goal: impl Fn(TilePos) -> bool,
     deadline: Option<tokio::time::Instant>,
     blocked_edges: &BTreeSet<(TilePos, TilePos)>,
+    observe: &mut impl FnMut(&mut oteryn_dev_client::DevClientSession) -> TestResult,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     let mut origin = from;
     let mut budget = ReachBudget::default();
@@ -2604,7 +2619,7 @@ async fn reach_route_until(
             return Err(SpawnProbeExpired.into());
         }
         probe_liveness(client, Duration::from_millis(1), deadline).await?;
-        client.take_events(); // Canonical session stores retain the applied observations.
+        observe(client)?;
         let observed = actor_tile(client)?;
         if observed != origin {
             origin = observed;
@@ -2621,13 +2636,13 @@ async fn reach_route_until(
                 }
                 verdict::Harness::global().progress("route-search");
                 probe_liveness(client, Duration::from_millis(1), deadline).await?;
-                client.take_events();
+                observe(client)?;
                 Ok(())
             },
         )
         .await?;
         probe_liveness(client, Duration::from_millis(1), deadline).await?;
-        client.take_events();
+        observe(client)?;
         let observed = actor_tile(client)?;
         if observed == origin {
             return Ok(path);
@@ -2836,19 +2851,36 @@ async fn walk(
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
-    walk_observing(client, world, path, |_, _| Ok(())).await
+    walk_observed(client, world, path, &mut |client| {
+        client.take_events();
+        Ok(())
+    })
+    .await
+}
+
+async fn walk_observed(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    observe: &mut impl FnMut(&mut oteryn_dev_client::DevClientSession) -> TestResult,
+) -> TestResult {
+    walk_until(client, world, path, None, false, observe).await
 }
 
 async fn walk_observing(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
-    observe: impl FnMut(
+    mut observe: impl FnMut(
         &oteryn_dev_client::DevClientSession,
         Vec<oteryn_dev_client::SessionEvent>,
     ) -> TestResult,
 ) -> TestResult {
-    walk_until_observing(client, world, path, None, false, observe).await
+    walk_until(client, world, path, None, false, |client| {
+        let events = client.take_events();
+        observe(client, events)
+    })
+    .await
 }
 
 async fn probe_step(
@@ -2880,23 +2912,7 @@ async fn walk_until(
     path: &[StepDirection],
     deadline: Option<tokio::time::Instant>,
     tolerate_refusal: bool,
-) -> TestResult {
-    walk_until_observing(client, world, path, deadline, tolerate_refusal, |_, _| {
-        Ok(())
-    })
-    .await
-}
-
-async fn walk_until_observing(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    path: &[StepDirection],
-    deadline: Option<tokio::time::Instant>,
-    tolerate_refusal: bool,
-    mut observe: impl FnMut(
-        &oteryn_dev_client::DevClientSession,
-        Vec<oteryn_dev_client::SessionEvent>,
-    ) -> TestResult,
+    mut observe: impl FnMut(&mut oteryn_dev_client::DevClientSession) -> TestResult,
 ) -> TestResult {
     for &direction in path {
         if probe_expired(deadline) {
@@ -2933,7 +2949,7 @@ async fn walk_until_observing(
                 )
             };
             let Some(delay) = delay else { break };
-            client.take_events();
+            observe(client)?;
             if !retry_fits_probe(tokio::time::Instant::now(), deadline, delay) {
                 return Err(SpawnProbeExpired.into());
             }
@@ -2954,7 +2970,7 @@ async fn walk_until_observing(
             )
             && client.world_spatial().actor_position == before
         {
-            client.take_events();
+            observe(client)?;
             let from = served_tile(before, basis)?;
             let to = destination(world, from, direction).ok_or("invalid refused STEP edge")?;
             return Err(BlockedSpawnEdge(from, to).into());
@@ -2975,8 +2991,7 @@ async fn walk_until_observing(
             )
             .into());
         }
-        let events = client.take_events();
-        observe(client, events)?;
+        observe(client)?;
     }
     Ok(())
 }
@@ -6271,6 +6286,33 @@ enum SpawnRespawn {
     Wait,
 }
 
+async fn travel_to_spawn_observed(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+    observe: &mut impl FnMut(&mut oteryn_dev_client::DevClientSession) -> TestResult,
+) -> TestResult {
+    client_readmission::within_retry_budget(
+        tokio::time::Instant::now() + Duration::from_secs(120),
+        async {
+            approach_spawn_target_observing(
+                client,
+                world,
+                spawns,
+                creature,
+                SpawnRespawn::Wait,
+                None,
+                observe,
+            )
+            .await?
+            .ok_or_else(|| format!("no reachable live {creature}").into())
+            .map(|_| ())
+        },
+    )
+    .await
+}
+
 async fn approach_spawn_target(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -6278,6 +6320,30 @@ async fn approach_spawn_target(
     creature: &str,
     respawn_wait: SpawnRespawn,
     probe_deadline: Option<tokio::time::Instant>,
+) -> TestResult<Option<oteryn_dev_client::WorldSpatialEntity>> {
+    approach_spawn_target_observing(
+        client,
+        world,
+        spawns,
+        creature,
+        respawn_wait,
+        probe_deadline,
+        &mut |client| {
+            client.take_events();
+            Ok(())
+        },
+    )
+    .await
+}
+
+async fn approach_spawn_target_observing(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+    respawn_wait: SpawnRespawn,
+    probe_deadline: Option<tokio::time::Instant>,
+    observe: &mut impl FnMut(&mut oteryn_dev_client::DevClientSession) -> TestResult,
 ) -> TestResult<Option<oteryn_dev_client::WorldSpatialEntity>> {
     let (name, _) = full_gold::creature_profile(creature)?;
     let authored: BTreeMap<_, _> = spawns
@@ -6346,6 +6412,7 @@ async fn approach_spawn_target(
                 },
                 probe_deadline,
                 &blocked_edges,
+                observe,
             )
             .await?;
             if let Ok(path) = path {
@@ -6355,6 +6422,7 @@ async fn approach_spawn_target(
                     &path,
                     probe_deadline,
                     probe_deadline.is_some(),
+                    &mut *observe,
                 )
                 .await
                 {
@@ -6438,7 +6506,16 @@ async fn approach_spawn_target(
         {
             chase_steps += 1;
             let deadline = probe_deadline.map_or(deadline, |limit| deadline.min(limit));
-            match walk_until(client, world, &[direction], Some(deadline), true).await {
+            match walk_until(
+                client,
+                world,
+                &[direction],
+                Some(deadline),
+                true,
+                &mut *observe,
+            )
+            .await
+            {
                 Err(error) if error.is::<BlockedSpawnEdge>() || error.is::<SpawnProbeExpired>() => {
                     chase_steps = 32;
                 }
@@ -6457,7 +6534,7 @@ async fn approach_spawn_target(
             Err(error) if error.is::<SpawnProbeExpired>() => return Err(error),
             result => result?,
         }
-        client.take_events();
+        observe(client)?;
     }
 }
 

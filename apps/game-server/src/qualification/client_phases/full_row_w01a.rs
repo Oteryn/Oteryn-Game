@@ -277,14 +277,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let health_after_refusal = client.world_entities().and_then(|entities| {
-        entities
-            .get(&target.entity)
-            .and_then(|entry| match entry.detail {
-                EntityDetail::Actor { health_percent, .. } => Some(health_percent),
-                _ => None,
-            })
+    let entities = client
+        .world_entities()
+        .ok_or("step=out-of-range-refusal observed=no-entity-view")?;
+    let target_after_refusal = entities.get(&target.entity);
+    let health_after_refusal = target_after_refusal.and_then(|entry| match entry.detail {
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => Some(health_percent),
+        _ => None,
     });
+    let target_evicted = target_after_refusal.is_none();
     let cleared = client.session_mut().attack_target(None).await?;
     if cleared.disposition != AttackIntentDisposition::Ok {
         return Err(
@@ -293,23 +295,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("clear-target", cleared);
 
-    match health_after_refusal {
-        Some(health) if health >= low => {
-            row.pass("out-of-range-refusal", (refused, low, health));
-        }
-        Some(health) => {
-            return Err(format!(
-                "step=out-of-range-refusal observed=attack-reply-{refused:?},health-before={low},health-after={health} need=nondecreasing-health-after-refusal"
-            )
-            .into());
-        }
-        None => {
-            return Err(format!(
-                "step=out-of-range-refusal observed=attack-reply-{refused:?},target-health-unobservable need=observed-nondecreasing-health-after-refusal"
-            )
-            .into());
-        }
+    if !visibility_refusal_preserved_health(low, target_evicted, health_after_refusal) {
+        return Err(format!(
+            "step=out-of-range-refusal observed=attack-reply-{refused:?},health-before={low},health-after={health_after_refusal:?},evicted={target_evicted} need=evicted-target-or-nondecreasing-health"
+        ).into());
     }
+    row.pass(
+        "out-of-range-refusal",
+        (refused, low, health_after_refusal, target_evicted),
+    );
 
     let saved = client.world_spatial().actor_position;
     if client.session_mut().logout().await?.result
@@ -339,9 +333,24 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
+fn visibility_refusal_preserved_health(before: u8, evicted: bool, after: Option<u8>) -> bool {
+    match after {
+        Some(health) => health >= before,
+        None => evicted,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn visibility_refusal_distinguishes_eviction_from_missing_health() {
+        assert!(visibility_refusal_preserved_health(20, true, None));
+        assert!(!visibility_refusal_preserved_health(20, false, None));
+        assert!(!visibility_refusal_preserved_health(20, false, Some(19)));
+        assert!(visibility_refusal_preserved_health(20, false, Some(20)));
+    }
 
     #[test]
     fn distance_is_chebyshev_for_visible_tiles() {

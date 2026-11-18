@@ -32,6 +32,14 @@ use oteryn_protocol_oteryn::arena::{
     self as wire, ArenaAction, ArenaDisposition, ArenaState, DromeAction, DromeResult,
 };
 
+fn unchanged_eligibility_refusal(before: DromeResult, enter: DromeResult) -> bool {
+    enter.disposition == 3
+        && DromeResult {
+            disposition: before.disposition,
+            ..enter
+        } == before
+}
+
 struct Journey {
     started: std::time::Instant,
     completed: usize,
@@ -173,7 +181,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         if left.disposition != 1 {
             return Err(format!("step-7 Tibiadrome Leave observed={left:?}").into());
         }
-    } else if drome_enter.disposition != 3 || drome_enter != drome_before {
+    } else if !unchanged_eligibility_refusal(drome_before, drome_enter) {
         return Err(format!(
             "step-7 Tibiadrome eligibility refusal mutated state before={drome_before:?} observed={drome_enter:?}"
         )
@@ -245,5 +253,38 @@ mod tests {
         let state = ArenaState::default();
         assert_eq!(state.active_rank, 0);
         assert_ne!(state.phase, 1);
+    }
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+
+    #[test]
+    fn eligibility_refusal_preserves_drome_state() {
+        let status = DromeResult {
+            disposition: 1,
+            level: 4,
+            ..DromeResult::default()
+        };
+        let refusal = DromeResult {
+            disposition: 3,
+            ..status
+        };
+        assert!(unchanged_eligibility_refusal(status, refusal));
+        assert!(!unchanged_eligibility_refusal(
+            status,
+            DromeResult {
+                level: 5,
+                ..refusal
+            }
+        ));
+        assert!(!unchanged_eligibility_refusal(
+            status,
+            DromeResult {
+                disposition: 4,
+                ..refusal
+            }
+        ));
     }
 }

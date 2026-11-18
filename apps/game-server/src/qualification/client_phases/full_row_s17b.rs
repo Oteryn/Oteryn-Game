@@ -2,7 +2,7 @@
 //! 1. A viewer opens the real listener and sends the cast Join with a ticket (`CastViewerSession`).
 //!    Without the cast listener and a Platform-issued ticket the join must be refused.
 //! 2. The admitted player session sends the cast consent command; without capability 292 the
-//!    session must refuse it exactly with `CapabilityNotSelected`.
+//!    server must send a sequenced Rejected result.
 //!
 //! The row then reports the missing precondition.
 use super::*;
@@ -12,8 +12,8 @@ use oteryn_protocol_oteryn::cast;
 use tokio_rustls::rustls::pki_types::ServerName;
 
 /// The viewer's first frame, a cast Join with a ticket Platform never issued, on the real
-/// listener. Returns the session error of the refused join.
-async fn viewer_join(clients: &SeamClients<'_>) -> TestResult<String> {
+/// listener. The current protocol has no typed ticket-refusal frame.
+pub(super) async fn viewer_join(clients: &SeamClients<'_>) -> TestResult {
     let connector =
         crate::qualification::connector(clients.certificate, &crate::qualification::EXACT)?;
     let tcp = tokio::net::TcpStream::connect(clients.address).await?;
@@ -28,38 +28,75 @@ async fn viewer_join(clients: &SeamClients<'_>) -> TestResult<String> {
     .await
     {
         Ok(_) => Err("step=viewer-join;observed=joined-with-an-unissued-ticket".into()),
-        Err(error) => Ok(format!("{error:?}")),
+        Err(error) => viewer_join_error(error),
     }
 }
 
-/// A gated cast command from the admitted player session must fail before the wire.
-async fn refused_by_session(
+fn viewer_join_error(error: oteryn_dev_client::SessionError) -> TestResult {
+    Err(format!(
+        "step=viewer-join;observed=unclassified-join-error:{error:?};needed=typed-ticket-refusal"
+    )
+    .into())
+}
+
+fn refusal_is_from_dispatch(
+    registered: bool,
+    result: &Result<
+        oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse,
+        oteryn_dev_client::SessionError,
+    >,
+) -> bool {
+    attributed_cast_refusal(
+        registered,
+        matches!(result, Ok(reply) if reply.status == CommandStatus::Rejected && reply.payload.is_empty()),
+    )
+}
+
+fn attributed_cast_refusal(registered: bool, wire_rejected: bool) -> bool {
+    registered && wire_rejected
+}
+
+/// A correctly encoded unnegotiated cast command must be rejected by Game dispatch.
+pub(super) async fn refused_by_session(
     client: &mut DevClientSession,
     capability: u32,
     command: u32,
     message: &cast::Message,
 ) -> TestResult<String> {
+    if client.selected_capabilities().contains(&capability) {
+        return Err(format!("step=cast-command;observed=capability-{capability}-selected").into());
+    }
+    use oteryn_protocol_oteryn::capability_tables::GATED;
+    let registered = GATED
+        .iter()
+        .any(|(id, commands, _)| *id == capability && commands.contains(&command));
     let payload = message
         .encode()
         .map_err(|error| format!("step=encode;observed={error:?}"))?;
     let reply = client
         .session_mut()
-        .gated_command(capability, command, &payload)
+        .qualification_command(command, &payload)
         .await;
-    let error = reply
-        .err()
-        .map(|error| format!("{error:?}"))
-        .ok_or("step=cast-command;observed=accepted-without-capability")?;
+    let error = format!("{reply:?}");
+    if !registered {
+        expect(
+            matches!(&reply, Ok(result) if result.status == CommandStatus::Rejected && result.payload.is_empty()),
+            "unregistered-cast-command",
+            &error,
+        )?;
+        return Ok(format!(
+            "capability-attribution-unavailable:player-route-unregistered:capability={capability}:command={command}"
+        ));
+    }
     expect(
-        error.contains("CapabilityNotSelected"),
+        refusal_is_from_dispatch(registered, &reply),
         "cast-command",
         &error,
     )?;
     Ok(error)
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
-    let refused = viewer_join(clients).await?;
+async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xa2).await?;
     let consent = refused_by_session(
         &mut client,
@@ -72,26 +109,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )
     .await?;
     logout(&mut client).await?;
-    Ok((
-        "FAIL",
-        format!(
-            "step=viewer-join;observed=join-refused:{refused},consent:{consent};needed=cast-listener-and-platform-issued-viewer-ticket"
-        ),
-    ))
+    evidence(&format!("S17B_CHECK consent-dispatch={consent}"));
+    viewer_join(clients).await
 }
-
-type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
-    let (status, detail) = match result {
-        Ok(Ok((status, detail))) => (status, token(&detail)),
-        Ok(Err(error)) => ("FAIL", token(&error.to_string())),
-        Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let detail = match result {
+        Ok(Ok(())) => "step=viewer-join;needed=platform-issued-viewer-ticket".to_owned(),
+        Ok(Err(error)) => token(&error.to_string()),
+        Err(_) => "step=journey;observed=timeout".to_owned(),
     };
     evidence(&format!(
-        "e2e_all scenario=S17b.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=S17b.full status=FAIL seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }
@@ -133,10 +165,57 @@ mod tests {
     use super::*;
 
     #[test]
+    fn viewer_transport_failures_do_not_prove_ticket_refusal() {
+        use oteryn_dev_client::SessionError;
+        for error in [
+            SessionError::SessionUnusable,
+            SessionError::Timeout("cast accept"),
+            SessionError::Io(std::io::ErrorKind::UnexpectedEof.into()),
+        ] {
+            assert!(viewer_join_error(error).is_err());
+        }
+    }
+
+    #[test]
+    fn capability_refusal_requires_rejected_wire_result() {
+        use oteryn_dev_client::SessionError;
+        let result = oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 2,
+            server_sequence: 7,
+            status: CommandStatus::Rejected,
+            payload: vec![],
+        };
+        assert!(refusal_is_from_dispatch(true, &Ok(result.clone())));
+        assert!(!refusal_is_from_dispatch(
+            true,
+            &Ok(
+                oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse {
+                    status: CommandStatus::Accepted,
+                    ..result
+                }
+            )
+        ));
+        assert!(!refusal_is_from_dispatch(
+            true,
+            &Err(SessionError::CapabilityNotSelected { capability: 292 })
+        ));
+    }
+
+    #[test]
     fn token_has_no_whitespace_and_is_bounded() {
         let value = token(&format!("step=a b\tc\n{}", "x".repeat(400)));
         assert!(!value.contains(char::is_whitespace));
         assert!(value.len() <= 240);
         assert!(value.starts_with("step=a-b-c-"));
+    }
+}
+
+#[cfg(test)]
+mod delta_review_tests {
+    use super::*;
+    #[test]
+    fn unregistered_cast_rejection_is_not_capability_evidence() {
+        assert!(!attributed_cast_refusal(false, true));
+        assert!(attributed_cast_refusal(true, true));
     }
 }

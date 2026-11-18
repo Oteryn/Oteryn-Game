@@ -41,9 +41,9 @@ class QualificationWiringTests(unittest.TestCase):
         self.assertNotIn("unreachable.insert", (PHASES / "full_gold.rs").read_text())
 
     def test_moving_target_must_pass_lane_budget_before_each_step(self):
-        search = (PHASES / "world.rs").read_text().split("async fn approach_spawn_target", 1)[1]
-        budget = search.find("if chase_steps == 32")
-        step = search.find("walk_until(client, world, &[direction]")
+        search = "".join((PHASES / "world.rs").read_text().split("async fn approach_spawn_target", 1)[1].split())
+        budget = search.find("ifchase_steps==32")
+        step = search.find("walk_until(client,world,&[direction]")
         self.assertGreaterEqual(budget, 0)
         self.assertLess(budget, step)
         self.assertTrue("".join(search[budget:step].split()).startswith(
@@ -86,7 +86,7 @@ class QualificationWiringTests(unittest.TestCase):
     def test_pursuit_step_uses_cooperative_lane_deadline(self):
         source = (PHASES / "world.rs").read_text()
         compact = "".join(source.split())
-        self.assertTrue("walk_until(client,world,&[direction],Some(deadline),true)" in compact)
+        self.assertTrue("walk_until(client,world,&[direction],Some(deadline),true,&mut*observe" in compact)
 
     def test_gold_probes_with_a_species_deadline(self):
         earn = (PHASES / "full_gold.rs").read_text()

@@ -174,11 +174,12 @@ impl<S: SessionStream> Session<S> {
                     .map_err(|_| FoundationProtocolError::MalformedFrame)?,
             });
         }
+        let last_received = tokio::time::Instant::now();
         Ok(Self {
             bulletin: None,
             stream,
             deadline,
-            last_received: tokio::time::Instant::now(),
+            last_received,
             connection_generation: session_generation,
             world_id: accepted_fields.world_id,
             activity_scope: accepted_fields.activity_scope,
@@ -201,7 +202,10 @@ impl<S: SessionStream> Session<S> {
             selected_capabilities,
             gated_snapshots,
             gated_revisions,
-            events,
+            events: events
+                .into_iter()
+                .map(|event| (last_received, event))
+                .collect(),
             entities,
             appearance,
             chat_revision,
