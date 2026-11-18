@@ -260,6 +260,11 @@ impl MeleeSource {
             && definition.maximum == self.maximum
     }
 
+    /// The defence and armor checks requested by the pinned melee effect.
+    pub const fn block_checks(&self) -> (bool, bool) {
+        (self.shield, self.armor)
+    }
+
     /// Native secondary damage conditions, already qualified with this source closure.
     /// The current player condition owner still decides immunity and atomic admission.
     pub fn conditions(&self) -> &[ConditionDefinition] {

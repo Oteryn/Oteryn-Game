@@ -595,9 +595,9 @@ async fn companion_melee_credit(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     use crate::foundation::MovementLocalPosition;
-    use oteryn_simulation_determinism::SemanticTimeMicros;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
     use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+    use oteryn_simulation_determinism::SemanticTimeMicros;
 
     let actor = admitted.runtime_actor.ok_or("hunter")?;
     let session = admitted.game_session_id;

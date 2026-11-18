@@ -300,6 +300,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return;
             }
         }
+        attack.drain_owned_companion_melee(
+            &mut runtime,
+            &states,
+            room,
+            content,
+            constants,
+            self.imported_charms,
+            now,
+        );
         let ChannelAttackStates {
             entries,
             blocks,

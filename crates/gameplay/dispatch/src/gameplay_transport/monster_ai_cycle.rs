@@ -1235,12 +1235,12 @@ pub fn drive_owner_spawns(runtime: &mut ChannelRuntimeV1, now: u64) {
 
 /// One monster the first playable melee dispatch serves: a wild hostile Creature whose bound
 /// profile has a native melee schedule.
-struct QualifiedMelee<'a> {
+pub(super) struct QualifiedMelee<'a> {
     behavior: &'a ProjectV2BehaviorAuthoring,
-    definition: MeleeDefinition,
+    pub(super) definition: MeleeDefinition,
     race_key: String,
     conditions: Vec<crate::foundation::ConditionDefinition>,
-    source: Option<crate::creature_auto_attack::MeleeSource>,
+    pub(super) source: Option<crate::creature_auto_attack::MeleeSource>,
 }
 
 fn qualified_melee<'a>(
@@ -1248,14 +1248,30 @@ fn qualified_melee<'a>(
     content: &'a crate::content::native_gameplay::NativeGameplayState,
     actor: ExactActorRef,
 ) -> Option<Vec<QualifiedMelee<'a>>> {
+    qualified_melee_for_role(runtime, content, actor, false)
+}
+
+pub(super) fn qualified_owned_melee<'a>(
+    runtime: &ChannelRuntimeV1,
+    content: &'a crate::content::native_gameplay::NativeGameplayState,
+    actor: ExactActorRef,
+) -> Option<Vec<QualifiedMelee<'a>>> {
+    qualified_melee_for_role(runtime, content, actor, true)
+}
+
+fn qualified_melee_for_role<'a>(
+    runtime: &ChannelRuntimeV1,
+    content: &'a crate::content::native_gameplay::NativeGameplayState,
+    actor: ExactActorRef,
+    owned: bool,
+) -> Option<Vec<QualifiedMelee<'a>>> {
+    use crate::monster_summon::CurrentSourceCreatureRole as Role;
     let snapshot = runtime.companion_snapshot(actor).ok()?;
     let role = crate::monster_summon::current_source_creature_role(runtime, actor).ok()?;
-    if !matches!(
-        role,
-        crate::monster_summon::CurrentSourceCreatureRole::Ordinary
-            | crate::monster_summon::CurrentSourceCreatureRole::IntrinsicMonsterSummon(_)
-    ) {
-        return None;
+    match role {
+        Role::Ordinary | Role::IntrinsicMonsterSummon(_) if !owned => {}
+        Role::PlayerCompanion(..) | Role::Familiar if owned && snapshot.state.master.is_some() => {}
+        _ => return None,
     }
     let record = content.creature_profiles().records.iter().find(|record| {
         record.profile.target.key == snapshot.state.policy.definition_key
@@ -1264,7 +1280,7 @@ fn qualified_melee<'a>(
     let ProjectV2AuthoringProfileData::Behavior(behavior) = &record.behavior.as_ref()?.data else {
         return None;
     };
-    if !behavior.targeting.hostile || !behavior.targeting.can_target {
+    if !owned && (!behavior.targeting.hostile || !behavior.targeting.can_target) {
         return None;
     }
     let source_at = |index| {
@@ -1284,7 +1300,8 @@ fn qualified_melee<'a>(
     for (index, schedule) in behavior.attacks.iter().enumerate() {
         let source = source_at(index);
         let legacy = record.monster_melee.as_ref().filter(|melee| {
-            schedule.ability == melee.ability
+            !owned
+                && schedule.ability == melee.ability
                 && schedule.interval_ms == melee.interval_ms
                 && schedule.chance_ppm == melee.chance_ppm
         });

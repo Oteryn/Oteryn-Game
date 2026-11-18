@@ -24,6 +24,7 @@ pub(super) use activity_transfer::PreparedActivityAttackStates;
 
 mod attack_chase_search;
 pub(super) mod charm_combat;
+mod companion_melee;
 mod cyclopedia;
 mod drain;
 mod equipped_offence;
@@ -263,6 +264,7 @@ pub struct ChannelAttackStates {
     /// The block budget of each live creature a player has hit (ATTACK-0 §5), created at its
     /// first hit.
     blocks: Vec<(ExactActorRef, BlockBudget)>,
+    companion_melee_due: Vec<(ExactActorRef, u16, u64)>,
     /// The Channel's unsettled creature kills (ARCH-KILL-REWARD-LOGOUT-1 §1.3).
     kills: super::kill_reward::KillSettlementQueue,
     /// CHASE-1: the Channel's player chase searches in the current owner window
