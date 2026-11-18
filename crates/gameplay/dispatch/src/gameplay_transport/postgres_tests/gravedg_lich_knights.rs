@@ -402,6 +402,12 @@ pub(super) fn configure_count(callback: &mut Callback) -> TestResult {
     let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
     encounter.phase = Some(EncounterPhase::GraveDangerCountVlarkorth { exit: at(103, 100) });
     encounter.monsters[0].creature = COUNT.into();
+    encounter.monsters.push(
+        oteryn_gameplay_quests::quest::world_callbacks::EncounterMonster {
+            creature: "oteryn:creature.soulless_minion".into(),
+            position: at(118, 115),
+        },
+    );
     Ok(())
 }
 
@@ -457,6 +463,24 @@ pub(super) async fn exercise_count(
             .await
             .is_err()
     );
+    let read_health = || async {
+        owner
+            .runtime
+            .lock()
+            .await
+            .companion_snapshot(boss)
+            .map(|snapshot| snapshot.health)
+            .map_err(debug)
+    };
+    let wounded = read_health().await?;
+    tick_at(owner, now + 1_999_998).await;
+    assert_eq!(
+        read_health().await?,
+        wounded,
+        "the minion waits two seconds"
+    );
+    tick_at(owner, now + 2_000_000).await;
+    assert!((300..=545).contains(&(read_health().await? - wounded)));
     tick_at(owner, now + 120_100_001).await;
     hit_by_amount(owner, admitted, boss, COUNT, 103, 1).await?;
     tick_at(owner, now + 20 * 60 * 1_000_000).await;
