@@ -22,25 +22,45 @@ const FORGE: TilePos = TilePos {
 };
 
 #[test]
+fn nrwicked_doomforge_step_cannot_use_a_retargeted_destination() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(
+        admin,
+        "nrwicked_doomforge_retargeted",
+        TilePos {
+            y: FORGE.y + 1,
+            ..FORGE
+        },
+    )
+}
+
+#[test]
 fn nrwicked_doomforge_step_cannot_use_the_raw_destination() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    run(admin, "nrwicked_doomforge", FORGE)
+}
+
+fn run(admin: String, fixture_name: &'static str, destination: TilePos) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(move || scenario(admin).map_err(|error| error.to_string()))?
+        .spawn(move || {
+            scenario(admin, fixture_name, destination).map_err(|error| error.to_string())
+        })?
         .join()
         .map_err(|_| "Doomforge scenario thread panicked")?
         .map_err(Into::into)
 }
 
-fn scenario(admin: String) -> TestResult {
+fn scenario(admin: String, fixture_name: &'static str, destination: TilePos) -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
         .block_on(async move {
-            let h = Harness::create_with_admission_seed(admin, "nrwicked_doomforge", true, false)
-                .await?;
+            let h = Harness::create_with_admission_seed(admin, fixture_name, true, false).await?;
             prepare_current_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
@@ -52,14 +72,14 @@ fn scenario(admin: String) -> TestResult {
             let world = initial.admitted.world_id;
             let channel = initial.admitted.channel_id;
             let room = qualify_native_entry_room(world).map_err(debug)?;
-            let (bytes, pins) = portal_fixture()?;
+            let (bytes, pins) = portal_fixture(destination)?;
             let map = boot(&bytes, &pins, world, channel, |key| {
                 (key == "oteryn:item.tibia.i37000")
                     .then(|| fixture::floor_items("oteryn:item.tibia.i37001"))
                     .flatten()
             })
             .map_err(debug)?;
-            assert_eq!(map.floors().teleport(PORTAL), Some(FORGE));
+            assert_eq!(map.floors().teleport(PORTAL), Some(destination));
             let cells = map.movement_cells(room.movement_cells()).map_err(debug)?;
             let pin = ChannelContentPin::from_activation(
                 world,
@@ -122,14 +142,14 @@ fn scenario(admin: String) -> TestResult {
         })
 }
 
-fn portal_fixture() -> TestResult<(Vec<u8>, crate::map::boot::BootPins)> {
+fn portal_fixture(destination: TilePos) -> TestResult<(Vec<u8>, crate::map::boot::BootPins)> {
     let (bytes, mut pins) = fixture::teleport_bundle();
     let mut manifest = bundle::read(&bytes)?.manifest;
     manifest.world = bundle::Extent {
         min_x: START.x,
         min_y: START.y,
-        max_x: FORGE.x + 1,
-        max_y: FORGE.y + 1,
+        max_x: destination.x + 1,
+        max_y: destination.y + 1,
         floors: vec![START.floor],
     };
     let mut portal = manifest.palette.pop().ok_or("portal palette")?;
@@ -153,7 +173,11 @@ fn portal_fixture() -> TestResult<(Vec<u8>, crate::map::boot::BootPins)> {
         palette: 1,
         depth: 0,
         attrs: sector::Attrs {
-            teleport: Some((FORGE.x, FORGE.y, FORGE.floor.to_ne_bytes()[0])),
+            teleport: Some((
+                destination.x,
+                destination.y,
+                destination.floor.to_ne_bytes()[0],
+            )),
             ..Default::default()
         },
     });
@@ -166,9 +190,9 @@ fn portal_fixture() -> TestResult<(Vec<u8>, crate::map::boot::BootPins)> {
         },
         bundle::Sector {
             floor: FORGE.floor,
-            sx: FORGE.x / 32,
-            sy: FORGE.y / 32,
-            tiles: vec![tile(FORGE)],
+            sx: destination.x / 32,
+            sy: destination.y / 32,
+            tiles: vec![tile(destination)],
         },
     ];
     let bytes = writer::write(&manifest, &sectors, &Default::default())?;
