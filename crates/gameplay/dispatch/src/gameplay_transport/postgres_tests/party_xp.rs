@@ -1554,7 +1554,7 @@ async fn scenario(
     if matches!(case, Case::Inactive) {
         assert_eq!((first_award, second_award), (10, 0));
     } else if matches!(case, Case::Concurrent) {
-        assert_eq!((first_award, second_award), (22, 22));
+        assert_eq!((first_award, second_award), (16, 16));
     } else if matches!(case, Case::Foreign) {
         let foreign = third
             .as_ref()
@@ -1570,11 +1570,11 @@ async fn scenario(
         // The member's lethal hit on one HP credits exactly 1 (damage_ledger.rs:731-737).
         let total = leader + staged + 1;
         // PARTY-XP-1, restated: the rat's base XP (experience 5) splits by real damage.
-        // The party keeps floor(5 * (leader + member) / total). A monk and a knight add
-        // 30%, and each member's equal share rounds up: ceil(pool * 130 / 200). The solo
+        // The party keeps floor(5 * (leader + member) / total). The rat is below the
+        // 20 XP vocation-bonus threshold. Each member rounds up half the pool. The solo
         // foreign Character keeps floor(5 * foreign / total). Level 1 doubles each award.
         let pool = 5 * (leader + 1) / total;
-        let member = i64::try_from(2 * (pool * 130).div_ceil(200))?;
+        let member = i64::try_from(2 * pool.div_ceil(2))?;
         let outside = i64::try_from(2 * (5 * staged / total))?;
         assert!(
             member > 0 && outside > 0,
@@ -1586,7 +1586,7 @@ async fn scenario(
             "leader={leader}, foreign={staged}"
         );
     } else if matches!(case, Case::Exhausted) {
-        assert_eq!((first_award, second_award), (8, 0));
+        assert_eq!((first_award, second_award), (6, 0));
     } else if matches!(case, Case::Pz) {
         assert!(
             first_award > 0 && second_award > 0,
@@ -1603,7 +1603,7 @@ async fn scenario(
             if matches!(case, Case::Modifiers) {
                 (6, 4)
             } else {
-                (8, 8)
+                (6, 6)
             }
         );
     }

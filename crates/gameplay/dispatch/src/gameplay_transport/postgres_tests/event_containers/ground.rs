@@ -1,4 +1,4 @@
-//! SP04-owned bags must not gain a W19 ground route, receipt or presentation.
+//! Ground event bags use SP04 rewards with the fenced ground action receipt.
 use super::*;
 use serde_json::Value;
 
@@ -178,7 +178,12 @@ fn scenario(case: Case) -> TestResult {
         super::super::item_look::seed_main_backpack(&harness, &[(key, 2)]).await?;
         let source = id(71);
         assert!(oteryn_gameplay_items::reward_bag::is_reward_bag(key));
-        assert!(!oteryn_gameplay_items::event_items::is_event_reward(key));
+        assert!(oteryn_gameplay_items::event_items::is_event_reward(key));
+        let drops_reward = case == Case::Special;
+        assert_eq!(
+            oteryn_gameplay_items::event_items::ground_output_at_source(key),
+            drops_reward
+        );
         let target = {
             let runtime = owner.runtime.lock().await;
             crate::durability::item_loop_move::LoopGround::from_native_owner(
@@ -261,8 +266,8 @@ fn scenario(case: Case) -> TestResult {
         .await?;
         assert_eq!(
             refused,
-            UseDisposition::StaleState,
-            "SP04 bags have no W19 ground route"
+            UseDisposition::NoRoom,
+            "the donor destination must have room for the whole reward"
         );
         assert_eq!(
             durable_state(&harness).await?,
@@ -271,7 +276,6 @@ fn scenario(case: Case) -> TestResult {
         );
         admitted = next;
 
-        // Free the former W19 destination capacity. SP04 still has no ground route.
         let removed = if case == Case::Special {
             &fillers[..1]
         } else {
@@ -297,7 +301,6 @@ fn scenario(case: Case) -> TestResult {
         if case == Case::Special {
             assert_eq!(ground_count(&harness).await?, 63);
         }
-        let before = durable_state(&harness).await?;
         let (next, outcome, actual) = super::super::rust_lottery::exchange(
             &owner,
             admitted,
@@ -307,24 +310,83 @@ fn scenario(case: Case) -> TestResult {
             None,
         )
         .await?;
-        assert_eq!(outcome, UseDisposition::StaleState);
-        assert_eq!(durable_state(&harness).await?, before);
-        assert_eq!(source_row(&harness).await?, source_before);
-        let retained: Value = sqlx::query_scalar("SELECT to_jsonb(g) FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
-            .bind(source.as_slice()).fetch_one(&harness.pool).await?;
-        assert_eq!(retained, source_location);
+        assert_eq!(outcome, UseDisposition::Committed);
+        let mut expected_source = source_before;
+        expected_source["quantity"] = serde_json::json!(u32::from(drops_reward));
+        expected_source["lifecycle"] = serde_json::json!(if drops_reward { 1 } else { 2 });
+        let mut debited_source = source_row(&harness).await?;
+        let transaction: String = sqlx::query_scalar(
+            "SELECT transaction_id::text FROM game_item_consume_transform_records WHERE command_id=2",
+        ).fetch_one(&harness.pool).await?;
+        assert_eq!(debited_source["last_transaction_id"], transaction);
+        debited_source["last_transaction_id"] = expected_source["last_transaction_id"].clone();
+        assert_eq!(debited_source, expected_source);
+        let retained: Option<Value> = sqlx::query_scalar("SELECT to_jsonb(g) FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(source.as_slice()).fetch_optional(&harness.pool).await?;
+        assert_eq!(retained, drops_reward.then_some(source_location));
+        assert_eq!(ground_count(&harness).await?, if drops_reward { 64 } else { 0 });
+
+        let definition = crate::gameplay_transport::item_look::typed_definition(
+            index,
+            reference(key).ok_or("ground source definition ref")?,
+        ).ok_or("ground source definition")?;
+        let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), 2, source);
+        let expected = reward_bag_conversion(native, &definition, draw).ok_or("ground conversion")?;
+        assert_eq!(expected.outputs.len(), if drops_reward { 1 } else { 14 });
+        let (recipe, mut outputs): (String, Vec<(String, i64)>) = {
+            let (recipe, receipt_outputs): (String, Value) = sqlx::query_as(
+                "SELECT recipe,outputs FROM game_item_consume_transform_records WHERE command_id=2",
+            ).fetch_one(&harness.pool).await?;
+            let mut outputs = Vec::new();
+            for output in receipt_outputs.as_array().ok_or("ground receipt outputs")? {
+                let item = output["item"].as_str().ok_or("minted item identity")?;
+                let placed: (String, i64) = if drops_reward {
+                    sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.item_instance_id=$1::uuid AND g.spatial_position=$2 AND i.lifecycle=1")
+                        .bind(item).bind(&target.spatial_position).fetch_one(&harness.pool).await?
+                } else {
+                    sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=$1::uuid AND e.character_id=encode($2,'hex')::uuid AND e.parent_item_instance_id=encode($3,'hex')::uuid AND i.lifecycle=1")
+                        .bind(item).bind(id(41).as_slice()).bind(id(70).as_slice()).fetch_one(&harness.pool).await?
+                };
+                outputs.push(placed);
+            }
+            (recipe, outputs)
+        };
+        let item_id = key.strip_prefix("oteryn:item.tibia.i").ok_or("event item")?;
+        assert_eq!(recipe, format!("oteryn:event-container.{item_id}"));
+        let mut expected_items: Vec<_> = expected.outputs.into_iter()
+            .map(|(definition, count)| (definition.production_key, i64::from(count))).collect();
+        expected_items.sort();
+        outputs.sort();
+        assert_eq!(outputs, expected_items);
+        let committed = durable_state(&harness).await?;
         admitted = next;
         let (_, replayed, same) =
             super::super::rust_lottery::exchange(&owner, admitted, 2, &actual, None, None).await?;
-        assert_eq!(replayed, UseDisposition::StaleState);
+        assert_eq!(replayed, UseDisposition::Committed);
         assert_eq!(same, actual);
-        assert_eq!(durable_state(&harness).await?, before);
+        assert_eq!(durable_state(&harness).await?, committed);
         drop(owner);
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
         restarted.movement_cells = (&cells).into();
         restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&bundle_room));
         deps.initialize(&restarted).await;
+        let replay_command = UseCommand {
+            game_session_id: fence.game_session_id,
+            command_id: 2,
+            item_fence: Some(fence),
+        };
+        let raw_intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+            admitted.continuity.selected_capabilities.as_slice(),
+            &actual,
+        )
+        .map_err(debug)?;
+        let replayed = restarted
+            .use_event_item(deps.actor, replay_command, raw_intent, None, false)
+            .await
+            .map_err(|_| "restarted W19 ground replay")?
+            .ok_or("restart replay without published source handle")?;
+        assert_eq!(replayed.disposition, UseDisposition::Committed);
         let request = UseCommand {
             game_session_id: fence.game_session_id,
             command_id: 3,
@@ -332,28 +394,15 @@ fn scenario(case: Case) -> TestResult {
         };
         assert!(
             restarted
-                .use_event_item(
-                    deps.actor,
-                    request,
-                    intent.clone(),
-                    Some(ItemKey::Instance(source)),
-                    false
-                )
-                .await
-                .map_err(|_| "restarted W19 ground probe")?
-                .is_none()
-        );
-        assert!(
-            restarted
                 .use_reward_bag(deps.actor, request, ItemKey::Instance(source))
                 .await
                 .is_none()
         );
-        assert_eq!(durable_state(&harness).await?, before);
+        assert_eq!(durable_state(&harness).await?, committed);
         let counts: (i64, i64, i64) = sqlx::query_as(
             "SELECT (SELECT count(*) FROM game_item_consume_transform_records), (SELECT count(*) FROM game_item_craft_records), (SELECT count(*) FROM game_item_audit_outbox)",
         ).fetch_one(&harness.pool).await?;
-        assert_eq!(counts, (0, 0, 0), "no ground receipts or audit rows");
+        assert_eq!(counts, (1, 0, 1), "one ground receipt and audit, no carried craft");
         eprintln!(
             "W19 POSTGRES_CASE_COMPLETED mode=POSTGRES ground_reward case={case:?} sp04_owner=true refusal=true replay=true"
         );

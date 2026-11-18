@@ -78,11 +78,12 @@ pub fn plan(
     ground: Option<GroundEffect>,
 ) -> Option<NoveltyPlan> {
     let conversion = conversion(native, used, session, command, source)?;
+    let effects = effects(&used.production_key, ground)?;
     Some(NoveltyPlan {
-        recipe: conversion.recipe,
+        recipe: format!("oteryn:event-container.{}", effects.source_item_id),
         outputs: conversion.outputs,
         consume_source: true,
-        effects: serde_json::to_value(effects(&used.production_key, ground)?).ok()?,
+        effects: serde_json::to_value(effects).ok()?,
     })
 }
 

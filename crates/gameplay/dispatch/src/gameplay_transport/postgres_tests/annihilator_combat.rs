@@ -300,6 +300,8 @@ pub(super) async fn clear_corridor(
             ),
             "native kill drain: {outcome:?}"
         );
+    }
+    for x in [33223, 33224] {
         super::annihilator_route::step(
             owner,
             member,

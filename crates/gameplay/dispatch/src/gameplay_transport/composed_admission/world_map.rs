@@ -220,11 +220,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             revision: entry.revision,
         })
-        .chain(item_ref_admission::visible_corpses(
-            &runtime,
-            self.active_generation,
-        ))
-        .chain(self.source_volatile_entities(&runtime))
         .map(|mut entry| {
             entry.position = frame.project(crate::foundation::MovementLocalPosition {
                 x: entry.position.x,
@@ -234,6 +229,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(entry)
         })
         .collect::<Option<Vec<_>>>()?;
+        entities.extend(item_ref_admission::visible_corpses(
+            &runtime,
+            self.active_generation,
+        ));
+        entities.extend(self.source_volatile_entities(&runtime));
         if let Some(own_session) = own_session
             && let Some(own) = entities
                 .iter_mut()

@@ -141,15 +141,17 @@ fn scenario(canonical: bool) -> TestResult {
         runtime
             .initialize_first_entry_position(deps.actor)
             .map_err(debug)?;
-        runtime
-            .realize_activation_spawns(vec![(
-                vec![(1, 1, 7)],
-                60_000,
-                5_000,
-                "canary:creature/rat".into(),
-                20,
-            )])
-            .map_err(debug)?;
+        if !canonical {
+            runtime
+                .realize_activation_spawns(vec![(
+                    vec![(1, 1, 7)],
+                    60_000,
+                    5_000,
+                    "canary:creature/rat".into(),
+                    20,
+                )])
+                .map_err(debug)?;
+        }
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let (consumer, clock, activation, _) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));

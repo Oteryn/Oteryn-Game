@@ -17,11 +17,11 @@ pub(super) fn world(
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
-    let tiles = [2, 3]
+    let tiles = [(2, 11), (3, 11), (2, 12), (3, 12)]
         .into_iter()
-        .map(|x| Tile {
+        .map(|(x, y)| Tile {
             x,
-            y: 11,
+            y,
             flags: 0,
             house: 0,
             zones: vec![],
@@ -109,6 +109,21 @@ pub(super) async fn verify(
             )
             .map_err(debug)?;
         assert!(runtime.visible_entities().creatures.is_empty());
+        for ((actor, position, session), x) in runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter_map(|(actor, position, session)| {
+                session.filter(|_| actor != player.0).map(|session| (actor, position, session))
+            })
+            .zip(2..)
+        {
+            runtime.relocate_arena_player(actor, session, position, MovementLocalPosition {
+                x,
+                y: 12,
+                floor: POSITION.floor,
+            }).map_err(debug)?;
+        }
     }
     for completed in [false, true] {
         if completed {
