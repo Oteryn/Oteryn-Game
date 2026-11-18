@@ -2,7 +2,7 @@
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::quest_state::{QuestCause, QuestTransitionRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef};
-use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent};
+use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent, UseTarget};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 mod capture;
@@ -65,6 +65,67 @@ pub struct QuestCreatureUseProof<'runtime> {
     corpse: Option<corpse::CorpseUse<'runtime>>,
 }
 impl<'runtime> QuestCreatureUseProof<'runtime> {
+    /// Direct USE on a visible corpse. Its live Item and the leased actor
+    /// remain borrowed while the Character transaction checks durable Ground.
+    pub fn read_direct_corpse(
+        runtime: &'runtime ChannelRuntimeV1,
+        actor: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+        intent: &UseIntent,
+        identity: [u8; 16],
+    ) -> Option<Self> {
+        let claim = callback.direct_corpse_claim.as_ref()?;
+        runtime.owner_fence().ok()?;
+        let corpse = runtime.bound_corpse(identity)?;
+        let at = runtime.read_actor_position(actor).ok()?.position();
+        let lease = runtime.bound_attacker_lease(actor, fence.game_session_id).ok()?;
+        if !matches!(intent.target, UseTarget::Item(_))
+            || intent.use_with.is_some() || intent.use_with_map_item.is_some()
+            || intent.use_with_position.is_some()
+            || actor.runtime_scope() != fence.runtime_scope
+            || actor.scope_generation() != fence.scope_ownership_generation
+            || lease.character_id().as_bytes() != fence.character_id.as_bytes()
+            || lease.generation() != fence.character_lease_generation
+            || command.game_session_id() != fence.game_session_id
+            || at.floor != corpse.position.floor
+            || at.x.abs_diff(corpse.position.x) > 1 || at.y.abs_diff(corpse.position.y) > 1
+            || corpse.item.production_key != format!("oteryn:item.tibia.i{}", claim.appearance)
+        {
+            return None;
+        }
+        Some(Self {
+            _runtime: std::marker::PhantomData,
+            fence,
+            command,
+            callback: callback.key.clone(),
+            key: None,
+            self_target: None,
+            target: Target::Corpse {
+                item: corpse.item.item_instance_id,
+                position: [corpse.position.x, corpse.position.y, i32::from(corpse.position.floor)],
+            },
+            intent: intent.clone(),
+            corpse: None,
+        })
+    }
+
+    pub(super) fn permits_direct_corpse(
+        &self,
+        fence: CurrentCharacterGameplayFence,
+        request: &QuestTransitionRequest,
+        callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+    ) -> Option<([u8; 16], [i32; 3])> {
+        (callback.direct_corpse_claim.is_some()
+            && self.key.is_none()
+            && self.fence.item_fence() == fence.item_fence()
+            && request.cause == QuestCause::Command(self.command)
+            && request.transition_key == self.callback)
+            .then(|| self.corpse())
+            .flatten()
+    }
+
     pub fn read_current(
         runtime: &'runtime ChannelRuntimeV1,
         actor: ExactActorRef,

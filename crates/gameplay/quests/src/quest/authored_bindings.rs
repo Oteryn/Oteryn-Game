@@ -54,6 +54,9 @@ pub enum Trigger {
     CarriedUse {
         callback: Box<RewardCallback>,
     },
+    CorpseUse {
+        callback: Box<RewardCallback>,
+    },
     MapUse {
         callback: Box<Callback>,
     },
@@ -291,14 +294,18 @@ impl Bindings {
                     | Trigger::TaskBoardUse { .. } => {
                         continue;
                     }
-                    Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
+                    Trigger::NpcDialogue { callback, .. }
+                    | Trigger::CarriedUse { callback }
+                    | Trigger::CorpseUse { callback } => {
                         super::reward_callbacks::validate_callbacks(std::slice::from_ref(
                             callback.as_ref(),
                         ))?;
                         if !callback.participants.is_empty()
                             || !callback.state_ops.is_empty()
-                            || matches!(&stage.trigger, Trigger::NpcDialogue { .. })
-                                != callback.carried_item.is_none()
+                            || matches!(&stage.trigger, Trigger::CarriedUse { .. })
+                                != callback.carried_item.is_some()
+                            || matches!(&stage.trigger, Trigger::CorpseUse { .. })
+                                != callback.direct_corpse_claim.is_some()
                         {
                             return Err("authored dialogue/carried trigger mismatch".into());
                         }
@@ -368,7 +375,7 @@ impl Bindings {
                             other.completes = stage.completes;
                         }
                     }
-                    Trigger::CarriedUse { callback } => {
+                    Trigger::CarriedUse { callback } | Trigger::CorpseUse { callback } => {
                         callback.completes = stage.completes;
                     }
                     Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
@@ -522,7 +529,9 @@ impl Stage {
 
     pub(in crate::quest) fn transition(&self, quest: &str) -> Result<QuestTransition, String> {
         let mut transition = match &self.trigger {
-            Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
+            Trigger::NpcDialogue { callback, .. }
+            | Trigger::CarriedUse { callback }
+            | Trigger::CorpseUse { callback } => {
                 super::reward_callbacks::primary_transition(callback)?
             }
             Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
@@ -579,7 +588,9 @@ impl Trigger {
                 callback,
                 alternatives,
             } => (Some(callback.as_ref()), alternatives),
-            Self::CarriedUse { callback } => (Some(callback.as_ref()), &[]),
+            Self::CarriedUse { callback } | Self::CorpseUse { callback } => {
+                (Some(callback.as_ref()), &[])
+            }
             _ => (None, &[]),
         };
         first.into_iter().chain(others.iter())

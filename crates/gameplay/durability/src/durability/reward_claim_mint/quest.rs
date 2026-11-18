@@ -147,7 +147,12 @@ pub(crate) async fn apply(
         admission.creature_use,
         admission.carried_use,
     ) {
-        (false, None, _) => {}
+        (false, None, _) if callback.direct_corpse_claim.is_none() => {}
+        (false, Some(proof), None) if callback.direct_corpse_claim.is_some() => {
+            if !super::quest_corpse::direct_claim_is_live(tx, fence, request, callback, proof, admission.native).await? {
+                return Ok(false);
+            }
+        }
         (true, Some(proof), Some(carried)) if callback.fresh_corpse => {
             if !proof
                 .permits_corpse(
@@ -456,7 +461,32 @@ pub(crate) async fn apply(
             .await?,
         );
     }
-    let minted = if let Some(reward) = &callback.give {
+    let direct_reward = callback.direct_corpse_claim.as_ref().map(|claim| {
+        // Retain the same draw across retries, alternate corpses and capacity
+        // failures. Crystal actions_corpse_bosses.lua:57 draws one item.
+        let seed = Sha256::new()
+            .chain_update(b"oteryn:quest:direct-corpse-reward/v1")
+            .chain_update(fence.character_id.as_bytes())
+            .chain_update(callback.key.as_bytes())
+            .finalize();
+        let entropy = u64::from_be_bytes(seed[..8].try_into().expect("SHA-256 prefix"));
+        let index = oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+            entropy, 0, i64::try_from(claim.rewards.len()).unwrap_or(0) - 1,
+        );
+        let item = claim.rewards.get(usize::try_from(index).unwrap_or(usize::MAX))
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        Ok::<_, DurabilityError>(oteryn_gameplay_quests::quest::reward_callbacks::ItemReward {
+            premium: false,
+            item: item.clone(),
+            count: 1,
+            contents: Vec::new(),
+            key_number: None,
+            backpack_outputs: Vec::new(),
+            text: None,
+            additional: Vec::new(),
+        })
+    }).transpose()?;
+    let minted = if let Some(reward) = callback.give.as_ref().or(direct_reward.as_ref()) {
         let Some(transaction) =
             mint_npc(tx, tuple, node, fence, command, callback, reward, admission).await?
         else {
@@ -495,8 +525,13 @@ pub(crate) async fn apply(
             .await?
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
+    let mut plan = oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if let Some(reward) = direct_reward {
+        plan["give"] = serde_json::to_value(reward).map_err(|_| DurabilityError::InvalidStoredState)?;
+    }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
     if callback.corpse_target.is_some() {
         let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
             return Ok(false);

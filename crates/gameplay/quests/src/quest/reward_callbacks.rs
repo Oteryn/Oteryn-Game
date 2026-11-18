@@ -232,17 +232,14 @@ pub struct DirectCorpseClaim {
 }
 
 impl DirectCorpseClaim {
-    fn valid(&self, callback: &RewardCallback) -> bool {
+    fn valid(&self, callback: &RewardCallback, valid_item: impl Fn(&str) -> bool) -> bool {
         let [claim, mission] = callback.storage.as_slice() else {
             return false;
         };
         self.appearance != 0
             && (1..=8).contains(&self.rewards.len())
             && self.rewards.iter().collect::<BTreeSet<_>>().len() == self.rewards.len()
-            && self
-                .rewards
-                .iter()
-                .all(|item| slug(item, "oteryn:item.", b"._/:-", 256))
+            && self.rewards.iter().all(|item| valid_item(item))
             && claim.minimum == 0
             && claim.maximum == 0
             && claim.set == 1
@@ -932,9 +929,9 @@ fn validate_document_with_capacity(
             })
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
-            || c.direct_corpse_claim
-                .as_ref()
-                .is_some_and(|claim| !claim.valid(c))
+            || c.direct_corpse_claim.as_ref().is_some_and(|claim| {
+                !claim.valid(c, |item| slug(item, "oteryn:item.", b"._/:-", 256))
+            })
             || match &c.world_claim {
                 None => c.direct_corpse_claim.is_none() && !slug(&c.npc, "oteryn:npc.", b"_", 128),
                 Some(binding) => {

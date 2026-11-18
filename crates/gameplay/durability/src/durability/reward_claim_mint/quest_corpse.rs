@@ -10,6 +10,55 @@ use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 use sqlx::Row;
 
+/// Verify the exact, still-live Ground corpse under the fenced reward transaction.
+pub(super) async fn direct_claim_is_live(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    request: &QuestTransitionRequest,
+    callback: &RewardCallback,
+    proof: &QuestCreatureUseProof<'_>,
+    native: &NativeGameplayState,
+) -> Result<bool, DurabilityError> {
+    let (Some((corpse, position)), Some(spec)) = (
+        proof.permits_direct_corpse(fence, request, callback),
+        callback.direct_corpse_claim.as_ref(),
+    ) else {
+        return Ok(false);
+    };
+    let crate::foundation::RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope
+    else {
+        return Ok(false);
+    };
+    let key = format!("oteryn:item.tibia.i{}", spec.appearance);
+    let Some(revision) = native.item_index().and_then(|index| index.revision(&key)) else {
+        return Ok(false);
+    };
+    let ground: Option<Vec<u8>> = sqlx::query_scalar(
+        "SELECT g.spatial_position FROM game_item_instances i
+         JOIN game_item_ground_locations g USING (item_instance_id,world_id)
+         JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id
+                                  AND r.transaction_id=i.minted_transaction_id
+         WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid
+           AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric
+           AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family='Item'
+           AND i.definition_production_key=$5 AND i.definition_revision_ref=$6
+           AND r.loot_purpose_key=$7 FOR SHARE OF i,g",
+    )
+    .bind(corpse.as_slice())
+    .bind(world_id.as_bytes().as_slice())
+    .bind(channel_id.as_bytes().as_slice())
+    .bind(fence.scope_ownership_generation.get().to_string())
+    .bind(key)
+    .bind(revision)
+    .bind(crate::durability::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY)
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(ground) = ground else { return Ok(false) };
+    let cell = crate::durability::spell_items_abi::decode_ground_cell(&ground)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(position == [cell.x, cell.y, -cell.z])
+}
+
 pub(super) async fn record(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,
