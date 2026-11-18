@@ -69,6 +69,15 @@ fn grizzly_npc_wire_trophy_hunter_backpack_request_refused() -> TestResult {
 }
 
 #[test]
+fn grizzly_companion_melee_kill_credits_master() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty(), "PostgreSQL admin URL is empty");
+    super::kill_reward_e2e::scenario_thread::run("grizzly-companion-credit", || scenario(8))
+}
+
+#[test]
 fn questpc8_grizzly_production_placement_native_join_and_task() -> TestResult {
     let started = std::time::Instant::now();
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -233,12 +242,28 @@ fn scenario(case: u8) -> TestResult {
                 (2, 0, 7)
             },
         );
-        let deps = Dependencies::with_content_and_capacity(
+        let mut deps = Dependencies::with_content_and_capacity(
             channel_pin,
             crate::content::qualify_native_entry_room(world).map_err(debug)?,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
-            if case == 5 { 5 } else { 2 },
+            if matches!(case, 5 | 8) { 5 } else { 2 },
         )?;
+        if case == 8 {
+            deps.combat_room = Some(
+                pin.qualified_room()
+                    .bundle_view(
+                        cells.clone(),
+                        bundle.frame_binding_digest(world),
+                        bundle.map_revision_digest(),
+                        crate::content::NativeEntryStart {
+                            x: 2,
+                            y: 0,
+                            floor: 7,
+                        },
+                    )
+                    .ok_or("Grizzly combat room")?,
+            );
+        }
         let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
         h.root
             .latch_premium_activation(
@@ -493,6 +518,15 @@ fn scenario(case: u8) -> TestResult {
                 value(&owner, &authority, quest::KILL_COUNTER_BASE + 1).await?,
                 0
             );
+        } else if case == 8 {
+            wire::talk(
+                &mut owner,
+                &mut admitted,
+                npc,
+                &[(3, "hi"), (4, "crocodiles"), (5, "yes")],
+            )
+            .await?;
+            companion_melee_credit(&owner, &admitted, &authority).await?;
         } else if case == 7 {
             seed(
                 &h,
@@ -553,6 +587,100 @@ fn scenario(case: u8) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn companion_melee_credit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    use crate::foundation::{MovementLocalPosition, owner_timer::SemanticTimeMicros};
+    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+
+    let actor = admitted.runtime_actor.ok_or("hunter")?;
+    let session = admitted.game_session_id;
+    assert!(owner.refresh_source_party_presence(actor, session).await);
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native")?;
+    let (target, target_ref) = {
+        let mut runtime = owner.runtime.lock().await;
+        native
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        let position = runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position();
+        runtime
+            .create_companion(
+                actor,
+                session,
+                "oteryn:creature.rat",
+                MovementLocalPosition {
+                    x: position.x - 1,
+                    ..position
+                },
+                None,
+                None,
+                1,
+            )
+            .map_err(debug)?;
+        let key = "oteryn:creature.crocodile";
+        let target = runtime
+            .admit_encounter_actor(
+                key,
+                1,
+                MovementLocalPosition {
+                    x: position.x - 2,
+                    ..position
+                },
+            )
+            .map_err(debug)?;
+        runtime
+            .install_creature_policy(target, key)
+            .map_err(debug)?;
+        let generation = runtime
+            .visible_entities()
+            .creatures
+            .into_iter()
+            .find(|creature| creature.actor == target)
+            .ok_or("visible crocodile")?
+            .generation;
+        (
+            target,
+            EntityRef {
+                identity: target.placement_identity(),
+                generation,
+            },
+        )
+    };
+    assert_eq!(
+        owner
+            .select_attack_target(actor, session, 6, Some(target_ref))
+            .await,
+        AttackIntentDisposition::Ok
+    );
+    let now = owner.owner_now().get();
+    for elapsed in (0..=20_000_000).step_by(2_000_000) {
+        owner
+            .drain_auto_attacks_at(SemanticTimeMicros::from_micros(now + elapsed))
+            .await;
+        if !owner.runtime.lock().await.contains_live_creature(target) {
+            break;
+        }
+    }
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        crate::gameplay_transport::kill_reward::DrainOutcome::Drained,
+    );
+    assert_eq!(
+        value(owner, authority, quest::KILL_COUNTER_BASE + 1).await?,
+        1
+    );
+    Ok(())
 }
 
 async fn value(
