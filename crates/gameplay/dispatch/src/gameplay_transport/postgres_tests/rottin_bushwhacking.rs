@@ -36,6 +36,8 @@ fn rottin_merchant_step_in_postgres() -> TestResult {
 const MISSION: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission03";
 const CAPTURES: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount";
+const QUESTLINE: &str =
+    "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline";
 const ROTTIN: &str = "oteryn:npc.rottin_wood";
 const TURN_IN: &str = "oteryn:quest-reward/rottin-wood/bushwhacking";
 const MERRY_ADVENTURES: &str = "oteryn:achievement/merry_adventures";
@@ -105,6 +107,10 @@ pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
         }]
     });
     if !wave {
+        authored["quests"][0]["tracks"]
+            .as_array_mut()
+            .ok_or("fixture tracks")?
+            .push(json!({"key": QUESTLINE, "initial": 5, "minimum": 0, "maximum": 6}));
         let donor =
             "201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:117-127";
         authored["quests"][0]["stages"]
@@ -115,7 +121,10 @@ pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
                 "trigger": {"kind": "npc_dialogue", "callback": {
                     "key": TURN_IN, "quest": quest, "npc": ROTTIN,
                     "keywords": ["mission"], "topic": 0, "next_topic": 0,
-                    "storage": [{"track": MISSION, "minimum": 1, "maximum": 1, "set": 2}],
+                    "storage": [
+                        {"track": MISSION, "minimum": 1, "maximum": 1, "set": 2},
+                        {"track": QUESTLINE, "minimum": 5, "maximum": 5, "set": 6}
+                    ],
                     "requires": [{"track": CAPTURES, "minimum": 5, "maximum": 5}],
                     "take": [], "give": {"item": "oteryn:item.tibia.i3035", "count": 5},
                     "outfit": null, "achievement": MERRY_ADVENTURES, "experience": 1000,
@@ -294,18 +303,20 @@ pub(super) async fn exercise_mission(
         super::rottin_rewards::experience(h).await?,
         before_xp + 1000
     );
-    let (stage, platinum, achievement): (i64, i64, bool) = sqlx::query_as(
+    let (stage, questline, platinum, achievement): (i64, i64, i64, bool) = sqlx::query_as(
         "SELECT
          (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$3),
          (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances
           WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1),
          EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key=$2)",
     )
     .bind(MISSION)
     .bind(MERRY_ADVENTURES)
+    .bind(QUESTLINE)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!((stage, platinum, achievement), (2, 6, true));
+    assert_eq!((stage, questline, platinum, achievement), (2, 6, 6, true));
     Ok(())
 }
 
