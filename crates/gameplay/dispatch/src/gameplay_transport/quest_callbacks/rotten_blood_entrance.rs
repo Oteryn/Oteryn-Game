@@ -72,9 +72,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(true) => (Some([34070, 31975, 14]), None, false),
                 Some(false) => (
                     Some([32955, 32398, 9]),
-                    Some(
-                        "You offerings to this sanguine master of this realm have been insufficient. You can not pass.",
-                    ),
+                    Some("Your offerings are insufficient to enter the Blood Vestibule."),
                     true,
                 ),
                 None => (None, Some("Sorry, not possible."), false),
