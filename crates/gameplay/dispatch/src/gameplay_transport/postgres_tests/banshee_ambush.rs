@@ -7,6 +7,7 @@ use super::{
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{ChannelRuntimeV1, CharacterId, CharacterLease, GameSessionId};
 use crate::map::overlay::TilePos;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
