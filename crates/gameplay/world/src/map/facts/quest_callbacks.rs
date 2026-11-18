@@ -65,9 +65,16 @@ struct MovementDecay {
 struct DynamicPortal {
     owner: u64,
     destination: TilePos,
+    travel: QuestPortalTravel,
     entry: Option<EntryId>,
     owner_revision: Option<u64>,
     expires: Option<u64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum QuestPortalTravel {
+    Scripted,
+    Native { effect: Option<u16> },
 }
 
 /// Already qualified facts for one atomic, Channel-local callback projection.
@@ -82,6 +89,7 @@ pub enum QuestCallbackProjection {
         restore: EntryFacts,
         position: TilePos,
         destination: TilePos,
+        travel: QuestPortalTravel,
     },
     /// Change a separate shared object and restore only that committed revision.
     TimedRemoteTransform {
@@ -257,6 +265,7 @@ impl CallbackStates {
                 restore,
                 position,
                 destination,
+                travel,
             } => {
                 if close
                     || view::placement_of(owner).map(|(pos, _)| pos) != Some(*position)
@@ -289,6 +298,7 @@ impl CallbackStates {
                     DynamicPortal {
                         owner,
                         destination: *destination,
+                        travel: *travel,
                         entry: None,
                         owner_revision: Some(revision),
                         expires: Some(*due),
@@ -446,6 +456,7 @@ impl CallbackStates {
                         DynamicPortal {
                             owner,
                             destination,
+                            travel: QuestPortalTravel::Scripted,
                             entry: Some(entry),
                             owner_revision: None,
                             expires: *expires,
@@ -1541,6 +1552,15 @@ impl BundleFacts {
 
     /// Only live, current portals resolve; the timer and explicit removal retire both ends.
     pub fn quest_portal_destination(&self, pos: TilePos, now: u64) -> Option<TilePos> {
+        self.quest_portal_traversal(pos, now)
+            .map(|(destination, _)| destination)
+    }
+
+    pub fn quest_portal_traversal(
+        &self,
+        pos: TilePos,
+        now: u64,
+    ) -> Option<(TilePos, QuestPortalTravel)> {
         let states = self.callbacks.lock().ok()?;
         let portal = states.portals.get(&pos)?;
         if portal.owner_revision.is_some_and(|revision| {
@@ -1552,7 +1572,7 @@ impl BundleFacts {
         portal
             .expires
             .is_none_or(|due| due > now)
-            .then_some(portal.destination)
+            .then_some((portal.destination, portal.travel))
     }
     /// Source selector validation against the original bound placement, never a client id.
     pub fn quest_callback_matches(
@@ -2456,6 +2476,7 @@ mod readset_tests {
             restore: ashes,
             position: source,
             destination,
+            travel: QuestPortalTravel::Scripted,
         };
         assert!(facts.apply_quest_callback(owner, 0, portal, &[], &[], false, Some(&entrance)));
         assert_eq!(
@@ -2484,6 +2505,7 @@ mod readset_tests {
             restore: ashes,
             position: source,
             destination,
+            travel: QuestPortalTravel::Scripted,
         };
         assert!(facts.apply_quest_callback(owner, 2, portal, &[], &[], false, Some(&next)));
         let changed = EntryFacts {

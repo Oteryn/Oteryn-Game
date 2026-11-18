@@ -2,7 +2,11 @@
 use crate::content::NativeEntryMovementCells;
 use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::map::view::{MapFacts, placement_key};
-use crate::map::{boot::BundleCollisionIndexExt, facts::QuestCallbackProjection, overlay::TilePos};
+use crate::map::{
+    boot::BundleCollisionIndexExt,
+    facts::{QuestCallbackProjection, QuestPortalTravel},
+    overlay::TilePos,
+};
 use oteryn_gameplay_quests::quest::world_callbacks::{
     CorpsePortalCleanup, Position, TerminalPortal,
 };
@@ -81,6 +85,9 @@ impl Portal {
                 restore,
                 position: at,
                 destination: tile(self.plan.destination),
+                travel: QuestPortalTravel::Native {
+                    effect: self.plan.traversal_effect,
+                },
             }),
         )
     }

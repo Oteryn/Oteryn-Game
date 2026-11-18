@@ -261,6 +261,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 restore,
                 position: tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE),
                 destination: tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION),
+                travel: crate::map::facts::QuestPortalTravel::Scripted,
             });
         }
         projection = match super::conditional_cells::prepare(map, callback, projection) {

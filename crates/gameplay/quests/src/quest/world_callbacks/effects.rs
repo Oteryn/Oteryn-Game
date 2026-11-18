@@ -609,6 +609,8 @@ pub struct TerminalPortal {
     pub destination: Position,
     pub return_destination: Position,
     pub duration_ms: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub traversal_effect: Option<u16>,
 }
 
 impl TerminalPortal {
@@ -623,6 +625,9 @@ impl TerminalPortal {
             && self.position != self.return_destination
             && self.destination != self.return_destination
             && (1..=3_600_000).contains(&self.duration_ms)
+            && self
+                .traversal_effect
+                .is_none_or(|effect| (1..=255).contains(&effect))
     }
 }
 

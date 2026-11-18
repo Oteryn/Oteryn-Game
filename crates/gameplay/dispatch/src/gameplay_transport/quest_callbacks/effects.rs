@@ -223,9 +223,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(pos) = native(entered.position()) else {
             return entered;
         };
-        let (corpse, to) = if let Some(to) = map
+        use crate::map::facts::QuestPortalTravel;
+
+        let (corpse, to, travel) = if let Some((to, travel)) = map
             .facts
-            .quest_portal_destination(pos, self.owner_now().get())
+            .quest_portal_traversal(pos, self.owner_now().get())
         {
             (
                 None,
@@ -234,6 +236,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     y: to.y,
                     floor: to.floor,
                 }),
+                travel,
             )
         } else if let Some((corpse, to)) = self
             .runtime
@@ -241,7 +244,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .quest_corpse_portal_at(entered.position())
         {
-            (Some(corpse), to)
+            (Some(corpse), to, QuestPortalTravel::Native { effect: None })
         } else {
             return entered;
         };
@@ -277,8 +280,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             None => {
                 map.facts
-                    .quest_portal_destination(pos, self.owner_now().get())
-                    == native(to)
+                    .quest_portal_traversal(pos, self.owner_now().get())
+                    == native(to).map(|destination| (destination, travel))
             }
         };
         if !current {
@@ -286,10 +289,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
-        // Crystal 201189f8, FallenDeath:10-13 binds a native Teleport corpse.
-        // Its addThing path (src/game/movement/teleport.cpp:97-100) turns
-        // entrants along the x axis and moves them directly to the shared landing.
-        let portal_facing = corpse.map(|_| {
+        // Crystal 201189f8, src/game/movement/teleport.cpp:95-104 turns entrants
+        // along the x axis, even when the landing already contains a creature.
+        let native_teleport = matches!(travel, QuestPortalTravel::Native { .. });
+        let portal_facing = native_teleport.then(|| {
             if entered.position().x > to.x {
                 crate::foundation::MovementFacing::West
             } else {
@@ -305,7 +308,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             to,
             blocked,
             &closed,
-            corpse.is_some(),
+            native_teleport,
             portal_facing,
         ) else {
             return entered;
@@ -313,6 +316,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(snapshot) = runtime.commit_source_step(proof) else {
             return entered;
         };
+        if let QuestPortalTravel::Native {
+            effect: Some(effect),
+        } = travel
+            && let Some(landing) = native(snapshot.position())
+        {
+            map.facts.emit_movement_effect(pos, effect);
+            map.facts.emit_movement_effect(landing, effect);
+        }
         if pos == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE)
             && to == local(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION)
         {
