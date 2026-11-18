@@ -59,8 +59,8 @@ fn save_audit(image: &Image, path: &std::path::Path) -> io::Result<()> {
     let format = bevy::image::ImageFormat::Png
         .as_image_crate_format()
         .ok_or_else(|| io::Error::other("PNG support is unavailable"))?;
-    let temporary = path.with_added_extension(format!(
-        "{}-{}.tmp",
+    let temporary = path.with_file_name(format!(
+        ".oteryn-audit-{}-{}.tmp",
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed),
     ));

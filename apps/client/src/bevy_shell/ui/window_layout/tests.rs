@@ -1824,9 +1824,11 @@ fn concurrent_market_resizes_and_moves_merge_each_axis() -> TestResult {
     Ok(())
 }
 
-#[test]
-fn window_close_waits_for_pending_move_to_be_saved() -> TestResult {
-    let (mut app, path, saved) = saved_market("close-busy")?;
+fn assert_window_close_saves_pending_move(
+    fixture: &str,
+    next_frame: std::time::Duration,
+) -> TestResult {
+    let (mut app, path, saved) = saved_market(fixture)?;
     install_close(&mut app);
     app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
         std::time::Duration::ZERO,
@@ -1853,6 +1855,7 @@ fn window_close_waits_for_pending_move_to_be_saved() -> TestResult {
     assert_eq!(WindowLayouts::load(&path)?, saved);
     lock.unlock()?;
     drop(lock);
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(next_frame));
     app.update();
     assert_eq!(app.should_exit(), Some(AppExit::Success));
     assert_eq!(
@@ -1861,6 +1864,19 @@ fn window_close_waits_for_pending_move_to_be_saved() -> TestResult {
     );
     std::fs::remove_dir_all(path.parent().ok_or("directory")?)?;
     Ok(())
+}
+
+#[test]
+fn window_close_waits_for_pending_move_to_be_saved() -> TestResult {
+    assert_window_close_saves_pending_move("close-busy", std::time::Duration::ZERO)
+}
+
+#[test]
+fn window_close_saves_pending_move_when_next_frame_is_past_deadline() -> TestResult {
+    assert_window_close_saves_pending_move(
+        "close-released-after-delay",
+        std::time::Duration::from_secs(5),
+    )
 }
 
 #[test]

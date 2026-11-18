@@ -136,6 +136,7 @@ fn screenshot_settings_survive_restart_and_save_full_and_game_only_frames()
     let mut full: ScreenshotPreferences = restored.preferences.screenshots.clone();
     full.game_only = false;
     full.directory.clear();
+    full.folder = root.join("fallback").to_str().ok_or("directory")?.into();
     capture.manual();
     let entire = full.save_frame(&mut capture, &root.join("fallback"), frame())?;
     assert!(!capture.pending());
@@ -172,6 +173,7 @@ fn screenshot_backlog_saves_preceding_frames_on_confirmed_death_and_persists_pol
     let settings_path = root.join("settings.json");
     let mut settings = SettingsState::new(Some(settings_path.clone()));
     let mut preferences = settings.preferences.clone();
+    preferences.screenshots.directory = root.to_str().ok_or("directory")?.into();
     preferences.screenshots.backlog_seconds = 2;
     preferences.screenshots.on_death = true;
     settings.apply(preferences.clone());

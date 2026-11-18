@@ -65,10 +65,11 @@ impl ScreenshotPreferences {
         capture.policy.death = self.on_death;
         capture.policy.achievement = self.on_achievement;
     }
+    /// Uses the same configured or platform screenshot destination as F12.
     pub fn save_frame(
         &self,
         capture: &mut CaptureController,
-        fallback: &Path,
+        _fallback: &Path,
         frame: Frame<'_>,
     ) -> io::Result<PathBuf> {
         if !self.valid() {
@@ -78,11 +79,7 @@ impl ScreenshotPreferences {
             ));
         }
         let effective = self.effective();
-        let directory = if effective.directory.is_empty() {
-            fallback
-        } else {
-            Path::new(&effective.directory)
-        };
+        let directory = super::screenshot::screenshot_directory(Path::new(&effective.directory))?;
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

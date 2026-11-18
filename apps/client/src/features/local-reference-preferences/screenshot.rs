@@ -87,7 +87,7 @@ impl Pixels {
     }
 }
 
-fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
+pub(super) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
     if !folder.as_os_str().is_empty() {
         if !folder.is_absolute() {
             return Err(io::Error::new(
@@ -100,20 +100,22 @@ fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
     if let Some(path) = PreferenceStore::path().filter(|path| path.is_absolute()) {
         return Ok(path.with_file_name("screenshots"));
     }
-    if let Some(local) = std::env::var_os("LOCALAPPDATA")
-        .map(PathBuf::from)
-        .filter(|path| path.is_absolute())
-    {
-        return Ok(local.join("Oteryn/screenshots"));
-    }
     #[cfg(unix)]
     {
         private_capture_directory()
     }
     #[cfg(not(unix))]
     {
-        Ok(std::env::temp_dir().join("Oteryn/screenshots"))
+        Ok(local_app_data()
+            .unwrap_or_else(std::env::temp_dir)
+            .join("Oteryn/screenshots"))
     }
+}
+
+fn local_app_data() -> Option<PathBuf> {
+    std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .filter(|path| path.is_absolute())
 }
 
 /// Open a new screenshot with private permissions before writing any pixels.
@@ -133,15 +135,36 @@ pub(crate) fn create_capture_file(path: &Path) -> io::Result<File> {
         .filter(|parent| !parent.as_os_str().is_empty())
     {
         directory.create(parent)?;
+        #[cfg(unix)]
+        if parent.file_name().is_some() {
+            // Older clients and the audit JSON writer can leave this directory public.
+            let directory = File::open(parent.join("."))?;
+            restrict_capture_directory(&directory, directory.metadata()?.permissions())?;
+        }
     }
     options.open(path)
+}
+
+#[cfg(unix)]
+fn restrict_capture_directory(
+    directory: &File,
+    mut permissions: std::fs::Permissions,
+) -> io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    let mode = permissions.mode();
+    // Sticky directories such as /tmp are explicitly shared by their owner.
+    if mode & 0o1000 == 0 && mode & 0o077 != 0 {
+        permissions.set_mode(mode & !0o077);
+        directory.set_permissions(permissions)?;
+    }
+    Ok(())
 }
 
 /// Keep the fallback private and reuse it for all captures in this process.
 #[cfg(unix)]
 fn private_capture_directory() -> io::Result<PathBuf> {
     use std::{
-        os::unix::fs::DirBuilderExt,
+        os::unix::fs::{DirBuilderExt, MetadataExt},
         sync::Mutex,
         time::{SystemTime, UNIX_EPOCH},
     };
@@ -159,6 +182,26 @@ fn private_capture_directory() -> io::Result<PathBuf> {
     let folder =
         std::env::temp_dir().join(format!("oteryn-screenshots-{}-{stamp}", std::process::id()));
     std::fs::DirBuilder::new().mode(0o700).create(&folder)?;
+    let result = (|| {
+        // An earlier client could have saved public BMPs in the shared fallback.
+        // Only restrict that existing directory when it belongs to this account.
+        if let Some(legacy) = local_app_data().map(|root| root.join("Oteryn/screenshots"))
+            && let Ok(entry) = legacy.symlink_metadata()
+            && entry.is_dir()
+            && entry.uid() == folder.metadata()?.uid()
+            && let Ok(legacy) = File::open(legacy.join("."))
+        {
+            let opened = legacy.metadata()?;
+            if (opened.dev(), opened.ino()) == (entry.dev(), entry.ino()) {
+                restrict_capture_directory(&legacy, opened.permissions())?;
+            }
+        }
+        Ok::<(), io::Error>(())
+    })();
+    if let Err(error) = result {
+        let _ = std::fs::remove_dir(&folder);
+        return Err(error);
+    }
     *directory = Some(folder.clone());
     Ok(folder)
 }

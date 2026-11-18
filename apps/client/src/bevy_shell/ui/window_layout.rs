@@ -532,12 +532,10 @@ fn persist(
     if exit_save.deferred.is_some() {
         exit_save.retain(&mut exits);
     }
-    if exit_save
+    let deadline_reached = exit_save
         .deadline
-        .is_some_and(|deadline| time.elapsed() >= deadline)
-    {
-        bevy::log::warn!("Could not save window layout before exit: layout lock is still held");
-    } else if let Some(baseline) = loaded.layouts.as_ref()
+        .is_some_and(|deadline| time.elapsed() >= deadline);
+    if let Some(baseline) = loaded.layouts.as_ref()
         && (loaded.reset_pending || baseline != &*layouts)
         && let Some(path) = owner.and_then(|owner| owner.window_layouts_path())
     {
@@ -593,7 +591,11 @@ fn persist(
             Err(error) => {
                 *pending = Some(time.elapsed());
                 if error.kind() == io::ErrorKind::WouldBlock {
-                    if exiting {
+                    if deadline_reached {
+                        bevy::log::warn!(
+                            "Could not save window layout before exit: layout lock is still held"
+                        );
+                    } else if exiting {
                         exit_save
                             .deadline
                             .get_or_insert(time.elapsed() + EXIT_SAVE_TIMEOUT);
