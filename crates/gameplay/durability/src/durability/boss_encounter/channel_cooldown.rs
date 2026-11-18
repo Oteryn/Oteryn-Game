@@ -28,6 +28,12 @@ impl DurabilityRoot {
         reset_epoch: u64,
         minimum_level: u32,
     ) -> Result<bool, DurabilityError> {
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) {
+            return Ok(false);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;

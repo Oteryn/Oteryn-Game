@@ -252,7 +252,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return UseDisposition::Rejected;
         };
-        let Some(admission) = super::super::SecureIdentifiers.game_session_id() else {
+        let Some(admission) = super::super::SecureIdentifiers.source_think_event_id() else {
             return UseDisposition::Rejected;
         };
         if !self
@@ -263,7 +263,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 &format!("oteryn:boss.{boss}"),
                 u64::from(room.cooldown_s),
-                *admission.as_bytes(),
+                admission,
                 self.reset_epoch,
                 encounter.minimum_level,
             )
