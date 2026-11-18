@@ -29,6 +29,8 @@ enum Case {
     Window,
     WindowStateless,
     WindowVisual,
+    WindowReset,
+    WindowResetDeparted,
     Area,
     DefeatTime,
     Summon,
@@ -115,15 +117,44 @@ fn seal_portal_changes_on_death_and_restores_after_both_players_use_it() -> Test
     run(admin, Case::WindowVisual)
 }
 
+#[test]
+fn mortal_shell_crystals_reset_at_two_minutes_with_a_remaining_damager() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::WindowReset)
+}
+
+#[test]
+fn mortal_shell_crystals_stay_active_if_all_direct_damagers_depart() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::WindowResetDeparted)
+}
+
 impl Case {
     fn is_window(self) -> bool {
         matches!(
             self,
-            Self::Window | Self::WindowStateless | Self::WindowVisual
+            Self::Window
+                | Self::WindowStateless
+                | Self::WindowVisual
+                | Self::WindowReset
+                | Self::WindowResetDeparted
         )
     }
     fn is_stateless_window(self) -> bool {
-        matches!(self, Self::WindowStateless | Self::WindowVisual)
+        matches!(
+            self,
+            Self::WindowStateless
+                | Self::WindowVisual
+                | Self::WindowReset
+                | Self::WindowResetDeparted
+        )
+    }
+    fn has_reset(self) -> bool {
+        matches!(self, Self::WindowReset | Self::WindowResetDeparted)
     }
 }
 
@@ -164,6 +195,15 @@ fn window_callback(at: MovementLocalPosition, case: Case) -> TestResult<Callback
         // content/presentations/bindings/client-ids.json maps it to client ID 73.
         callback["effects"]["death_window"]["open_effect"] = json!(73);
     }
+    if case.has_reset() {
+        callback["sources"] =
+            json!(["Crystal 201189f8 creaturescripts_bosses_kill.lua:58-86,136-144"]);
+        callback["effects"]["death_window"]["creatures"] = json!([RAT]);
+        callback["effects"]["death_window"]["delayed_reset"] = json!({
+            "delay_ms":120_000,"from":14961,"to":14955,
+            "positions":[{"x":x+4,"y":y,"floor":floor},{"x":x+5,"y":y,"floor":floor}]
+        });
+    }
     Ok(serde_json::from_value(callback)?)
 }
 
@@ -183,6 +223,9 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
     let source = match case {
         Case::WindowStateless | Case::WindowVisual => {
             "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:126-134"
+        }
+        Case::WindowReset | Case::WindowResetDeparted => {
+            "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:58-86,136-144"
         }
         Case::DefeatTime => {
             counter["record_defeat_time"] = json!(true);
@@ -291,6 +334,24 @@ fn run(admin: String, case: Case) -> TestResult {
                     position,
                     &[],
                     &[22761],
+                )?
+            } else if case.has_reset() {
+                let reset = callback
+                    .effects
+                    .death_window
+                    .as_ref()
+                    .and_then(|window| window.delayed_reset.as_ref())
+                    .ok_or("crystal reset")?;
+                let objects = reset
+                    .positions
+                    .iter()
+                    .map(|position| (*position, reset.from))
+                    .collect::<Vec<_>>();
+                super::quest_world_callbacks::world_with_objects(
+                    &callback,
+                    position,
+                    &objects,
+                    &[reset.to],
                 )?
             } else {
                 super::quest_world_callbacks::world(&callback, position)?
@@ -488,7 +549,11 @@ fn run(admin: String, case: Case) -> TestResult {
                 assert!((before..=after).contains(&actual));
                 [actual, actual, 0]
             }
-            Case::Window | Case::WindowStateless | Case::WindowVisual => {
+            Case::Window
+            | Case::WindowStateless
+            | Case::WindowVisual
+            | Case::WindowReset
+            | Case::WindowResetDeparted => {
                 return Err("timed exit requires bundle cells".into());
             }
         };
@@ -595,6 +660,37 @@ async fn exercise_window(
             move_to(owner, *player, origin).await?;
         } else {
             assert_eq!(enter_exit(owner, *player, portal).await?, origin);
+        }
+    }
+    if case.has_reset() {
+        let crystals = [closed_landing, MovementLocalPosition { x: at.x + 5, ..at }];
+        {
+            let mut runtime = owner.runtime.lock().await;
+            runtime
+                .remove_terminal_session(players[0].session, players[0].actor)
+                .map_err(debug)?;
+            if case == Case::WindowResetDeparted {
+                runtime
+                    .remove_terminal_session(players[1].session, players[1].actor)
+                    .map_err(debug)?;
+            }
+            for (clock, expected) in [
+                (319_999, 14961),
+                (
+                    320_000,
+                    if case == Case::WindowResetDeparted {
+                        14961
+                    } else {
+                        14955
+                    },
+                ),
+            ] {
+                set_clock(clock);
+                owner.drain_quest_death_map_resets(&runtime);
+                for crystal in crystals {
+                    assert_eq!(portal_appearance(owner, crystal)?, expected);
+                }
+            }
         }
     }
     Ok(())
