@@ -230,7 +230,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (participant, command_id) = {
             let runtime = self.runtime.lock().await;
             let movement = runtime.committed_movement_occurrence(actor).ok()??;
-            if runtime.read_actor_position(actor) != Ok(entered) || movement.after() != entered {
+            if runtime.read_actor_position(actor) != Ok(entered)
+                || movement.after() != entered
+                || self
+                    .bundle_map()
+                    .and_then(|map| at(map, entered.position()))
+                    .is_none_or(|current| current.key != portal.key)
+            {
                 return None;
             }
             let saved = self.placed_record(&runtime, entered.position());
