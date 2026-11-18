@@ -1169,6 +1169,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     std::sync::Arc::clone(catalogue), &permit, context,
                 ).await;
                 if !matches!(allowed, Ok(true)) {
+                    if matches!(allowed, Ok(false))
+                        && callback.return_on_failure
+                        && let Some(effect) = callback.effects.teleport_effect
+                        && let Some(at) = native(expected.position())
+                    {
+                        let runtime = self.runtime.lock().await;
+                        if runtime.owner_fence().is_ok()
+                            && runtime.read_actor_position(actor) == Ok(expected)
+                            && runtime.player_control_facts(actor, command.game_session_id)
+                                .is_ok_and(|facts| facts.control_loss.is_none())
+                        {
+                            let _ = map.facts.emit_movement_effect(at, effect);
+                        }
+                    }
                     if let Some(message) = &callback.failure_message {
                         self.states.chat.push_quest_feedback(command.game_session_id, message);
                     }
