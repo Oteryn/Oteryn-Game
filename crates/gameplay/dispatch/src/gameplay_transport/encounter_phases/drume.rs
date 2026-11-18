@@ -143,19 +143,6 @@ impl Skirmish {
         self.advance(runtime, room, cells)
     }
 
-    pub(super) fn has_players(
-        runtime: &ChannelRuntimeV1,
-        room: &Encounter,
-    ) -> Result<bool, CarrierError> {
-        Ok(runtime
-            .positioned_melee_census()?
-            .into_iter()
-            .any(|(_, at, session)| {
-                session.is_some()
-                    && super::super::quest_callbacks::room_contains(room, at.position())
-            }))
-    }
-
     pub(super) fn eject(
         &self,
         runtime: &mut ChannelRuntimeV1,

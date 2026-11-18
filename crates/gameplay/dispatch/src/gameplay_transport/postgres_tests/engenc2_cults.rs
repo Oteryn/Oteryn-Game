@@ -344,6 +344,34 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                     "the second staging tile cannot operate the lever"
                 );
             }
+            let ambient = if drume.is_some() && reenter {
+                let monster = callback
+                    .effects
+                    .encounter
+                    .as_ref()
+                    .ok_or("encounter")?
+                    .monsters
+                    .first()
+                    .ok_or("first commander spawn")?;
+                let mut runtime = owner.runtime.lock().await;
+                let health = runtime
+                    .companion_policy("oteryn:creature.rat")
+                    .map_err(debug)?
+                    .maximum_health;
+                let actor = runtime
+                    .admit_encounter_actor(
+                        "oteryn:creature.rat",
+                        health,
+                        super::quest_world_callbacks::local(monster.position),
+                    )
+                    .map_err(debug)?;
+                runtime
+                    .install_creature_policy(actor, "oteryn:creature.rat")
+                    .map_err(debug)?;
+                Some(actor)
+            } else {
+                None
+            };
             let outcome = owner
                 .use_object(
                     deps.actor,
@@ -376,6 +404,9 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                     .len(),
                 1
             );
+            if let Some(ambient) = ambient {
+                assert!(!owner.runtime.lock().await.contains_live_creature(ambient));
+            }
             if let Some(spawn_boss) = drume {
                 let (second_actor, second_session) = second.ok_or("second player")?;
                 if reenter {

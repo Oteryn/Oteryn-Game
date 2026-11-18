@@ -178,7 +178,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
-        let Ok(mut census) = runtime.positioned_melee_census() else {
+        let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
         // Crystal action_drume.lua:35-38 requires the lever user on the first staging tile.
@@ -264,20 +264,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        // Crystal action_drume.lua:77-82 clears a vacated arena before spawning the new squads.
-        if !preflight && callback.effects.battlefield.is_some() {
-            if states
-                .encounter_phases
-                .retire_vacated_drume(runtime, key)
-                .is_err()
-            {
-                return UseDisposition::Occupied;
-            }
-            let Ok(current) = runtime.positioned_melee_census() else {
-                return UseDisposition::Rejected;
-            };
-            census = current;
-        }
+        // Crystal action_drume.lua:77-82 clears the vacated arena on entry.
+        let battlefield = callback.effects.battlefield.is_some();
+        let retiring = if battlefield {
+            census
+                .iter()
+                .filter_map(|(actor, position, session)| {
+                    (session.is_none()
+                        && room_contains(encounter, position.position())
+                        && runtime.contains_live_creature(*actor)
+                        && !runtime
+                            .encounter_parts()
+                            .0
+                            .encounter_is_native_summon(*actor))
+                    .then_some(*actor)
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
         let mut proofs = Vec::new();
         for &(who, member_session, expected, destination) in &players {
             let blocked =
@@ -291,7 +296,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(destination),
                 blocked,
                 &closed,
-                callback.effects.battlefield.is_some(),
+                battlefield,
+                &retiring,
             ) else {
                 return UseDisposition::NotPossible;
             };
@@ -313,7 +319,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tile(monster.position),
                     false,
                 )
-                || census.iter().any(|(_, pos, _)| pos.position() == at)
+                || census
+                    .iter()
+                    .any(|(actor, pos, _)| pos.position() == at && !retiring.contains(actor))
             {
                 return UseDisposition::Occupied;
             }
@@ -324,7 +332,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if preflight {
             return if runtime
-                .preflight_quest_encounter_entry(proofs, &monsters)
+                .preflight_quest_encounter_replacement(proofs, &monsters, &retiring)
                 .is_ok()
             {
                 UseDisposition::Committed
@@ -381,7 +389,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let mut phases = if encounter.phase.is_some() {
-            let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
+            let Ok(active) = states.encounter_phases.reserve(runtime, key, battlefield) else {
                 return UseDisposition::Occupied;
             };
             Some(active)
@@ -405,6 +413,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
+            &retiring,
             |runtime, actors| {
                 let roster = if prepared.is_some() {
                     Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
@@ -438,6 +447,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             capture.publish_encounter(prepared, roster);
         }
         if let (Some(phases), Some(phase)) = (&mut phases, phase) {
+            if battlefield {
+                phases.retain(|old| old.key() != key);
+            }
             phases.push(phase);
         }
         drop(phases);

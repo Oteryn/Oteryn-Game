@@ -87,6 +87,12 @@ pub(super) struct ActivePhase {
     cells: crate::content::NativeEntryMovementCells,
 }
 
+impl ActivePhase {
+    pub(super) fn key(&self) -> u64 {
+        self.key
+    }
+}
+
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
@@ -113,33 +119,11 @@ impl Registry {
         })
     }
 
-    pub(super) fn retire_vacated_drume(
-        &self,
-        runtime: &mut ChannelRuntimeV1,
-        key: u64,
-    ) -> Result<(), CarrierError> {
-        let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
-        let Some(index) = active.iter().position(|phase| phase.key == key) else {
-            return Ok(());
-        };
-        let phase = &active[index];
-        let Fight::Drume(fight) = &phase.fight else {
-            return Err(CarrierError::PlanConflict);
-        };
-        if phase.fight.is_current(runtime) {
-            if drume::Skirmish::has_players(runtime, &phase.room)? {
-                return Err(CarrierError::PlanConflict);
-            }
-            fight.eject(runtime, &phase.room, &phase.cells)?;
-        }
-        active.remove(index);
-        Ok(())
-    }
-
     pub(super) fn reserve<'a>(
         &'a self,
         runtime: &mut ChannelRuntimeV1,
         key: u64,
+        replacing_drume: bool,
     ) -> Result<std::sync::MutexGuard<'a, Vec<ActivePhase>>, CarrierError> {
         let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
         active.retain_mut(|phase| {
@@ -165,7 +149,10 @@ impl Registry {
                 Err(_) => false,
             }
         });
-        if active.len() >= MAX_ENCOUNTERS || active.iter().any(|p| p.key == key) {
+        let existing = active.iter().find(|phase| phase.key == key);
+        if existing.map_or(active.len() >= MAX_ENCOUNTERS, |phase| {
+            !replacing_drume || !matches!(phase.fight, Fight::Drume(_))
+        }) {
             return Err(CarrierError::PlanConflict);
         }
         active

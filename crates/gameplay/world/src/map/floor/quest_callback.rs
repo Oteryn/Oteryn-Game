@@ -81,6 +81,7 @@ pub fn prepare_quest_encounter_ingress<'a>(
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
     player_stack: bool,
+    retiring: &[ExactActorRef],
 ) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
     let proof = CallbackTeleport {
         cells,
@@ -94,7 +95,7 @@ pub fn prepare_quest_encounter_ingress<'a>(
         player_stack,
         forced: false,
     };
-    proof.check(runtime)?;
+    proof.check_with_retiring(runtime, retiring)?;
     Ok(proof)
 }
 
@@ -127,6 +128,14 @@ pub fn prepare_quest_encounter_ejection<'a>(
 
 impl CallbackTeleport<'_> {
     fn check(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
+        self.check_with_retiring(runtime, &[])
+    }
+
+    fn check_with_retiring(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        retiring: &[ExactActorRef],
+    ) -> Result<(), MovementError> {
         // Only a forced encounter ejection moves a control-lost player.
         qualify_origin_control(
             runtime,
@@ -147,7 +156,10 @@ impl CallbackTeleport<'_> {
                     .map_err(MovementError::Actor)?
                     .iter()
                     .any(|(actor, position, session)| {
-                        *actor != self.actor && session.is_none() && position.position() == to
+                        *actor != self.actor
+                            && session.is_none()
+                            && position.position() == to
+                            && !retiring.contains(actor)
                     })
             } else {
                 runtime
