@@ -149,7 +149,7 @@ impl PendingCallbacks {
             .lock()
             .ok()?
             .iter()
-            .map(|pending| pending.next_due_us())
+            .filter_map(|pending| pending.next_due_us())
             .min()
     }
 }

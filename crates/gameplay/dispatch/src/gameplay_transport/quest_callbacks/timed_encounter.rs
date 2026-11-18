@@ -37,12 +37,15 @@ impl TimedEncounter {
                 .is_some_and(|encounter| encounter.room_min == min && encounter.room_max == max)
     }
 
-    pub(super) fn next_due_us(&self) -> u64 {
-        if self.attempted_spawn {
+    pub(super) fn next_due_us(&self) -> Option<u64> {
+        if !self.switches.is_empty() && self.switches.len() < 4 {
+            return None;
+        }
+        Some(if self.attempted_spawn {
             self.warn_at.unwrap_or(self.reset_at)
         } else {
             self.spawn_at
-        }
+        })
     }
 }
 
@@ -292,7 +295,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             }
-            if now < memo.next_due_us() {
+            if memo.next_due_us().is_none_or(|due| now < due) {
                 index += 1;
                 continue;
             }
