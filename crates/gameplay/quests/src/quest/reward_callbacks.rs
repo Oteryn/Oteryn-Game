@@ -1258,6 +1258,16 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     extend_document(catalogue, document)
 }
 
+#[cfg(feature = "test-support")]
+pub fn extend_fixture_dialogue(
+    catalogue: QuestStateCatalogue,
+    text: &str,
+) -> Result<(QuestStateCatalogue, Vec<RewardCallback>), String> {
+    let document = parse_documents(&[text])?;
+    let callbacks = document.callbacks.clone();
+    Ok((extend_document(catalogue, document)?, callbacks))
+}
+
 #[cfg(test)]
 fn extend_fixture_callbacks(
     catalogue: QuestStateCatalogue,

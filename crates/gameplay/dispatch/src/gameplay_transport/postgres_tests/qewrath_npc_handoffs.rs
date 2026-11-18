@@ -4,10 +4,9 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
-    QuestTransition, authored_bindings::Bindings, reward_callbacks, world_callbacks::Position,
+    QuestTransition, reward_callbacks, world_callbacks::Position,
 };
 use serde_json::json;
-use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 const CHILDREN: &str = "oteryn:quest.children_of_the_revolution_quest";
@@ -60,7 +59,7 @@ pub(super) async fn exercise(
             "quest/u8_6/wrath_of_the_emperor",
             41,
             28,
-            vec![("questline", 28, 29), ("mission10", -1, 1)],
+            vec![("questline", 0, 34, 28, 29), ("mission10", 0, i64::from(i32::MAX), 0, 1)],
             Some("oteryn:item.tibia.i10343"),
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sleeping_dragon.lua:203-222",
         )
@@ -73,9 +72,9 @@ pub(super) async fn exercise(
             13,
             18,
             vec![
-                ("questline", 18, 19),
-                ("teleport_access", -1, 1),
-                ("mission05", -1, 1),
+                ("questline", 0, 21, 18, 19),
+                ("teleport_access", 0, 1, 0, 1),
+                ("mission05", -1, 3, -1, 1),
             ],
             None,
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:143-149,337-345",
@@ -113,23 +112,23 @@ pub(super) async fn exercise(
     let track = |name: &str| format!("oteryn:quest-progress/{prefix}/{name}");
     let definitions = tracks
         .iter()
-        .map(|(key, _, after)| QuestTrack {
+        .map(|(key, initial, max, _, _)| QuestTrack {
             key: track(key),
             quest: quest.into(),
-            min: -1,
-            initial: -1,
-            max: *after,
+            min: *initial,
+            initial: *initial,
+            max: *max,
         })
         .collect::<Vec<_>>();
     let base = QuestStateCatalogue::new(
         "content-1",
-        definitions.clone(),
+        definitions,
         vec![QuestTransition {
             key: SEED.into(),
             quest: quest.into(),
             effects: vec![QuestEffect {
                 track: track("questline"),
-                from: QuestComparison::Eq(-1),
+                from: QuestComparison::Eq(0),
                 effect: QuestEffectKind::Set(start),
             }],
             completes: false,
@@ -142,39 +141,25 @@ pub(super) async fn exercise(
         "oteryn:quest-reward/{}/mission-handoff",
         if give.is_some() { "wrath" } else { "children" }
     );
-    let stage = json!({
-        "key": "mission-handoff", "completes": false,
-        "trigger": { "kind": "npc_dialogue", "callback": {
+    let document = json!({"schema": 1, "callbacks": [{
             "key": receipt_key, "quest": quest, "npc": npc,
+            "additive_dialogue_generation": 1,
             "keywords": ["yes"], "topic": topic, "next_topic": 0,
-            "storage": tracks.iter().map(|(key, before, after)| json!({
+            "storage": tracks.iter().map(|(key, _, _, before, after)| json!({
                 "track": track(key), "minimum": before, "maximum": before, "set": after,
             })).collect::<Vec<_>>(),
             "take": [], "give": give.map(|item| json!({"item":item,"count":1,"contents":[]})),
             "outfit": null, "achievement": null, "reply": reply,
             "sources": [source],
-        }}
-    });
-    let digest = Sha256::digest(serde_json::to_vec(&stage)?)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    let document = json!({"schema": 1, "quests": [{
-        "quest": quest, "recipe_sha256": digest, "sources": [source],
-        "tracks": definitions.iter().map(|t| json!({
-            "key": t.key, "initial": t.initial, "minimum": t.min, "maximum": t.max,
-        })).collect::<Vec<_>>(),
-        "stages": [stage],
     }]});
-    let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
     owner.quest_catalogue = Some(Arc::new(base.clone()));
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     super::qengine_outfit_stories::commit_fixture(owner, admitted, SEED, 9100).await?;
-    let mut next = bindings.attach(&base)?;
-    reward_callbacks::register_additive_predecessor(&mut next, &base, quest)?;
+    let (next, callbacks) = reward_callbacks::extend_fixture_dialogue(base, &document.to_string())?;
     owner.quest_catalogue = Some(Arc::new(next));
+    owner.states.npc_conversations.fixture_reward_callbacks(callbacks)?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -218,7 +203,7 @@ pub(super) async fn exercise(
             );
         }
     }
-    for (name, _, expected) in tracks {
+    for (name, _, _, _, expected) in tracks {
         let value: i64 =
             sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
                 .bind(track(name))
