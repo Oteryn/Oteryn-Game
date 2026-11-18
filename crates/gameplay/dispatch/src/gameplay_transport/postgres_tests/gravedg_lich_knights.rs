@@ -1092,13 +1092,26 @@ async fn repeat_after_cooldown(
     use crate::map::view::MapFacts;
     use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+    let last = party.last().ok_or("last staged player")?;
+    let last_character = owner
+        .runtime
+        .lock()
+        .await
+        .bound_attacker_lease(
+            last.runtime_actor.ok_or("last actor")?,
+            last.game_session_id,
+        )
+        .map_err(debug)?
+        .character_id();
     let expired = sqlx::query(
-        "UPDATE game_character_boss_cooldowns SET available_at = 0 WHERE boss_key = $1",
+        "UPDATE game_character_boss_cooldowns SET available_at = 0
+         WHERE boss_key = $1 AND character_id <> encode($2,'hex')::uuid",
     )
     .bind(boss)
+    .bind(last_character.as_bytes().as_slice())
     .execute(&h.pool)
     .await?;
-    assert_eq!(expired.rows_affected(), 5);
+    assert_eq!(expired.rows_affected(), 4);
     for (index, member) in party.iter().enumerate() {
         let actor = member.runtime_actor.ok_or("party actor")?;
         owner
@@ -1123,20 +1136,51 @@ async fn repeat_after_cooldown(
     let expected_revision = map.facts.object_revision(key);
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    let retry = owner
-        .use_object(
-            leader.runtime_actor.ok_or("leader actor")?,
-            UseCommand {
-                game_session_id: leader.game_session_id,
-                command_id: 111,
-                item_fence: leader.item_fence,
-            },
-            WorldObjectTarget {
-                placement,
-                expected_revision,
-            },
+    let leader_actor = leader.runtime_actor.ok_or("leader actor")?;
+    let use_lever = async |command_id| {
+        owner
+            .use_object(
+                leader_actor,
+                UseCommand {
+                    game_session_id: leader.game_session_id,
+                    command_id,
+                    item_fence: leader.item_fence,
+                },
+                WorldObjectTarget {
+                    placement: placement.clone(),
+                    expected_revision,
+                },
+            )
+            .await
+    };
+    assert_eq!(
+        use_lever(111).await.disposition,
+        UseDisposition::RequirementNotMet,
+        "one staged player on cooldown blocks the entire party"
+    );
+    assert_eq!(map.facts.object_revision(key), expected_revision);
+    for (index, member) in party.iter().enumerate() {
+        assert_position(
+            owner,
+            member.runtime_actor.ok_or("party actor")?,
+            100,
+            100 + i32::try_from(index)?,
         )
-        .await;
+        .await?;
+    }
+    let expired = sqlx::query(
+        "UPDATE game_character_boss_cooldowns SET available_at = 0
+         WHERE boss_key = $1 AND available_at > 0",
+    )
+    .bind(boss)
+    .execute(&h.pool)
+    .await?;
+    assert_eq!(
+        expired.rows_affected(),
+        1,
+        "refusal does not renew any cooldown"
+    );
+    let retry = use_lever(112).await;
     assert_eq!(
         retry.disposition,
         UseDisposition::Committed,
