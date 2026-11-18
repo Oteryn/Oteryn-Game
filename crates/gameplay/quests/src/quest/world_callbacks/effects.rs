@@ -399,6 +399,7 @@ impl Callback {
     pub fn starts_merchant_wave(&self) -> bool {
         self.effects.place_item == Some(12187)
             && self.trigger == Trigger::Use
+            && self.teleport.is_some()
             && self.effects.encounter.as_ref().is_some_and(|encounter| {
                 encounter.monsters.len() == 7
                     && encounter
@@ -770,7 +771,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || item.target_remove
             })
             || callback.lever.is_some()
-            || callback.teleport.is_some()
+            || (callback.teleport.is_some() && !callback.starts_merchant_wave())
             || !callback.passages.is_empty()
             || (effects.encounter.is_some() && !callback.starts_merchant_wave())
             || effects.item_cycle.is_some()
@@ -837,7 +838,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         && effects.party_transfer.is_none()
                         && callback.has_state())))
                 || !callback.passages.is_empty()
-                || callback.teleport.is_some())
+                || (callback.teleport.is_some() && !callback.starts_merchant_wave()))
             && !(effects.encounter.is_some() && super::asura_authored::admitted(callback)))
     {
         return false;

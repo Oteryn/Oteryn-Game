@@ -1322,7 +1322,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
             );
         }
-        if callback.effects.encounter.is_some() && !close {
+        let merchant_projected = if callback.effects.encounter.is_some() && !close {
             let disposition = self.execute_quest_encounter(
                 runtime,
                 states,
@@ -1338,7 +1338,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 personal_reservation.as_mut(),
                 projection.as_ref(),
             );
-            if disposition == UseDisposition::Committed {
+            if disposition != UseDisposition::Committed {
+                return disposition;
+            }
+            if !callback.starts_merchant_wave() {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                     pending.remove(&session);
                 }
@@ -1347,9 +1350,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     self.states.chat.push_quest_feedback(session, &message);
                 }
+                return disposition;
             }
-            return disposition;
-        }
+            true
+        } else {
+            false
+        };
         let flame = self
             .states
             .quest_callbacks
@@ -1514,7 +1520,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
+            } else if !merchant_projected
+                && !callback.is_read_only()
+                && !personal_gift_preserves_object
+                && !apply_scene()
             {
                 return UseDisposition::Rejected;
             }
