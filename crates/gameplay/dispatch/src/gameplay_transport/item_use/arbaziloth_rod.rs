@@ -16,6 +16,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fence = command.item_fence?;
         let session = command.game_session_id;
         let wire: [u8; 32] = Sha256::digest(encode_item_use_intent(intent).ok()?).into();
+        let outcome = |disposition| {
+            Some(UseOutcome {
+                disposition,
+                ..UseOutcome::rejected()
+            })
+        };
+        let resolve_boss = |runtime: &ChannelRuntimeV1| {
+            runtime
+                .visible_entities()
+                .creatures
+                .iter()
+                .find(|entry| {
+                    entry.actor.placement_identity() == wanted.identity
+                        && entry.generation == wanted.generation
+                        && runtime.arbaziloth_shields(entry.actor).is_some()
+                })
+                .map(|entry| entry.actor)
+        };
+        let boss = {
+            let runtime = self.runtime.lock().await;
+            if !rotten_essence::current(&runtime, actor, command) {
+                return None;
+            }
+            let mut states = self.states.spell_states.lock().await;
+            let gate = states.item_uses.gate(&runtime, actor, session)?;
+            if let Some((id, previous, disposition)) = gate.source_last
+                && id == command.command_id
+            {
+                return outcome(if previous == wire {
+                    disposition
+                } else {
+                    UseDisposition::Rejected
+                });
+            }
+            resolve_boss(&runtime)?
+        };
         let _lane = self.spell_lane_permit().await?;
         let inventory = self
             .root
@@ -71,31 +107,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        let outcome = |disposition| {
-            Some(UseOutcome {
-                disposition,
-                ..UseOutcome::rejected()
-            })
-        };
-        if let Some((id, previous, disposition)) = gate.source_last
-            && id == command.command_id
-        {
-            return outcome(if previous == wire {
-                disposition
-            } else {
-                UseDisposition::Rejected
-            });
+        if resolve_boss(&runtime) != Some(boss) {
+            return outcome(UseDisposition::NotPossible);
         }
-        let boss = runtime
-            .visible_entities()
-            .creatures
-            .iter()
-            .find(|entry| {
-                entry.actor.placement_identity() == wanted.identity
-                    && entry.generation == wanted.generation
-                    && runtime.arbaziloth_shields(entry.actor).is_some()
-            })?
-            .actor;
         let own = runtime.read_actor_position(actor).ok()?.position();
         let target = runtime.read_actor_position(boss).ok()?.position();
         if own.floor != target.floor || own.x.abs_diff(target.x).max(own.y.abs_diff(target.y)) > 1 {

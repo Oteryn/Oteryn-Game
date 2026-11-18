@@ -103,6 +103,7 @@ impl ChannelRuntimeV1 {
     }
 
     pub fn arbaziloth_shields_mut(&mut self, actor: ExactActorRef) -> Option<&mut ShieldSequence> {
+        self.owner_fence().ok()?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
         self.carrier.assert_slot_spell_unreserved(index).ok()?;
         match &mut self.carrier.slots[index] {

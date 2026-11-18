@@ -145,6 +145,7 @@ impl ActorCombatState {
     /// gameplay conditions/vitals remain with their existing physical owners.
     pub(super) fn reset_for_scope_handoff(&mut self) {
         self.reentry = None;
+        self.arbaziloth_shields = None;
         self.pending_owner = None;
         self.pending_source = None;
         self.party = super::runtime_actor_party::PartyActorState::default();
