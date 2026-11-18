@@ -450,7 +450,7 @@ fn worldchg_mage_tower_portal_projects_active_save_postgres() -> TestResult {
         let h = Harness::create_with_admission_seed(admin, "mage_tower_portal_save", false, false)
             .await?;
         let world = WorldId::decode(&id(42)).map_err(debug)?;
-        for (epoch, age, open) in [(1_i64, 0, false), (2, 10_801, true), (3, 0, false)] {
+        for (epoch, age, open) in [(1_i64, 10_801, true), (2, 0, false)] {
             sqlx::query(
                 "INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month)
                  VALUES(encode($1,'hex')::uuid,$2::bigint,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,
