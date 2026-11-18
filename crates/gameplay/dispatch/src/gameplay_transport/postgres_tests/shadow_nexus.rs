@@ -37,7 +37,7 @@ pub(super) fn callback(spend: bool) -> TestResult<Callback> {
     if spend {
         row["requires_world_admission"] = true.into();
         row["storage"] = serde_json::json!([
-            {"track":TRACK,"minimum":0,"maximum":22,"set":22},
+            {"track":TRACK,"minimum":0,"maximum":21,"set":22},
             {"track":MISSION,"minimum":0,"maximum":2,"set":2}
         ]);
         row["item_on_target"] = serde_json::json!({"item":WATER,"count":1,"selected_instance":true});
@@ -118,10 +118,16 @@ pub(super) async fn exercise(
     h: &Harness,
 ) -> TestResult {
     let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
+    let digest = catalogue.definition_hash(QUEST).ok_or("prior quest definition")?;
+    let mut repeat = callback(true)?;
+    repeat.key = "oteryn:quest-callback/nexus-repeat-fixture".into();
+    repeat.storage.retain(|storage| storage.track == TRACK);
+    repeat.storage[0].minimum = 22;
+    repeat.storage[0].maximum = 22;
+
     owner.quest_catalogue = Some(Arc::new(
-        catalogue.with_world_callback_fixtures(vec![callback(false)?, callback(true)?])?,
+        catalogue.with_world_callback_fixtures(vec![callback(false)?, callback(true)?, repeat])?,
     ));
-    let digest = owner.quest_catalogue.as_ref().and_then(|c| c.definition_hash(QUEST)).ok_or("quest hash")?;
     sqlx::query(
         "INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision)
          SELECT character_id,$2,'content-1',$3,character_revision,character_revision
@@ -150,11 +156,19 @@ pub(super) async fn exercise(
          WHERE charge_group=$1",
     ).bind(CHARGE).execute(&h.pool).await?;
     for attempt in 0..capacity {
+        if attempt == 1 {
+            sqlx::query("UPDATE game_character_quest_tracks SET value=1 WHERE track_key=$1")
+                .bind(MISSION).execute(&h.pool).await?;
+        }
         if attempt > 0 {
             give_water(owner,admitted,976+u64::try_from(attempt)?).await?;
         }
         assert_eq!(use_water(owner,admitted).await?,UseDisposition::Committed);
         assert_eq!(appearance(owner)?,7931,"an admitted debit leaves the remaining window visible");
+        let mission: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(MISSION).fetch_one(&h.pool).await?;
+        assert_eq!(mission, if attempt == 0 { 2 } else { 1 });
+
         advance(owner,1).await?;
     }
     give_water(owner,admitted,989).await?;
@@ -166,6 +180,6 @@ pub(super) async fn exercise(
                 (SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$3),
                 (SELECT remaining FROM game_quest_world_charge_windows WHERE charge_group=$4)",
     ).bind(TRACK).bind(MISSION).bind(WATER).bind(CHARGE).fetch_one(&h.pool).await?;
-    assert_eq!(outcome,(22,2,1,0));
+    assert_eq!(outcome,(22,1,1,0));
     Ok(())
 }

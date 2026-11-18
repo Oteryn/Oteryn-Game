@@ -68,10 +68,10 @@ pub(super) async fn exercise(
         native.install_companion_policies(&mut runtime).map_err(debug)?;
     }
     let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
+    let digest = catalogue.definition_hash(QUEST).ok_or("prior quest definition")?;
     owner.quest_catalogue = Some(Arc::new(catalogue.with_world_callback_fixtures(vec![
         callback(true)?,callback(false)?,
     ])?));
-    let digest = owner.quest_catalogue.as_ref().and_then(|c| c.definition_hash(QUEST)).ok_or("quest")?;
     sqlx::query(
         "INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision)
          SELECT character_id,$2,'content-1',$3,character_revision,character_revision

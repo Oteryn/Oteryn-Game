@@ -44,6 +44,7 @@ pub use character_requirements::CharacterRequirements;
 mod clear_area;
 pub use clear_area::ClearArea;
 mod charge_window;
+pub(crate) mod classic_predecessors;
 pub use charge_window::{ChargePhase, ChargeWindow};
 mod clock;
 mod completed_quests;
@@ -1428,7 +1429,10 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
 }
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-    let callbacks = load()?;
+    let callbacks = load()?
+        .into_iter()
+        .filter(|callback| !classic_predecessors::includes(callback))
+        .collect::<Vec<_>>();
     extend_callbacks(catalogue, &callbacks)
 }
 

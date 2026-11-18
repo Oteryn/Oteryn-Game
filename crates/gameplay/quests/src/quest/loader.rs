@@ -249,6 +249,8 @@ fn admit_native_bindings(
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     super::npc_rules::attach_late_additions(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
+    super::world_callbacks::classic_predecessors::attach(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
 

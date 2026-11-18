@@ -49,9 +49,11 @@ impl ChargeWindow {
     }
 }
 
-pub(super) fn disjoint(left: &Callback, right: &Callback) -> bool {
-    let (Some(left), Some(right)) = (&left.effects.charge_window, &right.effects.charge_window)
-    else {
+pub(super) fn disjoint(left_callback: &Callback, right_callback: &Callback) -> bool {
+    let (Some(left), Some(right)) = (
+        &left_callback.effects.charge_window,
+        &right_callback.effects.charge_window,
+    ) else {
         return false;
     };
     let (phases, active) = match (left, right) {
@@ -59,9 +61,25 @@ pub(super) fn disjoint(left: &Callback, right: &Callback) -> bool {
         | (ChargeWindow::Spend { active, .. }, ChargeWindow::Charge { phases, .. }) => {
             (phases, active)
         }
+        (ChargeWindow::Spend { .. }, ChargeWindow::Spend { .. })
+            if left == right && same_tool_and_disjoint_storage(left_callback, right_callback) =>
+        {
+            return true;
+        }
         _ => return false,
     };
     left.group() == right.group() && phases.iter().all(|p| p.from != *active)
+}
+
+fn same_tool_and_disjoint_storage(left: &Callback, right: &Callback) -> bool {
+    left.quest == right.quest
+        && left.item_on_target == right.item_on_target
+        && left.storage.iter().any(|a| {
+            right
+                .storage
+                .iter()
+                .any(|b| a.track == b.track && (a.maximum < b.minimum || b.maximum < a.minimum))
+        })
 }
 
 pub(super) fn valid(callback: &Callback, charge: &ChargeWindow) -> bool {

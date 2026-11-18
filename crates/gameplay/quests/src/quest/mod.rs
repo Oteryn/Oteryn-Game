@@ -700,6 +700,12 @@ impl QuestStateCatalogue {
         callbacks: Vec<world_callbacks::Callback>,
     ) -> Result<Self, String> {
         world_callbacks::validate_callbacks(&callbacks)?;
+        use world_callbacks::classic_predecessors as classic;
+        let prior = callbacks
+            .iter()
+            .any(classic::includes)
+            .then(|| self.definition_hash(classic::QUEST))
+            .flatten();
         let mut catalogue = self.clone();
         for callback in callbacks
             .iter()
@@ -708,6 +714,9 @@ impl QuestStateCatalogue {
             catalogue = catalogue
                 .with_fixture_transition(world_callbacks::primary_transition(callback)?)
                 .map_err(|error| format!("{error:?}"))?;
+        }
+        if let Some(prior) = prior {
+            classic::retain(&mut catalogue, prior);
         }
         catalogue.world_fixture = Some(callbacks);
         Ok(catalogue)
