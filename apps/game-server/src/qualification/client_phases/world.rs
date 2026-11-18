@@ -3190,13 +3190,37 @@ async fn probe_step(
     direction: StepDirection,
     deadline: Option<tokio::time::Instant>,
 ) -> TestResult<oteryn_dev_client::StepOutcome> {
-    let Some(deadline) = deadline else {
-        return Ok(client.step(direction).await?);
-    };
-    approach_action(client, deadline, "spawn-step", async |client| {
-        Ok(client.step(direction).await?)
+    finish_started_probe_step(deadline, async { Ok(client.step(direction).await?) }).await
+}
+
+async fn finish_started_probe_step<T>(
+    deadline: Option<tokio::time::Instant>,
+    step: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    if probe_expired(deadline) {
+        return Err(SpawnProbeExpired.into());
+    }
+    // Once submitted, STEP must drain its result on the session's exchange
+    // deadline. The caller still owns the overall row deadline.
+    step.await
+}
+
+#[tokio::test(start_paused = true)]
+async fn qualification_gold_spawn_probe_drains_started_step_before_rotating() -> TestResult {
+    let now = tokio::time::Instant::now();
+    let deadline = now + Duration::from_millis(10);
+    let result = finish_started_probe_step(Some(deadline), async {
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        Ok("step result")
     })
-    .await
+    .await?;
+    assert_eq!(result, "step result");
+    let expired = finish_started_probe_step(Some(deadline), async {
+        Err::<(), _>("an expired probe must not submit another STEP".into())
+    })
+    .await;
+    assert!(expired.is_err_and(|error| error.is::<SpawnProbeExpired>()));
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -5826,6 +5850,10 @@ pub(super) async fn journeys(
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
+        if error.is::<provisioning::MovementReturnFailure>() {
+            wait_character_released(clients, 1).await?;
+            return sweep_result.and(multiplayer_result);
+        }
     }
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
@@ -5844,26 +5872,12 @@ pub(super) async fn journeys(
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
-    // M04 can leave this Character at its Newhaven home temple after death.
-    // First reach the nearest authored safe tile in the current component.
-    let at = return_to_protection_zone(&mut client, world).await?;
-    match reach_route(&mut client, world, at, |at| at == TOWN).await? {
-        Ok(back) => {
-            evidence(&format!("profile_return goal=fixture_town at={at:?}"));
-            walk(&mut client, world, &back).await?;
-        }
-        Err(failure) => {
-            let detail = home_temple_return(at, failure);
-            evidence(&detail);
-            // character_core's step/relogin phase plans from TOWN. Do not run it
-            // (or its dependent town phases) against a different island.
-            evidence(&format!(
-                "e2e_all scenario=M01.step-relogin status=FAIL seconds=0 evidence={detail} cause=precondition root=profile_return/fixture-town"
-            ));
-            provisioning::e2ef1_logout_for_return(&mut client).await?;
-            return Err(detail.into());
-        }
-    }
+    let Some(at) = core_profile_start(&mut client, world, true).await? else {
+        drop(client);
+        wait_character_released(clients, 1).await?;
+        return sweep_result.and(multiplayer_result);
+    };
+    evidence(&format!("profile_return goal=fixture_town at={at:?}"));
     client = character_core(client, clients, world).await?;
     client = include!("full_e2ef3_registration.rs");
     client = floor_journey(client, clients, world).await?;
@@ -6070,6 +6084,35 @@ fn idle_removal_requires_on_time_owner_release_without_a_loss_epoch() {
     ));
 }
 
+async fn core_profile_start(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    core: bool,
+) -> TestResult<Option<TilePos>> {
+    let result: TestResult<TilePos> = async {
+        let at = return_to_protection_zone(client, world).await?;
+        let back = reach_route(client, world, at, |at| at == TOWN)
+            .await?
+            .map_err(|failure| home_temple_return(at, failure))?;
+        walk(client, world, &back).await?;
+        Ok(at)
+    }
+    .await;
+    match result {
+        Ok(at) => Ok(Some(at)),
+        Err(error) => {
+            evidence(&format!("world_profile state=failed error={error}"));
+            if core {
+                evidence(&format!(
+                    "e2e_all scenario=M01.step-relogin status=FAIL seconds=0 evidence={error} cause=precondition root=profile_return/fixture-town"
+                ));
+            }
+            provisioning::e2ef1_logout_for_return(client).await?;
+            Ok(None)
+        }
+    }
+}
+
 async fn profile_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -6082,6 +6125,13 @@ async fn profile_journey(
     let model = map_journey::MapModel::load(world, bytes, &root)?;
     let client = connect_character(clients, 0x6e, 0).await?;
     let mut client = provisioning::provision(client, clients, 0).await?;
+    if core_profile_start(&mut client, world, false)
+        .await?
+        .is_none()
+    {
+        drop(client);
+        return wait_character_released(clients, 0).await;
+    }
     use client_spell_journey::ProtectionProbe;
     let (words, target_intent) = client_spell_journey::fixture_protection_spell()?;
     let pz = if world
@@ -8665,4 +8715,21 @@ mod review_spawn_tests {
         assert!(!creature_matches(&entity, "Rat"));
         Ok(())
     }
+}
+
+#[test]
+fn qualification_m07_checks_rope_before_walking_and_profile_start_isolated() -> TestResult {
+    let movement = include_str!("full_e2ef1.rs");
+    let (_, m07) = movement.split_once("async fn m07(").ok_or("M07 absent")?;
+    let (m07, _) = m07
+        .split_once("fn inventory_signature(")
+        .ok_or("M07 boundary absent")?;
+    assert!(m07.split_once("buy_rope(").is_some_and(|(preflight, _)| {
+        preflight.contains("CAPABILITY_ITEM_USE_V1") && preflight.contains("CapabilityNotSelected")
+    }));
+    let source = include_str!("world.rs");
+    assert!(m07.contains(".world_context_use(&payload)"));
+    assert!(source.contains("let Some(at) = core_profile_start("));
+    assert!(source.contains("return sweep_result.and(multiplayer_result);"));
+    Ok(())
 }

@@ -54,6 +54,17 @@ pub(super) async fn provision(
     let client = connect_character(clients, 0x91, index).await?;
     original::provision(client, clients, index).await
 }
+#[derive(Debug)]
+pub(super) struct MovementReturnFailure(Box<dyn std::error::Error>);
+
+impl std::fmt::Display for MovementReturnFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "movement row could not restore its origin: {}", self.0)
+    }
+}
+
+impl std::error::Error for MovementReturnFailure {}
+
 pub(super) mod e2ef1 {
     use super::*;
     use oteryn_dev_client::{DevClientSession, EntityDetail, EntityRef};
@@ -1616,6 +1627,15 @@ pub(super) mod e2ef1 {
         metadata: &oteryn_world_bundle::bundle::Visited,
     ) -> TestResult {
         use oteryn_protocol_oteryn::world_object::*;
+        checks.active = Some("rope-ascent");
+        for capability in [CAPABILITY_ITEM_USE_V1, CAPABILITY_WORLD_INTERACTION_V1] {
+            if !client.selected_capabilities().contains(&capability) {
+                return Err(
+                    oteryn_dev_client::SessionError::CapabilityNotSelected { capability }.into(),
+                );
+            }
+        }
+        checks.active = Some("carried-rope");
         let index = provisioning::item_index()?;
         let reference = provisioning::item_reference(&index, 3003)?;
         let carried_rope = |client: &DevClientSession| {
@@ -1633,6 +1653,7 @@ pub(super) mod e2ef1 {
         }
         let rope = carried_rope(client).ok_or("ordinary rope purchase did not deliver the rope")?;
         checks.pass("carried-rope", rope);
+        checks.active = Some("rope-ascent");
         // Production rope resolver's exact ground and top item source ids.
         let object = approach(
             client,
@@ -1655,10 +1676,7 @@ pub(super) mod e2ef1 {
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(|e| format!("rope intent: {e:?}"))?;
-        let result = client
-            .session_mut()
-            .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
-            .await?;
+        let result = client.session_mut().world_context_use(&payload).await?;
         if result.status != CommandStatus::Accepted
             || decode_use_result(&result.payload).map_err(|e| format!("rope result: {e:?}"))?
                 != UseDisposition::Committed
@@ -1829,31 +1847,34 @@ pub(super) mod e2ef1 {
             if durable && required.contains(&"relogin") {
                 checks.pass("relogin", saved);
             }
-            let mut recovered = false;
             let restored: TestResult = async {
-            let from = tile(client.world_spatial().actor_position)?;
-            let back = match reach_route(&mut client, world, from, |at| at == origin).await? {
-                Ok(back) => back,
-                Err(failure) => {
-                    let at = return_to_protection_zone(&mut client, world).await?;
-                    let detail = home_temple_return(at, failure);
-                    evidence(&detail);
-                    // A reachable safe return is not a lost session. The next row
-                    // starts its own lifecycle at this observed position; its real
-                    // setup commands must establish their own prerequisites.
-                    evidence(&format!(
-                        "E2EF1_ROW_RETURN row={row} status=FAIL next_origin={at:?} evidence={detail}"
-                    ));
-                    recovered = true;
-                    return Err(detail.into());
+                let from = tile(client.world_spatial().actor_position)?;
+                let back = match reach_route(&mut client, world, from, |at| at == origin).await? {
+                    Ok(back) => back,
+                    Err(_) => {
+                        let planner = travel::Planner::load(world, &bytes)?;
+                        travel::travel_to(
+                            &mut client,
+                            &planner,
+                            row,
+                            origin,
+                            &|at| at == origin,
+                            &mut travel::Passages::default(),
+                        )
+                        .await?;
+                        if actor_tile(&mut client)? != origin {
+                            return Err("row return did not reach its origin".into());
+                        }
+                        return Ok(());
+                    }
+                };
+                walk(&mut client, world, &back).await?;
+                if actor_tile(&mut client)? != origin {
+                    return Err("row return did not reach its origin".into());
                 }
-            };
-            walk(&mut client, world, &back).await?;
-            if actor_tile(&mut client)? != origin {
-                return Err("row return did not reach its origin".into());
+                Ok(())
             }
-            Ok(())
-            }.await;
+            .await;
             let passed = completed_row(
                 result.is_ok() && checks.complete(required),
                 durable,
@@ -1893,8 +1914,8 @@ pub(super) mod e2ef1 {
                 if passed { "PASS" } else { "FAIL" },
                 started.elapsed().as_secs_f64()
             ));
-            if !recovered {
-                restored?;
+            if let Err(error) = restored {
+                return Err(MovementReturnFailure(error).into());
             }
         }
         if failed {
