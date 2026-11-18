@@ -673,7 +673,7 @@ fn scenario_case(
     } else if name == super::super::shulgrax_flower_pattern::CASE {
         super::super::shulgrax_flower_pattern::world(&callback)?
     } else if super::super::zamulosh_monster_step::is_habitat(name) {
-        super::super::zamulosh_monster_step::habitat_world(&callback)?
+        super::super::zamulosh_monster_step::habitat_world(&callback, name)?
     } else if super::super::warzone_portal_cooldown::is_victory(name) {
         super::super::warzone_portal_cooldown::portal_world(&callback, name, trigger)?
     } else if death_replacement {

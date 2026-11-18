@@ -2246,7 +2246,7 @@ fn delayed_scene_capacity(
 }
 
 impl QuestSceneMutation {
-    fn position(&self) -> Option<TilePos> {
+    pub fn position(&self) -> Option<TilePos> {
         match self {
             Self::Restore { key, .. } | Self::Remove { key, .. } | Self::Replace { key, .. } => {
                 view::placement_of(*key).map(|(at, _)| at)

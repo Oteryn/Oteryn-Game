@@ -196,7 +196,14 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
         && callback.experience.is_none()
         && callback.monk_reward.is_none()
         && callback.effects.transform.is_none()
-        && callback.effects.magic.is_none()
+        && callback.effects.magic.as_ref().is_none_or(|magic| {
+            scene.delayed_open.is_some()
+                && scene.open.iter().any(|edit| {
+                    edit.position == magic.position
+                        && edit.remove.is_some()
+                        && edit.create.is_some()
+                })
+        })
         && callback.effects.facing.is_none()
         && callback.effects.item_reward.is_none()
         && callback.effects.outfit_reward.is_none()

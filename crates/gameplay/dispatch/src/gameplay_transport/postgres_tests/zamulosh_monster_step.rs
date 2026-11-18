@@ -6,6 +6,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 pub(super) const CASE: &str = "ferumbras-zamulosh-lovely-monster-step";
 pub(super) const BLOSSOM: &str = "first-dragon-fertility-blossom-step";
 pub(super) const HABITAT: &str = "ferumbras-zamulosh-grass-habitat";
+const MISSING_BASIN: &str = "ferumbras-zamulosh-grass-habitat-missing-basin";
 const STALE_HABITAT: &str = "ferumbras-zamulosh-grass-habitat-stale";
 const FRAZZLEMAW: &str = "oteryn:creature.lovely_frazzlemaw";
 const DEER: &str = "oteryn:creature.lovely_deer";
@@ -13,6 +14,7 @@ const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
 const PLANT: &str = "oteryn:creature.angry_plant";
 const MATCHED_CUE: &str = "That seemed correct!";
 const THUNDER: u16 = 73; // Crystal src/utils/utils_definitions.hpp:128.
+const ENERGY_AREA: u16 = 38; // Crystal src/utils/utils_definitions.hpp:93.
 // Mount the source UID on a tile in the finale fixture. Crystal selects its
 // appearance and UID, while the map asset determines the coordinates.
 const FLOWER: Position = Position {
@@ -109,8 +111,19 @@ fn zamulosh_grass_habitat_drops_the_whole_batch_when_one_terrain_revision_change
     })
 }
 
+#[test]
+fn zamulosh_grass_habitat_skips_the_absent_basin_and_its_cue() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(MISSING_BASIN, || {
+        super::quest_world_callbacks::scenario(MISSING_BASIN, HABITAT_LEVER, false)
+    })
+}
+
 pub(super) fn is_habitat(name: &str) -> bool {
-    matches!(name, HABITAT | STALE_HABITAT)
+    matches!(name, HABITAT | MISSING_BASIN | STALE_HABITAT)
 }
 
 pub(super) fn habitat_callback() -> TestResult<Callback> {
@@ -125,8 +138,9 @@ pub(super) fn habitat_callback() -> TestResult<Callback> {
         "trigger":"use","selector":{"position":HABITAT_LEVER,"action":34306,"appearance":9125},
         "lever":[9125,9126],"reversible":false,"passages":[],"storage":[],"offerings":[],
         "return_on_failure":false,
-        "effects":{"scene":{
-            "open":[{"position":BASIN,"remove":11114,"create":22196,"passable":true}],
+        "effects":{"magic":{"position":BASIN,"effect":ENERGY_AREA},"scene":{
+            "open":[{"position":BASIN,"remove":11114,"create":22196,"passable":true,
+                "allow_missing":true}],
             "close":[],"delayed_open":{"delay_ms":2000,"edits":delayed_edits,
                 "spawn":{"position":HABITAT_SPAWN,"creature":FRAZZLEMAW}}
         }},
@@ -138,8 +152,14 @@ pub(super) fn habitat_callback() -> TestResult<Callback> {
     Ok(callback)
 }
 
-pub(super) fn habitat_world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    let mut objects = vec![(BASIN, 11114)];
+pub(super) fn habitat_world(
+    callback: &Callback,
+    name: &str,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let mut objects = Vec::new();
+    if name != MISSING_BASIN {
+        objects.push((BASIN, 11114));
+    }
     objects.extend(HABITAT_TILES.map(|(position, _)| (position, PREVIOUS_TERRAIN)));
     let mut appearances = vec![22196];
     appearances.extend(HABITAT_TILES.map(|(_, appearance)| appearance));
@@ -191,8 +211,19 @@ pub(super) async fn exercise_habitat(
         .next_movement_decay_time()
         .ok_or("deferred terrain")?;
     assert!(due >= before + 2_000_000 && due <= owner.owner_now().get() + 2_000_000);
-    assert!(has(BASIN, 22196)?);
+    assert_eq!(has(BASIN, 22196)?, name != MISSING_BASIN);
     assert!(!has(BASIN, 11114)?);
+    assert_eq!(
+        map.facts
+            .movement_effects_since(0)
+            .into_iter()
+            .filter(
+                |(_, at, effect)| (at.x, at.y, at.floor) == (BASIN.x, BASIN.y, BASIN.floor)
+                    && *effect == ENERGY_AREA
+            )
+            .count(),
+        usize::from(name != MISSING_BASIN)
+    );
     let channel = owner.runtime.lock().await;
     let frazzlemaws = || -> TestResult<Vec<ExactActorRef>> {
         Ok(channel

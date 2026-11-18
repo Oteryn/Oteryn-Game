@@ -1650,7 +1650,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
-        if let Some(magic) = &callback.effects.magic {
+        if let Some(magic) = &callback.effects.magic
+            && match &projection {
+                // Crystal 201189f8, actions_habitat_grass.lua:448-452.
+                // An absent basin skips its transformation and visual cue.
+                Some(crate::map::facts::QuestCallbackProjection::DelayedScene {
+                    immediate,
+                    ..
+                }) => immediate
+                    .iter()
+                    .any(|edit| edit.position() == Some(tile(magic.position))),
+                _ => true,
+            }
+        {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
         }
