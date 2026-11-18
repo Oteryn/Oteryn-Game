@@ -186,15 +186,29 @@ fn scenario(case: &str, placement: Option<fn() -> TestResult<NpcPlacement>>) -> 
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *fixture)
                 .await?;
+            for advance in [
+                "UPDATE game_character_roots SET character_revision=2
+                 WHERE character_id=encode($1, 'hex')::uuid AND character_revision=1",
+                "UPDATE game_character_progression_state SET character_revision=2
+                 WHERE character_id=encode($1, 'hex')::uuid AND character_revision=1",
+            ] {
+                let advanced = sqlx::query(advance)
+                    .bind(gameplay.character_id.as_bytes().as_slice())
+                    .execute(&mut *fixture)
+                    .await?;
+                assert_eq!(advanced.rows_affected(), 1);
+            }
             sqlx::query(
                 "INSERT INTO game_character_quest_states(
                      character_id, quest_key, pinned_content_revision, definition_hash,
                      started_character_revision, committed_character_revision)
                  SELECT character_id, $1, content_revision, decode($2, 'hex'),
-                        character_revision, character_revision FROM game_character_roots",
+                        character_revision, character_revision FROM game_character_roots
+                 WHERE character_id=encode($3, 'hex')::uuid",
             )
             .bind(QUEST)
             .bind(BASE_DEFINITION)
+            .bind(gameplay.character_id.as_bytes().as_slice())
             .execute(&mut *fixture)
             .await?;
             fixture.commit().await?;
