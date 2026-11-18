@@ -847,11 +847,16 @@ async fn exercise_queen(
     );
     // Raise the persisted fixture to the authored threshold. This fixture has no vocation
     // build, so project the persisted level into the live fact used by dialogue preview.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("UPDATE game_character_progression_state SET level=$1 WHERE character_id=encode($2,'hex')::uuid")
         .bind(i64::from(KISS_LEVEL))
         .bind(fence.character_id.as_bytes().as_slice())
-        .execute(&h.pool)
+        .execute(&mut *tx)
         .await?;
+    tx.commit().await?;
     let progression = h
         .root
         .read_character_progression(owner.character, fence.character_id)
