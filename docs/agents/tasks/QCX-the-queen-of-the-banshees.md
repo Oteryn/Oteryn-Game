@@ -63,3 +63,19 @@ PG via shard (pgsplit build files applied on `5f5f96a04d817c96e928b988190f67a3d6
 The callback registry and SOURCE proof were regenerated with the existing authoring tools. The quest tree generator then refreshed only shared source-change provenance hashes in 28 generated definitions and their catalogue index. A structural comparison found no gameplay field changes in those records.
 
 The generated definitions are whole-shard inputs to several other derived catalogues and two authored-prop packets. Their generators refreshed the transitive SHA-256 references. A structured diff confirmed that every JSON value changed in the transitive regeneration differed only by a SHA-256, including the World prop inputs. Recompiling the World after that refresh produced the same corrected bundle digest.
+
+PG via shard (pgsplit build files applied on `7f9e51cc45a6fbdfeb4da897a26fbd9fa9e1f19c`) final runtime candidate, 3 passed and 0 failed in 129.51 s. The shared USE cases cover exact receipts, replay and refusal. The STEP cases cover the surface destination, the final-room door resets, and the two existing seal callbacks.
+
+| PostgreSQL case | Duration |
+| --- | ---: |
+| Stone Skin Amulet USE | 17.98 s |
+| Stealth Ring USE | 14.61 s |
+| Tower Shield USE | 10.47 s |
+| Giant Sword USE | 9.49 s |
+| Boots of Haste USE | 10.26 s |
+| Platinum Coins USE | 10.52 s |
+| Final forcefield STEP | 15.56 s |
+| Hidden Seal return STEP | 13.16 s |
+| Plague Seal flame STEP | 14.72 s |
+
+The same filter with the admin URL unset returned 3 successful route-less guards in 0.00 s. Quest authoring passed all 44 commands, including 269 schema cases. World pin-check verified 1 World. Cargo fmt and dispatch library Clippy with warnings denied both exited successfully.
