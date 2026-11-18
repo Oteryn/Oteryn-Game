@@ -8,7 +8,8 @@ use crate::gameplay_transport::connection::{AdmittedSession, FreshAdmissionAutho
 use crate::gameplay_transport::kill_reward::DrainOutcome;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::attack::{
-    AttackIntentDisposition, decode_attack_intent_result, encode_attack_target_intent,
+    AttackIntentDisposition, CAPABILITY_ATTACK_V1, decode_attack_intent_result,
+    encode_attack_target_intent,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::time::Duration;
@@ -229,7 +230,7 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(),
-            &[3, 6, 16],
+            &[3, 6, 16, CAPABILITY_ATTACK_V1],
         )
         .ok_or("combat capabilities")?;
     owner.clock_origin -= Duration::from_secs(10);
