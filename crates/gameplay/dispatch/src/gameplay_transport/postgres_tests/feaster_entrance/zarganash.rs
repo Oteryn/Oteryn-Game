@@ -6,7 +6,6 @@ use oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use std::sync::Arc;
 
-const BOSS: &str = "oteryn:creature.the_fear_feaster";
 const SOURCE: &str = "oteryn:quest-callback/feaster-zarganash-fixture";
 const TRANSITION: &str = "oteryn:quest-transition/native-kills/feaster-zarganash-fixture";
 const QUEST: &str = "oteryn:quest.feaster_of_souls_quest";
@@ -17,21 +16,37 @@ fn feaster_zarganash_death_credits_only_the_damaging_entrant() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::super::kill_reward_e2e::scenario_thread::run_async(exercise)
+    super::super::kill_reward_e2e::scenario_thread::run_async(|admin| exercise(admin, false))
 }
 
-fn catalogue() -> TestResult<QuestStateCatalogue> {
+#[test]
+fn feaster_pale_worm_death_delivers_outfit_and_beyonder_to_admitted_players() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::super::kill_reward_e2e::scenario_thread::run_async(|admin| exercise(admin, true))
+}
+
+fn catalogue(
+    boss: &str,
+    pale_worm: bool,
+    x: i32,
+    y: i32,
+    floor: i16,
+) -> TestResult<QuestStateCatalogue> {
+    let cell = |dx| serde_json::json!({"x":x+dx,"y":y,"floor":-floor});
     let source = serde_json::json!({
-        "key":SOURCE,"quest":QUEST,"trigger":"use","selector":{"position":{"x":1,"y":0,"floor":-7},"ordinal":0},
+        "key":SOURCE,"quest":QUEST,"trigger":"use","selector":{"position":cell(-2),"ordinal":0},
         "lever":null,"reversible":false,"passages":[],"storage":[],"teleport":null,
         "effects":{"encounter":{
             "minimum_level":250,
             "players":[
-                {"from":{"x":1,"y":0,"floor":-7},"to":{"x":3,"y":0,"floor":-7}},
-                {"from":{"x":2,"y":0,"floor":-7},"to":{"x":4,"y":0,"floor":-7}}
+                {"from":cell(-2),"to":cell(0)},
+                {"from":cell(-1),"to":cell(1)}
             ],
-            "monsters":[{"position":{"x":5,"y":0,"floor":-7},"creature":BOSS}],
-            "room_min":{"x":3,"y":0,"floor":-7},"room_max":{"x":5,"y":0,"floor":-7}
+            "monsters":[{"position":cell(2),"creature":boss}],
+            "room_min":cell(0),"room_max":cell(2)
         }},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:actions_bosses_killed.lua:2-18"]
     });
@@ -39,7 +54,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
         "oteryn:quest-progress/feaster-fixture/gate",
         "oteryn:quest-progress/feaster-fixture/count",
     ];
-    let input = serde_json::json!({"schema":1,"quests":[{
+    let mut input = serde_json::json!({"schema":1,"quests":[{
         "quest":QUEST,"recipe_sha256":format!("{:x}", <sha2::Sha256 as sha2::Digest>::digest(SOURCE)),
         "sources":["Crystal Feaster death qualification"],
         "tracks":[
@@ -49,18 +64,28 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
         "stages":[
             {"key":"entry","completes":false,"trigger":{"kind":"map_use","callback":source}},
             {"key":"kill","completes":false,"trigger":{"kind":"kill","counter":{
-                "key":TRANSITION,"creature":BOSS,"track":tracks[1],"gate":tracks[0],
-                "gate_value":1,"maximum":1,"encounter_source":SOURCE,"require_damage":true
+                "key":TRANSITION,"creature":boss,"track":tracks[1],"gate":tracks[0],
+                "gate_value":1,"maximum":1,"encounter_source":SOURCE,"require_damage":!pale_worm
             }}}
         ]
     }]});
+    if pale_worm {
+        let counter = &mut input["quests"][0]["stages"][1]["trigger"]["counter"];
+        counter["pale_worm_reward"] = true.into();
+        counter["death_area"] = serde_json::json!({
+            "minimum":[x,y,i32::from(floor)],"maximum":[x+2,y,i32::from(floor)]
+        });
+    }
     let bindings = Bindings::parse(&serde_json::to_vec(&input)?)?;
     Ok(bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?)
 }
 
-async fn exercise(admin: String) -> TestResult {
-    let catalogue = Arc::new(catalogue()?);
-    let hash = catalogue.definition_hash(QUEST).ok_or("definition")?;
+async fn exercise(admin: String, pale_worm: bool) -> TestResult {
+    let boss = if pale_worm {
+        "oteryn:creature.the_pale_worm"
+    } else {
+        "oteryn:creature.the_fear_feaster"
+    };
     let h = Harness::create_with_admission_seed(admin, "feaster_zarganash", true, false).await?;
     prepare_current_session(&h).await?;
     h.seed_appearance_observer().await?;
@@ -80,7 +105,10 @@ async fn exercise(admin: String) -> TestResult {
     let active = controller.active().ok_or("active generation")?;
     let room = activated.qualified_room().clone();
     let (pin, cells, _, _) = activated.into_channel_parts();
-    let deps = Dependencies::with_content_and_capacity(pin, room, initial.spells.clone(), 3)?;
+    let start = pin.entry_start();
+    let catalogue = Arc::new(catalogue(boss, pale_worm, start.x, start.y, start.floor)?);
+    let hash = catalogue.definition_hash(QUEST).ok_or("definition")?;
+    let deps = Dependencies::with_content_and_capacity(pin, room, initial.spells.clone(), 4)?;
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = (&cells).into();
@@ -121,24 +149,24 @@ async fn exercise(admin: String) -> TestResult {
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
-    {
+    for scoped in [false, true] {
         let mut runtime = deps.runtime.lock().await;
-        let policy = runtime.companion_policy(BOSS).map_err(debug)?;
+        let policy = runtime.companion_policy(boss).map_err(debug)?;
         let target = runtime
             .admit_encounter_actor(
-                BOSS,
+                boss,
                 policy.maximum_health,
                 MovementLocalPosition {
-                    x: 5,
-                    y: 0,
-                    floor: 7,
+                    x: start.x + 2,
+                    y: start.y,
+                    floor: start.floor,
                 },
             )
             .map_err(debug)?;
         runtime
-            .install_creature_policy(target, BOSS)
+            .install_creature_policy(target, boss)
             .map_err(debug)?;
-        {
+        if scoped {
             let mut capture = queue.1.lock().map_err(|_| "capture lock")?;
             let admitted = capture
                 .prepare_encounter(
@@ -156,10 +184,13 @@ async fn exercise(admin: String) -> TestResult {
             .commit_damage_for_bound_attacker(
                 target,
                 actor,
-                CommandRef::new(session, CommandId::new(90).map_err(debug)?),
+                CommandRef::new(
+                    session,
+                    CommandId::new(if scoped { 91 } else { 90 }).map_err(debug)?,
+                ),
                 0,
                 OwnerDamageCommand {
-                    target: BOSS.as_bytes(),
+                    target: boss.as_bytes(),
                     occurrence: session.as_bytes(),
                     binding: b"feaster-zarganash",
                     damage: policy.maximum_health,
@@ -185,9 +216,20 @@ async fn exercise(admin: String) -> TestResult {
             now,
             Some(observed),
         );
+        drop(runtime);
+        owner.drain_kill_rewards(session).await;
+        if !scoped {
+            let unrelated: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+            )
+            .bind(TRANSITION)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(unrelated, 0);
+            owner.refresh_quest_session(session, false).await;
+        }
     }
-    owner.drain_kill_rewards(session).await;
-    let recipients: Vec<String> = sqlx::query_scalar(
+    let mut recipients: Vec<String> = sqlx::query_scalar(
         "SELECT replace(character_id::text, '-', '') FROM game_character_quest_receipts WHERE transition_key=$1"
     ).bind(TRANSITION).fetch_all(&h.pool).await?;
     let expected: String = fence
@@ -196,7 +238,19 @@ async fn exercise(admin: String) -> TestResult {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect();
-    assert_eq!(recipients, [expected]);
+    if pale_worm {
+        recipients.sort();
+        let observer_id: String = id(101).iter().map(|byte| format!("{byte:02x}")).collect();
+        let mut expected = [expected, observer_id];
+        expected.sort();
+        assert_eq!(recipients, expected);
+        let grants: (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key='oteryn:outfit.poltergeist/quest-grant/0'),                     (SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/beyonder')"
+        ).fetch_one(&h.pool).await?;
+        assert_eq!(grants, (2, 2));
+    } else {
+        assert_eq!(recipients, [expected]);
+    }
     drop(authority);
     drop(seal);
     h.cleanup().await
