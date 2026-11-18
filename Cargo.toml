@@ -208,3 +208,11 @@ overflow-checks = true
 opt-level = 2
 debug-assertions = true
 overflow-checks = true
+
+# The dispatch lib-test crate exceeds 16 GiB during codegen with the default
+# profile. Keep 256 codegen units while dropping line tables and incremental
+# state for this package's test profile.
+[profile.test.package.oteryn-gameplay-dispatch]
+debug = 0
+incremental = false
+codegen-units = 256

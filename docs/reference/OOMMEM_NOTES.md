@@ -215,8 +215,11 @@ warm dependencies. The scratch Cargo config applies only to
 `incremental = false`, and `codegen-units = 256`. The verbose rustc
 command confirms these settings. Its LLVM coordinator appeared with a
 14,621,092 KiB high-water mark. The first codegen pass reached
-16,340,144 KiB. At 938 s the compiler had emitted 98 objects and the
-cgroup OOM-kill counter had not moved. The build was still active.
+16,340,144 KiB. The build and link completed in 1,296.471 s with no
+additional OOM kill. The resulting `cargo test -- --list` output
+contains 4,341 lines and lists all 4,339 tests. This is the first
+package-only trial to produce the complete dispatch executable.
+The two-job measurement and hosted-runner margin are still open.
 
 ## Hosted build scope
 
