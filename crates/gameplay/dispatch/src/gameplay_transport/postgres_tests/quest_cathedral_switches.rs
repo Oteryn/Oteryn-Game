@@ -83,7 +83,20 @@ pub(super) async fn exercise(
     member: &mut AdmittedSession,
     map: &BundleMap,
 ) -> TestResult {
-    let bindings = world_callbacks::load_with_source_fixture(&source_bindings()?)?;
+    let mut source = source_bindings()?;
+    // Another legal StepIn on the same tile cannot expose the raw teleport.
+    // This fixture-only cue selects the retained ground beneath the portal.
+    source.push(serde_json::from_value(json!({
+        "key": "oteryn:quest-callback/cathedral-test-ground-cue",
+        "quest": QUEST,
+        "trigger": "step_in",
+        "selector": {"native":{"position":PORTAL,"ordinal":0,"appearance":410}},
+        "reversible": false, "return_on_failure": false,
+        "passages": [], "storage": [], "offerings": [],
+        "effects": {"magic":{"position":PORTAL,"effect":11}},
+        "sources": [SOURCE]
+    }))?);
+    let bindings = world_callbacks::load_with_source_fixture(&source)?;
     assert!(owner.states.quest_callbacks.fixture.set(bindings).is_ok());
     let actor = member.runtime_actor.ok_or("Cathedral switch operator")?;
     let session = member.game_session_id;

@@ -1346,7 +1346,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return entered;
         };
         let cause = QuestCause::Step(command);
-        let selected = (0..base.depths().iter().filter(|d| **d == 0).count())
+        let mut selected = (0..base.depths().iter().filter(|d| **d == 0).count())
             .filter_map(|o| {
                 let key = placement_key(at, u8::try_from(o).ok()?)?;
                 if map.facts.base_hidden(key) {
@@ -1365,6 +1365,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .flatten()
             .collect::<Vec<_>>();
+        // An exact authored portal owns this transfer even when another stack
+        // entry on the tile also has a StepIn callback.
+        if selected.len() > 1
+            && selected
+                .iter()
+                .any(|(callback, _)| callback.effects.native_portal_destination.is_some())
+        {
+            selected.retain(|(callback, _)| callback.effects.native_portal_destination.is_some());
+        }
         let mut selected = if selected.len() > 1
             && selected.iter().enumerate().all(|(i, (left, _))| {
                 selected[..i]
@@ -1709,9 +1718,9 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// A conditional source callback owns the portal only when its full native binding
-/// matches and callback selection at this tile is unambiguous. Ordinary step proofs
-/// still enforce entry collision, doors, pacing, occupancy and protection-zone rules.
+/// An exact authored portal binding suppresses raw movement before StepIn
+/// resolves the transfer. Legacy carried-item portals also require an
+/// unambiguous callback. Ordinary step proofs still apply.
 pub(super) struct CallbackPortals<'a> {
     pub inner: &'a dyn crate::map::floor::CellBlocker,
     pub map: Option<&'a BundleMap>,
@@ -1735,10 +1744,26 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
         }) else {
             return false;
         };
-        if !self.callbacks.iter().any(|c| {
-            c.trigger == Trigger::StepIn
-                && native_portal_binding(c).is_some_and(|binding| tile(binding.position) == at)
-        }) {
+        let mut has_legacy_portal = false;
+        for callback in self
+            .callbacks
+            .iter()
+            .filter(|c| c.trigger == Trigger::StepIn)
+        {
+            let Some(binding) =
+                native_portal_binding(callback).filter(|binding| tile(binding.position) == at)
+            else {
+                continue;
+            };
+            if callback.effects.native_portal_destination.is_none() {
+                has_legacy_portal = true;
+            } else if callback.actor_kind == world_callbacks::ActorKind::Player
+                && placement_key(at, binding.ordinal).is_some_and(|key| matches(map, callback, key))
+            {
+                return true;
+            }
+        }
+        if !has_legacy_portal {
             return false;
         }
         let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
