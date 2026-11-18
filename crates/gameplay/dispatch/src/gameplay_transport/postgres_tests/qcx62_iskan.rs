@@ -79,9 +79,17 @@ pub(super) fn catalogue(native: &QuestStateCatalogue) -> TestResult<QuestStateCa
                 &["So, do you want a passage to Nibelor my friend?"], vec![topic(2)]),
             rule("passage-before-report", &["passage"], None, vec![admitted(), guard(QUESTLINE, "lt", 3)],
                 &["Do you want to Nibelor?"], vec![topic(2)]),
+            rule("mission", &["mission"], None, vec![admitted(), guard(QUESTLINE, "eq", 1)],
+                &["Well, one of the boys has run away. I think he got the scent of some beast. He's young and inexperienced so I can't blame the cub ...",
+                  "I would like you to see after him. He should be somewhere north west of the town. He is probably marking his territory so you should be able to find his trace. Are you willing to do that?"],
+                vec![topic(1)]),
             rule("report", &["mission"], None, vec![admitted(), guard(QUESTLINE, "eq", 2)],
                 &["You are a friend of mine and the boys now. I tell you something. If you ever need to go to the isle of Nibelor, just ask me for a {passage}."],
                 vec![set(QUESTLINE, 3), set(MISSION, 3), topic(0)]),
+            rule("mission-confirm", &["yes"], Some(&[1]), vec![admitted(), guard(QUESTLINE, "eq", 1)],
+                &["That's surprising. Take a piece of meat. If you find the boy, feed it to him. That will give him enough strength and incentive to return to his pack ...",
+                  "Talk to him by calling his name 'Sniffler' and tell him you got meat for him. After he has eaten the meat, return here to talk to me about your mission."],
+                vec![set(QUESTLINE, 1), set(MISSION, 1), topic(0)]),
             rule("passage-confirm", &["yes"], Some(&[2]), vec![admitted(), guard(QUESTLINE, "ge", 3)], &[],
                 vec![json!({"kind":"teleport", "position": LANDING}),
                     json!({"kind":"magic_effect", "effect":"CONST_ME_TELEPORT"}), topic(0)]),
@@ -107,7 +115,7 @@ pub(super) async fn exercise(
         .await
         .map_err(|()| "fence")?
         .ok_or("fence")?;
-    import_track(h, fence.character_id.as_bytes().as_slice(), QUESTLINE, 2).await?;
+    import_track(h, fence.character_id.as_bytes().as_slice(), QUESTLINE, 1).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -116,7 +124,7 @@ pub(super) async fn exercise(
     classic_quests::talk(owner, admitted, iskan, 19201, "mission").await?;
     assert_eq!(
         classic_quests::progress(owner, admitted, authority, QUESTLINE).await?,
-        2
+        1
     );
 
     import_track(h, fence.character_id.as_bytes().as_slice(), BARBARIAN, 8).await?;
@@ -135,7 +143,21 @@ pub(super) async fn exercise(
         0
     );
 
-    let report = classic_quests::talk(owner, admitted, iskan, 19204, "mission").await?;
+    let request = classic_quests::talk(owner, admitted, iskan, 19204, "mission").await?;
+    assert!(request.iter().any(|line| line.contains("run away")));
+    let instructions = classic_quests::talk(owner, admitted, iskan, 19205, "yes").await?;
+    assert!(instructions.iter().any(|line| line.contains("Sniffler")));
+    assert_eq!(
+        classic_quests::progress(owner, admitted, authority, MISSION).await?,
+        1
+    );
+
+    // Sniffler's successful report was earned outside this conversation.
+    import_track(h, fence.character_id.as_bytes().as_slice(), QUESTLINE, 2).await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let report = classic_quests::talk(owner, admitted, iskan, 19206, "mission").await?;
     assert!(report.iter().any(|line| line.contains("friend of mine")));
     assert_eq!(
         classic_quests::progress(owner, admitted, authority, QUESTLINE).await?,
@@ -145,8 +167,8 @@ pub(super) async fn exercise(
         classic_quests::progress(owner, admitted, authority, MISSION).await?,
         3
     );
-    classic_quests::talk(owner, admitted, iskan, 19205, "passage").await?;
-    classic_quests::talk(owner, admitted, iskan, 19206, "yes").await?;
+    classic_quests::talk(owner, admitted, iskan, 19207, "passage").await?;
+    classic_quests::talk(owner, admitted, iskan, 19208, "yes").await?;
 
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let placed = owner
@@ -178,7 +200,9 @@ async fn import_track(h: &Harness, character: &[u8], track: &str, value: i64) ->
         "INSERT INTO game_character_quest_tracks
          (character_id,track_key,quest_key,value,committed_character_revision)
          SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots
-         WHERE character_id=encode($1,'hex')::uuid",
+         WHERE character_id=encode($1,'hex')::uuid
+         ON CONFLICT(character_id,track_key) DO UPDATE SET
+         value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision",
     )
     .bind(character)
     .bind(track)
