@@ -1029,7 +1029,7 @@ async fn exercise_rabbit(
         .race
         .clone()
         .ok_or("rabbit race")?;
-    let corpse = mint_corpse(owner, h, native, 6017, Some(race), 900).await?;
+    let corpse = mint_corpse(owner, h, native, 6017, Some(race.clone()), 900).await?;
     let command_id = draw_command(
         native,
         fence.game_session_id,
@@ -1044,7 +1044,7 @@ async fn exercise_rabbit(
         item_fence: Some(fence),
     };
     let intent = skinning_intent()?;
-    let attempt = |tool| {
+    let attempt = |corpse, command, tool| {
         owner.use_cooking_conversion(
             actor,
             command,
@@ -1053,18 +1053,18 @@ async fn exercise_rabbit(
             Some(ItemKey::Instance(corpse)),
         )
     };
-    let body = || async {
+    let body = |corpse: [u8; 16]| async move {
         sqlx::query_scalar::<_, String>("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(corpse.as_slice()).fetch_one(&h.pool).await
     };
     assert_eq!(
-        attempt(obsidian_knife)
+        attempt(corpse, command, obsidian_knife)
             .await
             .ok_or("rabbit refusal")?
             .disposition,
         UseDisposition::NothingToUse
     );
-    assert_eq!(body().await?, "oteryn:item.tibia.i6017");
+    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i6017");
     assert!(matches!(
         owner.states.chat.drain(session).as_slice(),
         [ChatLine::Private { text, .. }]
@@ -1073,9 +1073,9 @@ async fn exercise_rabbit(
 
     age_rabbit_fixture(h, corpse, 11_000).await?;
     owner.drain_source_item_deadlines().await;
-    assert_eq!(body().await?, "oteryn:item.tibia.i4301");
+    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
     assert_eq!(
-        attempt(obsidian_knife)
+        attempt(corpse, command, obsidian_knife)
             .await
             .ok_or("rabbit refusal")?
             .disposition,
@@ -1094,14 +1094,14 @@ async fn exercise_rabbit(
         .execute(&mut *tx).await?;
     tx.commit().await?;
     assert!(
-        attempt(stake)
+        attempt(corpse, command, stake)
             .await
             .is_none_or(|outcome| outcome.disposition != UseDisposition::Committed)
     );
-    assert_eq!(body().await?, "oteryn:item.tibia.i4301");
+    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
     for _ in 0..2 {
         assert_eq!(
-            attempt(kitchen_knife)
+            attempt(corpse, command, kitchen_knife)
                 .await
                 .ok_or("kitchen knife rabbit USE")?
                 .disposition,
@@ -1109,7 +1109,7 @@ async fn exercise_rabbit(
             "Crystal's kitchen knife action can skin a mature rabbit"
         );
     }
-    assert_eq!(body().await?, "oteryn:item.tibia.i4302");
+    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
     assert!(matches!(
         owner.states.chat.drain(session).as_slice(),
         [ChatLine::Private { text, .. }]
@@ -1123,7 +1123,7 @@ async fn exercise_rabbit(
         .use_cooking_conversion(
             actor,
             retry,
-            intent,
+            intent.clone(),
             Some(ItemKey::Instance(id(kitchen_knife))),
             Some(ItemKey::Instance(corpse)),
         )
@@ -1159,7 +1159,64 @@ async fn exercise_rabbit(
         .await
         .next_item_deadline_pass_us = 0;
     owner.drain_source_item_deadlines().await;
-    assert_eq!(body().await?, "oteryn:item.tibia.i4303");
+    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4303");
+    // With the mission finished, only the active Lucky Loop track admits skinning.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_character_quest_tracks SET value=2 WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01")
+        .execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_quest_tracks VALUES(encode($1,'hex')::uuid,$2,$3,1,2)")
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(
+            "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01",
+        )
+        .bind("oteryn:quest.rottin_wood_and_the_married_men_quest")
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+
+    let corpse = mint_corpse(owner, h, native, 6017, Some(race), 901).await?;
+    age_rabbit_fixture(h, corpse, 11_000).await?;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .next_item_deadline_pass_us = 0;
+    owner.drain_source_item_deadlines().await;
+    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
+    let failure = UseCommand {
+        command_id: draw_command(
+            native,
+            session,
+            corpse,
+            350_000_000,
+            1_000_000_000,
+            command_id + 2,
+        )?,
+        ..command
+    };
+    assert_eq!(
+        attempt(corpse, failure, obsidian_knife)
+            .await
+            .ok_or("Lucky Loop rabbit USE")?
+            .disposition,
+        UseDisposition::Committed,
+        "a failed roll spends the corpse without minting feet"
+    );
+    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
+    assert!(matches!(
+        owner.states.chat.drain(session).as_slice(),
+        [ChatLine::Private { text, .. }]
+            if text.starts_with("Your attempt to skin the rabbit failed.")
+    ));
+    let feet_after_failure: i64 = sqlx::query_scalar("SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i12172' AND lifecycle=1")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(feet_after_failure, feet);
     Ok(())
 }
 
