@@ -331,7 +331,44 @@ pub enum EncounterPhase {
         exit: Position,
         north_gate: Position,
         north_arrival: Position,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        passages: Option<ZelosPassages>,
     },
+}
+
+/// Crystal 201189f grave_danger_king_zelos.lua:309–350.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ZelosPassages {
+    pub pairs: [[Position; 2]; 8],
+    pub corners: [Position; 4],
+}
+
+impl ZelosPassages {
+    pub fn routes(self, entrance: Position) -> Option<[(Position, Position); 20]> {
+        let mut routes = [(entrance, entrance); 20];
+        for ([first, second], legs) in self.pairs.into_iter().zip(routes.chunks_exact_mut(2)) {
+            for ((from, across), leg) in [(first, second), (second, first)].into_iter().zip(legs) {
+                let dx = (i32::from(across.x) - i32::from(from.x)).signum();
+                let dy = (i32::from(across.y) - i32::from(from.y)).signum();
+                if from.floor != across.floor || from == across {
+                    return None;
+                }
+                *leg = (
+                    from,
+                    Position {
+                        x: u16::try_from(i32::from(across.x) + dx).ok()?,
+                        y: u16::try_from(i32::from(across.y) + dy).ok()?,
+                        floor: across.floor,
+                    },
+                );
+            }
+        }
+        for (corner, route) in self.corners.into_iter().zip(&mut routes[16..]) {
+            *route = (corner, entrance);
+        }
+        Some(routes)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -898,11 +935,24 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 if encounter.monsters.len() != 2 || !pos(exit) || in_room(exit)
                     || !fight.into_iter().all(|at| pos(at) && in_room(at))
                     || fight.into_iter().collect::<BTreeSet<_>>().len() != fight.len())
-            || matches!(encounter.phase, Some(EncounterPhase::GraveDangerZelos { exit, north_gate, north_arrival })
-                if encounter.monsters.len() < 5 || !pos(exit) || in_room(exit)
-                    || !pos(north_gate) || !in_room(north_gate)
-                    || !pos(north_arrival) || !in_room(north_arrival)
-                    || north_gate == north_arrival)
+            || matches!(encounter.phase, Some(EncounterPhase::GraveDangerZelos { exit, north_gate, north_arrival, passages })
+            if encounter.monsters.len() < 5 || !pos(exit) || in_room(exit)
+                || !pos(north_gate) || !in_room(north_gate)
+                || !pos(north_arrival) || !in_room(north_arrival)
+                || north_gate == north_arrival
+                || passages.is_some_and(|passages| {
+                    let Some(entrance) = encounter.players.first().map(|player| player.to) else {
+                        return true;
+                    };
+                    let Some(routes) = passages.routes(entrance) else {
+                        return true;
+                    };
+                    let mut triggers = BTreeSet::from([north_gate]);
+                    !routes.iter().all(|&(from, to)| {
+                        from != to && pos(from) && pos(to) && in_room(from) && in_room(to)
+                            && triggers.insert(from)
+                    }) || routes.iter().any(|&(_, to)| triggers.contains(&to))
+                }))
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
             || (unique_to.len() != encounter.players.len() && !source_party)

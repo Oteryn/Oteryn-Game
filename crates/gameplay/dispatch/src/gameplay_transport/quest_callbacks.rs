@@ -1281,7 +1281,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
         if let Some(landed) = self
-            .step_zelos_north_gate(actor, session, origin, entered)
+            .step_zelos_vortex(actor, session, origin, entered)
             .await
         {
             return landed;

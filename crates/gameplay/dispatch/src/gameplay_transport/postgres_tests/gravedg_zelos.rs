@@ -37,6 +37,7 @@ pub(super) fn configure(callback: &mut Callback) -> TestResult {
             y: 116,
             floor: -7,
         },
+        passages: None,
         north_arrival: Position {
             x: 115,
             y: 114,

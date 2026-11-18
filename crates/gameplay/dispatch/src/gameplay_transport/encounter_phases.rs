@@ -36,6 +36,7 @@ pub(super) struct ActivePhase {
 struct TimedRoom {
     exit: MovementLocalPosition,
     north_vortex: Option<(MovementLocalPosition, MovementLocalPosition)>,
+    corridors: Vec<(MovementLocalPosition, MovementLocalPosition)>,
     min: MovementLocalPosition,
     max: MovementLocalPosition,
     lever: PhaseLever,
@@ -212,7 +213,7 @@ impl Registry {
             .min()
     }
 
-    fn north_gate(
+    fn zelos_vortex(
         &self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
@@ -225,11 +226,19 @@ impl Registry {
                 return None;
             };
             let (north_gate, north_arrival) = room.north_vortex?;
-            (north_gate == at && zelos.is_current(runtime)).then(|| {
-                zelos
-                    .north_gate_open(runtime, actor, session, now)
-                    .then_some(north_arrival)
-            })
+            if !zelos.is_current(runtime) || zelos.timeout_participants(now).is_some() {
+                return None;
+            }
+            if north_gate == at {
+                return Some(
+                    zelos
+                        .north_gate_open(runtime, actor, session, now)
+                        .then_some(north_arrival),
+                );
+            }
+            room.corridors
+                .iter()
+                .find_map(|&(from, to)| (from == at).then_some(Some(to)))
         })
     }
 
@@ -420,6 +429,7 @@ pub(super) fn bind(
         Ok(TimedRoom {
             exit: local(exit),
             north_vortex,
+            corridors: Vec::new(),
             min: local(encounter.room_min),
             max: local(encounter.room_max),
             lever: PhaseLever {
@@ -478,10 +488,32 @@ pub(super) fn bind(
             exit,
             north_gate,
             north_arrival,
+            passages,
         }) => {
             let gate = local(north_gate);
             let arrival = local(north_arrival);
-            let room = make_room(exit, Some((gate, arrival)))?;
+            let mut room = make_room(exit, Some((gate, arrival)))?;
+            if let Some(passages) = passages {
+                let entrance = encounter
+                    .players
+                    .first()
+                    .ok_or(CarrierError::PlanConflict)?
+                    .to;
+                let routes = passages
+                    .routes(entrance)
+                    .ok_or(CarrierError::PlanConflict)?;
+                for (from, to) in routes {
+                    let from = local(from);
+                    let to = local(to);
+                    if !room.contains(from)
+                        || !room.contains(to)
+                        || !placement(&cells, runtime, from)
+                    {
+                        return Err(CarrierError::PlanConflict);
+                    }
+                    room.corridors.push((from, to));
+                }
+            }
             if room.contains(room.exit)
                 || !room.contains(gate)
                 || !room.contains(arrival)
@@ -862,8 +894,8 @@ fn push_osam_adjacent(
 }
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
-    /// Crystal 201189f grave_danger_king_zelos.lua:352–374.
-    pub(super) async fn step_zelos_north_gate(
+    /// Crystal 201189f grave_danger_king_zelos.lua:309–374.
+    pub(super) async fn step_zelos_vortex(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
@@ -874,7 +906,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        let arrival = states.encounter_phases.north_gate(
+        let arrival = states.encounter_phases.zelos_vortex(
             &runtime,
             actor,
             session,
