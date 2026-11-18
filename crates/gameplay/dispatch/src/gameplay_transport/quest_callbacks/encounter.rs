@@ -291,6 +291,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         }
         if let Some(wave) = wave {
+            if let Some(key) = wave
+                .victory
+                .as_ref()
+                .and_then(|win| win.achievement.as_deref())
+                && !matches!(
+                    self.achievements.lookup(key),
+                    crate::durability::account_achievement::AchievementCatalogueLookup::Earnable { .. }
+                )
+            {
+                return UseDisposition::Rejected;
+            }
             if [false, true]
                 .into_iter()
                 .filter_map(|victory| wave.credit(victory))

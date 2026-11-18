@@ -97,6 +97,16 @@ fn quest_use_refuses_a_wave_room_with_an_unreachable_timeout_exit() -> TestResul
 }
 
 #[test]
+fn quest_use_refuses_an_unknown_victory_achievement_before_relocation() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-unknown-victory-achievement", move || {
+        scenario(admin, Case::UnknownAchievement)
+    })
+}
+
+#[test]
 fn quest_step_admits_guarded_survival_trial_and_credits_at_deadline() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -167,6 +177,7 @@ enum Case {
     EarthStep,
     Retaliation,
     UnreachableExit,
+    UnknownAchievement,
     WorldCredit,
 }
 
@@ -177,7 +188,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         callback.key = "oteryn:quest-callback/fixture/quest-spawn".into();
         let initial_storage = std::mem::take(&mut callback.storage);
         callback.requires_world_admission = false;
-        let victory = matches!(case, Case::Victory | Case::VictoryWithoutProgress);
+        let victory = matches!(case, Case::Victory | Case::VictoryWithoutProgress | Case::UnknownAchievement);
         let credit_stage = i64::from(matches!(case, Case::VictoryWithoutProgress));
         let credit = || WaveCredit::Bound {
             key: CREDIT.into(),
@@ -220,7 +231,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
                     EXIT
                 },
                 timeout_credit: match case {
-                    Case::Victory | Case::VictoryWithoutProgress => None,
+                    Case::Victory | Case::VictoryWithoutProgress | Case::UnknownAchievement => None,
                     Case::WorldCredit => Some(WaveCredit::Reference(CREDIT.into())),
                     _ => Some(credit()),
                 },
@@ -229,7 +240,11 @@ fn scenario(admin: String, case: Case) -> TestResult {
                     creature: CAVE_RAT.into(),
                     exit: VICTORY_EXIT,
                     credit: Some(credit()),
-                    achievement: Some(CHAMPION.into()),
+                    achievement: Some(if matches!(case, Case::UnknownAchievement) {
+                        "oteryn:achievement/unregistered_wave_victory"
+                    } else {
+                        CHAMPION
+                    }.into()),
                 }),
                 eject_room: false,
                 stay_at_stations: false,
@@ -381,7 +396,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        if matches!(case, Case::Waves | Case::Victory | Case::VictoryWithoutProgress | Case::SurvivalStep | Case::Stations | Case::UnreachableExit | Case::WorldCredit) {
+        if matches!(case, Case::Waves | Case::Victory | Case::VictoryWithoutProgress | Case::SurvivalStep | Case::Stations | Case::UnreachableExit | Case::UnknownAchievement | Case::WorldCredit) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback, matches!(case, Case::WorldCredit))?));
         } else if matches!(case, Case::Retaliation) {
             owner.quest_catalogue = Some(std::sync::Arc::new(retaliation_catalogue(&callback)?));
@@ -441,13 +456,13 @@ fn scenario(admin: String, case: Case) -> TestResult {
             Case::Periodic => periodic_scenario(&owner).await?,
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
             Case::Retaliation => retaliation_scenario(&owner, &mut admitted, deps.actor).await?,
-            Case::UnreachableExit | Case::WorldCredit => {
+            Case::UnreachableExit | Case::UnknownAchievement | Case::WorldCredit => {
                 let peer = stage_peer(&h, &owner, &admitted).await?;
                 let peer_actor = peer.runtime_actor.ok_or("staged peer")?;
-                let expected = if matches!(case, Case::WorldCredit) {
-                    UseDisposition::Rejected
-                } else {
+                let expected = if matches!(case, Case::UnreachableExit) {
                     UseDisposition::NotPossible
+                } else {
+                    UseDisposition::Rejected
                 };
                 assert_eq!(use_room(&owner, &mut admitted, 1).await?, expected);
                 assert_eq!(position(&owner, deps.actor).await?, local(START));
