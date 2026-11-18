@@ -40,32 +40,54 @@ fn source_world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     trial: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use native_crop::{ExpectedTeleport, ExpectedTile, NativeCrop, native_scene};
+    use native_crop::{ExpectedTile, NativeCrop, native_scene};
+    const TRIAL: &[u8] = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/world/placements/region-z12-x129-y125.b3"
+    ));
+    const CURSE_ENTRANCE: &[u8] = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/world/placements/region-z08-x129-y124.b3"
+    ));
+    const CURSE_ARENA: &[u8] = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/world/placements/region-z08-x129-y125.b3"
+    ));
     let crops = if trial {
-        vec![NativeCrop {
-            bytes: include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../content/world/placements/region-z12-x129-y125.b3"
-            )),
-            region: (12, 129, 125),
-            bounds: (33120, 32238, 33165, 32261),
-            start: (33123, 32240),
-            expected: vec![ExpectedTile {
-                position: (33123, 32239),
-                ids: vec![34106],
-                counted_entry: None,
-            }],
-        }]
+        vec![
+            NativeCrop {
+                bytes: TRIAL,
+                region: (12, 129, 125),
+                bounds: (33123, 32239, 33124, 32241),
+                start: (33123, 32239),
+                expected: vec![ExpectedTile {
+                    position: (33123, 32239),
+                    ids: vec![34106],
+                    counted_entry: None,
+                }],
+            },
+            NativeCrop {
+                bytes: TRIAL,
+                region: (12, 129, 125),
+                bounds: (33154, 32246, 33155, 32247),
+                start: (33154, 32246),
+                expected: vec![],
+            },
+            NativeCrop {
+                bytes: TRIAL,
+                region: (12, 129, 125),
+                bounds: (33154, 32252, 33155, 32253),
+                start: (33154, 32252),
+                expected: vec![],
+            },
+        ]
     } else {
         vec![
             NativeCrop {
-                bytes: include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z08-x129-y124.b3"
-                )),
+                bytes: CURSE_ENTRANCE,
                 region: (8, 129, 124),
-                bounds: (33165, 31976, 33169, 31980),
-                start: (33167, 31978),
+                bounds: (33167, 31977, 33169, 31979),
+                start: (33168, 31977),
                 expected: vec![ExpectedTile {
                     position: (33167, 31977),
                     ids: vec![1020, 998, 25049],
@@ -73,32 +95,43 @@ fn source_world(
                 }],
             },
             NativeCrop {
-                bytes: include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z08-x129-y125.b3"
-                )),
+                bytes: CURSE_ARENA,
                 region: (8, 129, 125),
-                bounds: (33174, 32007, 33192, 32021),
+                bounds: (33182, 32012, 33183, 32013),
                 start: (33182, 32012),
+                expected: vec![],
+            },
+            NativeCrop {
+                bytes: CURSE_ARENA,
+                region: (8, 129, 125),
+                bounds: (33184, 32016, 33185, 32017),
+                start: (33184, 32016),
                 expected: vec![],
             },
         ]
     };
-    let bloodback_exit = [ExpectedTeleport {
-        position: (33180, 32011, 8),
-        ordinal: 2,
-        destination: (33167, 31978, 8),
-    }];
-    native_scene(native, crops, if trial { &[] } else { &bloodback_exit })
+    native_scene(native, crops, &[])
 }
 
 fn scenario(admin: String, trial: bool) -> TestResult {
     let (x, y, floor, boss, landing) = if trial {
         (33123, 32240, 12, "yirkas_blue_scales", (33154, 32246))
     } else {
-        (33167, 31978, 8, "bloodback", (33182, 32012))
+        (33168, 31977, 8, "bloodback", (33182, 32012))
     };
     let origin = MovementLocalPosition { x, y, floor };
+    let (entry_direction, exit) = if trial {
+        (StepDirection::North, origin)
+    } else {
+        (
+            StepDirection::West,
+            MovementLocalPosition {
+                x: 33167,
+                y: 31978,
+                floor,
+            },
+        )
+    };
     run(async |_| {
         reset();
         let h =
@@ -175,6 +208,7 @@ fn scenario(admin: String, trial: bool) -> TestResult {
         owner.movement_cells = (&cells).into();
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
+        admitted.runtime_actor = Some(deps.actor);
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
@@ -262,7 +296,7 @@ fn scenario(admin: String, trial: bool) -> TestResult {
                 .map_err(debug)?;
             Some(player)
         };
-        step(&mut owner, &admitted).await?;
+        step(&mut owner, &admitted, entry_direction).await?;
         assert_eq!(
             deps.runtime
                 .lock()
@@ -287,7 +321,7 @@ fn scenario(admin: String, trial: bool) -> TestResult {
         } else {
             earn_level(&owner, &admitted, &authority, 250).await?;
         }
-        step(&mut owner, &admitted).await?;
+        step(&mut owner, &admitted, entry_direction).await?;
         let runtime = deps.runtime.lock().await;
         let arrived = runtime
             .read_actor_position(deps.actor)
@@ -340,9 +374,9 @@ fn scenario(admin: String, trial: bool) -> TestResult {
                 .read_actor_position(deps.actor)
                 .map_err(debug)?
                 .position(),
-            origin
+            exit
         );
-        step(&mut owner, &admitted).await?;
+        step(&mut owner, &admitted, StepDirection::North).await?;
         assert_eq!(
             deps.runtime
                 .lock()
@@ -350,7 +384,7 @@ fn scenario(admin: String, trial: bool) -> TestResult {
                 .read_actor_position(deps.actor)
                 .map_err(debug)?
                 .position(),
-            origin
+            exit
         );
         let after: i64 = sqlx::query_scalar(
             "SELECT available_at FROM game_character_boss_cooldowns WHERE boss_key=$1",
@@ -430,6 +464,7 @@ async fn earn_level(
 async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    direction: StepDirection,
 ) -> TestResult {
     owner.clock_origin = owner
         .clock_origin
@@ -440,7 +475,7 @@ async fn step(
         .ordinary_paced_step(
             admitted.runtime_actor.ok_or("admitted runtime actor")?,
             admitted.game_session_id,
-            StepDirection::North,
+            direction,
             None,
             None,
         )
