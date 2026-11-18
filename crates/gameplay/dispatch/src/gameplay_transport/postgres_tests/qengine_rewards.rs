@@ -18,6 +18,8 @@ use std::sync::Arc;
 #[path = "qengine_rewards/m39_any_topic.rs"]
 mod m39_any_topic;
 
+pub(super) const BLOOD_HERB_CHEST: (u16, u16, i8) = (32769, 31968, -7);
+
 pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -28,6 +30,9 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps::SOURCE
+            } else if name == "qengine-rewards-rcauth-wyda" {
+                let (x, y, floor) = BLOOD_HERB_CHEST;
+                Position { x, y, floor }
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -1252,36 +1257,8 @@ pub(super) async fn exercise(
                 preserve: true,
             });
     }
-    if key == "rcauth/wyda-blood-herb" {
-        // This test starts after the source chest was claimed. Its protected
-        // track cannot be initialized using a synthetic generic transition.
-        super::questpc8_magic_sword::raise_level(owner, admitted, 2, 247).await?;
-        let fence = owner
-            .current_quest_fence(admitted.game_session_id)
-            .await
-            .map_err(|_| "fence")?
-            .ok_or("fence")?;
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        let inserted = sqlx::query(
-            "INSERT INTO game_character_quest_tracks \
-                 (character_id,track_key,quest_key,value,committed_character_revision) \
-             SELECT character_id,$2,$3,1,character_revision FROM game_character_roots \
-             WHERE character_id=encode($1,'hex')::uuid",
-        )
-        .bind(fence.character_id.as_bytes().as_slice())
-        .bind("oteryn:quest-progress/kv/bloodherb/claimed")
-        .bind(&callback.quest)
-        .execute(&mut *tx)
-        .await?;
-        assert_eq!(inserted.rows_affected(), 1);
-        tx.commit().await?;
-        owner
-            .refresh_quest_session(admitted.game_session_id, false)
-            .await;
-    } else if !key.starts_with("rcauth/") {
+    let wyda = key == "rcauth/wyda-blood-herb";
+    if !key.starts_with("rcauth/") {
         seed(owner, admitted, &setup, 9000).await?;
     }
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;
@@ -1333,12 +1310,53 @@ pub(super) async fn exercise(
             );
         }
     }
-    let at = Position {
-        x: 33293,
-        y: 31677,
-        floor: -15,
+    let at = if wyda {
+        use oteryn_protocol_oteryn::{
+            CommandStatus,
+            world_object::{UseDisposition, WorldObjectTarget},
+        };
+
+        let (x, y, floor) = BLOOD_HERB_CHEST;
+        let key = oteryn_world_bundle::bundle::placement_key(floor, x, y, 1)
+            .ok_or("Blood Herb chest placement key")?;
+        let map = owner.bundle_map().ok_or("Blood Herb chest map")?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let target = WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        };
+        let next = admitted.continuity.next_command_id;
+        assert_eq!(
+            super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(next, &target)])
+                .await?,
+            [(CommandStatus::Accepted, UseDisposition::Committed)]
+        );
+        assert_eq!(
+            super::classic_quests::progress(
+                owner,
+                admitted,
+                authority,
+                "oteryn:quest-progress/kv/bloodherb/claimed",
+            )
+            .await?,
+            1
+        );
+        Position { x: x - 1, y, floor }
+    } else {
+        Position {
+            x: 33293,
+            y: 31677,
+            floor: -15,
+        }
     };
-    for (i, input) in callback.take.iter().chain(&callback.present).enumerate() {
+    for (i, input) in callback
+        .take
+        .iter()
+        .chain(&callback.present)
+        .filter(|_| !wyda)
+        .enumerate()
+    {
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await

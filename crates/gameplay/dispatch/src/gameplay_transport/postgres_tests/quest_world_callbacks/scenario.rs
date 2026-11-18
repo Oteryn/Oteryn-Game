@@ -640,7 +640,14 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if name == "qengine-rewards-rcauth-wyda" {
+        super::super::quest_callbacks::source_world(
+            super::super::qengine_rewards::BLOOD_HERB_CHEST,
+            6111,
+            3634,
+            0,
+        )?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
