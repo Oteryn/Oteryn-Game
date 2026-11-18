@@ -1,5 +1,7 @@
 //! Source effects owned by the successful native NPC dialogue receipt.
-use super::super::{ComposedFreshAdmission, connection::UseCommand};
+use super::super::{
+    ComposedFreshAdmission, actor_spell::ChannelSpellStates, connection::UseCommand,
+};
 use super::*;
 use crate::durability::reward_claim_mint::QuestActorConditionProof;
 use oteryn_gameplay_foundation::foundation::condition::{
@@ -67,7 +69,14 @@ pub(super) async fn publish(
     {
         return;
     }
-    if let Some(fire) = &effects.fire_damage {
+    // Crystal 201189f8 data-global/npc/the_orc_king.lua:48-59 births eight public creatures.
+    let spawn_origin = if effects.nearby_creatures.is_empty() {
+        None
+    } else {
+        super::service_context::live_npc(runtime, actor, session, intent.npc_actor)
+            .map(|npc| npc.position)
+    };
+    if effects.fire_damage.is_some() || spawn_origin.is_some() {
         #[cfg(test)]
         if let Some((arrived, proceed)) = admission
             .states
@@ -78,14 +87,21 @@ pub(super) async fn publish(
             arrived.notify_one();
             proceed.notified().await;
         }
-        apply_fire(admission, runtime, actor, command, fire).await;
-    }
-    // Crystal 201189f8 data-global/npc/the_orc_king.lua:48-59 births eight public creatures.
-    if !effects.nearby_creatures.is_empty()
-        && let Some(npc) =
-            super::service_context::live_npc(runtime, actor, session, intent.npc_actor)
-    {
-        spawn_near_npc(admission, runtime, npc.position, &effects.nearby_creatures);
+        // The receipt already committed. Use the Channel's runtime then
+        // spell-state lock order so a transient reader cannot drop the reaction.
+        let mut states = admission.states.spell_states.lock().await;
+        if let Some(fire) = &effects.fire_damage {
+            apply_fire(admission, runtime, &mut states, actor, command, fire);
+        }
+        if let Some(origin) = spawn_origin {
+            spawn_near_npc(
+                admission,
+                runtime,
+                &states,
+                origin,
+                &effects.nearby_creatures,
+            );
+        }
     }
     // Crystal 201189f8 data-global/npc/kazzan.lua:53-67.
     if let Some(delay) = effects.end_conversation_delay_ms
@@ -102,18 +118,16 @@ pub(super) async fn publish(
 }
 
 // Crystal 201189f8 data-global/npc/wyda.lua:52-54,87-103.
-async fn apply_fire(
+fn apply_fire(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
     actor: ExactActorRef,
     command: UseCommand,
     fire: &NpcFireDamage,
 ) -> Option<()> {
     use crate::domain::condition::DotElement;
     let session = command.game_session_id;
-    // The receipt already spent the cookie. Follow the Channel's runtime then
-    // spell-state lock order so a transient reader cannot discard Soulfire.
-    let mut states = admission.states.spell_states.lock().await;
     if states.is_dead(actor) || !states.spell_idle(runtime, actor, session) {
         return None;
     }
@@ -167,14 +181,12 @@ async fn apply_fire(
 fn spawn_near_npc(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
     origin: super::service_context::Position,
     creatures: &[String],
 ) {
     use oteryn_gameplay_quests::quest::world_callbacks::{CreatureSpawn, Position};
-    let (Some(map), Ok(states)) = (
-        admission.bundle_map(),
-        admission.states.spell_states.try_lock(),
-    ) else {
+    let Some(map) = admission.bundle_map() else {
         return;
     };
     let (Ok(x), Ok(y), Some(floor)) = (
@@ -190,7 +202,7 @@ fn spawn_near_npc(
     for creature in creatures {
         admission.spawn_quest_creature(
             runtime,
-            &states,
+            states,
             map,
             &CreatureSpawn {
                 creature: creature.clone(),
