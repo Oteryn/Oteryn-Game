@@ -355,6 +355,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if periodic_pass {
             super::encounter_phases::tick(&mut runtime, &states);
             self.tick_quest_encounter_thresholds(&mut runtime);
+            self.observe_quest_encounter_forms(&mut runtime, &states);
         }
         if !periodic_pass
             && !source_due

@@ -74,7 +74,9 @@ pub use legacy_world_claims::{legacy_world_claim, legacy_world_source_unique};
 mod live_admission;
 mod native_trials;
 mod offering_portal;
+mod position_forms;
 pub use offering_portal::{FLUID_POOL, OfferingPortal, SACRIFICE_FIRE, STONE_KEY};
+pub use position_forms::PositionForms;
 #[cfg(test)]
 mod paid_step_tests;
 mod per_use_reward;

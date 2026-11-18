@@ -9,6 +9,7 @@ use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
 mod linked;
+pub(super) mod position_forms;
 pub(super) mod threshold;
 
 const MAX_ENCOUNTERS: usize = 64;

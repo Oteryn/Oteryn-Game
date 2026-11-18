@@ -64,6 +64,9 @@ pub struct CallbackEffects {
     pub roll_tool: Option<RollTool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub threshold_rearm: Option<ThresholdRearm>,
+    /// A live encounter creature changes form according to its map position.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position_forms: Option<PositionForms>,
     /// A shared switch's qualified STEP releases the damage gate of one room.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub release_encounter: Option<String>,
@@ -541,6 +544,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let effects = &callback.effects;
+    if effects
+        .position_forms
+        .as_ref()
+        .is_some_and(|forms| !forms.valid(callback))
+    {
+        return false;
+    }
     if effects.ground_supply_on_open && effects.ground_supply.is_empty() {
         return false;
     }
@@ -1156,7 +1166,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults)
             || encounter.linked_arrival.is_some()
-            || effects.threshold_rearm.is_some();
+            || effects.threshold_rearm.is_some()
+            || effects.position_forms.is_some();
         if effects.threshold_rearm.as_ref().is_some_and(|phase| {
             callback.trigger != Trigger::Use
                 || callback.actor_kind != ActorKind::Player

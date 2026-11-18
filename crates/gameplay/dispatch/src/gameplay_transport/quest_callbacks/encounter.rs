@@ -20,6 +20,7 @@ pub(super) struct EncounterVisit {
     expires: Option<VisitExpiry>,
     arrival_due: Option<u64>,
     threshold: Option<super::super::encounter_phases::threshold::Threshold>,
+    forms: Option<super::super::encounter_phases::position_forms::Forms>,
     owner_scope: (
         crate::foundation::RuntimeScopeRefV1,
         crate::foundation::ScopeOwnershipGeneration,
@@ -41,6 +42,7 @@ impl EncounterVisit {
         self.arrival_due
             .into_iter()
             .chain(self.expires.as_ref().map(|expiry| expiry.due))
+            .chain(self.forms.as_ref().and_then(|forms| forms.next_due_us()))
             .min()
     }
 
@@ -59,6 +61,35 @@ impl EncounterVisit {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) fn observe_quest_encounter_forms(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+    ) {
+        let Some(map) = self.bundle_map() else {
+            return;
+        };
+        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+            return;
+        };
+        let now = self.owner_now().get();
+        let scope = runtime.encounter_owner_scope();
+        for visit in visits.iter_mut().filter(|visit| {
+            visit.owner_scope == scope
+                && visit.expires.as_ref().is_some_and(|expiry| {
+                    expiry.due > now && expiry.bundle_digest == map.overlay.base().digest()
+                })
+        }) {
+            if let (Some(forms), Some(boss)) = (&mut visit.forms, visit.creatures.first_mut())
+                && forms
+                    .observe(runtime, boss, now)
+                    .is_ok_and(|scheduled| scheduled)
+            {
+                states.owner_wake.notify_one();
+            }
+        }
+    }
+
     pub(in crate::gameplay_transport) fn tick_quest_encounter_thresholds(
         &self,
         runtime: &mut ChannelRuntimeV1,
@@ -186,6 +217,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 });
                 if !occupied {
                     super::personal_trial::cleanup(runtime, &mut visit.creatures);
+                } else if let (Some(forms), Some(boss)) =
+                    (&mut visit.forms, visit.creatures.first_mut())
+                {
+                    let _ = forms.publish_due(runtime, boss, now);
                 }
                 return occupied;
             }
@@ -453,6 +488,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
                     || encounter.linked_arrival.is_some()
                     || callback.effects.threshold_rearm.is_some()
+                    || callback.effects.position_forms.is_some()
                 {
                     continue;
                 }
@@ -562,6 +598,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .threshold_rearm
                     .as_ref()
                     .map(|phase| (phase.exit, phase.time_limit_ms))
+            })
+            .or_else(|| {
+                callback
+                    .effects
+                    .position_forms
+                    .as_ref()
+                    .map(|forms| (forms.exit, forms.time_limit_ms))
             });
         if callback
             .effects
@@ -573,6 +616,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .iter()
                     .any(|key| runtime.companion_policy(key).is_err())
             })
+            || callback
+                .effects
+                .position_forms
+                .as_ref()
+                .is_some_and(|forms| {
+                    forms
+                        .regions
+                        .iter()
+                        .any(|region| runtime.companion_policy(&region.creature).is_err())
+                })
         {
             return UseDisposition::Rejected;
         }
@@ -746,6 +799,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 creatures: actors.clone(),
                 expires: expiration,
                 arrival_due,
+                forms: callback.effects.position_forms.as_ref().map(|spec| {
+                    super::super::encounter_phases::position_forms::Forms::new(
+                        encounter.monsters[0].creature.clone(),
+                        spec.clone(),
+                    )
+                }),
                 threshold: callback
                     .effects
                     .threshold_rearm
@@ -764,6 +823,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if encounter.solo_expiry.is_some()
             || arrival_due.is_some()
             || callback.effects.threshold_rearm.is_some()
+            || callback.effects.position_forms.is_some()
         {
             states.owner_wake.notify_one();
         }
