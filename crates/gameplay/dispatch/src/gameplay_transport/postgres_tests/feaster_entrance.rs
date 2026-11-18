@@ -33,10 +33,10 @@ fn feaster_timed_room_admits_two_players_and_ejects_both() -> TestResult {
 }
 
 async fn exercise(admin: String, timed: bool) -> TestResult {
-    let mut h = Harness::create_with_admission_seed(admin, "feaster_level", true, false).await?;
+    let h = Harness::create_with_admission_seed(admin, "feaster_level", true, false).await?;
     prepare_current_session(&h).await?;
     if timed {
-        h.seed_pvp_target().await?;
+        h.seed_appearance_observer().await?;
         super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -205,10 +205,28 @@ async fn exercise(admin: String, timed: bool) -> TestResult {
             );
             owner.clock_origin = owner
                 .clock_origin
+                .checked_sub(std::time::Duration::from_millis(50))
+                .ok_or("spawn clock")?;
+            owner.drain_quest_encounter_deadlines().await;
+            {
+                let runtime = deps.runtime.lock().await;
+                assert_eq!(
+                    runtime.current_live_creature_census().map_err(debug)?.len(),
+                    1
+                );
+            }
+            owner.clock_origin = owner
+                .clock_origin
                 .checked_sub(std::time::Duration::from_secs(301))
                 .ok_or("owner clock")?;
             owner.drain_quest_encounter_deadlines().await;
             let runtime = deps.runtime.lock().await;
+            assert!(
+                runtime
+                    .current_live_creature_census()
+                    .map_err(debug)?
+                    .is_empty()
+            );
             for player in [deps.actor, observer] {
                 assert_eq!(
                     runtime
