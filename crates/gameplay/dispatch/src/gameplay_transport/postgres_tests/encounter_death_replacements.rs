@@ -12,6 +12,7 @@ use serde_json::json;
 pub(super) const BOWL: &str = "first-dragon-angry-plant-corpse";
 pub(super) const EARTH: &str = "forgotten-knowledge-thorn-death-phases";
 pub(super) const ENERGY: &str = "forgotten-knowledge-prism-death-relocation";
+pub(super) const ENERGY_RECOVERY: &str = "forgotten-knowledge-prism-vacancy-recovery";
 pub(super) const ESSENCE: &str = "first-dragon-essence-death-phase";
 pub(super) const FALLEN: &str = "first-dragon-fallen-challenger-portal";
 pub(super) const LORE: &str = "forgotten-knowledge-lore-keeper-death-phase";
@@ -84,6 +85,7 @@ const LLOYD_SPAWN: Position = at(32799, 32827);
 const LLOYD_REBIRTH: Position = at(32799, 32826);
 const LLOYD_RETURN: Position = at(32799, 32829);
 const LLOYD_RETURN_EFFECT: u16 = 11; // Crystal CONST_ME_TELEPORT.
+const PRISM_RECOVERY_EFFECT: u16 = 12; // Crystal src/utils/utils_definitions.hpp:67.
 const REWARD_ROOM: Position = Position {
     x: 33617,
     y: 31020,
@@ -162,6 +164,17 @@ fn energy_prism_death_returns_lloyd_only_from_the_rebirth_tile() -> TestResult {
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(ENERGY, || {
         super::quest_world_callbacks::scenario(ENERGY, at(32759, 32867), false)
+    })
+}
+
+#[test]
+fn energy_prism_recovers_before_damage_only_while_the_rebirth_tile_is_empty() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(ENERGY_RECOVERY, || {
+        super::quest_world_callbacks::scenario(ENERGY_RECOVERY, at(32759, 32867), false)
     })
 }
 
@@ -318,8 +331,8 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
     if matches!(name, LORE | LORE_ROUTE) {
         return lore_callback(name, lever);
     }
-    if name == ENERGY {
-        return energy_callback(lever);
+    if matches!(name, ENERGY | ENERGY_RECOVERY) {
+        return energy_callback(name, lever);
     }
     let (quest, source, from, arrival, min, max, monsters, mut death_phases) = if name == EARTH {
         (
@@ -424,7 +437,7 @@ fn lore_callback(name: &str, lever: Position) -> TestResult<Callback> {
     Ok(callback)
 }
 
-fn energy_callback(lever: Position) -> TestResult<Callback> {
+fn energy_callback(name: &str, lever: Position) -> TestResult<Callback> {
     let players: Vec<_> = (32868..=32872)
         .map(|y| json!({"from":at(32759,y), "to":at(32800,32831)}))
         .collect();
@@ -439,18 +452,24 @@ fn energy_callback(lever: Position) -> TestResult<Callback> {
             "relocate":{"creature":LLOYD,"from":LLOYD_REBIRTH,"to":LLOYD_RETURN,"arrival_effect":LLOYD_RETURN_EFFECT}
         })
     });
+    let mut phases = json!({"terminal":LLOYD,"replacements":replacements});
+    if name == ENERGY_RECOVERY {
+        phases["heal_before_damage"] = json!({"creatures":PRISMS.map(|(creature, _)| creature),
+            "vacant_cell":LLOYD_REBIRTH,"amount":10000,"effect":PRISM_RECOVERY_EFFECT,"announcement":"*zap!*"});
+    }
     let data = json!({"schema":1,"callbacks":[{
-        "key":format!("oteryn:quest-callback/{ENERGY}"),"quest":"oteryn:quest.forgotten_knowledge_quest",
+        "key":format!("oteryn:quest-callback/{name}"),"quest":"oteryn:quest.forgotten_knowledge_quest",
         "trigger":"use","selector":{"position":lever,"appearance":8911},
         "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
         "effects":{"encounter":{
             "minimum_level":0,"players":players,"monsters":monsters,
             "room_min":at(32785,32814),"room_max":at(32812,32838),"shared_staging":true,
-            "death_phases":{"terminal":LLOYD,"replacements":replacements}
+            "death_phases":phases
         }},
         "sources":[
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/actions_lloyd.lua:1-12,47-74",
-            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/creaturescripts_energy_prism_death.lua:2-13"
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/creaturescripts_energy_prism_death.lua:2-13",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/creaturescripts_energy_prism.lua:2-10"
         ]
     }]});
     let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
@@ -466,7 +485,7 @@ pub(super) fn world(
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let extra = match name {
         BOWL => vec![BOWL_APPROACH],
-        ENERGY => vec![LLOYD_REBIRTH, LLOYD_RETURN],
+        ENERGY | ENERGY_RECOVERY => vec![LLOYD_REBIRTH, LLOYD_RETURN],
         ESSENCE => late_essence_waves()
             .flatten()
             .chain(ESSENCE_OUTSIDE)
@@ -709,6 +728,133 @@ async fn astral_power_route(
     Ok(())
 }
 
+async fn prism_recovery(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    peer: ExactActorRef,
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
+    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+    use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry;
+    use oteryn_gameplay_foundation::foundation::condition::{ConditionDefinition, TickFacts};
+    use oteryn_simulation_determinism::DecisionOccurrenceId;
+
+    let [lloyd] = live(owner, LLOYD)
+        .await?
+        .try_into()
+        .map_err(|_| "one Lloyd")?;
+    let [prism] = live(owner, PRISM_A)
+        .await?
+        .try_into()
+        .map_err(|_| "one prism A")?;
+    let player = admitted.runtime_actor.ok_or("player")?;
+    let map = owner.bundle_map().ok_or("Energy room")?;
+    let now = owner.owner_now().get();
+    let mut runtime = owner.runtime.lock().await;
+    for actor in [player, peer] {
+        assert_eq!(
+            runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            super::quest_world_callbacks::local(at(32800, 32831))
+        );
+    }
+    let hit = |runtime: &mut crate::foundation::ChannelRuntimeV1, sequence| {
+        let command = CommandId::new(sequence).map_err(debug)?;
+        runtime
+            .borrow_exact_actor_commit_at(now / 1000)
+            .commit_damage_for_bound_attacker(
+                prism,
+                player,
+                CommandRef::new(admitted.game_session_id, command),
+                0,
+                OwnerDamageCommand {
+                    target: PRISM_A.as_bytes(),
+                    occurrence: b"prism-recovery-hit",
+                    binding: b"prism-recovery-damage",
+                    damage: 100,
+                },
+            )
+            .map_err(debug)
+    };
+    let first = hit(&mut runtime, 110)?;
+    assert_eq!((first.health_before, first.health_after), (1000, 900));
+    assert!(!hit(&mut runtime, 110)?.applied);
+    let recovery = hit(&mut runtime, 111)?;
+    assert_eq!((recovery.health_before, recovery.health_after), (1000, 900));
+    assert!(!hit(&mut runtime, 111)?.applied);
+    let field = CreatureFieldEntry {
+        definition: ConditionDefinition::new(
+            "test-prism-vacancy-recovery",
+            1,
+            ConditionValues::Agony {
+                total_min: 100,
+                total_max: 100,
+                per_tick: 100,
+                interval_ms: 1000,
+                delayed: false,
+            },
+        )
+        .ok_or("Agony field")?,
+        source: None,
+        lineage: None,
+        occurrence: DecisionOccurrenceId::from_bytes([0xa3; 16]),
+    };
+    runtime
+        .commit_creature_field_entry(prism, now, Some(&field))
+        .map_err(debug)?;
+    let prepared = runtime
+        .stage_creature_periodic_turn(prism, now, TickFacts::default())
+        .map_err(debug)?;
+    let periodic = runtime
+        .commit_creature_periodic_turn(prepared)
+        .map_err(debug)?;
+    assert!(!periodic.ticks.is_empty());
+    assert_eq!(periodic.health_after, 900);
+    let spawn = runtime.read_actor_position(lloyd).map_err(debug)?;
+    runtime
+        .borrow_movement_position()
+        .commit_creature_relocation(
+            lloyd,
+            spawn,
+            super::quest_world_callbacks::local(LLOYD_REBIRTH),
+        )
+        .map_err(debug)?;
+    let guarded = hit(&mut runtime, 112)?;
+    assert_eq!((guarded.health_before, guarded.health_after), (900, 800));
+    let mut states = owner.states.spell_states.lock().await;
+    for _ in 0..2 {
+        crate::gameplay_transport::encounter_phases::tick(
+            &mut runtime,
+            &mut states,
+            Some(map),
+            now,
+        );
+    }
+    let pos = PRISMS[0].1;
+    assert_eq!(
+        map.facts
+            .movement_speech_since(0)
+            .iter()
+            .filter(|(_, speech)| speech.speaker == prism && speech.text == "*zap!*")
+            .count(),
+        2
+    );
+    assert_eq!(
+        map.facts
+            .movement_effects_since(0)
+            .iter()
+            .filter(
+                |(_, at, effect)| (at.x, at.y, at.floor) == (pos.x, pos.y, pos.floor)
+                    && *effect == PRISM_RECOVERY_EFFECT
+            )
+            .count(),
+        2
+    );
+    Ok(())
+}
+
 async fn put_dragon_on_approach(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -872,6 +1018,11 @@ pub(super) async fn exercise(
     } else {
         None
     };
+    let recovery_peer = if name == ENERGY_RECOVERY {
+        Some(super::ferumbras_crystal_reset::admit_peer(owner, h, at(32759, 32869)).await?)
+    } else {
+        None
+    };
     owner
         .states
         .quest_callbacks
@@ -886,6 +1037,8 @@ pub(super) async fn exercise(
     );
     if let Some(peer) = peer {
         fallen_portals(owner, admitted, peer).await?;
+    } else if let Some(peer) = recovery_peer {
+        prism_recovery(owner, admitted, peer).await?;
     } else if name == BOWL {
         flower_bowl(owner, admitted, h).await?;
     } else if name == EARTH {
