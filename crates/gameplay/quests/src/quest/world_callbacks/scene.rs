@@ -2,6 +2,7 @@
 use super::*;
 
 pub const MAX_SCENE_EDITS: usize = 32;
+pub const MAX_DELAYED_SCENE_EDITS: usize = 1_024;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -39,6 +40,8 @@ pub struct SceneEdits {
     pub relocations: Vec<SceneRelocation>,
     pub open: Vec<SceneEdit>,
     pub close: Vec<SceneEdit>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub delayed_open: Option<DelayedSceneEdits>,
     #[serde(default)]
     pub remove_self: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -50,6 +53,14 @@ pub struct SceneEdits {
     pub relocate_items_close: bool,
 }
 
+/// Crystal 201189f8, actions_habitat_grass.lua:393-420,439-465.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DelayedSceneEdits {
+    pub delay_ms: u32,
+    pub edits: Vec<SceneEdit>,
+}
+
 /// Crystal 201189f8, ferumbras_ascension/actions_ferumbras_lever.lua:35-56.
 /// Arena reset edits share the creature admission's map publication.
 pub(super) fn is_encounter_reset(callback: &Callback, scene: &SceneEdits) -> bool {
@@ -58,6 +69,7 @@ pub(super) fn is_encounter_reset(callback: &Callback, scene: &SceneEdits) -> boo
             && !callback.reversible
             && !scene.remove_self
             && scene.close.is_empty()
+            && scene.delayed_open.is_none()
             && scene.relocations.is_empty()
             && scene.evacuate_open.is_empty()
             && scene.evacuate_close.is_empty()
@@ -78,11 +90,22 @@ pub(super) fn is_encounter_reset(callback: &Callback, scene: &SceneEdits) -> boo
 }
 
 pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
-    let valid = |edits: &[SceneEdit]| {
-        edits.len() <= MAX_SCENE_EDITS
+    let valid = |edits: &[SceneEdit], delayed: bool| {
+        edits.len()
+            <= if delayed {
+                MAX_DELAYED_SCENE_EDITS
+            } else {
+                MAX_SCENE_EDITS
+            }
             && edits
                 .iter()
-                .map(|edit| (edit.position, edit.remove))
+                .map(|edit| {
+                    (
+                        edit.position,
+                        edit.remove,
+                        edit.create.filter(|_| delayed && edit.remove.is_none()),
+                    )
+                })
                 .collect::<BTreeSet<_>>()
                 .len()
                 == edits.len()
@@ -97,6 +120,29 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
                     && (!edit.allow_missing || edit.remove.is_some())
             })
     };
+    let delayed_valid = scene.delayed_open.as_ref().is_none_or(|delayed| {
+        let anchors: BTreeSet<_> = delayed
+            .edits
+            .iter()
+            .filter(|edit| edit.remove.is_some())
+            .map(|edit| edit.position)
+            .collect();
+        !callback.reversible
+            && callback.effects.encounter.is_none()
+            && !scene.remove_self
+            && scene.relocations.is_empty()
+            && scene.evacuate_open.is_empty()
+            && scene.evacuate_close.is_empty()
+            && !scene.relocate_items_close
+            && (1..=60_000).contains(&delayed.delay_ms)
+            && !delayed.edits.is_empty()
+            && valid(&delayed.edits, true)
+            && delayed.edits.iter().all(|edit| {
+                !edit.allow_missing
+                    && anchors.contains(&edit.position)
+                    && !scene.open.iter().any(|now| now.position == edit.position)
+            })
+    });
     let valid_evacuation = |moves: &[SceneEvacuation], edits: &[SceneEdit]| {
         moves.len() <= 8
             && moves.iter().map(|m| m.from).collect::<BTreeSet<_>>().len() == moves.len()
@@ -145,14 +191,15 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
         && callback.effects.outfit_reward.is_none()
         && !callback.completes
         && !callback.premium_required
-        && (!scene.open.is_empty() || scene.remove_self)
+        && (!scene.open.is_empty() || scene.remove_self || scene.delayed_open.is_some())
         && (!scene.remove_self || (!callback.reversible && scene.close.is_empty()))
         && (!callback.reversible || !scene.close.is_empty())
         && relocation_valid
         && (scene.relocations.is_empty()
             || (scene.evacuate_open.is_empty() && scene.evacuate_close.is_empty()))
-        && valid(&scene.open)
-        && valid(&scene.close)
+        && delayed_valid
+        && valid(&scene.open, false)
+        && valid(&scene.close, false)
         && valid_evacuation(&scene.evacuate_open, &scene.open)
         && valid_evacuation(&scene.evacuate_close, &scene.close)
         && (!scene.relocate_items_close

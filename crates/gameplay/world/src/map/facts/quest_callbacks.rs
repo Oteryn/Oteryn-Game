@@ -1,5 +1,6 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
+use oteryn_gameplay_quests::quest::world_callbacks::{MAX_DELAYED_SCENE_EDITS, MAX_SCENE_EDITS};
 use sha2::{Digest, Sha256};
 
 // A committed callback can replace or remove one exact native door. Keep every
@@ -130,6 +131,11 @@ pub enum QuestCallbackProjection {
         mutations: Vec<QuestSceneMutation>,
         remove_self: bool,
     },
+    DelayedScene {
+        due: u64,
+        immediate: Vec<QuestSceneMutation>,
+        delayed: Vec<QuestSceneMutation>,
+    },
     ItemLayout {
         positions: Vec<TilePos>,
         native_removals: Vec<QuestSceneMutation>,
@@ -172,6 +178,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    delayed_scenes: BTreeMap<(u64, u64), Vec<QuestSceneMutation>>,
     movement_item_expiries: BTreeMap<(u64, u64), (TilePos, u16)>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
@@ -484,9 +491,33 @@ impl CallbackStates {
                 mutations,
                 remove_self,
             } => {
-                if !project_scene(self, owner, mutations, *remove_self) {
+                if !project_scene(self, owner, mutations, *remove_self, MAX_SCENE_EDITS) {
                     return false;
                 }
+            }
+            QuestCallbackProjection::DelayedScene {
+                due,
+                immediate,
+                delayed,
+            } => {
+                if close
+                    || delayed.is_empty()
+                    || self
+                        .delayed_scenes
+                        .keys()
+                        .any(|(_, source)| *source == owner)
+                    || !project_scene(self, owner, immediate, false, MAX_SCENE_EDITS)
+                    || !project_scene(
+                        &mut self.clone(),
+                        owner,
+                        delayed,
+                        false,
+                        MAX_DELAYED_SCENE_EDITS,
+                    )
+                {
+                    return false;
+                }
+                self.delayed_scenes.insert((*due, owner), delayed.clone());
             }
             QuestCallbackProjection::ItemLayout {
                 positions,
@@ -497,7 +528,7 @@ impl CallbackStates {
                     .presences
                     .get(&owner)
                     .is_some_and(|(position, _)| !positions.contains(position))
-                    || !project_scene(self, owner, native_removals, false)
+                    || !project_scene(self, owner, native_removals, false, MAX_SCENE_EDITS)
                 {
                     return false;
                 }
@@ -591,6 +622,13 @@ impl CallbackStates {
         self.hidden.retain(|key| !key_inside(key));
         self.passable.retain(|key, _| !key_inside(key));
         self.movement_decays.retain(|(_, key), _| !key_inside(key));
+        self.delayed_scenes.retain(|(_, key), edits| {
+            !key_inside(key)
+                && !edits
+                    .iter()
+                    .filter_map(QuestSceneMutation::position)
+                    .any(&inside)
+        });
         let cleared = |p: &TilePos| {
             p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
         };
@@ -613,6 +651,11 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self
+                .delayed_scenes
+                .values()
+                .map(|edits| edits.len().saturating_mul(3))
+                .sum::<usize>()
             + self.movement_item_expiries.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
@@ -626,6 +669,37 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    /// Preflight durable USE against the same bounded projection as the map commit.
+    pub fn delayed_quest_scene_ready(
+        &self,
+        source: u64,
+        revision: u64,
+        projection: &QuestCallbackProjection,
+    ) -> bool {
+        let QuestCallbackProjection::DelayedScene {
+            immediate, delayed, ..
+        } = projection
+        else {
+            return false;
+        };
+        self.callbacks.lock().is_ok_and(|held| {
+            let states = &**held;
+            revision < u64::MAX
+                && states
+                    .changed
+                    .get(&source)
+                    .map_or(0, |(current, _)| *current)
+                    == revision
+                && !states.key_reserved(source)
+                && !immediate
+                    .iter()
+                    .chain(delayed)
+                    .any(|edit| edit.reserved(states))
+                && states.has_capacity(delayed_scene_capacity(immediate, delayed))
+                && states.clone().project(source, projection, false)
+        })
+    }
+
     /// Fence up to eight already qualified map placements without transforming
     /// them. The synchronous consequence runs under the same map owner lock,
     /// so an arrival can publish its prepared spawn while charges stay intact.
@@ -926,6 +1000,9 @@ impl BundleFacts {
                     .find_map(|(&(due, id), _)| (!states.key_reserved(id)).then_some(due)),
             )
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(states.delayed_scenes.iter().find_map(|(&(due, _), edits)| {
+                (!edits.iter().any(|edit| edit.reserved(&states))).then_some(due)
+            }))
             .min()
     }
 
@@ -989,6 +1066,28 @@ impl BundleFacts {
         for (deadline, position, appearance) in expiring {
             states.movement_item_expiries.remove(&deadline);
             if remove_callback_item(states, position, deadline.1, appearance) {
+                changed += 1;
+            }
+        }
+        let due_scenes: Vec<_> = states
+            .delayed_scenes
+            .range(..=(now, u64::MAX))
+            .filter(|(_, edits)| !edits.iter().any(|edit| edit.reserved(states)))
+            .map(|(deadline, _)| *deadline)
+            .collect();
+        for deadline in due_scenes {
+            let Some(edits) = states.delayed_scenes.remove(&deadline) else {
+                continue;
+            };
+            let mut staged = states.clone();
+            if project_scene(
+                &mut staged,
+                deadline.1,
+                &edits,
+                false,
+                MAX_DELAYED_SCENE_EDITS,
+            ) {
+                *states = staged;
                 changed += 1;
             }
         }
@@ -1767,6 +1866,9 @@ impl BundleFacts {
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)
             }
+            Some(QuestCallbackProjection::DelayedScene {
+                immediate, delayed, ..
+            }) => delayed_scene_capacity(immediate, delayed),
             Some(QuestCallbackProjection::ItemLayout {
                 native_removals, ..
             }) => native_removals.len().saturating_add(3),
@@ -1804,15 +1906,14 @@ impl BundleFacts {
                     states.position_reserved(*position)
                 }
                 QuestCallbackProjection::Scene { mutations, .. } => {
-                    mutations.iter().any(|mutation| match mutation {
-                        QuestSceneMutation::Restore { key, .. }
-                        | QuestSceneMutation::Remove { key, .. }
-                        | QuestSceneMutation::Replace { key, .. } => states.key_reserved(*key),
-                        QuestSceneMutation::Create { position, .. } => {
-                            states.position_reserved(*position)
-                        }
-                    })
+                    mutations.iter().any(|edit| edit.reserved(&states))
                 }
+                QuestCallbackProjection::DelayedScene {
+                    immediate, delayed, ..
+                } => immediate
+                    .iter()
+                    .chain(delayed)
+                    .any(|edit| edit.reserved(&states)),
                 QuestCallbackProjection::ItemLayout { positions, .. } => positions
                     .iter()
                     .any(|position| states.position_reserved(*position)),
@@ -2133,13 +2234,45 @@ pub enum QuestSceneMutation {
     },
 }
 
+fn delayed_scene_capacity(
+    immediate: &[QuestSceneMutation],
+    delayed: &[QuestSceneMutation],
+) -> usize {
+    immediate
+        .len()
+        .saturating_add(delayed.len())
+        .saturating_mul(3)
+        .saturating_add(1)
+}
+
+impl QuestSceneMutation {
+    fn position(&self) -> Option<TilePos> {
+        match self {
+            Self::Restore { key, .. } | Self::Remove { key, .. } | Self::Replace { key, .. } => {
+                view::placement_of(*key).map(|(at, _)| at)
+            }
+            Self::Create { position, .. } => Some(*position),
+        }
+    }
+
+    fn reserved(&self, states: &CallbackStates) -> bool {
+        match self {
+            Self::Restore { key, .. } | Self::Remove { key, .. } | Self::Replace { key, .. } => {
+                states.key_reserved(*key)
+            }
+            Self::Create { position, .. } => states.position_reserved(*position),
+        }
+    }
+}
+
 fn project_scene(
     states: &mut CallbackStates,
     owner: u64,
     edits: &[QuestSceneMutation],
     remove_self: bool,
+    maximum_edits: usize,
 ) -> bool {
-    if edits.len() > 32 {
+    if edits.len() > maximum_edits {
         return false;
     }
     for edit in edits {

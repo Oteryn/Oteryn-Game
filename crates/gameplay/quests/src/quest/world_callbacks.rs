@@ -94,7 +94,10 @@ pub use ground_stack::{
 };
 
 mod scene;
-pub use scene::{SceneEdit, SceneEdits, SceneEvacuation, SceneRelocation};
+pub use scene::{
+    MAX_DELAYED_SCENE_EDITS, MAX_SCENE_EDITS, SceneEdit, SceneEdits, SceneEvacuation,
+    SceneRelocation,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]

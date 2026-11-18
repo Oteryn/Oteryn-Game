@@ -238,6 +238,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return result;
                 }
             };
+        if let Some(project @ crate::map::facts::QuestCallbackProjection::DelayedScene { .. }) =
+            projection.as_ref()
+            && !map
+                .facts
+                .delayed_quest_scene_ready(key, expected_revision, project)
+        {
+            return UseDisposition::Rejected;
+        }
         // Both lifecycle deadlines belong to this operation, even when preparing
         // its remote object read set takes time.
         let lifecycle_now = self.owner_now().get();
@@ -1515,6 +1523,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::map::facts::QuestCallbackProjection::TimedTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedRemoteTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedEntrance { .. }
+                    | crate::map::facts::QuestCallbackProjection::DelayedScene { .. }
             )
         ) || callback.effects.reset_after_ms.is_some()
             || callback.effects.passages_reset_after_ms.is_some()
