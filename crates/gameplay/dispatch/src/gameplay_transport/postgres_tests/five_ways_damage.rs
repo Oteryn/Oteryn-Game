@@ -1,5 +1,5 @@
 use super::underwater_drowning::{QuestStepCase, health, quest_step_scenario, step};
-use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::{Harness, debug, id}};
 use crate::content::{ReferenceRationalPercent, ReferenceResistanceKind, spell_data::Vocation};
 use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_gameplay_quests::quest::world_callbacks::Callback;
@@ -17,10 +17,49 @@ fn five_ways_step_in_uses_base_vocation_and_final_field_element_protection() -> 
         .map_err(Into::into)
 }
 
+#[test]
+fn five_ways_final_field_spends_one_ordinary_equipped_protection_charge_per_hit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run("five ways equipped protection", || {
+        quest_step_scenario(QuestStepCase::FiveWaysCharged)
+    })
+}
+
+async fn equip_protector(owner: &ComposedFreshAdmission<'_, '_, '_>, h: &Harness) -> TestResult {
+    // Crystal items.xml:7264-7273 gives the equipped amulet five charges
+    // and 80% physical absorption. Its protection does not cover fire.
+    let definition = &owner.active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.item_policy_for_source_id(3081))
+        .ok_or("stone skin amulet policy")?
+        .record().production_definition;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
+        .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(&definition.production_key)
+        .bind(&definition.revision_ref).bind(id(181).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,7,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+        .bind(id(41).as_slice()).bind(id(180).as_slice()).bind(id(42).as_slice())
+        .bind(id(182).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn charges(h: &Harness) -> TestResult<Option<i32>> {
+    Ok(sqlx::query_scalar("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(id(180).as_slice()).fetch_optional(&h.pool).await?)
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     mover: (AdmittedSession, ExactActorRef, GameSessionId),
+    h: &Harness,
+    charged: bool,
 ) -> TestResult {
+    if charged {
+        equip_protector(owner, h).await?;
+    }
     let (_, actor, session) = mover;
     let (matching, other) = {
         let runtime = owner.runtime.lock().await;
@@ -65,11 +104,23 @@ pub(super) async fn exercise(
     step(owner, mover, StepDirection::West, 0).await?;
     let after_fire = health(owner, actor, session).await?;
     assert!((1..=30).contains(&before.saturating_sub(after_fire)));
+    if charged {
+        assert_eq!(charges(h).await?, None, "fire leaves the physical amulet untouched");
+    }
     step(owner, mover, StepDirection::East, 1).await?;
     assert_eq!(health(owner, actor, session).await?, after_fire);
     step(owner, mover, StepDirection::East, 2).await?;
     let after_physical = health(owner, actor, session).await?;
-    assert!((31..=72).contains(&after_fire.saturating_sub(after_physical)));
+    if charged {
+        assert!((1..=15).contains(&after_fire.saturating_sub(after_physical)));
+        assert_eq!(charges(h).await?, Some(4));
+        step(owner, mover, StepDirection::West, 1).await?;
+        assert_eq!(charges(h).await?, Some(4));
+        step(owner, mover, StepDirection::East, 2).await?;
+        assert_eq!(charges(h).await?, Some(3));
+    } else {
+        assert!((31..=72).contains(&after_fire.saturating_sub(after_physical)));
+    }
     let events = owner.bundle_map().ok_or("map")?.facts.movement_effects_since(0);
     assert!(events.iter().any(|(_, position, effect)| position.x == 0 && *effect == 16));
     assert!(events.iter().any(|(_, position, effect)| position.x == 2 && *effect == 37));

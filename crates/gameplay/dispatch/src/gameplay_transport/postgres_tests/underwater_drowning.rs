@@ -316,6 +316,7 @@ fn scenario(callback: Option<(u16, u16, bool)>, portals: bool) -> TestResult {
 pub(super) enum QuestStepCase {
     BossCooldown,
     FiveWays,
+    FiveWaysCharged,
 }
 
 pub(super) fn quest_step_scenario(case: QuestStepCase) -> TestResult {
@@ -347,7 +348,7 @@ fn scenario_in_world(
         let active = controller.active().ok_or("active")?;
         // Activated content digests (custody reads pin them), the test row's map binding.
         let channel = Dependencies::new()?.admitted.channel_id;
-        let (bytes, pins) = underwater_row(portals, matches!(quest_step, Some(QuestStepCase::FiveWays)))?;
+        let (bytes, pins) = underwater_row(portals, matches!(quest_step, Some(QuestStepCase::FiveWays | QuestStepCase::FiveWaysCharged)))?;
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let map = boot(
             &bytes,
@@ -435,7 +436,9 @@ fn scenario_in_world(
                 QuestStepCase::BossCooldown => {
                     super::essence_cooldown::exercise(&mut owner, mover, &h).await
                 }
-                QuestStepCase::FiveWays => super::five_ways_damage::exercise(&mut owner, mover).await,
+                QuestStepCase::FiveWays | QuestStepCase::FiveWaysCharged => {
+                    super::five_ways_damage::exercise(&mut owner, mover, &h, matches!(case, QuestStepCase::FiveWaysCharged)).await
+                },
             };
         }
         if portals {

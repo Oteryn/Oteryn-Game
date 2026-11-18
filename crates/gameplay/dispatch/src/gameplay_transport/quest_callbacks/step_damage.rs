@@ -40,7 +40,7 @@ pub(in crate::gameplay_transport) struct PendingStepDamage {
 impl PendingStepDamage {
     fn park(self) -> Box<dyn std::any::Any + Send> {
         Box::new(
-            crate::gameplay_transport::native_combat_cast::UnresolvedSpellCommit::QuestStepDamage(
+            crate::gameplay_transport::actor_spell::native_combat_cast::UnresolvedSpellCommit::QuestStepDamage(
                 Box::new(self),
             ),
         )
@@ -180,15 +180,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states: &mut ChannelSpellStates,
         map: &BundleMap,
     ) {
+        let current = pending.matches_current(runtime, states, map);
+        if !current && !recovering {
+            return;
+        }
         let mut window = permit.open_commit_window(pending, PendingStepDamage::park);
         if recovering {
             window.mark_already_committed();
         }
-        let current = window.attempt().matches_current(runtime, states, map);
-        if !current && !recovering {
-            return;
-        }
         let Ok(pass) = self.root.try_issue_semantic_pass() else {
+            if !recovering {
+                window.release();
+            }
             return;
         };
         let result = pass
@@ -277,7 +280,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(_) => {
                 window.release();
             }
-            Err(_) => {}
+            Err(_) => {
+                let _ = window.reclaim_uncommitted();
+            }
         }
     }
 
