@@ -35,7 +35,7 @@ impl Circuit {
     }
 }
 
-const WALL: Circuit = Circuit {
+const SOUTH_WALL: Circuit = Circuit {
     switch: TilePos {
         x: 32315,
         y: 31910,
@@ -47,6 +47,20 @@ const WALL: Circuit = Circuit {
         floor: -10,
     },
     unique: 30010,
+    plate: None,
+};
+const NORTH_WALL: Circuit = Circuit {
+    switch: TilePos {
+        x: 32212,
+        y: 31888,
+        floor: -12,
+    },
+    passage: TilePos {
+        x: 32259,
+        y: 31890,
+        floor: -10,
+    },
+    unique: 30011,
     plate: None,
 };
 const TRAPDOOR: Circuit = Circuit {
@@ -76,7 +90,8 @@ fn banshee_hidden_wall_use_resets_remotely_and_manual_close_reopens_safely_postg
         return Ok(());
     };
     drop(admin);
-    run_case(WALL)
+    run_case(SOUTH_WALL)?;
+    run_case(NORTH_WALL)
 }
 
 #[test]
