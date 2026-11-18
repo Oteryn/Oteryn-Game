@@ -275,17 +275,21 @@ async fn exercise_logic(
         "return_on_failure": false,
         "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3"]
     }))?;
-    let layout = [32309, 32311, 32313]
-        .into_iter()
-        .flat_map(|x| {
-            [31975, 31976].map(move |y| {
-                serde_json::json!({
-                    "position": { "x": x, "y": y, "floor": -13 },
-                    "appearance": if x == 32313 { 1998 } else { 1996 },
-                })
-            })
+    // Put the switched campfire last so checking only part of the layout admits the wrong state.
+    let layout = [
+        (32311, 31975, 1996),
+        (32313, 31975, 1998),
+        (32309, 31976, 1996),
+        (32311, 31976, 1996),
+        (32313, 31976, 1998),
+        (32309, 31975, 1996),
+    ]
+    .map(|(x, y, appearance)| {
+        serde_json::json!({
+            "position": { "x": x, "y": y, "floor": -13 },
+            "appearance": appearance,
         })
-        .collect::<Vec<_>>();
+    });
     const SEAL: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal";
     const DOOR: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal_door";
     const FLAME: &str = "oteryn:quest-callback/banshees-logic-flame";
@@ -330,7 +334,15 @@ async fn exercise_logic(
     let (campfire_tile, campfire_ordinal) =
         crate::map::view::placement_of(campfire_key).ok_or("campfire position")?;
     let lever_key = placement_key(lever)?;
+    let (lever_tile, lever_ordinal) =
+        crate::map::view::placement_of(lever_key).ok_or("lever position")?;
     let map = owner.bundle_map().ok_or("bundle map")?;
+    let lever_palette_id = map
+        .overlay
+        .base()
+        .tile(lever.x, lever.y, lever.floor)
+        .and_then(|tile| tile.ids().get(usize::from(lever_ordinal)).copied())
+        .ok_or("base lever")?;
     let campfire_palette_id = map
         .overlay
         .base()
@@ -368,6 +380,13 @@ async fn exercise_logic(
             )
             .await;
         assert_eq!(outcome.disposition, UseDisposition::Committed);
+        assert_eq!(
+            map.facts
+                .base_entry(lever_tile, lever_ordinal, lever_palette_id)
+                .ok_or("shared lever")?
+                .appearance_id,
+            if command_id == 2 { 2772 } else { 2773 }
+        );
         assert_eq!(map.facts.object_revision(campfire_key) != initial, changed);
         assert_eq!(
             map.facts
