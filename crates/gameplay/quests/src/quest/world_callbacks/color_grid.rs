@@ -64,7 +64,7 @@ impl ColorGrid {
                 colors,
                 ..
             } => {
-                callback.selector.action.is_some()
+                (callback.selector.action.is_some() || callback.selector.native.is_some())
                     && callback.teleport.is_none()
                     && !callback.return_on_failure
                     && *offset > 0

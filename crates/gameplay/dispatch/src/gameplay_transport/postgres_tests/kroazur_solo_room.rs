@@ -21,8 +21,9 @@ const KEY: &str = "oteryn:quest-callback/threatened-dreams-kroazur-entry";
 const QUEST: &str = "oteryn:quest.threatened_dreams_quest";
 const ACCESS: &str = "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_access";
 const KROAZUR: &str = "oteryn:creature.kroazur";
-const TRIGGER: Position = at(33590, 32305);
-const ORIGIN: Position = at(33589, 32305);
+// Crystal data-global/startup/tables/tile.lua:993-999 maps AID 25029 here.
+const TRIGGER: Position = Position { x: 33619, y: 32304, floor: -9 };
+const ORIGIN: Position = Position { x: 33618, ..TRIGGER };
 const LANDING: Position = at(33591, 32315);
 pub(super) const EXIT: Position = Position {x:33619,y:32306,floor:-9};
 
@@ -33,7 +34,8 @@ const fn at(x: u16, y: u16) -> Position {
 pub(super) fn binding() -> TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
         "key":KEY, "quest":QUEST, "trigger":"step_in",
-        "selector":{"position":TRIGGER,"action":25029,"appearance":100},
+        "selector":{"position":TRIGGER,"action":25029,"appearance":10840,
+            "native":{"position":TRIGGER,"ordinal":1,"appearance":10840}},
         "requires_world_admission":true,
         "return_on_failure":true,"reversible":false,"passages":[],"offerings":[],
         "storage":[{"track":ACCESS,"minimum":1,"maximum":1,"set":1}],

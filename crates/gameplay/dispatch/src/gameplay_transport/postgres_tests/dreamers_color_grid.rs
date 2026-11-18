@@ -4,7 +4,10 @@ use super::TestResult;
 use super::fixture::debug;
 use super::quest_world_callbacks::{local, scenario, wire, world_cells};
 use crate::gameplay_transport::{AdmittedSession, ComposedFreshAdmission};
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, GridGroup, Position};
+use oteryn_gameplay_quests::quest::{
+    QuestStateCatalogue,
+    world_callbacks::{self, Callback, GridGroup, Position},
+};
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
     encode_step_intent,
@@ -15,7 +18,8 @@ const SOLVED: &str = "dreamers-grid-solved";
 const UNSOLVED: &str = "dreamers-grid-unsolved";
 const COLORS: [u16; 4] = [2394, 2396, 2395, 2397];
 const SHIFT: Position = at(32816, 32334, -9);
-const TRIGGER: Position = at(32819, 32347, -9);
+// Crystal data-global/startup/tables/item.lua:5084-5087 maps UID 50147 here.
+const TRIGGER: Position = at(32826, 32347, -9);
 const DESTINATION: Position = at(32766, 32275, -14);
 const PATTERN: [u16; 6] = [2394, 2395, 2396, 2397, 2394, 2395];
 
@@ -44,7 +48,8 @@ pub(super) fn binding(name: &str) -> TestResult<Callback> {
          serde_json::json!({"mode":"shift","axis":"x","offset":2,"length":6,"colors":[2394,2395,2396,2397,900]}),
          None, false, serde_json::json!({"transform":430}), "movement_riddle.lua:3-54")
     } else {
-        (serde_json::json!({"position":TRIGGER,"unique":50147,"appearance":1949}),
+        (serde_json::json!({"position":TRIGGER,"unique":50147,"appearance":1949,
+            "native":{"position":TRIGGER,"ordinal":1,"appearance":1949}}),
          serde_json::json!({"mode":"reset","groups":groups()}),
          Some(DESTINATION), true, serde_json::json!({"teleport_effect":11}), "movement_riddle_teleport.lua:11-58")
     };
@@ -76,6 +81,27 @@ pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::b
         callback, trigger(name), callback.selector.appearance.ok_or("source appearance")?, 1,
         &objects, &[430, 2394, 2395, 2396, 2397], None, &[],
     )
+}
+
+pub(super) fn catalogue(
+    base: &QuestStateCatalogue,
+    callback: &Callback,
+    name: &str,
+) -> TestResult<std::sync::Arc<QuestStateCatalogue>> {
+    let mut callbacks = vec![serde_json::to_value(callback)?];
+    if name == RIGHT {
+        callbacks.push(serde_json::json!({
+            "key":"oteryn:quest-callback/dreamers-challenge-color-grid-release",
+            "quest":"oteryn:quest.dreamer_s_challenge_quest",
+            "trigger":"step_out", "selector":{"position":SHIFT,"action":2245},
+            "reversible":false, "return_on_failure":false,
+            "passages":[], "storage":[], "offerings":[],
+            "effects":{"transform":431},
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_riddle.lua:45-54"]
+        }));
+    }
+    let document = serde_json::json!({"schema":1,"callbacks":callbacks}).to_string();
+    Ok(std::sync::Arc::new(world_callbacks::with_fixture_world_document(base, &document)?))
 }
 
 #[test]
@@ -133,6 +159,16 @@ pub(super) async fn exercise(
         RIGHT => {
             assert_eq!(after, vec![2395,2394,2395,2396,2397,2394]);
             assert_eq!(read(SHIFT)?, 430);
+            let reply = wire(
+                owner,
+                admitted,
+                2,
+                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                encode_step_intent(StepDirection::West),
+            ).await?;
+            assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+            assert_eq!(read(SHIFT)?, 431);
+            assert_eq!(cells.iter().copied().map(read).collect::<Result<Vec<_>, _>>()?, after);
         }
         SOLVED => {
             for color in COLORS {

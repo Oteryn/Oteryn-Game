@@ -1721,6 +1721,13 @@ fn scenario_case(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
             )?);
         }
+        if color_grid {
+            owner.quest_catalogue = Some(dreamers_color_grid::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
+                &callback,
+                name,
+            )?);
+        }
         if lucifuga {
             owner.quest_catalogue = Some(lucifuga_bait_spawn::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
@@ -1801,7 +1808,6 @@ fn scenario_case(
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
             || lever_fixture
             || dreamers_wall
-            || color_grid
             || target_swap
             || failure_landing
             || name.ends_with("-expiry")

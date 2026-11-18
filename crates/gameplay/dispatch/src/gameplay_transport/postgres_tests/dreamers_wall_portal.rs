@@ -5,8 +5,8 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
 pub(super) const BLOCKED: &str = "dreamers-wall-portal-blocked";
 pub(super) const CLEAR: &str = "dreamers-wall-portal-clear";
-// The fixture places UID 9030 on this test tile.
-const TRIGGER: Position = at(32762, 32294);
+// Crystal data-global/startup/tables/item.lua:4495-4498 maps UID 9030 here.
+const TRIGGER: Position = at(32762, 32290);
 const PUZZLE: Position = at(32762, 32305);
 const EXIT: Position = at(32852, 32287);
 const WALLS: [Position; 16] = [
@@ -37,7 +37,7 @@ pub(super) fn binding() -> TestResult<Callback> {
         "key": "oteryn:quest-callback/dreamers-challenge-wall-portal",
         "quest": "oteryn:quest.dreamer_s_challenge_quest",
         "trigger": "step_in",
-        "selector": {"position":TRIGGER, "unique":9030, "appearance":1949},
+        "selector": {"native":{"position":TRIGGER,"ordinal":1,"appearance":1949}},
         "reversible":false, "passages":[], "storage":[], "offerings":[],
         "teleport": EXIT,
         "effects": {
