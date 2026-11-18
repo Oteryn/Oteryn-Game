@@ -121,3 +121,77 @@ BEGIN
         EXECUTE replace(body,last_ground_transform,'final.source_ordinal=0 AND final.target_family IS NOT NULL)');
     END LOOP;
 END $scarab_carried_deadline$;
+
+-- Tonar's shell is an exact successor of a native Scarab corpse. The loot
+-- container belongs to the corpse owner until its children have been removed.
+-- Once portable, the committed transform or an ordinary custody handoff proves
+-- that the same Item still has the original absolute deadline.
+CREATE FUNCTION game_item_portable_scarab_shell(p_item UUID) RETURNS BOOLEAN
+LANGUAGE sql STABLE STRICT SECURITY DEFINER AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM game_item_instances i
+        JOIN game_item_mint_receipts m ON m.item_instance_id=i.item_instance_id
+            AND m.transaction_id=i.minted_transaction_id
+        JOIN game_spell_field_temporal_schedules p ON p.item_instance_id=i.item_instance_id
+            AND p.source_transaction_id=m.transaction_id AND p.source_ordinal=0
+        JOIN game_spell_field_temporal_receipts prev ON prev.item_instance_id=i.item_instance_id
+            AND prev.source_stage=p.source_stage-1
+        WHERE i.item_instance_id=p_item AND i.lifecycle=1 AND i.quantity=1
+          AND i.world_id=m.death_world_id AND i.definition_family='Item'
+          AND i.definition_revision_ref='definition-r1'
+          AND (p.source_stage,i.definition_production_key) IN
+              ((3,'oteryn:item.tibia.i4195'),(4,'oteryn:item.tibia.i4196'))
+          AND (p.definition_family,p.definition_production_key,p.definition_revision)=
+              (i.definition_family,i.definition_production_key,i.definition_revision_ref)
+          AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
+          AND m.loot_table_family='Item' AND m.loot_table_production_key='oteryn:item.tibia.i6024'
+          AND m.loot_table_revision_ref='definition-r1' AND m.materialized_at IS NOT NULL
+          AND p.expires_at_unix_ms > floor(extract(epoch FROM statement_timestamp())*1000)::bigint
+          AND ((prev.transaction_id=i.last_transaction_id AND prev.state_revision_before+1=i.state_revision)
+            OR EXISTS (SELECT 1 FROM game_item_decay_handoffs h
+                WHERE h.item_instance_id=i.item_instance_id AND h.result_revision=i.state_revision
+                  AND h.custody_transaction_id=i.last_transaction_id
+                  AND h.source_stage=prev.source_stage AND h.stage_transaction_id=prev.transaction_id))
+          AND NOT EXISTS (SELECT 1 FROM game_item_corpse_container_entries loot
+                          WHERE loot.parent_item_instance_id=i.item_instance_id)
+    )
+$$;
+
+DO $scarab_pickup$
+DECLARE
+    body TEXT;
+    anchor TEXT;
+BEGIN
+    EXECUTE format('ALTER FUNCTION game_item_portable_scarab_shell(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+
+    body := pg_get_functiondef('game_item_plain_corpse_source(uuid)'::regprocedure);
+    anchor := 'AND NOT game_item_loop_drop_ref(g.corpse_ref))';
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'Scarab plain corpse predecessor changed';
+    END IF;
+    EXECUTE replace(body,anchor,anchor||$arm$
+        OR EXISTS (SELECT 1 FROM game_item_ground_locations g
+            WHERE g.item_instance_id=p_item AND g.scope_kind=1
+              AND game_corpse_stage_ground_current(p_item,g.world_id,g.channel_id,
+                  g.runtime_scope_ownership_generation,g.stack_ordinal)
+              AND game_item_portable_scarab_shell(p_item))$arm$);
+
+    body := pg_get_functiondef('game_item_loop_line_admit()'::regprocedure);
+    anchor := 'AND NOT COALESCE((NEW.to_kind IN(1,2) AND NEW.quantity_before=1 AND NEW.quantity_after=1';
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'Scarab Ground pickup predecessor changed';
+    END IF;
+    EXECUTE replace(body,anchor,$arm$
+        AND NOT (NEW.to_kind IN(1,2) AND NEW.quantity_before=1 AND NEW.quantity_after=1
+            AND NEW.definition_family='Item' AND NEW.definition_revision_ref='definition-r1'
+            AND NEW.definition_production_key IN ('oteryn:item.tibia.i4195','oteryn:item.tibia.i4196')
+            AND game_item_portable_scarab_shell(NEW.item_instance_id)
+            AND (game_item_plain_corpse_source(NEW.item_instance_id)
+                 OR EXISTS (SELECT 1 FROM game_item_ground_locations dropped
+                            WHERE dropped.item_instance_id=NEW.item_instance_id
+                              AND game_item_loop_drop_ref(dropped.corpse_ref))))
+        $arm$||anchor);
+END $scarab_pickup$;
+
+REVOKE ALL ON FUNCTION game_item_portable_scarab_shell(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_item_portable_scarab_shell(UUID) TO oteryn_game_runtime;

@@ -21,7 +21,10 @@
 mod dreamer_ring;
 pub use dreamer_ring::DreamerRingTarget;
 mod altar_arrival;
-pub use altar_arrival::{AltarFieldRead, AltarArrivalReceipt, AltarArrivalTarget, PendingAltarBoss, PendingAltarRealization};
+pub use altar_arrival::{
+    AltarArrivalReceipt, AltarArrivalTarget, AltarFieldRead, PendingAltarBoss,
+    PendingAltarRealization,
+};
 
 mod elemental_arrival;
 pub use elemental_arrival::{ElementalArrivalProbe, ElementalArrivalTarget};
@@ -1092,7 +1095,6 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
                 g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.runtime_scope_ownership_generation::text AS ground_generation, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
-                EXISTS(SELECT 1 FROM game_item_mint_receipts cm WHERE cm.item_instance_id=i.item_instance_id AND cm.loot_purpose_key='CORPSE_MATERIALIZATION') AS native_corpse, \
                 game_elemental_corpse_ground_source(i.item_instance_id) AS altar_corpse_source, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
@@ -1181,7 +1183,10 @@ async fn apply_loop_move<C: ItemLoopContent>(
         if native_corpse && !matches!(request.destination, LoopDestination::Ground(_)) {
             return refuse(LoopMoveRefusal::NotSupported);
         }
-        if !row.try_get::<bool, _>("loop_pickup")? && !native_corpse && !row.try_get::<bool, _>("altar_corpse_source")? {
+        if !row.try_get::<bool, _>("loop_pickup")?
+            && !native_corpse
+            && !row.try_get::<bool, _>("altar_corpse_source")?
+        {
             return refuse(LoopMoveRefusal::NotSupported);
         }
         let source_plain_corpse: bool = row.try_get("source_plain_corpse")?;
@@ -1199,16 +1204,16 @@ async fn apply_loop_move<C: ItemLoopContent>(
             let loop_drop: bool = row.try_get("loop_drop")?;
             // A corpse MINT binds the native pin's revision-string digest.
             // Its first loop drop binds the underlying bundle revision instead.
-            let native_map = (native_corpse && !loop_drop) || source_plain_corpse
-
-                && source_map
-                    == format!(
-                        "sha256:{}",
-                        sha2::Sha256::digest(to.map_revision.as_bytes())
-                            .iter()
-                            .map(|byte| format!("{byte:02x}"))
-                            .collect::<String>()
-                    );
+            let native_map = (native_corpse && !loop_drop)
+                || source_plain_corpse
+                    && source_map
+                        == format!(
+                            "sha256:{}",
+                            sha2::Sha256::digest(to.map_revision.as_bytes())
+                                .iter()
+                                .map(|byte| format!("{byte:02x}"))
+                                .collect::<String>()
+                        );
             if (source_map != to.map_revision && !native_map)
                 || row.try_get::<String, _>("ground_content")? != to.content_revision
                 || ((loop_drop || native_corpse || source_plain_corpse)
@@ -1228,7 +1233,9 @@ async fn apply_loop_move<C: ItemLoopContent>(
     {
         return refuse(LoopMoveRefusal::Stale);
     }
-    let facts = if row.try_get::<bool, _>("native_corpse")? { content.loop_native_corpse_facts(&definition) } else if source == SourceKind::Ground
+    let facts = if row.try_get::<bool, _>("native_corpse")? {
+        content.loop_native_corpse_facts(&definition)
+    } else if source == SourceKind::Ground
         && matches!(request.destination, LoopDestination::Ground(_))
     {
         content.loop_ground_facts(&definition)
