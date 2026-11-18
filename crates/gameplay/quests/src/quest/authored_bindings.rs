@@ -336,7 +336,9 @@ impl Bindings {
                         && !stage.is_native_encounter()
                         && !matches!(&stage.trigger,
                             Trigger::MapUse { callback } | Trigger::StepIn { callback }
-                            if callback.operation_count() > 0))
+                            if callback.operation_count() > 0)
+                        && !matches!(&stage.trigger, Trigger::CarriedUse { callback }
+                            if callback.carried_relocation.is_some()))
                     || storage.iter().any(|s| {
                         !tracks.contains(&s.track)
                             || quest

@@ -1602,6 +1602,8 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
         .position(|state| !state.preserve)
         .or_else(|| (!callback.storage.is_empty()).then_some(0));
     let stamp_binding = binding.filter(|_| temporal_payment::guarded(callback));
+    let relocation_binding =
+        binding.filter(|_| bound_effect.is_none() && callback.carried_relocation.is_some());
     Ok(QuestTransition {
         world_change: None,
         key: callback.key.clone(),
@@ -1636,12 +1638,19 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
                     }
                 },
             })
-            .chain(
-                callback
-                    .state_ops
-                    .iter()
-                    .map(|operation| temporal_binding::stamp(operation, stamp_binding)),
-            )
+            .chain(callback.state_ops.iter().map(|operation| {
+                let mut effect = temporal_binding::stamp(operation, stamp_binding);
+                // Crystal 6-mind-travel.lua:21-30 only consumes the potion and relocates.
+                if let Some(binding) = relocation_binding
+                    && let QuestEffectKind::Draw { sides, .. } = effect.effect
+                {
+                    effect.effect = QuestEffectKind::Draw {
+                        sides,
+                        binding: Some(binding),
+                    };
+                }
+                effect
+            }))
             .chain(callback.counter.iter().map(|counter| QuestEffect {
                 track: counter.track.clone(),
                 from: QuestComparison::Between(0, counter.maximum - 1),

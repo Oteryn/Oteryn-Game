@@ -11,22 +11,29 @@ use oteryn_protocol_oteryn::world_object::{
     COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, decode_use_result,
     encode_item_use_intent,
 };
+use oteryn_protocol_oteryn::world_spatial::{
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+    encode_step_intent,
+};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 const QUEST: &str = "oteryn:quest.fixture_kilmaresh_potion";
 const KEY: &str = "oteryn:quest-reward/fixture-kilmaresh/mind-potion";
-const STATE: &str = "oteryn:quest-progress/fixture-kilmaresh/mind-entered";
 const DRAW: &str = "oteryn:quest-progress/fixture-kilmaresh/side";
 const POTION: &str = "oteryn:item.tibia.i31350";
 const RING: &str = "oteryn:item.tibia.i31306";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:1-39";
 
 const START: Position = Position {
-    x: 33865,
+    x: 33857,
     y: 31533,
     floor: -7,
+};
+const OUTSIDE: Position = Position {
+    x: START.x - 1,
+    ..START
 };
 const LANDINGS: [Position; 2] = [
     Position {
@@ -42,7 +49,7 @@ const LANDINGS: [Position; 2] = [
 ];
 
 #[test]
-fn hallucinogen_use_checks_the_ring_slot_and_lands_on_the_persisted_brain_side() -> TestResult {
+fn hallucinogen_use_checks_ring_and_temple_and_commits_only_the_chosen_side() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -55,7 +62,6 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
         "quest": QUEST, "recipe_sha256": Sha256::digest(SOURCE).iter().map(|b| format!("{b:02x}")).collect::<String>(),
         "sources": [SOURCE],
         "tracks": [
-            {"key": STATE, "initial": -1, "minimum": -1, "maximum": 1},
             {"key": DRAW, "initial": -1, "minimum": -1, "maximum": 2}
         ],
         "stages": [{
@@ -64,7 +70,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
                 "key": KEY, "quest": QUEST, "npc": "oteryn:npc.faloriel",
                 "keywords": [], "topic": 0, "next_topic": 0, "carried_item": POTION,
                 "take": [{"item": POTION, "count": 1}],
-                "storage": [{"track": STATE, "minimum": -1, "maximum": 1, "set": 1}],
+                "storage": [],
                 "state_ops": [{"track": DRAW, "from": {"kind": "any"}, "effect": {"kind": "draw", "sides": 2}}],
                 "self_target": {"minimum": {"x": 33857, "y": 31526, "floor": -7},
                                 "maximum": {"x": 33873, "y": 31540, "floor": -7}},
@@ -93,7 +99,8 @@ async fn exercise(admin: String) -> TestResult {
         "content-1",
     )?;
     let generation = controller.active().ok_or("content generation")?;
-    let tiles: Vec<_> = std::iter::once(START)
+    let tiles: Vec<_> = [START, OUTSIDE]
+        .into_iter()
         .chain(LANDINGS)
         .map(|p| (p.x, p.y, p.floor, 0, 1948))
         .collect();
@@ -177,10 +184,65 @@ async fn exercise(admin: String) -> TestResult {
         ).bind(RING).execute(&mut *tx).await?;
         tx.commit().await?;
     }
+    for (move_id, direction, position) in [
+        (2, StepDirection::West, OUTSIDE),
+        (4, StepDirection::East, START),
+    ] {
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("step clock")?;
+        let step = wire(
+            &owner,
+            &mut admitted,
+            move_id,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            encode_step_intent(direction),
+        )
+        .await?;
+        assert_eq!(
+            decode_step_result(&step).map_err(debug)?.disposition,
+            StepDisposition::Moved
+        );
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position(),
+            local(position)
+        );
+        if position == OUTSIDE {
+            let rejected = wire(
+                &owner,
+                &mut admitted,
+                3,
+                COMMAND_TYPE_USE_INTENT,
+                payload.clone(),
+            )
+            .await?;
+            assert_eq!(
+                decode_use_result(&rejected).map_err(debug)?,
+                UseDisposition::Rejected
+            );
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                local(OUTSIDE)
+            );
+        }
+    }
     let committed = wire(
         &owner,
         &mut admitted,
-        2,
+        5,
         COMMAND_TYPE_USE_INTENT,
         payload.clone(),
     )
@@ -210,7 +272,7 @@ async fn exercise(admin: String) -> TestResult {
         local(expected)
     );
     assert_eq!(
-        wire(&owner, &mut admitted, 2, COMMAND_TYPE_USE_INTENT, payload).await?,
+        wire(&owner, &mut admitted, 5, COMMAND_TYPE_USE_INTENT, payload).await?,
         committed
     );
     let (receipts, remaining): (i64, i64) = sqlx::query_as(
@@ -218,6 +280,22 @@ async fn exercise(admin: String) -> TestResult {
                 (SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$2)"
     ).bind(KEY).bind(POTION).fetch_one(&h.pool).await?;
     assert_eq!((receipts, remaining), (1, 0));
+    let cues: Vec<_> = owner
+        .bundle_map()
+        .ok_or("temple map")?
+        .facts
+        .movement_effects_since(0)
+        .into_iter()
+        .filter_map(|(_, tile, effect)| (effect == 38).then_some(tile))
+        .collect();
+    assert_eq!(
+        cues,
+        [crate::map::overlay::TilePos {
+            x: expected.x,
+            y: expected.y,
+            floor: expected.floor
+        }]
+    );
     drop(owner);
     drop(authority);
     drop(seal);
