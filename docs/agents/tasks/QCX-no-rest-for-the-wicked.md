@@ -37,20 +37,27 @@ The admitted appearance pair in the outfit catalogue is female 1808 and male 180
 - BLOCKER wards, cell, vision and three trials exact bindings and stateful timed objectives absent from the pinned donor quest scripts `data-global/npc/ortelio.lua:61-82` (cell hint only) and `data-global/npc/lai.lua:54-59` (NPC shell only)
 - BLOCKER Arbaziloth encounter and mode loot fight-specific health interception, adds, rod phases and mode resolution `data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_fight.lua:171-195,219-295,349-406`
 - BLOCKER Fiend Slayer report and ten-hard-win room guarded reward and mode-specific participant credit `data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_death.lua:18-55`, `data-global/npc/the_forgemaster.lua:176-184`
-- BLOCKER Doomforge portal native teleport interception tied to encounter outcome `data-global/scripts/quests/no_rest_for_the_wicked/forge_teleport.lua:9-40`
+- BLOCKER Doomforge hard-win admission native outcome credit and conditional passage `data-global/scripts/quests/no_rest_for_the_wicked/forge_teleport.lua:9-40`
 - BLOCKER extra-room claim verified room access and exact retained chest selectors `data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1-32`
 
 ## OPEN-FACTS
 
 Exact global mist threshold, the level/Premium enforcement point, crystal duration and precise ordering of the remaining three towers, finger success odds, exact trial cooldowns, the fishing trial timer, Arbaziloth cooldown and phase HP thresholds, rod dodge odds, mode-specific loot rates and quantities, and native Global IDs for the weapon choices, outfit, achievement, portal and chest selectors. The spoiler names the first outfit grant and the ten-hard-win reward room, but does not establish the exact Lai and Forgemaster responses or an exact XP amount. The captured text reports the Imp kill and collector failure totals, but its counter wording does not fully specify the interaction between kills and arrivals.
 
+## Corrections
+
+- The disabled recipe and derived completion candidate now require 100 Demonic Core Essences and 25 Charged Imps. The captured Global spoiler supplies both counts. They remain recipe data pending active quest dispatch bindings. [Spoiler](https://tibia.fandom.com/?curid=107634&oldid=1177415)
+- The retained Doomforge portal keeps its appearance at (34041, 32330, 14). The placement and Transition generators hold the unconditional destination (34062, 32334, 14) until an admitted hard-win owner can authorize the passage. This closes entry through this portal on current main. [Spoiler](https://tibia.fandom.com/?curid=107634&oldid=1177415)
+- The initial generator attempt ran `python3 tools/content-schema/quest-authoring/quest_tree_authoring.py` with an edit to the frozen compiler. Its exact error was `ValueError: input/proof/compiler SHA mismatch: tools/content-schema/quest-authoring/quest_tree_authoring.py`. The correction now uses the existing chosen-journal extension and the in-tree Quest tree generator. The frozen compiler and receipt are byte-identical to the base.
+
 ## PARTIAL
 
-Audit only. Entry, claims, progression, rewards and a PostgreSQL dispatch regression remain open. The simple authored count corrections were attempted through the Quest tree generator. Its checked source receipt rejects changes to the compiler input with `ValueError: input/proof/compiler SHA mismatch: tools/content-schema/quest-authoring/quest_tree_authoring.py`. The attempted changes were removed. The existing ITEMHOLD repin tool only accepts its listed predecessors, which exclude this base compiler digest. The Monk receipt generator is scoped to its own approved inputs. The affected receipt therefore needs a scoped compiler repin before the inactive recipe values can be corrected. A dispatch test against the inactive candidate would provide no evidence for quest behavior.
+Hard-win passage admission, Arbaziloth rewards, extra-room claims, and the other audited quest stages remain open. The active movement test covers the fail-closed placement. The two count fixes are in the disabled recipe and have no active dispatch path.
 
 ## Verification
 
-- Quest authoring `--part checks` passed all 44 checks, including 27 tests across three test scripts.
-- World bundle `pin-check . <temporary output directory>` passed for the one Oteryn world pin. The compiler at this base requires the output directory argument.
-- `cargo fmt --all -- --check` and dispatch library Clippy with all features and `-D warnings` passed.
-- PostgreSQL and route-less QCX70 runs have zero cases and no durations. This audit did not land an executable fix to exercise. The shard build files were never applied.
+- PG via shard (pgsplit build files applied on `2ebc4e82f2b8500fa48eae31ec74bfb44ab806dc`). Baseline `qcx70-doomforge` failed in 34.77 s because STEP landed at (34062, 32334, 14). After the guard, the same case passed on the refreshed tree in 23.42 s and STEP stayed at (34041, 32330, 14). Cargo reported 1 passed, 0 failed, and 3,009 filtered out.
+- `cargo run --locked -p oteryn-world-bundle-compiler -- pin-refresh .` generated Oteryn pin `c037dc8f7c5c55b75820849a4133ef4eaa4f299b8819526abdf081ae4088727a`. The matching `pin-check` passed. The authored-prop generators refreshed two whole-shard witnesses because the shared definition shard changed. The props themselves compare equal.
+- The route-less invocation returned Ok and reported 1 passed in 0.00 s. It supplied no database evidence. The two local shard build files were removed after the test runs.
+- The quest-authoring checks passed all 44 commands, including 27 tests. The world metadata validator and guarded-placement generator check passed.
+- Workspace formatting, explicit formatting for the auto-mounted test, and strict dispatch library Clippy passed with the shard build files removed.
