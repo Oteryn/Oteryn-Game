@@ -883,7 +883,10 @@ fn haunted_cellar_fixture(
             .cmp(&b["production_definition"]["production_key"].as_str())
     });
     profiles.bytes = serde_json::to_vec(&document)?;
-    profiles.sha256 = format!("{:x}", Sha256::digest(&profiles.bytes));
+    profiles.sha256 = Sha256::digest(&profiles.bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     try_activate_input(world, &input).map_err(Into::into)
 }
 
