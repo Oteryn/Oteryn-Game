@@ -120,8 +120,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let tool_id = entry.and_then(|entry| source_id(&entry.item.definition.production_key));
         let corpse_id = source_id(&ground.definition().production_key);
-        request.lord_ashes = tool_id == Some(5908) && matches!(corpse_id, Some(8181 | 8182));
-        if !request.lord_ashes
+        let lord_ashes = tool_id == Some(5908) && matches!(corpse_id, Some(8181..=8184));
+        request.lord_ashes = lord_ashes;
+        if !lord_ashes
             && !tool_id
                 .zip(corpse_id)
                 .and_then(|(tool, target)| {
@@ -187,7 +188,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.refresh_skinning_projection(fence).await;
         }
         drop(permit);
-        Ok(outcome(result))
+        Ok(outcome(
+            if lord_ashes && result == UseDisposition::NothingToUse {
+                UseDisposition::NotPossible
+            } else {
+                result
+            },
+        ))
     }
 
     /// Refresh only existing corpse bindings from the complete durable owner snapshot.

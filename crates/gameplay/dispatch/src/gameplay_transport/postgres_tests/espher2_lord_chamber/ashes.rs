@@ -202,9 +202,9 @@ pub(super) async fn exercise(
             use_knife(201).await.ok_or("ashes USE replay")?.disposition,
             UseDisposition::Committed
         );
-        assert_ne!(
+        assert_eq!(
             use_knife(202).await.ok_or("ashes second USE")?.disposition,
-            UseDisposition::Committed
+            UseDisposition::NotPossible
         );
         let quantity: i64 = sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i954'")
             .bind(item_fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
