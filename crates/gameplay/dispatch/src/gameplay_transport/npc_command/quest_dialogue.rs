@@ -238,14 +238,15 @@ fn reply(
 }
 
 /// A receipt remains successful when its original conversation has ended. Only
-/// the current conversation may receive the retained reply; reconciliation must
-/// not reopen an older generation or publish into another NPC's conversation.
+/// the current conversation may receive dialogue, including a refusal line.
+/// Reconciliation must not reopen an older generation or publish into another
+/// NPC's conversation.
 fn publish_committed_reply(
     current: Option<Context>,
     expected: &Context,
     rendered: NpcTalkOutcome,
 ) -> NpcTalkOutcome {
-    if current.as_ref() == Some(expected) && rendered.disposition == NpcIntentDisposition::Ok {
+    if current.as_ref() == Some(expected) && rendered.conversation.is_some() {
         rendered
     } else {
         NpcTalkOutcome::only(NpcIntentDisposition::Ok)
