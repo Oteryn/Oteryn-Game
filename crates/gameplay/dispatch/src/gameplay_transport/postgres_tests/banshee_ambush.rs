@@ -243,9 +243,16 @@ fn scenario() -> TestResult {
             (actor, session, START, START, 1),
             (peer, peer_session, WITNESS, DESTINATION, 2),
             (peer, peer_session, WITNESS, WITNESS, 2),
+            (actor, session, START, START, 0),
         ] {
             let origin = {
                 let mut runtime = owner.runtime.lock().await;
+                if cohorts == 0 {
+                    // The durable seal must refuse re-entry even after the room is cleared.
+                    for creature in runtime.current_live_creature_census().map_err(debug)? {
+                        runtime.remove_encounter_actor(creature).map_err(debug)?;
+                    }
+                }
                 let mut origin = runtime.read_actor_position(actor).map_err(debug)?;
                 let closed = crate::map::floor::BundleDoors(&map.facts);
                 if origin.position() == local(DESTINATION) {
