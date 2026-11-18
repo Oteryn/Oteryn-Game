@@ -38,6 +38,8 @@ The NPC placement generator now admits Gerimor’s retained source placement at 
 ## Validation
 
 - Baseline PostgreSQL via the local shard, with the base callback and placement records restored for the run. Both tests failed as expected (74.59 s total). The teleports reached their correct landings without a cue (Carlin 42.29 s, Essence 12.78 s, Orc entry 8.42 s, Orc exit 8.78 s). Gerimor failed at the missing placement after initializing the database (1.06 s).
+- PG via shard (pgsplit build files applied on `000a051a51b7e0b65d2669d7d5b1cba46edb7d9e`), 2 passed, 0 failed, 77.45 s total. Carlin exit 19.09 s, Essence exit 10.31 s, Orc entry 10.48 s, Orc exit 11.29 s, Gerimor 25.31 s. The run without the PG URL returned success for both route guards in 0.00 s.
+- World pin refresh and pin-check passed. The compiled World contains 104 NPC definitions with placements, up from 103 on the base. The NPC placement generator replay also passed.
 - Dispatch library Clippy passed. The quest-authoring suite stopped at the base quest-tree drift in three definition shards and their index. The Cults callback generator check passed independently.
 
 ## Blockers and remaining work
