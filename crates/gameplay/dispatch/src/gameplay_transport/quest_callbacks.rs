@@ -36,6 +36,7 @@ mod source_transforms;
 mod timed_encounter;
 mod timed_passages;
 pub(super) mod zamulosh;
+mod zamulosh_terrain;
 
 use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{
@@ -101,6 +102,7 @@ pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
+    habitats: std::sync::Mutex<[Option<zamulosh_terrain::PendingHabitat>; 8]>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,
@@ -261,6 +263,26 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     };
     if source_ordinal.is_some_and(|source| source != ordinal) {
         return false;
+    }
+    if zamulosh_terrain::is_habitat_callback(&callback.key) {
+        return callback.selector.native.as_ref().is_some_and(|source| {
+            tile(source.position) == pos
+                && source.ordinal == ordinal
+                && !map.facts.base_hidden(key)
+                && map
+                    .overlay
+                    .base()
+                    .tile(pos.x, pos.y, pos.floor)
+                    .and_then(|base| {
+                        base.ids()
+                            .iter()
+                            .zip(base.depths())
+                            .filter(|(_, depth)| **depth == 0)
+                            .nth(usize::from(ordinal))
+                            .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
+                    })
+                    .is_some_and(|entry| Some(entry.appearance_id) == callback.selector.appearance)
+        });
     }
     if super::kill_reward::is_forge_exit(&callback.key) {
         return callback.selector.native.as_ref().is_some_and(|source| {
@@ -1255,6 +1277,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 selected_tool.as_ref(),
             ))
             .await;
+            if result == UseDisposition::Committed {
+                self.schedule_zamulosh_habitat(&mut runtime, &states, map, callback);
+            }
             drop(states);
             drop(runtime);
             drop(slot);

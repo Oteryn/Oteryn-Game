@@ -242,30 +242,30 @@ impl BundleFacts {
 }
 
 impl CallbackStates {
+    fn scenery_tile(&self, pos: TilePos) -> Option<(u64, &FeroxaPhaseTile)> {
+        if let Some((revision, tile)) = self.habitat_tiles.get(&pos) {
+            return Some((*revision, tile));
+        }
+        let phase = self.feroxa_phase.as_ref()?;
+        Some((phase.revision, phase.tiles.get(&pos)?))
+    }
+
     fn has_phase_capacity(&self, additional: usize) -> bool {
         self.has_capacity(additional)
     }
 
     pub(super) fn phase_revision(&self, key: u64) -> Option<u64> {
         let (pos, _) = view::placement_of(key)?;
-        let phase = self.feroxa_phase.as_ref()?;
-        phase.tiles.contains_key(&pos).then_some(phase.revision)
+        self.scenery_tile(pos).map(|(revision, _)| revision)
     }
 
     pub(super) fn phase_entry(&self, pos: TilePos, ordinal: u8) -> Option<Option<EntryFacts>> {
-        let phase = self.feroxa_phase.as_ref()?;
-        Some(
-            phase
-                .tiles
-                .get(&pos)?
-                .entries
-                .get(usize::from(ordinal))
-                .copied(),
-        )
+        let (_, tile) = self.scenery_tile(pos)?;
+        Some(tile.entries.get(usize::from(ordinal)).copied())
     }
 
     pub(super) fn phase_composition(&self, pos: TilePos) -> Option<view::ComposedTile> {
-        let tile = self.feroxa_phase.as_ref()?.tiles.get(&pos)?;
+        let (_, tile) = self.scenery_tile(pos)?;
         let entries = tile
             .entries
             .iter()
@@ -302,7 +302,7 @@ impl CallbackStates {
         &self,
         pos: TilePos,
     ) -> Result<Option<QualifiedSpellTile>, SpellTileLookupError> {
-        let Some(tile) = self.feroxa_phase.as_ref().and_then(|p| p.tiles.get(&pos)) else {
+        let Some((_, tile)) = self.scenery_tile(pos) else {
             return Ok(None);
         };
         if self.phase_has_dynamic_blocker(pos) {
@@ -361,25 +361,21 @@ impl FeroxaMapPhase {
 
 impl BundleFacts {
     pub(crate) fn phase_contains(&self, pos: TilePos) -> bool {
-        self.callbacks.lock().is_ok_and(|s| {
-            s.feroxa_phase
-                .as_ref()
-                .is_some_and(|p| p.tiles.contains_key(&pos))
-        })
+        self.callbacks
+            .lock()
+            .is_ok_and(|s| s.scenery_tile(pos).is_some())
     }
     pub fn phase_zones(&self, pos: TilePos) -> Result<Option<(bool, bool)>, view::ViewError> {
         let s = self
             .callbacks
             .lock()
             .map_err(|_| view::ViewError::MissingFacts)?;
-        Ok(s.feroxa_phase
-            .as_ref()
-            .and_then(|p| p.tiles.get(&pos))
-            .map(|tile| (tile.no_logout, tile.spell.flags().protection_zone)))
+        Ok(s.scenery_tile(pos)
+            .map(|(_, tile)| (tile.no_logout, tile.spell.flags().protection_zone)))
     }
     pub(crate) fn phase_teleport(&self, pos: TilePos) -> Option<Option<TilePos>> {
         let s = self.callbacks.lock().ok()?;
-        let tile = s.feroxa_phase.as_ref()?.tiles.get(&pos)?;
+        let (_, tile) = s.scenery_tile(pos)?;
         Some(tile.teleport.and_then(|(ordinal, to)| {
             let key = placement_key(pos, ordinal)?;
             let current = s
@@ -393,3 +389,181 @@ impl BundleFacts {
 
 #[cfg(test)]
 mod tests;
+
+impl BundleFacts {
+    /// Swap a habitat to the retained counterpart's scenery. Both reads use
+    /// the immutable base so changing the other habitat cannot alter the source.
+    pub fn publish_habitat_mirror(
+        &self,
+        base: &crate::map::WorldBase,
+        spells: &crate::content::bundle_spell_tiles::BundleSpellTiles,
+        origin: TilePos,
+        counterpart_x: u16,
+    ) -> bool {
+        if !matches!((origin.x, counterpart_x), (33611, 33634) | (33634, 33611))
+            || !matches!(origin.y, 32658 | 32676 | 32694 | 32712)
+            || origin.floor != -12
+        {
+            return false;
+        }
+        let mut tiles = BTreeMap::new();
+        for dx in 0..15 {
+            for dy in 0..16 {
+                let position = TilePos {
+                    x: origin.x + dx,
+                    y: origin.y + dy,
+                    floor: origin.floor,
+                };
+                let source = TilePos {
+                    x: counterpart_x + dx,
+                    ..position
+                };
+                if self.house_tile(position) || self.house_tile(source) {
+                    return false;
+                }
+                let (Some(tile), Some(previous)) = (
+                    base.tile(source.x, source.y, source.floor),
+                    base.tile(position.x, position.y, position.floor),
+                ) else {
+                    return false;
+                };
+                let logical = |p: TilePos| LogicalCell {
+                    x: i32::from(p.x),
+                    y: i32::from(p.y),
+                    z: -i32::from(p.floor),
+                };
+                let Ok(source_spell) = spells.lookup_base(logical(source)) else {
+                    return false;
+                };
+                let Ok(target_spell) = spells.lookup_base(logical(position)) else {
+                    return false;
+                };
+                if source_spell.flags().floor_change || target_spell.flags().floor_change {
+                    return false;
+                }
+                let rotations = Default::default();
+                let mut entries = Vec::new();
+                for (ordinal, (&id, &depth)) in tile.ids().iter().zip(tile.depths()).enumerate() {
+                    let Ok(ordinal) = u8::try_from(ordinal) else {
+                        return false;
+                    };
+                    let Some(entry) = self.entry(source, ordinal, id, None, &rotations) else {
+                        return false;
+                    };
+                    if depth != 0 || entry.pickupable || entry.bound || entry.count != 1 {
+                        return false;
+                    }
+                    entries.push(entry);
+                }
+                for (ordinal, (&id, &depth)) in
+                    previous.ids().iter().zip(previous.depths()).enumerate()
+                {
+                    let Ok(ordinal) = u8::try_from(ordinal) else {
+                        return false;
+                    };
+                    let Some(entry) = self.entry(position, ordinal, id, None, &rotations) else {
+                        return false;
+                    };
+                    if depth != 0 || entry.pickupable || entry.bound {
+                        return false;
+                    }
+                }
+                // Crystal's desert and ice scripts account for these retained
+                // physical palette deltas from the counterpart scenery.
+                let replacements: &[u16] = match (position.x, position.y) {
+                    (33642, 32683) | (33643, 32682) => &[417, 12516],
+                    (33636, 32702) | (33638, 32705) | (33639, 32704) => &[6598],
+                    (33637, 32702) => &[6607],
+                    (33638, 32702 | 32703) => &[6601],
+                    (33638, 32704) | (33639, 32701 | 32702) => &[6594],
+                    (33639, 32705) => &[6597],
+                    (33640, 32705) => &[6608],
+                    _ => &[],
+                };
+                if !replacements.is_empty() {
+                    let Some(replaced) = replacements
+                        .iter()
+                        .map(|id| self.movement_item_facts(*id))
+                        .collect::<Option<Vec<_>>>()
+                    else {
+                        return false;
+                    };
+                    if replaced.iter().any(|e| e.pickupable || e.bound) {
+                        return false;
+                    }
+                    entries = replaced;
+                }
+                let ground = entries
+                    .iter()
+                    .find(|e| e.terrain_kind == Some(TerrainKind::Ground));
+                let Some(ground) = ground else { return false };
+                let tops = entries
+                    .iter()
+                    .filter(|e| e.terrain_kind != Some(TerrainKind::Ground))
+                    .map(|e| u32::from(e.appearance_id))
+                    .collect();
+                let mut flags = source_spell.flags();
+                flags.protection_zone = target_spell.flags().protection_zone;
+                let spell = QualifiedSpellTile::from_bundle(
+                    source_spell
+                        .ground_speed()
+                        .map(|speed| (u32::from(ground.appearance_id), speed)),
+                    tops,
+                    flags,
+                    target_spell.no_pvp_zone().zip(target_spell.pvp_zone()),
+                );
+                tiles.insert(
+                    position,
+                    FeroxaPhaseTile {
+                        position,
+                        entries,
+                        spell,
+                        no_logout: false,
+                        teleport: None,
+                    },
+                );
+            }
+        }
+        let Ok(mut state) = self.callbacks.lock() else {
+            return false;
+        };
+        let inside = |key| placement_key_owner(key).is_some_and(|pos| tiles.contains_key(&pos));
+        if !state.has_capacity(tiles.values().map(|tile| 1 + tile.entries.len()).sum())
+            || state.reserved.iter().copied().any(inside)
+            || state
+                .reserved_positions
+                .iter()
+                .any(|pos| tiles.contains_key(pos))
+            || state
+                .movement_items
+                .keys()
+                .any(|pos| tiles.contains_key(pos))
+        {
+            return false;
+        }
+        let revisions = state
+            .habitat_tiles
+            .values()
+            .map(|(revision, _)| *revision)
+            .chain(
+                state
+                    .changed
+                    .iter()
+                    .filter(|(key, _)| inside(**key))
+                    .map(|(_, (revision, _))| *revision),
+            );
+        let Some(revision) = revisions.max().unwrap_or(0).checked_add(1) else {
+            return false;
+        };
+        let state = Arc::make_mut(&mut state);
+        state.clear_feroxa_scenery(|pos| tiles.contains_key(&pos));
+        state
+            .habitat_tiles
+            .extend(tiles.into_iter().map(|(pos, tile)| (pos, (revision, tile))));
+        true
+    }
+}
+
+fn placement_key_owner(key: u64) -> Option<TilePos> {
+    view::placement_of(key).map(|(pos, _)| pos)
+}

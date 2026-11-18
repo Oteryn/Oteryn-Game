@@ -86,12 +86,20 @@ impl BundleSpellTiles {
         &self,
         cell: LogicalCell,
     ) -> Result<Cow<'_, QualifiedSpellTile>, SpellTileLookupError> {
-        let pos = tile_pos(cell).ok_or(SpellTileLookupError::Absent)?;
         if let Some(phases) = self.phases.get()
             && let Some(tile) = phases.lookup(cell)?
         {
             return Ok(Cow::Owned(tile));
         }
+        self.lookup_base(cell)
+    }
+
+    /// Resolve the immutable bundle before applying Channel-local scenery.
+    pub fn lookup_base(
+        &self,
+        cell: LogicalCell,
+    ) -> Result<Cow<'_, QualifiedSpellTile>, SpellTileLookupError> {
+        let pos = tile_pos(cell).ok_or(SpellTileLookupError::Absent)?;
         let index = self
             .base
             .tile_index(pos.x, pos.y, pos.floor)

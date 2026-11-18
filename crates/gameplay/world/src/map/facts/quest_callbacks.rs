@@ -143,6 +143,7 @@ type ScopedMovementEffect = (u64, Option<EffectScope>, TilePos, u16);
 #[derive(Clone, Debug, Default)]
 pub(super) struct CallbackStates {
     pub(super) feroxa_phase: Option<Arc<super::feroxa_map_phases::FeroxaMapPhase>>,
+    pub(super) habitat_tiles: BTreeMap<TilePos, (u64, super::feroxa_map_phases::FeroxaPhaseTile)>,
     pub(super) reserved: BTreeSet<u64>,
     pub(super) reserved_positions: BTreeSet<TilePos>,
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
@@ -521,6 +522,11 @@ impl CallbackStates {
 
     pub(super) fn has_capacity(&self, additional: usize) -> bool {
         let used = self.feroxa_phase.as_ref().map_or(0, |p| p.footprint())
+            + self
+                .habitat_tiles
+                .values()
+                .map(|(_, tile)| 1 + tile.entries.len())
+                .sum::<usize>()
             + self.naginata_picks.len()
             + self.reserved.len()
             + self.arena_pillars.len()

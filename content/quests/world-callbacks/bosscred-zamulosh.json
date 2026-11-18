@@ -1,0 +1,709 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-corrupted",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33628,
+          "y": 32719,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33628,
+            "y": 32719,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34311,
+        "appearance": 9125
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitat/corrupted",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitats",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_corrupted.lua:1-426"
+      ],
+      "effects": {
+        "transform": 9126
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-corrupted/reset",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33628,
+          "y": 32719,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33628,
+            "y": 32719,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34311,
+        "appearance": 9126
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_corrupted.lua:1-426"
+      ],
+      "effects": {
+        "transform": 9125
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-desert",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33631,
+          "y": 32683,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33631,
+            "y": 32683,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34308,
+        "appearance": 9125
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitat/desert",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitats",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_desert.lua:1-405"
+      ],
+      "effects": {
+        "transform": 9126
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-desert/reset",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33631,
+          "y": 32683,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33631,
+            "y": 32683,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34308,
+        "appearance": 9126
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_desert.lua:1-405"
+      ],
+      "effects": {
+        "transform": 9125
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-dimension",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33631,
+          "y": 32719,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33631,
+            "y": 32719,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34312,
+        "appearance": 9125
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitat/dimension",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitats",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_dimension.lua:1-441"
+      ],
+      "effects": {
+        "transform": 9126
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-dimension/reset",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33631,
+          "y": 32719,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33631,
+            "y": 32719,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34312,
+        "appearance": 9126
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_dimension.lua:1-441"
+      ],
+      "effects": {
+        "transform": 9125
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-grass",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33631,
+          "y": 32665,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33631,
+            "y": 32665,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34306,
+        "appearance": 9125
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitat/grass",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitats",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_grass.lua:1-473"
+      ],
+      "effects": {
+        "transform": 9126
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-grass/reset",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33631,
+          "y": 32665,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33631,
+            "y": 32665,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34306,
+        "appearance": 9126
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_grass.lua:1-473"
+      ],
+      "effects": {
+        "transform": 9125
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-ice",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33631,
+          "y": 32701,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33631,
+            "y": 32701,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34310,
+        "appearance": 9125
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitat/ice",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitats",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_ice.lua:1-488"
+      ],
+      "effects": {
+        "transform": 9126
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-ice/reset",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33631,
+          "y": 32701,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33631,
+            "y": 32701,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34310,
+        "appearance": 9126
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_ice.lua:1-488"
+      ],
+      "effects": {
+        "transform": 9125
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-mushroom",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33628,
+          "y": 32683,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33628,
+            "y": 32683,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34307,
+        "appearance": 9125
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitat/mushroom",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitats",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_mushroom.lua:1-441"
+      ],
+      "effects": {
+        "transform": 9126
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-mushroom/reset",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33628,
+          "y": 32683,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33628,
+            "y": 32683,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34307,
+        "appearance": 9126
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_mushroom.lua:1-441"
+      ],
+      "effects": {
+        "transform": 9125
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-roshamuul",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33628,
+          "y": 32665,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33628,
+            "y": 32665,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34305,
+        "appearance": 9125
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitat/roshamuul",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitats",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_roshamuul.lua:1-514"
+      ],
+      "effects": {
+        "transform": 9126
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-roshamuul/reset",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33628,
+          "y": 32665,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33628,
+            "y": 32665,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34305,
+        "appearance": 9126
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_roshamuul.lua:1-514"
+      ],
+      "effects": {
+        "transform": 9125
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-venom",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33628,
+          "y": 32701,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33628,
+            "y": 32701,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34309,
+        "appearance": 9125
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitat/venom",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/ferumbras-ascension/habitats",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_venom.lua:1-497"
+      ],
+      "effects": {
+        "transform": 9126
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/zamulosh-habitat-venom/reset",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33628,
+          "y": 32701,
+          "floor": -12
+        },
+        "native": {
+          "position": {
+            "x": 33628,
+            "y": 32701,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 9125
+        },
+        "action": 34309,
+        "appearance": 9126
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_venom.lua:1-497"
+      ],
+      "effects": {
+        "transform": 9125
+      }
+    }
+  ]
+}

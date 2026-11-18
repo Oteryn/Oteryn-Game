@@ -139,6 +139,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         4 => {
                             if self.ensure_source_map_initialized().await {
                                 self.drain_quest_encounter_deadlines().await;
+                                self.drain_zamulosh_terrain().await;
                             }
                         }
                         5 => {

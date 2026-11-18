@@ -71,3 +71,70 @@ pub(super) fn transition() -> QuestTransition {
         world_change: None,
     }
 }
+
+pub struct Habitat {
+    pub key: &'static str,
+    pub origin: (u16, u16),
+    pub counterpart_x: u16,
+    pub creature: &'static str,
+    pub spawn: (u16, u16),
+}
+
+pub const HABITATS: [Habitat; 8] = [
+    Habitat {
+        key: "oteryn:quest-callback/zamulosh-habitat-corrupted",
+        origin: (33611, 32712),
+        counterpart_x: 33634,
+        creature: "oteryn:creature.lovely_yielothax",
+        spawn: (33619, 32722),
+    },
+    Habitat {
+        key: "oteryn:quest-callback/zamulosh-habitat-desert",
+        origin: (33634, 32676),
+        counterpart_x: 33611,
+        creature: "oteryn:creature.lovely_rotworm",
+        spawn: (33641, 32684),
+    },
+    Habitat {
+        key: "oteryn:quest-callback/zamulosh-habitat-dimension",
+        origin: (33634, 32712),
+        counterpart_x: 33611,
+        creature: "oteryn:creature.lovely_souleater",
+        spawn: (33642, 32722),
+    },
+    Habitat {
+        key: "oteryn:quest-callback/zamulosh-habitat-grass",
+        origin: (33634, 32658),
+        counterpart_x: 33611,
+        creature: "oteryn:creature.lovely_frazzlemaw",
+        spawn: (33642, 32666),
+    },
+    Habitat {
+        key: "oteryn:quest-callback/zamulosh-habitat-ice",
+        origin: (33634, 32694),
+        counterpart_x: 33611,
+        creature: "oteryn:creature.lovely_snake",
+        spawn: (33642, 32702),
+    },
+    Habitat {
+        key: "oteryn:quest-callback/zamulosh-habitat-mushroom",
+        origin: (33611, 32676),
+        counterpart_x: 33634,
+        creature: "oteryn:creature.lovely_scorpion",
+        spawn: (33617, 32684),
+    },
+    Habitat {
+        key: "oteryn:quest-callback/zamulosh-habitat-roshamuul",
+        origin: (33611, 32658),
+        counterpart_x: 33634,
+        creature: "oteryn:creature.lovely_deer",
+        spawn: (33619, 32666),
+    },
+    Habitat {
+        key: "oteryn:quest-callback/zamulosh-habitat-venom",
+        origin: (33611, 32694),
+        counterpart_x: 33634,
+        creature: "oteryn:creature.lovely_polar_bear",
+        spawn: (33617, 32702),
+    },
+];

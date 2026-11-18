@@ -51,6 +51,7 @@ fn scenario_case(
         name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
     let qm48 = name == "qm48/mammoth";
     let m03_use = name == super::super::qengine_m03_use::NAME;
+    let bosscred_habitat = name == super::super::bosscred_zamulosh::HABITAT_NAME;
     let bosscred_zamulosh = name == super::super::bosscred_zamulosh::NAME;
     let bosscred_ferumbras = name == super::super::bosscred_ferumbras::NAME;
     let bosscred_forge = name == super::super::bosscred_inquisition::NAME;
@@ -80,7 +81,7 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m03_use
+    let native_crop = bosscred_habitat || m03_use
         || qd_world
         || engenc_asura
         || m49
@@ -128,6 +129,8 @@ fn scenario_case(
             y: 32167,
             floor: -8,
         }
+    } else if bosscred_habitat {
+        super::super::bosscred_zamulosh::HABITAT_START
     } else if bosscred_zamulosh {
         super::super::bosscred_zamulosh::START
     } else if qd_world {
@@ -363,6 +366,8 @@ fn scenario_case(
         )?)
     } else if bosscred_forge {
         super::super::bosscred_inquisition::fixture_callback(callback("inquisition-portal-2167")?)
+    } else if bosscred_habitat {
+        callback("zamulosh-habitat-grass")?
     } else if bosscred_zamulosh {
         super::super::bosscred_zamulosh::fixture_callback(callback("inquisition-portal-2152")?)
     } else if qd_world {
@@ -1050,6 +1055,8 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("machine native policies")?,
             )?
+        } else if bosscred_habitat {
+            super::super::bosscred_zamulosh::habitat_world(generation.native_gameplay().ok_or("habitat native policies")?)?
         } else if qd_world {
             super::super::qd_world::world(
                 name,
@@ -1909,6 +1916,8 @@ fn scenario_case(
                 &h,
             ))
             .await?;
+        } else if bosscred_habitat {
+            Box::pin(super::super::bosscred_zamulosh::habitat(&mut owner, &mut admitted, &deps, &h)).await?;
         } else if bosscred_zamulosh {
             Box::pin(super::super::bosscred_zamulosh::exercise(
                 &mut owner,
