@@ -1424,6 +1424,18 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     extend_callbacks(catalogue, &callbacks)
 }
 
+/// Exercise the production dispatch and writer with a validated, per-catalogue fixture.
+#[cfg(any(test, feature = "test-support"))]
+pub fn with_fixture_callbacks(
+    catalogue: QuestStateCatalogue,
+    document: &str,
+) -> Result<QuestStateCatalogue, String> {
+    let callbacks = parse(document)?;
+    let mut catalogue = extend_callbacks(catalogue, &callbacks)?;
+    catalogue.fixture_world_callbacks = Some(callbacks);
+    Ok(catalogue)
+}
+
 fn extend_callbacks(
     catalogue: QuestStateCatalogue,
     callbacks: &[Callback],

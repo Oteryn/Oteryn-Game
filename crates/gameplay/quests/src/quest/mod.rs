@@ -431,6 +431,8 @@ pub struct QuestStateCatalogue {
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     #[cfg(any(test, feature = "test-support"))]
     fixture_npc_rules: Option<std::sync::Arc<npc_rules::NpcRuleCatalog>>,
+    #[cfg(any(test, feature = "test-support"))]
+    fixture_world_callbacks: Option<Vec<world_callbacks::Callback>>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
 }
@@ -622,6 +624,8 @@ impl QuestStateCatalogue {
             npc_legacy: BTreeMap::new(),
             #[cfg(any(test, feature = "test-support"))]
             fixture_npc_rules: None,
+            #[cfg(any(test, feature = "test-support"))]
+            fixture_world_callbacks: None,
             predecessors: BTreeMap::new(),
             authored_bindings: None,
             native_recipe_evidence: None,
@@ -698,6 +702,10 @@ impl QuestStateCatalogue {
 
     #[must_use]
     pub fn authored_world_callbacks(&self) -> Option<&[world_callbacks::Callback]> {
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(fixture) = self.fixture_world_callbacks.as_deref() {
+            return Some(fixture);
+        }
         self.authored_bindings
             .as_ref()
             .map(|runtime| runtime.world.as_slice())

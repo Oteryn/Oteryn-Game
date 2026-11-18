@@ -22,6 +22,56 @@ const LAZARAN_BEER: &str =
 const MISSING: &str = "You have not brought the requested drink.";
 const ACCEPTED: &str = "Thank you for the drink.";
 
+pub(super) fn generation_with_items(
+    world: crate::foundation::WorldId,
+    skull: bool,
+) -> TestResult<(
+    crate::content::ContentActivationController,
+    crate::content::NativeEntryContentPin,
+)> {
+    use sha2::{Digest, Sha256};
+    let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+    let profiles = input.item_profiles.as_mut().ok_or("native item profiles")?;
+    let mut packet: Value = serde_json::from_slice(&profiles.bytes)?;
+    let records = packet["records"].as_array_mut().ok_or("profile records")?;
+    let (id, template, name, weight) = if skull {
+        // Crystal 201189f8 data/items/items.xml:26533-26536.
+        (
+            10159,
+            "oteryn:item.tibia.i10198",
+            "skull of a caveman",
+            2180,
+        )
+    } else {
+        // Crystal 201189f8 data/items/items.xml:10874-10878.
+        (3465, "oteryn:item.tibia.i2874", "pot", 5250)
+    };
+    let key = format!("oteryn:item.tibia.i{id}");
+    if !records
+        .iter()
+        .any(|row| row["production_definition"]["production_key"] == key)
+    {
+        let mut record = records
+            .iter()
+            .find(|row| row["production_definition"]["production_key"] == template)
+            .ok_or("admitted item shape")?
+            .clone();
+        record["production_definition"]["production_key"] = json!(key);
+        record["authoring"]["item"]["key"] = json!(key);
+        record["authoring"]["item"]["revision"] = json!("definition-r1");
+        record["production_binding"]["external_id"] = json!(id.to_string());
+        record["production_binding"]["target"]["key"] = json!(key);
+        record["semantics"]["physical"]["value"]["weight"]["value"] = json!(weight);
+        record["semantics"]["presentation"]["value"]["name"]["value"] = json!(name);
+        record["semantics"]["presentation"]["value"]["description"] = json!({"state":"UNKNOWN"});
+        records.push(record);
+    }
+    profiles.bytes = serde_json::to_vec(&packet)?;
+    profiles.sha256 = format!("{:x}", Sha256::digest(&profiles.bytes));
+    crate::content::native_gameplay::test_support::try_activate_input(world, &input)
+        .map_err(super::fixture::debug)
+}
+
 #[test]
 fn quest_npc_rapanaio_consumes_only_rum_and_fruit_juice_at_their_topics() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {

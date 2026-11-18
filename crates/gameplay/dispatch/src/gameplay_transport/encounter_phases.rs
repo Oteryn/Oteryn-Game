@@ -3,6 +3,9 @@ use super::{actor_spell::ChannelSpellStates, grizzly_kills, kill_reward::Pending
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
+use oteryn_gameplay_encounters::bosses::boreth::native_death::{
+    BorethCarrierExt, BorethDeathLedger,
+};
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
@@ -24,6 +27,7 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    boreth: Mutex<BorethDeathLedger>,
 }
 
 impl Registry {
@@ -87,6 +91,16 @@ impl Registry {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
     ) {
+        // Crystal 201189f8 data-global/scripts/quests/blood_brothers_quest/boreth_death.lua:3-20.
+        // Reuse the sealed physical cleanup before any reward/principal selection.
+        if runtime
+            .borrow_combat_death()
+            .creature_target_identity(actor)
+            .is_ok_and(|key| key == b"oteryn:creature.boreth")
+            && let Ok(mut ledger) = self.boreth.lock()
+        {
+            let _ = runtime.commit_boreth_death(&mut ledger, actor);
+        }
         let Ok(mut active) = self.active.lock() else {
             return;
         };

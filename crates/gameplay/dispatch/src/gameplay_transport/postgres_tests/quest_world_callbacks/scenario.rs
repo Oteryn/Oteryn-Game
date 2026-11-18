@@ -28,7 +28,9 @@ fn scenario_case(
     let dance_hints = name == super::super::quest_progress_magic::NAME;
     let native_dance = dance_hints || name == "unnatural-selection-dance-native";
     let npc_fluid = name.starts_with(super::super::quest_npc_fluid_intake::NAME);
+    let skull_custody = name == super::super::quest_skull_custody::NAME;
     let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
+    let boreth_cleanup = name == super::super::boreth_death_cleanup::NAME;
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -365,6 +367,10 @@ fn scenario_case(
         callback("qm03/pits")?
     } else if nomads_window {
         callback(super::super::qengine_m02_use::NAME)?
+    } else if skull_custody {
+        super::super::quest_skull_custody::bone_pile()?
+    } else if boreth_cleanup {
+        callback("unnatural-selection-ray-of-light")?
     } else if native_dance {
         callback("unnatural-selection-dance-2")?
     } else if name.starts_with("qengine-rewards-m39-bone") {
@@ -1028,11 +1034,14 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
-        let (controller, activated) =
+        let (controller, activated) = if skull_custody || npc_fluid && name.ends_with("lazaran") {
+            super::super::quest_npc_fluid_intake::generation_with_items(deps.admitted.world_id, skull_custody)?
+        } else {
             super::super::death_ml_loss_composed::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
-            )?;
+            )?
+        };
         let generation = controller.active().ok_or("generation")?;
         let world = if m03_use {
             super::super::qengine_m03_use::world(
@@ -1545,7 +1554,7 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
-            } else if classic_npc || qd_world {
+            } else if classic_npc || qd_world || boreth_cleanup {
                 5
             } else if monk {
                 4
@@ -3282,6 +3291,10 @@ fn scenario_case(
                 origin,
             ))
             .await?;
+        } else if boreth_cleanup {
+            Box::pin(super::super::boreth_death_cleanup::exercise(&owner, &admitted)).await?;
+        } else if skull_custody {
+            Box::pin(super::super::quest_skull_custody::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if source_tile_magic {
             Box::pin(super::super::quest_source_tile_magic::exercise(
                 &mut owner,
