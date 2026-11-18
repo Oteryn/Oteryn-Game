@@ -103,7 +103,7 @@ impl Scene {
 }
 
 #[test]
-fn spawnsum_inquisition_haunted_ruin_consumes_holy_water_and_opens_door() -> TestResult {
+fn spawnsum_inquisition_haunted_ruin_consumes_water_and_temporarily_closes_door() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -349,6 +349,11 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
                     .and_then(|tile| tile.entries.get(1).map(|entry| entry.facts.appearance_id))
             };
             assert_eq!(appearance(), Some(7868));
+            assert!(
+                map.facts
+                    .quest_callback_blocked(map.overlay.base(), door, false)
+            );
+
             assert_eq!(map.facts.expire_movement_items(10_000_100), 1);
             assert_eq!(appearance(), Some(7869));
         }

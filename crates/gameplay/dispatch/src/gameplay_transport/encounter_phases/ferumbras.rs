@@ -451,7 +451,10 @@ fn draw(
         DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
     };
     use sha2::{Digest, Sha256};
-    let digest = Sha256::digest(actor.placement_identity());
+    let digest = Sha256::new()
+        .chain_update(actor.placement_identity())
+        .chain_update(actor.actor_local_generation().to_be_bytes())
+        .finalize();
     let occurrence = DecisionOccurrenceId::from_bytes(digest[..16].try_into().ok()?);
     let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
     let sample = deterministic_decision_u64(&root, occurrence, domain, index.into()).ok()?;

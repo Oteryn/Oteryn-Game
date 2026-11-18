@@ -306,13 +306,20 @@ impl CallbackStates {
                 let Some(revision) = expected.checked_add(1) else {
                     return false;
                 };
+                // A door's visible replacement and logical passage share the
+                // same revision. Other target transforms keep their collision.
+                let opens = super::super::door_registry::open_of(u32::from(restore.appearance_id))
+                    == Some(u32::from(after.appearance_id));
+                let closes = super::super::door_registry::open_of(u32::from(after.appearance_id))
+                    == Some(u32::from(restore.appearance_id));
+                let overlay = (opens || closes).then(|| (false, self.passable.insert(*key, opens)));
                 self.changed.insert(*key, (revision, *after));
                 self.movement_decays.insert(
                     (*due, *key),
                     MovementDecay {
                         revision,
                         restore: *restore,
-                        overlay: None,
+                        overlay,
                     },
                 );
             }
