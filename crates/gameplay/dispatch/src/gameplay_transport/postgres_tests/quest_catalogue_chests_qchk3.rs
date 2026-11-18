@@ -1,4 +1,6 @@
 //! Source-placement reward qualification for the QCHK-3 quest chests.
+//! The cohort exercises every listed placement, including all three shared
+//! Pits of Inferno weapon selectors and the existing Steel Helmet witness.
 use super::{TestResult, quest_catalogue_chests::phase_a_cohort};
 
 #[test]
