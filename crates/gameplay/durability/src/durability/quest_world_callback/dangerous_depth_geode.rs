@@ -1,6 +1,9 @@
 //! Crystal's 30-fragment geode closes for 30 minutes after opening an eight-second portal.
 use super::{DurabilityError, SpellLanePermit};
-use crate::durability::{DurabilityRoot, db::begin_type2_transaction};
+use crate::durability::{
+    DurabilityRoot,
+    db::{begin_semantic_transaction, commit_semantic_transaction},
+};
 use crate::foundation::{ChannelId, CommandRef, WorldId};
 use sqlx::{Postgres, Transaction};
 
@@ -50,7 +53,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_type2_transaction(holder, deadline).await?;
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let remaining = sqlx::query_scalar::<_, i64>(
                         "SELECT floor(extract(epoch FROM (opened_at+interval '8 seconds'-statement_timestamp())) * 1000000)::bigint
                          FROM game_warzone_geodes
@@ -65,9 +68,9 @@ impl DurabilityRoot {
                     .bind(epoch.to_string())
                     .bind(command.game_session_id().as_bytes().as_slice())
                     .bind(command.command_id().get().to_string())
-                    .fetch_optional(&mut **tx)
+                    .fetch_optional(&mut *tx)
                     .await?;
-                    tx.commit(deadline).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
                     Ok(remaining.and_then(|remaining| u64::try_from(remaining).ok()))
                 })
             })

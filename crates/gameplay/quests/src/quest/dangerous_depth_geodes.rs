@@ -86,6 +86,7 @@ impl Geode {
         callback.storage.clear();
         callback.effects = Default::default();
         callback.requires_world_admission = true;
+        callback.failure_message = Some("The crystal geode can't carry any more crystals.".into());
         callback.item_on_target = Some(ItemOnTarget {
             on_step: false,
             item: FRAGMENT.into(),

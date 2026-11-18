@@ -57,7 +57,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(())?;
         let portal = map
             .facts
-            .quest_callback_replacement(key, 1949)
+            .movement_item_facts(1949)
             .filter(|entry| !entry.pickupable)
             .ok_or(())?;
         if map.facts.base_hidden(key) || map.facts.house_tile(position) {
