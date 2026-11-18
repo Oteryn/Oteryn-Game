@@ -16,6 +16,10 @@ merge base of the delivery branch and the fetched `origin/main` at
 `3ffe8d05116b56d752944370a7c43341e0ca8bc8`. The delivery branch was
 resumed at `cc23b6d21828ea53f9f6f0e602d091c433535aa5`. Its compile inputs
 differ from the measurement base only in the dispatch test profile.
+The current resubmission resumed at
+`4a40b57a5f5c4d3412459f490711224e85eb11a2`. The fetched `origin/main`
+was `45135fdeecf2f448d0c300505d041c7397bf7731`, with the same measurement
+base as its merge base with the delivery branch.
 Rust 1.100.0, 16 GiB cgroup, no swap. Linux `wait4` supplied peak RSS and
 wall time because `/usr/bin/time` was unavailable. RSS records the largest
 individual process peak. Concurrent processes also contribute to cgroup usage.
@@ -281,6 +285,16 @@ measurement still reaches the local memory limit before linking. Serial
 Cargo scheduling limits overlapping dependency builds while one large
 dispatch compiler process can still exhaust the available RAM.
 
+The fetched main includes #3300 (`50ab200ff`). That change raises PR lib
+archive swap from 8 to 16 GiB and disables dispatch debuginfo through a
+Cargo config override. The PR and Merge Queue lib archive commands still
+use Cargo's default job count there. The pinned-base debug-only trial
+above failed under a 16 GiB memory cap without swap. The extra swap can
+change the hosted outcome, so the debug-only trial cannot establish the
+result or wall time of #3300. The serial workflow diff below targets the
+pinned base. The current main has a different Merge Queue workflow blob,
+so a patch against that tree needs a newly computed audit digest.
+
 On [PR #3281](https://github.com/Oteryn/Oteryn-Game/pull/3281), the
 [hosted PostgreSQL lib build](https://github.com/Oteryn/Oteryn-Game/actions/runs/44220523121/job/134552950881)
 lost communication with GitHub at 52:00 elapsed while the library
@@ -352,6 +366,11 @@ commands. The PR selector returned full scope for the root manifest change
 and selected the dispatch, durability and game-server libraries. The PR
 unit shards already use one Cargo job, so the patch targets the archive
 steps and the two Merge Queue library shards.
+
+The current resubmission repeated the scratch-index application and YAML
+comparison. The four step changes only add the serial job setting. Their
+commands and job timeout values match the measurement base. The lib-test
+sources and `Cargo.lock` also match that base byte for byte.
 
 ```diff
 diff --git a/.github/workflows/merge-authority-audit.yml b/.github/workflows/merge-authority-audit.yml

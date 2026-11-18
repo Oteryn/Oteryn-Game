@@ -209,8 +209,8 @@ opt-level = 2
 debug-assertions = true
 overflow-checks = true
 
-# With these settings, the full dispatch lib-test builds under a 16 GiB cap
-# with one Cargo job. Two jobs still exceed the cap during codegen.
+# Use one Cargo job for the full dispatch lib-test on 16 GiB runners.
+# See docs/reference/dispatch-lib-test-memory.md for the measured compiler peak.
 [profile.test.package.oteryn-gameplay-dispatch]
 debug = 0
 incremental = false
