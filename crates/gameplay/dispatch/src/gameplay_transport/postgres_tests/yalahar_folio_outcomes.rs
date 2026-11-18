@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::foundation::MovementFacing;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::map::view::MapFacts;
@@ -58,7 +59,7 @@ const START: Position = Position {
 };
 
 #[test]
-fn folio_use_relocates_and_resets_success_without_starting_a_headache() -> TestResult {
+fn folio_use_relocates_to_an_occupied_tile_and_resets_success() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -202,6 +203,14 @@ async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> Te
         .bind(generation.identity().client_artifact_digest().as_slice())
         .bind(world.frame_binding_digest(admitted.world_id).as_slice()).execute(&h.pool).await?;
     owner.admit_quest_session(&admitted).await;
+    let landing_occupant = if branch == "relocate" {
+        // Crystal actions_mission09.lua:28 and game.cpp:3167-3192.
+        let (peer, _) =
+            super::grizzly_boss::second_player(&owner, &deps, &h, local(LANDING)).await?;
+        Some(peer)
+    } else {
+        None
+    };
     let quest_now = 1_800_000_000;
     h.root.set_test_quest_clock(quest_now).map_err(debug)?;
     let map = owner.bundle_map().ok_or("map")?;
@@ -324,10 +333,8 @@ async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> Te
     );
     {
         let runtime = owner.runtime.lock().await;
-        let at = runtime
-            .read_actor_position(deps.actor)
-            .map_err(debug)?
-            .position();
+        let arrival = runtime.read_actor_position(deps.actor).map_err(debug)?;
+        let at = arrival.position();
         let spawned: Vec<_> = runtime
             .current_live_creature_census()
             .map_err(debug)?
@@ -349,6 +356,29 @@ async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> Te
             assert_eq!(at, local(if success { START } else { LANDING }));
             assert!(spawned.is_empty());
         }
+        if let Some(peer) = landing_occupant {
+            assert_eq!(arrival.facing(), Some(MovementFacing::East));
+            assert_eq!(
+                runtime.read_actor_position(peer).map_err(debug)?.position(),
+                local(LANDING)
+            );
+        }
+    }
+    if landing_occupant.is_some() {
+        let teleport_cues: Vec<_> = map
+            .facts
+            .movement_effects_since(0)
+            .into_iter()
+            .filter_map(|(_, position, effect)| (effect == 11).then_some(position))
+            .collect();
+        assert_eq!(
+            teleport_cues,
+            [crate::map::overlay::TilePos {
+                x: LANDING.x,
+                y: LANDING.y,
+                floor: LANDING.floor,
+            }]
+        );
     }
     if expect_headache {
         // Crystal actions_mission09.lua:20-24 permits reading at equality.
