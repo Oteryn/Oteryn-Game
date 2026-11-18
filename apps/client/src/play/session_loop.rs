@@ -64,13 +64,16 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         outbox.end(public_class(&error));
         return;
     }
+    let mut held = Vec::new();
+    // Publish the admission queue before any query can append a new scope's
+    // snapshot with the same initial sequence and revisions.
+    publish(&mut session, &outbox, &mut held);
     if let Some(command) = outbox.returner_initial_request() {
         match session.feature(&command).await {
             Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
             Err(_) => outbox.returner_unavailable(),
         }
     }
-    let mut held = Vec::new();
     let mut personal_marks_refresh = std::time::Instant::now();
     let mut read_spell_info = true;
     'session: loop {

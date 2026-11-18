@@ -123,6 +123,11 @@ impl Scene {
         self.actor_clocks
             .entries
             .retain(|entity, _| entries.iter().any(|entry| entry.entity.entity == *entity));
+        // Bevy fades the retained terrain and objects in the same floor pass.
+        #[cfg(bevy_shell)]
+        let object_floors = self.world.all_draw_floors();
+        #[cfg(not(bevy_shell))]
+        let object_floors = self.world.draw_floors();
         for entry in entries {
             let entity = oteryn_client_ui::native_creature_icons::project(&entry.entity);
             if let EntityDetail::ObjectWithAppearance {
@@ -152,7 +157,7 @@ impl Scene {
                     i16::try_from(draw_floor),
                     entity.position.x.checked_sub(shift),
                     entity.position.y.checked_sub(shift),
-                ) && (shift == 0 || self.world.draw_floors().contains(&draw_floor))
+                ) && (shift == 0 || object_floors.contains(&draw_floor))
                     && let Some(draws) =
                         self.cache
                             .world_item(appearance_id, entity.position, quantity)

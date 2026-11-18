@@ -52,7 +52,18 @@ impl Outbox {
                 let shared_frontend = mailbox.shared_frontend;
                 let traffic = mailbox.traffic.take();
                 let character = std::mem::take(&mut mailbox.party.own_character_name);
-                let world = std::mem::take(&mut mailbox.properties.house.fields[0]);
+                let world = match scope.scope {
+                    ActivityScope::Channel { world, .. }
+                    | ActivityScope::Instance { world, .. } => world,
+                };
+                let mut world_field = String::with_capacity(36);
+                for (index, byte) in world.iter().enumerate() {
+                    if [4, 6, 8, 10].contains(&index) {
+                        world_field.push('-');
+                    }
+                    use std::fmt::Write;
+                    let _ = write!(world_field, "{byte:02x}");
+                }
                 let chat_mode = match mailbox.chat.console.mode {
                     oteryn_client_ui::chat::ComposerMode::Temporary => {
                         oteryn_client_ui::chat::ComposerMode::Off
@@ -65,7 +76,7 @@ impl Outbox {
                 mailbox.shared_frontend = shared_frontend;
                 mailbox.traffic = traffic;
                 mailbox.party.own_character_name = character;
-                mailbox.properties.house.fields[0] = world;
+                mailbox.properties.house.fields[0] = world_field;
                 mailbox.notices.tutorial_selected = session.feature_selected(31);
                 mailbox.notices.save_selected = session.feature_selected(75);
                 mailbox.chat.console.mode = chat_mode;

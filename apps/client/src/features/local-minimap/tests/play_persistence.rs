@@ -230,3 +230,157 @@ fn minimap_editor_survives_temporary_play_view_replacement()
     assert!(lock(&shared).editor.is_none());
     Ok(())
 }
+
+#[test]
+fn review_stale_minimap_clients_preserve_each_others_markers()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!(
+        "minimap-shared-clients-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos()
+    ));
+    let position = ActorPosition {
+        x: 100,
+        y: 200,
+        floor: -7,
+    };
+    let snapshot = WorldMapViewSnapshot {
+        header: MapViewHeader {
+            origin: position,
+            first_visible_floor: -7,
+            content_generation: [1; 32],
+            bundle_digest: [2; 32],
+            reset_epoch: 1,
+        },
+        tiles: vec![MapTile {
+            position,
+            ground_speed: 100,
+            more: false,
+            items: vec![],
+        }],
+    };
+    let open = || -> Result<PlayView, oteryn_renderer::BatchError> {
+        let mut play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+        lock(&play.minimap).root = Some(root.clone());
+        play.bind_minimap_world("11111111-1111-4111-8111-111111111111");
+        play.set_live_map(&snapshot)?;
+        Ok(play)
+    };
+    let (first, second, autosave) = (open()?, open()?, open()?);
+    assert!(lock(&first.minimap).create_mark_at((100, 200, -7))?);
+    assert!(lock(&second.minimap).create_mark_at((101, 200, -7))?);
+    lock(&autosave.minimap).save()?;
+    let reopened = open()?;
+    assert_eq!(
+        lock(&reopened.minimap)
+            .markers
+            .iter()
+            .map(|mark| mark.x)
+            .collect::<Vec<_>>(),
+        [100, 101]
+    );
+    lock(&reopened.minimap).remove_marker(100, 200, -7)?;
+    lock(&second.minimap).edit_marker(101, 200, -7, "Gate".into(), 2)?;
+    let final_view = open()?;
+    let map = lock(&final_view.minimap);
+    assert_eq!(map.markers.len(), 1);
+    assert_eq!(map.markers[0].label, "Gate");
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn review_truncated_live_map_preserves_cached_minimap_palette()
+-> Result<(), Box<dyn std::error::Error>> {
+    check_live_map_palette(
+        false,
+        "review_truncated_live_map_preserves_cached_minimap_palette",
+    )
+}
+
+#[test]
+fn review_resolved_top_item_sets_minimap_palette_above_unknown_appearance()
+-> Result<(), Box<dyn std::error::Error>> {
+    check_live_map_palette(
+        true,
+        "review_resolved_top_item_sets_minimap_palette_above_unknown_appearance",
+    )
+}
+
+fn check_live_map_palette(
+    unresolved_lower: bool,
+    test: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::world_map::{MapDefinition, MapItem, MapOrigin};
+    let assets = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    if std::env::var_os("OTERYN_TEST_STACK_PALETTE").is_none() {
+        let status = std::process::Command::new(std::env::current_exe()?)
+            .args([test, "--nocapture"])
+            .env("OTERYN_TEST_STACK_PALETTE", "1")
+            .env(crate::map::ASSET_DIR_ENV, &assets)
+            .status()?;
+        assert!(status.success());
+        return Ok(());
+    }
+    // The pinned catalog gives ground 106 colour 24, item 1081 colour 86,
+    // and item 102 no automap colour.
+    let (ground, top, plain) = (106, 1081, 102);
+    let item = |appearance_id| MapItem {
+        definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
+        count: 1,
+        sub_type: 0,
+        origin: MapOrigin::DisplayOnly,
+        appearance_id,
+    };
+    let root = std::env::temp_dir().join(format!("minimap-stack-palette-{}", std::process::id()));
+    let position = ActorPosition {
+        x: 100,
+        y: 200,
+        floor: -7,
+    };
+    let lower = if unresolved_lower { 0 } else { ground };
+    let mut snapshot = WorldMapViewSnapshot {
+        header: MapViewHeader {
+            origin: position,
+            first_visible_floor: -7,
+            content_generation: [1; 32],
+            bundle_digest: [2; 32],
+            reset_epoch: 1,
+        },
+        tiles: vec![MapTile {
+            position,
+            ground_speed: 100,
+            more: false,
+            items: vec![item(lower), item(top)],
+        }],
+    };
+    let open = || -> Result<PlayView, oteryn_renderer::BatchError> {
+        let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+        lock(&view.minimap).root = Some(root.clone());
+        view.bind_minimap_world("11111111-1111-4111-8111-111111111111");
+        Ok(view)
+    };
+    let mut view = open()?;
+    view.set_live_map(&snapshot)?;
+    assert_eq!(lock(&view.minimap).cells.get(&(-7, 100, 200)), Some(&86));
+    lock(&view.minimap).save()?;
+    if lower == ground {
+        snapshot.tiles[0].items = std::iter::once(item(ground))
+            .chain(std::iter::repeat_n(item(plain), 9))
+            .collect();
+        snapshot.tiles[0].more = true;
+        view.set_live_map(&snapshot)?;
+        lock(&view.minimap).save()?;
+        drop(view);
+        let mut rejoined = open()?;
+        rejoined.set_live_map(&snapshot)?;
+        assert_eq!(
+            lock(&rejoined.minimap).cells.get(&(-7, 100, 200)),
+            Some(&86)
+        );
+    }
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}

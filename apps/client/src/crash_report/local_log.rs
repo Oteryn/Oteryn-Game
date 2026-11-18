@@ -477,3 +477,33 @@ fn review_crash_redacts_complete_credentials() {
     }
     assert!(text.contains("next line"));
 }
+
+#[cfg(test)]
+#[test]
+fn review_crash_redacts_adjacent_urls_and_multiline_json() {
+    let cases = [
+        (
+            "https://one.test/,https://user:adjacent-secret@two.test/",
+            "https://one.test/,https://[redacted]@two.test/",
+        ),
+        (
+            "{\"password\"\n:\r\n\t\"json-secret\"}",
+            "{\"password\"\n:\r\n\t\"[redacted]\"}",
+        ),
+    ];
+    assert_eq!(
+        cases.map(|(message, expected)| {
+            let text = crash_text(
+                &Crash {
+                    message,
+                    location: "test",
+                    thread: "test",
+                    backtrace: "",
+                },
+                SystemTime::now(),
+            );
+            text.contains(expected)
+        }),
+        [true, true]
+    );
+}

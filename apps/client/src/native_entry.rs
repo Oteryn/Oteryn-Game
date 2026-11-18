@@ -2,6 +2,9 @@
 #[cfg(test)]
 #[path = "features/local-account-services/tests/entry.rs"]
 mod account_services_tests;
+#[cfg(test)]
+#[path = "play/admission_scene_test.rs"]
+mod admission_scene_test;
 mod admitted;
 mod authorize;
 mod challenge;

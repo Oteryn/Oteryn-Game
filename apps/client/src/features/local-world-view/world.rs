@@ -60,23 +60,23 @@ impl World {
             .iter()
             .filter(|tile| in_draw_window(map, tile.position))
         {
-            let mut color = 0;
-            for item in &tile.items {
+            let mut color = (!tile.more && !tile.items.is_empty()).then_some(0);
+            for (stack_index, item) in tile.items.iter().enumerate() {
                 if let Some(appearance) = index.get(u32::from(item.appearance_id)) {
                     if let Some((level, color)) = appearance.light.filter(|(level, _)| *level > 0) {
                         item_lights.push((tile.position, level, color));
                     }
-                    if let Some(value) = appearance.minimap_color.filter(|value| *value != 0) {
-                        color = value;
+                    // A truncated stack can hide a coloured item above the ground.
+                    if (!tile.more || stack_index != 0)
+                        && let Some(value) = appearance.minimap_color.filter(|value| *value != 0)
+                    {
+                        color = Some(value);
                     }
+                } else {
+                    color = None;
                 }
             }
-            if !tile.items.is_empty()
-                && tile
-                    .items
-                    .iter()
-                    .all(|item| index.get(u32::from(item.appearance_id)).is_some())
-            {
+            if let Some(color) = color {
                 minimap_colors.insert(
                     (tile.position.floor, tile.position.x, tile.position.y),
                     color,

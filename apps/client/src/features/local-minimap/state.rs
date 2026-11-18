@@ -238,7 +238,16 @@ impl Minimap {
             hex(&bundle)
         )))
     }
-    pub fn observe(&mut self, map: &WorldMapViewSnapshot) {
+    #[cfg(test)]
+    fn observe(&mut self, map: &WorldMapViewSnapshot) {
+        self.observe_colours(map, &BTreeMap::new());
+    }
+
+    pub(in crate::play) fn observe_colours(
+        &mut self,
+        map: &WorldMapViewSnapshot,
+        colours: &BTreeMap<(i16, i32, i32), u8>,
+    ) {
         let binding = (
             map.header.content_generation,
             map.header.bundle_digest,
@@ -314,19 +323,18 @@ impl Minimap {
                 self.dirty = true;
             }
         }
+        for (&key, &colour) in colours {
+            if let Some(current) = self.cells.get_mut(&key)
+                && *current != colour
+            {
+                *current = colour;
+                self.dirty = true;
+            }
+        }
         if self.saved_at.elapsed() >= Duration::from_secs(5)
             && let Err(error) = self.save()
         {
             self.feedback = lfmt!("Could not save minimap: {error}", error = error);
-        }
-    }
-    pub(in crate::play) fn observe_colours(&mut self, map: &WorldMapViewSnapshot, colours: &BTreeMap<(i16, i32, i32), u8>) {
-        self.observe(map);
-        for (&key, &colour) in colours {
-            if let Some(current) = self.cells.get_mut(&key) && *current != colour {
-                *current = colour;
-                self.dirty = true;
-            }
         }
     }
     pub fn follow(&mut self, x: i32, y: i32, floor: i16) {
@@ -372,14 +380,6 @@ impl Minimap {
         label: String,
         color: u8,
     ) -> io::Result<()> {
-        if self
-            .quest_markers
-            .iter()
-            .any(|m| (m.x, m.y, m.floor) == (x, y, floor))
-        {
-            return Err(io::Error::other("Quest markers are supplied by the server"));
-        }
-
         if !(0..=65_535).contains(&x)
             || !(0..=65_535).contains(&y)
             || !(-15..=0).contains(&floor)
@@ -392,79 +392,111 @@ impl Minimap {
                 "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
             )));
         }
-        let previous = self.markers.clone();
-        if let Some(marker) = self
-            .markers
-            .iter_mut()
-            .find(|m| (m.x, m.y, m.floor) == (x, y, floor))
-        {
-            marker.label = label;
-            marker.color = color;
-        } else {
-            if self.markers.len() >= MAX_MARKERS {
-                return Err(io::Error::other(tr!(
-                    "The minimap supports up to 512 markers"
-                )));
-            }
-            self.markers.push(Marker {
+        self.change_marker(
+            (x, y, floor),
+            Some(Marker {
                 x,
                 y,
                 floor,
                 label,
                 color,
-            });
-        }
-        self.save_marker_change(previous)
+            }),
+            false,
+        )?;
+        Ok(())
     }
     /// `Misc.: Create Mark`: adds a default-labelled marker at `own`. Returns `false` and leaves
     /// the map unchanged when a marker already sits there, so the caller opens it for editing.
     pub fn create_mark_at(&mut self, own: (i32, i32, i16)) -> io::Result<bool> {
         let (x, y, floor) = own;
-        if self
-            .markers
-            .iter()
-            .any(|m| (m.x, m.y, m.floor) == (x, y, floor))
-        {
-            return Ok(false);
+        if !cache_position(i32::from(floor), x, y) {
+            return Err(io::Error::other(tr!(
+                "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
+            )));
         }
-        self.edit_marker(x, y, floor, tr!("Mark").into(), 0)?;
-        Ok(true)
+        self.change_marker(
+            own,
+            Some(Marker {
+                x,
+                y,
+                floor,
+                label: tr!("Mark").into(),
+                color: 0,
+            }),
+            true,
+        )
     }
     // Invoked by native Windows controls; the headless tests exercise the same state.
     #[allow(dead_code)]
     pub fn remove_marker(&mut self, x: i32, y: i32, floor: i16) -> io::Result<()> {
+        self.change_marker((x, y, floor), None, false)?;
+        Ok(())
+    }
+
+    fn change_marker(
+        &mut self,
+        position: (i32, i32, i16),
+        replacement: Option<Marker>,
+        create_only: bool,
+    ) -> io::Result<bool> {
         if self
             .quest_markers
             .iter()
-            .any(|m| (m.x, m.y, m.floor) == (x, y, floor))
+            .any(|m| (m.x, m.y, m.floor) == position)
         {
             return Err(io::Error::other("Quest markers are supplied by the server"));
         }
-        let previous = self.markers.clone();
-        self.markers
-            .retain(|m| (m.x, m.y, m.floor) != (x, y, floor));
-        self.save_marker_change(previous)
-    }
-    fn save_marker_change(&mut self, previous: Vec<Marker>) -> io::Result<()> {
-        let was_dirty = std::mem::replace(&mut self.dirty, true);
-        self.save().inspect_err(|_| {
-            self.markers = previous;
-            self.dirty = was_dirty;
+        self.update_cache(|markers| {
+            let index = markers.iter().position(|m| (m.x, m.y, m.floor) == position);
+            match (index, replacement) {
+                (Some(_), _) if create_only => return Ok(false),
+                (Some(index), Some(marker)) => markers[index] = marker,
+                (Some(_), None) => {
+                    markers.retain(|m| (m.x, m.y, m.floor) != position);
+                }
+                (None, Some(marker)) => {
+                    if markers.len() >= MAX_MARKERS {
+                        return Err(io::Error::other(tr!(
+                            "The minimap supports up to 512 markers"
+                        )));
+                    }
+                    markers.push(marker);
+                }
+                (None, None) => {}
+            }
+            Ok(true)
         })
     }
+
     pub fn save(&mut self) -> io::Result<()> {
-        if !self.dirty {
-            return Ok(());
+        if self.dirty {
+            self.update_cache(|_| Ok(true))?;
         }
+        Ok(())
+    }
+
+    fn update_cache(
+        &mut self,
+        change: impl FnOnce(&mut Vec<Marker>) -> io::Result<bool>,
+    ) -> io::Result<bool> {
         let Some(path) = self.path() else {
-            return if self.world.is_some() {
-                Err(io::Error::other("Minimap storage is unavailable"))
-            } else {
-                Ok(())
-            };
+            if self.world.is_some() {
+                return Err(io::Error::other("Minimap storage is unavailable"));
+            }
+            let changed = change(&mut self.markers)?;
+            self.dirty |= changed;
+            return Ok(changed);
         };
         if self.load_failed {
             return Err(io::Error::other(tr!("Invalid minimap file")));
+        }
+        let _lock = Saved::lock_cache(&path)?;
+        // An autosave also reads the current markers, so stale exploration cannot
+        // erase edits made by another client after this view loaded.
+        let mut markers = Saved::read_from(&path)?.map_or_else(Vec::new, |saved| saved.markers);
+        if !change(&mut markers)? {
+            self.markers = markers;
+            return Ok(false);
         }
         let saved = Saved {
             version: 1,
@@ -473,22 +505,41 @@ impl Minimap {
                 .iter()
                 .map(|(&(f, x, y), &c)| [i32::from(f), x, y, i32::from(c)])
                 .collect(),
-            markers: self.markers.clone(),
+            markers,
         };
         saved.validate()?;
         saved.write_to(&path)?;
+        self.markers = saved.markers;
         self.dirty = false;
         self.saved_at = Instant::now();
-        Ok(())
+        Ok(true)
     }
+
     fn load(&mut self) -> io::Result<()> {
         let Some(path) = self.path() else {
             return Ok(());
         };
+        let Some(saved) = Saved::read_from(&path)? else {
+            return Ok(());
+        };
+        // Version 1 uses the same value for old item-only cells and real gray terrain.
+        // Only an authoritative observation can tell which remembered cells to clear.
+        self.cells = saved
+            .cells
+            .into_iter()
+            .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
+            .collect();
+        self.markers = saved.markers;
+        Ok(())
+    }
+}
+
+impl Saved {
+    fn read_from(path: &std::path::Path) -> io::Result<Option<Self>> {
         let file = match std::fs::File::open(path) {
-            Ok(f) => f,
-            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
-            Err(e) => return Err(e),
+            Ok(file) => file,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(error),
         };
         if file.metadata()?.len() > MAX_BYTES {
             return Err(io::Error::other(tr!("Minimap file is too large")));
@@ -500,15 +551,7 @@ impl Minimap {
         }
         let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         saved.validate()?;
-        // Version 1 uses the same value for old item-only cells and real gray terrain.
-        // Only an authoritative observation can tell which remembered cells to clear.
-        self.cells = saved
-            .cells
-            .into_iter()
-            .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
-            .collect();
-        self.markers = saved.markers;
-        Ok(())
+        Ok(Some(saved))
     }
 }
 impl Drop for Minimap {

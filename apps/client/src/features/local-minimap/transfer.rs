@@ -13,6 +13,21 @@ struct Portable {
     saved: Saved,
 }
 impl Saved {
+    pub(super) fn lock_cache(path: &Path) -> io::Result<std::fs::File> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        // The cache is atomically replaced, so lock a stable sibling across writes.
+        let lock = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(path.with_extension("lock"))?;
+        lock.lock()?;
+        Ok(lock)
+    }
+
     pub(super) fn write_to(&self, path: &Path) -> io::Result<()> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -94,6 +109,7 @@ impl Minimap {
             )));
         }
         portable.saved.validate()?;
+        let _lock = Saved::lock_cache(&active)?;
         portable.saved.write_to(&active)?;
         self.cells = portable
             .saved

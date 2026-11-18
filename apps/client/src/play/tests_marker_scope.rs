@@ -317,7 +317,16 @@ fn query_handoff_continues(
                 activity,
                 capability,
                 spell_info_queried: false,
-                pending: Vec::new(),
+                pending: if activity {
+                    vec![SessionEvent::ServerMessage(AppliedDelta {
+                        server_sequence: 0,
+                        base_revision: 1,
+                        new_revision: 1,
+                        value: oteryn_session::ServerMessage::StatusText("Source admission".into()),
+                    })]
+                } else {
+                    Vec::new()
+                },
                 serves: Arc::clone(&serves),
             },
             commands,
@@ -357,6 +366,12 @@ fn query_handoff_continues(
             .collect::<Vec<_>>(),
         if activity { vec![0, 2] } else { vec![2] }
     );
+    let console = link.chat_panel().console;
+    let notices = console.notices.text(console.filters, console.display);
+    assert!(!notices.contains("Source admission"));
+    if activity {
+        assert!(notices.contains("MOTD"));
+    }
     assert!(serves.load(Ordering::SeqCst) > 1);
     if dropped_marks {
         assert!(serves.load(Ordering::SeqCst) > 270);
@@ -443,8 +458,8 @@ fn support_delivery_activity_scope_changed_publishes_destination_and_continues()
 
 fn house_handoff(outbox: &Outbox) {
     let mut id = [1; 16];
-    id[6] = 0x70;
-    id[8] = 0x80;
+    id[6] = 0x71;
+    id[8] = 0x81;
     let mut destination = id;
     destination[15] = 2;
     let scope = ActivityScopeSnapshot {
@@ -541,10 +556,19 @@ fn destination_look_uses_a_fresh_receipt() -> Result<(), &'static str> {
 }
 
 #[test]
-fn review_scope_preserves_admission_identity() {
-    let (link, _, outbox) = play_channel();
+fn review_scope_preserves_admission_identity() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox) = play_channel();
     link.party_own_character("Ari");
     link.house_world("01010101-0101-7101-8101-010101010101");
+    crate::play::mailbox::lock(&outbox.0)
+        .properties
+        .house
+        .model
+        .selected = true;
+    link.house_edit(0, String::new());
+    link.house_edit(1, "oteryn:content.area.city.thais".into());
+    link.house_request(0);
+    assert!(commands.try_recv().is_err());
     house_handoff(&outbox);
     assert_eq!(link.party_panel().own_character_name, "Ari");
     assert!(link.notices_panel().tutorial_selected && link.notices_panel().save_selected);
@@ -555,4 +579,19 @@ fn review_scope_preserves_admission_identity() {
             .fields[0],
         "01010101-0101-7101-8101-010101010101"
     );
+    view()?.tick(&link).map_err(|error| format!("{error:?}"))?;
+    crate::play::mailbox::lock(&outbox.0)
+        .properties
+        .house
+        .model
+        .selected = true;
+    link.house_edit(1, "oteryn:content.area.city.thais".into());
+    link.house_request(0);
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("expected a house catalogue query".into());
+    };
+    let query = oteryn_protocol_oteryn::house::decode_house_query(&command.payload)
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(query.world[15], 1);
+    Ok(())
 }

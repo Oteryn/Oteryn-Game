@@ -53,6 +53,16 @@ fn skip_horizontal_space(bytes: &[u8], mut start: usize) -> usize {
     start
 }
 
+fn skip_json_space(bytes: &[u8], mut start: usize) -> usize {
+    while bytes
+        .get(start)
+        .is_some_and(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
+    {
+        start += 1;
+    }
+    start
+}
+
 fn line_end(bytes: &[u8], start: usize) -> usize {
     bytes[start..]
         .iter()
@@ -93,31 +103,34 @@ fn redact_urls(text: &str) -> String {
             .map_or(0, |index| index + 1);
         let scheme = text[scheme_start..marker].to_ascii_lowercase();
         let authority = marker + 3;
-        // URL user information permits RFC 3986 sub-delimiters, including commas.
-        let end = bytes[authority..]
-            .iter()
-            .position(|byte| byte.is_ascii_whitespace() || b"\"<>".contains(byte))
-            .map_or(bytes.len(), |offset| authority + offset);
         if text[authority..].starts_with(MASK) {
             search = authority + MASK.len();
             continue;
         }
+        let terminates_url = |byte: &u8| byte.is_ascii_whitespace() || b"\"<>".contains(byte);
         if scheme.starts_with("postgres") {
+            let end = bytes[authority..]
+                .iter()
+                .position(terminates_url)
+                .map_or(bytes.len(), |offset| authority + offset);
             out.push_str(&text[copied..authority]);
             out.push_str(MASK);
             copied = end;
+            search = end;
         } else {
-            let host_end = bytes[authority..end]
+            // URL user information permits RFC 3986 sub-delimiters, including commas.
+            let host_end = bytes[authority..]
                 .iter()
-                .position(|byte| b"/?#".contains(byte))
-                .map_or(end, |offset| authority + offset);
+                .position(|byte| terminates_url(byte) || b"/?#".contains(byte))
+                .map_or(bytes.len(), |offset| authority + offset);
             if let Some(at) = bytes[authority..host_end].iter().rposition(|b| *b == b'@') {
                 out.push_str(&text[copied..authority]);
                 out.push_str(MASK);
                 copied = authority + at;
             }
+            // Continue scanning the path and surrounding text for another URL scheme.
+            search = authority;
         }
-        search = end.max(authority);
     }
     out.push_str(&text[copied..]);
     out
@@ -152,14 +165,20 @@ fn redact_pairs(text: &str) -> String {
         if quoted_key {
             cursor += 1;
         }
-        while cursor < bytes.len() && bytes[cursor] == b' ' {
-            cursor += 1;
+        if quoted_key {
+            cursor = skip_json_space(bytes, cursor);
+        } else {
+            cursor = skip_horizontal_space(bytes, cursor);
         }
         if cursor >= bytes.len() || !matches!(bytes[cursor], b'=' | b':') {
             continue;
         }
         let header = bytes[cursor] == b':' && !quoted_key;
-        cursor = skip_horizontal_space(bytes, cursor + 1);
+        cursor = if quoted_key {
+            skip_json_space(bytes, cursor + 1)
+        } else {
+            skip_horizontal_space(bytes, cursor + 1)
+        };
         let end = if header && key.ends_with("cookie") {
             line_end(bytes, cursor)
         } else if let Some(&quote @ (b'"' | b'\'')) = bytes.get(cursor) {
