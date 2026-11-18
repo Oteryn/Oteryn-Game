@@ -94,6 +94,7 @@ fn registry() -> Result<&'static Registry, String> {
             // Kesar's real final report shares the mission track protected by
             // Fugue's native kill. Only its complete gated operation may finish it.
             add(super::hero_of_bounac::transition(), false, true)?;
+            add(super::zamulosh::habitat_reset(), false, true)?;
             add(super::arena_completion::transition()?, false, true)?;
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
