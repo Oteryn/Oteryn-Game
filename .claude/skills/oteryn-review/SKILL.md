@@ -8,6 +8,25 @@ description: Reviewing an Oteryn-Game diff before it lands (a returned Codex or 
 A review reads code, not reports. The worker's summary, the PR body and a
 green check are claims; the diff and the merged tree are the evidence.
 
+## 0. Gate before any review is requested
+
+Review is for what a command cannot find. The review retro of 2026-11-18
+(5 sessions) found that most findings were exact golden counts, stale digests
+or pins, missing predecessor pins, test-only code in a non-test build and
+first-entry paths nobody ran; each of these a command catches. So before a
+review is requested on a head, the head has:
+
+- the local checks of `oteryn-dev` `references/local-checks.md` green,
+  including the generators (`regenerate_content.py --resolve` leaves no
+  diff), `pin-check`, the changed packages' tests and the non-test build;
+- the real caller of the change run: the PG case or node-boot row the packet
+  names, red before the fix and green after, or, while that caller is red on
+  `main` for an unrelated reason, the same rows compared against `main`;
+- every member integrated: review only the final head of a branch or package,
+  never a WIP head or one member of a package.
+
+A head that fails the gate goes back to its author, not to review.
+
 ## 1. Gather the whole input
 
 - The diff against the exact base: `git diff <base>...<head>` (the base SHA
@@ -43,6 +62,8 @@ races, end paths, wiring). Add these, which it does not spell out:
 
 For each possible finding, confirm it is real: it is not handled elsewhere in
 the diff, no existing test covers it, and the surrounding code agrees.
+Then grep the root cause across the whole tree, not only the diff: a class
+fixed in one place and left in another is the next round's finding.
 
 ## 4. Audit, then findings
 
@@ -123,6 +144,11 @@ with CI and never blocks or delays it.
 
 ## 6. Receiving findings (Codex, Claude review, people)
 
+- Give every finding one verdict before any fix: `REAL-P0..P3`, `BY DESIGN`,
+  `DUPLICATE`, `FALSE` or `OUT OF SCOPE`, with `file:line` and the reachable
+  caller you traced. A finding that needs a change outside the branch's owned
+  paths (engine, client, another lane) is `OUT OF SCOPE`: it goes as a
+  BLOCKER to the owning lane, not into this fix run.
 - Verify each finding against the code: trace a real caller or input to the failure.
 - Real and in proportion: a P0/P1 is fixed in the next push and answered in
   one line with the fix; a P2/P3 is answered in one line and goes to the
@@ -130,6 +156,40 @@ with CI and never blocks or delays it.
   you traced, the test that covers it). A P1 is never left silent.
 - No performative agreement ("great catch"); actions and evidence only.
 - Collect all fixes of one review round into one push.
+
+## 7. The fix packet
+
+The fix run (§5) gets one packet for the whole round:
+
+- the findings numbered, and a required status per number in the report:
+  `FIXED <test>`, `NOT REPRODUCED` or `BLOCKED <why>`. Lanes handed a list
+  tend to stop after the first item; the numbered status list makes a skipped
+  item visible;
+- the sweep list as its scope: every instance of each class across the tree,
+  with `file:line`, including sibling tests in other crates or languages (a
+  reward count asserted in Rust and in Python);
+- a red test first, through the real caller (PG case, dispatch path or node-boot
+  row), not a unit test of the patched helper only;
+- a guard for every class that already recurred: one choke-point function and a
+  source-scan or invariant test that fails when the raw pattern appears
+  elsewhere;
+- the forbidden paths: a fix diff that touches `.github/**`,
+  `tools/repository/**` or `.github/repository-policy.json` is rejected
+  whole, unless the owner approved that exact path by name for this change.
+
+## 8. When review does not converge
+
+Patching stops and the design changes when any of these holds:
+
+- a round finds more P0/P1 than the round before;
+- the same module or flow produces findings in a second PR or round;
+- a finding is a regression or a second site of an earlier fix.
+
+Then write the rule down as one thing the code can check (a transition table
+with one test per state and event, a single transaction for a durable value,
+one shared source for a policy plus a parity test), implement that, and report
+to the owner. This is the §5 rule ("a P0/P1 after the second review means the
+design is wrong") applied earlier.
 
 ## Sources
 

@@ -24,6 +24,13 @@ context and does not see the other runs' output.
 | `authority` | durable value (gold, items, bounties), overflow and `i64::MAX`, checks done by the server and not the client, input bounds |
 | `tests` | tests that pass without testing (skipped PostgreSQL route, no assertion on the outcome, a sleep instead of a wait), missing red case, CI job filters |
 
+The lens list of a PR is fixed when its first round starts and does not
+change for the second: findings of two rounds are then comparable. One
+whole-diff round on the integrated head replaces per-area review loops; per-area
+loops on a package ran 8-9 rounds and did not converge, while the one
+whole-diff round found the cross-cutting P0 the area loops missed (retro
+2026-11-18).
+
 Choose lenses by diff size and by what the diff touches:
 
 - Up to about 400 changed lines: 2 lenses, the two that fit the diff best.
@@ -63,17 +70,22 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
    the opposite brief helps: a fresh subagent or Codex run told "try to refute
    this finding; default to refuted when unsure". Keep the finding when the
    refute attempt fails.
-3. Pattern sweep: for every confirmed finding, grep the whole diff, and the
-   files it touches, for the same class (same call, same lock, same `_ =>`,
-   same unchecked add). Add each instance to the confirmed list. A class fixed
-   at one site and left at another is the main cause of the next round.
+3. Pattern sweep: for every confirmed finding, grep the whole tree for the
+   same class (same call, same lock, same `_ =>`, same unchecked add, same
+   literal that an environment knob overrides), and every test in any crate or
+   language that asserts the changed value. Add each instance to the confirmed
+   list. A class fixed at one site and left at another is the main cause of the
+   next round: in the retro, rounds that did not converge found one sibling
+   per round.
 4. P2/P3 go to the grouped list (§4). They do not start a fix now.
 
 ## 4. One batch fix, one delta review, one CI cycle
 
 1. Write all confirmed P0/P1 findings, sweep instances included, to one file
    and run one fix: `codex-review.sh <worktree> <tag> --fix-confirmed <file>`.
-   Never one fix run per finding.
+   Never one fix run per finding. The packet follows `SKILL.md` §7 (numbered
+   items with a status each, sweep list, red test through the real caller,
+   class guard, forbidden paths).
 2. Review the fix diff yourself (§2-§3) and run the local checks.
 3. Push once. One CI cycle covers the whole batch.
 4. The second review allowed by §5 covers only the fix diff (the delta), with
