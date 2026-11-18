@@ -77,9 +77,10 @@ Porcelain Mask (25088 ×1) and Colourful Feathers (25089 ×3).
   the topic and durable track intact.
 - The placement generator now admits Gelidrazah's Thirst at `32275, 31366, z4`,
   the existing donor candidate and the exact Okolnir cell in the spoiler.
-- The quest accepts the original Tamoril-only NPC binding as a predecessor.
-  Removing the quiz rules and source file from the projected program
-  reconstructs the base payload exactly.
+- The quest recognizes the complete pre-quiz definition for existing saves,
+  including its Festive reward and selected final encounter. The predecessor
+  hash was read from the compiled base catalogue at `871c1dec7`. The
+  PostgreSQL quiz case seeds a saved quest under that exact hash.
 
 ## Blockers
 

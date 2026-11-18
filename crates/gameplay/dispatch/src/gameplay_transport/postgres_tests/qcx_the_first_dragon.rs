@@ -15,6 +15,7 @@ use std::sync::Arc;
 
 const NPC: &str = "oteryn:npc.gelidrazah_s_thirst";
 const QUEST: &str = "oteryn:quest.the_first_dragon_quest";
+const BASE_DEFINITION: &str = "a4ef0e5a69d1e2b40ae78dc42bd1c93f4de8e8c3b72961cc590558ee47c7b202";
 const ACCESS: &str = "oteryn:quest-progress/quest/u11_02/the_first_dragon/gelidrazah_access";
 
 #[test]
@@ -178,6 +179,26 @@ fn scenario(case: &str, placement: Option<fn() -> TestResult<NpcPlacement>>) -> 
             }
         };
         deps.initialize(&owner).await;
+        if placement.is_none() {
+            // A player who accepted through Tamoril on the base still holds
+            // that catalogue's exact definition hash.
+            let mut fixture = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *fixture)
+                .await?;
+            sqlx::query(
+                "INSERT INTO game_character_quest_states(
+                     character_id, quest_key, pinned_content_revision, definition_hash,
+                     started_character_revision, committed_character_revision)
+                 SELECT character_id, $1, content_revision, decode($2, 'hex'),
+                        character_revision, character_revision FROM game_character_roots",
+            )
+            .bind(QUEST)
+            .bind(BASE_DEFINITION)
+            .execute(&mut *fixture)
+            .await?;
+            fixture.commit().await?;
+        }
         owner.refresh_quest_session(session, true).await;
         let read_access = || {
             sqlx::query_scalar::<_, Option<i64>>(
