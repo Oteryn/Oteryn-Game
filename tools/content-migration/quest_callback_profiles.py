@@ -233,6 +233,11 @@ def _requested_inputs(root, extra_keys=()):
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
+    # Crystal 201189f data-global/monster/quests/the_elemental_spheres/
+    # ice_overlord.lua:44,73-76: this reward boss always drops flawless ice
+    # crystal. Its already-admitted canonical facts must reach the native
+    # inventory provider so personal reward settlement can finish the death.
+    keys.add('oteryn:item.tibia.i942')
     # M07's Rust-authored Lion trials need the same native physical Item owner.
     import lion_trial_item_profiles
     keys.update(f'oteryn:item.tibia.i{i}' for i in lion_trial_item_profiles.SOURCE_RECORDS)
