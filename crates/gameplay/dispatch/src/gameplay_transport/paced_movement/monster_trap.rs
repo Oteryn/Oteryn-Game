@@ -41,6 +41,9 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         if !runtime.contains_live_creature(step.actor) {
             continue;
         }
+        states
+            .encounter_phases
+            .azaram_monster_step(runtime, step, now);
         let Some(destination) = tile_entries(map, step.to) else {
             continue;
         };

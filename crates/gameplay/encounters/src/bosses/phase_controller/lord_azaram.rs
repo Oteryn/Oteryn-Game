@@ -143,6 +143,43 @@ impl LordAzaramEncounter {
         Ok(())
     }
 
+    pub fn step_on_splinter(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        position: MovementLocalPosition,
+        now: u64,
+    ) -> Result<(), CarrierError> {
+        if actor != self.lord
+            || self.lord_health.is_none()
+            || self.return_at.is_some()
+            || now >= self.expires
+        {
+            return Ok(());
+        }
+        let Some(index) = self.cleansed.iter().position(|&at| at == position) else {
+            return Ok(());
+        };
+        self.owner.current(runtime)?;
+        let snapshot = runtime.companion_snapshot(actor)?;
+        let maximum =
+            u64::try_from(snapshot.maximum_health).map_err(|_| CarrierError::PlanConflict)?;
+        let healed = runtime.commit_source_creature_heal_batch(
+            runtime.content_pin().server_artifact_digest(),
+            &[(actor, SOUL.to_owned(), maximum, maximum / 3)],
+        )?;
+        self.cleansed.swap_remove(index);
+        self.absorbed += 1;
+        if self.absorbed >= 3
+            || healed
+                .iter()
+                .any(|result| result.health_after >= snapshot.maximum_health)
+        {
+            self.return_at = Some(now.saturating_add(500_000));
+        }
+        Ok(())
+    }
+
     pub fn advance(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -180,25 +217,8 @@ impl LordAzaramEncounter {
                 self.last_health = health;
                 self.damage = 0;
                 self.absorbed = 0;
-            } else if self.return_at.is_none() {
-                let position = runtime.read_actor_position(self.lord)?.position();
-                let mut full = snapshot.health >= snapshot.maximum_health;
-                if let Some(index) = self.cleansed.iter().position(|&at| at == position) {
-                    let maximum = u64::try_from(snapshot.maximum_health)
-                        .map_err(|_| CarrierError::PlanConflict)?;
-                    let healed = runtime.commit_source_creature_heal_batch(
-                        runtime.content_pin().server_artifact_digest(),
-                        &[(self.lord, SOUL.to_owned(), maximum, maximum / 3)],
-                    )?;
-                    self.cleansed.swap_remove(index);
-                    self.absorbed += 1;
-                    full |= healed
-                        .iter()
-                        .any(|result| result.health_after >= snapshot.maximum_health);
-                }
-                if full || self.absorbed >= 3 {
-                    self.return_at = Some(now.saturating_add(500_000));
-                }
+            } else if self.return_at.is_none() && snapshot.health >= snapshot.maximum_health {
+                self.return_at = Some(now.saturating_add(500_000));
             }
             return Ok(true);
         }

@@ -270,6 +270,30 @@ impl Registry {
         })
     }
 
+    pub(super) fn azaram_monster_step(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        step: crate::map::facts::MonsterStep,
+        now: u64,
+    ) {
+        if step.from == step.to {
+            return;
+        }
+        let Ok(mut active) = self.active.lock() else {
+            return;
+        };
+        for phase in active.iter_mut() {
+            if let Fight::LordAzaram(fight) = &mut phase.fight
+                && let Err(error) = fight.step_on_splinter(runtime, step.actor, step.to, now)
+            {
+                super::operator_event(&format!(
+                    "encounter_phase_deferred key={} reason={error:?}",
+                    phase.key
+                ));
+            }
+        }
+    }
+
     pub(super) fn timed_lever_busy(&self, key: u64) -> bool {
         self.active.lock().map_or(true, |active| {
             active
