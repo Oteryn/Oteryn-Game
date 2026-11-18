@@ -200,7 +200,7 @@ fn world(
     Ok(world)
 }
 
-fn scenario(
+pub(super) fn scenario(
     action: Option<u16>,
     unique: Option<u16>,
     layer: &str,

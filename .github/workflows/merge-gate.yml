@@ -924,6 +924,20 @@ jobs:
           fi
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
+      # The dispatch library test build peaks above the hosted runner's 16 GB since #3056
+      # (17.3 GB at -j1, 20.3 GB at -j4, measured 2026-11-17); swap makes it slow down instead
+      # of being killed with exit 143.
+      - name: Add swap for the library test build
+        if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true' && runner.environment == 'github-hosted'
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 16G /mnt/oteryn-extra.swap
+          sudo chmod 600 /mnt/oteryn-extra.swap
+          sudo mkswap /mnt/oteryn-extra.swap
+          sudo swapon /mnt/oteryn-extra.swap
+          swapon --show
+          free -h
+
       # mold 2.42.1 (released 2026-09-11), pinned by SHA-256. The nextest step links through its
       # LD_PRELOAD wrapper, so RUSTFLAGS and the linker setting stay as in the protected-main
       # cache producer and the restored target/ keeps matching; only the link step gets faster.
@@ -955,6 +969,7 @@ jobs:
         if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true'
         env:
           SHARD: ${{ matrix.shard }}
+          CARGO_BUILD_JOBS: "1"
           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
