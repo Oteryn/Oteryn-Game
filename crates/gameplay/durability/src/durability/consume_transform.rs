@@ -392,6 +392,31 @@ async fn write<C: ItemLoopContent>(
             )
         })
     };
+    let cellar_disguise = if matches!(ground, ActionContext::Carried)
+        && definition.production_key == oteryn_gameplay_items::haunted_cellar::FULL_BUCKET_KEY
+        && oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+            &[
+                oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
+                oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
+            ],
+            &request.intent,
+        )
+        .is_ok_and(|intent| intent.use_with.is_some())
+    {
+        let questline = sqlx::query_scalar::<_, i64>(
+            "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(oteryn_gameplay_items::haunted_cellar::QUESTLINE)
+        .fetch_optional(&mut ***tx)
+        .await?;
+        if questline.unwrap_or(-1) < 1 {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+        }
+        oteryn_gameplay_items::novelty_items::haunted_cellar_disguise(native, &definition)
+    } else {
+        None
+    };
     let mut conversion = if let Some(planting) = planting_plan {
         planting
     } else if let Some(conversion) = conversion {
@@ -421,13 +446,15 @@ async fn write<C: ItemLoopContent>(
             extra_inputs: Vec::new(),
         }
     } else if secondary.is_none() {
-        if let Some(plan) = oteryn_gameplay_items::novelty_items::plan(
-            native,
-            &definition,
-            session,
-            command,
-            request.source,
-        ) {
+        if let Some(plan) = cellar_disguise.or_else(|| {
+            oteryn_gameplay_items::novelty_items::plan(
+                native,
+                &definition,
+                session,
+                command,
+                request.source,
+            )
+        }) {
             ActionPlan {
                 recipe: plan.recipe,
                 outputs: plan.outputs,

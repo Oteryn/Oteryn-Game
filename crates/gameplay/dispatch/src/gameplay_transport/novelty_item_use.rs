@@ -195,16 +195,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome(UseDisposition::Committed)));
         }
         // Reward containers retain the existing craft receipt owner and its route.
-        if !novelty_items::is_novelty(&item.definition.production_key) {
+        let cellar_disguise = item.definition.production_key
+            == oteryn_gameplay_items::haunted_cellar::FULL_BUCKET_KEY
+            && intent.use_with.is_some();
+        let plan = if cellar_disguise {
+            novelty_items::haunted_cellar_disguise(native, &item.definition)
+        } else if novelty_items::is_novelty(&item.definition.production_key) {
+            novelty_items::plan(
+                native,
+                &item.definition,
+                *command.game_session_id.as_bytes(),
+                command.command_id,
+                id,
+            )
+        } else {
             return Ok(None);
-        }
-        let plan = novelty_items::plan(
-            native,
-            &item.definition,
-            *command.game_session_id.as_bytes(),
-            command.command_id,
-            id,
-        );
+        };
         let Some(plan) = plan else {
             return Ok(Some(outcome(UseDisposition::NotPossible)));
         };
@@ -230,7 +236,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }) else {
                     return Ok(Some(outcome(UseDisposition::TargetIllegal)));
                 };
-                if !visible_target && target.actor != actor {
+                if (cellar_disguise || !visible_target) && target.actor != actor {
                     return Ok(Some(outcome(UseDisposition::TargetIllegal)));
                 }
                 let at = runtime

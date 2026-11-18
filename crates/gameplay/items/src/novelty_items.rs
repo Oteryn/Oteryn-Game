@@ -377,6 +377,66 @@ pub fn plan(
     })
 }
 
+/// Crystal actions_strange_bucket.lua:58–69. The caller proves the self target
+/// and the item transaction checks the Haunted House storage gate.
+pub fn haunted_cellar_disguise(
+    native: &NativeGameplayState,
+    used: &TypedDefinitionRef,
+) -> Option<NoveltyPlan> {
+    use crate::haunted_cellar::*;
+    if used.production_key != FULL_BUCKET_KEY {
+        return None;
+    }
+    let source = native
+        .item_policy(&used.production_key, &used.revision_ref)?
+        .record();
+    if source.production_definition.family != used.family || !source.admission.materializable {
+        return None;
+    }
+    let empty = native.item_policy_for_source_id(EMPTY_BUCKET)?.record();
+    if !empty.admission.materializable {
+        return None;
+    }
+    let definition = &empty.production_definition;
+    let effects = NoveltyEffects {
+        kind: NoveltyKind::Costume,
+        source_item_id: FULL_BUCKET,
+        donor: "data-global/scripts/quests/the_dream_courts/actions_strange_bucket.lua:58-69".into(),
+        ground: None,
+        cues: vec![NoveltyCue {
+            binding: "appearance:effect/poff".into(),
+            effect_id: 3,
+        }],
+        speech: Some("You pour all of the ectoplasm over yourself. Without the bucket you cannot stabilise it, you need to hurry until it dissolves!".into()),
+        private_speech: true,
+        require_head: false,
+        require_player_target: true,
+        dice_value: None,
+        costume: Some(CostumeEffect {
+            monster: "Slime".into(),
+            look_type: SLIME_LOOK_TYPE,
+            duration_ms: SLIME_DURATION_MS,
+        }),
+        damage: None,
+        achievement: None,
+        achievement_progress: Vec::new(),
+        timed_output: None,
+    };
+    Some(NoveltyPlan {
+        recipe: "oteryn:haunted-cellar-disguise.v1".into(),
+        outputs: vec![(
+            TypedDefinitionRef {
+                family: definition.family.clone(),
+                production_key: definition.production_key.clone(),
+                revision_ref: definition.revision_ref.clone(),
+            },
+            1,
+        )],
+        consume_source: true,
+        effects: serde_json::to_value(effects).ok()?,
+    })
+}
+
 #[derive(Debug, Deserialize)]
 pub struct HouseTransformRule {
     pub item_id: u32,

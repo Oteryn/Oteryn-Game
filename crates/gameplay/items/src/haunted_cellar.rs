@@ -1,5 +1,9 @@
 //! Crystal 201189f8, actions_strange_bucket.lua:26–75 and items.xml:55483–55505.
 
+pub const QUESTLINE: &str =
+    "oteryn:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline";
+pub const FULL_BUCKET_KEY: &str = "oteryn:item.tibia.i29309";
+
 pub const MUTATED_EGG: u32 = 29305;
 pub const NORMAL_EGG: u32 = 233;
 pub const EMPTY_BUCKET: u32 = 29310;
