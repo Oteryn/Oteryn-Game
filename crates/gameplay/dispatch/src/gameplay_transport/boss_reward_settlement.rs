@@ -8,7 +8,6 @@ use crate::durability::boss_encounter::reward_chest::{
     BossRewardChestPlan, BossRewardContributor, BossRewardDeath, BossRewardItem,
 };
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::foundation::RuntimeScopeRefV1;
 use oteryn_gameplay_encounter_rules::boss::pity::{
     boosted_probability_ppm, is_pity_item, pity_boss_key,
 };

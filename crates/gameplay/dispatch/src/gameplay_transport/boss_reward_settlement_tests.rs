@@ -1,6 +1,7 @@
 use super::boss_reward_contribution::{FrozenBossDeath, FrozenBossParticipant};
 use super::*;
 use crate::domain::item_definition::ItemStackClass;
+use crate::foundation::RuntimeScopeRefV1;
 use oteryn_gameplay_domain::domain::loot_data::{
     LootDefinitionRef, LootEntryDetails, LootSelectionAlgorithm, LootTableDefinition,
     LootTableEntry,
