@@ -135,7 +135,12 @@ async fn exercise(h: &Harness) -> TestResult {
         .item_index()
         .and_then(|index| index.definition_ref("Item", WATER, "definition-r1"))
         .ok_or("holy water definition")?;
-    let fence = crate::bestiary_postgres_harness::item_fence()?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(debug)?
+        .ok_or("current USE fence")?
+        .item_fence();
     let use_water = |command_id| {
         owner.tame_mount(
             deps.actor,

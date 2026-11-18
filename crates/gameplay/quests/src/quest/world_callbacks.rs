@@ -783,6 +783,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.push(super::targuna_ram::callback()?);
     native_callbacks.push(nomads_land::callback()?);
     native_callbacks.extend(super::ice_seal_paint::callbacks()?);
+    native_callbacks.extend(super::inquisition_actions::callbacks());
     native_callbacks.push(super::source_world_objects::uneasy_crystal());
     native_callbacks.extend(super::rotten_blood::flames::callbacks());
     native_callbacks.extend(super::source_world_objects::lions_amphora());

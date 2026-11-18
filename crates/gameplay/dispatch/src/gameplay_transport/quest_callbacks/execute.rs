@@ -129,6 +129,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 (pos, after)
             };
+        let summon = match oteryn_gameplay_quests::quest::inquisition_actions::summon(callback) {
+            None => None,
+            Some(creature) => {
+                let Ok(policy) = runtime.companion_policy(creature) else {
+                    return UseDisposition::Rejected;
+                };
+                Some((
+                    creature,
+                    policy.maximum_health,
+                    local(Position {
+                        x: pos.x,
+                        y: pos.y,
+                        floor: pos.floor,
+                    }),
+                ))
+            }
+        };
         if map.facts.object_revision(key) != expected_revision {
             // A known-commit source visual batch may have published its first
             // fixed object before a retry. Only that retained exact post-CAS
@@ -1461,7 +1478,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection.as_ref(),
                 )
             };
-            if let Some(proof) = scene_moves {
+            if let Some(summon) = summon {
+                if runtime
+                    .commit_quest_creature_spawn_with_projection(&[summon], apply_scene)
+                    .is_err()
+                {
+                    return UseDisposition::Rejected;
+                }
+            } else if let Some(proof) = scene_moves {
                 let committed = match runtime.commit_source_scene_relocations(proof, apply_scene) {
                     Ok(committed) => committed,
                     Err(error) => {

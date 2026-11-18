@@ -58,6 +58,7 @@ pub mod hive_access;
 pub mod hot_cuisine;
 pub mod ice_islands_seals;
 pub mod ice_seal_paint;
+pub mod inquisition_actions;
 pub mod isle_of_evil;
 pub mod item_disguises;
 pub mod kill_objectives;
