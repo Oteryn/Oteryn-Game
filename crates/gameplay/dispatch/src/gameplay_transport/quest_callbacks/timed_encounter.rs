@@ -36,6 +36,92 @@ impl TimedEncounter {
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(
         clippy::too_many_arguments,
+        reason = "binds the shared timer to the exact native source occurrence"
+    )]
+    pub(super) fn summon_on_quest_step(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        revision: u64,
+        at: MovementLocalPosition,
+    ) -> UseDisposition {
+        let Some(summon) = &callback.effects.step_summon else {
+            return UseDisposition::Rejected;
+        };
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return UseDisposition::Rejected;
+        };
+        if runtime.owner_fence().is_err()
+            || native.install_companion_policies(runtime).is_err()
+            || map.facts.object_revision(key) != revision
+        {
+            return UseDisposition::StaleState;
+        }
+        let Ok(policy) = runtime.companion_policy(&summon.creature) else {
+            return UseDisposition::Rejected;
+        };
+        let health = policy.maximum_health;
+        let now = self.owner_now().get();
+        let scope = runtime.encounter_owner_scope();
+        let content = runtime.content_pin().server_artifact_digest();
+        let map_digest = map.overlay.base().digest();
+        let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
+            return UseDisposition::Rejected;
+        };
+        pending.retain(|memo| {
+            memo.callback.effects.step_summon.is_none()
+                || (memo.scope == scope
+                    && memo.content == content
+                    && memo.map == map_digest
+                    && now < memo.reset_at
+                    && map.facts.object_revision(memo.key) == memo.revision)
+        });
+        if pending.iter().any(|memo| memo.key == key) {
+            return UseDisposition::Committed;
+        }
+        if pending.len() >= MAX_TIMED_ENCOUNTERS || pending.try_reserve(1).is_err() {
+            return UseDisposition::Exhausted;
+        }
+        let [minimum, maximum] = summon.cooldown_minutes.map(u16::from);
+        let span = maximum - minimum + 1;
+        let random = loop {
+            let Some([byte]) = crate::gameplay_transport::SecureIdentifiers::random::<1>() else {
+                return UseDisposition::Rejected;
+            };
+            let roll = u16::from(byte);
+            if roll < 256 - 256 % span {
+                break minimum + roll % span;
+            }
+        };
+        let Some(reset_at) = now.checked_add(u64::from(random) * 60_000_000) else {
+            return UseDisposition::Exhausted;
+        };
+        // The source AID cools down even if native monster admission refuses.
+        let _ = runtime.commit_quest_creature_spawn(&[(summon.creature.as_str(), health, at)]);
+        pending.push(TimedEncounter {
+            callback: callback.clone(),
+            key,
+            revision,
+            content,
+            map: map_digest,
+            scope,
+            spawn_at: now,
+            reset_at,
+            attempted_spawn: true,
+            spawned: Vec::new(),
+        });
+        states.owner_wake.notify_one();
+        UseDisposition::Committed
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
         reason = "the held native USE occurrence owns one source timer"
     )]
     pub(super) fn schedule_timed_quest_encounter(

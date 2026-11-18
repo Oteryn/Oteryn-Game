@@ -103,6 +103,16 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    /// Spawn at the entered tile, then cool down that placement without clearing its creatures.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub step_summon: Option<StepSummon>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct StepSummon {
+    pub creature: String,
+    pub cooldown_minutes: [u8; 2],
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -393,6 +403,25 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if let Some(summon) = &effects.step_summon {
+        let [minimum, maximum] = summon.cooldown_minutes;
+        return callback.trigger == Trigger::StepIn
+            && callback.actor_kind == ActorKind::Player
+            && callback.is_read_only()
+            && !callback.return_on_failure
+            && !callback.reversible
+            && callback.teleport.is_none()
+            && callback.selector.action.is_some_and(|action| action != 0)
+            && (1..=maximum).contains(&minimum)
+            && maximum <= 60
+            && summon.creature.starts_with("oteryn:creature.")
+            && super::super::valid_quest_key(&summon.creature)
+            && **effects
+                == CallbackEffects {
+                    step_summon: Some(summon.clone()),
+                    ..CallbackEffects::default()
+                };
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

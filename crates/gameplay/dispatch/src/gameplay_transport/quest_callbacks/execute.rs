@@ -886,6 +886,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        if callback.effects.step_summon.is_some() {
+            return self.summon_on_quest_step(
+                runtime,
+                states,
+                map,
+                callback,
+                key,
+                expected_revision,
+                expected.position(),
+            );
+        }
         let party = if let Some(party) = &callback.effects.party_transfer {
             if after.appearance_id != party.activation_appearance {
                 return if map.facts.apply_quest_callback(

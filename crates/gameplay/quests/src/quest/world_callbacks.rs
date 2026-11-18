@@ -78,6 +78,7 @@ mod selected_tool_tests;
 mod solid_repair_tests;
 mod solid_repairs;
 mod state_operations;
+mod step_summon;
 mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
@@ -85,7 +86,7 @@ pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
     MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion,
-    RewardDoor, TargetTransform,
+    RewardDoor, StepSummon, TargetTransform,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
@@ -776,6 +777,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.extend(super::goblin_merchant::callbacks()?);
     native_callbacks.extend(super::shared_world_progress::callbacks());
     native_callbacks.extend(super::hive_access::callbacks());
+    native_callbacks.push(step_summon::lucifuga()?);
     native_callbacks.push(super::dreamer_carrot::callback());
     native_callbacks.push(super::dreamer_death_ring::reset_callback());
     native_callbacks.extend(super::dreamer_fire_bug::callbacks());
@@ -1097,8 +1099,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             })
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
-                    || callback.teleport.is_none()
-                    || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
+                    || (callback.effects.step_summon.is_none()
+                        && (callback.teleport.is_none()
+                            || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)))
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()
                     || !callback.offerings.is_empty()
@@ -2370,6 +2373,20 @@ mod tests {
                     .is_err()
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn step_summon_admits_a_read_only_bait_guard() -> Result<(), String> {
+        let callbacks = [load()?
+            .into_iter()
+            .find(|callback| callback.key == step_summon::LUCIFUGA)
+            .ok_or("registered Lucifuga callback")?];
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("catalogue")?,
+            &callbacks,
+        )?;
+        assert!(catalogue.transition(&callbacks[0].key).is_none());
         Ok(())
     }
 
