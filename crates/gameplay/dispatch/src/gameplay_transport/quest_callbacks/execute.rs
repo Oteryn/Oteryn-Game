@@ -518,6 +518,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => Some(key),
             },
             Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { .. }) => Some(key),
+            Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
+                if callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.selected_instance) =>
+            {
+                Some(key)
+            }
             Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 key, ..
             }) => Some(*key),
