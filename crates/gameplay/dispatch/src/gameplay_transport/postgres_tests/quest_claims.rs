@@ -208,9 +208,20 @@ pub(super) async fn exercise(
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
-    let mut callback = serde_json::to_value(super::authored_world_rewards::placeholder(AT)?)?;
-    callback["key"] = json!(CLAIM);
-    callback["requires_world_admission"] = json!(true);
+    // The source tile is installed by the common dispatch fixture. Build the binding
+    // independently so its guards and effects come entirely from this scenario.
+    let mut callback = json!({
+        "key":CLAIM,"quest":QUEST,"trigger":"use",
+        "selector":{"position":AT,"unique":63001,"appearance":100},
+        "requires_world_admission":true,"reversible":false,"passages":[],
+        "storage":[],"offerings":[],"return_on_failure":false,
+        "sources":[
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/actions_fountain.lua:3-15",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:115-139",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_rewards.lua:43-72",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_great_dragon_hunt_quest/actions_treasure.lua:19-40"
+        ]
+    });
     let well = matches!(name, WELL | WELL_LOST_ACK);
     let mut tracks = vec![];
     let mut effects;
@@ -283,7 +294,10 @@ pub(super) async fn exercise(
         }
     }
     callback["effects"]["claim"] = effects;
-    let recipe_sha256 = format!("{:x}", Sha256::digest(serde_json::to_vec(&callback)?));
+    let recipe_sha256: String = Sha256::digest(serde_json::to_vec(&callback)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let trigger = if name == STEP { "step_in" } else { "map_use" };
     let mut stages = vec![json!({
         "key":"claim","completes":false,"trigger":{"kind":trigger,"callback":callback}
