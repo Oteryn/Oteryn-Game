@@ -134,6 +134,12 @@ pub(super) async fn exercise(
             .position(),
         local(start)
     );
+    let map = owner.bundle_map().ok_or("map")?;
+    let effect_before = map
+        .facts
+        .movement_effects_since(0)
+        .last()
+        .map_or(0, |row| row.0);
     if callback.trigger == Trigger::StepIn {
         let reply = wire(
             owner,
@@ -147,7 +153,6 @@ pub(super) async fn exercise(
     } else {
         let key = oteryn_world_bundle::bundle::placement_key(source.floor, source.x, source.y, 1)
             .ok_or("source object")?;
-        let map = owner.bundle_map().ok_or("map")?;
         let mut placement = map.overlay.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
         let target = WorldObjectTarget {
@@ -157,11 +162,6 @@ pub(super) async fn exercise(
         if name == SATCHEL {
             return exercise_satchel(owner, admitted, h, actor, start, expected, target, key).await;
         }
-        let effect_before = map
-            .facts
-            .movement_effects_since(0)
-            .last()
-            .map_or(0, |row| row.0);
         let outcomes =
             super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(1, &target)])
                 .await?;
@@ -173,16 +173,15 @@ pub(super) async fn exercise(
                 UseDisposition::Committed
             })
         );
-        if refused {
-            assert!(
-                map.facts
-                    .movement_effects_since(effect_before)
-                    .iter()
-                    .any(|(_, at, effect)| *effect == 11
-                        && (at.x, at.y, at.floor) == (start.x, start.y, start.floor))
-            );
-        }
     }
+    assert!(
+        map.facts
+            .movement_effects_since(effect_before)
+            .iter()
+            .any(|(_, at, effect)| *effect == 11
+                && (at.x, at.y, at.floor) == (expected.x, expected.y, expected.floor)),
+        "{name} must emit its teleport effect at the player's final position"
+    );
     assert_eq!(
         owner
             .runtime
