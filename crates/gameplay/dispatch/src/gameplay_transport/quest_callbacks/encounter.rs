@@ -201,7 +201,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_member(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -210,6 +210,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
+                encounter.phase.is_some(),
             ) else {
                 return UseDisposition::NotPossible;
             };
