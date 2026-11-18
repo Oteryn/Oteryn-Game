@@ -62,6 +62,91 @@ impl ShieldSequence {
     }
 }
 
+use super::{NativePhaseOwner, Plan, Role};
+use oteryn_gameplay_entities::{
+    CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
+};
+
+const BOSS: &str = "oteryn:creature.arbaziloth";
+const FORGEMASTER: &str = "oteryn:creature.the_forgemaster";
+const ENRAGED: &str = "oteryn:creature.enraged_arbaziloth";
+const ENRAGED_ROLES: &[Role] = &[Role {
+    creature: ENRAGED,
+    after: 0,
+}];
+
+/// The replacement remains bound to the exact actors admitted for this attempt.
+#[derive(Debug)]
+pub struct ArbazilothEncounter {
+    phase: NativePhaseOwner,
+    boss: ExactActorRef,
+    forgemaster: ExactActorRef,
+    enraged: Option<ExactActorRef>,
+    shields: ShieldSequence,
+}
+
+impl ArbazilothEncounter {
+    pub fn bind(
+        runtime: &ChannelRuntimeV1,
+        players: &[(ExactActorRef, GameSessionId)],
+        boss: ExactActorRef,
+        forgemaster: ExactActorRef,
+    ) -> Result<Self, CarrierError> {
+        if !runtime.matches_live_creature_identity(boss, BOSS.as_bytes())
+            || !runtime.matches_live_creature_identity(forgemaster, FORGEMASTER.as_bytes())
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        runtime.companion_policy(ENRAGED)?;
+        Ok(Self {
+            phase: NativePhaseOwner::bind(
+                runtime,
+                Plan {
+                    roles: ENRAGED_ROLES,
+                    terminal: 1,
+                },
+                players,
+            )?,
+            boss,
+            forgemaster,
+            enraged: None,
+            shields: ShieldSequence::default(),
+        })
+    }
+
+    pub fn shields_for(&mut self, actor: ExactActorRef) -> Option<&mut ShieldSequence> {
+        (actor == self.boss && self.enraged.is_none()).then_some(&mut self.shields)
+    }
+
+    /// Crystal removes the Forgemaster and normal boss when the delayed event
+    /// fires, then puts the enraged form at the original boss's current tile.
+    pub fn advance(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_ms: u64,
+        map_admits: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+    ) -> Result<Option<ExactActorRef>, CarrierError> {
+        if self.enraged.is_some()
+            || !self.shields.forgemaster_departure_due(now_ms)
+            || !runtime.matches_live_creature_identity(self.boss, BOSS.as_bytes())
+            || !runtime.matches_live_creature_identity(self.forgemaster, FORGEMASTER.as_bytes())
+        {
+            return Ok(None);
+        }
+        let position = runtime.read_actor_position(self.boss)?.position();
+        let enraged = self.phase.spawn_role(
+            runtime,
+            0,
+            position,
+            &[self.boss, self.forgemaster],
+            None,
+            map_admits,
+        )?;
+        self.enraged = Some(enraged);
+        Ok(Some(enraged))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
