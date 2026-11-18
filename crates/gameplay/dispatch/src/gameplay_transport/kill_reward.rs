@@ -2266,6 +2266,7 @@ pub fn record_creature_kill(
     if let Some(choice) = daily_boost {
         let boosted_creature = creature == choice.creature;
         let boosted_boss = creature == choice.boss;
+        facts.boosted_creature = boosted_creature;
         if boosted_creature {
             let Ok(base) = u64::try_from(row.xp_amount.get()) else {
                 return;
@@ -2306,6 +2307,7 @@ pub fn record_creature_kill(
                 } else {
                     1
                 };
+                facts.daily_loot_rolls = extra_rolls;
                 let boosted_entries = if boosted_boss {
                     // Boss bonus rerolls equipment only, never gold, creature products, other
                     // consumables or a unique entry (W13). Stable partition keeps replay
@@ -4051,19 +4053,36 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .await
         };
         if super::qualification_witnesses_enabled()
-            && outcome
-                .as_ref()
-                .is_ok_and(|result| result.rewards.loot.is_ok())
+            && let Ok(result) = &outcome
         {
-            let stamina = live_stamina.map_or_else(|| "none".to_owned(), |value| value.to_string());
-            super::qualification_death_witness(
-                "physical_loot_inputs",
-                entry.facts.death,
-                &format!(
-                    " stamina={stamina} loot_rate={} xp_rate={}",
-                    self.event_rates.loot, self.event_rates.experience
-                ),
-            );
+            let (corpse, loot_error) = match &result.rewards.loot {
+                Ok(Some(_)) => ("present", None),
+                Ok(None) => ("absent", None),
+                Err(CombatDeathRewardLootError::Mint(error, _)) => {
+                    ("present", Some(format!("mint:{error:?}")))
+                }
+                Err(error) => ("failed", Some(format!("{error:?}"))),
+            };
+            if !result.rewards.loot.as_ref().is_err_and(loot_unknown) {
+                let stamina =
+                    live_stamina.map_or_else(|| "none".to_owned(), |value| value.to_string());
+                let loot_error = loot_error.map_or_else(
+                    || "none".to_owned(),
+                    |reason| reason.replace(char::is_whitespace, "_"),
+                );
+                super::qualification_death_witness(
+                    "physical_loot_inputs",
+                    entry.facts.death,
+                    &format!(
+                        " stamina={stamina} loot_rate={} xp_rate={} corpse_settlement={corpse} loot_error={loot_error} boosted_creature={} boosted_boss={} daily_loot_rolls={}",
+                        self.event_rates.loot,
+                        self.event_rates.experience,
+                        entry.facts.boosted_creature,
+                        entry.facts.boosted_boss,
+                        entry.facts.daily_loot_rolls,
+                    ),
+                );
+            }
         }
         if let Ok(outcome) = &outcome {
             admission
