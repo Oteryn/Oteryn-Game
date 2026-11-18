@@ -8,10 +8,14 @@
       "quest": "oteryn:quest.spike_task",
       "trigger": "step_in",
       "selector": {
-        "position": null,
+        "position": {
+          "x": 32242,
+          "y": 32597,
+          "floor": -8
+        },
         "unique": null,
-        "action": 4227,
-        "appearance": null
+        "action": null,
+        "appearance": 14973
       },
       "lever": null,
       "reversible": false,
