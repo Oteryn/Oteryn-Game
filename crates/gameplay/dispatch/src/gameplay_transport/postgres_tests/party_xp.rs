@@ -191,9 +191,13 @@ fn task_board_real_dispatch_interleaved_principals_keep_death_order_and_final_bo
 
 pub(super) fn run(case: Case) -> TestResult {
     // Without the PostgreSQL route the case skips, as the other dispatch PostgreSQL tests do.
-    if fixture::configured_admin().is_none() {
+    let Some(admin) = fixture::configured_admin() else {
         return Ok(());
-    }
+    };
+    run_with_admin(case, admin)
+}
+
+pub(super) fn run_with_admin(case: Case, admin: String) -> TestResult {
     std::thread::Builder::new()
         .name("party-xp-pg".into())
         .stack_size(64 << 20)
@@ -201,8 +205,6 @@ pub(super) fn run(case: Case) -> TestResult {
             fixture::runtime()
                 .map_err(|e| e.to_string())?
                 .block_on(async move {
-                    let admin = fixture::configured_admin()
-                        .ok_or("canonical PostgreSQL admin URL required")?;
                     // One tag per case: the tag names the database and the retained
                     // recovery directory, which concurrent cases must not share.
                     let tag = format!("party_xp_{}", case as u8);
