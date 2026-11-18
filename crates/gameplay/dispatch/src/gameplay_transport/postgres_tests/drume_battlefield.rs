@@ -29,6 +29,7 @@ const LION: &str = "oteryn:creature.lion_commander";
 const USURPER: &str = "oteryn:creature.usurper_commander";
 const DRUME: &str = "oteryn:creature.drume";
 const KESAR: &str = "oteryn:creature.kesar";
+const TIMEOUT_MS: u32 = 1_200_000;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum ExitCase {
@@ -87,7 +88,7 @@ pub(super) fn bind(callback: &mut Callback) -> TestResult {
         "exit": EXIT,
         "captain": CAPTAIN,
         "boss": {"x":116,"y":113,"floor":-7},
-        "timeout_ms":1_200_000,
+        "timeout_ms":TIMEOUT_MS,
     });
     json["effects"]["encounter"]["phase"] = "drume_skirmish".into();
     let encounter = json["effects"]["encounter"]["monsters"]
@@ -167,6 +168,7 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let first = leader.runtime_actor.ok_or("first actor")?;
     let actors = [first, second];
+    let after_deadline = owner.owner_now().get() + u64::from(TIMEOUT_MS) * 1000 + 1;
     assert_positions(owner, actors, LANDING).await?;
     // Keep the summon master outside the skirmish so master teardown cannot
     // accidentally satisfy the timeout assertion.
@@ -213,9 +215,7 @@ pub(super) async fn exercise(
         assert!(runtime.contains_live_creature(summoned));
         runtime.remove_encounter_actor(obstruction).map_err(debug)?;
         let states = owner.states.spell_states.lock().await;
-        let after_deadline = owner.owner_now().get() + 1_200_000_001;
         crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states, after_deadline);
-        crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states, after_deadline + 1);
     }
     if spawn_boss {
         assert!(list(owner, DRUME).await?.is_empty());
@@ -275,7 +275,28 @@ pub(super) async fn exercise(
         assert!(list(owner, USURPER).await?.is_empty());
         assert!(list(owner, DRUME).await?.is_empty());
         assert_positions(owner, actors, super::quest_world_callbacks::local(EXIT)).await?;
-        assert!(owner.runtime.lock().await.contains_live_creature(summoned));
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let tick = crate::gameplay_transport::encounter_phases::tick;
+            if exit_case == ExitCase::Defeat {
+                tick(&mut runtime, &states, owner.owner_now().get());
+            }
+            assert!(runtime.contains_live_creature(summoned));
+            // Crystal action_drume.lua:23-34,119-122 retains the scheduled
+            // clear after commander_kills.lua:14-23 ejects the players.
+            tick(&mut runtime, &states, after_deadline + 1);
+            assert!(!runtime.contains_live_creature(summoned));
+            let ambient = runtime
+                .admit_encounter_actor("oteryn:creature.rat", 20, LANDING)
+                .map_err(debug)?;
+            tick(&mut runtime, &states, after_deadline + 2);
+            assert!(runtime.contains_live_creature(ambient));
+        }
+        for session in [leader.game_session_id, second_session] {
+            assert!(owner.states.chat.drain(session).is_empty());
+        }
+        assert_positions(owner, actors, super::quest_world_callbacks::local(EXIT)).await?;
     }
     assert!(owner.runtime.lock().await.contains_live_creature(master));
     let exit_effects = owner
@@ -310,7 +331,7 @@ async fn exercise_busy_timeout(
     let lions = list(owner, LION).await?;
     let target = *lions.last().ok_or("surviving lion commander")?;
     let now = owner.owner_now();
-    let deadline = now.get() + 1_200_000_000;
+    let deadline = now.get() + u64::from(TIMEOUT_MS) * 1000;
     let staged = {
         let mut runtime = owner.runtime.lock().await;
         let lease = runtime.bound_attacker_lease(caster, session).map_err(debug)?;

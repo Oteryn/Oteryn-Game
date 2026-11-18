@@ -140,17 +140,16 @@ impl Skirmish {
             // Lion dies. An obstructed exit must retain the selected outcome.
             self.state = BattlefieldState::Exiting(Ejection::Defeat);
         }
-        match self.state {
-            BattlefieldState::Exiting(reason) => {
-                self.eject(runtime, room, cells, reason)?;
-                self.state = match reason {
-                    Ejection::Defeat => BattlefieldState::AwaitingTimeout,
-                    Ejection::Timeout => BattlefieldState::Finished,
-                };
-                return Ok(());
-            }
-            BattlefieldState::AwaitingTimeout | BattlefieldState::Finished => return Ok(()),
-            BattlefieldState::Fighting => {}
+        if let BattlefieldState::Exiting(reason) = self.state {
+            self.eject(runtime, room, cells, reason)?;
+            self.state = match reason {
+                Ejection::Defeat => BattlefieldState::AwaitingTimeout,
+                Ejection::Timeout => BattlefieldState::Finished,
+            };
+            return Ok(());
+        }
+        if !matches!(self.state, BattlefieldState::Fighting) {
+            return Ok(());
         }
         if self.phase.pending().any(|(role, _)| role == DRUME) {
             self.phase.spawn_role(
@@ -179,13 +178,15 @@ impl Skirmish {
     ) -> Result<(), CarrierError> {
         // Crystal action_drume.lua:23-34,119-122 keeps the timer after defeat.
         // A subsequent successful lever admission replaces the scheduled clear.
-        if now_us >= self.deadline
-            && matches!(
-                self.state,
-                BattlefieldState::Fighting | BattlefieldState::AwaitingTimeout
-            )
-        {
-            self.state = BattlefieldState::Exiting(Ejection::Timeout);
+        if now_us >= self.deadline {
+            if matches!(self.state, BattlefieldState::AwaitingTimeout) {
+                self.eject(runtime, room, cells, Ejection::Timeout)?;
+                self.state = BattlefieldState::Finished;
+                return Ok(());
+            }
+            if matches!(self.state, BattlefieldState::Fighting) {
+                self.state = BattlefieldState::Exiting(Ejection::Timeout);
+            }
         }
         self.advance(runtime, room, cells)
     }
