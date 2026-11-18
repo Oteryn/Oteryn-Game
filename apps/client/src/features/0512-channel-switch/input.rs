@@ -21,6 +21,12 @@ impl PlayLink {
         let mut mailbox = lock(&self.mailbox);
         let mailbox = &mut *mailbox;
         let panel = &mut mailbox.channel_switch;
+        if !panel.open {
+            // A new picker session refreshes the load and allows a fresh capacity decision.
+            for row in &mut panel.rows {
+                row.full = false;
+            }
+        }
         panel.open = true;
         let due = mailbox
             .channel_probe_refreshed
@@ -165,6 +171,13 @@ fn refresh_probes(
         });
 }
 
+#[cfg(all(test, feature = "bevy-shell"))]
+impl PlayLink {
+    pub(crate) fn set_channel_switch_fixture(&self, panel: channel_switch::ChannelSwitchPanel) {
+        lock(&self.mailbox).channel_switch = panel;
+    }
+}
+
 #[cfg(test)]
 mod ping_tests {
     #[test]
@@ -191,5 +204,16 @@ mod ping_tests {
             None,
             "a Channel without a probe shows no ping"
         );
+    }
+
+    #[test]
+    fn dropping_the_session_cancels_the_open_picker_probe() -> Result<(), &'static str> {
+        let (link, _commands, _outbox) = crate::play::play_channel();
+        link.channel_probe_platform(Some("invalid".into()));
+        link.channel_switch_open();
+        let token = super::lock(&link.mailbox).channel_probe_cancel.clone().ok_or("probe token")?;
+        drop(link);
+        assert!(token.is_cancelled());
+        Ok(())
     }
 }

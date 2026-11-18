@@ -114,9 +114,17 @@ pub fn apply_request(
     {
         return panel.switching;
     }
-    panel.switching = None;
+    let target = panel.switching.take();
     match status {
         Some(status) => {
+            if status.lock == SwitchLock::ChannelFull
+                && let Some(row) = panel
+                    .rows
+                    .iter_mut()
+                    .find(|row| Some(row.channel) == target)
+            {
+                row.full = true;
+            }
             if !matches!(
                 status.lock,
                 SwitchLock::ChannelFull

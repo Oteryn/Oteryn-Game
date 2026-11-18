@@ -17,24 +17,67 @@ CREATE TABLE game_channel_pvp_types (
 );
 REVOKE ALL ON game_channel_pvp_types FROM PUBLIC;
 GRANT SELECT ON game_channel_pvp_types TO oteryn_game_runtime;
-GRANT SELECT, INSERT, UPDATE ON game_channel_pvp_types TO oteryn_game_control;
+GRANT SELECT ON game_channel_pvp_types TO oteryn_game_control;
 
 INSERT INTO game_channel_pvp_types(world_id, channel_id, pvp_type)
 SELECT world_id, channel_id, 1 FROM game_runtime_scope_assignments WHERE scope_kind=1 AND state=1;
 
+-- Policy is published together with the assigned topology and its receipt, under the
+-- exact Channel and operation grants used by the assignment writer.
+CREATE FUNCTION game_channel_publish_policy(
+    p_world UUID, p_channel UUID, p_operation_key BYTEA, p_pvp SMALLINT, p_capacity INTEGER
+) RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+DECLARE
+    -- NASG-COMMAND-BYTES appends the PvP byte and optional u16 capacity.
+    policy_bytes BYTEA := CASE WHEN p_pvp IS NULL AND p_capacity IS NULL THEN ''::bytea
+        ELSE decode(lpad(to_hex(COALESCE(p_pvp,0)),2,'0'),'hex')
+             || COALESCE(substring(int4send(p_capacity) FROM 3), ''::bytea) END;
+BEGIN
+    IF p_pvp NOT IN (1,2) OR p_capacity NOT BETWEEN 1 AND 65535 OR NOT EXISTS (
+        SELECT FROM game_runtime_scope_assignment_receipts r
+        JOIN game_runtime_scope_assignments a USING (scope_key, operation_key)
+        JOIN game_control_scope_grants g
+          ON g.control_role=session_user AND g.world_id=a.world_id AND g.channel_id=a.channel_id
+         AND g.operation=get_byte(r.command,1)
+        WHERE r.operation_key=p_operation_key AND r.xmin=pg_current_xact_id()::xid
+          AND a.scope_kind=1 AND a.state=1 AND r.state=1
+          AND a.world_id=p_world AND a.channel_id=p_channel AND g.operation IN (1,2)
+          AND r.command = substring(r.command FOR (
+              92 + get_byte(r.command,34) + CASE WHEN g.operation=2 THEN
+                  17 + 8 * get_byte(r.command,84 + get_byte(r.command,34)) ELSE 0 END
+          )) || policy_bytes
+    ) THEN
+        RAISE EXCEPTION 'Channel policy publication is not granted to this control role'
+            USING ERRCODE='42501';
+    END IF;
+    INSERT INTO game_channel_pvp_types(world_id,channel_id,pvp_type,player_capacity)
+    VALUES(p_world,p_channel,COALESCE(p_pvp,1),COALESCE(p_capacity,100))
+    ON CONFLICT(world_id,channel_id) DO UPDATE
+    SET pvp_type=COALESCE(p_pvp,game_channel_pvp_types.pvp_type),
+        player_capacity=COALESCE(p_capacity,game_channel_pvp_types.player_capacity)
+    WHERE p_pvp IS NOT NULL OR p_capacity IS NOT NULL;
+END $$;
+REVOKE ALL ON FUNCTION game_channel_publish_policy(UUID,UUID,BYTEA,SMALLINT,INTEGER) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_channel_publish_policy(UUID,UUID,BYTEA,SMALLINT,INTEGER) TO oteryn_game_control;
+
+CREATE INDEX game_channel_live_sessions
+    ON game_durability_reconnect_sessions(world_id, COALESCE(runtime_scope_channel_id,origin_channel_id))
+    WHERE session_state IN (1,2);
+
 -- Count live and reconnectable sessions as the Channel load command does. The existing
 -- Control-issued account type grants GM access at level 4 (the Gamemaster room predicate).
 CREATE FUNCTION game_channel_full(p_character UUID, p_world UUID, p_channel UUID)
-RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $$
-    SELECT EXISTS (
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+    SELECT NOT EXISTS (
+        SELECT FROM game_chat_roles r WHERE r.character_id=p_character AND r.account_type >= 4
+    ) AND EXISTS (
         SELECT FROM game_channel_pvp_types c
-        WHERE c.world_id=p_world AND c.channel_id=p_channel AND c.player_capacity <= (
-            SELECT count(*) FROM game_durability_reconnect_sessions s
+        WHERE c.world_id=p_world AND c.channel_id=p_channel AND EXISTS (
+            SELECT FROM game_durability_reconnect_sessions s
             WHERE s.world_id=p_world AND s.session_state IN (1,2)
               AND COALESCE(s.runtime_scope_channel_id,s.origin_channel_id)=p_channel
+            OFFSET (c.player_capacity - 1) LIMIT 1
         )
-    ) AND NOT EXISTS (
-        SELECT FROM game_chat_roles r WHERE r.character_id=p_character AND r.account_type >= 4
     )
 $$;
 REVOKE ALL ON FUNCTION game_channel_full(UUID,UUID,UUID) FROM PUBLIC;
@@ -72,13 +115,15 @@ CREATE FUNCTION game_channel_switch_now_ms() RETURNS BIGINT LANGUAGE sql VOLATIL
     SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::BIGINT
 $$;
 
--- The hard locks that the database itself can prove for a switch into p_channel (§8): an open
--- in-fight logout block, and a red or black skull entering a Channel that is not known Open PvP.
+-- Durable switch locks (§8) cover boss visits, house transitions, combat, and skulls
+-- entering a Channel that is not known Open PvP.
 -- Returns NULL when none applies, else the refusal reason.
 CREATE FUNCTION game_channel_switch_lock(p_character UUID, p_world UUID, p_channel UUID)
-RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $$
+RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
     SELECT CASE
-        WHEN game_channel_full(p_character,p_world,p_channel) THEN 'CHANNEL_FULL'
+        WHEN EXISTS (SELECT FROM game_character_grizzly_boss_entries b
+                     WHERE b.character_id=p_character AND b.world_id=p_world
+                       AND b.state IN ('ACTIVE','RETURN_PENDING')) THEN 'EVENT'
         WHEN EXISTS (SELECT 1 FROM game_character_last_positions p
                      WHERE p.character_id = p_character AND p.world_id = p_world
                        AND p.house_key IS NOT NULL AND p.origin_channel_id <> p_channel)
@@ -100,7 +145,7 @@ GRANT EXECUTE ON FUNCTION game_channel_switch_lock(UUID, UUID, UUID)
 -- No row: the next admission sets the baseline and no cooldown runs.
 CREATE FUNCTION game_channel_switch_status(p_character UUID, p_world UUID)
 RETURNS TABLE (last_channel_id UUID, cooldown_left_ms BIGINT)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $$
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
     SELECT g.last_channel_id,
            CASE WHEN g.switched_at IS NULL THEN 0::BIGINT
                 ELSE GREATEST(0::BIGINT, g.switched_at + game_channel_switch_cooldown_ms()
@@ -115,7 +160,7 @@ GRANT EXECUTE ON FUNCTION game_channel_switch_status(UUID, UUID)
 -- Classification inside the final admission boundary (§10-§11). A relog into another Channel is a
 -- switch too. Refusals raise, so the admission and everything it wrote roll back.
 CREATE FUNCTION game_channel_switch_admit() RETURNS trigger
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 DECLARE
     g game_channel_switch_guards;
     now_ms BIGINT := game_channel_switch_now_ms();

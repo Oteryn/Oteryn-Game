@@ -21,18 +21,18 @@ const JWS: &str = "eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl";
 mod admitted;
 pub(super) use admitted::admitted_frames;
 #[path = "test_support/channel_node.rs"]
-pub(super) mod channel_node;
+pub(crate) mod channel_node;
 
 /// A local Platform + Gateway (one response per connection) and a TLS game endpoint
 /// that answers with scripted refusals or joins and drops each admitted stream.
-pub(super) struct Stack {
+pub(crate) struct Stack {
     pub(super) servers: ClientRuntime,
     http_url: String,
     requests: Arc<Mutex<Vec<String>>>,
     pub(super) admissions: Arc<AtomicUsize>,
     pub(super) root_path: PathBuf,
     pub(super) game_port: u16,
-    pub(super) node: Arc<channel_node::Node>,
+    pub(crate) node: Arc<channel_node::Node>,
 }
 
 impl Stack {
@@ -64,7 +64,7 @@ impl Stack {
     }
 
     /// chsw: one World with two Channels behind one Gateway and one scripted node.
-    pub(super) fn start_two_channels() -> Result<Self, Box<dyn std::error::Error>> {
+    pub(crate) fn start_two_channels() -> Result<Self, Box<dyn std::error::Error>> {
         Self::start_variant(Vec::new(), Vec::new(), false, false, false, true)
     }
 
@@ -168,7 +168,7 @@ impl Stack {
         })
     }
 
-    pub(super) fn config(&self) -> NativeLoginConfig {
+    pub(crate) fn config(&self) -> NativeLoginConfig {
         NativeLoginConfig {
             device_sessions: Default::default(),
             platform_url: self.http_url.clone(),
@@ -216,7 +216,7 @@ impl Stack {
         }
     }
 
-    pub(super) fn finish(self) {
+    pub(crate) fn finish(self) {
         let _ = std::fs::remove_file(&self.root_path);
         self.servers.shutdown(Duration::from_millis(100));
     }

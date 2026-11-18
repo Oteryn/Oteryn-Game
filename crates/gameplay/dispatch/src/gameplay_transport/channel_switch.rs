@@ -5,7 +5,7 @@
 //! cooldown and the database locks and advances the guard (migration 2858).
 use super::logout::LogoutReply;
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
-use crate::foundation::{CommandId, RuntimeScopeRefV1};
+use crate::foundation::{ChannelRuntimeV1, CommandId, ExactActorRef, GameSessionId, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::channel_switch::{self as wire, SwitchLock, SwitchStatus};
 use oteryn_protocol_oteryn::logout::LogoutResult;
 
@@ -90,38 +90,54 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. }) {
             return Some(SwitchLock::Event);
         }
-        {
-            let runtime = self.runtime.lock().await;
-            let Ok(position) = runtime.read_actor_position(actor) else {
-                return Some(SwitchLock::Checkpoint);
-            };
-            let at = position.position();
-            if self
-                .callback_content()
-                .iter()
-                .filter_map(|callback| callback.effects.encounter.as_ref())
-                .any(|room| {
-                    super::quest_callbacks::room_contains(room, at)
-                        && runtime.positioned_melee_census().map_or(true, |occupants| {
-                            occupants.iter().any(|(_, pos, controller)| {
-                                controller.is_none()
-                                    && super::quest_callbacks::room_contains(room, pos.position())
-                            })
-                        })
-                })
-            {
-                return Some(SwitchLock::Event);
-            }
+        let runtime = self.runtime.lock().await;
+        self.switch_encounter_lock(&runtime, actor, session)
+    }
+
+    async fn switch_status(
+        &self,
+        admitted: AdmittedSession,
+        target: Option<[u8; 16]>,
+    ) -> Option<SwitchStatus> {
+        if let Some(lock) = self.switch_runtime_lock(admitted).await {
+            return Some(status_of(lock));
         }
+        let durable = self.switch_durable_status(admitted, target).await;
+        // A Grizzly visit stays open after the fight, until its room owner completes the return.
+        if durable.is_some_and(|status| status.lock == SwitchLock::Event) {
+            return durable;
+        }
+        let actor = admitted.runtime_actor?;
         let Some(zones) = self.logout_zones(actor).await else {
-            return Some(SwitchLock::Checkpoint);
+            return Some(status_of(SwitchLock::Checkpoint));
         };
         if zones.no_logout {
-            return Some(SwitchLock::NoLogout);
+            return Some(status_of(SwitchLock::NoLogout));
         }
-        self.logout_in_fight(actor, session, zones.protection_zone)
-            .await
-            .map(|_| SwitchLock::Combat)
+        if self.logout_in_fight(actor, admitted.game_session_id, zones.protection_zone).await.is_some() {
+            return Some(status_of(SwitchLock::Combat));
+        }
+        durable
+    }
+
+    pub(super) fn switch_encounter_lock(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<SwitchLock> {
+        let Ok(position) = runtime.read_actor_position(actor) else {
+            return Some(SwitchLock::Checkpoint);
+        };
+        let at = position.position();
+        if self.encounter_blocks_channel_switch(runtime, actor, session, at) {
+            return Some(SwitchLock::Event);
+        }
+        let Ok(states) = self.states.spell_states.try_lock() else {
+            return Some(SwitchLock::Checkpoint);
+        };
+        states.encounter_phases.blocks_channel_switch(runtime, actor, session, at)
+            .then_some(SwitchLock::Event)
     }
 
     async fn switch_durable_status(
@@ -154,10 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.switch_session_current(admitted, id).await {
             return None;
         }
-        let status = match self.switch_runtime_lock(admitted).await {
-            Some(lock) => status_of(lock),
-            None => self.switch_durable_status(admitted, None).await?,
-        };
+        let status = self.switch_status(admitted, None).await?;
         wire::encode_status(status).map(ChannelSwitchOutcome::Status)
     }
 
@@ -202,10 +215,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if &target == admitted.channel_id.as_bytes() {
             return refuse(status_of(SwitchLock::SameChannel));
         }
-        if let Some(lock) = self.switch_runtime_lock(admitted).await {
-            return refuse(status_of(lock));
-        }
-        let status = self.switch_durable_status(admitted, Some(target)).await?;
+        let status = self.switch_status(admitted, Some(target)).await?;
         if status != SwitchStatus::READY {
             return refuse(status);
         }

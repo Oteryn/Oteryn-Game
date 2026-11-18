@@ -150,4 +150,113 @@ mod tests {
                     && color.0 == source::DISABLED_TEXT_COLOR)
         );
     }
+    #[test]
+    fn channel_switch_cooldown_refresh_preserves_scroll_and_focus()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use super::super::{Content, Overlay, project};
+        use bevy::input_focus::{FocusCause, InputFocus};
+        use oteryn_client_runtime::channel_switch::{SwitchLock, SwitchStatus};
+        use oteryn_client_ui::channel_switch::{ChannelRow, ChannelSwitchPanel};
+
+        let mut app = App::new();
+        let mut host = HostOwner::new(None)?;
+        let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        let (link, _commands, _outbox) = crate::play::play_channel();
+        link.set_channel_switch_fixture(ChannelSwitchPanel {
+            open: true,
+            selected: true,
+            current: Some([1; 16]),
+            rows: vec![ChannelRow {
+                channel: [2; 16],
+                name: "Destination".into(),
+                pvp: None,
+                ping_ms: None,
+                online: None,
+                full: false,
+            }],
+            status: Some(SwitchStatus {
+                lock: SwitchLock::Cooldown,
+                cooldown_left_ms: 1_500,
+            }),
+            status_at_ms: crate::play::feature_0512_channel_switch::view::now_ms(),
+            ..default()
+        });
+        host.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        host.dialogs.open(host.generation(), Content::ChannelSwitch);
+        app.insert_non_send(host)
+            .init_resource::<InputFocus>()
+            .insert_resource(Skin {
+                buttons: source::ButtonImages {
+                    up: default(),
+                    down: default(),
+                },
+                frame: default(),
+                font: default(),
+            })
+            .add_systems(Update, project);
+        app.world_mut().spawn((Overlay, Node::default()));
+        app.update();
+
+        let (row, first_text) = {
+            let world = app.world_mut();
+            world
+                .query::<(Entity, &TableRow, &Text, &TextColor)>()
+                .iter(world)
+                .find(|(_, row, _, _)| row.0 == 1)
+                .map(|(entity, _, text, color)| {
+                    assert_eq!(color.0, source::DISABLED_TEXT_COLOR);
+                    (entity, text.0.clone())
+                })
+                .ok_or("destination row")?
+        };
+        let window = app
+            .world()
+            .get::<ChildOf>(row)
+            .ok_or("scroll area")?
+            .parent();
+        let offset = Vec2::new(0., 37.);
+        app.world_mut()
+            .entity_mut(window)
+            .insert(ScrollPosition(offset));
+        let focus = {
+            let world = app.world_mut();
+            world
+                .query::<(Entity, &super::super::Reply)>()
+                .iter(world)
+                .find(|(_, reply)| matches!(reply.choice, Choice::SwitchRow(_)))
+                .map(|(entity, _)| entity)
+                .ok_or("destination button")?
+        };
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(focus, FocusCause::Navigated);
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        loop {
+            app.update();
+            let text = app
+                .world()
+                .get::<Text>(row)
+                .ok_or("cooldown replaced the row")?;
+            assert_eq!(app.world().resource::<InputFocus>().get(), Some(focus));
+            assert_eq!(
+                app.world()
+                    .get::<ScrollPosition>(window)
+                    .map(|scroll| scroll.0),
+                Some(offset)
+            );
+            if text.0.ends_with("Available") {
+                assert_ne!(text.0, first_text);
+                assert_eq!(
+                    app.world().get::<TextColor>(row).map(|color| color.0),
+                    Some(source::TEXT_COLOR)
+                );
+                break;
+            }
+            if std::time::Instant::now() >= deadline {
+                return Err("cooldown did not refresh its destination row".into());
+            }
+            std::thread::yield_now();
+        }
+        Ok(())
+    }
 }

@@ -125,7 +125,16 @@ fn the_client_switches_to_the_other_channel_and_a_second_switch_in_the_cooldown_
                 assert_eq!(full.error.as_deref(), Some("This channel is full."));
                 assert_eq!(stack.node.switches.load(Ordering::SeqCst), 0);
                 link.channel_switch_back();
+                assert!(
+                    link.channel_switch_panel()
+                        .rows
+                        .iter()
+                        .any(|row| row.channel == second && row.full)
+                );
+                link.channel_switch_close();
                 stack.node.full.store(false, Ordering::SeqCst);
+                link.channel_switch_open();
+                panel_until(&mut view, &link, |panel| !panel.pending)?;
 
                 // The switch to B: the server ends the session after the accepted result.
                 link.channel_switch_select(second);

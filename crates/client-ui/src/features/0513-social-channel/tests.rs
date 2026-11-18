@@ -73,7 +73,6 @@ fn c0513_rows_show_the_channel_and_notices_name_it() {
             &names,
             &offline,
             &batch(vip(VipPresenceStatus::Online, Some(HERE), true)),
-            |_| true
         ),
         ["Bryn has logged in on channel Aurelia-1."]
     );
@@ -82,8 +81,7 @@ fn c0513_rows_show_the_channel_and_notices_name_it() {
         presence_notices(
             &names,
             &batch(vip(VipPresenceStatus::Online, Some(HERE), false)),
-            &batch(online.clone()),
-            |_| true
+            &batch(vip(VipPresenceStatus::Online, Some(THERE), true)),
         ),
         ["Bryn has changed to channel Aurelia-3."]
     );
@@ -92,9 +90,8 @@ fn c0513_rows_show_the_channel_and_notices_name_it() {
             &names,
             &batch(online.clone()),
             &batch(vip(VipPresenceStatus::Offline, None, true)),
-            |_| true
         ),
         ["Bryn has logged out of channel Aurelia-3."]
     );
-    assert!(presence_notices(&names, &batch(online.clone()), &batch(online), |_| true).is_empty());
+    assert!(presence_notices(&names, &batch(online.clone()), &batch(online)).is_empty());
 }

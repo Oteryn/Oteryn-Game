@@ -20,21 +20,25 @@ impl VipPresenceStore {
 
     fn at(&self, now: Instant) -> PresenceBatch {
         let mut batch = self.batch.clone();
-        let age = now.saturating_duration_since(self.confirmed_at);
-        for entry in &mut batch.entries {
-            // Announcements are events; rendering the persistent view must not repeat one.
-            entry.announce = false;
-            if entry.status == Status::Online {
-                let lifetime = Duration::from_millis(u64::from(entry.confirmed_for_ms));
-                entry.confirmed_for_ms =
-                    u32::try_from(lifetime.saturating_sub(age).as_millis()).unwrap_or(0);
-                if entry.confirmed_for_ms == 0 {
-                    entry.status = Status::Unconfirmed;
-                    entry.channel = None;
-                }
+        expire_vip_presence(&mut batch, now.saturating_duration_since(self.confirmed_at));
+        batch
+    }
+}
+
+/// Applies the monotonic confirmation deadline to a persistent presence view.
+pub fn expire_vip_presence(batch: &mut PresenceBatch, age: Duration) {
+    for entry in &mut batch.entries {
+        // Announcements are events; rendering the persistent view must not repeat one.
+        entry.announce = false;
+        if entry.status == Status::Online {
+            let lifetime = Duration::from_millis(u64::from(entry.confirmed_for_ms));
+            entry.confirmed_for_ms =
+                u32::try_from(lifetime.saturating_sub(age).as_millis()).unwrap_or(0);
+            if entry.confirmed_for_ms == 0 {
+                entry.status = Status::Unconfirmed;
+                entry.channel = None;
             }
         }
-        batch
     }
 }
 

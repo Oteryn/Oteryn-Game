@@ -274,6 +274,7 @@ use std::io;
 use std::num::NonZeroU32;
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+pub use vip_presence::expire_vip_presence;
 
 /// The ALPN protocol id an adapter must negotiate (or otherwise guarantee) before a session is
 /// admitted over its stream. Re-exported so adapters need no direct `protocol-oteryn` edge.

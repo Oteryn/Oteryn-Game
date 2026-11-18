@@ -11,7 +11,7 @@ message VipPresenceEntryV1 {
   uint64 entry = 1;
   string name = 2;
   uint32 status = 3; // 0 unconfirmed, 1 offline, 2 online
-  bool announce = 4;
+  bool announce = 4; // with 513, also an authoritative Online-to-Online Channel change
   uint32 confirmed_for_ms = 5; // online only, 1..10000; zero for other statuses
   // Capability 513 SOCIAL_CHANNEL_V1 only: the 16-byte ChannelId of the World the online
   // target is on. Absent for other statuses and for peers without 513.

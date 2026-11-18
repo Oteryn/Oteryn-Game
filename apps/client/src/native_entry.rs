@@ -18,7 +18,7 @@ mod live_bulletin_tests;
 #[path = "native_entry/tests/queue_progress.rs"]
 mod queue_progress_tests;
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 #[cfg(test)]
 mod tests;
 

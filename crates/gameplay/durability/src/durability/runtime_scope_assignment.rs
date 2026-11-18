@@ -1440,26 +1440,6 @@ async fn authoritative_transition(
     .bind(instance_id.as_ref().map(|id| id.as_slice()))
     .execute(&mut **tx)
     .await?;
-    if let Some(channel) = channel_id
-        && state == AssignmentState::Assigned
-    {
-        sqlx::query(
-            "INSERT INTO game_channel_pvp_types(world_id,channel_id,pvp_type)
-                     VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,COALESCE($3,1::smallint))
-                     ON CONFLICT (world_id,channel_id) DO UPDATE SET pvp_type=EXCLUDED.pvp_type
-                     WHERE $3::smallint IS NOT NULL",
-        )
-        .bind(world_id.as_bytes().as_slice())
-        .bind(channel.as_slice())
-        .bind(policy.pvp_type.map(|p| i16::from(p as u8)))
-        .execute(&mut **tx)
-        .await?;
-        if let Some(capacity) = policy.player_capacity {
-            sqlx::query("UPDATE game_channel_pvp_types SET player_capacity=$3 WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
-                .bind(world_id.as_bytes().as_slice()).bind(channel.as_slice()).bind(i32::from(capacity.get()))
-                .execute(&mut **tx).await?;
-        }
-    }
     // Every decision on a guarded scope fences the guard at the next
     // publication revision; the receipt retains that exact binding.
     let fenced_publication_revision = runtime_guard_publication_revision(root, tx, scope)
@@ -1498,6 +1478,20 @@ async fn authoritative_transition(
     .bind(fenced_publication_revision.map(|revision| revision.to_string()))
     .execute(&mut **tx)
     .await?;
+    if let Some(channel) = channel_id
+        && state == AssignmentState::Assigned
+    {
+        sqlx::query(
+            "SELECT game_channel_publish_policy(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5)",
+        )
+        .bind(world_id.as_bytes().as_slice())
+        .bind(channel.as_slice())
+        .bind(key.0.as_slice())
+        .bind(policy.pvp_type.map(|p| i16::from(p as u8)))
+        .bind(policy.player_capacity.map(|capacity| i32::from(capacity.get())))
+        .execute(&mut **tx)
+        .await?;
+    }
     // The fence runs once the assignment row, high-water and receipt are
     // consistent: the Runtime guard trigger validates authoritative history
     // and admits only publications carrying the current generation.

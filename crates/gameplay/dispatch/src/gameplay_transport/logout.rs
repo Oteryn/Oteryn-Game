@@ -133,9 +133,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=logout_busy stage=activity_scope");
             return Ok(LogoutReply::Result(LogoutResult::Busy));
         }
-        Ok(self
-            .release_logout(admitted, actor, controller, channel_switch)
-            .await)
+        self.release_logout(admitted, actor, controller, channel_switch)
+            .await
     }
 
     pub(super) async fn logout_preflight(
@@ -306,7 +305,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         controller: ControllerBinding,
         channel_switch: bool,
-    ) -> LogoutReply {
+    ) -> Result<LogoutReply, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let store = if channel_switch {
@@ -316,9 +315,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let release = TerminalRelease::Logout(controller.transport);
         // Nothing is fenced yet when no transition id can be minted.
-        let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
-            operator_event("event=logout_busy stage=release_fence");
-            return LogoutReply::Result(LogoutResult::Busy);
+        let token = {
+            let mut runtime = self.runtime.lock().await;
+            if channel_switch
+                && let Some(lock) = self.switch_encounter_lock(&runtime, actor, session)
+            {
+                return Err(lock);
+            }
+            let Ok(token) = release.fence(&mut runtime) else {
+                operator_event("event=logout_busy stage=release_fence");
+                return Ok(LogoutReply::Result(LogoutResult::Busy));
+            };
+            token
         };
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
@@ -333,7 +341,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &mut kills,
             )
             .await;
-        match step {
+        Ok(match step {
             ReleaseAttempt::Done(GraceExpiryResult::Released) => {
                 LogoutReply::Result(LogoutResult::Accepted)
             }
@@ -376,7 +384,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown
             }
-        }
+        })
     }
     /// §1.6: a session whose current row is TERMINAL when its transport loss is committed ended
     /// in a release whose acknowledgement was lost. Its actor is retired: Premium release, the

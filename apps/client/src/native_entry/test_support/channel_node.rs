@@ -22,6 +22,7 @@ pub(crate) const OTHERS: [u32; 2] = [3, 5];
 pub(crate) struct Node {
     pub(crate) login_channel: Mutex<String>,
     pub(crate) switches: AtomicUsize,
+    pub(crate) refuse_destination: std::sync::atomic::AtomicBool,
     pub(crate) full: std::sync::atomic::AtomicBool,
 }
 
@@ -74,6 +75,15 @@ where
 {
     oteryn_session::read_frame(stream).await.ok()?;
     let current = uuid(&node.login_channel.lock().ok()?.clone())?;
+    if current == uuid(CHANNEL_B)? && node.refuse_destination.load(Ordering::SeqCst) {
+        oteryn_session::write_frame(
+            stream,
+            &oteryn_protocol_oteryn::admission_queue::encode_channel_full(),
+        )
+        .await
+        .ok()?;
+        return Some(());
+    }
     let mut session = uuid(super::CHARACTER)?;
     session[15] = u8::try_from(admission).ok()?;
     for frame in join_frames(session, current)? {

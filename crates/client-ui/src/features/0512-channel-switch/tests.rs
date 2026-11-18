@@ -230,3 +230,29 @@ fn c0512_destination_refusal_allows_another_request() -> Result<(), &'static str
     }
     Ok(())
 }
+
+#[test]
+fn c0512_full_refusal_removes_the_destination_from_recommendations() -> Result<(), &'static str> {
+    let mut p = panel();
+    select(&mut p, C, 0);
+    confirm(&mut p).ok_or("switch request")?;
+    apply_request(
+        &mut p,
+        &result(
+            CommandStatus::Rejected,
+            SwitchStatus {
+                lock: SwitchLock::ChannelFull,
+                cooldown_left_ms: 0,
+            },
+        )?,
+        1,
+    );
+    assert!(p.error.take().is_some());
+    assert!(p.row(C).is_some_and(|row| row.full));
+    assert!(
+        !panel_rows(&p, 2)
+            .iter()
+            .any(|row| row.0[4] == "Recommended")
+    );
+    Ok(())
+}

@@ -12,6 +12,7 @@ impl Outbox {
 
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, mut events: Vec<SessionEvent>) {
+        let received_at = tokio::time::Instant::now();
         if let Some(index) = events
             .iter()
             .rposition(|event| matches!(event, SessionEvent::ActivityScope(_)))
@@ -87,26 +88,10 @@ impl Outbox {
         }
         if let Some(presence) = mailbox.pushed.vip_presence.take() {
             if mailbox.social_channel_selected {
-                let contacts = mailbox
-                    .vip
-                    .view
-                    .as_deref()
-                    .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok());
                 let notices = oteryn_client_ui::social_channel::presence_notices(
                     &mailbox.party.channel_names,
                     &mailbox.vip_presence.presence,
                     &presence,
-                    |id| {
-                        contacts
-                            .as_ref()
-                            .and_then(|v| v["entries"].as_array())
-                            .is_some_and(|entries| {
-                                entries.iter().any(|e| {
-                                    e["entry"].as_u64() == Some(id)
-                                        && e["notify"].as_bool() == Some(true)
-                                })
-                            })
-                    },
                 );
                 for notice in notices {
                     mailbox.vip_channel_notice_serial += 1;
@@ -114,6 +99,7 @@ impl Outbox {
                     mailbox.vip_channel_notices.push((serial, notice));
                 }
             }
+            mailbox.vip_presence_confirmed_at = Some(received_at);
             oteryn_client_ui::vip_presence::replace(&mut mailbox.vip_presence, presence);
         }
         if let Some(position) = mailbox.pushed.own
@@ -365,6 +351,7 @@ impl Drop for PlayLink {
         if !self.owns_session {
             return;
         }
+        self.channel_switch_close();
         let mut mailbox = lock(&self.mailbox);
         mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {

@@ -25,7 +25,7 @@ async fn admit<'e>(
     sqlx::query(
         "INSERT INTO game_durability_fresh_admission_receipts VALUES(\
          '\\x01'::bytea || decode(repeat($1, 32), 'hex'), $2::uuid, $3::uuid, $4::uuid, $5::uuid, \
-         $6::uuid, 1, 1, 1, decode(repeat('ab', 16), 'hex'), 1, '{}', 1)",
+         $6::uuid, $7, 1, 1, decode(repeat('ab', 16), 'hex'), 1, '{}', 1)",
     )
     .bind(format!("{seq:02x}"))
     .bind(hex(session))
@@ -33,6 +33,7 @@ async fn admit<'e>(
     .bind(hex(id(CHARACTER)))
     .bind(hex(id(WORLD)))
     .bind(hex(id(channel)))
+    .bind(i64::from(seq))
     .execute(executor)
     .await
     .map(|_| ())
@@ -111,6 +112,27 @@ async fn preflight(
     Ok(row)
 }
 
+/// Explain the production capacity query with its real parameters on the fixture Channel.
+async fn assert_capacity_uses_bounded_index_scan(pool: &sqlx::PgPool) -> TestResult {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL enable_seqscan = off").execute(&mut *tx).await?;
+    let body: String = sqlx::query_scalar(
+        "SELECT prosrc FROM pg_proc WHERE oid='game_channel_full(uuid,uuid,uuid)'::regprocedure",
+    ).fetch_one(&mut *tx).await?;
+    let plan: Vec<String> = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+        "EXPLAIN (COSTS OFF) SELECT ({body}) FROM (SELECT $1::uuid AS p_character, $2::uuid AS p_world, $3::uuid AS p_channel) args"
+    )))
+    .bind(hex(id(CHARACTER)))
+    .bind(hex(id(WORLD)))
+    .bind(hex(id(CHANNEL)))
+    .fetch_all(&mut *tx)
+    .await?;
+    assert!(plan.iter().any(|line| line.contains("game_channel_live_sessions")), "{plan:?}");
+    assert!(plan.iter().any(|line| line.contains("Limit")), "{plan:?}");
+    tx.rollback().await?;
+    Ok(())
+}
+
 fn channel_text(seed: u8) -> String {
     let h = hex(id(seed));
     format!(
@@ -151,6 +173,7 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                     sqlx::query("INSERT INTO game_channel_pvp_types(world_id,channel_id,pvp_type,player_capacity) VALUES($1::uuid,$2::uuid,1,1) ON CONFLICT(world_id,channel_id) DO UPDATE SET player_capacity=1")
                         .bind(hex(id(WORLD))).bind(hex(id(CHANNEL))).execute(pool).await?;
                     assert_eq!(preflight(pool,Some(CHANNEL)).await?.1.as_deref(), Some("CHANNEL_FULL"));
+                    assert_capacity_uses_bounded_index_scan(pool).await?;
                     assert_eq!(code(admit(pool, 18, CHANNEL).await).as_deref(),Some("OTH02"));
                     assert_eq!(guard(pool).await?, None);
                     for account_type in [4_i16, 6] {
@@ -172,11 +195,18 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                     let mut upgrade = pool.begin().await?;
                     sqlx::raw_sql("DROP TRIGGER game_channel_switch_admit ON game_durability_fresh_admission_receipts;
                         DROP FUNCTION game_channel_switch_admit(), game_channel_switch_status(uuid,uuid), game_channel_switch_lock(uuid,uuid,uuid), game_channel_switch_cooldown_ms(), game_channel_switch_now_ms(), game_channel_full(uuid,uuid,uuid);
+                        DROP FUNCTION game_channel_publish_policy(uuid,uuid,bytea,smallint,integer);
+                        DROP INDEX game_channel_live_sessions;
                         DROP TABLE game_channel_switch_guards, game_channel_pvp_types;")
                         .execute(&mut *upgrade).await?;
+                    admit(&mut *upgrade, 12, CHANNEL_B).await?;
                     sqlx::raw_sql(include_str!("../../../migrations/2858_channel_switch_guard.sql"))
                         .execute(&mut *upgrade).await?;
                     admit(&mut *upgrade, 13, CHANNEL_B).await?;
+                    let switches: i64 = sqlx::query_scalar("SELECT switch_count FROM game_channel_switch_guards WHERE character_id=$1::uuid")
+                        .bind(hex(id(CHARACTER))).fetch_one(&mut *upgrade).await?;
+                    assert_eq!(switches, 0, "the latest receipt already entered B");
+                    admit(&mut *upgrade, 14, CHANNEL_A).await?;
                     let switches: i64 = sqlx::query_scalar("SELECT switch_count FROM game_channel_switch_guards WHERE character_id=$1::uuid")
                         .bind(hex(id(CHARACTER))).fetch_one(&mut *upgrade).await?;
                     assert_eq!(switches, 1, "first post-upgrade switch");

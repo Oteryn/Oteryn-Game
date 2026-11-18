@@ -17,7 +17,7 @@ use sqlx::Row;
 
 /// `$3` NULL reads the locks that do not depend on a target.
 pub const PREFLIGHT_SQL: &str = "SELECT COALESCE((SELECT cooldown_left_ms FROM game_channel_switch_status(encode($1,'hex')::uuid,encode($2,'hex')::uuid)),0) AS cooldown_left_ms,\
- game_channel_switch_lock(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid) AS lock_reason,\
+ CASE WHEN game_channel_full(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid) THEN 'CHANNEL_FULL' ELSE game_channel_switch_lock(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid) END AS lock_reason,\
  $3::bytea IS NULL OR EXISTS(SELECT 1 FROM game_runtime_scope_assignments WHERE scope_kind=1 AND state=1 AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid) AS destination";
 
 /// Characters online per current Channel of the World `$1`, from the durable non-terminal
@@ -41,6 +41,7 @@ pub fn preflight_status(
     let cooldown_left_ms = u32::try_from(cooldown_left_ms).ok()?.min(COOLDOWN_MS);
     let lock = match lock_reason {
         Some("CHANNEL_FULL") => SwitchLock::ChannelFull,
+        Some("EVENT") => SwitchLock::Event,
         Some("TRANSITION") => SwitchLock::Transition,
         Some("COMBAT") => SwitchLock::Combat,
         Some("SKULL") if has_target => SwitchLock::Skull,
@@ -68,6 +69,33 @@ pub fn preflight_status(
 }
 
 impl DurabilityRoot {
+    /// An authenticated fresh admission checks configured capacity before taking a runtime slot.
+    /// The receipt trigger repeats the decision under the admission relation lock.
+    pub async fn read_channel_full(
+        &self,
+        character: [u8; 16],
+        world: [u8; 16],
+        channel: [u8; 16],
+    ) -> Result<bool, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let full = sqlx::query_scalar(
+                        "SELECT game_channel_full(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)",
+                    )
+                    .bind(character.as_slice())
+                    .bind(world.as_slice())
+                    .bind(channel.as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(full)
+                })
+            })
+            .await
+    }
+
     /// The switch facts of the fenced Character in `world`, toward `target` when named.
     /// `Ok(None)` when the session fence is no longer current.
     pub async fn read_channel_switch_preflight(

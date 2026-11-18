@@ -68,6 +68,10 @@ a fresh read without announcing transitions that might have happened while down.
 Fresh VIP mutations on sessions selecting capability 258 return UNAVAILABLE
 while the World relay is not ready. This refusal is retained by the existing VIP
 command owner under the original session, CommandId and canonical request hash.
+With capability 513, a confirmed Online contact whose Channel changes also sets
+the announcement bit when the contact's stored notify preference is enabled.
+The full presence read supplies this preference independently of management pages.
+
 Exact replay precedes current readiness and remains unchanged after local runtime
 loss or listener recovery; changed-request reuse is REJECTED. The denial path
 cannot apply the requested mutation or spend a rate token. Migration 0716 extends

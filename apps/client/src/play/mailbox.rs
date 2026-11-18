@@ -209,6 +209,7 @@ pub(super) struct Mailbox {
     pub(super) premium_game: crate::premium::game::Panel,
     pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
+    pub(super) vip_presence_confirmed_at: Option<tokio::time::Instant>,
     /// chsw (capability 513): VIP login, logout and Channel-change notices naming the Channel,
     /// numbered so each is shown once.
     pub(super) social_channel_selected: bool,

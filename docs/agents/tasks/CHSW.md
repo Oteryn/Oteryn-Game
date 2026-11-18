@@ -59,10 +59,11 @@ under client-channel-probe-v1 (Oteryn-Platform d2e54f2e, PR #1939; fixtures vend
 edge one warm-up and three timed `HEAD` requests on one connection, the median shown, 2 s per
 request, at most every 30 s and only while the picker is open (`crates/platform-client/src/channel_probe.rs`).
 The Platform list handler and the edge targets are not deployed yet (a T36b follow-up); until
-then the list request fails and other Channels show "—". Capacity and `full` wait for an owner
-decision; no capacity refusal exists. The Game-side PvP type of a Channel is stored in
-`game_channel_pvp_types` (migration 2858); the online count comes from the durable reconnect
-journal (command 6251), so there is no heartbeat.
+then the list request fails and other Channels show "—". The Channel assignment publishes
+PvP type and player capacity through the scoped Control writer. A full Channel refuses normal
+players before they join the runtime queue. GM and admin accounts bypass that configured limit.
+The picker marks a refused destination full for that opening. Command 6251 reads online counts
+from the durable reconnect journal.
 
 ## Validation
 
