@@ -164,12 +164,15 @@ async fn exercise_satchel(
 ) -> TestResult {
     const EPOCH: i64 = 1_700_000_000;
     let map = owner.bundle_map().ok_or("map")?;
-    for (id, elapsed, rewards, last_claim) in [
+    h.root.set_test_quest_clock(EPOCH)?;
+    for (id, advance, rewards, last_claim) in [
         (1, 0, 1, EPOCH),
         (2, SATCHEL_RECLAIM_SECONDS, 1, EPOCH),
-        (3, SATCHEL_RECLAIM_SECONDS + 1, 2, EPOCH + SATCHEL_RECLAIM_SECONDS + 1),
+        (3, 1, 2, EPOCH + SATCHEL_RECLAIM_SECONDS + 1),
     ] {
-        h.root.set_test_quest_clock(EPOCH + elapsed)?;
+        if advance > 0 {
+            h.root.advance_test_quest_clock(advance)?;
+        }
         target.expected_revision = map.facts.object_revision(key);
         let outcomes = super::quest_callbacks::wire_use_targets_retained(
             owner, admitted, &[(id, &target)],
