@@ -583,6 +583,12 @@ pub(super) async fn prepare_in_transaction<
     }))
 }
 
+impl BossAdmissionPlan {
+    pub(super) fn maximum_players(&self) -> usize {
+        self.definition.policy.maximum_players
+    }
+}
+
 pub(super) async fn commit_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     r: &ActivityEnterRequest,

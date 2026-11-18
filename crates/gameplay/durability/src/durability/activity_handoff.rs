@@ -251,6 +251,25 @@ pub struct ActivityHandoffOwner {
     root: DurabilityRoot,
 }
 
+#[derive(Clone, Copy)]
+enum EntryMode {
+    Activity,
+    Boss { window_ms: Option<std::num::NonZeroU32> },
+}
+
+impl EntryMode {
+    fn is_boss(self) -> bool {
+        matches!(self, Self::Boss { .. })
+    }
+
+    fn window_ms(self) -> Option<std::num::NonZeroU32> {
+        match self {
+            Self::Activity => None,
+            Self::Boss { window_ms } => window_ms,
+        }
+    }
+}
+
 impl ActivityHandoffOwner {
     pub fn new(root: DurabilityRoot) -> Self {
         Self { root }
@@ -262,7 +281,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, false, &super::quest_state::grizzly::NoGrizzlyPremium).await
+        self.enter_inner(authority, node, request, EntryMode::Activity, &super::quest_state::grizzly::NoGrizzlyPremium).await
     }
 
     pub async fn enter_boss_room(
@@ -271,7 +290,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, true, &super::quest_state::grizzly::NoGrizzlyPremium).await
+        self.enter_inner(authority, node, request, EntryMode::Boss { window_ms: None }, &super::quest_state::grizzly::NoGrizzlyPremium).await
     }
 
     /// Join the selected quest's Premium predicate to the same admission transaction.
@@ -282,7 +301,22 @@ impl ActivityHandoffOwner {
         request: ActivityEnterRequest,
         premium: &G,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, true, premium).await
+        self.enter_inner(authority, node, request, EntryMode::Boss { window_ms: None }, premium).await
+    }
+
+    /// Start a room with a single entrant and reserve space for enrollment
+    /// until the admission deadline. The room catalogue sets the capacity.
+    pub async fn open_boss_admission_window(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ActivityEnterRequest,
+        window_ms: std::num::NonZeroU32,
+    ) -> Result<ActivityEnterOutcome> {
+        self.enter_inner(
+            authority, node, request, EntryMode::Boss { window_ms: Some(window_ms) },
+            &super::quest_state::grizzly::NoGrizzlyPremium,
+        ).await
     }
 
     async fn enter_inner<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
@@ -290,13 +324,16 @@ impl ActivityHandoffOwner {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         mut request: ActivityEnterRequest,
-        boss_room: bool,
+        mode: EntryMode,
         premium: &G,
     ) -> Result<ActivityEnterOutcome> {
         request
             .participants
             .sort_by_key(|p| *p.source.character_id.as_bytes());
-        if !entry::valid_request(&request, boss_room)
+        if !entry::valid_request(&request, mode.is_boss())
+            || mode.window_ms().is_some_and(|window| {
+                request.participants.len() != 1 || u64::from(window.get()) >= request.time_limit_ms
+            })
             || request.activity_key == super::soulpit::SOULPIT_ACTIVITY_KEY
         {
             return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
@@ -315,7 +352,7 @@ impl ActivityHandoffOwner {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let result = entry::enter_in_transaction(
-                        &mut tx, &root, &node, &request, boss_room, None, *premium,
+                        &mut tx, &root, &node, &request, mode, None, *premium,
                     )
                     .await?;
                     if !matches!(result, ActivityEnterOutcome::Refused(_)) {

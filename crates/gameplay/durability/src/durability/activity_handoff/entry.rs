@@ -74,9 +74,14 @@ pub(super) fn valid_request(r: &ActivityEnterRequest, boss_room: bool) -> bool {
 fn binding(
     r: &ActivityEnterRequest,
     soulpit: Option<&super::soulpit::SoulpitEntryContext<'_>>,
+    mode: EntryMode,
 ) -> [u8; 32] {
     let mut hash = Sha256::new();
     hash_field(&mut hash, b"native-activity-enter-v1");
+    if let Some(window) = mode.window_ms() {
+        hash_field(&mut hash, b"boss-admission-window");
+        hash_field(&mut hash, &window.get().to_be_bytes());
+    }
     if let Some(context) = soulpit {
         match &context.request.funding {
             crate::durability::soulpit::SoulpitFunding::Core { source, definition } => {
@@ -182,13 +187,13 @@ pub(super) async fn enter_in_transaction<
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,
     r: &ActivityEnterRequest,
-    boss_room: bool,
+    mode: EntryMode,
     soulpit: Option<super::soulpit::SoulpitEntryContext<'_>>,
     premium: &G,
 ) -> Result<ActivityEnterOutcome> {
     if (r.activity_key == super::super::soulpit::SOULPIT_ACTIVITY_KEY) != soulpit.is_some()
         || soulpit.as_ref().is_some_and(|context| {
-            boss_room
+            mode.is_boss()
                 || r.time_limit_ms != 600_000
                 || context.request.handoff_id != r.handoff_id
                 || context.request.command.command_id().get() != r.command_id
@@ -221,7 +226,7 @@ pub(super) async fn enter_in_transaction<
         .iter()
         .find(|p| p.source.character_id.as_bytes() == r.initiating_character_id.as_bytes())
         .ok_or(DurabilityError::InvalidStoredState)?;
-    let request_binding = binding(r, soulpit.as_ref());
+    let request_binding = binding(r, soulpit.as_ref(), mode);
     // Lock all source sessions before roots, both in Character order. This also
     // serializes command receipt absence without reversing a progression writer's
     // session-then-root order or locking the initiator ahead of other members.
@@ -332,7 +337,7 @@ pub(super) async fn enter_in_transaction<
         }
     }
     let now = quest_activity_now_ms(tx, root).await?;
-    let boss_plan = if boss_room {
+    let boss_plan = if mode.is_boss() {
         match super::boss_room::prepare_in_transaction(tx, r, now, premium).await? {
             Ok(plan) => Some(plan),
             Err(reason) => return Ok(ActivityEnterOutcome::Refused(reason)),
@@ -351,11 +356,18 @@ pub(super) async fn enter_in_transaction<
     else {
         return Err(DurabilityError::InvalidStoredState);
     };
-    sqlx::query("INSERT INTO game_activity_handoff_groups(handoff_id,world_id,instance_id,activity_key,template_revision,content_revision,ownership_generation,participant_count,state,prepared_at) \
-        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7::text::numeric,$8,1,$9)")
+    let window_ms = mode.window_ms().map(|duration| i32::try_from(duration.get()))
+        .transpose().map_err(|_| DurabilityError::InvalidStoredState)?;
+    let capacity = if let (Some(plan), Some(_)) = (&boss_plan, window_ms) {
+        plan.maximum_players()
+    } else {
+        r.participants.len()
+    };
+    sqlx::query("INSERT INTO game_activity_handoff_groups(handoff_id,world_id,instance_id,activity_key,template_revision,content_revision,ownership_generation,participant_count,state,prepared_at,admission_window_ms) \
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7::text::numeric,$8,1,$9,$10)")
         .bind(r.handoff_id.as_slice()).bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(&r.activity_key)
         .bind(&r.template_revision).bind(&r.content_revision).bind(r.destination_generation.get().to_string())
-        .bind(i16::try_from(r.participants.len()).map_err(|_| DurabilityError::InvalidStoredState)?).bind(now).execute(&mut ***tx).await?;
+        .bind(i16::try_from(capacity).map_err(|_| DurabilityError::InvalidStoredState)?).bind(now).bind(window_ms).execute(&mut ***tx).await?;
     let fact = node.fact();
     sqlx::query("INSERT INTO game_activity_runtime_entries(handoff_id,initiating_character_id,initiating_game_session_id,initiating_connection_generation,command_id,request_binding,holder_node_id,holder_registration_revision,assignment_source_revision,destination_coordinate_frame_digest,destination_map_revision_digest,destination_server_artifact_digest,deadline) \
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5::text::numeric,$6,encode($7,'hex')::uuid,$8::text::numeric,$9::text::numeric,$10,$11,$12,$13)")

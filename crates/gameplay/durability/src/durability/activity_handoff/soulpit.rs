@@ -86,7 +86,7 @@ impl ActivityHandoffOwner {
                         &root,
                         &node,
                         &request,
-                        false,
+                        EntryMode::Activity,
                         Some(context),
                         &super::super::quest_state::grizzly::NoGrizzlyPremium,
                     )
