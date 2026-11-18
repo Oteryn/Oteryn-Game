@@ -326,20 +326,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Ok((policy.maximum_health, monsters))
             };
-        let prepare =
-            |runtime: &ChannelRuntimeV1, spells: &super::super::actor_spell::ChannelSpellStates| {
-                crate::map::floor::prepare_quest_callback_teleport(
-                    runtime,
-                    self.movement_cells(),
-                    actor,
-                    session,
-                    entered,
-                    local(room.landing),
-                    super::super::pvp_live::pz_blocked(spells, actor, session, self.owner_now()),
-                    &blockers,
-                )
-                .map_err(|_| invalid)
-            };
         {
             let runtime = self.runtime.lock().await;
             let spells = self.states.spell_states.lock().await;
@@ -347,7 +333,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !self.states.player_trades.physical(session, None) {
                 return Err(stale);
             }
-            prepare(&runtime, &spells)?;
+            crate::map::floor::prepare_quest_callback_teleport(
+                &runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                local(room.landing),
+                super::super::pvp_live::pz_blocked(&spells, actor, session, self.owner_now()),
+                &blockers,
+            )
+            .map_err(|_| invalid)?;
         }
         let policy = BossRoomPolicy {
             minimum_players: 1,
@@ -381,7 +377,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut runtime = self.runtime.lock().await;
             let spells = self.states.spell_states.lock().await;
             let (maximum_health, monsters) = qualify(&runtime, &spells)?;
-            let proof = prepare(&runtime, &spells)?;
+            let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
+                &runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                local(room.landing),
+                super::super::pvp_live::pz_blocked(&spells, actor, session, self.owner_now()),
+                &blockers,
+                None,
+            )
+            .map_err(|_| invalid)?;
             let mut deadlines = self
                 .states
                 .channel_boss_rooms
