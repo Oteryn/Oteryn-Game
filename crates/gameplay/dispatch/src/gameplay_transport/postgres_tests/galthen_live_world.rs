@@ -11,6 +11,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 };
 
 pub(super) const SATCHEL: &str = "galthen-satchel";
+pub(super) const COOLDOWN: &str = "galthen-yselda-shortcut-1-cooldown";
 pub(super) const LOW_LEVEL: &str = "-low-level";
 const SATCHEL_RECLAIM_SECONDS: i64 = 30 * 24 * 60 * 60;
 
@@ -18,8 +19,8 @@ const fn at(x: u16, y: u16, floor: i8) -> Position {
     Position { x, y, floor }
 }
 
-// Literal coordinates from the five travel registrations in the pinned donor.
-const ROUTES: [(&str, Position, Position); 5] = [
+// Literal coordinates from the travel registrations in the pinned donor.
+const ROUTES: [(&str, Position, Position); 7] = [
     (
         "galthen-forest-1",
         at(32424, 32500, -10),
@@ -45,6 +46,16 @@ const ROUTES: [(&str, Position, Position); 5] = [
         at(34000, 31732, -9),
         at(34038, 31727, -10),
     ),
+    (
+        "galthen-yselda-shortcut-1",
+        at(32419, 32458, -7),
+        at(32528, 32489, -11),
+    ),
+    (
+        "galthen-yselda-shortcut-2",
+        at(32528, 32488, -11),
+        at(32418, 32458, -7),
+    ),
 ];
 
 #[test]
@@ -57,6 +68,7 @@ fn galthen_live_travel_postgres() -> TestResult {
         super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, source, false))?;
     }
     for (name, source) in [
+        (COOLDOWN, ROUTES[5].1),
         ("galthen-forest-1-low-level", ROUTES[0].1),
         ("galthen-iksupan-entrance-low-level", ROUTES[2].1),
     ] {
@@ -85,7 +97,20 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let source = callback.selector.position.ok_or("source tile")?;
-    let refused = name.ends_with(LOW_LEVEL);
+    let refused = name.ends_with(LOW_LEVEL) || name == COOLDOWN;
+    if name == COOLDOWN {
+        sqlx::query(
+            "INSERT INTO game_character_boss_cooldowns
+               (character_id,boss_key,available_at,admission,reset_epoch)
+             VALUES(encode($1,'hex')::uuid,'oteryn:boss.megasylvan_yselda',
+               floor(extract(epoch FROM clock_timestamp())*1000)::bigint+600000,
+               encode($2,'hex')::uuid,0)",
+        )
+        .bind(super::fixture::id(41).as_slice())
+        .bind(super::fixture::id(81).as_slice())
+        .execute(&h.pool)
+        .await?;
+    }
     let start = at(source.x - 1, source.y, source.floor);
     let expected = if refused {
         start
