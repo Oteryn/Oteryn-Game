@@ -22,6 +22,16 @@ LIBRARY = "data-global/lib/quests/killing_in_the_name_of.lua"
 MOVEMENT = "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua"
 STORAGES = "data-global/lib/core/storages.lua"
 NPC = "data-global/npc/grizzly_adams.lua"
+# TibiaWiki Spoiler, curid 36696, oldid 1206121, ranked task tables.
+GLOBAL_TASK_FIELDS = {
+    6: {"experience": 5000},
+    8: {"experience": 2500},
+    11: {"required": 200, "points": 2},
+    22: {"required": 250, "points": 3},
+    27: {"points": 4},
+    # The Demon task grants no points (represented by an absent point award).
+    42: {"experience": 100000},
+}
 BLOBS = {
     LIBRARY: "1e051f206687ccc2904de52d6c0348a8f3bf2b1e",
     MOVEMENT: "4220280abdca9db1c6d5b12113dcdcf9756de764",
@@ -182,7 +192,10 @@ def generate(source_root):
         alt = alt_first_names.get(task["raceName"])
         alt_start = storage_lookup[STORAGE_PREFIX + alt] if alt else None
         members = []
-        for index, name in enumerate(task["creatures"]):
+        task_creatures = task["creatures"]
+        if number == 42:
+            task_creatures = [*task_creatures, "infernal demon"]
+        for index, name in enumerate(task_creatures):
             key = creature_key(name, creature_keys)
             alt_storage = alt_start + index if alt_start is not None else None
             if alt_storage is not None:
@@ -206,6 +219,7 @@ def generate(source_root):
             "experience": reward["experience"], "points": reward["points"],
             "item": reward["item"], "completion_storage": reward["completion_storage"],
             "donor_line": field["line"],
+            **GLOBAL_TASK_FIELDS.get(number, {}),
         })
     movement = lua_tables.assignments(lower_positions(sources[MOVEMENT]), {"bosses"})["bosses"]
     bosses = []

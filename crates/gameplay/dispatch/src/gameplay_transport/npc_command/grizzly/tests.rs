@@ -105,7 +105,7 @@ fn grizzly_eligible_special_request_clears_an_ordinary_task_confirmation() {
     let mut state = member();
     state.insert(quest::storage_track(quest::POINTS_STORAGE), 70);
     let actor = GrizzlyActor {
-        level: 80,
+        level: 90,
         ..player()
     };
     let mut topic = Topic::None;

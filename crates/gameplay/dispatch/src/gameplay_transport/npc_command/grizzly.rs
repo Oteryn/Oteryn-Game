@@ -243,7 +243,7 @@ fn dialogue(state: &GrizzlyState, actor: GrizzlyActor, topic: &mut Topic, text: 
     }
     if matches!(text.as_str(), "special" | "special task" | "special tasks") {
         // NPC:915-943 resets the topic after every eligible special-task branch.
-        if actor.level >= 80 && quest::storage_value(state, quest::POINTS_STORAGE) >= 70 {
+        if actor.level >= 90 && quest::storage_value(state, quest::POINTS_STORAGE) >= 70 {
             *topic = Topic::None;
         }
         return Reply::action(

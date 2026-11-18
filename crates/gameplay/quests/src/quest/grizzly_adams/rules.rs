@@ -40,10 +40,7 @@ pub fn can_start_task(
 /// a threshold. At level 130 the catch-up bonus is added after the configured rate (1).
 #[must_use]
 pub fn points_reward(level: u32, current: i64, reward: i64) -> i64 {
-    if (level < 50 && current >= 40)
-        || (level < 80 && current >= 70)
-        || (level < 130 && current >= 100)
-    {
+    if (level < 50 && current >= 40) || (level < 80 && current >= 70) || current >= 100 {
         return 0;
     }
     let bonus = if level >= 130 {
@@ -162,6 +159,17 @@ pub fn plan_action(
         GrizzlyAction::Promote => {
             let next = promotion_due(state, actor.level).ok_or(GrizzlyRefusal::NoPromotion)?;
             plan.set(PROMOTION_STORAGE, next)?;
+            // TibiaWiki Spoiler (curid 36696, oldid 1206121), Paw and Fur Ranks.
+            let (experience, achievement) = match next {
+                0 => (5_000, Some("Huntsman")),
+                2 => (8_000, None),
+                4 => (10_000, None),
+                6 => (15_000, None),
+                7 => (30_000, Some("Elite Hunter")),
+                _ => return Err(GrizzlyRefusal::NoPromotion),
+            };
+            plan.transition.experience = Some(experience);
+            plan.transition.achievement = achievement.map(str::to_owned);
         }
         GrizzlyAction::SelectBoss(id) => select_boss(&mut plan, actor, *id)?,
         GrizzlyAction::ReportBoss(id) => {
@@ -337,18 +345,23 @@ fn select_boss(plan: &mut Plan<'_>, actor: GrizzlyActor, id: u8) -> Result<(), G
 fn special_task(plan: &mut Plan<'_>, actor: GrizzlyActor) -> Result<(), GrizzlyRefusal> {
     // grizzly_adams.lua:917-940: use the first matching branch, considering Tiquanda
     // before Demodras. An incidental boss kill can make the first task fall through.
-    if actor.level < 80 {
-        return Err(GrizzlyRefusal::Level);
-    }
     if storage_value(plan.state, POINTS_STORAGE) < 70 {
-        return Err(GrizzlyRefusal::Rank);
+        return Err(if actor.level < 90 {
+            GrizzlyRefusal::Level
+        } else {
+            GrizzlyRefusal::Rank
+        });
     }
     let mut all_completed = true;
-    for id in [29, 30] {
+    // TibiaWiki Spoiler (curid 36696, oldid 1206121), Special Tasks.
+    for (id, minimum_level) in [(29, 90), (30, 100)] {
         let boss = boss(id).ok_or(GrizzlyRefusal::InvalidBoss)?;
         let stage = storage_value(plan.state, boss.storage);
         let kills = storage_value(plan.state, boss.kill_storage);
         if stage < 1 {
+            if actor.level < minimum_level {
+                return Err(GrizzlyRefusal::Level);
+            }
             plan.set(boss.kill_storage, 0)?;
             plan.set(boss.storage, 1)?;
             return Ok(());
