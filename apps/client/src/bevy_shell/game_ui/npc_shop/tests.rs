@@ -74,7 +74,7 @@ fn test_large_buy_catalogue(
     query: &str,
     initial_rows: usize,
 ) -> Result {
-    use std::{hint::black_box, time::Instant};
+    use std::hint::black_box;
     let (host, _, outbox) = fixture()?;
     let mut window = host
         .play
@@ -225,23 +225,19 @@ fn test_large_buy_catalogue(
         offers(&mut app) == before,
         "option toggle rebuilt offer rows"
     );
-    let format = (0..5)
-        .map(|_| {
-            let start = Instant::now();
-            black_box(shop.filtered_quotes(Some(NpcTradeSide::Buy), ""));
-            start.elapsed()
-        })
-        .min()
-        .ok_or("format")?;
-    let idle = (0..5)
-        .map(|_| {
-            let start = Instant::now();
-            app.update();
-            start.elapsed()
-        })
-        .min()
-        .ok_or("idle")?;
-    assert!(idle < format, "idle frame {idle:?}, formatting {format:?}");
+    // Idle frames must not rebuild the catalogue. Counting passes is exact;
+    // a wall-clock comparison against one formatting pass depended on how
+    // many other systems the frame runs.
+    black_box(shop.filtered_quotes(Some(NpcTradeSide::Buy), ""));
+    CATALOGUE_PASSES.with(|passes| passes.set(0));
+    for _ in 0..5 {
+        app.update();
+    }
+    assert_eq!(
+        CATALOGUE_PASSES.with(std::cell::Cell::get),
+        0,
+        "idle frames rebuilt the offer catalogue"
+    );
     Ok(())
 }
 #[test]

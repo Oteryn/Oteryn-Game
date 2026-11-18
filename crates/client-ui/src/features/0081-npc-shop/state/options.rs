@@ -39,8 +39,8 @@ impl LiveShop {
                     && self.inventory.as_ref().is_some_and(|inventory| {
                         inventory.entries.iter().any(|entry| {
                             // The item view projects source appearances for the three coins.
-                            // Zero is an unknown appearance on legacy inventory views.
-                            matches!(entry.appearance_id, 0 | 3031 | 3035 | 3043)
+                            // Zero means no appearance, so it is never a coin stack.
+                            matches!(entry.appearance_id, 3031 | 3035 | 3043)
                         })
                     })))
     }
