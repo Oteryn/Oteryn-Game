@@ -178,7 +178,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // remain unconsumed; unrelated actors continue normally.
                 Err(()) => continue,
             };
-            states
+            let receipt = states
                 .tick_source_creature_conditions_with_health_observations(
                     runtime,
                     actor,
@@ -187,6 +187,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &observations,
                 )
                 .map_err(|_| DurabilityError::Unavailable)?;
+            if let Some(map) = self.bundle_map() {
+                super::encounter_phases::bosses::publish_shield_hits(
+                    map,
+                    runtime,
+                    actor,
+                    receipt.shielded_hits,
+                );
+            }
         }
         Ok(())
     }

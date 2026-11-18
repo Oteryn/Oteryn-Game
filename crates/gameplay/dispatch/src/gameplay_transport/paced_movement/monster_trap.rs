@@ -66,7 +66,7 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
                 continue;
             };
             if transform(map, *key, rule.closed) {
-                spike_trap_hit(runtime, states, step.actor, *key, rule, now);
+                spike_trap_hit(runtime, states, map, step.actor, *key, rule, now);
             }
         }
     }
@@ -143,6 +143,7 @@ fn silvered_trap_hit(
 fn spike_trap_hit(
     runtime: &mut ChannelRuntimeV1,
     states: &ChannelSpellStates,
+    map: &BundleMap,
     actor: crate::foundation::ExactActorRef,
     key: u64,
     rule: Trap,
@@ -205,7 +206,7 @@ fn spike_trap_hit(
     {
         return;
     }
-    let _ = states.tick_source_creature_conditions(
+    if let Ok(receipt) = states.tick_source_creature_conditions(
         runtime,
         actor,
         crate::foundation::TickFacts {
@@ -213,7 +214,14 @@ fn spike_trap_hit(
             standing_on_field: None,
         },
         SemanticTimeMicros::from_micros(now),
-    );
+    ) {
+        crate::gameplay_transport::encounter_phases::bosses::publish_shield_hits(
+            map,
+            runtime,
+            actor,
+            receipt.shielded_hits,
+        );
+    }
 }
 
 #[cfg(test)]

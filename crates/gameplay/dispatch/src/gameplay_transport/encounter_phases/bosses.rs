@@ -5,6 +5,35 @@ use oteryn_gameplay_entities::carrier::runtime_actor_companion::CompanionSnapsho
 use oteryn_gameplay_quests::quest::world_callbacks::Encounter;
 use sha2::{Digest, Sha256};
 
+pub(in crate::gameplay_transport) fn publish_shield_hits(
+    map: &BundleMap,
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    hits: usize,
+) {
+    if hits == 0 {
+        return;
+    }
+    let (Some(effect), Ok(position)) = (
+        runtime.boss_speech_shield_effect(actor),
+        runtime.read_actor_position(actor),
+    ) else {
+        return;
+    };
+    let at = position.position();
+    let (Ok(x), Ok(y), Some(floor)) = (
+        u16::try_from(at.x),
+        u16::try_from(at.y),
+        i8::try_from(at.floor).ok().and_then(i8::checked_neg),
+    ) else {
+        return;
+    };
+    let tile = crate::map::overlay::TilePos { x, y, floor };
+    for _ in 0..hits {
+        map.facts.emit_movement_effect(tile, u16::from(effect));
+    }
+}
+
 #[derive(Debug)]
 pub(in crate::gameplay_transport) struct BossFight {
     room: Encounter,

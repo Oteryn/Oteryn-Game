@@ -24,6 +24,7 @@ pub struct CreatureFieldEntry {
 #[derive(Debug)]
 pub struct PreparedCreaturePeriodicTurn {
     impacts: Vec<CreaturePeriodicImpact>,
+    shielded_hits: usize,
     health_events: PeriodicHealthEvents,
     before: CompanionSnapshot,
     original_slot: Slot,
@@ -40,6 +41,7 @@ pub struct PreparedCreaturePeriodicTurn {
 pub struct CreaturePeriodicReceipt {
     /// Final per-tick health effects, installed with this transient owner receipt.
     pub impacts: Vec<CreaturePeriodicImpact>,
+    pub shielded_hits: usize,
     pub actor: ExactActorRef,
     pub health_before: i64,
     pub health_after: i64,
@@ -225,6 +227,8 @@ impl ChannelRuntimeV1 {
         let mut after = before.state.clone();
         let ticks = after.conditions.take_due(now_us, facts);
         let mut impacts = Vec::new();
+        let speech_shielded = self.boss_speech_shield_effect(actor).is_some();
+        let mut shielded_hits = 0;
         let mut total = 0i64;
         let mut had_damage = false;
         let mut health_after = before.health;
@@ -232,6 +236,18 @@ impl ChannelRuntimeV1 {
         let mut current_type = before.clone();
         for (tick_index, tick) in ticks.iter().enumerate() {
             match tick.kind {
+                TickKind::Damage {
+                    amount,
+                    refused: false,
+                    ..
+                }
+                | TickKind::Agony {
+                    amount,
+                    refused: false,
+                } if speech_shielded => {
+                    // Crystal grand_master_oberon_immunity.lua:3-7 handles any HP hit.
+                    shielded_hits += usize::from(amount > 0);
+                }
                 TickKind::Damage {
                     amount,
                     refused: false,
@@ -624,6 +640,7 @@ impl ChannelRuntimeV1 {
         Ok(PreparedCreaturePeriodicTurn {
             damage_contributors,
             impacts,
+            shielded_hits,
             health_events,
             before,
             original_slot,
@@ -708,6 +725,7 @@ impl ChannelRuntimeV1 {
             .install_native_death_events(prepared.native_death);
         Ok(CreaturePeriodicReceipt {
             impacts: prepared.impacts,
+            shielded_hits: prepared.shielded_hits,
             actor: prepared.before.actor,
             health_before: prepared.before.health,
             health_after: prepared.health_after,

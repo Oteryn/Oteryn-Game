@@ -325,6 +325,60 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
             owner.runtime.lock().await.boss_speech_shield_effect(target),
             Some(50)
         );
+        let field = oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry {
+            definition:
+                oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+                    "test.oberon.agony",
+                    1,
+                    oteryn_gameplay_domain::domain::condition::ConditionValues::Agony {
+                        total_min: 10,
+                        total_max: 10,
+                        per_tick: 10,
+                        interval_ms: 1000,
+                        delayed: true,
+                    },
+                )
+                .ok_or("agony condition")?,
+            source: None,
+            lineage: None,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(id(90)),
+        };
+        owner
+            .runtime
+            .lock()
+            .await
+            .commit_creature_field_entry(target, 2_000_000, Some(&field))
+            .map_err(debug)?;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .next_monster_ai_pass_us = 0;
+        owner
+            .drain_monster_melee_at(
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(3_000_000),
+            )
+            .await;
+        let after_tick = owner
+            .runtime
+            .lock()
+            .await
+            .companion_snapshot(target)
+            .map_err(debug)?;
+        assert_eq!(after_tick.health, initial);
+        assert!(after_tick.state.conditions.instances().is_empty());
+        assert!(
+            map.facts
+                .movement_effects_since(0)
+                .iter()
+                .any(|(_, tile, effect)| {
+                    tile.x == BOSS_AT.x
+                        && tile.y == BOSS_AT.y
+                        && tile.floor == BOSS_AT.floor
+                        && *effect == 50
+                })
+        );
         strike(&owner, &admitted, target, OBERON, initial, 101, false).await?;
         assert_eq!(
             owner
