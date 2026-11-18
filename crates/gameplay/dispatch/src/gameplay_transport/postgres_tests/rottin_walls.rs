@@ -79,7 +79,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
         };
         let room = entry
             .bundle_view(cells.clone(), frame_binding, map_revision, start)
-            .ok_or("qualified wall room")?;
+            .ok_or("wall bundle combat view")?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -120,7 +120,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        owner.rooms = SeamRooms::new(Some(&room), Some(&room));
+        owner.rooms = SeamRooms::new(None, Some(&room));
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
