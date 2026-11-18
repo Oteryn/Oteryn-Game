@@ -371,6 +371,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 remaining,
                 now.get(),
                 runtime.content_pin().server_artifact_digest(),
+                session,
             );
         }
         let state = states.get(&runtime, actor, session)?;

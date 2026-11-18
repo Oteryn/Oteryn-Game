@@ -81,6 +81,7 @@ pub(super) fn apply_world_cake_regeneration(
     remaining_ms: u32,
     now_us: u64,
     content_digest: [u8; 32],
+    session: crate::foundation::GameSessionId,
 ) -> Option<()> {
     use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
     use oteryn_gameplay_foundation::foundation::condition::{
@@ -118,13 +119,13 @@ pub(super) fn apply_world_cake_regeneration(
     let root = GameplayDecisionRoot::from_bytes(content_digest);
     let facts = ApplicationFacts {
         now: now_us,
-        base_speed: 1,
+        base_speed: state.owned_base_speed(),
         mana_shield_capacity: 0,
         target_reentry_protected: false,
         source_reentry_protected: false,
         target_is_player: true,
         decision_root: &root,
-        occurrence: DecisionOccurrenceId::from_bytes([0; 16]),
+        occurrence: DecisionOccurrenceId::from_bytes(*session.as_bytes()),
     };
     let mut next = before.clone();
     next.apply(&definition, None, ConditionSourceKind::SelfUse, &[], &facts)
