@@ -1582,6 +1582,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     captured_name: None,
                 });
         }
+        if fresh_effects
+            && let Some(timer) = &callback.effects.personal_return
+            && let Some(haste) = &timer.haste
+            && let Some(current) = states.get(runtime, actor, session)
+        {
+            let mut next = current.clone();
+            if crate::spell::actor_conditions::apply_quest_haste(
+                &mut next, timer.delay_ms, haste.multiplier, haste.offset, self.owner_ms(),
+            ).is_ok() && next.advance_batch_revision().is_ok()
+                && states.commit(runtime, actor, session, next)
+            {
+                states.owner_wake.notify_one();
+            }
+        }
         if callback.effects.restore_disguise {
             let Some(current) = states.get(runtime, actor, session) else {
                 return UseDisposition::Rejected;

@@ -433,6 +433,30 @@ fn qualified_regeneration_sub_id(profile: &EffectProfile) -> Result<u8, SpellCas
     }
 }
 
+/// Crystal 201189f8 mission06_run_like_wolf.lua:158-161 uses a fixed formula.
+pub fn apply_quest_haste(
+    state: &mut PlayerSpellState,
+    duration_ms: u32,
+    multiplier: i32,
+    offset: i32,
+    now_ms: u64,
+) -> Result<(), SpellCastDisposition> {
+    let definition = definition(
+        "quest.personal_return.haste",
+        ConditionValues::Speed {
+            paralysis: false,
+            duration_ms,
+            range: oteryn_gameplay_domain::domain::condition::SpeedRange {
+                a_min: multiplier,
+                a_max: multiplier,
+                b_min: offset,
+                b_max: offset,
+            },
+        },
+    )?;
+    apply_definition(state, definition, now_ms, 0)
+}
+
 pub fn apply_appearance(
     state: &mut PlayerSpellState,
     selection: crate::domain::appearance::AppearanceSelection<String>,

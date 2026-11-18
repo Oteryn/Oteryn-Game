@@ -114,6 +114,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
+            lock_admission_relations(&mut tx).await?;
             assert_gameplay_fence(&mut tx,&fence,&node).await?.map_err(|_| DurabilityError::Unavailable)?;
             let row = sqlx::query(
                 "SELECT uuid_send(occurrence) AS occurrence,return_key,committed_revision IS NOT NULL AS committed
@@ -153,7 +154,8 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
-            assert_gameplay_fence(&mut tx,&fence,&node).await?.map_err(|_| DurabilityError::Unavailable)?;
+            lock_admission_relations(&mut tx).await?;
+            super::super::character_progression::assert_item_only_fence(&mut tx,&fence.item_fence(),&node).await?.map_err(|_| DurabilityError::Unavailable)?;
             sqlx::query(
                 "DELETE FROM game_quest_personal_returns WHERE character_id=encode($1,'hex')::uuid
                     AND return_key=$2 AND occurrence=encode($3,'hex')::uuid
