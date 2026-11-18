@@ -101,43 +101,15 @@ pub(super) async fn exercise(
         .get(2)
         .ok_or("wall source")?;
     for count in 1..=7 {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(2))
-            .ok_or("clock")?;
-        let map = owner.bundle_map().ok_or("map")?;
-        let mut placement = map.overlay.base().digest().to_vec();
-        placement.extend_from_slice(&key.to_be_bytes());
-        let payload = encode_item_use_intent(&UseIntent {
-            target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?),
-            use_with: None,
-            use_with_position: None,
-            use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
-                placement,
-                expected_revision: map.facts.object_revision(key),
-            })),
-        })
-        .map_err(debug)?;
-        let reference = owner
-            .active_generation
-            .and_then(|g| g.native_gameplay())
-            .and_then(|n| n.item_index())
-            .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i3460", "definition-r1"))
-            .ok_or("hammer reference")?;
-        let (next, result, _) = super::item_craft::exchange(
-            owner,
-            *admitted,
-            admitted.continuity.next_command_id,
-            &payload,
-            Some(reference),
-        )
-        .await?;
-        *admitted = next;
-        if count == 7 {
-            assert_ne!(result, UseDisposition::Committed);
-        } else {
-            assert_eq!(result, UseDisposition::Committed);
-        }
+        let result = use_hammer(owner, admitted, key).await?;
+        assert_eq!(
+            result,
+            if count == 7 {
+                UseDisposition::Rejected
+            } else {
+                UseDisposition::Committed
+            },
+        );
         let state = owner
             .root
             .read_character_quest_state(owner.character, fence.character_id)
@@ -158,6 +130,20 @@ pub(super) async fn exercise(
         let now = owner.owner_now().get();
         let due = map.facts.next_movement_decay_time().ok_or("wall reset")?;
         assert!((119_000_000..=120_000_000).contains(&due.saturating_sub(now)));
+        if count == 1 {
+            assert_eq!(
+                use_hammer(owner, admitted, key).await?,
+                UseDisposition::NothingToUse,
+                "a wall must break again before it can earn more credit",
+            );
+            let state = owner
+                .root
+                .read_character_quest_state(owner.character, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(state.tracks().get(ROTTIN_WALLCOUNT), Some(&1));
+        }
+        let map = owner.bundle_map().ok_or("map")?;
         assert_eq!(map.facts.expire_movement_items(due - 1), 0);
         assert_eq!(map.facts.expire_movement_items(due), 1);
         assert_eq!(
@@ -173,4 +159,44 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool).await?;
     assert_eq!(hammer, 1);
     Ok(())
+}
+
+async fn use_hammer(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    key: u64,
+) -> TestResult<UseDisposition> {
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let map = owner.bundle_map().ok_or("map")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?),
+        use_with: None,
+        use_with_position: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        })),
+    })
+    .map_err(debug)?;
+    let reference = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .and_then(|n| n.item_index())
+        .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i3460", "definition-r1"))
+        .ok_or("hammer reference")?;
+    let (next, result, _) = super::item_craft::exchange(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        &payload,
+        Some(reference),
+    )
+    .await?;
+    *admitted = next;
+    Ok(result)
 }
