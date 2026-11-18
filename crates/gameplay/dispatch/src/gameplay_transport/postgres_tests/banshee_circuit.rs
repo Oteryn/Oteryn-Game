@@ -153,10 +153,14 @@ fn scenario(circuit: Circuit) -> TestResult {
                 "key":"pressure-plate","completes":false,"trigger":{"kind":"step_in","callback":callback}
             }));
         }
+        let recipe_sha256: String = Sha256::digest(serde_json::to_vec(&stages)?)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
         let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
             "schema":1,"quests":[{
                 "quest":QUEST,
-                "recipe_sha256":format!("{:x}", Sha256::digest(serde_json::to_vec(&stages)?)),
+                "recipe_sha256":recipe_sha256,
                 "sources":stages[0]["trigger"]["callback"]["sources"],
                 "tracks":[{
                     "key":"oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/first_seal",
