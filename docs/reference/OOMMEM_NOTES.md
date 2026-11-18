@@ -207,6 +207,17 @@ The trial reached 16,551,756 KiB, added one cgroup OOM kill, and exited
 before linking. This package-scoped profile change did not produce a
 test binary.
 
+## Combined package profile trial
+
+The serial follow-up uses the same locked dispatch lib-test command and
+warm dependencies. The scratch Cargo config applies only to
+`profile.test.package.oteryn-gameplay-dispatch`, with `debug = 0`,
+`incremental = false`, and `codegen-units = 256`. The verbose rustc
+command confirms these settings. Its LLVM coordinator appeared with a
+14,621,092 KiB high-water mark. The first codegen pass reached
+16,340,144 KiB. At 938 s the compiler had emitted 98 objects and the
+cgroup OOM-kill counter had not moved. The build was still active.
+
 ## Hosted build scope
 
 The PR PostgreSQL archive selects the dispatch, game-server and durability
