@@ -20,6 +20,7 @@ use oteryn_protocol_oteryn::world_object::{
 };
 
 const HAMMER: &str = "oteryn:item.tibia.i3460";
+const KITCHEN_KNIFE: &str = "oteryn:item.tibia.i3469";
 const TARGET: Position = Position {
     x: 32647,
     y: 32216,
@@ -243,7 +244,7 @@ async fn exercise(
         .get(2)
         .ok_or("wall source")?;
     assert_eq!(
-        use_hammer(owner, admitted, key, false).await?,
+        use_tool(owner, admitted, key, HAMMER, false).await?,
         UseDisposition::NothingToUse,
         "a hammer definition request must resolve to a carried hammer",
     );
@@ -256,18 +257,25 @@ async fn exercise(
         state.tracks().get(ROTTIN_WALLCOUNT).copied().unwrap_or(0),
         0
     );
-    super::world_input_item::input_item(
-        owner,
-        fence.item_fence(),
-        &Offering {
-            position: TARGET,
-            item: HAMMER.into(),
-            count: 1,
-        },
-        951,
-        true,
-    )
-    .await?;
+    for (command, item) in [(951, KITCHEN_KNIFE), (952, HAMMER)] {
+        super::world_input_item::input_item(
+            owner,
+            fence.item_fence(),
+            &Offering {
+                position: TARGET,
+                item: item.into(),
+                count: 1,
+            },
+            command,
+            true,
+        )
+        .await?;
+    }
+    assert_eq!(
+        use_tool(owner, admitted, key, KITCHEN_KNIFE, true).await?,
+        UseDisposition::NothingToUse,
+        "an unrelated carried tool must not qualify as a hammer",
+    );
     let carried_hammer = || {
         sqlx::query_scalar::<_, serde_json::Value>(
             "SELECT to_jsonb(i) FROM game_item_instances i WHERE definition_production_key=$1 AND lifecycle=1",
@@ -280,7 +288,7 @@ async fn exercise(
         // The first repair proves that the definition hotkey now resolves to
         // the carried hammer. Subsequent repairs select its exact item handle.
         let from_handle = count != 1;
-        let result = use_hammer(owner, admitted, key, from_handle).await?;
+        let result = use_tool(owner, admitted, key, HAMMER, from_handle).await?;
         assert_eq!(
             result,
             if count == 7 {
@@ -320,7 +328,7 @@ async fn exercise(
         assert!((119_000_000..=120_000_000).contains(&due.saturating_sub(now)));
         if count == 1 {
             assert_eq!(
-                use_hammer(owner, admitted, key, true).await?,
+                use_tool(owner, admitted, key, HAMMER, true).await?,
                 UseDisposition::NothingToUse,
                 "a wall must break again before it can earn more credit",
             );
@@ -365,10 +373,11 @@ async fn exercise(
     Ok(())
 }
 
-async fn use_hammer(
+async fn use_tool(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     key: u64,
+    tool: &str,
     from_handle: bool,
 ) -> TestResult<UseDisposition> {
     owner.clock_origin = owner
@@ -382,8 +391,8 @@ async fn use_hammer(
         .active_generation
         .and_then(|g| g.native_gameplay())
         .and_then(|n| n.item_index())
-        .and_then(|i| i.definition_ref("Item", HAMMER, "definition-r1"))
-        .ok_or("hammer reference")?;
+        .and_then(|i| i.definition_ref("Item", tool, "definition-r1"))
+        .ok_or("tool reference")?;
     let payload = encode_item_use_intent(&UseIntent {
         // exchange resolves the real inventory snapshot handle when requested.
         target: UseTarget::ItemByDefinition(reference),
