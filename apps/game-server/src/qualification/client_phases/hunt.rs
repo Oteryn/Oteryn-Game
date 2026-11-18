@@ -9,7 +9,7 @@ pub(super) async fn hunt_named(
     client: &mut oteryn_dev_client::DevClientSession,
     name: Option<&str>,
 ) -> TestResult {
-    use oteryn_dev_client::{EntityDetail, EntityKind};
+    use oteryn_dev_client::EntityKind;
     if !client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
@@ -59,49 +59,31 @@ pub(super) async fn hunt_named(
         return Err(format!("hunt attack: {attack:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
-    let mut damaged = false;
-    let mut last_position = target.position;
-    let mut target_removed = false;
+    let mut observed = HuntEvidence {
+        damaged: false,
+        last_position: target.position,
+        removed: false,
+        prior_corpses,
+    };
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
-                if let Some(updated) = delta
-                    .value
-                    .update
-                    .iter()
-                    .find(|entry| entry.entity == target.entity)
-                {
-                    last_position = updated.position;
-                }
-                damaged |= delta.value.update.iter().any(|entry| entry.entity == target.entity
-                    && matches!(entry.detail, EntityDetail::Actor { health_percent, .. }
-                        | EntityDetail::ActorWithIcons { health_percent, .. } if health_percent < 100));
-                target_removed =
-                    named_corpse_ready(target_removed, delta.value.leave.contains(&target.entity));
+                observed.apply(target.entity, &delta.value);
             }
         }
         if name.is_some()
-            && target_removed
-            && damaged
             && let Some(entities) = client.world_entities()
+            && let Some(corpse) = observed.corpse(entities.iter(), target.entity)
         {
-            let mut corpses = entities.iter().filter(|entry| {
-                entry.kind == EntityKind::Corpse
-                    && entry.position == last_position
-                    && !prior_corpses.contains(&entry.entity)
-                    && corpse_handle(entry.detail).is_some()
-            });
-            if let (Some(corpse), None) = (corpses.next(), corpses.next()) {
-                break *corpse;
-            }
+            break corpse;
         }
         if name.is_none()
             && let Some(corpse) = client
                 .world_entities()
                 .and_then(|entities| {
                     entities.iter().find(|entry| {
-                        entry.kind == EntityKind::Corpse && entry.position == last_position
+                        entry.kind == EntityKind::Corpse && entry.position == observed.last_position
                     })
                 })
                 .copied()
@@ -112,7 +94,7 @@ pub(super) async fn hunt_named(
             return Err("hunt produced no corpse before deadline".into());
         }
     };
-    if !damaged
+    if !observed.damaged
         || client
             .world_entities()
             .is_some_and(|entities| entities.get(&target.entity).is_some())
@@ -244,13 +226,151 @@ fn round2_appearance_corpse_retains_its_item_handle() {
     );
 }
 
-fn named_corpse_ready(removed: bool, leaves_now: bool) -> bool {
-    removed || leaves_now
+struct HuntEvidence {
+    damaged: bool,
+    last_position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    removed: bool,
+    prior_corpses: BTreeSet<oteryn_dev_client::EntityRef>,
+}
+
+impl HuntEvidence {
+    fn apply(
+        &mut self,
+        target: oteryn_dev_client::EntityRef,
+        delta: &oteryn_dev_client::WorldSpatialEntitiesDelta,
+    ) {
+        use oteryn_dev_client::{EntityDetail, EntityKind};
+        if let Some(actor) = delta
+            .update
+            .iter()
+            .chain(&delta.enter)
+            .find(|entity| entity.entity == target)
+        {
+            self.last_position = actor.position;
+            self.removed = false;
+            self.damaged |= matches!(actor.detail, EntityDetail::Actor { health_percent, .. }
+                | EntityDetail::ActorWithIcons { health_percent, .. } if health_percent < 100);
+        }
+        self.removed |= delta.leave.contains(&target);
+        if !self.removed {
+            self.prior_corpses.extend(
+                delta
+                    .enter
+                    .iter()
+                    .filter(|entry| entry.kind == EntityKind::Corpse)
+                    .map(|entry| entry.entity),
+            );
+        }
+    }
+
+    fn corpse<'a>(
+        &self,
+        entities: impl Iterator<Item = &'a oteryn_dev_client::WorldSpatialEntity>,
+        target: oteryn_dev_client::EntityRef,
+    ) -> Option<oteryn_dev_client::WorldSpatialEntity> {
+        if !self.removed || !self.damaged {
+            return None;
+        }
+        named_corpse(entities, target, self.last_position, &self.prior_corpses)
+    }
+}
+
+fn named_corpse<'a>(
+    entities: impl Iterator<Item = &'a oteryn_dev_client::WorldSpatialEntity>,
+    target: oteryn_dev_client::EntityRef,
+    last_position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    prior_corpses: &BTreeSet<oteryn_dev_client::EntityRef>,
+) -> Option<oteryn_dev_client::WorldSpatialEntity> {
+    use oteryn_dev_client::EntityKind;
+    let mut found = None;
+    for entry in entities {
+        if entry.entity == target {
+            return None;
+        }
+        if entry.kind == EntityKind::Corpse
+            && entry.position == last_position
+            && !prior_corpses.contains(&entry.entity)
+            && corpse_handle(entry.detail).is_some()
+            && found.replace(*entry).is_some()
+        {
+            return None;
+        }
+    }
+    found
 }
 
 #[test]
-fn round3_named_corpse_can_arrive_after_removal() {
-    let departed = named_corpse_ready(false, true);
-    assert!(named_corpse_ready(departed, false));
-    assert!(!named_corpse_ready(false, false));
+fn round4_live_warlock_reentry_blocks_unrelated_corpse() {
+    use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, ItemHandle, WorldSpatialEntity};
+    use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+    let at = ActorPosition {
+        x: 20,
+        y: 30,
+        floor: 7,
+    };
+    let id = EntityRef {
+        identity: [1; 16],
+        generation: 1,
+    };
+    let actor = WorldSpatialEntity {
+        display_name: None,
+        entity: id,
+        kind: EntityKind::Creature,
+        position: at,
+        detail: EntityDetail::Actor {
+            direction: StepDirection::North,
+            appearance_ref: 1,
+            health_percent: 35,
+        },
+    };
+    let corpse = WorldSpatialEntity {
+        display_name: None,
+        entity: EntityRef {
+            identity: [2; 16],
+            generation: 1,
+        },
+        kind: EntityKind::Corpse,
+        position: at,
+        detail: EntityDetail::Object {
+            item_definition_ref: 1,
+            quantity: 1,
+            item_handle: Some(ItemHandle::MIN),
+        },
+    };
+    let mut observed = HuntEvidence {
+        damaged: false,
+        last_position: at,
+        removed: false,
+        prior_corpses: BTreeSet::new(),
+    };
+    let mut delta = oteryn_dev_client::WorldSpatialEntitiesDelta {
+        content_generation: [0; 32],
+        actor_position: at,
+        enter: vec![],
+        update: vec![],
+        leave: vec![id],
+    };
+    observed.apply(id, &delta);
+    delta.leave.clear();
+    delta.enter = vec![actor, corpse];
+    observed.apply(id, &delta);
+    assert_eq!(observed.corpse(delta.enter.iter(), id), None);
+    delta.enter.clear();
+    delta.leave.push(id);
+    observed.apply(id, &delta);
+    assert_eq!(observed.corpse([corpse].iter(), id), None);
+    let final_corpse = WorldSpatialEntity {
+        entity: EntityRef {
+            identity: [3; 16],
+            generation: 1,
+        },
+        ..corpse
+    };
+    delta.leave.clear();
+    delta.enter.push(final_corpse);
+    observed.apply(id, &delta);
+    assert_eq!(
+        observed.corpse([corpse, final_corpse].iter(), id),
+        Some(final_corpse)
+    );
 }

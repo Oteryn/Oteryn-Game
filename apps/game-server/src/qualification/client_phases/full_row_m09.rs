@@ -514,10 +514,27 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 reward.item, tally(&before_skin), tally(&after_skin)
             ).into()),
         };
-        let second = use_on(&mut client, knife.handle, MapUseTarget::Item(corpse_handle)).await?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+        let second = tokio::time::timeout_at(deadline, async {
+            loop {
+                let handle = client.world_entities()
+                    .and_then(|entities| entities.get(&corpse.entity))
+                    .filter(|entity| object_definition(**entity) == Some(spent_definition))
+                    .and_then(|entity| match entity.detail {
+                        oteryn_dev_client::EntityDetail::Object { item_handle, .. }
+                        | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
+                        _ => None,
+                    }).ok_or("step 4 spent corpse has no current item handle")?;
+                let reply = use_on(&mut client, knife.handle, MapUseTarget::Item(handle)).await?;
+                if reply.1 != UseDisposition::Exhausted {
+                    break Ok::<_, Box<dyn std::error::Error>>(reply);
+                }
+                client.service_liveness(Duration::from_millis(200)).await?;
+                client.take_events();
+            }
+        }).await??;
         settle(&mut client).await?;
-        if second.0 == CommandStatus::Accepted
-            && second.1 != UseDisposition::Committed
+        if spent_corpse_reply(second)
             && inventory_signature(&client)? == after_skin
             && client
                 .world_entities()
@@ -795,4 +812,16 @@ fn round3_four_verified_skinning_misses_complete_the_series() {
     assert!(!skinning_series_complete(3, false));
     assert!(skinning_series_complete(4, false));
     assert!(skinning_series_complete(1, true));
+}
+
+fn spent_corpse_reply(reply: (CommandStatus, UseDisposition)) -> bool {
+    reply == (CommandStatus::Accepted, UseDisposition::NothingToUse)
+}
+
+#[test]
+fn round4_spent_corpse_needs_semantic_refusal() {
+    assert!(spent_corpse_reply((CommandStatus::Accepted, UseDisposition::NothingToUse)));
+    for unrelated in [UseDisposition::StaleState, UseDisposition::Exhausted, UseDisposition::Committed] {
+        assert!(!spent_corpse_reply((CommandStatus::Accepted, unrelated)));
+    }
 }

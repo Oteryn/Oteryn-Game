@@ -267,7 +267,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let character = clients.characters[1];
     let index = provisioning::item_index()?;
-    prepare_house_fixture(&mut db, clients, character, &index).await?;
+    let fixture_house = prepare_house_fixture(&mut db, clients.world, clients.channel, character, &index).await?;
     let mut client = connect_world(clients, 0xb0).await?;
     let (house, item, revision, acl, cell): (String, Vec<u8>, String, String, Vec<u8>) = sqlx::query_as(
         "SELECT p.house_key,uuid_send(i.item_instance_id),i.state_revision::text,p.acl_revision::text,h.spatial_position
@@ -276,7 +276,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
           WHERE p.world_id=encode($1,'hex')::uuid AND p.owner_character_id=encode($2,'hex')::uuid
             AND p.house_key=$3 AND i.definition_production_key='oteryn:item.tibia.i6355' AND i.lifecycle=1
           ORDER BY p.house_key,h.spatial_position,i.item_instance_id LIMIT 1",
-    ).bind(clients.world.as_slice()).bind(character.as_slice()).bind(FIXTURE_HOUSE).fetch_optional(&mut db).await?
+    ).bind(clients.world.as_slice()).bind(character.as_slice()).bind(fixture_house).fetch_optional(&mut db).await?
         .ok_or("step=wrap observed=no-owned-house-with-placed-furniture needed=ordinary-house-settlement-and-furnishing")?;
     let item = item.as_slice().try_into()?;
     let revision: u64 = revision.parse()?;
@@ -482,60 +482,76 @@ fn furniture_and_fluid_use_can_pass_with_exact_state_evidence() {
     );
 }
 
-const FIXTURE_HOUSE: &str = "oteryn:content.house.alai_flats_flat_01";
-const FIXTURE_FURNITURE: &[(u32, [i32; 3])] =
-    &[(6355, [32377, 32258, 7]), (2295, [32378, 32258, 7])];
+const FIXTURE_HOUSES: &[(&str, [[i32; 3]; 2])] = &[
+    ("oteryn:content.house.alai_flats_flat_01", [[32377, 32258, 7], [32378, 32258, 7]]),
+    ("oteryn:content.house.alai_flats_flat_02", [[32382, 32258, 7], [32383, 32258, 7]]),
+    ("oteryn:content.house.alai_flats_flat_03", [[32376, 32264, 7], [32376, 32265, 7]]),
+];
+const FIXTURE_ITEMS: [u32; 2] = [6355, 2295];
 
 /// I10 owns the initial condition for the disposable node-boot world. The
 /// measured wrap, destruction, and persistence operations are player commands.
 async fn prepare_house_fixture(
     db: &mut sqlx::PgConnection,
-    clients: &SeamClients<'_>,
+    world: [u8; 16],
+    channel: [u8; 16],
     character: [u8; 16],
     index: &crate::content::item_ref::ItemDefinitionIndex,
-) -> TestResult {
+) -> TestResult<&'static str> {
     let mut tx = db.begin().await?;
-    sqlx::query(
-        "WITH property AS (
-           INSERT INTO game_house_properties
-             (world_id,house_key,kind,state,rent_gold,content_digest,owner_character_id,owner_account_id,acquisition_receipt_ref,paid_until)
-           SELECT r.world_id,$2,'private_house',3,50000,a.server_artifact_digest,r.character_id,r.account_id,
-                  game_character_uuid_v7(),statement_timestamp()+interval '30 days'
-             FROM game_character_roots r
-             CROSS JOIN LATERAL (
-               SELECT server_artifact_digest FROM game_content_activations
-               WHERE world_id=r.world_id AND channel_id=encode($4,'hex')::uuid
-               ORDER BY activation_sequence DESC LIMIT 1
-             ) a
-             WHERE r.world_id=encode($1,'hex')::uuid AND r.character_id=encode($3,'hex')::uuid
-           ON CONFLICT (world_id,house_key) DO NOTHING RETURNING *
-         ), slot AS (
-           INSERT INTO game_account_housing_slots(account_id,world_id,house_key)
-           SELECT owner_account_id,world_id,house_key FROM property
-         )
-         INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref)
-         SELECT world_id,house_key,owner_character_id,ownership_generation,acquisition_receipt_ref FROM property",
-    ).bind(clients.world.as_slice()).bind(FIXTURE_HOUSE).bind(character.as_slice())
-        .bind(clients.channel.as_slice()).execute(&mut *tx).await?;
-    let owned: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 FROM game_house_properties
-          WHERE world_id=encode($1,'hex')::uuid AND house_key=$2
-          AND owner_character_id=encode($3,'hex')::uuid AND state=3)",
-    ).bind(clients.world.as_slice()).bind(FIXTURE_HOUSE).bind(character.as_slice())
-        .fetch_one(&mut *tx).await?;
-    if !owned {
-        return Err("step=fixture the authored house is not owned by the I10 character".into());
+    let mut chosen = None;
+    for &(house, positions) in FIXTURE_HOUSES {
+        sqlx::query(
+            "WITH property AS (
+               INSERT INTO game_house_properties
+                 (world_id,house_key,kind,state,rent_gold,content_digest,owner_character_id,owner_account_id,acquisition_receipt_ref,paid_until)
+               SELECT r.world_id,$2,'private_house',3,50000,a.server_artifact_digest,r.character_id,r.account_id,
+                      game_character_uuid_v7(),statement_timestamp()+interval '30 days'
+                 FROM game_character_roots r
+                 CROSS JOIN LATERAL (
+                   SELECT server_artifact_digest FROM game_content_activations
+                   WHERE world_id=r.world_id AND channel_id=encode($4,'hex')::uuid
+                   ORDER BY activation_sequence DESC LIMIT 1
+                 ) a
+                 WHERE r.world_id=encode($1,'hex')::uuid AND r.character_id=encode($3,'hex')::uuid
+               ON CONFLICT (world_id,house_key) DO NOTHING RETURNING *
+             ), slot AS (
+               INSERT INTO game_account_housing_slots(account_id,world_id,house_key)
+               SELECT owner_account_id,world_id,house_key FROM property
+             )
+             INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref)
+             SELECT world_id,house_key,owner_character_id,ownership_generation,acquisition_receipt_ref FROM property",
+        ).bind(world.as_slice()).bind(house).bind(character.as_slice())
+            .bind(channel.as_slice()).execute(&mut *tx).await?;
+        // Serialize ownership verification and fixture placement against
+        // settlement and other invocations of this fixture.
+        let owned: bool = sqlx::query_scalar(
+            "SELECT coalesce(p.owner_character_id=encode($3,'hex')::uuid AND p.state=3
+                      AND p.content_digest=(
+                        SELECT a.server_artifact_digest FROM game_content_activations a
+                         WHERE a.world_id=p.world_id AND a.channel_id=encode($4,'hex')::uuid
+                         ORDER BY a.activation_sequence DESC LIMIT 1
+                      ),false)
+               FROM game_house_properties p
+              WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=$2 FOR UPDATE OF p",
+        ).bind(world.as_slice()).bind(house).bind(character.as_slice()).bind(channel.as_slice())
+            .fetch_optional(&mut *tx).await?.unwrap_or(false);
+        if owned {
+            chosen = Some((house, positions));
+            break;
+        }
     }
+    let (house, positions) = chosen.ok_or("step=fixture all I10 houses are occupied or unavailable")?;
     // Use the same fixture-only insertion path as the native wrap dispatch test.
     sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-    for &(id, position) in FIXTURE_FURNITURE {
+    for (id, position) in FIXTURE_ITEMS.into_iter().zip(positions) {
         let key = format!("oteryn:item.tibia.i{id}");
         let revision = index.revision(&key).ok_or("I10 fixture item definition is absent")?;
         let cell: Vec<u8> = position.into_iter().flat_map(i32::to_be_bytes).collect();
         sqlx::query(
             "INSERT INTO game_house_tiles(world_id,house_key,spatial_position)
              VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING",
-        ).bind(clients.world.as_slice()).bind(FIXTURE_HOUSE).bind(&cell).execute(&mut *tx).await?;
+        ).bind(world.as_slice()).bind(house).bind(&cell).execute(&mut *tx).await?;
         sqlx::query(
             "WITH target AS (
                INSERT INTO game_item_instances
@@ -558,11 +574,11 @@ async fn prepare_house_fixture(
              INSERT INTO game_item_house_reclaim_provenance
                (item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision)
              SELECT item_instance_id,world_id,house_key,encode($6,'hex')::uuid,placed_transaction_id,1 FROM placement",
-        ).bind(clients.world.as_slice()).bind(FIXTURE_HOUSE).bind(&cell).bind(&key)
+        ).bind(world.as_slice()).bind(house).bind(&cell).bind(&key)
             .bind(revision).bind(character.as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
-    Ok(())
+    Ok(house)
 }
 
 #[test]
@@ -570,16 +586,73 @@ fn round3_stock_house_fixtures_supply_both_mechanics() -> TestResult {
     let catalogue: serde_json::Value = serde_json::from_str(include_str!(
         "../../../../../content/houses/houses-00000-00499.json"
     ))?;
-    let house = catalogue["houses"].as_array().ok_or("house catalogue")?.iter()
-        .find(|record| record["identity"]["key"] == FIXTURE_HOUSE).ok_or("I10 fixture house")?;
-    assert_eq!(FIXTURE_FURNITURE.len(), 2);
+    let houses = catalogue["houses"].as_array().ok_or("house catalogue")?;
     let index = provisioning::item_index()?;
-    for &(id, position) in FIXTURE_FURNITURE {
-        assert!(house["tiles"].as_array().is_some_and(|cells| cells.contains(&serde_json::json!(position))));
-        provisioning::item_reference(&index, id)?;
+    for &(key, positions) in FIXTURE_HOUSES {
+        let house = houses.iter().find(|record| record["identity"]["key"] == key)
+            .ok_or("I10 fixture house")?;
+        assert_ne!(positions[0], positions[1]);
+        for (id, position) in FIXTURE_ITEMS.into_iter().zip(positions) {
+            assert!(house["tiles"].as_array().is_some_and(|cells| cells.contains(&serde_json::json!(position))));
+            provisioning::item_reference(&index, id)?;
+        }
     }
-    assert_ne!(FIXTURE_FURNITURE[0].1, FIXTURE_FURNITURE[1].1);
-    assert_eq!(FIXTURE_FURNITURE[0].0, 6355);
-    assert_eq!(FIXTURE_FURNITURE[1].0, 2295);
     Ok(())
+}
+
+#[test]
+fn round4_house_fixture_falls_back_when_first_house_is_vacant() -> TestResult {
+    use crate::bestiary_postgres_harness::{self as pg, Harness};
+    let Some(admin) = pg::configured_admin() else { return Ok(()); };
+    pg::runtime()?.block_on(async {
+        let h = Harness::create(admin, "i10_furniture_fallback", true).await?;
+        let result = async {
+            let world = pg::id(pg::WORLD);
+            let channel = pg::id(pg::CHANNEL);
+            let character = pg::id(pg::CHARACTER);
+            let mut db = h.pool.acquire().await?;
+            let mut tx = db.begin().await?;
+            sqlx::query(
+                "INSERT INTO game_content_activations(world_id,channel_id,activation_sequence,
+                  server_artifact_digest,client_artifact_digest,frame_binding_digest,issued_by,issued_at)
+                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3,$3,$3,'test',1)
+                 ON CONFLICT DO NOTHING",
+            ).bind(world.as_slice()).bind(channel.as_slice()).bind([7_u8; 32].as_slice())
+                .execute(&mut *tx).await?;
+            sqlx::query(
+                "WITH vacant AS (
+                   INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest)
+                   VALUES(encode($1,'hex')::uuid,$2,'private_house',1,50000,$3) RETURNING *
+                 )
+                 INSERT INTO game_house_ownership(world_id,house_key,ownership_revision,acquisition_receipt_ref)
+                 SELECT world_id,house_key,ownership_generation,game_character_uuid_v7() FROM vacant",
+            ).bind(world.as_slice()).bind(FIXTURE_HOUSES[0].0).bind([7_u8; 32].as_slice())
+                .execute(&mut *tx).await?;
+            tx.commit().await?;
+            let index = provisioning::item_index()?;
+            let mut second_db = h.pool.acquire().await?;
+            let (first, second) = tokio::join!(
+                prepare_house_fixture(&mut db, world, channel, character, &index),
+                prepare_house_fixture(&mut second_db, world, channel, character, &index),
+            );
+            assert_eq!(first?, FIXTURE_HOUSES[1].0);
+            assert_eq!(second?, FIXTURE_HOUSES[1].0);
+            let original_state: i16 = sqlx::query_scalar(
+                "SELECT state FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid AND house_key=$2",
+            ).bind(world.as_slice()).bind(FIXTURE_HOUSES[0].0).fetch_one(&mut *db).await?;
+            assert_eq!(original_state, 1);
+            let placed: Vec<(String, String)> = sqlx::query_as(
+                "SELECT h.house_key,i.definition_production_key
+                   FROM game_item_house_interior_locations h JOIN game_item_instances i USING(item_instance_id,world_id)
+                  WHERE h.world_id=encode($1,'hex')::uuid ORDER BY i.definition_production_key",
+            ).bind(world.as_slice()).fetch_all(&mut *db).await?;
+            assert_eq!(placed, vec![
+                (FIXTURE_HOUSES[1].0.into(), "oteryn:item.tibia.i2295".into()),
+                (FIXTURE_HOUSES[1].0.into(), "oteryn:item.tibia.i6355".into()),
+            ]);
+            Ok(())
+        }.await;
+        h.cleanup().await?;
+        result
+    })
 }
