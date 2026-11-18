@@ -1,8 +1,8 @@
 {
   "counts": {
-    "dispatch_pg_qualified": 189,
+    "dispatch_pg_qualified": 194,
     "not_playable": 2,
-    "supported_unqualified": 145
+    "supported_unqualified": 140
   },
   "native_authored_claims": [
     {
@@ -10153,8 +10153,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk9_waterfall_quest_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/waterfall_quest"
@@ -10214,8 +10214,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk9_wedding_ring_quest_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/wedding_ring_quest"
@@ -10536,8 +10536,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk9_skeleton_decoration_quest_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "crystalserver:quest/skeleton_decoration_quest"
@@ -10569,8 +10569,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk9_studded_legs_quest_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "crystalserver:quest/studded_legs_quest"
@@ -10596,8 +10596,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk9_targuna_quest_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u15_24.targuna.silver_amulet_chest",

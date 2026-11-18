@@ -267,6 +267,19 @@ QUALIFIED.update({FALCON_PREFIX + suffix:
     for suffix in FALCON_SOURCES})
 
 
+QUALIFIED.update({
+    "oteryn:reward-claim.kv.honeyflower":
+        "quest_catalogue_chests_qchk9_studded_legs_quest_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.weddingring2":
+        "quest_catalogue_chests_qchk9_wedding_ring_quest_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u15_24.targuna.mana_potions_chest":
+        "quest_catalogue_chests_qchk9_targuna_quest_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.tyrsung":
+        "quest_catalogue_chests_qchk9_skeleton_decoration_quest_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_1.waterfall_quest":
+        "quest_catalogue_chests_qchk9_waterfall_quest_use_replay_and_refusal",
+})
+
 def falcon_supported(definition):
     key = definition["identity"]["key"]
     expected = FALCON_SOURCES.get(key.removeprefix(FALCON_PREFIX)) if key.startswith(FALCON_PREFIX) else None
