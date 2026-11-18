@@ -1485,6 +1485,27 @@ impl ChannelSpellStates {
         )
     }
 
+    pub(super) fn apply_source_health_loss(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        amount: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        self.apply_creature_damage_kind_inner(
+            runtime,
+            target,
+            session,
+            amount,
+            crate::player_lethal::PlayerHitKind::Undefined,
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::None,
+            true,
+            None,
+        )
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn apply_creature_damage_kind_inner(
         &mut self,

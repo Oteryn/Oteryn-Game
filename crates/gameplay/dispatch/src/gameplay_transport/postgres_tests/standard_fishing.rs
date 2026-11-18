@@ -337,7 +337,7 @@ fn run_gathering_at(
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
-            gathering_scenario(tool, target, after, yield_item, committed, in_sewers)
+            gathering_scenario(tool, target, after, yield_item, committed, in_sewers, false)
                 .map_err(|e| e.to_string())
         })?
         .join()
@@ -349,13 +349,14 @@ fn run_gathering_at(
     Ok(())
 }
 
-fn gathering_scenario(
+pub(super) fn gathering_scenario(
     tool: u16,
     target_id: u16,
     after: Option<u16>,
     yield_item: Option<u16>,
     committed: bool,
     in_sewers: bool,
+    shock: bool,
 ) -> TestResult {
     run(async |admin| {
         let harness =
@@ -647,6 +648,12 @@ fn gathering_scenario(
                 let attempt = oteryn_gameplay_items::fishing::gathering_attempt(
                     tool, target_id, 10, catch_roll, roll,
                 );
+                if shock {
+                    return attempt.is_none() && super::mechanical_fishing_shock::is_shock_draw(
+                        native.source_digest(),
+                        occurrence,
+                    );
+                }
                 if !committed {
                     attempt.is_none()
                 } else {
@@ -656,6 +663,11 @@ fn gathering_scenario(
             .ok_or("deterministic handle history exists")?;
         admitted.continuity.item_view.handle_counter = counter;
         let command_id = 1;
+        let before = if shock {
+            Some(super::mechanical_fishing_shock::health(&owner, &admitted).await?)
+        } else {
+            None
+        };
         let (next, result, actual) =
             exchange(&owner, admitted, command_id, &payload, reference(rod)).await?;
         let actual_intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
@@ -675,6 +687,12 @@ fn gathering_scenario(
                 UseDisposition::NothingToUse
             }
         );
+        if let Some(before) = before {
+            super::mechanical_fishing_shock::assert_shock(&owner, &next, target_pos, before).await?;
+            let (_, replay, _) = exchange(&owner, next, command_id, &actual, None).await?;
+            assert_eq!(replay, UseDisposition::NothingToUse);
+            super::mechanical_fishing_shock::assert_shock(&owner, &next, target_pos, before).await?;
+        }
         let state: Option<i64> =
             sqlx::query_scalar("SELECT state_item_id FROM game_terrain_tool_transforms")
                 .fetch_optional(&harness.pool)

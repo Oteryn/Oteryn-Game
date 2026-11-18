@@ -17,6 +17,7 @@ use sha2::{Digest, Sha256};
 
 mod dispenser;
 pub(super) mod enchanting;
+mod fishing;
 mod harvest;
 mod planting;
 mod rope;
@@ -329,6 +330,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(rod) = rod else {
                 return disposition(UseDisposition::NothingToUse);
             };
+            let mechanical_sewer =
+                mechanical_sewer && rod.item.definition.production_key == "oteryn:item.tibia.i9306";
             let rod = rod.item.item_instance_id;
             let worm = entries
                 .clone()
@@ -388,7 +391,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             self.save_trained_levels(due).await;
             let consumable = if mechanical_sewer { nail } else { worm };
-            if !oteryn_gameplay_items::fishing::catches(skill, roll) || consumable.is_none() {
+            let caught = oteryn_gameplay_items::fishing::catches(skill, roll);
+            if mechanical_sewer && consumable.is_some() && !caught && !map_target.2 {
+                self.project_sewer_fishing_miss(actor, command, native, map_target, occurrence)
+                    .await;
+            }
+            if !caught || consumable.is_none() {
                 return disposition(UseDisposition::NothingToUse);
             }
             request.tool = Some(rod);
