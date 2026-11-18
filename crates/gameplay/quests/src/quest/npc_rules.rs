@@ -336,13 +336,13 @@ fn npc_false(value: &bool) -> bool {
     !*value
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRuleProgram {
     pub document: NpcRuleDocument,
     pub digest: [u8; 32],
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcRuleCatalog {
     programs: Vec<NpcRuleProgram>,
 }
@@ -412,6 +412,28 @@ pub struct NpcRulePlan {
 }
 
 impl NpcRuleCatalog {
+    /// Resolve the same source for dialogue preview and the locked NPC writer.
+    pub fn for_catalogue(catalogue: &super::QuestStateCatalogue) -> Result<&Self, NpcRuleError> {
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(source) = catalogue.npc_fixture.as_deref() {
+            return Ok(source);
+        }
+        let _ = catalogue;
+        Self::runtime()
+    }
+
+    /// Build an isolated binding through the ordinary source validator and
+    /// definition-pin registration, without modifying the compiled content.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn attach_fixture(
+        self,
+        catalogue: super::QuestStateCatalogue,
+    ) -> Result<super::QuestStateCatalogue, String> {
+        let mut bound = extend_from(catalogue, &BTreeMap::new(), &self)?;
+        bound.npc_fixture = Some(std::sync::Arc::new(self));
+        Ok(bound)
+    }
+
     /// Resolve only programmes explicitly bound into this catalogue for this NPC.
     pub fn admitted_for_npc(
         &self,
@@ -521,6 +543,8 @@ impl NpcRuleCatalog {
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
+                        || (p.document.quest == "oteryn:quest.the_ice_islands_quest"
+                            && p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.ice-islands-iskan"))
                         || p.document.program_key.as_deref() == Some(questpc2_oldrak_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_albinius_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_gerimor_source::PROGRAM)
@@ -749,6 +773,10 @@ fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
                     "oteryn:quest.outfit_and_addon_quests",
                     Some("oteryn:quest-npc-program.citizen-source-sagas")
                 )
+                | (
+                    "oteryn:quest.the_ice_islands_quest",
+                    Some("oteryn:quest-npc-program.ice-islands-iskan")
+                )
         )
 }
 
@@ -758,6 +786,14 @@ pub(super) fn extend(
     source_tracks: &BTreeMap<String, String>,
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    extend_from(catalogue, source_tracks, source)
+}
+
+fn extend_from(
+    catalogue: super::QuestStateCatalogue,
+    source_tracks: &BTreeMap<String, String>,
+    source: &NpcRuleCatalog,
+) -> Result<super::QuestStateCatalogue, String> {
     let mut legacy = catalogue.npc_legacy.clone();
     let predecessors = catalogue.predecessors.clone();
     for program in source.programs() {

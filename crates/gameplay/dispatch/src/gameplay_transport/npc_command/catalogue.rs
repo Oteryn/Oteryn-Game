@@ -69,9 +69,10 @@ pub(super) async fn inventory(
         let runtime = admission.runtime.lock().await;
         let npc =
             service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
-        let source = NpcRuleCatalog::runtime()
+        let catalogue = admission.quest_catalogue.as_ref()?;
+        let source = NpcRuleCatalog::for_catalogue(catalogue)
             .ok()?
-            .admitted_for_npc(&npc.key, admission.quest_catalogue.as_ref()?)
+            .admitted_for_npc(&npc.key, catalogue)
             .ok()??;
         if !npc_program::inventory_prefetch_required(&npc.key, &source) {
             return None;
@@ -120,7 +121,11 @@ pub(super) async fn appearance(
         // read-only; prepare rechecks the engaged NPC before using the snapshot.
         let npc =
             service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
-        NpcRuleCatalog::runtime()
+        let source = match admission.quest_catalogue.as_deref() {
+            Some(catalogue) => NpcRuleCatalog::for_catalogue(catalogue),
+            None => NpcRuleCatalog::runtime(),
+        };
+        source
             .ok()?
             .programs()
             .iter()
@@ -190,7 +195,7 @@ pub(super) fn prepare(
         intent,
     )?;
     let catalogue = admission.quest_catalogue.as_ref()?;
-    let source = NpcRuleCatalog::runtime()
+    let source = NpcRuleCatalog::for_catalogue(catalogue)
         .ok()?
         .admitted_for_npc(&context.2, catalogue)
         .ok()??;
@@ -352,6 +357,11 @@ pub(super) fn prepare(
             p.source.quest.as_str(),
             "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
         )
+        // Crystal 201189f8 iskan.lua:119-127. The source can use this
+        // continuation only for the exact Nibelor landing.
+        && !(p.source.quest == "oteryn:quest.the_ice_islands_quest"
+            && request.npc == "oteryn:npc.iskan"
+            && (p.destination.x, p.destination.y, p.destination.floor) == (32325, 31049, -7))
     }) {
         return Some(Step::Refused);
     }

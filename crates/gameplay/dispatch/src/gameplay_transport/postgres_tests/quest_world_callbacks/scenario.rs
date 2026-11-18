@@ -60,6 +60,7 @@ fn scenario_case(
     let ice_chakoya = name == super::super::qcx60_chakoya::NAME;
     let ice_cure = name == super::super::qcx60_carried_tools::CURE_NAME;
     let ice_tools = ice_cure || name == super::super::qcx60_carried_tools::NAME;
+    let ice_iskan = name == super::super::qcx62_iskan::NAME;
     let qready_craft = name == super::super::qready1_crafting::NAME;
     let qready_workbench = super::super::qready1_workbenches::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -353,7 +354,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if ice_iskan {
+        super::super::authored_world_rewards::placeholder(trigger)?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
@@ -934,6 +937,7 @@ fn scenario_case(
     run(async |admin| {
         let h = if ice_chakoya
             || ice_tools
+            || ice_iskan
             || shared_rewards
             || qengine_reward
             || outfit_world
@@ -1702,6 +1706,13 @@ fn scenario_case(
         if ice_tools {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::qcx60_carried_tools::catalogue(&callback, ice_cure)?,
+            ));
+        }
+        if ice_iskan {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::qcx62_iskan::catalogue(
+                    owner.quest_catalogue.as_deref().ok_or("Iskan catalogue")?,
+                )?,
             ));
         }
         if draconia_escape {
@@ -2560,6 +2571,10 @@ fn scenario_case(
         } else if ice_tools {
             Box::pin(super::super::qcx60_carried_tools::exercise(
                 &mut owner, &mut admitted, &h, ice_cure,
+            )).await?;
+        } else if ice_iskan {
+            Box::pin(super::super::qcx62_iskan::exercise(
+                &mut owner, &mut admitted, &h, &authority,
             )).await?;
         } else if name == "engitem-native-seal-paint" {
             Box::pin(super::super::engitem_seal_paint::exercise(

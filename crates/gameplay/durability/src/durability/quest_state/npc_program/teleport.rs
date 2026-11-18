@@ -62,10 +62,10 @@ impl DurabilityRoot {
             permit,
             fence,
             request,
-            catalogue,
+            Arc::clone(&catalogue),
             items,
             premium,
-            NpcRuleCatalog::runtime().map_err(|_| CharacterProgressionError::InvalidInput)?,
+            NpcRuleCatalog::for_catalogue(&catalogue).map_err(|_| CharacterProgressionError::InvalidInput)?,
             Some(admission),
         )
         .await
@@ -82,7 +82,7 @@ pub fn preview_teleport(
     Option<NpcTeleportPlan>,
     oteryn_gameplay_quests::quest::npc_rules::NpcRuleError,
 > {
-    let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
+    let Some(source) = NpcRuleCatalog::for_catalogue(catalogue)?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
     evaluate(
