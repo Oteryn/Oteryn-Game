@@ -960,7 +960,15 @@ fn house_list_window_uses_selected_house_name() -> TestResult {
     model.index = 1;
     let mut queue = bevy::ecs::world::CommandQueue::default();
     let mut commands = Commands::new(&mut queue, app.world());
-    super::super::houses::build(&mut commands, &skin, 1, &Default::default(), &model, "");
+    super::super::houses::build(
+        &mut commands,
+        &skin,
+        1,
+        &Default::default(),
+        [None; 7],
+        &model,
+        "",
+    );
     queue.apply(app.world_mut());
     let world = app.world_mut();
     assert!(

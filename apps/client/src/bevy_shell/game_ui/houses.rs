@@ -91,7 +91,7 @@ fn project(
     skin: Res<Skins>,
     mut state: ResMut<HouseWindow>,
     mut focus: ResMut<InputFocus>,
-    fields: Query<(&Field, &EditableText)>,
+    fields: Query<(Entity, &Field)>,
 ) {
     if state.generation != Some(owner.generation()) || owner.play.is_none() {
         state.open = false;
@@ -116,7 +116,6 @@ fn project(
     {
         return;
     }
-    let rebuilding = state.root.is_some();
     let same_house = projected.as_ref().is_some_and(|panel| {
         state.activity_revision == panel.activity_revision
             && state.model.as_ref().is_some_and(|old| {
@@ -141,15 +140,19 @@ fn project(
                 && panel.fields[index] == state.fields[index]
         })
     };
-    if fields.iter().any(|(field, text)| {
-        retain(field.0) && (text.pending_paste.is_some() || !text.pending_edits.is_empty())
-    }) {
-        return;
+    let mut retained = [None; 7];
+    for (entity, field) in &fields {
+        if retain(field.0) {
+            retained[field.0] = Some(entity);
+            commands.entity(entity).remove::<ChildOf>();
+        }
     }
-    let retained: [bool; 7] = std::array::from_fn(retain);
     state.redraw = false;
     if let Some(root) = state.root.take() {
-        if focus.get().is_some_and(|entity| fields.contains(entity)) {
+        if focus
+            .get()
+            .is_some_and(|entity| fields.contains(entity) && !retained.contains(&Some(entity)))
+        {
             focus.clear();
         }
         commands.entity(root).despawn();
@@ -181,19 +184,12 @@ fn project(
     message.push_str(&state.feedback);
     state.activity_revision = panel.activity_revision;
     state.ownership = ownership;
-    let mut editors = panel.fields.clone();
-    if rebuilding {
-        for (field, text) in &fields {
-            if retained[field.0] {
-                editors[field.0] = text.value().to_string();
-            }
-        }
-    }
     let root = build(
         &mut commands,
         &skin,
         owner.generation(),
-        &editors,
+        &panel.fields,
+        retained,
         &panel.model,
         &message,
     );
@@ -368,6 +364,7 @@ pub(super) fn build(
     skin: &Skins,
     generation: u64,
     fields: &[String; 7],
+    retained: [Option<Entity>; 7],
     model: &Panel,
     message: &str,
 ) -> Entity {
@@ -459,6 +456,10 @@ pub(super) fn build(
                 content,
                 "Names cannot be resolved by this server for access lists; an empty list removes all members. For transfers, enter the recipient character name here.",
             );
+        }
+        if let Some(field) = retained[index] {
+            commands.entity(content).add_child(field);
+            continue;
         }
         let mut editable = EditableText::new(&fields[index]);
         editable.allow_newlines = index == 4;
