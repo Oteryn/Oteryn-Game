@@ -439,6 +439,22 @@ pub(super) fn prepare(
             }
         }) {
         Ok(Some(plan)) => plan,
+        Ok(None) | Err(_) if outfit_greeting => {
+            return Some(Step::Reply(Box::new(ReplyStep {
+                lines: Vec::new(),
+                end: true,
+                end_delay_ms: 0,
+                previous,
+                next: Conversation {
+                    context,
+                    actor,
+                    npc: intent.npc_actor,
+                    npc_actor: admission.states.chat.engaged(command.game_session_id)?,
+                    topic: 0,
+                },
+                supersedes_topic: true,
+            })));
+        }
         Ok(None) => {
             if greeting {
                 state.catalogue = None;
