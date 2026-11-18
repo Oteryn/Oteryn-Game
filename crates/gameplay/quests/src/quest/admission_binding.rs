@@ -128,7 +128,7 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
                 | QuestEffectKind::AddWithBinding { .. }
                 | QuestEffectKind::RaiseToWithBinding { .. }
                 | QuestEffectKind::SetNowWithBinding { .. }
-        ) || (changes(effect.effect) && registry.protected_tracks.contains(&effect.track))
+        ) || registry.protected_tracks.contains(&effect.track)
     }) {
         return Err("unregistered write to bound track".into());
     }
@@ -181,7 +181,7 @@ pub fn validate_for_catalogue(
     if transition
         .effects
         .iter()
-        .any(|effect| changes(effect.effect) && protected.contains(effect.track.as_str()))
+        .any(|effect| protected.contains(effect.track.as_str()))
     {
         return Err("unregistered write to authored bound track".into());
     }
