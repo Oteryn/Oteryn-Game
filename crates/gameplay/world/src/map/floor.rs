@@ -193,10 +193,11 @@ impl FloorTable {
     }
 
     fn doomforge_portal(&self, at: TilePos) -> Option<u8> {
+        if (at.x, at.y, at.floor) != (34041, 32330, -14) {
+            return None;
+        }
         let &(ordinal, appearance) = self.teleport_sources.get(&at)?;
-        (at.x, at.y, at.floor, appearance)
-            .eq(&(34041, 32330, -14, 37000))
-            .then_some(ordinal)
+        (appearance == 37000).then_some(ordinal)
     }
 
     /// How many tiles teleport.
@@ -554,7 +555,7 @@ fn source_appearance(bundle: &super::boot::BundleMap, at: TilePos, ordinal: u8) 
         .map(|facts| facts.appearance_id)
 }
 
-fn cold_doomforge(cells: &NativeEntryMovementCells, cell: Cell) -> bool {
+fn is_doomforge_portal(cells: &NativeEntryMovementCells, cell: Cell) -> bool {
     let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
         return false;
     };
@@ -574,6 +575,7 @@ pub fn is_teleport(cells: &NativeEntryMovementCells, cell: LogicalCell) -> bool 
     let authored =
         pos(cell.x, cell.y, cell.z).is_some_and(|at| current_teleport(cells, at).is_some());
     authored
+        || is_doomforge_portal(cells, (cell.x, cell.y, cell.z))
         || match cells.index() {
             NativeMovementCollisionIndex::Bundle(index) => pos(cell.x, cell.y, cell.z)
                 .is_some_and(|at| index.map().facts.quest_portal_destination(at, 0).is_some()),
@@ -765,7 +767,7 @@ fn destination(
             x: cell.0,
             y: cell.1,
             z: cell.2,
-        }) || (!doomforge_open && cold_doomforge(cells, cell))
+        }) || (!doomforge_open && is_doomforge_portal(cells, cell))
         {
             Ground::Blocked
         } else {
@@ -791,7 +793,7 @@ fn destination(
         },
         |at| {
             if doomforge_open
-                && cold_doomforge(
+                && is_doomforge_portal(
                     cells,
                     (i32::from(at.x), i32::from(at.y), -i32::from(at.floor)),
                 )
