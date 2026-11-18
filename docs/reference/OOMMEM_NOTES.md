@@ -23,8 +23,15 @@ The game-server build peaked in the production dispatch compiler process
 with the test-support feature. The game-server executable is 868,769,624
 bytes. Its link used 239 rlibs (1,953,996,922 bytes) and 263 objects
 (397,694,920 bytes). Dispatch test rustc had 48 direct rlib inputs
-(1,163,839,310 bytes). It never produced a test executable or invoked a
-linker, so its full test list and link input totals remain unavailable.
+(1,163,839,310 bytes). The baseline never produced a test executable or
+invoked a linker. A stable `rustc --test --emit=mir` replay of the same
+verbose command recovered 4,339 unique registered test names and a
+4,339-entry libtest descriptor array. Of those registrations, 2,238
+belong to the generated PG mounts and 2,101 to all other mounts and
+modules. The retained offline-death retry is registered exactly once.
+The MIR inventory gives an exact baseline for comparing names after a
+split. The baseline executable size and final link input totals are
+unavailable.
 
 In the resubmitted baseline, the dispatch test rustc high-water mark was
 15,092,520 KiB (14.39 GiB) before the LLVM coordinator thread appeared.
