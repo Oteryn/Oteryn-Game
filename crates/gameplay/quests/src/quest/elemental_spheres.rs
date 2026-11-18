@@ -10,17 +10,18 @@ pub const QUEST: &str = "oteryn:quest.elemental_spheres_quest";
 pub const MACHINE_GEMS: &str = "oteryn:quest-progress/elemental_spheres/machine_gem_count";
 pub const QUEST_LINE: &str = "oteryn:quest-progress/elemental_spheres/quest_line";
 
-const ENCHANTED_GEMS: [(&str, &str); 4] = [
-    ("druid", "oteryn:item.tibia.i677"),
-    ("knight", "oteryn:item.tibia.i678"),
-    ("paladin", "oteryn:item.tibia.i675"),
-    ("sorcerer", "oteryn:item.tibia.i676"),
+// The base vocation selects both the accepted gem and the entry destination.
+const SPHERES: [(&str, &str, (u16, u16)); 4] = [
+    ("druid", "oteryn:item.tibia.i677", (33331, 32076)),
+    ("knight", "oteryn:item.tibia.i678", (33087, 32096)),
+    ("paladin", "oteryn:item.tibia.i675", (33265, 32202)),
+    ("sorcerer", "oteryn:item.tibia.i676", (33183, 32197)),
 ];
 
 pub fn gem_for_vocation(base: &str) -> Option<&'static str> {
-    ENCHANTED_GEMS
+    SPHERES
         .iter()
-        .find_map(|(vocation, gem)| (*vocation == base).then_some(*gem))
+        .find_map(|(vocation, gem, _)| (*vocation == base).then_some(*gem))
 }
 
 #[derive(Clone, Copy)]
@@ -154,15 +155,10 @@ pub(super) fn retain_machine_predecessor(catalogue: &mut super::QuestStateCatalo
         });
 }
 
-pub fn sphere_destination(base_vocation: &str) -> Option<Position> {
-    let (x, y) = match base_vocation {
-        "druid" => (33331, 32076),
-        "knight" => (33087, 32096),
-        "paladin" => (33265, 32202),
-        "sorcerer" => (33183, 32197),
-        _ => return None,
-    };
-    Some(Position { x, y, floor: -13 })
+pub fn sphere_destination(base: &str) -> Option<Position> {
+    SPHERES.iter().find_map(|&(vocation, _, (x, y))| {
+        (vocation == base).then_some(Position { x, y, floor: -13 })
+    })
 }
 
 pub(super) fn machine_callbacks() -> Result<Vec<Callback>, String> {
@@ -199,8 +195,8 @@ pub(super) fn machine_callbacks() -> Result<Vec<Callback>, String> {
         })).map_err(|error| error.to_string())
     });
     let deposits = GEM_USES.into_iter().map(|(key, position, appearance)| {
-        let [(_, item), rest @ ..] = ENCHANTED_GEMS;
-        let alternatives = rest.map(|(_, gem)| gem);
+        let [(_, item, _), rest @ ..] = SPHERES;
+        let alternatives = rest.map(|(_, gem, _)| gem);
         serde_json::from_value(serde_json::json!({
             "key": key,
             "quest": QUEST,
@@ -495,6 +491,25 @@ pub fn plan_arrival(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn elemental_spheres_machine_pairs_each_vocation_gem_with_its_destination() {
+        // Crystal actions_machine1.lua:1-6 and enchanting.lua:6-11.
+        for (vocation, gem, x, y) in [
+            ("druid", "oteryn:item.tibia.i677", 33331, 32076),
+            ("knight", "oteryn:item.tibia.i678", 33087, 32096),
+            ("paladin", "oteryn:item.tibia.i675", 33265, 32202),
+            ("sorcerer", "oteryn:item.tibia.i676", 33183, 32197),
+        ] {
+            assert_eq!(gem_for_vocation(vocation), Some(gem));
+            assert_eq!(
+                sphere_destination(vocation),
+                Some(Position { x, y, floor: -13 })
+            );
+        }
+        assert_eq!(gem_for_vocation("monk"), None);
+        assert_eq!(sphere_destination("monk"), None);
+    }
 
     #[test]
     fn elemental_spheres_machine_routes_use_the_same_durable_counter() -> Result<(), String> {
