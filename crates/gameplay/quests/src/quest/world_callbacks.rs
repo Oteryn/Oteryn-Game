@@ -565,6 +565,13 @@ impl Callback {
             .any(|state| !state.preserve && !state.read_only)
             || self.operations().any(state_operations::mutates)
     }
+    /// Crystal 6-mind-travel.lua:124-138 debits an item without changing quest progress.
+    fn preserves_progress_on_item_debit(&self) -> bool {
+        self.effects.random_step_item
+            && self.operation_count() == 0
+            && !self.storage.is_empty()
+            && self.storage.iter().all(|state| state.preserve)
+    }
     /// Each accepted use has its own ordinary MINT occurrence, guarded by an
     /// elapsed-time predicate and timestamp write in that same transaction.
     pub fn has_repeating_clock(&self) -> bool {
@@ -1051,7 +1058,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
-                && (!callback.has_state_writes()
+                && (!(callback.has_state_writes() || callback.preserves_progress_on_item_debit())
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use
@@ -1581,7 +1588,11 @@ fn extend_callbacks(
 /// Exact canonical state operation used by both lowering and the mutation boundary.
 pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
-    let bound_index = callback.storage.iter().position(|state| !state.preserve);
+    let bound_index = callback
+        .storage
+        .iter()
+        .position(|state| !state.preserve)
+        .or_else(|| callback.preserves_progress_on_item_debit().then_some(0));
     let mut effects: Vec<_> = callback
         .storage
         .iter()
@@ -1596,7 +1607,10 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
                     value: state.set,
                 },
                 None if state.add.is_some() => QuestEffectKind::Add(state.add.unwrap_or(0)),
-                None if state.preserve => QuestEffectKind::Add(0),
+                None if state.preserve => match binding.filter(|_| Some(index) == bound_index) {
+                    Some(binding) => QuestEffectKind::AddWithBinding { delta: 0, binding },
+                    None => QuestEffectKind::Add(0),
+                },
                 None if state.at_least => match binding.filter(|_| Some(index) == bound_index) {
                     Some(binding) => QuestEffectKind::RaiseToWithBinding {
                         value: state.set,

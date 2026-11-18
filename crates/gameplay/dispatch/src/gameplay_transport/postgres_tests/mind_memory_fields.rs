@@ -15,9 +15,11 @@ use std::sync::Arc;
 
 const QUEST: &str = "oteryn:quest.fixture_kilmaresh_shards";
 const KEY: &str = "oteryn:quest-callback/fixture-kilmaresh/energy-field";
-const TRACK: &str = "oteryn:quest-progress/fixture-kilmaresh/field";
+const TRACK: &str = "oteryn:quest-progress/fixture-kilmaresh/memories";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:117-143";
-const POS: (u16, u16, i8) = (33912, 31653, -9);
+// Crystal startup/tables/item.lua:2382-2391 places action 40004 on energy fields.
+const POS: (u16, u16, i8) = (33906, 31628, -9);
+const FIELD: u16 = 2126;
 const SHARDS: [&str; 3] = [
     "oteryn:item.tibia.i31354",
     "oteryn:item.tibia.i31355",
@@ -25,7 +27,7 @@ const SHARDS: [&str; 3] = [
 ];
 
 #[test]
-fn mind_energy_field_step_removes_exactly_one_owned_shard() -> TestResult {
+fn mind_energy_field_step_removes_one_owned_shard_without_changing_memories() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -37,17 +39,18 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
     let data = json!({"schema":1,"quests":[{
         "quest": QUEST, "sources": [SOURCE],
         "recipe_sha256": Sha256::digest(SOURCE).iter().map(|b| format!("{b:02x}")).collect::<String>(),
-        "tracks": [{"key": TRACK, "initial": -1, "minimum": -1, "maximum": 1}],
+        "tracks": [{"key": TRACK, "initial": 2, "minimum": -1, "maximum": 4}],
         "stages": [{
             "key": "oteryn:quest-stage/fixture-kilmaresh/field", "completes": false,
             "trigger": {"kind": "step_in", "callback": {
                 "key": KEY, "quest": QUEST, "trigger": "step_in",
                 "selector": {"native": {"position": {"x": POS.0, "y": POS.1, "floor": POS.2},
-                                        "ordinal": 1, "appearance": 1948}},
+                                        "ordinal": 1, "appearance": FIELD}},
                 "requires_world_admission": true, "passages": [], "offerings": [],
                 "reversible": false, "return_on_failure": false, "sources": [SOURCE],
                 "effects": {"random_step_item": true},
-                "storage": [{"track": TRACK, "minimum": -1, "maximum": 1, "set": 1}],
+                "storage": [{"track": TRACK, "minimum": -1, "maximum": 4,
+                             "set": 2, "preserve": true}],
                 "item_on_target": {"item": SHARDS[0], "alternatives": &SHARDS[1..],
                                    "count": 1, "on_step": true}
             }}
@@ -72,7 +75,7 @@ async fn exercise(admin: String) -> TestResult {
         "content-1",
     )?;
     let generation = controller.active().ok_or("content generation")?;
-    let world = super::quest_callbacks::source_world(POS, 0, 1948, 0)?;
+    let world = super::quest_callbacks::source_world(POS, 0, FIELD, 0)?;
     let start = MovementLocalPosition {
         x: i32::from(POS.0 - 1),
         y: i32::from(POS.1),
@@ -135,13 +138,19 @@ async fn exercise(admin: String) -> TestResult {
         .await?;
         assert_eq!(remaining, 3 - i64::try_from(command.div_ceil(2).min(3))?);
     }
-    let receipts: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    let (receipts, preserved): (i64, i64) = sqlx::query_as(
+        "SELECT count(*), count(*) FILTER (WHERE values_before = ARRAY[2]::bigint[]
+                                            AND values_after = values_before)
+         FROM game_character_quest_receipts WHERE transition_key=$1",
     )
     .bind(KEY)
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(receipts, 3, "an empty inventory makes no debit");
+    assert_eq!(
+        preserved, receipts,
+        "debit receipts preserve Memories progress"
+    );
     drop(owner);
     drop(authority);
     drop(seal);
