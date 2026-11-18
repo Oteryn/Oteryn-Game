@@ -98,6 +98,14 @@ command confirmed `-C codegen-units=256` and omitted `-C incremental`.
 No linker ran. The package override did not produce a usable binary.
 The clean half-mount link replay used 4,898,860 KiB in 9.891 s.
 
+## One-job trial with 32 codegen units
+
+The package override compiled with `-C codegen-units=32`, keeping line
+tables and incremental compilation. The sampled rustc high-water mark
+was 15,097,208 KiB before the LLVM coordinator appeared, within 4,688 KiB
+of the default two-job build at that point. The nearly identical
+pre-codegen footprint narrows the potential gain to the LLVM phase.
+
 ## Hosted build scope
 
 The PR PostgreSQL archive selects the dispatch, game-server and durability
