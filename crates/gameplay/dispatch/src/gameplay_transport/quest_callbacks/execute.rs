@@ -1308,8 +1308,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
-                    if fresh {
+                    // Draw feedback belongs to the first map publication, which
+                    // may follow recovery of an already-committed shovel debit.
+                    if fresh || callback.effects.tool_use_draw.is_some() {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
+                    }
+                    if fresh {
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.
                         if callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
                             && committed.changes.iter().any(|change|
@@ -1782,12 +1786,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(message) = success_message {
             self.states.chat.push_quest_feedback(session, &message);
         }
-        if fresh_effects
-            && let Some(message) = callback
-                .effects
-                .tool_use_draw
-                .as_ref()
-                .and_then(|draw| draw.follow_up.as_deref())
+        if let Some(message) = callback
+            .effects
+            .tool_use_draw
+            .as_ref()
+            .and_then(|draw| draw.follow_up.as_deref())
         {
             self.states.chat.push_quest_feedback(session, message);
         }

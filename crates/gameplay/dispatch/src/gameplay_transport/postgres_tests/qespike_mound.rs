@@ -9,13 +9,14 @@ use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::Position,
 };
 use oteryn_protocol_oteryn::world_object::{
-    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 use serde_json::json;
 use std::{num::NonZeroU64, sync::Arc, time::Duration};
 
 pub(super) const NAME: &str = "qespike-mound";
 pub(super) const OCCUPIED: &str = "qespike-mound-occupied";
+pub(super) const LOST_ACK: &str = "qespike-mound-lost-ack";
 const QUEST: &str = "oteryn:quest.spike_task";
 const TRACK: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_mound_main";
 const TOOL: &str = "oteryn:item.tibia.i3003";
@@ -45,6 +46,17 @@ fn spike_mound_enraged_soul_roll_still_credits_when_the_spawn_tile_is_occupied()
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(OCCUPIED, || {
         super::quest_world_callbacks::scenario(OCCUPIED, MOUND, false)
+    })
+}
+
+#[test]
+fn spike_mound_reconciliation_publishes_both_winning_messages_once() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(LOST_ACK, || {
+        super::quest_world_callbacks::scenario(LOST_ACK, MOUND, false)
     })
 }
 
@@ -90,10 +102,12 @@ fn bindings() -> TestResult<Bindings> {
 
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
+    admitted: &mut AdmittedSession,
     harness: &Harness,
-    occupied: bool,
+    name: &str,
 ) -> TestResult {
+    let occupied = name == OCCUPIED;
+    let lost_ack = name == LOST_ACK;
     let generation = owner.active_generation.ok_or("active generation")?;
     let native = generation.native_gameplay().ok_or("native")?;
     let seed = generation.identity().server_artifact_digest();
@@ -150,7 +164,7 @@ pub(super) async fn exercise(
             .map(|entry| entry.appearance_id)
     };
     let mut next_command = admitted.continuity.next_command_id;
-    let intervals: &[(u8, u8)] = if occupied {
+    let intervals: &[(u8, u8)] = if occupied || lost_ack {
         &[(90, 100)]
     } else {
         &[(1, 49), (90, 100)]
@@ -181,23 +195,73 @@ pub(super) async fn exercise(
             .await
             .map_err(debug)?
             .ok_or("quest fence")?;
-        let result = owner
-            .tame_mount_impl(
-                actor,
-                UseCommand {
-                    game_session_id: session,
-                    command_id,
-                    item_fence: Some(fence.item_fence()),
-                },
-                intent,
-                Some(ItemKey::Instance(id(71))),
-                None,
-                true,
-            )
-            .await
-            .map_err(debug)?
-            .ok_or("map tool USE")?;
-        assert_eq!(result.disposition, UseDisposition::Committed);
+        if lost_ack {
+            let tool = native
+                .item_index()
+                .and_then(|index| index.definition_ref("Item", TOOL, "definition-r1"))
+                .ok_or("shovel fixture item")?;
+            for skipped in admitted.continuity.next_command_id..command_id {
+                super::quest_world_callbacks::wire(owner, admitted, skipped, 999, Vec::new())
+                    .await?;
+            }
+            assert_eq!(admitted.continuity.next_command_id, command_id);
+            let payload = encode_item_use_intent(&intent).map_err(debug)?;
+            owner
+                .states
+                .quest_callbacks
+                .interrupt_after_commit
+                .store(true, std::sync::atomic::Ordering::Release);
+            assert!(
+                super::item_craft::exchange(owner, *admitted, command_id, &payload, Some(tool))
+                    .await
+                    .is_err()
+            );
+            assert!(owner.has_pending_quest_callback(session));
+            assert_eq!(appearance(owner), Some(19211));
+            owner
+                .states
+                .chat
+                .admit(session, "Hunter", owner.owner_now());
+            assert!(owner.reconcile_quest_callbacks(session).await);
+            assert!(!owner.has_pending_quest_callback(session));
+            let messages: Vec<_> = owner
+                .states
+                .chat
+                .drain(session)
+                .into_iter()
+                .filter_map(|line| match line {
+                    oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } => Some(text),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                messages,
+                [
+                    "You unearthed a spirit's anger!!!",
+                    "Report the task to Gnomilly."
+                ]
+            );
+            assert!(owner.reconcile_quest_callbacks(session).await);
+            assert!(owner.states.chat.drain(session).is_empty());
+        } else {
+            let result = owner
+                .tame_mount_impl(
+                    actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id,
+                        item_fence: Some(fence.item_fence()),
+                    },
+                    intent,
+                    Some(ItemKey::Instance(id(71))),
+                    None,
+                    true,
+                )
+                .await
+                .map_err(debug)?
+                .ok_or("map tool USE")?;
+            assert_eq!(result.disposition, UseDisposition::Committed);
+        }
         assert_eq!(appearance(owner), Some(19212));
         let progress: i64 = sqlx::query_scalar(
             "SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),0)",

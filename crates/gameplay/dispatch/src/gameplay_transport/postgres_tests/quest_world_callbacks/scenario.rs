@@ -55,7 +55,9 @@ fn scenario_case(
     let machine_deposit = name.starts_with(super::super::qespike_machine_deposit::PREFIX);
     let mound = matches!(
         name,
-        super::super::qespike_mound::NAME | super::super::qespike_mound::OCCUPIED
+        super::super::qespike_mound::LOST_ACK
+            | super::super::qespike_mound::NAME
+            | super::super::qespike_mound::OCCUPIED
     );
     let sphere_machine = matches!(
         name,
@@ -2497,9 +2499,9 @@ fn scenario_case(
         } else if mound {
             Box::pin(super::super::qespike_mound::exercise(
                 &mut owner,
-                &admitted,
+                &mut admitted,
                 &h,
-                name == super::super::qespike_mound::OCCUPIED,
+                name,
             ))
             .await?;
         } else if matches!(
