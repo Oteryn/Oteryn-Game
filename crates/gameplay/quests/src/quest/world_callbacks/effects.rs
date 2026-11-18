@@ -98,6 +98,9 @@ pub struct CallbackEffects {
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
+    /// A retained-tool route can acknowledge a refused quest predicate at its target.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refused_tool_effect: Option<u16>,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -392,6 +395,14 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 }
 
 pub(super) fn valid(callback: &Callback) -> bool {
+    if callback
+        .effects
+        .refused_tool_effect
+        .is_some_and(|effect| !(1..=255).contains(&effect) || !callback.is_retained_tool_route())
+    {
+        return false;
+    }
+
     let effects = &callback.effects;
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();

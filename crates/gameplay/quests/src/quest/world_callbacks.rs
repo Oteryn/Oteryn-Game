@@ -628,6 +628,22 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 }
 
 impl Callback {
+    /// A carried tool activates an exact target and remains in the same custody.
+    /// Crystal register_actions.lua:1035-1067 uses this shape for the Library scythe.
+    pub fn is_retained_tool_route(&self) -> bool {
+        self.trigger == Trigger::Use
+            && self.teleport.is_some()
+            && self.requires_world_admission
+            && (self.selector.native.is_some()
+                || (self.selector.position.is_some() && self.selector.ordinal.is_some()))
+            && self.item_on_target.as_ref().is_some_and(|tool| {
+                tool.reusable
+                    && tool.selected_instance
+                    && tool.target_replacement.is_none()
+                    && !tool.target_remove
+            })
+    }
+
     /// A fenced single-player STEP may stage inside its own bounded room.
     /// Runtime admission still rejects every other player in that room.
     #[must_use]

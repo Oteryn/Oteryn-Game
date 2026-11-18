@@ -18,7 +18,8 @@ const DRAW: [&str; 3] = [
     "oteryn:quest-progress/fixture-yalahar/draw-two",
     "oteryn:quest-progress/fixture-yalahar/draw-three",
 ];
-const TELAS: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:94-105,385-399";
+const TELAS: &str =
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:94-105,385-399";
 const GOLEM: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/golem_servant.lua:84-108,203-208,238-240";
 const PART_LINES: [&str; 12] = [
     "Essential component: bag of screws is missing!",
@@ -81,9 +82,14 @@ fn binding(npc: &str, repair: bool) -> TestResult<QuestStateCatalogue> {
                 }}
             })
         }).collect();
-    let tracks: Vec<_> = std::iter::once(json!({"key": STAGE, "initial": 0, "minimum": 0, "maximum": 2}))
-        .chain(keys.iter().map(|track| json!({"key": track, "initial": -1, "minimum": -1, "maximum": sides})))
-        .collect();
+    let tracks: Vec<_> =
+        std::iter::once(json!({"key": STAGE, "initial": 0, "minimum": 0, "maximum": 2}))
+            .chain(
+                keys.iter().map(
+                    |track| json!({"key": track, "initial": -1, "minimum": -1, "maximum": sides}),
+                ),
+            )
+            .collect();
     let binding = json!({"schema": 1, "quests": [{
         "quest": QUEST, "recipe_sha256": format!("{:x}", Sha256::digest(source)),
         "sources": [source], "tracks": tracks, "stages": stages
@@ -93,19 +99,35 @@ fn binding(npc: &str, repair: bool) -> TestResult<QuestStateCatalogue> {
 }
 
 async fn exercise(admin: &str, repair: bool) -> TestResult {
-    let h = Harness::create_with_admission_seed(admin, "yalahar_dialogue_draws", true, false).await?;
+    let h =
+        Harness::create_with_admission_seed(admin, "yalahar_dialogue_draws", true, false).await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
-        WorldId::decode(&id(42)).map_err(debug)?, "content-1",
+        WorldId::decode(&id(42)).map_err(debug)?,
+        "content-1",
     )?;
     let room = pin.qualified_room().clone();
     let deps = Dependencies::with_content(
-        pin.into_channel_pin(), room, crate::spell::cast::v1_spell_book().map_err(debug)?,
+        pin.into_channel_pin(),
+        room,
+        crate::spell::cast::v1_spell_book().map_err(debug)?,
     )?;
-    deps.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
-    let npc_key = if repair { "oteryn:npc.golem_servant" } else { "oteryn:npc.telas" };
+    deps.runtime
+        .lock()
+        .await
+        .initialize_first_entry_position(deps.actor)
+        .map_err(debug)?;
+    let npc_key = if repair {
+        "oteryn:npc.golem_servant"
+    } else {
+        "oteryn:npc.telas"
+    };
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = controller.active();
     owner.quest_catalogue = Some(Arc::new(binding(npc_key, repair)?));
@@ -114,24 +136,44 @@ async fn exercise(admin: &str, repair: bool) -> TestResult {
     deps.initialize(&owner).await;
     owner.admit_quest_session(&admitted).await;
     let [npc] = install(&owner, &admitted, [npc_key]).await?;
-    let fence = owner.current_quest_fence(admitted.game_session_id).await
-        .map_err(|()| "quest fence")?.ok_or("quest session")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest session")?;
     talk(&mut owner, &admitted, npc, 1, "hi").await?;
-    let lines = talk(&mut owner, &admitted, npc, 2, if repair { "yes" } else { "mission" }).await?;
-    let state = h.root.read_character_quest_state(&authority, fence.character_id).await.map_err(debug)?;
+    let lines = talk(
+        &mut owner,
+        &admitted,
+        npc,
+        2,
+        if repair { "yes" } else { "mission" },
+    )
+    .await?;
+    let state = h
+        .root
+        .read_character_quest_state(&authority, fence.character_id)
+        .await
+        .map_err(debug)?;
     assert_eq!(state.tracks().get(STAGE), Some(&1));
     let first = *state.tracks().get(DRAW[0]).ok_or("first draw")?;
     if repair {
         assert!((1..=12).contains(&first));
         assert_eq!(lines, [PART_LINES[usize::try_from(first - 1)?]]);
         let lines = talk(&mut owner, &admitted, npc, 3, "yes").await?;
-        let state = h.root.read_character_quest_state(&authority, fence.character_id).await.map_err(debug)?;
+        let state = h
+            .root
+            .read_character_quest_state(&authority, fence.character_id)
+            .await
+            .map_err(debug)?;
         assert_eq!(state.tracks().get(STAGE), Some(&2));
         let next = *state.tracks().get(DRAW[0]).ok_or("next part")?;
         assert!((1..=12).contains(&next));
         assert_eq!(lines, [PART_LINES[usize::try_from(next - 1)?]]);
     } else {
-        let chosen = DRAW.iter().map(|key| state.tracks().get(*key).copied().ok_or("ingredient draw"))
+        let chosen = DRAW
+            .iter()
+            .map(|key| state.tracks().get(*key).copied().ok_or("ingredient draw"))
             .collect::<Result<BTreeSet<_>, _>>()?;
         assert_eq!(chosen.len(), 3);
         assert!(chosen.iter().all(|index| (1..=6).contains(index)));

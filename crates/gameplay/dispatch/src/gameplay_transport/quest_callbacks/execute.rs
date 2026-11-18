@@ -1059,6 +1059,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let (context, selected_tool) = context;
+            let selected_tool_used = selected_tool.is_some();
             let context = if let Some((source, intent)) = selected_tool {
                 let Some(context) = context.with_selected_tool(source, intent) else {
                     return UseDisposition::Rejected;
@@ -1266,6 +1267,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
+                }
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
+                    if callback.effects.refused_tool_effect.is_some() && selected_tool_used =>
+                {
+                    if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                        pending.remove(&session);
+                    }
+                    if let Some(effect) = callback.effects.refused_tool_effect {
+                        map.facts.emit_movement_effect(pos, effect);
+                    }
+                    return UseDisposition::Rejected;
                 }
                 Ok(_) | Err(_) => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
