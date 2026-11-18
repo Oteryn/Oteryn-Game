@@ -899,11 +899,29 @@ async fn stations_scenario(
     let map = owner.bundle_map().ok_or("station map")?;
     let hatch_key = oteryn_world_bundle::bundle::placement_key(HATCH.floor, HATCH.x, HATCH.y, 1)
         .ok_or("station hatch key")?;
+    let hatch_tile = crate::map::overlay::TilePos {
+        x: HATCH.x,
+        y: HATCH.y,
+        floor: HATCH.floor,
+    };
+    let hatch_palette = *map
+        .overlay
+        .base()
+        .tile(HATCH.x, HATCH.y, HATCH.floor)
+        .and_then(|tile| tile.ids().get(1))
+        .ok_or("station hatch placement")?;
+    let hatch_appearance = || {
+        map.facts
+            .base_entry(hatch_tile, 1, hatch_palette)
+            .map(|facts| facts.appearance_id)
+    };
     assert_eq!(map.facts.object_revision(hatch_key), 0);
+    assert_eq!(hatch_appearance(), Some(1897));
     guarded_wave_step(owner, admitted).await?;
     assert_eq!(position(owner, player).await?, local(TRIGGER));
     assert_eq!(position(owner, peer_actor).await?, local(PEER_START));
     assert_eq!(map.facts.object_revision(hatch_key), 1);
+    assert_eq!(hatch_appearance(), Some(1977));
     let close_at = map.facts.next_movement_decay_time().ok_or("station hatch timer")?;
     assert_eq!(map.facts.expire_movement_items(close_at - 1), 0);
     assert_eq!(map.facts.object_revision(hatch_key), 1);
@@ -916,7 +934,14 @@ async fn stations_scenario(
 
     // Crystal movements_click.lua:106-125 opens a separate route. Move one
     // station member into the room through the normal movement owner.
-    let clock = owner.freeze_owner_clock_for_test();
+    let _clock = owner.freeze_owner_clock_for_test();
+    let (release, released) = std::sync::mpsc::channel::<()>();
+    let (ready, started) = tokio::sync::oneshot::channel();
+    let blocking = tokio::task::spawn_blocking(move || {
+        let _ = ready.send(());
+        let _ = released.recv_timeout(Duration::from_secs(45));
+    });
+    started.await?;
     for expected in [row(1), LANDING] {
         owner.states.test_owner_time.store(
             owner.owner_now().get() + 1_000_001,
@@ -926,10 +951,12 @@ async fn stations_scenario(
         assert_eq!(step.disposition, StepDisposition::Moved);
         assert_eq!(position(owner, player).await?, local(expected));
     }
-    drop(clock);
+    drop(release);
+    blocking.await?;
     advance(owner, 2_000).await;
     assert_eq!(map.facts.expire_movement_items(close_at), 1);
     assert_eq!(map.facts.object_revision(hatch_key), 2);
+    assert_eq!(hatch_appearance(), Some(1897));
     advance(owner, 6_999).await;
     assert_eq!(position(owner, player).await?, local(LANDING));
     advance(owner, 1).await;
