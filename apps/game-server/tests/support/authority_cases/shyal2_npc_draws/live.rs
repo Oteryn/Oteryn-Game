@@ -240,9 +240,10 @@ async fn exercise(
             &model,
             &[program.npc],
         )));
-    owner.states.chat.admit(
+    owner.states.chat.admit_as(
         session,
         "Ritual witness",
+        Some(id(fixture::CHARACTER)),
         SemanticTimeMicros::from_micros(0),
     );
     owner.states.chat.set_npc_service(session);
