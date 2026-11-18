@@ -186,6 +186,7 @@ impl Registry {
                         &entry.creature,
                         &phase.credits,
                         &entry.damage_shares,
+                        matches!(phase.fight, Fight::Arbaziloth(_)).then_some(entry.facts.death),
                     ),
                 )
             });

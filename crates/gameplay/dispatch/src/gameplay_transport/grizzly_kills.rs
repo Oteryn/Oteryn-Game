@@ -801,6 +801,7 @@ pub(super) fn freeze_encounter_credit(
     creature: &str,
     admitted: &[EncounterCredit],
     shares: &[crate::foundation::RewardDamageShare],
+    hard_death: Option<crate::foundation::CreatureDeathOccurrenceKey>,
 ) -> Vec<super::quest_kills::Recipient> {
     let mut recipients = Vec::new();
     for participant in admitted {
@@ -818,6 +819,46 @@ pub(super) fn freeze_encounter_credit(
                         && lease.generation() == participant.lease_generation
                 })
         {
+            continue;
+        }
+        if let Some(death) = hard_death {
+            use crate::durability::quest_state::{
+                native_kills::{NativeDeathSource, NativeQuestDeath},
+                source_deaths::SourceDeathContext,
+            };
+            let Ok(position) = runtime.read_actor_position(participant.actor) else {
+                continue;
+            };
+            let at = position.position();
+            for transition in
+                oteryn_gameplay_quests::quest::source_deaths::arbaziloth_hard_transitions()
+            {
+                recipients.push(super::quest_kills::Recipient {
+                    actor: participant.actor,
+                    session: participant.session,
+                    character: participant.character,
+                    lease_generation: participant.lease_generation,
+                    death: NativeQuestDeath {
+                        transition: transition.into(),
+                        definition_hash: None,
+                        creature: creature.into(),
+                        observed_revision: participant.observed_revision,
+                        source: NativeDeathSource::ArbazilothHard {
+                            death,
+                            source: SourceDeathContext {
+                                scope: death.runtime_scope(),
+                                scope_generation: death.scope_ownership_generation().get(),
+                                character: participant.character,
+                                session: participant.session,
+                                lease_generation: participant.lease_generation,
+                                position: [at.x, at.y, -i32::from(at.floor)],
+                                dealt_damage: true,
+                                top_damage_character: None,
+                            },
+                        },
+                    },
+                });
+            }
             continue;
         }
         // This is the participant's actual World-owned party snapshot. It neither
@@ -981,6 +1022,7 @@ mod encounter_credit_tests {
             "oteryn:creature.essence_of_malice",
             &credits[..2],
             &shares,
+            None,
         );
         assert_eq!(result.len(), 2);
         assert!(
@@ -995,6 +1037,7 @@ mod encounter_credit_tests {
             "oteryn:creature.essence_of_malice",
             &credits[..2],
             &shares,
+            None,
         );
         assert_eq!(
             result.len(),
