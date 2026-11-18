@@ -13,6 +13,34 @@ import world_region_codec as codec
 
 
 class QuestChestBindings(unittest.TestCase):
+    def test_dreamer_and_foolish_startup_uids_are_on_the_shipped_tiles(self):
+        expected = {
+            (32850, 32285, 14): (2472, 6196),
+            (32749, 32341, 14): (2469, 6197),
+            (32751, 32341, 14): (2469, 6198),
+            (32753, 32341, 14): (2469, 6199),
+            (32755, 32341, 14): (2469, 6200),
+            (32563, 32115, 4): (2469, 6259),
+            (32661, 31855, 13): (2472, 6269),
+        }
+        rows, _ = chests.selections()
+        selected = {
+            pos: row for pos, row in rows["unique"].items()
+            if 6195 <= row["unique"] <= 6201 or row["unique"] in (6259, 6269)
+        }
+        self.assertEqual(
+            {pos: (row["appearance"], row["unique"]) for pos, row in selected.items()},
+            expected,
+        )
+        palette = json.loads((chests.ROOT / chests.INDEX).read_bytes())["palette"]
+        for (x, y, z), row in selected.items():
+            with self.subTest(uid=row["unique"]):
+                path = chests.ROOT / "content/world/placements" / codec.region_name(z, x // 256, y // 256)
+                raw = path.read_bytes()
+                generated, found, added = chests.overlay_region(raw, palette, {(x, y, z): row}, "unique")
+                self.assertEqual((found, added), (1, 0))
+                self.assertEqual(generated, raw)
+
     def test_current_committed_corpus_captures_exact_elvenbane_startup_uids(self):
         from pathlib import Path
 

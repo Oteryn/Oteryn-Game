@@ -22,6 +22,15 @@ fn questpc8_secret_library_raft_research_fiddle_gail_oberon_and_access() -> Test
         return Ok(());
     }
     let started = std::time::Instant::now();
+    run_library_journey()?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED questpc8_secret_library_raft_research_fiddle_gail_oberon_and_access duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+pub(super) fn run_library_journey() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("questpc8-secret-library", || {
         quest_world_callbacks::scenario(
             "authored-secret-library",
@@ -32,12 +41,7 @@ fn questpc8_secret_library_raft_research_fiddle_gail_oberon_and_access() -> Test
             },
             false,
         )
-    })?;
-    eprintln!(
-        "POSTGRES_CASE_COMPLETED questpc8_secret_library_raft_research_fiddle_gail_oberon_and_access duration={:?}",
-        started.elapsed()
-    );
-    Ok(())
+    })
 }
 
 pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
@@ -176,7 +180,9 @@ pub(super) async fn exercise(
         "instrument alone does not grant library access"
     );
     travel(owner, admitted, 32621, 32737, 6).await?;
-    say(owner, admitted, gail, &mut command, &["hi", "daughter"]).await?;
+    refresh(owner, admitted).await;
+    super::qcx_the_secret_library::assert_gail_reply(owner, admitted, gail, command).await?;
+    command += 2;
     assert_eq!(progress(h, "stage").await?, 7);
     travel(owner, admitted, 32671, 32736, 11).await?;
     step(owner, admitted, command, StepDirection::East).await?;

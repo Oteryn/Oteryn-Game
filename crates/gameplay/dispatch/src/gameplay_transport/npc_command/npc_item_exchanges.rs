@@ -172,9 +172,15 @@ pub(super) async fn talk(
         return Some(ordinary);
     }
     let Some(recipe) = recipe else {
-        return Some(oriental_trader::open_alias(
-            admission, actor, command, intent, &runtime, ordinary,
-        ));
+        let outcome =
+            oriental_trader::open_alias(admission, actor, command, intent, &runtime, ordinary);
+        let opened = oriental_trader::opened_source(&runtime, intent, &outcome);
+        drop(runtime);
+        if let Some(source) = opened {
+            // A failed grant keeps the open window; see `grant_on_open`.
+            let _granted = oriental_trader::grant_on_open(admission, command, source).await;
+        }
+        return Some(outcome);
     };
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,

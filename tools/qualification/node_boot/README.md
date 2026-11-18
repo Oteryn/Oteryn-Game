@@ -1,17 +1,39 @@
 # Node qualification with the pinned World and spell content
 
-The default `run.sh` first preserves the native entry room's existing SEAM stages
-in a disposable baseline pass, then creates a fresh topology with real World
-regions `(126,125)`, `(126,126)` and `(127,127)`, on every authored floor, and
-`content/spells.manifest.json` content. `compile-regions` uses the production
-compiler and its equivalence proof; the generated qualification digest is passed
-to the production loader. The committed full-world pin is unchanged. The third
-region retains the default start for ordinary home respawns. The full-world smoke
-measured 176 seconds in the production loader before selecting this subset.
-It uses the shipped `serve` command's `[world_bundle]` composition and sets the
-Channel's existing first-entry start to Thais temple `(32369, 32238, -7)`. The pin
-remains preproduction; this runner does not enable production Worlds. Each pass
-creates and cleans up its own Platform/PostgreSQL/node topology.
+The default `run.sh` first runs the native entry room's SEAM stages in a
+disposable baseline pass. Then it runs the World qualification with
+`content/spells.manifest.json` and three regions on every authored floor.
+Regions `(126,125)` and `(126,126)` cover Thais and its outskirts, and
+`(127,127)` retains the default start for ordinary home respawns.
+
+For quest walk-in qualification that needs the other regions, set
+`NODE_BOOT_WORLD_PROFILE=quests` and select the relevant scenarios with the
+existing row or group selectors. The default `town` profile serves the ordinary
+node-boot shards. The 20-region bundle has 29,367 compiled spawn points versus
+4,063 in `town`, increasing the work in actor censuses shared by gameplay and
+admission. The `quests` profile adds the following regions.
+
+| Region | Coverage |
+| --- | --- |
+| `(125,121)` | Barbarian Test and Arena |
+| `(126,124)` | Paradox Tower |
+| `(126,127)` | Extends the Bounac, crypt and Ada boat coverage in `(126,126)` |
+| `(127,123)` | Koshei assembly |
+| `(127,125)` | Feaster entry |
+| `(127,126)`, `(128,125)` | Dreamer's Challenge levers and carrot destination |
+| `(128,122)` | Blood Brothers mirrors and boss landing |
+| `(128,126)`, `(129,126)` | Drefia brain cells |
+| `(128,128)` | The Many portal and room for Killing in the Name of |
+| `(129,123)`, `(129,124)` | Edron quest chests with uniques 6028, 6032 and 6033 |
+| `(129,126)`, `(129,127)`, `(130,126)` | Koshei coffin, boss, rewards and parts |
+| `(132,125)` | Isle of Ada landing and death binding |
+| `(133,123)`, `(133,124)`, `(128,126)` | Rotten Blood Blood Vestibule walk-in (landing `(34101,31679,-13)` is in `(133,123)`) |
+
+Both profiles use the production compiler's `compile-regions` equivalence
+proof and pass the generated qualification digest to the shipped `serve`
+command's `[world_bundle]` loader. First entry starts at Thais temple
+`(32369, 32238, -7)`. Each pass creates and cleans up its own preproduction
+Platform, PostgreSQL and node topology.
 
 W20a/W20b use an explicitly disposable `qualification-clock` build by default.
 The World UTC clock and dispatch's monotonic owner clock share an atomic file

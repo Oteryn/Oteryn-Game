@@ -8,7 +8,7 @@ Why rounds shrink: one reviewer with one prompt stops after its first strong
 findings, and a line cap cuts the rest. Each fix also adds new code that the
 next round reviews. The rules below remove those causes. They do not change
 the limits in §5: at most 2 reviews per PR, the review never edits code, and
-the fix runs at effort `medium`.
+the fix runs at effort `high`.
 
 ## 1. One round = several lens runs over the same head
 
@@ -34,7 +34,7 @@ Choose lenses by diff size and by what the diff touches:
   gets the lenses that fit it. Every chunk still gets the whole diff as
   read-only context, so cross-file defects are not lost.
 
-Each lens is one Codex Cloud task (read-only, model `gpt-6.2-sol`, reasoning
+Each lens is one Codex Cloud task (read-only, model `gpt-6.2-astra`, reasoning
 effort `high`), never `codex exec` on the PC. Name the task
 `review-<tag>-<lens>`.
 

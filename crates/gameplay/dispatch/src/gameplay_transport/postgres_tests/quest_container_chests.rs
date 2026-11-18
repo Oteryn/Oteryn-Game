@@ -311,7 +311,16 @@ fn scenario_case(
         };
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
+        let shipped_world = catalogue
+            .map(|chest| {
+                super::quest_catalogue_chests::dreamer_or_foolish_source_world(chest, native)
+            })
+            .transpose()?
+            .flatten();
+        let ordinal = shipped_world.as_ref().map_or(1, |(_, ordinal)| *ordinal);
+        let world = if let Some((world, _)) = shipped_world {
+            world
+        } else if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
             super::quest_callbacks::source_world_choices_with_door(
                 chest,
                 captured_choices.as_deref().unwrap_or(&[
@@ -511,7 +520,7 @@ fn scenario_case(
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         let target_at = |x| -> TestResult<WorldObjectTarget> {
-            let key = oteryn_world_bundle::bundle::placement_key(chest.2, x, chest.1, 1)
+            let key = oteryn_world_bundle::bundle::placement_key(chest.2, x, chest.1, ordinal)
                 .ok_or("placement")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());

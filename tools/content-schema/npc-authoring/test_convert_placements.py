@@ -39,6 +39,14 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
         self.assertTrue(all(r['provenance'] for r in actual))
 
+    def test_jack_springer_uses_the_pinned_isle_of_the_kings_cell(self):
+        rows = [r['declaration'] for r in self.records
+                if r['declaration']['npc'] == 'oteryn:npc.jack_springer']
+        self.assertEqual([r['cell'] for r in rows], [{'x': 32326, 'y': 32261, 'floor': 9}])
+        source, = rows[0]['provenance']
+        self.assertEqual(source['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
+        self.assertEqual(source['source_row'], 'data-global/world/world-npc.xml')
+
     def test_m38_swan_keeps_the_exact_stationary_source_anchor(self):
         actual = [r['declaration'] for r in self.records
                   if r['declaration']['npc'] == 'oteryn:npc.a_swan']
@@ -135,6 +143,15 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual(zirella["direction"], "north")
         self.assertEqual(zirella["provenance"][0]["origin"], "wiki")
         self.assertIn("north", zirella["provenance"][0]["direction_note"])
+
+    def test_bozo_preserves_the_pinned_thais_placement(self):
+        [bozo] = [row["declaration"] for row in self.records
+                  if row["declaration"]["npc"] == "oteryn:npc.bozo"]
+        self.assertEqual(bozo["cell"], {"x": 32313, "y": 32183, "floor": 7})
+        self.assertEqual(bozo["direction"], "north")
+        [source] = bozo["provenance"]
+        self.assertEqual(source["source_row"], "data-global/world/world-npc.xml")
+        self.assertEqual(source["revision"], "201189f871d23597b82caf88fd611454a2ddefb8")
 
     def test_no_cell_is_shared(self):
         cells = [(r["declaration"]["cell"]["x"], r["declaration"]["cell"]["y"], r["declaration"]["cell"]["floor"]) for r in self.records]

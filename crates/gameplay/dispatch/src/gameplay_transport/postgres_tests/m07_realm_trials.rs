@@ -52,8 +52,34 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     assert_eq!(key_count(harness).await?,1);
     assert_eq!(Box::pin(use_source(owner,admitted,2,CONTROL,1,0)).await?,UseDisposition::Rejected,"a key is not a started trial");
     assert_eq!(receipts(harness).await?,0);
-    assert_eq!(Box::pin(use_source(owner,admitted,3,BEGIN,3,0)).await?,UseDisposition::Committed);
-    assert_eq!(phase(owner,fence,callback).await?,Some(1));
+    let current = owner.quest_catalogue.as_ref().ok_or("realm catalogue")?;
+    let predecessor = predecessor_catalogue(current, callback)?;
+    let old_hash = predecessor
+        .definition_hash(&callback.quest)
+        .ok_or("old realm definition")?;
+    let current = owner
+        .quest_catalogue
+        .replace(std::sync::Arc::new(predecessor));
+    assert_eq!(
+        Box::pin(use_source(owner, admitted, 3, BEGIN, 3, 0)).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(phase(owner, fence, callback).await?, Some(1));
+    let stored: Vec<u8> = sqlx::query_scalar(
+        "SELECT definition_hash FROM game_character_quest_states WHERE quest_key = $1",
+    )
+    .bind(&callback.quest)
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(
+        stored.as_slice(),
+        old_hash,
+        "the begin receipt used the deployed catalogue"
+    );
+    owner.quest_catalogue = current;
+    owner
+        .refresh_quest_session(admitted.game_session_id, true)
+        .await;
     let blocker={
         let mut runtime=owner.runtime.lock().await;
         owner.active_generation.and_then(|g|g.native_gameplay()).ok_or("native policies")?
@@ -98,6 +124,43 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     assert_eq!(key_count(harness).await?,1);assert_eq!(receipts(harness).await?,2);
     Ok(())
 }
+fn predecessor_catalogue(
+    current: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    trial: &Callback,
+) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, world_callbacks};
+
+    // Reconstruct the Realm definition from ccbd37016. Only the passage timer
+    // changed its hashed terms. Citation text is excluded from gated_binding.
+    let mut old_trial = trial.clone();
+    old_trial.effects.passages_reset_after_ms = Some(60_000);
+    let begin = world_callbacks::load()?
+        .into_iter()
+        .find(|row| row.key == "oteryn:quest-callback/m07/realm-begin")
+        .ok_or("realm begin callback")?;
+    let old = QuestStateCatalogue::new(
+        current.content_revision(),
+        current
+            .declared_tracks()
+            .filter(|track| track.quest == trial.quest)
+            .cloned()
+            .collect(),
+        vec![
+            world_callbacks::primary_transition(&begin)?,
+            world_callbacks::primary_transition(&old_trial)?,
+        ],
+    )
+    .map_err(debug)?;
+    let hash = old.definition_hash(&trial.quest).ok_or("old realm hash")?;
+    assert_eq!(
+        hash.iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+        "245b1686c81a2abef73c1525e7ed55e6fc628ea056d9da81963b962f59f69a08",
+    );
+    Ok(old)
+}
+
 async fn use_source(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,id:u64,position:Position,ordinal:u8,revision:u64)->TestResult<UseDisposition> {
     owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(1)).ok_or("clock")?;
     let map=owner.bundle_map().ok_or("map")?;

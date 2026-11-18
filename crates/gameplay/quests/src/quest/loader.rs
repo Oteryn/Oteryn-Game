@@ -194,13 +194,55 @@ struct RequestedBy {
     topics: Vec<i64>,
 }
 
+// Published by the complete merge-base catalogue at ccbd37016f33b984a98bdd45e422013cc138f877.
+const DEPLOYED_QUEST_PREDECESSORS: [(&str, [u8; 32]); 3] = [
+    (
+        "oteryn:quest.adventures_of_galthen_quest",
+        [
+            0x61, 0x0d, 0x37, 0xee, 0x99, 0xa3, 0x53, 0xc9, 0xa5, 0xcb, 0x00, 0x02, 0x0f, 0x3d,
+            0x42, 0x5e, 0x1e, 0x8f, 0xe7, 0x2d, 0xf4, 0xb5, 0x85, 0x87, 0x89, 0x68, 0xab, 0xfb,
+            0x55, 0x9a, 0x64, 0x45,
+        ],
+    ),
+    (
+        "oteryn:quest.chayenne_realm",
+        [
+            0x24, 0x5b, 0x16, 0x86, 0xc8, 0x1a, 0x2a, 0xbe, 0xf7, 0x3c, 0x15, 0x25, 0xe7, 0xed,
+            0x55, 0xe6, 0xfc, 0x62, 0x8e, 0xa0, 0x56, 0xd9, 0xda, 0x81, 0x96, 0x3b, 0x96, 0x2f,
+            0x59, 0xf6, 0x9a, 0x08,
+        ],
+    ),
+    (
+        "oteryn:quest.what_a_foolish_quest",
+        [
+            0x37, 0x14, 0xb9, 0x02, 0xa4, 0x1c, 0x69, 0x9d, 0xa6, 0xcb, 0xb3, 0xda, 0xa3, 0xf9,
+            0xeb, 0x7b, 0x80, 0x70, 0x47, 0xca, 0x82, 0x4c, 0x61, 0xac, 0x9f, 0xca, 0x8e, 0x43,
+            0xa4, 0x78, 0xe0, 0xb6,
+        ],
+    ),
+];
+
 /// Load the embedded lowered quest content for `content_revision`.
 pub fn load_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let lowered = lower_embedded_quest_state(content_revision)?;
     let bindings = super::authored_bindings::embedded::load().map_err(QuestLoadError::Json)?;
-    admit_native_bindings(lowered, bindings.as_ref())
+    let mut lowered = admit_native_bindings(lowered, bindings.as_ref())?;
+    // The Realm timing change and the two new authored routes retain all
+    // existing track defaults. The newly declared idol track starts at zero.
+    for (quest, hash) in DEPLOYED_QUEST_PREDECESSORS {
+        lowered
+            .catalogue
+            .predecessors
+            .entry(quest.into())
+            .or_default()
+            .push(super::NpcDefinitionPredecessor {
+                hash,
+                defaults: BTreeMap::new(),
+            });
+    }
+    Ok(lowered)
 }
 
 /// Admit a complete explicit binding snapshot instead of the compiled binding registry.
@@ -548,6 +590,22 @@ mod tests {
     }
 
     #[test]
+    fn package_predecessors_keep_exact_deployed_pins() -> Result<(), String> {
+        let loaded =
+            load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        for (quest, mut hash) in super::DEPLOYED_QUEST_PREDECESSORS {
+            assert_ne!(catalogue.definition_hash(quest), Some(hash));
+            let defaults = crate::quest::npc_rules::legacy_defaults(catalogue, quest, &hash)
+                .ok_or_else(|| format!("missing deployed pin for {quest}"))?;
+            assert!(defaults.is_empty());
+            hash[0] ^= 1;
+            assert!(crate::quest::npc_rules::legacy_defaults(catalogue, quest, &hash).is_none());
+        }
+        Ok(())
+    }
+
+    #[test]
     fn runtime_scope_preserves_only_admitted_predecessors() -> Result<(), String> {
         const MARLIN: &str = "oteryn:quest.marlin_trophy_quest";
         const DAWNPORT: &str = "oteryn:quest.dawnport_quest";
@@ -636,6 +694,7 @@ mod tests {
             crate::quest::world_callbacks::EMBEDDED,
             // QMECH source cohorts retain their separate registration owners.
             include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
+            include_str!("../../../../../content/quests/world-callbacks/dream-courts.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"),

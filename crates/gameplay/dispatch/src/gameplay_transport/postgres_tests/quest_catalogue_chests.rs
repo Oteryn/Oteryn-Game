@@ -1133,6 +1133,71 @@ pub(super) async fn assert_charges(
     Ok(())
 }
 
+/// Use the shipped source tiles for the Foolish and Dreamer chests. The
+/// guardian claim binds only when all four placements are present together.
+pub(super) fn dreamer_or_foolish_source_world(
+    chest: &CatalogueChest,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<Option<(crate::map::boot::BundleWorld, u8)>> {
+    use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+
+    let (bytes, ids, xs, ordinal, start): (&[u8], &[u32], &[u16], u8, _) = match chest.unique {
+        6196 => (
+            include_bytes!("../../../../../../content/world/placements/region-z14-x128-y126.b3"),
+            &[408, 2472],
+            &[32850],
+            1,
+            (32852, 32285),
+        ),
+        6197..=6200 => (
+            include_bytes!("../../../../../../content/world/placements/region-z14-x127-y126.b3"),
+            &[870, 2321, 2126, 2469],
+            &[32749, 32751, 32753, 32755],
+            3,
+            (chest.position.0, 32342),
+        ),
+        6259 => (
+            include_bytes!("../../../../../../content/world/placements/region-z04-x127-y125.b3"),
+            &[436, 2469],
+            &[32563],
+            1,
+            (32561, 32115),
+        ),
+        6269 => (
+            include_bytes!("../../../../../../content/world/placements/region-z13-x127-y124.b3"),
+            &[409, 2472],
+            &[32661],
+            1,
+            (32661, 31853),
+        ),
+        _ => return Ok(None),
+    };
+    let (x, y, floor) = chest.position;
+    let world = native_crop(
+        native,
+        NativeCrop {
+            bytes,
+            region: (u8::try_from(-floor)?, x / 256, y / 256),
+            bounds: (
+                (xs[0] - 1).min(start.0),
+                y.min(start.1),
+                xs[xs.len() - 1].max(start.0) + 1,
+                y.max(start.1) + 1,
+            ),
+            start,
+            expected: xs
+                .iter()
+                .map(|&x| ExpectedTile {
+                    position: (x, y),
+                    ids: ids.to_vec(),
+                    counted_entry: None,
+                })
+                .collect(),
+        },
+    )?;
+    Ok(Some((world, ordinal)))
+}
+
 /// The binder admits a claim only when every source placement is present.
 /// Preserve all sibling selectors even while exercising one clicked chest.
 pub(super) fn catalogue_source_world(

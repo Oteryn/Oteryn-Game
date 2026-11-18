@@ -13,6 +13,13 @@ fn guardian_reward_bags_and_lost_heroes_book_dispatch() -> TestResult {
         chest.claim.ends_with(".dreamers_challenge.chest_book")
             || chest.claim.ends_with(".dreamers_challenge.chests_wine")
     });
+    assert_eq!(
+        cases
+            .iter()
+            .map(|chest| chest.unique)
+            .collect::<std::collections::BTreeSet<_>>(),
+        [6196, 6197, 6198, 6199, 6200].into(),
+    );
     assert_eq!(cases.len(), 5);
     for chest in &cases {
         if chest.unique == 6196 {

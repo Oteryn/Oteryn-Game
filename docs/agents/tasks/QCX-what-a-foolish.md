@@ -17,8 +17,9 @@ and records chosen completion. It explicitly omits the later prank sequence
 and achievements. Its reward intents list the outfit and staff, even though
 Global awards the staff at mission 8. The named quest has no active or held
 world callback shard. Eight action/movement records are embedded as source
-evidence in the definition. The Bozo and peer NPCs are imported, but the
-quest-specific dialogue source links do not activate those mission routes.
+evidence in the definition. The World spawns Bozo at (32313, 32183, 7)
+using Crystal `data-global/world/world-npc.xml:1879–1881`. The other
+mission dialogue remains source evidence.
 
 | Part | Global expectation and differences from the import |
 | --- | --- |
@@ -41,9 +42,9 @@ The watch claim is one item 112, with UID 6259 and appearance 2469 at
 kitchen knife 3469 and one book 2821, with UID 6269 and appearance 2472 at
 (32661, 31855, 13). Global corroborates those named contents. Crystal
 `data-global/startup/tables/chest.lua:2600–2613` supplies the identifiers
-and the existing source reward dispatch fixture covers both. The decoded
-placement shards carry the matching appearances. The legacy UID selectors
-are supplied by the claim binding projection. The authored entry recognizes the existing native bag projection through
+and the World chest generator restores both UIDs on the matching shipped
+appearances. Dispatch exercises USE on both shipped placements. The authored
+entry recognizes the existing native bag projection through
 the exact quest and claim provenance. The canonical variant and SOURCE
 record preserve the historical hold and payload. No XP reward is stated by the Global revisions.
 

@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book",
+      "position": [
+        32850,
+        32285,
+        14
+      ],
+      "appearance": 2472,
+      "unique": 6196,
+      "source_line": 2124
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine",
+      "position": [
+        32749,
+        32341,
+        14
+      ],
+      "appearance": 2469,
+      "unique": 6197,
+      "source_line": 2131
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine",
+      "position": [
+        32751,
+        32341,
+        14
+      ],
+      "appearance": 2469,
+      "unique": 6198,
+      "source_line": 2139
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine",
+      "position": [
+        32753,
+        32341,
+        14
+      ],
+      "appearance": 2469,
+      "unique": 6199,
+      "source_line": 2147
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine",
+      "position": [
+        32755,
+        32341,
+        14
+      ],
+      "appearance": 2469,
+      "unique": 6200,
+      "source_line": 2155
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.bag_book_knife",
+      "position": [
+        32661,
+        31855,
+        13
+      ],
+      "appearance": 2472,
+      "unique": 6269,
+      "source_line": 2607
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.magical_watch",
+      "position": [
+        32563,
+        32115,
+        4
+      ],
+      "appearance": 2469,
+      "unique": 6259,
+      "source_line": 2600
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": []
+}
