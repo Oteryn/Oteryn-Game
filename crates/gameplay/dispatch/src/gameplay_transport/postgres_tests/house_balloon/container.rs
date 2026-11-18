@@ -586,6 +586,7 @@ pub(super) async fn wire_move(
         ).await,
         LoopMoveResult::Committed,
     );
+    let move_sent = std::cell::Cell::new(None);
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let server = async {
         serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await
@@ -634,12 +635,24 @@ pub(super) async fn wire_move(
             let reply = decode_command_result(envelope.payload()).map_err(debug)?;
             assert_eq!(reply.status, CommandStatus::Accepted);
             if reply.command_id == 1 {
-                assert_eq!(tree::decode_container_view_result(reply.payload).map_err(debug)?, tree::ContainerViewOutcome::Opened);
-                let payload = item::encode_item_move_intent_for(&item::ItemMoveIntent {
-                    source: source.ok_or("carried bag handle")?,
-                    destination: item::ItemMoveDestination::Container(destination, Some(1)),
-                }, selection).map_err(debug)?;
-                write_frame(&mut client, &send(2, item::COMMAND_TYPE_ITEM_MOVE_INTENT, &payload)?).await?;
+                assert_eq!(
+                    tree::decode_container_view_result(reply.payload).map_err(debug)?,
+                    tree::ContainerViewOutcome::Opened
+                );
+                let payload = item::encode_item_move_intent_for(
+                    &item::ItemMoveIntent {
+                        source: source.ok_or("carried bag handle")?,
+                        destination: item::ItemMoveDestination::Container(destination, Some(1)),
+                    },
+                    selection,
+                )
+                .map_err(debug)?;
+                move_sent.set(Some(tokio::time::Instant::now()));
+                write_frame(
+                    &mut client,
+                    &send(2, item::COMMAND_TYPE_ITEM_MOVE_INTENT, &payload)?,
+                )
+                .await?;
             } else {
                 assert_eq!(reply.command_id, 2);
                 assert_eq!(item::decode_item_move_result_for(reply.payload, selection).map_err(debug)?, item::ItemMoveOutcome::Moved);
@@ -649,8 +662,24 @@ pub(super) async fn wire_move(
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
     };
-    let (_, result) = tokio::time::timeout(std::time::Duration::from_secs(12), async { tokio::join!(server, client) }).await?;
+    let (end, result) = tokio::time::timeout(std::time::Duration::from_secs(12), async {
+        tokio::join!(server, client)
+    })
+    .await?;
     result?;
+    let crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(current) =
+        end
+    else {
+        return Err(format!("House move connection ended with {end:?}").into());
+    };
+    let sent = move_sent.get().ok_or("move was sent")?;
+    assert!(
+        current
+            .continuity
+            .gameplay_idle
+            .last_activity()
+            .is_some_and(|activity| activity >= sent)
+    );
     let order: Vec<Vec<u8>> = sqlx::query_scalar(
         "SELECT uuid_send(item_instance_id) FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal DESC",
     )

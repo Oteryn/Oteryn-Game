@@ -2311,6 +2311,16 @@ pub(super) async fn lock_admission_relations(
     Ok(())
 }
 
+/// The same fence for an advisory read which can be retried on the next tick.
+pub(super) async fn try_lock_admission_relations(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Result<(), DurabilityError> {
+    sqlx::query(&format!("{ADMISSION_RELATIONS_LOCK} NOWAIT"))
+        .execute(&mut **transaction)
+        .await?;
+    Ok(())
+}
+
 /// The admission relations in lexical order, locked by [`lock_admission_relations`].
 const ADMISSION_RELATIONS_LOCK: &str = "LOCK TABLE \
      game_durability_admission_account_guards, \

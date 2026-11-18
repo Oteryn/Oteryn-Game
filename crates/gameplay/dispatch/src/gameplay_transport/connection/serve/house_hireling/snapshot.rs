@@ -16,7 +16,9 @@ impl State {
             .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1)
             && (selected.contains(
                 oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
-            ) || enabled
+            ) || selected.contains(u32::from(oteryn_protocol_oteryn::mail::CAPABILITY_MAIL_V1))
+                || selected.contains(CAPABILITY_ITEM_EQUIP_DROP_V1)
+                || enabled
                 || selected.contains(
                     oteryn_protocol_oteryn::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
                 )

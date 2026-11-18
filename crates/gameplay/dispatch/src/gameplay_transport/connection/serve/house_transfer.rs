@@ -298,6 +298,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     COMMAND_TYPE_HOUSE_TRANSFER
                         | oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
                         | oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+                        | oteryn_protocol_oteryn::item_view::COMMAND_TYPE_ITEM_MOVE_INTENT
                 )
                 && super::super::gameplay_idle::meaningful(command, selected.as_slice());
             let mut effects = None;
@@ -443,9 +444,12 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     oteryn_protocol_oteryn::house_wrap::Reply::decode(&payload),
                     Some(oteryn_protocol_oteryn::house_wrap::Reply::Committed(_))
                 )
-                || (command.command_type
-                    == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
-                    && payload == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8])
+            {
+                services.invalidate_capacity();
+                services.inventory(stream, authority, &mut admitted).await?;
+            } else if command.command_type
+                == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
+                && payload == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8]
             {
                 services.inventory(stream, authority, &mut admitted).await?;
             }

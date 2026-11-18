@@ -258,6 +258,10 @@ impl State {
         }
     }
 
+    pub(super) fn invalidate_capacity(&mut self) {
+        self.capacity_refresh_at = None;
+    }
+
     pub(super) async fn effects<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         &mut self,
         stream: &mut S,
@@ -266,7 +270,7 @@ impl State {
         dispatch: Dispatch,
     ) -> Result<(), ServeEnd> {
         if super::inventory_capacity::changes_carried_weight(&dispatch) {
-            self.capacity_refresh_at = None;
+            self.invalidate_capacity();
         }
         match dispatch {
             Dispatch::NoLogout | Dispatch::Logout(LogoutResult::InFight { .. }) => {

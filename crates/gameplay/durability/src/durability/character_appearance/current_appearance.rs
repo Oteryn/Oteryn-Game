@@ -89,10 +89,24 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    let root = match assert_read_fence(&mut tx, &fence, &node, scope).await? {
+                    let (mut tx, root) = match scope {
+                        ReadScope::Channel => {
+                            let mut tx = super::super::db::begin_observation_transaction(holder, deadline).await?;
+                            super::super::character_authority::observe_recovery_fence(&mut tx, &recovery).await?;
+                            let root = super::super::character_progression::observe_fenced_root(
+                                &mut tx, &fence.item_fence(), Some(fence.expected_character_revision.get()), &node,
+                            ).await?;
+                            (tx, root)
+                        }
+                        ReadScope::House { .. } => {
+                            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                            assert_recovery_fence(&mut tx, &recovery).await?;
+                            lock_admission_relations(&mut tx).await?;
+                            let root = assert_read_fence(&mut tx, &fence, &node, scope).await?;
+                            (tx, root)
+                        }
+                    };
+                    let root = match root {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error.into())),
                     };

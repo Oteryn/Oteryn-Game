@@ -88,6 +88,10 @@ const MAP_OFFERS: &[OfferedCapability] = &[
 // inventory-only cases keep the map offer closed and prove USE without domain17.
 const INVENTORY_OFFERS: &[OfferedCapability] = &[
     OfferedCapability {
+        id: 3,
+        requires: &[],
+    },
+    OfferedCapability {
         id: 4,
         requires: &[6],
     },
@@ -117,6 +121,10 @@ const INVENTORY_OFFERS: &[OfferedCapability] = &[
     },
     OfferedCapability {
         id: 49,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: 51,
         requires: &[],
     },
     OfferedCapability {
@@ -155,6 +163,8 @@ pub(super) enum Case {
     Carried,
     ResidentTick,
     ResidentLetter,
+    ResidentMail,
+    ResidentEquip,
     ResidentMount,
     ResidentQuest,
     Nested,

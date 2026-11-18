@@ -5,6 +5,7 @@ use super::*;
 pub(super) struct ActorPresentation {
     actor: ExactActorRef,
     walk: Option<(u64, u32)>,
+    house_walk: Option<(GameSessionId, u64, u32)>,
     mount: u32,
     speed_bonus: u16,
 }
@@ -40,6 +41,7 @@ impl ChannelRuntimeV1 {
             .or_insert(ActorPresentation {
                 actor,
                 walk: None,
+                house_walk: None,
                 mount: 0,
                 speed_bonus: 0,
             });
@@ -47,6 +49,7 @@ impl ChannelRuntimeV1 {
             *entry = ActorPresentation {
                 actor,
                 walk: None,
+                house_walk: None,
                 mount: 0,
                 speed_bonus: 0,
             };
@@ -106,10 +109,29 @@ impl ChannelRuntimeV1 {
             .filter(|p| p.actor == actor);
         Some((
             movement.revision(),
-            0,
+            entry
+                .and_then(|p| p.house_walk)
+                .filter(|(owner, at, _)| *owner == session && *at == movement.revision())
+                .map_or(0, |(_, _, ms)| ms),
             entry.map_or(0, |p| p.mount),
             entry.map_or(0, |p| p.speed_bonus),
         ))
+    }
+
+    /// Record the timed step under the same House owner turn that moved the actor.
+    pub fn record_house_walk(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        snapshot: &super::house_custody::HouseMovementSnapshot,
+        duration: std::time::Duration,
+    ) {
+        if self.read_house_movement(actor, session).as_ref().ok() != Some(snapshot) {
+            return;
+        }
+        if let Ok(ms) = u32::try_from(duration.as_millis()) {
+            self.presentation_entry(actor).house_walk = Some((session, snapshot.revision(), ms));
+        }
     }
 
     fn record_riding(&mut self, actor: ExactActorRef, mount: u32, speed_bonus: u16) {

@@ -151,6 +151,19 @@ fn skip_entity(skipped: &mut Vec<wire::EntityRef>, entity: wire::EntityRef, reas
     skipped.push(entity);
 }
 
+async fn observation_fence(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    reconnectable: bool,
+) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, crate::durability::DurabilityError> {
+    use crate::durability::character_authority::CharacterAuthorityError;
+    match admission.root.observe_current_gameplay_fence(admission.character, session, reconnectable).await {
+        Ok(fence) => Ok(fence),
+        Err(CharacterAuthorityError::Unavailable(error)) => Err(error),
+        Err(_) => Ok(None),
+    }
+}
+
 async fn observe_once(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     observer: ExactActorRef,
@@ -161,7 +174,7 @@ async fn observe_once(
 ) -> Option<Observation> {
     let (context, content) = note_none(admission.appearance_context(), "content")?;
     let own_fence = read_result(
-        super::super::character_gameplay_fence::current_once(admission, session, false).await,
+        observation_fence(admission, session, false).await,
         failure,
         "fence",
     )?;
@@ -298,7 +311,7 @@ async fn observe_once(
             continue;
         };
         let fence = read_result(
-            super::super::character_gameplay_fence::current_once(admission, target_session, true)
+            observation_fence(admission, target_session, true)
                 .await,
             failure,
             "fence",

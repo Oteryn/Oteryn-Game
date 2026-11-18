@@ -625,7 +625,7 @@ pub(super) async fn assert_gameplay_fence(
         &fence.item_fence(),
         Some(fence.expected_character_revision.get()),
         node,
-        false,
+        Some(false),
     )
     .await
 }
@@ -641,7 +641,7 @@ pub(super) async fn assert_item_only_fence(
     std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
     DurabilityError,
 > {
-    assert_fenced_root(tx, fence, None, node, false).await
+    assert_fenced_root(tx, fence, None, node, Some(false)).await
 }
 
 /// The identical item fence with a non-key root lock. Market updates no root
@@ -655,7 +655,20 @@ pub(super) async fn assert_market_item_fence(
     std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
     DurabilityError,
 > {
-    assert_fenced_root(tx, fence, None, node, true).await
+    assert_fenced_root(tx, fence, None, node, Some(true)).await
+}
+
+/// Read the same current root and interpretation without taking writer locks.
+pub(super) async fn observe_fenced_root(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    expected_revision: Option<u64>,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<
+    std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
+    DurabilityError,
+> {
+    assert_fenced_root(tx, fence, expected_revision, node, None).await
 }
 
 async fn assert_fenced_root(
@@ -663,31 +676,30 @@ async fn assert_fenced_root(
     fence: &CurrentCharacterItemFence,
     expected_revision: Option<u64>,
     node: &NodeIncarnationProof,
-    no_key_update: bool,
+    no_key_update: Option<bool>,
 ) -> std::result::Result<
     std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
     DurabilityError,
 > {
-    let account_text = match assert_session_fence(tx, fence, node).await? {
+    let account_text = match check_session_fence(tx, fence, node, no_key_update.is_some()).await? {
         Ok(account_text) => account_text,
         Err(error) => return Ok(Err(error)),
     };
     let world_id = fence.runtime_scope.world_id();
 
-    let root = sqlx::query(if no_key_update {
-        "SELECT account_id::text, world_id::text, character_revision::text, \
+    let root_sql = "SELECT account_id::text, world_id::text, character_revision::text, \
                 profile_revision, ruleset_revision, content_revision, \
                 starter_template_revision \
            FROM game_character_roots \
-          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
-          FOR NO KEY UPDATE"
-    } else {
-        "SELECT account_id::text, world_id::text, character_revision::text, \
+          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR UPDATE";
+    let root = sqlx::query(match no_key_update {
+        Some(false) => root_sql,
+        Some(true) => "SELECT account_id::text, world_id::text, character_revision::text, \
                 profile_revision, ruleset_revision, content_revision, \
                 starter_template_revision \
            FROM game_character_roots \
-          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
-          FOR UPDATE"
+          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR NO KEY UPDATE",
+        None => root_sql.trim_end_matches(" FOR UPDATE"),
     })
     .bind(fence.character_id.as_bytes().as_slice())
     .fetch_optional(&mut **tx)

@@ -10,9 +10,17 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
                 if after == 0 { before } else { after }
             ),
         ),
-        Case::ResidentTick | Case::ResidentLetter | Case::ResidentMount | Case::ResidentQuest => (
+        Case::ResidentTick
+        | Case::ResidentLetter
+        | Case::ResidentMail
+        | Case::ResidentMount
+        | Case::ResidentQuest => (
             "oteryn:item.tibia.i3505".into(),
             "oteryn:item.tibia.i3505".into(),
+        ),
+        Case::ResidentEquip => (
+            "oteryn:item.tibia.i3354".into(),
+            "oteryn:item.tibia.i3354".into(),
         ),
         Case::CarpetTile { .. } => (
             "oteryn:item.tibia.i22736".to_owned(),
@@ -77,6 +85,11 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         )?
     } else if matches!(case, Case::BedKit(_)) {
         super::super::house_wrap::static_bed_decoration_bundle(
+            base.admitted.world_id,
+            base.admitted.channel_id,
+        )?
+    } else if case == Case::ResidentMount {
+        super::super::house_wrap::walkable_house_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
@@ -163,8 +176,15 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             QuestLogContent::new(QuestLogCatalogue::new(catalogue, vec![visible]).map_err(debug)?, Vec::new()),
         ).ok_or("resident quest journal")?);
     }
-    if matches!(case, Case::ResidentLetter | Case::ResidentMount) {
+    if matches!(
+        case,
+        Case::ResidentLetter | Case::ResidentMail | Case::ResidentEquip | Case::ResidentMount
+    ) {
         super::super::tutorial_vitals_fixture::publish_native_activation(h, &native_pin).await?;
+    }
+    if matches!(case, Case::ResidentEquip | Case::ResidentMount) {
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+            .bind(id(41).as_slice()).execute(&h.pool).await?;
     }
     deps.initialize(&owner).await;
     {
@@ -273,7 +293,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             &[4, 6, 11, 15, 18, 49, 86]
         }
         Case::Nested => &[4, 6, 12, 14, 15, 49, 86],
-        Case::ResidentTick | Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511],
+        Case::ResidentTick => &[3, 4, 6, 15, 49, 51, 86, 115, 165, 508, 509, 511],
+        Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511],
+        Case::ResidentMail => &[4, 6, 86, 115],
+        Case::ResidentEquip => &[4, 6, 12, 15, 86],
         Case::ResidentMount => &[6, 13, 25, 49, 86, 502],
         Case::ResidentQuest => &[6, 49, 86, 500],
         Case::Carried | Case::Foreign => &[4, 6, 15, 49, 86],
@@ -282,6 +305,8 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         owner.offered_capabilities(), case == Case::ResidentMount,
     );
     let offered = crate::gameplay_transport::server_info::offered(&offered, true);
+    let offered =
+        crate::gameplay_transport::hireling::offered(&offered, case == Case::ResidentTick);
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(&offered, capabilities).ok_or("House USE offers")?;
     let contents = if matches!(case, Case::CarpetTile { .. }) {
@@ -322,6 +347,8 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         case,
         Case::ResidentTick
             | Case::ResidentLetter
+            | Case::ResidentMail
+            | Case::ResidentEquip
             | Case::ResidentMount
             | Case::ResidentQuest
             | Case::Decoration(_, _)
@@ -376,10 +403,23 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         admitted.continuity.next_command_id, 1,
         "the actual House handoff creates a new session"
     );
+    if case == Case::ResidentMount {
+        for x in [POSITION[0], POSITION[0] + 1] {
+            let position: Vec<u8> = [x, POSITION[1], POSITION[2]]
+                .iter()
+                .flat_map(|v| v.to_be_bytes())
+                .collect();
+            sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
+                .bind(id(42).as_slice()).bind(HOUSE).bind(position).execute(&h.pool).await?;
+        }
+    }
     if matches!(case, Case::ResidentQuest | Case::ResidentMount) {
         return super::super::house_resident_reads::presentation_exchange(&owner, admitted, case).await;
     }
-    if matches!(case, Case::ResidentTick | Case::ResidentLetter) {
+    if matches!(
+        case,
+        Case::ResidentTick | Case::ResidentLetter | Case::ResidentMail | Case::ResidentEquip
+    ) {
         return super::super::house_resident_reads::exchange(h, &owner, admitted, before_ref, case)
             .await;
     }

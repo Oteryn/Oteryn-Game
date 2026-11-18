@@ -1198,7 +1198,7 @@ impl DurabilityRoot {
         session: crate::foundation::GameSessionId,
         content_digest: [u8; 32],
     ) -> Result<MovementEquipmentSnapshot> {
-        use super::character_progression::observe_session_fence;
+        use super::character_progression::observe_fenced_root;
         let record = recovery.record_for(self).map_err(|_| rejected("equipment recovery root"))?;
         let node = node.clone();
         let store = super::fresh_admission::FreshAdmissionStore::from_root(self.clone());
@@ -1218,18 +1218,10 @@ impl DurabilityRoot {
                 runtime_scope: current.current_runtime_scope(),
                 scope_ownership_generation: current.current_scope_generation(),
             };
-            let Ok(account) = observe_session_fence(&mut tx, &fence, &node).await? else {
+            let Ok(root) = observe_fenced_root(&mut tx, &fence, None, &node).await? else {
                 return Ok(Err(rejected("equipment observation fence")));
             };
             let world = fence.runtime_scope.world_id();
-            let revision: Option<String> = sqlx::query_scalar(
-                "SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND account_id=$2::uuid AND world_id=encode($3,'hex')::uuid AND lifecycle=1",
-            )
-            .bind(fence.character_id.as_bytes().as_slice()).bind(account).bind(world.as_bytes().as_slice())
-            .fetch_optional(&mut *tx).await?;
-            let Some(revision) = revision else {
-                return Ok(Err(rejected("equipment observation root")));
-            };
             let digest: Option<Vec<u8>> = match fence.runtime_scope {
                 crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
                     sqlx::query_scalar("SELECT server_artifact_digest FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1")
@@ -1247,7 +1239,7 @@ impl DurabilityRoot {
                 return Ok(Err(rejected("equipment observation content")));
             }
             let result = async {
-                let equipment = equipment_snapshot(&mut tx, &fence, content_digest, number(revision)?, false).await?;
+                let equipment = equipment_snapshot(&mut tx, &fence, content_digest, root.revision, false).await?;
                 Ok(MovementEquipmentSnapshot { fence, equipment })
             }.await;
             tx.rollback().await?;

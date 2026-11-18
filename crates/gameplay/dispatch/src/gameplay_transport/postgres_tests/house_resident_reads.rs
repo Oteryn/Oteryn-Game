@@ -25,6 +25,16 @@ fn house_resident_letter_6246_postgres() -> TestResult {
 }
 
 #[test]
+fn house_resident_mail_without_inscription_postgres() -> TestResult {
+    run_case(Case::ResidentMail)
+}
+
+#[test]
+fn house_resident_equip_returns_command_result_postgres() -> TestResult {
+    run_case(Case::ResidentEquip)
+}
+
+#[test]
 fn house_resident_mount_and_dismount_visible_postgres() -> TestResult {
     run_case(Case::ResidentMount)
 }
@@ -64,11 +74,16 @@ pub(super) async fn presentation_exchange(
                 break;
             }
         }
-        for (command_id, mounted, look) in [(1, true, 139), (2, false, 0)] {
-            let frame = encode_client_command(admitted.continuity.connection_generation, &ClientCommandValue {
-                command_id, command_type: actor_motion::COMMAND_TYPE_MOUNT,
-                payload: &actor_motion::encode_mount(mounted),
-            }).map_err(debug)?;
+        for (command_id, mounted, look) in [(1, true, 139), (3, false, 0)] {
+            let frame = encode_client_command(
+                admitted.continuity.connection_generation,
+                &ClientCommandValue {
+                    command_id,
+                    command_type: actor_motion::COMMAND_TYPE_MOUNT,
+                    payload: &actor_motion::encode_mount(mounted),
+                },
+            )
+            .map_err(debug)?;
             crate::gameplay_transport::tcp_tls::write_frame(&mut client, &frame).await?;
             loop {
                 let raw = super::item_look::read_frame(&mut client).await?;
@@ -80,11 +95,32 @@ pub(super) async fn presentation_exchange(
                     break;
                 }
             }
+            let motion = next_motion(&mut client, admitted).await?;
+            assert_eq!(motion.mount_look_type, look);
             let actor = admitted.runtime_actor.ok_or("mount observer")?;
             let view = owner.observe_visible_entities(actor).await.ok_or("mounted visibility")?;
             let motion = view.entities.iter().find(|entity| entity.identity == actor.placement_identity())
                 .and_then(|entity| entity.motion).ok_or("House resident motion")?;
             assert_eq!(motion.mount_look_type, look);
+            let direction = if mounted {
+                oteryn_protocol_oteryn::world_spatial::StepDirection::East
+            } else {
+                oteryn_protocol_oteryn::world_spatial::StepDirection::West
+            };
+            let frame = encode_client_command(
+                admitted.continuity.connection_generation,
+                &ClientCommandValue {
+                    command_id: command_id + 1,
+                    command_type: 1,
+                    payload: &oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction),
+                },
+            )
+            .map_err(debug)?;
+            crate::gameplay_transport::tcp_tls::write_frame(&mut client, &frame).await?;
+            let walked = next_motion(&mut client, admitted).await?;
+            assert!(walked.translation_revision > motion.translation_revision);
+            assert!(walked.step_duration_ms > 0, "a House step must animate");
+            assert_eq!(walked.mount_look_type, look);
         }
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
@@ -93,6 +129,41 @@ pub(super) async fn presentation_exchange(
         tokio::join!(serving, observing)
     }).await?;
     result
+}
+
+async fn next_motion(
+    client: &mut tokio::io::DuplexStream,
+    admitted: AdmittedSession,
+) -> TestResult<actor_motion::ActorMotion> {
+    let identity = admitted
+        .runtime_actor
+        .ok_or("mount observer")?
+        .placement_identity();
+    loop {
+        let raw = super::item_look::read_frame(client).await?;
+        let envelope = decode_wire_envelope(&raw).map_err(debug)?;
+        if envelope.message_type() != MessageType::StateDelta {
+            continue;
+        }
+        let delta =
+            oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+        if delta.domain_id != 1 || delta.delta_type != 2 {
+            continue;
+        }
+        let (delta, _, _) = entities::decode_world_spatial_entities_delta_with_sidecar(
+            delta.payload,
+            entities::EntityFields::selected(admitted.continuity.selected_capabilities.as_slice()),
+        )
+        .map_err(debug)?;
+        if let Some(motion) = delta
+            .update
+            .iter()
+            .find(|entry| entry.entity.identity == identity)
+            .and_then(|entry| entry.motion)
+        {
+            return Ok(motion);
+        }
+    }
 }
 
 pub(super) async fn select_mount(
@@ -186,6 +257,7 @@ pub(super) async fn exchange(
     }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let observe = async move {
+        let mut writer = None;
         let mut capacity = false;
         let mut emblem = false;
         let mut letter_handle = None;
@@ -193,7 +265,39 @@ pub(super) async fn exchange(
             let raw = super::item_look::read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&raw).map_err(debug)?;
             match envelope.message_type() {
-                MessageType::SnapshotChunk if case == Case::ResidentLetter => {
+                MessageType::SnapshotCommit if case == Case::ResidentTick => {
+                    let mut lock = h.pool.begin().await?;
+                    sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
+                        .execute(&mut *lock)
+                        .await?;
+                    writer = Some((lock, tokio::time::Instant::now()));
+                }
+                MessageType::SnapshotCommit
+                    if case == Case::ResidentMail && letter_handle.is_none() =>
+                {
+                    // Still drive the real MAIL route if a regression omits the inventory snapshot.
+                    let payload = mail::encode_intent(&MailIntent::WriteText {
+                        item_handle: 1,
+                        text: "Edited in the House".into(),
+                    })
+                    .map_err(debug)?;
+                    let frame = encode_client_command(
+                        admitted.continuity.connection_generation,
+                        &ClientCommandValue {
+                            command_id: 1,
+                            command_type: u32::from(mail::COMMAND_TYPE_MAIL),
+                            payload: &payload,
+                        },
+                    )
+                    .map_err(debug)?;
+                    crate::gameplay_transport::tcp_tls::write_frame(&mut client, &frame).await?;
+                }
+                MessageType::SnapshotChunk
+                    if matches!(
+                        case,
+                        Case::ResidentLetter | Case::ResidentMail | Case::ResidentEquip
+                    ) =>
+                {
                     let (_, domains) =
                         oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())
                             .map_err(debug)?;
@@ -203,7 +307,7 @@ pub(super) async fn exchange(
                         }
                         let inventory = item_view::decode_character_inventory_with_equip_drop(
                             domain.payload,
-                            false,
+                            case == Case::ResidentEquip,
                         )
                         .map_err(debug)?;
                         let handle = inventory
@@ -213,16 +317,44 @@ pub(super) async fn exchange(
                             .ok_or("letter handle")?
                             .handle;
                         letter_handle = Some(handle);
-                        let request = item_inscription::Request {
-                            item_handle: handle.get(),
-                        }
-                        .encode()
-                        .ok_or("request")?;
+                        let (command_type, request) = if case == Case::ResidentMail {
+                            (
+                                u32::from(mail::COMMAND_TYPE_MAIL),
+                                mail::encode_intent(&MailIntent::WriteText {
+                                    item_handle: handle.get(),
+                                    text: "Edited in the House".into(),
+                                })
+                                .map_err(debug)?,
+                            )
+                        } else if case == Case::ResidentEquip {
+                            (
+                                item_view::COMMAND_TYPE_ITEM_MOVE_INTENT,
+                                item_view::encode_item_move_intent_with_equip_drop(
+                                    &item_view::ItemMoveIntent {
+                                        source: handle,
+                                        destination: item_view::ItemMoveDestination::Equipment(
+                                            item_view::EquipmentSlot::Head,
+                                        ),
+                                    },
+                                    true,
+                                )
+                                .map_err(debug)?,
+                            )
+                        } else {
+                            (
+                                item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_READ,
+                                item_inscription::Request {
+                                    item_handle: handle.get(),
+                                }
+                                .encode()
+                                .ok_or("request")?,
+                            )
+                        };
                         let frame = encode_client_command(
                             admitted.continuity.connection_generation,
                             &ClientCommandValue {
                                 command_id: 1,
-                                command_type: item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_READ,
+                                command_type,
                                 payload: &request,
                             },
                         )
@@ -230,6 +362,24 @@ pub(super) async fn exchange(
                         client.write_u32(u32::try_from(frame.len())?).await?;
                         client.write_all(&frame).await?;
                     }
+                }
+                MessageType::CommandResult
+                    if matches!(case, Case::ResidentMail | Case::ResidentEquip) =>
+                {
+                    let reply = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(reply.command_id, 1);
+                    if case == Case::ResidentMail {
+                        assert_eq!(reply.status, CommandStatus::Accepted);
+                        assert_eq!(reply.payload, [MailOutcome::TextWritten as u8]);
+                    } else {
+                        assert_eq!(reply.status, CommandStatus::Accepted);
+                        assert_eq!(
+                            item_view::decode_item_move_result_with_equip_drop(reply.payload, true)
+                                .map_err(debug)?,
+                            item_view::ItemMoveOutcome::Rejected
+                        );
+                    }
+                    break;
                 }
                 MessageType::CommandResult if case == Case::ResidentLetter => {
                     let reply = decode_command_result(envelope.payload()).map_err(debug)?;
@@ -292,6 +442,13 @@ pub(super) async fn exchange(
                         _ => (),
                     }
                     if capacity && emblem {
+                        let (lock, started) =
+                            writer.take().ok_or("writer held during House tick")?;
+                        assert!(
+                            started.elapsed() < std::time::Duration::from_secs(2),
+                            "House tick waited for admission writer"
+                        );
+                        lock.rollback().await?;
                         break;
                     }
                 }
@@ -313,7 +470,7 @@ pub(super) async fn exchange(
     })
     .await?;
     result?;
-    if case == Case::ResidentLetter {
+    if matches!(case, Case::ResidentLetter | Case::ResidentMail) {
         let text: String = sqlx::query_scalar(
             "SELECT text FROM game_item_texts WHERE item_instance_id=encode($1,'hex')::uuid",
         )

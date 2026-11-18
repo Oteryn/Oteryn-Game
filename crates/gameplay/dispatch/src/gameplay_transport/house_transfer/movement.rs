@@ -305,7 +305,8 @@ impl Turn<'_, '_, '_, '_> {
         } else {
             None
         };
-        self.runtime
+        let moved = self
+            .runtime
             .compare_move_house(
                 &current,
                 LocalPosition {
@@ -316,6 +317,8 @@ impl Turn<'_, '_, '_, '_> {
                 facing,
             )
             .map_err(MovementError::Actor)?;
+        self.runtime
+            .record_house_walk(self.actor, self.session, &moved, duration);
         if let Some(cooldowns) = cooldowns {
             state.cooldowns = cooldowns;
         }

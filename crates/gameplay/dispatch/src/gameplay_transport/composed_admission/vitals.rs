@@ -14,11 +14,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .house_actor_state(actor, game_session_id)
             .is_ok()
         {
-            let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
-                .current_session_at(game_session_id)
+            let fence = self
+                .root
+                .observe_current_gameplay_fence(self.character, game_session_id, true)
                 .await
-                .ok()?;
-            let fence = item_fence_of(current)?;
+                .ok()??
+                .item_fence();
             let runtime = self.runtime.lock().await;
             return self.states.spell_states.lock().await.house_vitals(
                 &runtime,

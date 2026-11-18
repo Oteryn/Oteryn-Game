@@ -471,6 +471,17 @@ async fn move_equipment_inner(
     hotkey: bool,
 ) -> EquipmentMoveResult {
     let refused = EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected);
+    // The equipment writer only grants Channel custody. Return a known refusal for
+    // House input before the Channel-only equipment clocks are consulted.
+    if admission
+        .runtime
+        .lock()
+        .await
+        .house_actor_state(actor, command.game_session_id)
+        .is_ok()
+    {
+        return refused;
+    }
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
     // EXTRA can qualify a death's talisman reward. Settle earlier deaths before
