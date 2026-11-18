@@ -13,6 +13,9 @@ use oteryn_foundation::CancellationToken;
 use oteryn_gameplay_encounter_rules::raid::{
     CatalogueSpawnMode, MAX_ANNOUNCEMENTS, MAX_CANDIDATES, MAX_WAVES, RaidCatalogue, SelectedRaid,
 };
+use oteryn_gameplay_encounter_rules::raid::{
+    RaidPosition, source_silencer_plateau as silencer_plateau,
+};
 use oteryn_gameplay_entities::{RaidCreatureStatus, RaidSpawnIdentity, RaidSpawnOutcome};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
@@ -527,6 +530,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    pub(super) async fn silencer_plateau_positions(
+        &self,
+        source: [[i32; 3]; 2],
+    ) -> Option<[RaidPosition; 2]> {
+        let runtime = self.runtime.lock().await;
+        let room = self.effective_rooms().gate_monster_ai()?;
+        let context = self
+            .active_generation?
+            .qualify_published_world_context(room, runtime.content_pin())?;
+        let frame = context.source_frame();
+        let position = |source| {
+            let (x, y, floor) = frame.physical_position(source)?;
+            Some(RaidPosition { x, y, floor })
+        };
+        Some([position(source[0])?, position(source[1])?])
+    }
+
     async fn drive_retained_raid_firing(
         &self,
         firing: [u8; 16],
@@ -573,8 +593,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .drive_claustrophobic_raid(firing, raid, now_ms, progress)
                 .await;
         }
-        let raid = catalogue.get(key).filter(|raid| raid.active).ok_or(())?;
-        let selected = raid.select(seed, firing).map_err(|_| ())?;
+        let selected = if key.as_str() == silencer_plateau::RAID_KEY {
+            let [from, to] = self
+                .silencer_plateau_positions(silencer_plateau::SOURCE_SPAWN_AREA)
+                .await
+                .ok_or(())?;
+            silencer_plateau::select(seed, firing, from, to).map_err(|_| ())?
+        } else {
+            let raid = catalogue.get(key).filter(|raid| raid.active).ok_or(())?;
+            raid.select(seed, firing).map_err(|_| ())?
+        };
         let identity = RaidStepIdentity {
             firing_id: firing,
             channel: self.channel_id,
