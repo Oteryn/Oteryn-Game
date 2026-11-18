@@ -4,7 +4,9 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult,
     fixture::{Harness, debug, id},
 };
+use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
+use crate::foundation::GameSessionId;
 use crate::gameplay_transport::connection::{
     ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority, SessionContinuity,
 };
@@ -174,56 +176,51 @@ async fn admit_peer(
     first: &AdmittedSession,
     h: &Harness,
 ) -> TestResult<AdmittedSession> {
-    use crate::world_party_runtime_postgres_cases::{
-        FreshPlayerOwners, committed_fresh_player_from_source_owned,
-    };
-    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-        .fetch_one(&h.pool)
-        .await?;
-    let (current, operation) = committed_fresh_player_from_source_owned(
-        &FreshPlayerOwners {
-            root: h.root.clone(),
-            node: h.node.clone(),
-            recovery: &h.recovery,
-        },
-        60,
-        63,
-        171,
-        now,
-        Some("platform-test"),
-    )
-    .await
-    .map_err(|error| format!("dock peer admission: {error}"))?;
+    h.seed_pvp_target().await?;
+    let operation =
+        super::appearance_change_postgres::observer_visibility_tests::admit_with_operation(h)
+            .await?;
+    let session = GameSessionId::decode(&id(110)).map_err(debug)?;
+    let current = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session(session)
+        .await
+        .map_err(debug)?;
     let fence = crate::gameplay_transport::item_fence_of(current).ok_or("peer fence")?;
     let actor = {
         let mut runtime = owner.runtime.lock().await;
-        let reservation = runtime.reserve_fresh_session(fence.game_session_id).map_err(debug)?;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
         let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
         runtime
             .initialize_pinned_test_position(actor, super::quest_world_callbacks::local(AT))
             .map_err(debug)?;
         runtime
-            .bind_attacker_lease(actor, fence.game_session_id, current.current_character_lease())
+            .bind_attacker_lease(actor, session, current.current_character_lease())
             .map_err(debug)?;
-        owner.states.spell_states.lock().await.initialize(
-            &runtime,
-            actor,
-            fence.game_session_id,
-            crate::gameplay_transport::actor_spell::tests::FACTS,
-            (3, 7_000_000),
-            owner.owner_now(),
-        ).ok_or("peer spell state")?;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                crate::gameplay_transport::actor_spell::tests::FACTS,
+                (3, 7_000_000),
+                owner.owner_now(),
+            )
+            .ok_or("peer spell state")?;
         actor
     };
     let mut peer = AdmittedSession {
-        game_session_id: fence.game_session_id,
+        game_session_id: session,
         world_id: first.world_id,
         channel_id: first.channel_id,
         runtime_actor: Some(actor),
         first_entry: FirstEntryOutcome::Positioned,
         controller: Some(ControllerBinding {
             transport: current.current_transport().ok_or("peer transport")?,
-            account_id: id(63),
+            account_id: id(100),
         }),
         continuity: SessionContinuity::FRESH,
         item_fence: Some(fence),
@@ -240,25 +237,32 @@ async fn admit_peer(
         )
         .await
         .map_err(debug)?;
-    let grant = h.root.grant_starter_items(
-        owner.character,
-        owner.holder,
-        &fence,
-        &NativeItemWeights(native),
-        &StarterTemplate {
-            definition: crate::durability::item_mint::TypedDefinitionRef {
-                family: "Item".into(),
-                production_key: "oteryn:item.tibia.i2854".into(),
-                revision_ref: "definition-r1".into(),
+    let grant = h
+        .root
+        .grant_starter_items(
+            owner.character,
+            owner.holder,
+            &fence,
+            &NativeItemWeights(native),
+            &StarterTemplate {
+                definition: crate::durability::item_mint::TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: "oteryn:item.tibia.i2854".into(),
+                    revision_ref: "definition-r1".into(),
+                },
+                ..StarterTemplate::main()
             },
-            ..StarterTemplate::main()
-        },
-    ).await.map_err(debug)?;
+        )
+        .await
+        .map_err(debug)?;
     assert!(!matches!(grant, StarterGrantOutcome::NotAdmitted));
     owner.admit_progression_session(&mut peer).await;
     owner.admit_quest_session(&peer).await;
-    let fence = owner.current_quest_fence(peer.game_session_id)
-        .await.map_err(|()| "peer quest fence")?.ok_or("peer quest fence")?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "peer quest fence")?
+        .ok_or("peer quest fence")?;
     super::quest_world_callbacks::input_item(
         owner,
         fence.item_fence(),

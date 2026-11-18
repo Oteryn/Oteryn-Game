@@ -7,6 +7,12 @@ use crate::foundation::admission_authority_publication::{
 pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn admit(
     harness: &Harness,
 ) -> TestResult {
+    admit_with_operation(harness).await.map(|_| ())
+}
+
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn admit_with_operation(
+    harness: &Harness,
+) -> TestResult<crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1> {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&harness.pool)
@@ -95,7 +101,7 @@ pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn admit(
     ),
         "observer admission: {outcome:?}"
     );
-    Ok(())
+    Ok(request.operation().clone())
 }
 
 pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn initialize(
