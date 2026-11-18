@@ -362,7 +362,7 @@ fn scenario_case(
     use super::super::faceless_bane_phase;
     let faceless_bane = name == faceless_bane_phase::NAME;
     use super::super::feaster_solo_rooms;
-    let feaster_solo = matches!(name, feaster_solo_rooms::IRGIX | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK);
+    let feaster_solo = matches!(name, feaster_solo_rooms::IRGIX | feaster_solo_rooms::IRGIX_RETURN | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK);
     use super::super::haunted_cellar_disguise;
     let haunted_cellar = matches!(name, haunted_cellar_disguise::NAME | haunted_cellar_disguise::FINISH);
     use super::super::haunted_cellar_ectoplasm;
@@ -1489,8 +1489,8 @@ fn scenario_case(
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             dream_scar_izcandar_forms::NAME | faceless_bane_phase::NAME | feaster_solo_rooms::IRGIX
-            | zarganash_linked_boss::NAME
-            | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK => Some(250),
+            | feaster_solo_rooms::IRGIX_RETURN | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK
+            | zarganash_linked_boss::NAME => Some(250),
             _ => None,
         };
         if let Some(initial_level) = initial_level {

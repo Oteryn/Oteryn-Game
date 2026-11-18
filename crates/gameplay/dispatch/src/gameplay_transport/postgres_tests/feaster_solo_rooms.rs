@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 use std::{sync::Arc, time::Duration};
 
 pub(super) const IRGIX: &str = "feaster-solo-irgix";
+pub(super) const IRGIX_RETURN: &str = "feaster-solo-irgix-return";
 pub(super) const UNAZ: &str = "feaster-solo-unaz";
 pub(super) const VOK: &str = "feaster-solo-vok";
 
@@ -30,6 +31,7 @@ struct Room {
     spawn: Position,
     min: Position,
     max: Position,
+    manual_exit: Position,
     exit: Position,
 }
 
@@ -42,6 +44,7 @@ const ROOMS: &[Room] = &[
         spawn: at(33467, 31399, -8),
         min: at(33460, 31393, -8),
         max: at(33474, 31408, -8),
+        manual_exit: at(33467, 31396, -8),
         exit: at(33493, 31400, -8),
     },
     Room {
@@ -52,6 +55,7 @@ const ROOMS: &[Room] = &[
         spawn: at(33565, 31496, -8),
         min: at(33558, 31487, -8),
         max: at(33582, 31499, -8),
+        manual_exit: at(33562, 31492, -8),
         exit: at(33563, 31477, -8),
     },
     Room {
@@ -62,11 +66,13 @@ const ROOMS: &[Room] = &[
         spawn: at(33508, 31486, -9),
         min: at(33501, 31483, -9),
         max: at(33515, 31496, -9),
+        manual_exit: at(33505, 31485, -9),
         exit: at(33509, 31451, -9),
     },
 ];
 
 fn room(name: &str) -> TestResult<&'static Room> {
+    let name = if name == IRGIX_RETURN { IRGIX } else { name };
     ROOMS
         .iter()
         .find(|room| room.name == name)
@@ -102,7 +108,7 @@ pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::b
         &[],
         &[],
         None,
-        &[r.exit, spectator_wait(r)],
+        &[r.exit, r.manual_exit, spectator_wait(r)],
     )
 }
 
@@ -134,6 +140,18 @@ fn irgix_solo_room_rejects_an_occupant_and_sets_cooldown_before_timed_exit() -> 
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(IRGIX, || {
         scenario(IRGIX, room(IRGIX)?.door, false)
+    })
+}
+
+#[test]
+fn irgix_return_step_clears_the_abandoned_visit_and_preserves_the_personal_cooldown() -> TestResult
+{
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(IRGIX_RETURN, || {
+        scenario(IRGIX_RETURN, room(IRGIX_RETURN)?.door, false)
     })
 }
 
@@ -240,6 +258,11 @@ pub(super) async fn exercise(
     .await?;
     let booked = cooldown().await?.ok_or("solo cooldown")?;
     assert!((future - 10_000..=future).contains(&booked));
+    if name == IRGIX_RETURN {
+        Box::pin(return_through_portal(owner, admitted, r, origin)).await?;
+        assert_eq!(cooldown().await?, Some(booked));
+        return Ok(());
+    }
     owner.drain_quest_encounter_deadlines().await;
     assert_eq!(
         owner
@@ -270,5 +293,76 @@ pub(super) async fn exercise(
         local(r.exit)
     );
     assert!(live(owner, r.boss).await?.is_empty());
+    Ok(())
+}
+
+async fn return_through_portal(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    room: &Room,
+    origin: Position,
+) -> TestResult {
+    use crate::foundation::ExactActorRef;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let session = admitted.game_session_id;
+    let map = owner.bundle_map().ok_or("map")?;
+    let live = super::engworldchg_journals::live_creatures;
+    let [previous]: [ExactActorRef; 1] = live(owner, room.boss)
+        .await?
+        .try_into()
+        .map_err(|_| "original encounter boss")?;
+    let before_exit = Position {
+        x: room.manual_exit.x - 1,
+        ..room.manual_exit
+    };
+    for (approach, expected) in [(before_exit, room.exit), (origin, origin)] {
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let proof = crate::map::floor::prepare_quest_callback_teleport(
+                &runtime,
+                owner.movement_cells(),
+                actor,
+                session,
+                runtime.read_actor_position(actor).map_err(debug)?,
+                local(approach),
+                false,
+                &crate::map::floor::BundleDoors(&map.facts),
+            )
+            .map_err(debug)?;
+            runtime.commit_source_step(proof).map_err(debug)?;
+            assert!(runtime.contains_live_creature(previous));
+        }
+        let command = admitted.continuity.next_command_id;
+        let result = wire(
+            owner,
+            admitted,
+            command,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            encode_step_intent(StepDirection::East),
+        )
+        .await?;
+        assert_eq!(
+            decode_step_result(&result).map_err(debug)?,
+            StepDisposition::Moved
+        );
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            local(expected)
+        );
+    }
+    assert!(live(owner, room.boss).await?.is_empty());
+    assert!(
+        owner
+            .states
+            .quest_callbacks
+            .next_encounter_due_us()
+            .is_none()
+    );
     Ok(())
 }
