@@ -102,6 +102,10 @@ pub struct CallbackEffects {
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
+    /// Immediate creature placement around the selected object.
+    /// Crystal 201189f8, data-global/scripts/quests/the_new_frontier/action_beaver.lua:12-38.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub spawn_creatures: Vec<CreatureSpawn>,
     pub encounter: Option<Encounter>,
 }
 
@@ -299,6 +303,27 @@ pub struct EncounterPlayer {
 pub struct EncounterMonster {
     pub position: Position,
     pub creature: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CreatureSpawn {
+    pub creature: String,
+    pub count: u8,
+}
+
+pub fn valid_creature_spawn(spawns: &[CreatureSpawn]) -> bool {
+    (1..=8).contains(&spawns.len())
+        && spawns
+            .iter()
+            .map(|spawn| usize::from(spawn.count))
+            .sum::<usize>()
+            <= 8
+        && spawns.iter().all(|spawn| {
+            spawn.count > 0
+                && spawn.creature.starts_with("oteryn:creature.")
+                && super::super::valid_quest_key(&spawn.creature)
+        })
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -748,12 +773,34 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }) {
         return false;
     }
+    if !effects.spawn_creatures.is_empty()
+        && (!valid_creature_spawn(&effects.spawn_creatures)
+            || !callback.requires_world_admission
+            || !callback.has_personal_state()
+            || callback.actor_kind != ActorKind::Player
+            || callback.trigger != Trigger::Use
+            || callback.selector.position.is_none()
+            || callback.item_on_target.is_none()
+            || callback.lever.is_some()
+            || callback.reversible
+            || callback.teleport.is_some()
+            || callback.remote_teleport.is_some()
+            || !callback.passages.is_empty()
+            || effects.transform.is_some()
+            || effects.item_presence.is_some()
+            || effects.target_transform.is_some()
+            || effects.reset_after_ms.is_some()
+            || effects.restore_disguise)
+    {
+        return false;
+    }
     let operations = usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
         + usize::from(effects.encounter.is_some())
         + usize::from(effects.scene.is_some())
         + usize::from(effects.reward_door.is_some())
-        + usize::from(effects.party_transfer.is_some());
+        + usize::from(effects.party_transfer.is_some())
+        + usize::from(!effects.spawn_creatures.is_empty());
     if let Some(claimed_rewards) = effects
         .quest_completion
         .as_ref()
@@ -797,6 +844,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && effects.spawn_creatures.is_empty()
                 && (!lever
                     || (effects.scene.is_none()
                         && effects.party_transfer.is_none()

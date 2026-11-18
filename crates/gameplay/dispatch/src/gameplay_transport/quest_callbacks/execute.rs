@@ -961,6 +961,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return preflight;
             }
         }
+        let creature_spawn = if callback.effects.spawn_creatures.is_empty() {
+            None
+        } else {
+            match super::spawn_creatures::prepare(
+                self,
+                runtime,
+                map,
+                local(Position {
+                    x: pos.x,
+                    y: pos.y,
+                    floor: pos.floor,
+                }),
+                &callback.effects.spawn_creatures,
+            ) {
+                Ok(spawn) => Some(spawn),
+                Err(disposition) => return disposition,
+            }
+        };
         let mut success_preface = None;
         if callback.effects.encounter.is_some() && callback.has_personal_state() && !durable {
             return UseDisposition::Rejected;
@@ -1515,6 +1533,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
+            } else if let Some(spawn) = creature_spawn {
+                if !spawn.publish(runtime) {
+                    return UseDisposition::Rejected;
+                }
+                states.owner_wake.notify_one();
             } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
             {
                 return UseDisposition::Rejected;

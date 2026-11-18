@@ -557,7 +557,8 @@ fn scenario_case(
     if name.starts_with("qengine-rewards-world-clock")
         || matches!(
             name,
-            "qengine-rewards-authored-world-rewards"
+            super::super::frontier_tree_bait::NAME
+                | "qengine-rewards-authored-world-rewards"
                 | "qengine-rewards-authored-world-rewards-full"
                 | super::super::secret_service_dock_fire::NAME
                 | "qengine-rewards-authored-native-admission"

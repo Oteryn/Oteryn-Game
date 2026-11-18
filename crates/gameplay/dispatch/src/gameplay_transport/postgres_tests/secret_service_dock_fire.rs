@@ -45,7 +45,7 @@ pub(super) async fn exercise(owner: &mut ComposedFreshAdmission<'_, '_, '_>, adm
         position: AT, item: "oteryn:item.tibia.i5467".into(), count: 1,
     }, 4600, true).await?;
     let ignition = owner.owner_now().get();
-    assert_eq!(use_dock(owner, admitted).await?, UseDisposition::Committed);
+    assert_eq!(use_target(owner, admitted, AT).await?, UseDisposition::Committed);
     let pos = crate::map::overlay::TilePos { x: AT.x, y: AT.y, floor: AT.floor };
     let due = {
         let map = owner.bundle_map().ok_or("map")?;
@@ -56,7 +56,7 @@ pub(super) async fn exercise(owner: &mut ComposedFreshAdmission<'_, '_, '_>, adm
         assert_eq!(map.facts.expire_movement_items(due - 1), 0);
         due
     };
-    assert_eq!(use_dock(owner, admitted).await?, UseDisposition::Occupied);
+    assert_eq!(use_target(owner, admitted, AT).await?, UseDisposition::Occupied);
     let stored: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1").bind(TRACK).fetch_one(&h.pool).await?;
     assert_eq!(stored, 2);
     let map = owner.bundle_map().ok_or("map")?;
@@ -67,10 +67,10 @@ pub(super) async fn exercise(owner: &mut ComposedFreshAdmission<'_, '_, '_>, adm
     Ok(())
 }
 
-async fn use_dock(owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession) -> TestResult<UseDisposition> {
+pub(super) async fn use_target(owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession) -> TestResult<UseDisposition> {
     owner.clock_origin = owner.clock_origin.checked_sub(Duration::from_secs(2)).ok_or("clock")?;
     let map = owner.bundle_map().ok_or("map")?;
-    let key = oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1).ok_or("source position")?;
+    let key = oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, 1).ok_or("source position")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let use_intent = encode_use_intent(&WorldObjectTarget {placement, expected_revision: map.facts.object_revision(key)}).map_err(debug)?;

@@ -53,6 +53,16 @@ pub(super) async fn queue_death(
     creature: &str,
     command: u64,
 ) -> TestResult<crate::foundation::ExactActorRef> {
+    queue_death_using(owner, admitted, creature, command, None).await
+}
+
+pub(super) async fn queue_death_using(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    creature: &str,
+    command: u64,
+    existing: Option<crate::foundation::ExactActorRef>,
+) -> TestResult<crate::foundation::ExactActorRef> {
     use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
     use crate::gameplay_transport::kill_reward::KillSink;
     let actor = admitted.runtime_actor.ok_or("actor")?;
@@ -68,6 +78,10 @@ pub(super) async fn queue_death(
     let now = observed.get() / 1000;
     let target = {
         let mut runtime = owner.runtime.lock().await;
+        let target = if let Some(target) = existing {
+            assert_eq!(runtime.creature_spell_target_atom(target).map_err(debug)?.as_bytes(), creature.as_bytes());
+            target
+        } else {
         let at = runtime
             .read_actor_position(actor)
             .map_err(debug)?
@@ -83,6 +97,8 @@ pub(super) async fn queue_death(
         runtime
             .install_creature_policy(target, creature)
             .map_err(debug)?;
+            target
+        };
         let lease = runtime
             .bound_attacker_lease(actor, session)
             .map_err(debug)?;
