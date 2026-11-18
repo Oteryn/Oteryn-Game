@@ -420,6 +420,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map(|(who, session, _)| (*who, *session))
                     .collect(),
                 lever,
+                (self.owner_now().get() / 1_000).saturating_add(u64::from(wave.timeout_ms)),
             ));
             states.owner_wake.notify_one();
             for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {

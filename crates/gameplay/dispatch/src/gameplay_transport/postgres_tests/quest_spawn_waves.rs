@@ -167,6 +167,26 @@ fn quest_wave_victory_awards_both_survivors_even_without_quest_progress() -> Tes
 }
 
 #[test]
+fn quest_wave_uses_an_in_time_terminal_death_observed_after_timeout() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-wave-in-time-death", move || {
+        scenario(admin, Case::VictoryBeforeTimeout)
+    })
+}
+
+#[test]
+fn quest_wave_terminal_death_at_timeout_ejects_both_without_victory_credit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-wave-death-at-timeout", move || {
+        scenario(admin, Case::DeathAtTimeout)
+    })
+}
+
+#[test]
 fn quest_step_earth_hit_updates_current_vitals_once() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -192,7 +212,9 @@ enum Case {
     PeriodicMissingCenter,
     PeriodicOccupiedCenter,
     Waves,
+    DeathAtTimeout,
     Victory,
+    VictoryBeforeTimeout,
     VictoryWithoutProgress,
     SurvivalStep,
     Stations,
@@ -203,6 +225,12 @@ enum Case {
     WorldCredit,
 }
 
+impl Case {
+    fn has_victory_binding(self) -> bool {
+        matches!(self, Self::Victory | Self::VictoryBeforeTimeout | Self::VictoryWithoutProgress | Self::DeathAtTimeout | Self::UnknownAchievement)
+    }
+}
+
 fn scenario(admin: String, case: Case) -> TestResult {
     run(async move |_| {
         let started = std::time::Instant::now();
@@ -210,7 +238,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         callback.key = "oteryn:quest-callback/fixture/quest-spawn".into();
         let initial_storage = std::mem::take(&mut callback.storage);
         callback.requires_world_admission = false;
-        let victory = matches!(case, Case::Victory | Case::VictoryWithoutProgress | Case::UnknownAchievement);
+        let victory = case.has_victory_binding();
         let credit_stage = i64::from(matches!(case, Case::VictoryWithoutProgress));
         let credit = || WaveCredit::Bound {
             key: CREDIT.into(),
@@ -253,8 +281,8 @@ fn scenario(admin: String, case: Case) -> TestResult {
                     EXIT
                 },
                 timeout_credit: match case {
-                    Case::Victory | Case::VictoryWithoutProgress | Case::UnknownAchievement => None,
                     Case::WorldCredit => Some(WaveCredit::Reference(CREDIT.into())),
+                    _ if victory => None,
                     _ => Some(credit()),
                 },
                 // Crystal the_new_frontier/creaturescripts_tirecz_kill.lua:19-34.
@@ -423,7 +451,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 owner.states.quest_callbacks.periodic_boss_fixture.set(Vec::new()).is_ok()
             );
         }
-        if matches!(case, Case::Waves | Case::Victory | Case::VictoryWithoutProgress | Case::SurvivalStep | Case::Stations | Case::UnreachableExit | Case::UnknownAchievement | Case::WorldCredit) {
+        if victory || matches!(case, Case::Waves | Case::SurvivalStep | Case::Stations | Case::UnreachableExit | Case::WorldCredit) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback, matches!(case, Case::WorldCredit))?));
         } else if matches!(case, Case::Retaliation) {
             owner.quest_catalogue = Some(std::sync::Arc::new(retaliation_catalogue(&callback)?));
@@ -489,9 +517,8 @@ fn scenario(admin: String, case: Case) -> TestResult {
         )
         .await?;
         match case {
-            Case::Waves | Case::Victory | Case::VictoryWithoutProgress => {
-                wave_scenario(&h, &owner, &mut admitted, deps.actor, victory, 1-credit_stage)
-                    .await?
+            Case::Waves | Case::Victory | Case::VictoryBeforeTimeout | Case::VictoryWithoutProgress | Case::DeathAtTimeout => {
+                wave_scenario(&h, &owner, &mut admitted, deps.actor, case).await?
             }
             Case::SurvivalStep => survival_step_scenario(&owner, &mut admitted, deps.actor).await?,
             Case::Stations => stations_scenario(&h, &owner, &mut admitted, deps.actor).await?,
@@ -796,9 +823,11 @@ async fn wave_scenario(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     player: ExactActorRef,
-    victory: bool,
-    progress: i64,
+    case: Case,
 ) -> TestResult {
+    let victory = case.has_victory_binding();
+    let timeout_edge = matches!(case, Case::VictoryBeforeTimeout | Case::DeathAtTimeout);
+    let timed_out = matches!(case, Case::DeathAtTimeout);
     assert_eq!(
         use_room(owner, admitted, 1).await?,
         UseDisposition::Rejected
@@ -830,6 +859,8 @@ async fn wave_scenario(
     });
     started.await?;
     tokio::time::pause();
+    let clock = timeout_edge.then(|| owner.freeze_owner_clock_for_test());
+    let start_us = owner.owner_now().get();
     let result = use_room(owner, admitted, 3).await;
     drop(release);
     blocking.await?;
@@ -866,9 +897,22 @@ async fn wave_scenario(
         // is occupied. Stay inside the room and clear of both staged players.
         assert_eq!(at.x, local(FIRST).x);
         assert!((local(FIRST).y..=local(PEER_LANDING).y).contains(&at.y));
+        if timeout_edge {
+            // Delay the scheduler across cleanup (Crystal action_arena.lua:71).
+            // Stamp the lethal turn independently at the boundary or just before it.
+            let lethal_ms = if timed_out { 10_000 } else { 9_999 };
+            tokio::time::advance(Duration::from_millis(lethal_ms - 3_000)).await;
+            owner.states.test_owner_time.store(
+                start_us + lethal_ms * 1_000 + 1,
+                std::sync::atomic::Ordering::Relaxed,
+            );
+        }
         project_wave_death(owner, *terminal, b"terminal-wave").await?;
+        if timeout_edge {
+            tokio::time::advance(Duration::from_millis(1)).await;
+        }
         owner.drain_quest_encounter_deadlines().await;
-        VICTORY_EXIT
+        if timed_out { EXIT } else { VICTORY_EXIT }
     } else {
         assert!(active.iter().any(|(_, at)| *at == local(FIRST)));
         assert!(active.iter().any(|(_, at)| *at == local(SECOND)));
@@ -880,6 +924,7 @@ async fn wave_scenario(
     assert!(creatures(owner).await?.is_empty());
     assert_eq!(next_spawn_delay(owner).await, None);
     tokio::time::resume();
+    drop(clock);
 
     let primary = admitted
         .item_fence
@@ -898,8 +943,9 @@ async fn wave_scenario(
     };
     let primary_after = read_credit(primary).await?;
     let partner_after = read_credit(partner).await?;
-    assert_eq!(primary_after.tracks().get(TRACK), Some(&progress));
-    assert_eq!(partner_after.tracks().get(TRACK), Some(&progress));
+    let progress = (!timed_out).then_some(i64::from(!matches!(case, Case::VictoryWithoutProgress)));
+    assert_eq!(primary_after.tracks().get(TRACK).copied(), progress);
+    assert_eq!(partner_after.tracks().get(TRACK).copied(), progress);
     owner.drain_quest_encounter_deadlines().await;
     assert_eq!(read_credit(primary).await?, primary_after);
     assert_eq!(read_credit(partner).await?, partner_after);
@@ -910,7 +956,7 @@ async fn wave_scenario(
     .bind(CHAMPION)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(grants, if victory { 2 } else { 0 });
+    assert_eq!(grants, if victory && !timed_out { 2 } else { 0 });
     Ok(())
 }
 

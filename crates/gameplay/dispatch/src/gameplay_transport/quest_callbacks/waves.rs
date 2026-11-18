@@ -20,6 +20,7 @@ pub(super) struct ActiveWaveRun {
     pub(super) participants: Vec<(ExactActorRef, GameSessionId)>,
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     started: Instant,
+    timeout_owner_ms: u64,
     next: usize,
     creatures: Vec<ExactActorRef>,
     terminal: Option<ExactActorRef>,
@@ -35,6 +36,7 @@ impl ActiveWaveRun {
         callback: String,
         participants: Vec<(ExactActorRef, GameSessionId)>,
         lever: Option<(u64, crate::map::view::EntryFacts)>,
+        timeout_owner_ms: u64,
     ) -> Self {
         Self {
             key,
@@ -43,6 +45,7 @@ impl ActiveWaveRun {
             participants,
             scope: runtime.encounter_owner_scope(),
             started: Instant::now(),
+            timeout_owner_ms,
             next: 0,
             creatures: Vec::new(),
             terminal: None,
@@ -93,11 +96,17 @@ impl ActiveWaveRun {
             .retain(|actor| runtime.contains_live_creature(*actor));
         let timed_out = elapsed >= Duration::from_millis(plan.timeout_ms.into());
         if self.exit.is_none() {
+            // Crystal action_arena.lua:71 arms cleanup at the room timeout;
+            // creaturescripts_tirecz_kill.lua:19-30 settles the kill event.
+            // Retained deaths carry the lethal turn's owner clock, even when
+            // this scheduler first observes the projection after the cutoff.
             self.exit = if let Some(victory) = &plan.victory
-                && self
-                    .terminal
-                    .is_some_and(|actor| runtime.retains_corpse_projection(actor))
-            {
+                && self.terminal.is_some_and(|actor| {
+                    runtime
+                        .borrow_combat_death()
+                        .projected_death_at_ms(actor)
+                        .is_ok_and(|at| at.map_or(!timed_out, |at| at < self.timeout_owner_ms))
+                }) {
                 Some((victory.exit, true))
             } else {
                 timed_out.then_some((plan.timeout_exit, false))
