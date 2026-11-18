@@ -21,9 +21,9 @@ use super::consume_transform_audit as audit;
 mod cake;
 pub use cake::CakeBakerContext;
 mod dispenser;
-pub mod mind;
 #[path = "consume_transform_ground.rs"]
 mod ground;
+pub mod mind;
 #[path = "consume_transform_planting.rs"]
 mod planting;
 pub use ground::{GroundActionContext, GroundActionSource};
@@ -279,9 +279,14 @@ async fn write<C: ItemLoopContent>(
     let world = fence.runtime_scope.world_id();
     let selected_request = if matches!(ground, ActionContext::Mind(mind::MindAction::Field)) {
         let Some(source) = mind::select_shard(tx, fence, request.command).await? else {
-            return Ok(ConsumeTransformResult::refused(UseDisposition::NothingToUse));
+            return Ok(ConsumeTransformResult::refused(
+                UseDisposition::NothingToUse,
+            ));
         };
-        Some(ConsumeTransformRequest { source, ..request.clone() })
+        Some(ConsumeTransformRequest {
+            source,
+            ..request.clone()
+        })
     } else {
         None
     };
@@ -487,7 +492,10 @@ async fn write<C: ItemLoopContent>(
     let source_ordinal: String = source.try_get("ordinal")?;
     let source_location: Value = source.try_get("source_location")?;
     let parent: Option<Vec<u8>> = source.try_get("parent")?;
-    if conversion.recipe == cake::RECIPE {
+    let mind_debit = matches!(ground, ActionContext::Mind(_));
+    if conversion.recipe == cake::RECIPE || mind_debit {
+        // A one-item debit adds neither weight nor slots. Its locked custody
+        // and paid quantity are proved by the same persisted action and guard.
         let capacity = if let Some(parent) = &parent {
             let bag = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
                 .bind(parent).fetch_one(&mut ***tx).await?;
@@ -515,7 +523,11 @@ async fn write<C: ItemLoopContent>(
             parent.as_deref(),
             source_kind,
             &source_ordinal,
-            capacity,
+            if mind_debit {
+                capacity.min(20)
+            } else {
+                capacity
+            },
             &[],
             &source_location,
             None,

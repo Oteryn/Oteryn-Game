@@ -29,7 +29,10 @@ pub(super) fn is_recipe(recipe: &str) -> bool {
 }
 
 impl DurabilityRoot {
-    #[allow(clippy::too_many_arguments, reason = "binds the action to the existing Item owner fences")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the action to the existing Item owner fences"
+    )]
     pub async fn consume_mind_item<C: ItemLoopContent>(
         &self,
         permit: &super::super::spell_owner_commit::SpellLanePermit,
@@ -42,9 +45,18 @@ impl DurabilityRoot {
         action: MindAction,
     ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
         self.consume_transform_inner(
-            permit, recovery, node, fence, request, native, content, false, None,
+            permit,
+            recovery,
+            node,
+            fence,
+            request,
+            native,
+            content,
+            false,
+            None,
             ActionContext::Mind(action),
-        ).await
+        )
+        .await
     }
 }
 
@@ -68,19 +80,30 @@ pub(super) async fn select_shard(
     .fetch_all(&mut ***tx)
     .await?;
     let Some(index) = reward_bag_bounded_draw(
-        *fence.game_session_id.as_bytes(), command.command_id().get(),
-        *fence.character_id.as_bytes(), 51, rows.len() as u64,
+        *fence.game_session_id.as_bytes(),
+        command.command_id().get(),
+        *fence.character_id.as_bytes(),
+        51,
+        rows.len() as u64,
     ) else {
         return Ok(None);
     };
-    rows[index as usize].as_slice().try_into().map(Some)
+    rows[index as usize]
+        .as_slice()
+        .try_into()
+        .map(Some)
         .map_err(|_| DurabilityError::InvalidStoredState)
 }
 
 pub fn potion_landing(command: CommandRef, source: [u8; 16]) -> Option<usize> {
     reward_bag_bounded_draw(
-        *command.game_session_id().as_bytes(), command.command_id().get(), source, 50, 2,
-    ).map(|index| index as usize)
+        *command.game_session_id().as_bytes(),
+        command.command_id().get(),
+        source,
+        50,
+        2,
+    )
+    .map(|index| index as usize)
 }
 
 pub(super) async fn prepare(
@@ -90,6 +113,9 @@ pub(super) async fn prepare(
     definition: &TypedDefinitionRef,
     action: MindAction,
 ) -> Result<Option<ActionPlan>, DurabilityError> {
+    if definition.family != "Item" || definition.revision_ref != "definition-r1" {
+        return Ok(None);
+    }
     let effects = match action {
         MindAction::Potion if definition.production_key == POTION => {
             let equipped: bool = sqlx::query_scalar(
@@ -107,7 +133,8 @@ pub(super) async fn prepare(
             if !equipped {
                 return Ok(None);
             }
-            let landing = potion_landing(request.command, request.source).ok_or(DurabilityError::InvalidStoredState)?;
+            let landing = potion_landing(request.command, request.source)
+                .ok_or(DurabilityError::InvalidStoredState)?;
             json!({"kind":"consume_effect","landing":landing})
         }
         MindAction::Field if SHARDS.contains(&definition.production_key.as_str()) => json!({}),

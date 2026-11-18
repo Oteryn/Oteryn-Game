@@ -163,7 +163,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &self.reset_epoch.to_be_bytes(),
         ]
         .concat();
-        let _ = self
+        let result = self
             .root
             .consume_mind_item(
                 permit,
@@ -182,6 +182,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 MindAction::Field,
             )
             .await;
+        #[cfg(test)]
+        eprintln!("KILMARESH_MIND_FIELD_DEBIT {result:?}");
+        if result.is_err() {
+            super::super::operator_event("kilmaresh_mind_field_debit_unavailable");
+        }
     }
 }
 
