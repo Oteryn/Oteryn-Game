@@ -8,12 +8,13 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 pub(super) const NAME: &str = "qengine-rewards-rahemos-hat";
 const TARGET: Position = Position { x: 101, y: 100, floor: -7 };
-pub(super) const DOOR: Position = Position { x: 103, ..TARGET };
+const DOOR: Position = Position { x: 100, y: 99, ..TARGET };
+const LANDING: Position = Position { y: 100, ..DOOR };
 const SUCCESS: &str = "You found the carrot! The door is open!";
 const FAILURE: &str = "You guessed wrong! Take this! Carrot changed now the Hat!";
 
 #[test]
-fn rahemos_lever_roll_leaves_hat_closed_on_damage_and_opens_on_success() -> TestResult {
+fn rahemos_hat_roll_controls_damage_carrot_and_passage_to_the_oasis() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
@@ -27,7 +28,7 @@ pub(super) fn callback(at: Position) -> TestResult<Callback> {
         "key":"oteryn:quest-callback/rahemos-hat-fixture",
         "quest":"oteryn:quest.the_ancient_tombs_quest","trigger":"use",
         "selector":{"position":at,"ordinal":1,"appearance":2772},
-        "lever":[2772,2773],"reversible":false,"passages":[{"position":DOOR,"appearance":1662,"replacement":1663,"if_present":true}],"storage":[],"offerings":[],
+        "lever":[2772,2773],"reversible":false,"passages":[{"position":DOOR,"appearance":1662,"replacement":1663,"if_present":true,"replacement_passable":true}],"storage":[],"offerings":[],
         "return_on_failure":false,
         "success_message":SUCCESS,
         "effects":{"reset_after_ms":4000,"magic":{"position":DOOR,"effect":15},"use_chance":{
@@ -45,7 +46,17 @@ pub(super) async fn exercise(
     h: &Harness,
 ) -> TestResult {
     let row = callback(TARGET)?;
-    assert!(owner.states.quest_callbacks.fixture.set(vec![row.clone()]).is_ok());
+    // Crystal 201189f8 movements_oasis_lever_door.lua:3-15 binds the
+    // doorway's StepIn (AID 12108) separately from the hats' USE (AID 12107).
+    let passage = serde_json::from_value(serde_json::json!({
+        "key":"oteryn:quest-callback/rahemos-oasis-step-fixture",
+        "quest":row.quest, "trigger":"step_in",
+        "selector":{"native":{"position":DOOR,"ordinal":1,"appearance":1662}},
+        "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
+        "teleport":LANDING,"effects":{"teleport_effect":11},
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_oasis_lever_door.lua:3-15"]
+    }))?;
+    assert!(owner.states.quest_callbacks.fixture.set(vec![row.clone(), passage]).is_ok());
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let session = admitted.game_session_id;
     owner.states.chat.admit(session, "Rahemos", owner.owner_now());
@@ -107,7 +118,7 @@ pub(super) async fn exercise(
         assert!(owner.states.chat.drain(session).iter().any(|line|
             matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == feedback)));
         let remaining = super::underwater_drowning::health(owner, actor, session).await?;
-        assert!((1..=10).contains(&before.saturating_sub(remaining)));
+        assert_eq!(before - remaining, 10, "only the losing pull deals 200 physical damage before the fixture resistance");
     }
     let carrot = {
         let map = owner.bundle_map().ok_or("map")?;
@@ -174,5 +185,16 @@ pub(super) async fn exercise(
     assert!(!spawned(owner));
     assert_eq!(appearance(owner, TARGET)?,2772);
     assert_eq!(appearance(owner, DOOR)?,1663);
+
+    let map = owner.bundle_map().ok_or("map")?;
+    let last_effect = map.facts.movement_effects_since(0).last().map_or(0, |entry| entry.0);
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    let (step, _) = owner.ordinary_paced_step(actor, session, StepDirection::North, None, None).await;
+    assert_eq!(step.disposition, StepDisposition::Moved);
+    let position = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+    assert_eq!(position.position(), super::quest_world_callbacks::local(LANDING));
+    assert!(map.facts.movement_effects_since(last_effect).iter().any(|(_, at, cue)| {
+        (at.x, at.y, at.floor, *cue) == (LANDING.x, LANDING.y, LANDING.floor, 11)
+    }));
     Ok(())
 }
