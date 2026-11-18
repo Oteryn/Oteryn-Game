@@ -3,7 +3,9 @@
 
 use super::{PendingKillSettlement, TaskSnapshot};
 use crate::durability::quest_state::native_kills::{NativeDeathSource, NativeQuestDeath};
-use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+use crate::foundation::{
+    ChannelRuntimeV1, CharacterId, ExactActorRef, GameSessionId, MovementLocalPosition,
+};
 use oteryn_gameplay_quests::quest::{
     authored_bindings::kills::DamageRecipients, native_kills::admits_death_position,
 };
@@ -14,6 +16,26 @@ pub(super) fn position(at: MovementLocalPosition) -> Option<(u16, u16, i8)> {
         u16::try_from(at.y).ok()?,
         i8::try_from(at.floor).ok()?,
     ))
+}
+
+struct DamageCandidate {
+    source_actor: Option<ExactActorRef>,
+    character: CharacterId,
+    session: GameSessionId,
+    lease_generation: u64,
+    total: u64,
+    last_hit: Option<u64>,
+}
+
+impl DamageCandidate {
+    fn matches(&self, snapshot: &TaskSnapshot) -> bool {
+        self.character.as_bytes() == &snapshot.character
+            && self
+                .source_actor
+                .is_none_or(|actor| actor == snapshot.actor)
+            && self.session == snapshot.session
+            && self.lease_generation == snapshot.lease_generation
+    }
 }
 
 pub(super) fn capture(
@@ -49,46 +71,88 @@ pub(super) fn capture(
     let Ok(attributed) = owner.current_session_damage_shares(entry.target) else {
         return recipients;
     };
+    let Ok(census) = runtime.positioned_actor_census() else {
+        return recipients;
+    };
+    let live = |candidate: &DamageCandidate| {
+        candidate.total > 0
+            && census.iter().any(|(actor, _, session)| {
+                *session == Some(candidate.session)
+                    && candidate.source_actor.is_none_or(|source| source == *actor)
+                    && runtime
+                        .bound_attacker_lease(*actor, candidate.session)
+                        .is_ok_and(|lease| {
+                            lease.character_id() == candidate.character
+                                && lease.generation() == candidate.lease_generation
+                        })
+            })
+    };
+    let build_rank = |mut candidates: Vec<DamageCandidate>| {
+        candidates.retain(live);
+        candidates.sort_unstable_by_key(|candidate| {
+            (
+                std::cmp::Reverse(candidate.total),
+                !top.is_some_and(|winner| winner.character == candidate.character),
+                candidate.character,
+            )
+        });
+        candidates
+    };
+    let direct = build_rank(
+        direct
+            .into_iter()
+            .map(|hit| DamageCandidate {
+                source_actor: Some(hit.actor),
+                character: hit.character,
+                session: hit.session,
+                lease_generation: hit.lease_generation,
+                total: hit.total,
+                last_hit: hit.last_damage_at_ms,
+            })
+            .collect(),
+    );
+    let attributed = build_rank(
+        attributed
+            .into_iter()
+            .filter_map(|hit| {
+                Some(DamageCandidate {
+                    source_actor: None,
+                    character: hit.character,
+                    session: hit.session?,
+                    lease_generation: hit.lease_generation?,
+                    total: hit.total,
+                    last_hit: hit.last_damage_at_ms,
+                })
+            })
+            .collect(),
+    );
     for snapshot in snapshots {
-        let direct_hit = direct.iter().find(|hit| {
-            hit.total > 0
-                && hit.character.as_bytes() == &snapshot.character
-                && hit.actor == snapshot.actor
-                && hit.session == snapshot.session
-                && hit.lease_generation == snapshot.lease_generation
-        });
-        let owner_hit = attributed.iter().find(|hit| {
-            hit.total > 0
-                && hit.character.as_bytes() == &snapshot.character
-                && hit.session == Some(snapshot.session)
-                && hit.lease_generation == Some(snapshot.lease_generation)
-        });
-        let is_top = top.is_some_and(|winner| {
-            winner.actor == snapshot.actor
-                && winner.session == snapshot.session
-                && winner.lease_generation == snapshot.lease_generation
-        });
         for counter in &snapshot.native_counters {
             let Some(credit) = counter.damage_credit else {
                 continue;
             };
             if counter.creature != entry.creature
-                || credit.recipients == DamageRecipients::TopDamage && !is_top
                 || !admits_death_position(counter.death_area, &counter.death_areas, point)
             {
                 continue;
             }
-            let hit = if credit.summon_owner {
-                owner_hit.map(|share| (share.character, share.last_damage_at_ms))
+            let candidates = if credit.summon_owner {
+                &attributed
             } else {
-                direct_hit.map(|share| (share.character, share.last_damage_at_ms))
+                &direct
             };
-            let Some((character, hit_at_ms)) = hit else {
+            // Crystal201189f creature.cpp:531-552 ranks damage after the fight
+            // window, and :587 resolves the winning summon to its master.
+            let mut eligible = candidates
+                .iter()
+                .filter(|hit| credit.admits_hit(hit.last_hit, entry.facts.death_at_ms));
+            let hit = match credit.recipients {
+                DamageRecipients::TopDamage => eligible.next().filter(|hit| hit.matches(snapshot)),
+                DamageRecipients::AllDamagers => eligible.find(|hit| hit.matches(snapshot)),
+            };
+            let Some(hit) = hit else {
                 continue;
             };
-            if !credit.admits_hit(hit_at_ms, entry.facts.death_at_ms) {
-                continue;
-            }
             recipients.push(super::super::quest_kills::Recipient {
                 actor: snapshot.actor,
                 session: snapshot.session,
@@ -102,10 +166,10 @@ pub(super) fn capture(
                     source: NativeDeathSource::Damage {
                         death: entry.facts.death,
                         session: snapshot.session,
-                        character,
+                        character: hit.character,
                         lease_generation: snapshot.lease_generation,
                         position,
-                        hit_at_ms,
+                        hit_at_ms: hit.last_hit,
                         death_at_ms: entry.facts.death_at_ms,
                     },
                 },

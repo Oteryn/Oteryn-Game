@@ -2148,9 +2148,13 @@ pub fn record_creature_kill(
             // no fallback invents XP, a loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
             if boss.is_none()
+                && !super::grizzly_kills::tracks_native_creature(
+                    sink.queue,
+                    &creature,
+                    top.present().is_some(),
+                )
                 && (top.present().is_none()
                     || !super::grizzly_kills::tracks_creature(&creature)
-                        && !super::grizzly_kills::tracks_native_creature(sink.queue, &creature)
                         && !tracks_native_progression(&creature)
                         && !sink.prey.is_some_and(|states| {
                             states.encounter_phases.has_terminal(runtime, target)

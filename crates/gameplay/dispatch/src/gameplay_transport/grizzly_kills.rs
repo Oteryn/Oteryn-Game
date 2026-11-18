@@ -295,14 +295,18 @@ fn freeze(
 /// Membership in the pinned Grizzly catalogue permits capture only, never a reward
 /// amount or a recipient. The native lethal facts and frozen live task runs still
 /// decide eligibility, and the fenced quest writer remains the sole value owner.
-pub(super) fn tracks_native_creature(queue: &KillSettlementQueue, creature: &str) -> bool {
-    oteryn_gameplay_quests::quest::native_kills::tracks_creature(creature)
+pub(super) fn tracks_native_creature(
+    queue: &KillSettlementQueue,
+    creature: &str,
+    principal_present: bool,
+) -> bool {
+    principal_present && oteryn_gameplay_quests::quest::native_kills::tracks_creature(creature)
         || queue.1.lock().is_ok_and(|cache| {
             cache.sessions.iter().any(|snapshot| {
-                snapshot
-                    .native_counters
-                    .iter()
-                    .any(|counter| counter.creature == creature)
+                snapshot.native_counters.iter().any(|counter| {
+                    counter.creature == creature
+                        && (principal_present || counter.damage_credit.is_some())
+                })
             })
         })
 }

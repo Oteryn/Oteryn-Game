@@ -9,6 +9,7 @@ use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_crea
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 const RAT: &str = "oteryn:creature.rat";
@@ -89,9 +90,14 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
     });
     let source = match case {
         Case::All => {
+            counter["gate"] = json!(TRACK);
+            counter["gate_value"] = json!(0);
+            counter["maximum"] = json!(1);
+            counter["set_to_maximum"] = json!(true);
             "Crystal201189f the_new_frontier/creaturescripts_shard_of_corruption_kill.lua:5-10"
         }
         Case::Top => {
+            counter["damage_credit"]["recent_damage_ms"] = json!(60_000);
             "Crystal201189f the_inquisition_quest/creaturescripts_inquisition_ungreez.lua:2-10"
         }
         Case::Time => {
@@ -122,9 +128,10 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         counter["maximum"] = json!(3);
         stages.push(stage("cave-rat", &counter));
     }
+    let fixture_digest = format!("{:x}", Sha256::digest(serde_json::to_vec(&stages)?));
     let definition = json!({"schema":1, "quests":[{
         "quest":"oteryn:quest.authored.draccoon_herald_outfits_quest",
-        "recipe_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "recipe_sha256": fixture_digest,
         "sources":[source],
         "tracks":[
             {"key":PHASE, "initial":1, "minimum":0, "maximum":1},
@@ -278,6 +285,18 @@ fn run(admin: String, case: Case) -> TestResult {
             .await?;
             assert_tracks(&h.pool, [0, 1, 0]).await?;
         }
+        if case == Case::Top {
+            death(
+                &owner,
+                &players,
+                RAT,
+                MovementLocalPosition { x: at.x + 1, ..at },
+                case,
+                140,
+            )
+            .await?;
+            assert_tracks(&h.pool, [0, 1, 0]).await?;
+        }
         death(
             &owner,
             &players,
@@ -289,7 +308,7 @@ fn run(admin: String, case: Case) -> TestResult {
         .await?;
         let expected = match case {
             Case::All | Case::Area => [1, 1, 0],
-            Case::Top => [1, 0, 0],
+            Case::Top => [1, 1, 0],
             Case::Time | Case::Summon => [1, 2, 0],
             Case::Ordered => [3, 3, 0],
         };
@@ -341,8 +360,8 @@ async fn death(
             .install_creature_policy(target, creature)
             .map_err(debug)?;
         let shares = [hp - 1, 1];
-        let age = if case == Case::Time {
-            60_000 + u64::from(ordinal == 130)
+        let age = if case == Case::Time || ordinal == 140 {
+            60_000 + u64::from(matches!(ordinal, 130 | 140))
         } else {
             1
         };
