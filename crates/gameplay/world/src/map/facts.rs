@@ -383,6 +383,7 @@ impl BundleFacts {
         ]
         .into_iter()
         .chain(6594..=6608)
+        .chain([7872, 27260]) // Crystal actions_note.lua:19 and movement-1-first_seal_close_mw.lua:66.
         .filter_map(|id| {
             let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
             movement_solidities.insert(id, definition.solid.unwrap_or(true));
