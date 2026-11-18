@@ -21,7 +21,10 @@ pub fn protect(
     set_damage_divisor(runtime, actors, 0)
 }
 
-pub(super) fn halve(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef) -> Result<(), CarrierError> {
+pub(super) fn halve(
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+) -> Result<(), CarrierError> {
     set_damage_divisor(runtime, &[actor], 2)
 }
 
@@ -92,13 +95,22 @@ impl EncounterHooks for DamageGates {
         max_sub_ordinal: Option<u16>,
         now_ms: Option<u64>,
     ) -> Option<Result<OwnerDamageResult, CarrierError>> {
-        let (_, divisor) = self.actors.iter().find(|(saved, _)| *saved == ExactActorRef(actor))?;
+        let (_, divisor) = self
+            .actors
+            .iter()
+            .find(|(saved, _)| *saved == ExactActorRef(actor))?;
         if *divisor == 0 {
             return Some(Err(CarrierError::PlanConflict));
         }
         command.damage /= i64::from(*divisor);
         Some(carrier.commit_encounter_single_damage(
-            continuity, actor, command, attacker, fail, max_sub_ordinal, now_ms,
+            continuity,
+            actor,
+            command,
+            attacker,
+            fail,
+            max_sub_ordinal,
+            now_ms,
         ))
     }
     fn projected_death(&mut self, _: ExactActorRef, _: CreatureDeathOccurrenceKey) {}

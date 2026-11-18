@@ -96,15 +96,7 @@ pub(super) fn phase_scenario(reenter: bool, zelos: bool) -> TestResult {
                 y: 100,
                 floor: -7,
             };
-            let world = if zelos {
-                super::quest_world_callbacks::world_with_cells(
-                    &callback,
-                    trigger,
-                    &[Position { x: 115, y: 113, floor: -7 }],
-                )?
-            } else {
-                super::quest_world_callbacks::world(&callback, trigger)?
-            };
+            let world = super::gravedg_zelos::lever_world(&callback, trigger)?;
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -296,6 +288,11 @@ pub(super) fn phase_scenario(reenter: bool, zelos: bool) -> TestResult {
                     .is_some(),
                 "admitted quest snapshot"
             );
+            let second = if zelos {
+                Some(super::gravedg_zelos::admit_partner(&h, &deps, &owner, &admitted).await?)
+            } else {
+                None
+            };
             let key =
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
@@ -319,8 +316,8 @@ pub(super) fn phase_scenario(reenter: bool, zelos: bool) -> TestResult {
                 UseDisposition::Committed,
                 "phase admission"
             );
-            if zelos {
-                return super::gravedg_zelos::exercise(&owner, &admitted).await;
+            if let Some(second) = second {
+                return super::gravedg_zelos::exercise(&owner, &admitted, second).await;
             }
             assert_eq!(
                 owner

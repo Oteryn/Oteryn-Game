@@ -227,11 +227,12 @@ pub(super) fn bind(
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
     if let Some(EncounterPhase::GraveDangerZelos { king, exit }) = encounter.phase {
-        let local = |at: oteryn_gameplay_quests::quest::world_callbacks::Position| MovementLocalPosition {
-            x: i32::from(at.x),
-            y: i32::from(at.y),
-            floor: -i16::from(at.floor),
-        };
+        let local =
+            |at: oteryn_gameplay_quests::quest::world_callbacks::Position| MovementLocalPosition {
+                x: i32::from(at.x),
+                y: i32::from(at.y),
+                floor: -i16::from(at.floor),
+            };
         let king_at = local(king);
         let timeout = TimeoutExit {
             exit: local(exit),
@@ -247,7 +248,9 @@ pub(super) fn bind(
         }
         return Ok(ActivePhase {
             key,
-            fight: Fight::Zelos(ZelosEncounter::bind(runtime, players, actors, king_at, now)?),
+            fight: Fight::Zelos(ZelosEncounter::bind(
+                runtime, players, actors, king_at, now,
+            )?),
             credits,
             frozen: None,
             cells,
@@ -359,7 +362,11 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStat
     active.retain(|phase| phase.fight.is_current(runtime));
     active.retain_mut(|phase| {
         let ActivePhase {
-            key, fight, cells, timeout, ..
+            key,
+            fight,
+            cells,
+            timeout,
+            ..
         } = phase;
         if let (Fight::Zelos(fight), Some(timeout)) = (&*fight, timeout.as_ref())
             && let Some(participants) = fight.timeout_participants(now)
@@ -393,14 +400,25 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStat
         let map = index.map();
         let underwater = super::paced_movement::underwater_drown::underwater;
         states.stage_special_movement_step(
-            runtime, map, actor, session, now, Some(before), after, None,
+            runtime,
+            map,
+            actor,
+            session,
+            now,
+            Some(before),
+            after,
+            None,
         );
         states.stage_underwater_step(
-            runtime, actor, session, now, underwater(map, before), underwater(map, after),
+            runtime,
+            actor,
+            session,
+            now,
+            underwater(map, before),
+            underwater(map, after),
         );
     }
 }
-
 
 type EvacuatedPlayer = (
     crate::content::NativeEntryMovementCells,
@@ -425,29 +443,31 @@ fn evacuate(
     };
     let map = index.map();
     let closed = crate::map::floor::BundleDoors(&map.facts);
-    let mut complete = true;
+    let mut moves = Vec::new();
+    let mut proofs = Vec::new();
     for &(actor, session) in participants {
         if runtime.player_control_facts(actor, session).is_err() {
             continue;
         }
         let Ok(before) = runtime.read_actor_position(actor) else {
-            complete = false;
-            continue;
+            return false;
         };
         if !exit.contains(before.position()) {
             continue;
         }
-        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
-            runtime, cells, actor, session, before, exit.exit, false, &closed,
+        let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+            runtime, cells, actor, session, before, exit.exit, &closed,
         ) else {
-            complete = false;
-            continue;
+            return false;
         };
-        let Ok(after) = runtime.commit_source_step(proof) else {
-            complete = false;
-            continue;
-        };
-        exits.push((cells.clone(), actor, session, before.position(), after.position()));
+        moves.push((actor, session, before.position()));
+        proofs.push(proof);
     }
-    complete
+    let Ok(snapshots) = runtime.commit_quest_relocation(proofs, || true) else {
+        return false;
+    };
+    for ((actor, session, before), after) in moves.into_iter().zip(snapshots) {
+        exits.push((cells.clone(), actor, session, before, after.position()));
+    }
+    true
 }

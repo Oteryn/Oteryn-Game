@@ -155,7 +155,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let occupant = occupants.next();
             let Some(&(who, expected, Some(member_session))) = occupant else {
                 // Crystal boss levers collect whoever stands on the staging tiles.
-                if encounter.phase.is_some() && occupant.is_none() {
+                if encounter.phase
+                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
+                    || (encounter.phase.is_some() && occupant.is_none())
+                {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -202,7 +205,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_admission(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -211,6 +214,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
+                matches!(encounter.phase, Some(
+                    oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::GraveDangerZelos { .. }
+                )),
             ) else {
                 return UseDisposition::NotPossible;
             };
