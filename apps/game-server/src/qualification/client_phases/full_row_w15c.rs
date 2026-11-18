@@ -37,6 +37,12 @@ const WALKWAY: TilePos = TilePos {
     y: 32770,
     floor: -6,
 };
+// Crystal 201189f8, data-global/world/world.otbm: the i482 opening drops onto i1968 here.
+const LADDER_LANDING: TilePos = TilePos {
+    x: 32674,
+    y: 32784,
+    floor: -7,
+};
 // Crystal 201189f8 data-global/world/world.otbm: the north-facing ramp at (32694, 32772, 7).
 const RAMP_FOOT: TilePos = TilePos {
     x: 32694,
@@ -148,11 +154,12 @@ fn to_walkway(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> 
     route(world, from, |at| at == WALKWAY)
 }
 
-fn to_ramp(world: &BundleWorld) -> TestResult<Vec<StepDirection>> {
-    // Crystal 201189f8, data-global/world/world.otbm. The path descends onto
-    // the ladder at (32674, 32784, 7) and crosses the jungle grass to the ramp.
-    route(world, WALKWAY, |at| at == RAMP_FOOT)
-        .ok_or_else(|| "step=reach observed=no-walk-route-from-walkway-to-ramp".into())
+fn to_ramp(world: &BundleWorld) -> TestResult<[Vec<StepDirection>; 2]> {
+    let descent = route(world, WALKWAY, |at| at == LADDER_LANDING)
+        .ok_or("step=reach observed=no-walk-route-from-walkway-to-ladder-landing")?;
+    let ground = route(world, LADDER_LANDING, |at| at == RAMP_FOOT)
+        .ok_or("step=reach observed=no-walk-route-from-ladder-landing-to-ramp")?;
+    Ok([descent, ground])
 }
 
 fn from_ramp(
@@ -367,7 +374,7 @@ async fn reach(
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<EntityRef> {
     let from = tile(client.world_spatial().actor_position)?;
-    let ramp = to_ramp(world)?;
+    let [descent, ramp] = to_ramp(world)?;
     let approach = from_ramp(world, npc)?;
     let path = if let Some(path) = to_walkway(world, from) {
         path
@@ -378,6 +385,7 @@ async fn reach(
         harbor
     };
     walk_leg(client, world, "port-hope-walkway", &path).await?;
+    walk_leg(client, world, "port-hope-ladder-landing", &descent).await?;
     walk_leg(client, world, "grizzly-ramp-foot", &ramp).await?;
     approach_grizzly(client, world, npc, "grizzly-adams", &approach).await
 }
@@ -591,12 +599,7 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
     }
     // Crystal's world.otbm has ladder i1968 at (32674, 32784, 7) and ramp
     // i1975 at (32694, 32772, 7), facing north per data/items/items.xml:4000-4002.
-    let ladder_landing = TilePos {
-        x: 32674,
-        y: 32784,
-        floor: -7,
-    };
-    for at in [WALKWAY, ladder_landing, RAMP_FOOT] {
+    for at in [WALKWAY, LADDER_LANDING, RAMP_FOOT] {
         assert!(
             world
                 .base()
@@ -647,11 +650,10 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
     )?;
     assert_eq!(walkway, WALKWAY);
     assert!(route(&world, PORT_HOPE, |at| near(at, grizzly)).is_none());
-    let ramp = check_leg(
-        "Raised walkway to Grizzly's ramp",
-        walkway,
-        to_ramp(&world)?,
-    )?;
+    let [descent, ramp] = to_ramp(&world)?;
+    let ladder = check_leg("Raised walkway to ladder landing", walkway, descent)?;
+    assert_eq!(ladder, LADDER_LANDING);
+    let ramp = check_leg("Ladder landing to Grizzly's ramp", ladder, ramp)?;
     assert_eq!(ramp, RAMP_FOOT);
     let approach = from_ramp(&world, grizzly)?;
     let reached = check_leg("Ramp foot to Grizzly Adams", ramp, approach)?;
