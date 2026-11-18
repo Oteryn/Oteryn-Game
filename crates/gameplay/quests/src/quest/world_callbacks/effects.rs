@@ -51,6 +51,12 @@ pub struct CallbackEffects {
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
+    /// Gate a physical callback using the authoritative Character creation sex.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_sex: Option<super::super::reward_callbacks::CreationSex>,
+    /// Require this fluid on the same carried instance the receipt consumes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_fluid_subtype: Option<u8>,
     /// Opt in to source-script displacement onto a present blocked pad.
     #[serde(default, skip_serializing_if = "is_false")]
     pub scripted_teleport: bool,
@@ -309,6 +315,9 @@ pub struct Encounter {
     /// Gather the players currently standing within a source spectator area.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub staging_area: Option<EncounterStagingArea>,
+    /// Spawn an immediate encounter in the room the triggering player stepped into.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub spawn_in_place: bool,
     pub room_min: Position,
     pub room_max: Position,
     /// A value-free source switch schedules native monsters without moving a party.
@@ -415,6 +424,20 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if (effects.required_sex.is_some() || effects.required_fluid_subtype.is_some())
+        && (!callback.requires_world_admission
+            || !callback.has_personal_state()
+            || callback.actor_kind != ActorKind::Player
+            || callback.trigger != Trigger::StepIn)
+        || effects.required_fluid_subtype.is_some_and(|subtype| {
+            subtype == 0
+                || callback.item_on_target.as_ref().is_none_or(|input| {
+                    !input.on_step || input.count != 1 || !input.ingredients.is_empty()
+                })
+        })
+    {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8
@@ -806,8 +829,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && !callback.opening_only
             && !callback.reversible
             && callback.offerings.is_empty()
-            && callback.item_on_target.is_none()
-            && (encounter.players.len() == 1 || encounter.staging_area.is_some())
+            && callback.item_on_target.as_ref().is_none_or(|input| {
+                (encounter.spawn_in_place && input.on_step)
+                    || (encounter.staging_area.is_some() && input.selected_instance)
+            })
+            && (encounter.players.len() == 1
+                || encounter.staging_area.is_some()
+                || encounter.spawn_in_place)
             && encounter.timing.is_none()
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
@@ -877,20 +905,30 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
         let gathering = encounter.staging_area.is_some();
-        if encounter.staging_area.is_some_and(|area| {
-            !encounter.players.is_empty()
-                || encounter.timing.is_some()
-                || encounter.phase.is_some()
-                || !pos(area.minimum)
-                || !pos(area.maximum)
-                || area.minimum.floor != area.maximum.floor
-                || area.minimum.floor == encounter.room_min.floor
-                || area.minimum.x > area.maximum.x
-                || area.minimum.y > area.maximum.y
-                || area.maximum.x - area.minimum.x >= 64
-                || area.maximum.y - area.minimum.y >= 64
-                || !in_room(area.destination)
-        }) || (encounter.minimum_level == 0 && !source_party && !gathering)
+        if (encounter.spawn_in_place
+            && (callback.trigger != Trigger::StepIn
+                || !personal_encounter
+                || gathering
+                || !encounter.players.is_empty()
+                || encounter.phase.is_some()))
+            || encounter.staging_area.is_some_and(|area| {
+                !encounter.players.is_empty()
+                    || encounter.timing.is_some()
+                    || encounter.phase.is_some()
+                    || !pos(area.minimum)
+                    || !pos(area.maximum)
+                    || area.minimum.floor != area.maximum.floor
+                    || area.minimum.floor == encounter.room_min.floor
+                    || area.minimum.x > area.maximum.x
+                    || area.minimum.y > area.maximum.y
+                    || area.maximum.x - area.minimum.x >= 64
+                    || area.maximum.y - area.minimum.y >= 64
+                    || !in_room(area.destination)
+            })
+            || (encounter.minimum_level == 0
+                && !source_party
+                && !gathering
+                && !encounter.spawn_in_place)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -909,6 +947,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         > 4096
             } else {
                 !gathering
+                    && !encounter.spawn_in_place
                     && !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                         .contains(&encounter.players.len())
             }

@@ -140,13 +140,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .contains(&at.y)
         };
         let personal_entry = callback.personal_room_entry().map(local);
-        if census.iter().any(|(who, pos, occupant_session)| {
-            occupant_session.is_some()
-                && in_room(pos.position())
-                && !(Some(pos.position()) == personal_entry
-                    && *who == actor
-                    && *occupant_session == Some(session))
-        }) {
+        if !encounter.spawn_in_place
+            && census.iter().any(|(who, pos, occupant_session)| {
+                occupant_session.is_some()
+                    && in_room(pos.position())
+                    && !(Some(pos.position()) == personal_entry
+                        && *who == actor
+                        && *occupant_session == Some(session))
+            })
+        {
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -251,9 +253,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             players.push((who, member_session, expected));
             proofs.push(proof);
         }
-        if !players
-            .iter()
-            .any(|(who, s, _)| *who == actor && *s == session)
+        if !encounter.spawn_in_place
+            && !players
+                .iter()
+                .any(|(who, s, _)| *who == actor && *s == session)
         {
             return UseDisposition::Rejected;
         }
@@ -281,6 +284,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
+        }
+        if encounter.spawn_in_place {
+            if !runtime
+                .read_actor_position(actor)
+                .is_ok_and(|at| in_room(at.position()))
+                || states
+                    .get(runtime, actor, session)
+                    .is_none_or(|state| state.character_facts().level < encounter.minimum_level)
+            {
+                return UseDisposition::Rejected;
+            }
+            if preflight {
+                return if runtime.preflight_quest_creature_spawn(&monsters).is_ok() {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Occupied
+                };
+            }
+            let Some(reservation) = reservation else {
+                return UseDisposition::Rejected;
+            };
+            let Ok(actors) = runtime.commit_quest_creature_spawn_with_projection(&monsters, || {
+                map.facts.apply_quest_callback(
+                    key,
+                    expected_revision,
+                    after,
+                    &[],
+                    &[],
+                    false,
+                    projection,
+                )
+            }) else {
+                return UseDisposition::Rejected;
+            };
+            return match reservation.publish(runtime, actors) {
+                Ok(()) => UseDisposition::Committed,
+                Err(disposition) => disposition,
+            };
         }
         if preflight {
             return if runtime

@@ -469,6 +469,22 @@ pub(super) async fn consume(
     if !context_is_current(tx, permit, fence, context).await? {
         return Ok(false);
     }
+    if let Some(required) = callback.effects.required_sex {
+        use oteryn_gameplay_quests::quest::reward_callbacks::CreationSex;
+        let expected = match required {
+            CreationSex::Female => 1_i16,
+            CreationSex::Male => 2_i16,
+        };
+        let sex: Option<i16> = sqlx::query_scalar(
+            "SELECT sex FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
+        if sex != Some(expected) {
+            return Ok(false);
+        }
+    }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
         return Ok(false);
     }
@@ -707,7 +723,9 @@ async fn consume_inputs(
             .collect();
         let row = sqlx::query(
             "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
-             c.location,c.kind,i.quantity FROM \
+             c.location,c.kind,i.quantity, \
+             (SELECT f.fluid_subtype FROM game_item_fluid_states f \
+               WHERE f.item_instance_id=i.item_instance_id) AS fluid_subtype FROM \
              game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
              JOIN game_item_instances i ON i.item_instance_id=c.item \
              WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
@@ -722,6 +740,11 @@ async fn consume_inputs(
         .fetch_optional(&mut **tx)
         .await?;
         let Some(row) = row else { return Ok(false) };
+        if let Some(subtype) = callback.effects.required_fluid_subtype
+            && row.try_get::<Option<i16>, _>("fluid_subtype")? != Some(i16::from(subtype))
+        {
+            return Ok(false);
+        }
         let input = Input {
             item: row.try_get("item")?,
             before: row.try_get("before_item")?,
