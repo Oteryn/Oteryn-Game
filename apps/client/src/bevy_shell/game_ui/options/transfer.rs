@@ -72,16 +72,23 @@ fn activate(
         .next()
         .map(|field| field.value().to_string().trim().to_owned())
         .unwrap_or_default();
-    let settings = &mut owner.settings;
-    let result = match action {
-        Action::Export | Action::Import if path.is_empty() => {
-            Err(std::io::Error::other("Enter a file path"))
+    let result = (|| {
+        if !matches!(action, Action::Export)
+            && let Some(play) = &owner.play
+        {
+            play.view.require_minimap_preferences_writer()?;
         }
-        Action::Export => settings.export_to(Path::new(&path)),
-        Action::Import => settings.import_from(Path::new(&path)),
-        Action::Restore => settings.restore_backup(),
-        Action::Defaults => settings.reset_defaults(),
-    };
+        let settings = &mut owner.settings;
+        match action {
+            Action::Export | Action::Import if path.is_empty() => {
+                Err(std::io::Error::other("Enter a file path"))
+            }
+            Action::Export => settings.export_to(Path::new(&path)),
+            Action::Import => settings.import_from(Path::new(&path)),
+            Action::Restore => settings.restore_backup(),
+            Action::Defaults => settings.reset_defaults(),
+        }
+    })();
     match result {
         Ok(()) => {
             if !matches!(action, Action::Export) {
@@ -104,7 +111,10 @@ fn activate(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::play::{PreferenceStore, SettingsState};
+    use crate::play::{
+        MinimapBinding, PlayView, PreferenceStore, ReferencePreferences, SettingsState,
+        play_channel,
+    };
     type TestResult = Result<(), Box<dyn std::error::Error>>;
 
     fn press(app: &mut App, action: Action) {
@@ -121,6 +131,110 @@ mod tests {
                 .clone(),
             owner.settings.preferences.audio_device.clone(),
         ))
+    }
+
+    fn read_only_options_transfer(action: Action, name: &str) -> TestResult {
+        let root =
+            std::env::temp_dir().join(format!("bevy-options-reader-{name}-{}", std::process::id()));
+        let result = (|| -> TestResult {
+            let base = root.join("settings.json");
+            let character = [3; 16];
+            let active = PreferenceStore::character_path(&base, character);
+            std::fs::create_dir_all(active.parent().ok_or("character settings directory")?)?;
+            let mut saved = ReferencePreferences::default();
+            saved.minimap.binding = Some(MinimapBinding {
+                world: None,
+                channel: None,
+                generation: [1; 32],
+                bundle: [2; 32],
+                epoch: 1,
+            });
+            saved.minimap.tiles.push((100, 200, -7, 55));
+            PreferenceStore::export_to(&saved, &active)?;
+
+            let backup = active.with_extension("backup.json");
+            let portable = root.join("portable.json");
+            let mut incoming = saved.clone();
+            incoming.minimap.tiles.push((101, 200, -7, 55));
+            PreferenceStore::export_to(&incoming, &backup)?;
+            if matches!(action, Action::Import) {
+                PreferenceStore::export_to(&incoming, &portable)?;
+            }
+            let before = std::fs::read(&active)?;
+            let backup_before = std::fs::read(&backup)?;
+
+            let mut app = super::super::tests::app(Page::Misc, Some(base))?;
+            let mut writer = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+            let mut reader = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+            writer.bind_test_minimap(root.join("maps"));
+            reader.bind_test_minimap(root.join("maps"));
+            let (link, _, _) = play_channel();
+            {
+                let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+                owner.cancel();
+                owner.settings.select_character(Some(character));
+                owner.play = Some(crate::bevy_shell::owner::ActivePlay { view: reader, link });
+                owner.open_graphics();
+            }
+            app.world_mut().spawn((
+                PathField,
+                EditableText::new(portable.to_str().ok_or("portable settings path")?),
+            ));
+
+            press(&mut app, action);
+
+            let owner = app.world().non_send::<HostOwner>();
+            assert!(
+                std::fs::read(&backup)? == backup_before,
+                "reader rewrote the backup"
+            );
+            assert!(
+                std::fs::read(&active)? == before,
+                "reader rewrote character settings"
+            );
+            assert_eq!(owner.settings.preferences.minimap, saved.minimap);
+            assert_eq!(
+                owner.preferences_draft().ok_or("options draft")?.minimap,
+                saved.minimap
+            );
+            if matches!(action, Action::Export) {
+                assert_eq!(owner.settings.feedback, "Options exported");
+                assert_eq!(
+                    PreferenceStore::read_transfer(&portable)?.minimap,
+                    saved.minimap
+                );
+            } else {
+                assert_eq!(
+                    owner.settings.feedback,
+                    "The minimap is busy in another client"
+                );
+            }
+            drop(app);
+            drop(writer);
+            Ok(())
+        })();
+        let _ = std::fs::remove_dir_all(root);
+        result
+    }
+
+    #[test]
+    fn read_only_options_transfer_refuses_import() -> TestResult {
+        read_only_options_transfer(Action::Import, "import")
+    }
+
+    #[test]
+    fn read_only_options_transfer_refuses_restore() -> TestResult {
+        read_only_options_transfer(Action::Restore, "restore")
+    }
+
+    #[test]
+    fn read_only_options_transfer_refuses_reset() -> TestResult {
+        read_only_options_transfer(Action::Defaults, "defaults")
+    }
+
+    #[test]
+    fn read_only_options_transfer_exports_saved_exploration() -> TestResult {
+        read_only_options_transfer(Action::Export, "export")
     }
 
     #[test]

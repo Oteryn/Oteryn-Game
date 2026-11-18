@@ -19,6 +19,16 @@ pub(super) fn cache_busy() -> io::Error {
     )
 }
 
+#[cfg(bevy_shell)]
+impl crate::play::PlayView {
+    pub(crate) fn require_minimap_preferences_writer(&self) -> io::Result<()> {
+        if lock(&self.minimap).is_read_only() {
+            return Err(cache_busy());
+        }
+        Ok(())
+    }
+}
+
 impl Saved {
     pub(super) fn lock_cache(path: &Path) -> io::Result<std::fs::File> {
         if let Some(parent) = path.parent() {
