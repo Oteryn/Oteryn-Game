@@ -476,12 +476,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Err(());
         };
-        let parameters = &profile.spell()["execution"]["native_behavior"]["parameters"];
-        let minimum_level = parameters["login"]["minimum_level"].as_u64().ok_or(())?;
+        let minimum_level = crate::spell::companion_lifecycle::familiar_login_minimum_level(profile)
+            .map_err(|_| ())?;
         // Below the login level gate, a Character with no persisted familiar projection
         // has nothing to restore. This includes a newly bootstrapped Character whose
         // policy-bound progression and Premium access are still unavailable.
-        let nothing_to_restore = u64::from(owned.level()) < minimum_level
+        let nothing_to_restore = owned.level() < minimum_level
             && self
                 .root
                 .read_character_familiar_state(self.character, fence.character_id)

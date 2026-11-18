@@ -1238,10 +1238,7 @@ fn plan_familiar_event_actions(
     if !stored_return || facts.event != FamiliarEvent::Login || creation_decided {
         return Ok(actions);
     }
-    let minimum_level = parameters(spell, "familiar_summon")?["login"]["minimum_level"]
-        .as_u64()
-        .and_then(|v| u32::try_from(v).ok())
-        .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
+    let minimum_level = familiar_login_minimum_level(spell)?;
     let returning = FamiliarFacts {
         premium: true,
         level: facts.level.max(minimum_level),
@@ -1257,6 +1254,16 @@ fn plan_familiar_event_actions(
         )
     }));
     Ok(actions)
+}
+
+/// The minimum level for the active familiar profile's Login event.
+pub fn familiar_login_minimum_level(
+    spell: &CompiledNativeSpell,
+) -> Result<u32, CompanionExecutionError> {
+    parameters(spell, "familiar_summon")?["login"]["minimum_level"]
+        .as_u64()
+        .and_then(|level| u32::try_from(level).ok())
+        .ok_or(CompanionExecutionError::UnqualifiedProfile)
 }
 
 #[allow(
