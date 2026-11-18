@@ -313,11 +313,12 @@ fn portal(capacity: Option<u8>) -> TestResult<Callback> {
         } else {
             "oteryn:creature.brain_head"
         };
+        let room_start = if solo { 2 } else { 1 };
         callback["effects"]["encounter"] = serde_json::json!({
             "minimum_level": 250,
             "players": [],
-            "monsters": [{"position":{"x":1,"y":0,"floor":-7},"creature":defender}],
-            "room_min":{"x":1,"y":0,"floor":-7},
+            "monsters": [{"position":{"x":room_start,"y":0,"floor":-7},"creature":defender}],
+            "room_min":{"x":room_start,"y":0,"floor":-7},
             "room_max":{"x":3,"y":0,"floor":-7},
             "timing":{
                 "spawn_after_ms":if solo { 0 } else { 50 },"reset_after_ms":300_000,
