@@ -117,7 +117,14 @@ dependencies. The 1,121,028,728-byte executable listed 2,455 tests
 The executable also carried 217 non-mount tests retained by the scratch
 control. No names were added relative to the base. The link used
 241 rlibs (1,487,365,036 bytes) and 258 objects (1,162,448,280 bytes).
-Its measured peak was 4,134,660 KiB over 13.190 s.
+Its measured peak was 4,134,660 KiB over 13.190 s. Replaying the captured
+link command independently peaked at 4,136,800 KiB over 9.687 s.
+
+The focused
+`boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger`
+case passed against the retained PostgreSQL 18.6 service in 56.46 s.
+It emitted the offline-death deadline, native entry, scope barrier,
+and state-and-replay completion markers.
 
 ## Full suite with 256 codegen units and incremental off
 
