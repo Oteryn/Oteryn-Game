@@ -233,9 +233,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states.owner_wake.notify_one();
         if let Some(bucket) = receipt.effects["filled_bucket"].as_u64() {
             let feedback = if bucket == u64::from(rules::FULL_BUCKET) {
-                "The ectoplasm was already seeping into the cocoon. You manage to fill the bucket."
+                "You fill the bucket before the last of the ectoplasm seeps into the egg."
             } else {
-                "There is not enough ectoplasm left to fill it in the bucket."
+                "You collect some ectoplasm. The bucket still has room for more."
             };
             self.states
                 .chat

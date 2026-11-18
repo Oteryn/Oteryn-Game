@@ -401,13 +401,14 @@ pub fn haunted_cellar_disguise(
     let effects = NoveltyEffects {
         kind: NoveltyKind::Costume,
         source_item_id: FULL_BUCKET,
-        donor: "data-global/scripts/quests/the_dream_courts/actions_strange_bucket.lua:58-69".into(),
+        donor: "data-global/scripts/quests/the_dream_courts/actions_strange_bucket.lua:58-69"
+            .into(),
         ground: None,
         cues: vec![NoveltyCue {
             binding: "appearance:effect/poff".into(),
             effect_id: 3,
         }],
-        speech: Some("You pour all of the ectoplasm over yourself. Without the bucket you cannot stabilise it, you need to hurry until it dissolves!".into()),
+        speech: Some("You coat yourself in ectoplasm. The disguise will dissolve soon.".into()),
         private_speech: true,
         require_head: false,
         require_player_target: true,

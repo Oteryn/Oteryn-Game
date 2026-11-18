@@ -142,19 +142,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .record_item_effect(&runtime, actor, origin, 3, false);
                 self.states.chat.push_quest_feedback(
                     command.game_session_id,
-                    "The curse of disturbing this fragile, ancient peace is your price to pay!",
+                    "You have disturbed the tomb and awakened its guardian.",
                 );
             }
             Ok(HauntedTombUse::Key) => {
                 self.states.chat.push_quest_feedback(
                     command.game_session_id,
-                    "You got a strangely ornamented key!",
+                    "You find a strangely ornamented key.",
                 );
                 states.owner_wake.notify_one();
             }
             Ok(HauntedTombUse::CoolingDown) => {
-                self.states.chat.push_quest_feedback(command.game_session_id,
-                    "The opening of the last sarcophagus still haunts you. Wait some time for your spirits to return.");
+                self.states.chat.push_quest_feedback(
+                    command.game_session_id,
+                    "Give the sarcophagus a moment. Its presence still unsettles you.",
+                );
             }
             Ok(HauntedTombUse::NoRoom) => return outcome(UseDisposition::NoRoom),
             Ok(HauntedTombUse::Ineligible | HauntedTombUse::Replay) => {}
