@@ -502,7 +502,7 @@ pub(super) async fn exercise(
         y: 120,
         floor: 7,
     };
-    let magnor = {
+    let (magnor, blocker) = {
         let mut runtime = owner.runtime.lock().await;
         let actor = find(&runtime, KNIGHTS[0])?.ok_or("admitted Magnor")?;
         let spawn = runtime.read_actor_position(actor).map_err(debug)?;
@@ -510,7 +510,22 @@ pub(super) async fn exercise(
             .borrow_movement_position()
             .commit_creature_relocation(actor, spawn, magnor_death)
             .map_err(debug)?;
-        actor
+        let blocker_key = "oteryn:creature.troll";
+        let health = runtime
+            .companion_policy(blocker_key)
+            .map_err(debug)?
+            .maximum_health;
+        let blocker = runtime
+            .commit_quest_creature_spawn(&[(
+                blocker_key,
+                health,
+                MovementLocalPosition {
+                    x: magnor_death.x + 1,
+                    ..magnor_death
+                },
+            )])
+            .map_err(debug)?[0];
+        (actor, blocker)
     };
     super::engenc2_cults::kill(owner, admitted, magnor, KNIGHTS[0], 103).await?;
     tick_at(owner, now + 31_000_000).await;
@@ -528,7 +543,12 @@ pub(super) async fn exercise(
             .into_iter()
             .filter(|&actor| runtime.matches_live_creature_identity(actor, shard_key.as_bytes()))
             .collect();
-        assert_eq!(shards.len(), 4, "Magnor splits into four linked shards");
+        assert_eq!(
+            shards.len(),
+            4,
+            "Magnor finds room for all four linked shards even with a nearby tile occupied"
+        );
+        runtime.remove_test_actor(blocker).map_err(debug)?;
         for &shard in &shards {
             let at = runtime
                 .read_actor_position(shard)
