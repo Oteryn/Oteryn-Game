@@ -129,6 +129,7 @@ pub(super) enum NativeScenario {
     Timeout,
     ResetMonsters,
     TrophyLook,
+    TrophyStep,
 }
 
 #[test]
@@ -199,7 +200,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         )?;
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
-        let (bytes, pins) = if matches!(route, Some(NativeScenario::RecreatedPillars)) {
+        let (bytes, pins) = if matches!(route, Some(NativeScenario::TrophyStep)) {
+            fixture::bundle_with_trophy_tiles(native)?
+        } else if matches!(route, Some(NativeScenario::RecreatedPillars)) {
             fixture::bundle_with_pillar_floors(native)?
         } else if native_portals {
             fixture::bundle_with_pillars(native)?
@@ -326,6 +329,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         );
         if matches!(route, Some(NativeScenario::TrophyLook)) {
             return super::barena2_trophy_look::check_trophy_look(&harness, &owner, &mut admitted, deps.actor).await;
+        }
+        if matches!(route, Some(NativeScenario::TrophyStep)) {
+            return super::barena2_trophy_look::check_trophy_step(&harness, &owner, &admitted, deps.actor).await;
         }
         fixture::train_character(&owner, admitted.game_session_id).await?;
         let build = harness
