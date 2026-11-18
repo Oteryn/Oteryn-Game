@@ -961,6 +961,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return preflight;
             }
         }
+        // Crystal 201189f8 movement-1-first_seal_flame.lua:9-19 and
+        // movement-3-third_seal_warlock_tile.lua:9-14. Validate the pinned
+        // creature catalogue before advancing a character's one-way seal flag.
+        let Some(ambush) = callback
+            .effects
+            .ambush
+            .iter()
+            .map(|monster| {
+                let policy = runtime.companion_policy(&monster.creature).ok()?;
+                (map.overlay
+                    .base()
+                    .tile(
+                        monster.position.x,
+                        monster.position.y,
+                        monster.position.floor,
+                    )
+                    .is_some())
+                .then_some((
+                    monster.creature.as_str(),
+                    policy.maximum_health,
+                    local(monster.position),
+                ))
+            })
+            .collect::<Option<Vec<_>>>()
+        else {
+            return UseDisposition::Rejected;
+        };
         let mut success_preface = None;
         if callback.effects.encounter.is_some() && callback.has_personal_state() && !durable {
             return UseDisposition::Rejected;
@@ -1495,6 +1522,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             underwater(map, after.position()),
                         );
                     }
+                }
+            } else if !ambush.is_empty() {
+                // The map CAS and positions publish as a single Channel turn.
+                // Crystal ignores createMonster's failure after writing the seal.
+                if runtime
+                    .commit_quest_creature_spawn_with_projection(&ambush, apply_scene)
+                    .is_err()
+                    && !apply_scene()
+                {
+                    return UseDisposition::Rejected;
                 }
             } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
             {

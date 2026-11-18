@@ -351,7 +351,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if super::super::banshee_seal_offerings::matches(name) {
+    let mut callback = if super::super::banshee_seal_ambushes::matches(name) {
+        super::super::banshee_seal_ambushes::callback(name)?
+    } else if super::super::banshee_seal_offerings::matches(name) {
         super::super::banshee_seal_offerings::callback(name)?
     } else if m03_use {
         super::super::qengine_m03_use::callback()?
@@ -3110,6 +3112,8 @@ fn scenario_case(
         } else if name == "questpc2-oldrak-npc" {
             super::super::questpc2_oldrak::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if super::super::banshee_seal_ambushes::matches(name) {
+            Box::pin(super::super::banshee_seal_ambushes::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if super::super::banshee_seal_offerings::matches(name) {
             Box::pin(super::super::banshee_seal_offerings::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if classic_npc {

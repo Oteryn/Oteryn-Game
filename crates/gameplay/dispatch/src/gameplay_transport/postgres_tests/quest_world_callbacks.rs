@@ -428,6 +428,7 @@ fn world_cells(
         }
     }
     let mut effect_positions = extra.to_vec();
+    effect_positions.extend(callback.effects.ambush.iter().map(|monster| monster.position));
     if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
         effect_positions.push(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION);
         effect_positions.extend(

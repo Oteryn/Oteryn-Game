@@ -57,6 +57,9 @@ pub struct FluidOffering {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Exact creatures projected by a successful personal STEP receipt.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ambush: Vec<EncounterMonster>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -465,6 +468,35 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
 
     let pos = |p: Position| (-15..=0).contains(&p.floor);
+    if !effects.ambush.is_empty()
+        && (callback.actor_kind != ActorKind::Player
+            || callback.trigger != Trigger::StepIn
+            || !callback.requires_world_admission
+            || !callback.storage.iter().any(|state| {
+                !state.preserve
+                    && !state.read_only
+                    && !state.increment
+                    && state.add.is_none()
+                    && state.set_if.is_none()
+                    && state.maximum < state.set
+            })
+            || callback.opening_only
+            || callback.reversible
+            || callback.lever.is_some()
+            || !callback.passages.is_empty()
+            || effects.encounter.is_some()
+            || effects.party_transfer.is_some()
+            || effects.scene.is_some()
+            || effects.ambush.len() > 8
+            || effects.ambush.iter().any(|monster| {
+                !pos(monster.position)
+                    || !super::super::valid_quest_key(&monster.creature)
+                    || callback.teleport == Some(monster.position)
+                    || callback.selector.position == Some(monster.position)
+            }))
+    {
+        return false;
+    }
     if effects.fluid_offering.as_ref().is_some_and(|offering| {
         callback.trigger != Trigger::StepIn
             || callback.actor_kind != ActorKind::Player
