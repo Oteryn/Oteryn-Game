@@ -1444,3 +1444,29 @@ impl Peer {
 fn player_trade_postgres_frozen_nested_contents_wire_inspection_and_swap() -> TestResult {
     run_scenario_with_read_priority(false, false, false, true)
 }
+
+pub(super) fn capacity_frame(
+    frame: &[u8],
+    selected: &[u32],
+) -> TestResult<Option<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity>> {
+    use oteryn_protocol_oteryn::world_spatial_entities::{
+        DeltaSidecar, EntityFields, decode_world_spatial_entities_delta_with_sidecar,
+    };
+    let envelope = decode_wire_envelope(frame).map_err(debug)?;
+    if envelope.message_type() != MessageType::StateDelta {
+        return Ok(None);
+    }
+    let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+    if delta.domain_id != 1 || delta.delta_type != 2 {
+        return Ok(None);
+    }
+    let (_, _, sidecar) = decode_world_spatial_entities_delta_with_sidecar(
+        delta.payload,
+        EntityFields::selected(selected),
+    )
+    .map_err(debug)?;
+    Ok(match sidecar {
+        Some(DeltaSidecar::InventoryCapacity(value)) => Some(value),
+        _ => None,
+    })
+}
