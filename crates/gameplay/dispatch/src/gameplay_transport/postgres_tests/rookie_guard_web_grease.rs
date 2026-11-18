@@ -72,6 +72,60 @@ pub(super) fn callback() -> TestResult<Callback> {
     Ok(serde_json::from_value(document()["callbacks"][0].clone())?)
 }
 
+pub(super) fn activate(
+    world: crate::foundation::WorldId,
+) -> TestResult<(
+    crate::content::ContentActivationController,
+    crate::content::NativeEntryContentPin,
+)> {
+    use crate::content::native_gameplay::{PinnedGameplayBytes, test_support::try_activate_input};
+    use serde_json::json;
+    use sha2::{Digest, Sha256};
+    let hex = |bytes: &[u8]| {
+        Sha256::digest(bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    };
+    let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+    let mut appearances: serde_json::Value = serde_json::from_slice(
+        &input
+            .spell_appearances
+            .as_ref()
+            .ok_or("pinned native spell appearance document")?
+            .bytes,
+    )?;
+    let mut cocoon = json!({
+        "outfit_key":"oteryn:outfit.source.crystal.look422","outfit_revision":"source-outfit-r1",
+        "look_type":422,"colours":[0,0,0,0],"addons":0,"mount_key":null,"creature":null,
+        "source":{
+            "revision":"201189f871d23597b82caf88fd611454a2ddefb8",
+            "path":"data-global/scripts/spells/monster/spider_queen_wrap.lua",
+            "git_blob":"b0621abdcc35fa20a512712c3abc8502ca45d113",
+            "sha256":"6f51784cf952ba4572e175dfb8daf01ff1e7dfaf7e4c978d99d2199b9f151ecf",
+            "explicit_fields":{"lookType":422},
+            "defaulted_fields":["lookAddons","lookBody","lookFeet","lookHead","lookLegs","lookMount","lookTypeEx"],
+            "default_source":{
+                "revision":"201189f871d23597b82caf88fd611454a2ddefb8",
+                "path":"src/creatures/creatures_definitions.hpp",
+                "git_blob":"fc4ae0cf45a56ee7c363b0f452acfb14cbd3c63a",
+                "sha256":"8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94"
+            }
+        }
+    });
+    cocoon["qualification_sha256"] = hex(&serde_json::to_vec(&cocoon)?).into();
+    appearances["records"]
+        .as_array_mut()
+        .ok_or("native appearance records")?
+        .push(cocoon);
+    let bytes = serde_json::to_vec(&appearances)?;
+    input.spell_appearances = Some(PinnedGameplayBytes {
+        sha256: hex(&bytes),
+        bytes,
+    });
+    try_activate_input(world, &input).map_err(|error| debug(error).into())
+}
+
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
     super::quest_world_callbacks::world_cells(
         callback,

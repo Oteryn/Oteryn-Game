@@ -337,6 +337,32 @@ fn qualified_crystal_stag(record: &SpellAppearanceRecord) -> bool {
 /// W11 only: two boss callback selections, independently generated from the
 /// pinned Lua literals, Outfit_t defaults and actual outfit asset membership.
 /// No source revision-wide permission or casting rule is added.
+/// Crystal 201189f8 spider_queen_wrap.lua:10-12, with the pinned Outfit_t defaults.
+fn qualified_crystal_spider_wrap(record: &SpellAppearanceRecord) -> bool {
+    const REVISION: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
+    record.creature.is_none()
+        && record.outfit_key == "oteryn:outfit.source.crystal.look422"
+        && record.look_type == 422
+        && record.source.revision == REVISION
+        && record.source.path == "data-global/scripts/spells/monster/spider_queen_wrap.lua"
+        && record.source.git_blob == "b0621abdcc35fa20a512712c3abc8502ca45d113"
+        && record.source.sha256
+            == "6f51784cf952ba4572e175dfb8daf01ff1e7dfaf7e4c978d99d2199b9f151ecf"
+        && record.source.explicit_fields.len() == 1
+        && record.source.explicit_fields.get("lookType") == Some(&422)
+        && record
+            .source
+            .default_source
+            .as_ref()
+            .is_some_and(|defaults| {
+                defaults.revision == REVISION
+                    && defaults.path == "src/creatures/creatures_definitions.hpp"
+                    && defaults.git_blob == "fc4ae0cf45a56ee7c363b0f452acfb14cbd3c63a"
+                    && defaults.sha256
+                        == "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94"
+            })
+}
+
 fn qualified_soul_war_callback(record: &SpellAppearanceRecord) -> bool {
     static RECORDS: std::sync::OnceLock<Option<Vec<SpellAppearanceRecord>>> =
         std::sync::OnceLock::new();
@@ -392,12 +418,14 @@ pub fn compile(
     let mut fixed = BTreeSet::new();
     for record in &document.records {
         let crystal_stag = qualified_crystal_stag(record);
+        let crystal_spider_wrap = qualified_crystal_spider_wrap(record);
         let cached_canary = qualified_cached_canary_record(record);
         let project_illusionable = qualified_project_illusionable_record(record);
         let soul_war_callback = qualified_soul_war_callback(record);
         let canary = record.source.revision == PIN && record.source.default_source.is_none();
         if (!canary
             && !crystal_stag
+            && !crystal_spider_wrap
             && !cached_canary
             && !project_illusionable
             && !soul_war_callback)
@@ -439,6 +467,7 @@ pub fn compile(
             }
         } else if !fixed.insert(record.look_type)
             || (!soul_war_callback
+                && !crystal_spider_wrap
                 && !record
                     .source
                     .path
