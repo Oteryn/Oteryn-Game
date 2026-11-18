@@ -35,6 +35,12 @@ The existing world reward writer mints each supply once per character. Each pick
 
 With the pgsplit build files and base quest content, both cases reached literal USE and returned `NothingToUse`. The Anatomy Book case took 41.79 s and the Colourful Mushroom case took 25.04 s. The first callback run reached the reward writer, which requires an active native profile for each item. The canonical item definitions alone did not supply that profile.
 
+PG via shard (pgsplit build files applied on f4ce5138c7779d9f935bc58d487cff8f8a9ad630). The filtered dispatch suite passed both live PostgreSQL cases. Anatomy Book took 55.47 s and Colourful Mushroom took 53.54 s. Each case checked one item, a refused repeat USE and exactly one durable claim row. The same two cases returned `Ok(())` without the PostgreSQL URL in 0.00 s.
+
+The item admission also required the native update overlay to bind the new base digest. The refresh retained all 68 existing overlay records and regenerated the equipment custody census with the two new item identities.
+
+All 44 quest-authoring checks passed, including 269 schema cases. World pin-check, Rust formatting and dispatch library Clippy passed.
+
 ## Blockers
 
 ```text
