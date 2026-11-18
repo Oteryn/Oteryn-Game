@@ -758,10 +758,10 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 .fetch_one(&h.pool)
                 .await?;
             assert!(reached, "fault reached after real chests and before XP");
-            let counts: (i64,i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_party_kill_xp_receipts), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage')").fetch_one(&h.pool).await?;
+            let counts: (i64,i64,i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_party_kill_xp_receipts), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_boss_reward_items), (SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage')").fetch_one(&h.pool).await?;
             assert_eq!(
                 counts,
-                (0, 0, 0, 0, 0),
+                (0, 0, 0, 0, 0, 0),
                 "chests, XP and storage roll back with the death"
             );
             for statement in [
