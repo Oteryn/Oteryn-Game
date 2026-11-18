@@ -201,43 +201,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         native_state: &crate::content::native_gameplay::NativeGameplayState,
         moves: &[(TilePos, TilePos)],
     ) -> Option<Vec<(ItemKey, TilePos, TilePos)>> {
-        let Some(ground) = loop_move::loop_ground(self, map.overlay.base(), Some(index)).await
-        else {
-            return None;
-        };
+        let ground = loop_move::loop_ground(self, map.overlay.base(), Some(index)).await?;
         let movable = |facts: &EntryFacts| {
             let oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference) =
                 facts.definition
             else {
-                return None;
+                return false;
             };
             let Some((key, revision)) = index.definition_at(reference) else {
-                return None;
+                return false;
             };
             native_state.item_policy(key,revision).is_some_and(|policy|matches!(&policy.record().semantics.physical,ReferenceItemField::Known(p) if p.movable==ReferenceItemField::Known(true)))
         };
         let mut items = Vec::new();
         for &(from, to) in moves {
-            let Some(entries) = super::super::paced_movement::special_movement::tile_entries(
+            let entries = super::super::paced_movement::special_movement::tile_entries(
                 map,
                 local(Position {
                     x: from.x,
                     y: from.y,
                     floor: from.floor,
                 }),
-            ) else {
-                return None;
-            };
+            )?;
             for (key, facts) in entries.entries {
                 if !movable(&facts) {
                     continue;
                 }
-                let Some((_, ordinal)) = crate::map::view::placement_of(key) else {
-                    return None;
-                };
-                let Some(pending) = self.states.loop_ground.pending_origin(key) else {
-                    return None;
-                };
+                let (_, ordinal) = crate::map::view::placement_of(key)?;
+                let pending = self.states.loop_ground.pending_origin(key)?;
                 if pending.is_some()
                     || !ground
                         .overlay()
@@ -258,9 +249,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(tile) = ground.overlay().tile(from) {
                 for entry in tile.added() {
                     if let AddedItem::Ground(item) = entry.item() {
-                        let Some(facts) = ground.facts(&map.facts).added_entry(entry.item()) else {
-                            return None;
-                        };
+                        let facts = ground.facts(&map.facts).added_entry(entry.item())?;
                         if movable(&facts) {
                             items.push((ItemKey::Instance(item.item_instance_id), from, to));
                         }
