@@ -229,23 +229,28 @@ fn scenario(admin: String) -> TestResult {
                 .ok_or("stage conditions")?;
             assert!(states.commit(&runtime, deps.actor, session, next));
         }
-        for (command, health, fire, poison) in [
-            (2, 10, true, true),
-            (3, 50, true, true),
-            (4, 50, false, true),
-            (5, 50, false, false),
-            (6, 50, false, false),
+        // Crystal 201189f8 data/npclib/npc.lua:13-20 vetoes a word-prefixed
+        // occurrence anywhere, while permitting "heal" at the start of "healing".
+        for (command, text, health, fire, poison) in [
+            (2, "heal", 10, true, true),
+            (3, "unhealthy, please heal", 10, true, true),
+            (4, "please HEALing", 50, true, true),
+            (5, "heal", 50, false, true),
+            (6, "heal", 50, false, false),
+            (7, "heal", 50, false, false),
         ] {
             if command == 3 {
                 set_progress(&owner, &h, session, 12).await?;
             }
             owner.clock_origin -= std::time::Duration::from_secs(1);
-            let outcome = super::npc_paid_travel::talk(&owner, &deps, npc, command, "heal").await?;
-            let lines = outcome.conversation.ok_or("healing response")?.lines;
-            if matches!(command, 2 | 6) {
-                assert_eq!(lines, ["You look for food and rest."]);
-            } else {
-                assert!(lines.is_empty());
+            let outcome = super::npc_paid_travel::talk(&owner, &deps, npc, command, text).await?;
+            if command != 3 {
+                let lines = outcome.conversation.ok_or("healing response")?.lines;
+                if matches!(command, 2 | 7) {
+                    assert_eq!(lines, ["You look for food and rest."]);
+                } else {
+                    assert!(lines.is_empty());
+                }
             }
             let runtime = deps.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;

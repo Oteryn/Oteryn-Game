@@ -12,6 +12,7 @@ mod evaluate;
 mod hidden_threats;
 mod item_exchange;
 mod keyword;
+pub use keyword::matches as matches_npc_keyword;
 mod marlin_trophy;
 mod player_name;
 mod questpc2_albinius_source;

@@ -2,6 +2,7 @@
 use super::*;
 use crate::content::npc_catalogue::healing::{HealingProfile, catalogue, profile};
 use crate::domain::condition::{ConditionType, DotElement, StatusKind};
+use oteryn_gameplay_quests::quest::npc_rules::{NpcKeywordMode, matches_npc_keyword};
 
 pub(super) fn apply(
     admission: &super::super::ComposedFreshAdmission<'_, '_, '_>,
@@ -42,9 +43,11 @@ pub(super) fn apply(
         .any(|word| text.eq_ignore_ascii_case(word));
     let healing = match profile {
         HealingProfile::Full => text.eq_ignore_ascii_case("healing"),
-        HealingProfile::QuestEmergency => oteryn_gameplay_npc::greeting::words(text)
-            .iter()
-            .any(|word| word.starts_with("heal")),
+        // Crystal 201189f8 data-global/npc/hairycles.lua:223 calls
+        // MsgContains (data/npclib/npc.lua:13-20).
+        HealingProfile::QuestEmergency => {
+            matches_npc_keyword(text, "heal", NpcKeywordMode::MsgContains).ok()?
+        }
         _ => text.eq_ignore_ascii_case("heal") || text.eq_ignore_ascii_case("healing"),
     };
     if !greeting && !healing {

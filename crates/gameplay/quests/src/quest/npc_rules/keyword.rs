@@ -25,11 +25,8 @@ pub(super) fn validate(keyword: &str, mode: NpcKeywordMode) -> Result<(), NpcRul
     Ok(())
 }
 
-pub(super) fn matches(
-    message: &str,
-    keyword: &str,
-    mode: NpcKeywordMode,
-) -> Result<bool, NpcRuleError> {
+/// Match a validated source NPC keyword using the selected donor predicate.
+pub fn matches(message: &str, keyword: &str, mode: NpcKeywordMode) -> Result<bool, NpcRuleError> {
     validate(keyword, mode)?;
     let message = message.to_ascii_lowercase();
     let keyword = keyword.to_ascii_lowercase();
