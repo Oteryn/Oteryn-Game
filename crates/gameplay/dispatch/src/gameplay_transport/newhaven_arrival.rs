@@ -296,12 +296,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let _ = map.facts.emit_movement_effect(tile, 11);
             }
             placed = Some(record);
-            let ended_by_program = matches!(
-                &held.route,
-                newhaven_travel::Departure::Quest(proof) if proof.end_on_arrival
-            ) && self.states.chat.end_engagement(session, held.npc);
+            // An immediate program close carries its reply in the committed TALK receipt.
+            let ended_by_program = match &held.route {
+                newhaven_travel::Departure::Quest(proof) => proof
+                    .end_on_arrival
+                    .is_some_and(|npc| self.states.chat.end_engagement(session, npc)),
+                _ => false,
+            };
             if !ended_by_program {
-                // An immediate program close carries its reply in the committed TALK receipt.
                 self.states.chat.close_out_of_range(&runtime, session);
             }
         }

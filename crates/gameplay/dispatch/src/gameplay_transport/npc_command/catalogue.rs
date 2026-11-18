@@ -753,7 +753,7 @@ pub(super) async fn apply(
                     context: next.context.clone(),
                     magic,
                     encounter: teleport_encounter,
-                    end_on_arrival,
+                    end_on_arrival: end_on_arrival.then_some(next.npc_actor),
                 },
                 destination,
                 &mut runtime,
