@@ -95,3 +95,41 @@ pub fn assign_keywords(
         }
     })
 }
+
+/// Existing characters may already have a Frontier state pinned before tree
+/// USE and negotiation admission were registered. Preserve that exact pin.
+pub(super) fn pre_tree_definition(
+    catalogue: &crate::quest::QuestStateCatalogue,
+) -> Result<Option<crate::quest::NpcDefinitionPredecessor>, String> {
+    use crate::quest::{NpcDefinitionPredecessor, QuestStateCatalogue, frontier_tree};
+    let mut removed_tree = false;
+    let transitions = catalogue
+        .transitions
+        .values()
+        .filter(|transition| transition.quest == QUEST)
+        .filter(|transition| {
+            let tree = frontier_tree::for_callback(&transition.key).is_some();
+            removed_tree |= tree;
+            !tree
+        })
+        .cloned()
+        .collect();
+    if !removed_tree {
+        return Ok(None);
+    }
+    let tracks = catalogue
+        .tracks
+        .values()
+        .filter(|track| track.quest == QUEST)
+        .cloned()
+        .collect();
+    let previous = QuestStateCatalogue::new(catalogue.content_revision(), tracks, transitions)
+        .map_err(|error| format!("{error:?}"))?;
+    let hash = previous
+        .definition_hash(QUEST)
+        .ok_or("missing preceding Frontier definition")?;
+    Ok(Some(NpcDefinitionPredecessor {
+        hash,
+        defaults: BTreeMap::new(),
+    }))
+}

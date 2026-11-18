@@ -764,7 +764,13 @@ pub(super) fn extend(
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
     let mut legacy = catalogue.npc_legacy.clone();
-    let predecessors = catalogue.predecessors.clone();
+    let mut predecessors = catalogue.predecessors.clone();
+    if let Some(previous) = frontier_negotiations::pre_tree_definition(&catalogue)? {
+        predecessors
+            .entry(frontier_negotiations::QUEST.into())
+            .or_default()
+            .push(previous);
+    }
     for program in source.programs() {
         let quest = &program.document.quest;
         if program.document.schema == 1

@@ -108,7 +108,9 @@ fn scenario(name: &'static str, creature: &'static str) -> TestResult {
 }
 
 async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
-    prepare_current_session(h).await?;
+    prepare_current_session(h)
+        .await
+        .map_err(|error| format!("first Fresh admission: {error}"))?;
     let shard = rule.creature == "oteryn:creature.shard_of_corruption";
     let peer = if shard {
         use crate::world_party_runtime_postgres_cases::{
@@ -129,7 +131,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             now,
             Some("platform-test"),
         )
-        .await?;
+        .await
+        .map_err(|error| format!("second Fresh admission: {error}"))?;
         Some(peer)
     } else {
         None
@@ -139,8 +142,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         .root
         .open_character_authority(&seal)
         .await
-        .map_err(debug)?;
-    let mut deps = Dependencies::new()?;
+        .map_err(|error| format!("character authority: {error:?}"))?;
+    let mut deps = Dependencies::new().map_err(|error| format!("dispatch fixture: {error}"))?;
     let (controller, activated) = super::death_ml_loss_composed::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
@@ -347,7 +350,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                     Arc::clone(&catalogue),
                 )
                 .await
-                .map_err(debug)?;
+                .map_err(|error| format!("seed mission stage: {error:?}"))?;
             assert!(
                 matches!(outcome, QuestTransitionOutcome::Committed(_)),
                 "seed: {outcome:?}"
