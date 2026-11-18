@@ -51,7 +51,7 @@ fn solo_quest_room_ejects_the_admitted_player_after_the_last_monster_dies() -> T
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    cave_case(admin, "solo_quest_room_ejection", false)
+    cave_case(admin, "solo_quest_room_ejection", CaveRoom::EmptyAtTimeout)
 }
 
 #[test]
@@ -59,16 +59,32 @@ fn cave_spider_refuses_occupied_entry_then_ejects_only_the_admitted_player() -> 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    cave_case(admin, "cave_spider_room_cleanup", true)
+    cave_case(admin, "cave_spider_room_cleanup", CaveRoom::OccupiedEntry)
 }
 
-fn cave_case(admin: String, name: &'static str, keep_cave_monsters: bool) -> TestResult {
+#[test]
+fn cave_spider_first_deadline_cleans_new_monsters_and_second_deadline_ejects_second_player()
+-> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    cave_case(admin, "cave_spider_room_reentry", CaveRoom::TwoAdmissions)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum CaveRoom {
+    EmptyAtTimeout,
+    OccupiedEntry,
+    TwoAdmissions,
+}
+
+fn cave_case(admin: String, name: &'static str, cave: CaveRoom) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
             run(async |_| {
                 let h = Harness::create_with_admission_seed(admin, name, false, false).await?;
-                let result = Box::pin(exercise_world(&h, None, None, keep_cave_monsters)).await;
+                let result = Box::pin(exercise_world(&h, None, None, Some(cave))).await;
                 let cleanup = h.cleanup().await;
                 result?;
                 cleanup
@@ -92,19 +108,20 @@ pub(super) struct BossRoom {
 }
 
 pub(super) async fn exercise(h: &Harness, boss: Option<BossRoom>) -> TestResult {
-    exercise_world(h, boss, None, false).await
+    exercise_world(h, boss, None, None).await
 }
 
 pub(super) async fn exercise_step_buff(h: &Harness, buff: StepBuff) -> TestResult {
-    exercise_world(h, None, Some(buff), false).await
+    exercise_world(h, None, Some(buff), None).await
 }
 
 async fn exercise_world(
     h: &Harness,
     boss: Option<BossRoom>,
     buff: Option<StepBuff>,
-    keep_cave_monsters: bool,
+    cave: Option<CaveRoom>,
 ) -> TestResult {
+    let keep_cave_monsters = cave == Some(CaveRoom::OccupiedEntry);
     let mut source = boss.map_or(
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua:31-58",
         |room| room.source
@@ -547,6 +564,9 @@ async fn exercise_world(
     if boss.is_none() {
         assert_eq!(read_progress().await?, 10);
     }
+    if cave == Some(CaveRoom::TwoAdmissions) {
+        return two_cave_admissions(&owner, &deps, h, admitted, start, enter_at).await;
+    }
     let (room_visitor, cave_creatures) = {
         let mut runtime = deps.runtime.lock().await;
         assert_eq!(
@@ -735,5 +755,88 @@ async fn exercise_world(
     if boss.is_none() {
         assert_eq!(read_progress().await?, 10);
     }
+    Ok(())
+}
+
+
+async fn two_cave_admissions(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    h: &Harness,
+    first: super::AdmittedSession,
+    start: crate::foundation::MovementLocalPosition,
+    first_enter_at: u64,
+) -> TestResult {
+    let first_actor = deps.actor;
+    let first_due = first_enter_at + u64::from(AFTER_MS) * 1_000;
+    assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), Some(first_due));
+    let first_monster = {
+        let mut runtime = owner.runtime.lock().await;
+        let before = runtime.read_actor_position(first_actor).map_err(debug)?;
+        assert_eq!(before.position(), local(ROOM));
+        let [monster] = runtime.current_live_creature_census().map_err(debug)?
+            .try_into().map_err(|_| "first room monster")?;
+        let map = owner.bundle_map().ok_or("room map")?;
+        let doors = crate::map::floor::BundleDoors(map.facts.doors());
+        let leave = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime, owner.movement_cells(), first_actor, first.game_session_id,
+            before, local(BYSTANDER), false, &doors,
+        ).map_err(debug)?;
+        runtime.commit_source_step(leave).map_err(debug)?;
+        monster
+    };
+    let (second_actor, mut second) =
+        super::grizzly_boss::vacancy::second_player(owner, deps, h, start).await?;
+    let second_enter_at = first_enter_at + 5_000_000;
+    owner.states.test_owner_time.store(second_enter_at + 1, Ordering::Relaxed);
+    let reply = wire(
+        owner,
+        &mut second,
+        1,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::East),
+    )
+    .await?;
+    assert_eq!(
+        oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
+    );
+    let credited: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_tracks WHERE character_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid) AND track_key=$3 AND value=10",
+    )
+    .bind(id(41).as_slice())
+    .bind(id(101).as_slice())
+    .bind(TRACK)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(credited, 2, "each admission credits its own character");
+    let second_monster = {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(runtime.read_actor_position(second_actor).map_err(debug)?.position(), local(ROOM));
+        assert!(!runtime.contains_live_creature(first_monster));
+        let [monster] = runtime.current_live_creature_census().map_err(debug)?
+            .try_into().map_err(|_| "second room monster")?;
+        monster
+    };
+
+    // Crystal clearBossRoom (data/libs/functions/functions.lua:226-238)
+    // targets the first entrant but scans all current monsters in the room.
+    assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), Some(first_due));
+    owner.states.test_owner_time.store(first_due + 1, Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(!runtime.contains_live_creature(second_monster));
+        assert_eq!(runtime.read_actor_position(first_actor).map_err(debug)?.position(), local(BYSTANDER));
+        assert_eq!(runtime.read_actor_position(second_actor).map_err(debug)?.position(), local(ROOM));
+    }
+    let second_due = second_enter_at + u64::from(AFTER_MS) * 1_000;
+    assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), Some(second_due));
+    owner.states.test_owner_time.store(second_due + 1, Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(runtime.read_actor_position(first_actor).map_err(debug)?.position(), local(BYSTANDER));
+    assert_eq!(runtime.read_actor_position(second_actor).map_err(debug)?.position(), local(EXIT));
+    assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
     Ok(())
 }

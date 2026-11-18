@@ -22,7 +22,7 @@ use std::sync::Arc;
 #[path = "grizzly_boss/combat.rs"]
 mod combat;
 #[path = "grizzly_boss/vacancy.rs"]
-mod vacancy;
+pub(super) mod vacancy;
 #[path = "grizzly_boss/world.rs"]
 pub(super) mod world;
 

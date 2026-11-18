@@ -575,9 +575,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(phases);
         if let Some(visits) = &mut visits {
-            // Crystal grimvale/actions_portal_minis_grimvale.lua:127-132 and
-            // actions_portal_minis_ancient_feud.lua:119-124 each schedule an
-            // independent scan of the current room occupants.
+            // Crystal hidden_threats/movement-cave_spider_room.lua:57 and the
+            // Grimvale mini-boss scripts each schedule their own room scan.
+            // A later admission can replace the monsters before that scan runs.
             let ejection = encounter.ejection.map(|rule| ScheduledEjection {
                 due_us: self
                     .owner_now()
@@ -589,14 +589,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             if ejection.is_some() {
                 states.owner_wake.notify_one();
-                if encounter.boss_cooldown_seconds.is_none() {
-                    visits.retain(|visit| {
-                        visit.ejection.is_none()
-                            || visit.room.boss_cooldown_seconds.is_some()
-                            || visit.room.room_min != encounter.room_min
-                            || visit.room.room_max != encounter.room_max
-                    });
-                }
             }
             visits.push(EncounterVisit {
                 room: encounter.clone(),
