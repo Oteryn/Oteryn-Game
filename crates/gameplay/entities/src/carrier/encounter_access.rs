@@ -377,7 +377,17 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
-        if monsters.is_empty() || monsters.len() > 8 {
+        self.commit_quest_creature_replacement(&[], monsters, project)
+    }
+
+    /// One phase replaces exact live siblings and admits its successors atomically.
+    pub fn commit_quest_creature_replacement(
+        &mut self,
+        retire: &[ExactActorRef],
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        if monsters.is_empty() || monsters.len() > 8 || retire.len() > 16 {
             return Err(CarrierError::PlanConflict);
         }
         let mut actors = Vec::new();
@@ -386,6 +396,12 @@ impl ChannelRuntimeV1 {
             .map_err(|_| CarrierError::AllocationFailed)?;
         let before = self.carrier.clone();
         let result = (|| {
+            for actor in retire {
+                if !self.contains_live_creature(*actor) {
+                    return Err(CarrierError::CreatureTargetMismatch);
+                }
+                self.remove_encounter_actor(*actor)?;
+            }
             for (key, health, at) in monsters {
                 let actor = self.admit_encounter_actor(key, *health, *at)?;
                 self.install_creature_policy(actor, key)?;

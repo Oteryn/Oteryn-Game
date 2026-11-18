@@ -8,12 +8,72 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
+mod replacements;
+
+#[derive(Debug)]
+enum Fight {
+    Cults(CultsEncounter),
+    Replacements(replacements::Replacements),
+}
+
+impl Fight {
+    fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        match self {
+            Self::Cults(fight) => fight.is_current(runtime),
+            Self::Replacements(fight) => fight.is_current(runtime),
+        }
+    }
+
+    fn contains(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(fight) => fight.contains(actor),
+            Self::Replacements(fight) => fight.contains(actor),
+        }
+    }
+
+    fn contains_terminal(&self, actor: ExactActorRef) -> bool {
+        matches!(self, Self::Cults(fight) if fight.contains_terminal(actor))
+    }
+
+    fn projected_death(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Result<bool, CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.projected_death(runtime, actor),
+            Self::Replacements(fight) => fight.projected_death(runtime, actor),
+        }
+    }
+
+    fn advance(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        admits: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+    ) -> Result<(), CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.advance(runtime, admits),
+            Self::Replacements(fight) => fight.advance(runtime, admits),
+        }
+    }
+
+    fn victors(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.victors(runtime),
+            Self::Replacements(fight) => fight.victors(runtime),
+        }
+    }
+}
+
 const MAX_ENCOUNTERS: usize = 64;
 
 #[derive(Debug)]
 pub(super) struct ActivePhase {
     key: u64,
-    fight: CultsEncounter,
+    fight: Fight,
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     credits: Vec<grizzly_kills::EncounterCredit>,
@@ -161,6 +221,19 @@ pub(super) fn bind(
         .encounter
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
+    if let Some(plan) = &encounter.death_phases {
+        return Ok(ActivePhase {
+            key,
+            fight: Fight::Replacements(replacements::Replacements::bind(
+                runtime, encounter, plan, actors, players,
+            )?),
+            room: encounter.clone(),
+            participants: players.to_vec(),
+            credits,
+            frozen: None,
+            cells,
+        });
+    }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
         return Err(CarrierError::PlanConflict);
     }
@@ -210,7 +283,9 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: CultsEncounter::bind(runtime, players, pillars, stops, centre)?,
+        fight: Fight::Cults(CultsEncounter::bind(
+            runtime, players, pillars, stops, centre,
+        )?),
         room: encounter.clone(),
         participants: players.to_vec(),
         credits,

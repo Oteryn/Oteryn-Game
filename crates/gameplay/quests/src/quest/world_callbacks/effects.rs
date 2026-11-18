@@ -311,6 +311,9 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+    /// Exact encounter-owned death transitions and their terminal creature.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub death_phases: Option<DeathPhases>,
     /// Use every occupied staging tile and permit a shared party landing.
     #[serde(default, skip_serializing_if = "is_false")]
     pub shared_staging: bool,
@@ -326,6 +329,77 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathPhases {
+    pub terminal: String,
+    pub replacements: Vec<DeathReplacement>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathReplacement {
+    pub defeated: String,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub retire_siblings: bool,
+    pub spawn: Vec<ReplacementActor>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ReplacementActor {
+    pub creature: String,
+    /// Omit the position to use the exact defeated actor's tile.
+    pub position: Option<Position>,
+}
+
+impl Encounter {
+    pub fn has_phases(&self) -> bool {
+        self.phase.is_some() || self.death_phases.is_some()
+    }
+}
+
+fn valid_death_phases(
+    encounter: &Encounter,
+    plan: &DeathPhases,
+    in_room: impl Fn(Position) -> bool,
+) -> bool {
+    use super::super::valid_quest_key;
+    if encounter.phase.is_some()
+        || encounter.timing.is_some()
+        || encounter.personal_cooldown_seconds.is_some()
+        || !valid_quest_key(&plan.terminal)
+        || !(1..=8).contains(&plan.replacements.len())
+    {
+        return false;
+    }
+    let mut known: BTreeSet<_> = encounter
+        .monsters
+        .iter()
+        .map(|actor| actor.creature.as_str())
+        .collect();
+    let mut defeated = BTreeSet::new();
+    for rule in &plan.replacements {
+        if rule.defeated == plan.terminal
+            || !known.contains(rule.defeated.as_str())
+            || !defeated.insert(rule.defeated.as_str())
+            || !(1..=8).contains(&rule.spawn.len())
+        {
+            return false;
+        }
+        for actor in &rule.spawn {
+            if !valid_quest_key(&actor.creature)
+                || defeated.contains(actor.creature.as_str())
+                || actor.position.is_some_and(|position| !in_room(position))
+            {
+                return false;
+            }
+            known.insert(&actor.creature);
+        }
+    }
+    known.contains(plan.terminal.as_str())
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -858,6 +932,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
             encounter.phase == Some(EncounterPhase::Cults) || encounter.shared_staging;
         let personal_cooldown = encounter.personal_cooldown_seconds.is_some();
         if (encounter.minimum_level == 0 && !source_party && !personal_cooldown)
+            || encounter.death_phases.as_ref().is_some_and(|plan| {
+                callback.trigger != Trigger::Use
+                    || callback.has_personal_state()
+                    || !valid_death_phases(encounter, plan, in_room)
+            })
             || (encounter.shared_staging
                 && (callback.trigger != Trigger::Use
                     || encounter.timing.is_some()

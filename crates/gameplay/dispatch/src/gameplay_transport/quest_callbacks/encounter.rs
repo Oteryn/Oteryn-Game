@@ -469,7 +469,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let credits = if encounter.phase.is_some() {
+        let credits = if encounter.phase == Some(world_callbacks::EncounterPhase::Cults) {
             let Ok(credits) =
                 super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
             else {
@@ -479,7 +479,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let mut phases = if encounter.phase.is_some() {
+        let mut phases = if encounter.has_phases() {
             let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
                 return UseDisposition::Occupied;
             };
@@ -487,7 +487,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let mut visits = if encounter.phase.is_none() && !monsters.is_empty() {
+        let mut visits = if !encounter.has_phases() && !monsters.is_empty() {
             let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
                 return UseDisposition::Rejected;
             };
@@ -516,15 +516,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
                     )?)
                 } else { None };
-                credits
-                    .map(|credits| {
+                encounter.has_phases().then(|| {
                         super::super::encounter_phases::bind(
                             runtime,
                             callback,
                             key,
                             actors,
                             &party,
-                            credits,
+                            credits.unwrap_or_default(),
                             self.movement_cells().clone(),
                         )
                     })
