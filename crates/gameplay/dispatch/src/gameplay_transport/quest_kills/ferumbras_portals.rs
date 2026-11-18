@@ -132,6 +132,7 @@ pub(super) async fn open(
         restore: before,
         position,
         destination,
+        retreat: Some(tile((33319, 32318, -13))),
     };
     let _ = map.facts.apply_quest_callback(
         key,

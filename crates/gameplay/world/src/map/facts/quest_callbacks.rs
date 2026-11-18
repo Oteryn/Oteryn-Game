@@ -68,6 +68,7 @@ struct DynamicPortal {
     entry: Option<EntryId>,
     owner_revision: Option<u64>,
     expires: Option<u64>,
+    retreat: Option<TilePos>,
 }
 
 /// Already qualified facts for one atomic, Channel-local callback projection.
@@ -80,6 +81,7 @@ pub enum QuestCallbackProjection {
         restore: EntryFacts,
         position: TilePos,
         destination: TilePos,
+        retreat: Option<TilePos>,
     },
     /// Change a separate shared object and restore only that committed revision.
     TimedRemoteTransform {
@@ -222,6 +224,7 @@ impl CallbackStates {
                 restore,
                 position,
                 destination,
+                retreat,
             } => {
                 if close
                     || view::placement_of(owner).map(|(pos, _)| pos) != Some(*position)
@@ -257,6 +260,7 @@ impl CallbackStates {
                         entry: None,
                         owner_revision: Some(revision),
                         expires: Some(*due),
+                        retreat: *retreat,
                     },
                 );
             }
@@ -409,6 +413,7 @@ impl CallbackStates {
                             entry: Some(entry),
                             owner_revision: None,
                             expires: *expires,
+                            retreat: None,
                         },
                     );
                 }
@@ -856,7 +861,7 @@ impl BundleFacts {
         let expired: BTreeSet<_> = states
             .portals
             .values()
-            .filter(|p| p.expires.is_some_and(|due| due <= now))
+            .filter(|p| p.retreat.is_none() && p.expires.is_some_and(|due| due <= now))
             .map(|p| p.owner)
             .collect();
         for owner in expired {
@@ -881,6 +886,17 @@ impl BundleFacts {
                 && let Some(revision) = decay.revision.checked_add(1)
             {
                 states.changed.insert(key, (revision, decay.restore));
+                if let Some((position, _)) = view::placement_of(key)
+                    && let Some(portal) = states.portals.get_mut(&position)
+                    && portal.owner == key
+                    && portal.owner_revision == Some(decay.revision)
+                    && portal.expires == Some(at.0)
+                    && let Some(retreat) = portal.retreat.take()
+                {
+                    portal.destination = retreat;
+                    portal.owner_revision = Some(revision);
+                    portal.expires = None;
+                }
                 if let Some((hidden, passable)) = decay.overlay {
                     if hidden {
                         states.hidden.insert(key);
@@ -1429,7 +1445,7 @@ impl BundleFacts {
             .unwrap_or_default()
     }
 
-    /// Only live, current portals resolve; the timer and explicit removal retire both ends.
+    /// Only current portals resolve, including a source retreat after its deadline.
     pub fn quest_portal_destination(&self, pos: TilePos, now: u64) -> Option<TilePos> {
         let states = self.callbacks.lock().ok()?;
         let portal = states.portals.get(&pos)?;
@@ -1439,10 +1455,11 @@ impl BundleFacts {
         }) {
             return None;
         }
-        portal
-            .expires
-            .is_none_or(|due| due > now)
-            .then_some(portal.destination)
+        if portal.expires.is_some_and(|due| due <= now) {
+            portal.retreat
+        } else {
+            Some(portal.destination)
+        }
     }
     /// Source selector validation against the original bound placement, never a client id.
     pub fn quest_callback_matches(
@@ -2339,6 +2356,7 @@ mod readset_tests {
             restore: ashes,
             position: source,
             destination,
+            retreat: None,
         };
         assert!(facts.apply_quest_callback(owner, 0, portal, &[], &[], false, Some(&entrance)));
         assert_eq!(
@@ -2367,6 +2385,7 @@ mod readset_tests {
             restore: ashes,
             position: source,
             destination,
+            retreat: None,
         };
         assert!(facts.apply_quest_callback(owner, 2, portal, &[], &[], false, Some(&next)));
         let changed = EntryFacts {

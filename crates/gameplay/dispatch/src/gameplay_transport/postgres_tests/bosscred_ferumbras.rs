@@ -23,6 +23,11 @@ const EXIT: Position = Position {
     y: 31510,
     floor: -13,
 };
+const RETREAT: Position = Position {
+    x: 33319,
+    y: 32318,
+    floor: -13,
+};
 const CREATURE: &str = "oteryn:creature.plagirath";
 const CREDIT: &str = "oteryn:quest-progress/ferumbras-ascension/defeated-at/plagirath";
 
@@ -46,7 +51,11 @@ pub(super) fn fixture_callback(mut callback: Callback) -> Callback {
 }
 
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    super::quest_world_callbacks::world_with_cells(callback, PORTAL, &[WEST, BOSS, EXIT, WAIT])
+    super::quest_world_callbacks::world_with_cells(
+        callback,
+        PORTAL,
+        &[WEST, BOSS, EXIT, RETREAT, WAIT],
+    )
 }
 
 pub(super) async fn exercise(
@@ -131,24 +140,28 @@ pub(super) async fn exercise(
         .checked_sub(std::time::Duration::from_secs(60))
         .ok_or("clock origin")?;
     let map = owner.bundle_map().ok_or("portal map")?;
-    assert!(
-        map.facts
-            .quest_portal_destination(
-                crate::map::overlay::TilePos {
-                    x: PORTAL.x,
-                    y: PORTAL.y,
-                    floor: PORTAL.floor,
-                },
-                owner.owner_now().get()
-            )
-            .is_none()
+    assert_eq!(
+        map.facts.quest_portal_destination(
+            crate::map::overlay::TilePos {
+                x: PORTAL.x,
+                y: PORTAL.y,
+                floor: PORTAL.floor
+            },
+            owner.owner_now().get(),
+        ),
+        Some(crate::map::overlay::TilePos {
+            x: RETREAT.x,
+            y: RETREAT.y,
+            floor: RETREAT.floor
+        }),
     );
+    map.facts.expire_movement_items(owner.owner_now().get());
     for (player, parking) in [(&mut *first, BOSS), (&mut second, WAIT)] {
         let actor = player.runtime_actor.ok_or("player actor")?;
         super::grizzly_boss::vacancy::teleport(owner, actor, player.game_session_id, local(WEST))
             .await?;
         super::questpc7_ferumbras::step(owner, player, StepDirection::East).await?;
-        assert_ne!(
+        assert_eq!(
             owner
                 .runtime
                 .lock()
@@ -156,7 +169,7 @@ pub(super) async fn exercise(
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .position(),
-            local(EXIT)
+            local(RETREAT)
         );
         super::grizzly_boss::vacancy::teleport(
             owner,
