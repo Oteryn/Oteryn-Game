@@ -119,7 +119,7 @@ pub(super) fn apply_world_cake_regeneration(
     let root = GameplayDecisionRoot::from_bytes(content_digest);
     let facts = ApplicationFacts {
         now: now_us,
-        base_speed: state.owned_base_speed(),
+        base_speed: u16::try_from(state.owned_base_speed()).ok()?,
         mana_shield_capacity: 0,
         target_reentry_protected: false,
         source_reentry_protected: false,
