@@ -209,9 +209,8 @@ opt-level = 2
 debug-assertions = true
 overflow-checks = true
 
-# The dispatch lib-test build hits the 16 GiB memory limit during codegen.
-# Use 256 codegen units without line tables or incremental state for this
-# package's test profile.
+# With these settings, the full dispatch lib-test builds under a 16 GiB cap
+# with one Cargo job. Two jobs still exceed the cap during codegen.
 [profile.test.package.oteryn-gameplay-dispatch]
 debug = 0
 incremental = false
