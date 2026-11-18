@@ -1210,15 +1210,29 @@ pub(super) async fn party_is_current(
     context: &QuestWorldContext,
 ) -> Result<bool, DurabilityError> {
     use crate::foundation::{ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
-    let Some(party) = &callback.effects.party_transfer else {
+    let party = callback.effects.party_transfer.as_ref();
+    let rite = callback.effects.party_rite.as_ref();
+    let Some(station_count) = party
+        .map(|p| p.stations.len())
+        .or_else(|| rite.map(|r| r.stations.len()))
+    else {
         return Ok(context.party.is_empty());
     };
-    if context.party.len() != party.stations.len() || !(1..=8).contains(&context.party.len()) {
+    if context.party.len() != station_count
+        || !(1..=8).contains(&context.party.len())
+        || (rite.is_some()
+            && !context.party.iter().any(|member| {
+                &member.character == initiator.character_id.as_bytes()
+                    && &member.session == initiator.game_session_id.as_bytes()
+                    && member.actor_placement == context.actor_placement
+                    && member.movement_revision == context.movement_revision
+            }))
+    {
         return Ok(false);
     }
     let mut characters = std::collections::BTreeSet::new();
     let mut sessions = std::collections::BTreeSet::new();
-    for (member, station) in context.party.iter().zip(&party.stations) {
+    for (index, member) in context.party.iter().enumerate() {
         if !characters.insert(member.character)
             || !sessions.insert(member.session)
             || member.actor_placement == [0; 16]
@@ -1255,6 +1269,9 @@ pub(super) async fn party_is_current(
         {
             return Ok(false);
         }
+        let Some(station) = party.and_then(|p| p.stations.get(index)) else {
+            continue;
+        };
         let vocation: Option<String> = sqlx::query_scalar(
             "SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
         )

@@ -11,6 +11,7 @@ mod ground_fixture;
 
 #[cfg(test)]
 mod personal_event_tests;
+mod party_rite;
 
 /// Empty donor missions stay unavailable. Selected personal programmes and
 /// surveys require their exact canonical operation and physical cause; live
@@ -2089,6 +2090,13 @@ impl DurabilityRoot {
                             tx.rollback().await?;
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
+                    }
+                    if let (Some(callback), Some((_, context, _))) = (&callback, &context)
+                        && let Some(rite) = &callback.effects.party_rite
+                        && !party_rite::apply(&mut tx, fence, &request, &catalogue, transition, rite, context).await?
+                    {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     let committed_revision = root
                         .revision

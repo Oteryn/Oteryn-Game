@@ -87,7 +87,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if callback.effects.party_transfer.is_some()
+        if (callback.effects.party_transfer.is_some() || callback.effects.party_rite.is_some())
             && self
                 .states
                 .quest_callbacks
@@ -923,7 +923,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::StaleState;
         }
-        let party = if let Some(party) = &callback.effects.party_transfer {
+        let party = if callback.effects.party_rite.is_some() {
+            match self.prepare_party_transfer(runtime, states, &closed, callback, session) {
+                Ok(plan) => Some(plan),
+                Err(refusal) => return refusal,
+            }
+        } else if let Some(party) = &callback.effects.party_transfer {
             if after.appearance_id != party.activation_appearance {
                 return if map.facts.apply_quest_callback(
                     key,
@@ -970,6 +975,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             Vec::new()
         };
+        let mut peer_slots = Vec::new();
+        if callback.effects.party_rite.is_some() {
+            for member in &party_context {
+                if &member.session == session.as_bytes() {
+                    continue;
+                }
+                let Ok(character) = crate::domain::CharacterId::from_bytes(member.character) else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(mut slot) = self.revision_sequencer.try_acquire(character) else {
+                    return UseDisposition::Occupied;
+                };
+                slot.observe_endgame_progression();
+                peer_slots.push(slot);
+            }
+        }
         let durable = callback.requires_durable_commit()
             && !callback.is_read_only()
             && !(close && callback.opening_only);
@@ -1329,7 +1350,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     {
                         self.states.chat.push_quest_feedback(session, message);
                     }
-                    if party.is_some() {
+                    if callback.effects.party_transfer.is_some() {
                         // The source lever still flips on a missing sacrifice.
                         map.facts.apply_quest_callback(key, expected_revision, after, &[], &[], close, None);
                     }
@@ -1338,6 +1359,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if let Some(plan) = party {
+            if callback.effects.party_rite.is_some() {
+                for member in plan.sessions() {
+                    self.schedule_quest_refresh(member);
+                }
+            }
             return self.commit_party_transfer(
                 runtime,
                 states,

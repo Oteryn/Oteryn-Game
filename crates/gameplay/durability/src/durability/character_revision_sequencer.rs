@@ -91,6 +91,17 @@ impl CharacterRevisionSequencer {
         Self::default()
     }
 
+    /// A shared physical rite already holds its Channel turn. An in-flight
+    /// peer must make the rite retryable without waiting on that peer's slot.
+    pub fn try_acquire(&self, character_id: CharacterId) -> Option<RevisionSlot> {
+        let queue = {
+            let mut slots = self.slots.lock().ok()?;
+            slots.retain(|_, queue| Arc::strong_count(queue) > 1);
+            Arc::clone(slots.entry(character_id).or_default())
+        };
+        Some(RevisionSlot { character_id, cursor: queue.try_lock_owned().ok()? })
+    }
+
     /// Wait for the slot of `character_id`. Requests are granted in arrival order. The caller
     /// must not hold the runtime lock while it waits.
     pub async fn acquire(&self, character_id: CharacterId) -> RevisionSlot {

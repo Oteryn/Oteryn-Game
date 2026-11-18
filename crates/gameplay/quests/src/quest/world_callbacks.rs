@@ -84,8 +84,8 @@ mod treasure_source_tests;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
-    MagicEffect, MountReward, ObjectCycle, ObjectCycleStage, PartyStation, PartyTransfer, Portal,
-    PortalPair, QuestCompletion, RewardDoor, TargetTransform,
+    MagicEffect, MountReward, ObjectCycle, ObjectCycleStage, PartyRite, PartyStation,
+    PartyTransfer, Portal, PortalPair, QuestCompletion, RewardDoor, TargetTransform,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,

@@ -78,6 +78,9 @@ pub struct CallbackEffects {
     pub quest_completion: Option<QuestCompletion>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub party_transfer: Option<PartyTransfer>,
+    /// Each occupied station participates in one shared Quest transaction.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub party_rite: Option<PartyRite>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reward_door: Option<RewardDoor>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -486,6 +489,71 @@ pub struct PartyStation {
     pub offering: Position,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct PartyRite {
+    pub stations: Vec<EncounterPlayer>,
+    pub admission_item: String,
+    pub entry_track: String,
+}
+
+impl PartyRite {
+    // Crystal 201189f8 movements_unlock_entrace.lua:52-119. The charged
+    // crystal qualifies an unmarked character, but remains in their custody.
+    fn valid(&self, callback: &Callback) -> bool {
+        let distinct = |positions: Vec<Position>| {
+            positions.iter().all(|p| (-15..=0).contains(&p.floor))
+                && positions.iter().copied().collect::<BTreeSet<_>>().len() == positions.len()
+        };
+        callback.trigger == Trigger::StepIn
+            && callback.actor_kind == ActorKind::Player
+            && callback.requires_world_admission
+            && !callback.return_on_failure
+            && callback
+                .selector
+                .position
+                .is_some_and(|position| self.stations.iter().any(|s| s.from == position))
+            && callback
+                .selector
+                .position_aliases
+                .iter()
+                .all(|p| self.stations.iter().any(|s| s.from == *p))
+            && callback.lever.is_none()
+            && !callback.reversible
+            && callback.native_rule.is_none()
+            && callback.teleport.is_none()
+            && callback.remote_teleport.is_none()
+            && callback.passages.is_empty()
+            && callback.offerings.is_empty()
+            && callback.present.is_empty()
+            && callback.item_on_target.is_none()
+            && callback.effects.party_transfer.is_none()
+            && callback.effects.encounter.is_none()
+            && callback.effects.stationary_encounter.is_empty()
+            && callback.effects.transform.is_none()
+            && callback.operation_count() == 0
+            && callback.storage.len() == 2
+            && callback
+                .storage
+                .iter()
+                .any(|s| s.track != self.entry_track && s.preserve)
+            && callback.storage.iter().any(|s| {
+                s.track == self.entry_track
+                    && !s.preserve
+                    && !s.increment
+                    && !s.at_least
+                    && s.set == 1
+                    && s.maximum == 1
+                    && s.minimum < 1
+            })
+            && (2..=8).contains(&self.stations.len())
+            && distinct(self.stations.iter().map(|s| s.from).collect())
+            && distinct(self.stations.iter().map(|s| s.to).collect())
+            && self.stations.iter().all(|s| s.from != s.to)
+            && super::super::valid_quest_key(&self.admission_item)
+    }
+}
+
 fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let unique = |positions: Vec<Position>| {
@@ -544,6 +612,13 @@ pub(super) fn has_encounter_custody_effect(callback: &Callback) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .party_rite
+        .as_ref()
+        .is_some_and(|rite| !rite.valid(callback))
+    {
+        return false;
+    }
     if effects.achievement.as_ref().is_some_and(|key| {
         !key.starts_with("oteryn:achievement/")
             || !super::super::valid_quest_key(key)

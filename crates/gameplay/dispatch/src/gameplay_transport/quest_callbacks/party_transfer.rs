@@ -27,20 +27,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         callback: &Callback,
         initiator: GameSessionId,
     ) -> Result<Plan<impl crate::foundation::SourceStepCommitProof + 'a>, UseDisposition> {
-        let party = callback
-            .effects
-            .party_transfer
-            .as_ref()
-            .ok_or(UseDisposition::Rejected)?;
+        let stations: Vec<_> = if let Some(rite) = &callback.effects.party_rite {
+            rite.stations.iter().map(|s| (s.from, s.to, None)).collect()
+        } else if let Some(party) = &callback.effects.party_transfer {
+            party
+                .stations
+                .iter()
+                .map(|s| (s.from, s.to, Some(s.vocation.as_str())))
+                .collect()
+        } else {
+            return Err(UseDisposition::Rejected);
+        };
         let census = runtime
             .positioned_melee_census()
             .map_err(|_| UseDisposition::Rejected)?;
         let mut members = Vec::new();
         let mut proofs = Vec::new();
-        for station in &party.stations {
+        for (from, to, vocation) in stations {
             let mut occupants = census
                 .iter()
-                .filter(|(_, at, _)| at.position() == local(station.from));
+                .filter(|(_, at, _)| at.position() == local(from));
             let Some(&(actor, expected, Some(session))) = occupants.next() else {
                 return Err(UseDisposition::Rejected);
             };
@@ -53,10 +59,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Vocation::Paladin | Vocation::RoyalPaladin => "paladin",
                 Vocation::Knight | Vocation::EliteKnight => "knight",
                 Vocation::Monk | Vocation::ExaltedMonk => "monk",
-                Vocation::None => return Err(UseDisposition::Rejected),
+                Vocation::None => "none",
             };
             if occupants.next().is_some()
-                || base != station.vocation
+                || vocation.is_some_and(|vocation| base != vocation)
                 || states.is_dead(actor)
                 || !states.spell_idle(runtime, actor, session)
                 || !runtime
@@ -76,7 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actor,
                 session,
                 expected,
-                local(station.to),
+                local(to),
                 blocked,
                 closed,
             )
@@ -87,6 +93,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected,
             });
             proofs.push(proof);
+        }
+        if callback.effects.party_rite.is_some() && !members.iter().any(|m| m.session == initiator)
+        {
+            return Err(UseDisposition::Rejected);
         }
         Ok(Plan { proofs, members })
     }
