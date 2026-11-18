@@ -3,7 +3,9 @@
 use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::foundation::{CharacterId, CharacterLease, GameSessionId, MovementLocalPosition};
+use crate::foundation::{
+    CharacterId, CharacterLease, GameSessionId, MovementFacing, MovementLocalPosition,
+};
 use crate::gameplay_transport::connection::{AdmittedSession, FirstEntryOutcome};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::Position,
@@ -303,6 +305,20 @@ async fn exercise(admin: String, room: Room) -> TestResult {
             room.landing,
         )
     };
+    let exit_occupant = {
+        // The donor timeout uses Creature:teleportTo even if a creature is
+        // standing at the destination. The occupant keeps its exact tile.
+        let mut runtime = owner.runtime.lock().await;
+        let creature = "oteryn:creature.fire_devil";
+        let health = runtime
+            .companion_policy(creature)
+            .map_err(debug)?
+            .maximum_health;
+        let occupants = runtime
+            .commit_quest_creature_spawn(&[(creature, health, local(room.exit))])
+            .map_err(debug)?;
+        occupants.first().copied().ok_or("exit occupant")?
+    };
     let due = entered_at + u64::from(room.timeout_ms) * 1_000;
     set_time(due - 1);
     owner.drain_quest_encounter_deadlines().await;
@@ -334,9 +350,12 @@ async fn exercise(admin: String, room: Room) -> TestResult {
                 peer_position
             })
         );
+        let arrival = runtime.read_actor_position(deps.actor).map_err(debug)?;
+        assert_eq!(arrival.position(), local(room.exit));
+        assert_eq!(arrival.facing(), Some(MovementFacing::East));
         assert_eq!(
             runtime
-                .read_actor_position(deps.actor)
+                .read_actor_position(exit_occupant)
                 .map_err(debug)?
                 .position(),
             local(room.exit)
@@ -463,6 +482,31 @@ async fn exercise(admin: String, room: Room) -> TestResult {
                 .into_iter()
                 .any(|actor| runtime.matches_live_creature_identity(actor, room.boss.as_bytes())),
             "the first eligible second admits the challenger and spawns a scorpion"
+        );
+    }
+    let exit_tile = crate::map::overlay::TilePos {
+        x: room.exit.x,
+        y: room.exit.y,
+        floor: room.exit.floor,
+    };
+    assert!(
+        owner
+            .bundle_map()
+            .ok_or("room map")?
+            .facts
+            .movement_effects_since(0)
+            .into_iter()
+            .all(|(_, position, effect)| position != exit_tile || effect != 11),
+        "the donor deadline ejection emits no teleport effect at the exit"
+    );
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime
+                .read_actor_position(exit_occupant)
+                .map_err(debug)?
+                .position(),
+            local(room.exit)
         );
     }
     let receipts: i64 = sqlx::query_scalar(

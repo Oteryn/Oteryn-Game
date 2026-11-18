@@ -133,6 +133,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if !room_contains(&visit.room, expected.position()) {
                     continue;
                 }
+                // Crystal spectators.lua:113-132 and movements_teleportTo.lua:108-115
+                // eject directly to the exit tile without a teleport effect.
                 let Ok(proof) = crate::map::floor::prepare_quest_timeout_ejection(
                     runtime,
                     &self.movement_cells,
@@ -164,8 +166,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     underwater(map, expected.position()),
                     underwater(map, moved.position()),
                 );
-                // Crystal spectators.lua:113-132 and movements_teleportTo.lua:108-115
-                // eject the player without a teleport effect.
             }
             // The donor deadline ejects players. Living monsters remain
             // until the next admitted challenger resets the room.
