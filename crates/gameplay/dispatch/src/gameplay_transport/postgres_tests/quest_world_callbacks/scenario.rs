@@ -1041,7 +1041,7 @@ fn scenario_case(
                     .ok_or("machine native policies")?,
             )?
         } else if sphere_machine {
-            super::super::qespike_sphere_machine::world(generation.native_gameplay().ok_or("sphere native policies")?)?
+            super::super::qespike_sphere_machine::world()?
         } else if qd_world {
             super::super::qd_world::world(
                 name,

@@ -59,36 +59,18 @@ pub(super) fn callback() -> TestResult<Callback> {
     }))?)
 }
 
-pub(super) fn world(
-    native: &crate::content::native_gameplay::NativeGameplayState,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups::{NativeCrop, native_scene_with_appearances};
-    native_scene_with_appearances(
-        native,
-        vec![
-            NativeCrop {
-                bytes: include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z10-x129-y124.b3"
-                )),
-                region: (10, 129, 124),
-                bounds: (33266, 31828, 33272, 31833),
-                start: (33268, 31831),
-                expected: Vec::new(),
-            },
-            NativeCrop {
-                bytes: include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z13-x129-y125.b3"
-                )),
-                region: (13, 129, 125),
-                bounds: (33086, 32095, 33089, 32098),
-                start: (33087, 32096),
-                expected: Vec::new(),
-            },
+pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
+    // Model the verified B3 machine positions and appearances in a fixture
+    // palette. Content owns admission of the four machine definitions.
+    super::quest_callbacks::source_world_spatial(
+        (LEFT.x, LEFT.y + 1, LEFT.floor),
+        &[
+            (LEFT.x, LEFT.y, LEFT.floor, 0, 842),
+            (RIGHT.x, RIGHT.y, RIGHT.floor, 0, 843),
+            (RIGHT.x + 1, RIGHT.y, RIGHT.floor, 0, 846),
+            (RIGHT.x + 2, RIGHT.y, RIGHT.floor, 0, 847),
+            (KNIGHT.x, KNIGHT.y, KNIGHT.floor, 0, 231),
         ],
-        &[],
-        &[846, 847],
     )
 }
 

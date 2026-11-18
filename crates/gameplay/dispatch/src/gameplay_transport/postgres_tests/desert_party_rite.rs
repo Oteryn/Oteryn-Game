@@ -48,6 +48,10 @@ fn desert_dungeon_four_station_rite_uses_real_fenced_players() -> TestResult {
 }
 
 pub(super) fn scenario(earned: bool) -> TestResult {
+    scenario_with_station_custody(earned, false)
+}
+
+pub(super) fn scenario_with_station_custody(earned: bool, station_custody: bool) -> TestResult {
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "desert_party_rite", false, false).await?;
@@ -55,10 +59,13 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
         println!("DESERT_PARTY_RITE POSTGRES_CASE_OBSERVED server_version_num={version}");
-        let callback = oteryn_gameplay_quests::quest::world_callbacks::load()?
+        let mut callback = oteryn_gameplay_quests::quest::world_callbacks::load()?
             .into_iter()
             .find(|row| row.key == KEY)
             .ok_or("source four-vocation party/offering callback missing")?;
+        if station_custody {
+            super::qespike_lord_admission::configure(&mut callback)?;
+        }
         let party = callback
             .effects
             .party_transfer
@@ -193,6 +200,9 @@ pub(super) fn scenario(earned: bool) -> TestResult {
                 .catalogue()
                 .clone(),
         ));
+        if station_custody {
+            super::qespike_lord_admission::install(&mut owner, &callback)?;
+        }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         select_movement(&owner, &mut admitted, earned)?;
@@ -366,6 +376,9 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             placement: placement.clone(),
             expected_revision: revision,
         };
+        if station_custody {
+            return super::qespike_lord_admission::exercise(&owner, &mut admitted, &members, &h, key, &target(0), &callback).await;
+        }
         // First pull only transforms. A missing member on the return pull consumes nothing.
         assert_eq!(
             pull_next(&owner, &mut admitted, &target(0)).await?,
@@ -562,7 +575,7 @@ pub(super) fn scenario(earned: bool) -> TestResult {
     })
 }
 
-async fn current(
+pub(super) async fn current(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
 ) -> TestResult<crate::durability::character_progression::CurrentCharacterGameplayFence> {
@@ -605,7 +618,7 @@ fn select_movement(
         .ok_or("selected")?;
     Ok(())
 }
-async fn pull_next(
+pub(super) async fn pull_next(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     target: &WorldObjectTarget,
@@ -639,7 +652,7 @@ async fn burns(h: &Harness) -> TestResult<i64> {
     .fetch_one(&h.pool)
     .await?)
 }
-async fn positions(
+pub(super) async fn positions(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     members: &[(ExactActorRef, GameSessionId)],
 ) -> TestResult<Vec<MovementLocalPosition>> {
@@ -654,7 +667,7 @@ async fn positions(
         })
         .collect()
 }
-async fn relocate(
+pub(super) async fn relocate(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,

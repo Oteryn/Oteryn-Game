@@ -17,7 +17,9 @@ pub(super) const NAME: &str = "qespike-hotspot";
 const KEY: &str = "oteryn:quest-reward/qespike/lava-temperature";
 const QUEST: &str = "oteryn:quest.spike_task";
 const TRACK: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_lava_main";
-const THERMOMETER: &str = "oteryn:item.tibia.i19206";
+// The carried binding is generic. Use a native rope in the fixture until
+// the Content session admits Crystal's thermometer (19206).
+const CARRIED_TOOL: &str = "oteryn:item.tibia.i3003";
 const POOLS: [([i32; 3], [i32; 3]); 9] = [
     ([32263, 32481, 13], [32274, 32490, 13]),
     ([32163, 32558, 13], [32173, 32567, 13]),
@@ -44,13 +46,13 @@ fn spike_thermometer_only_consumes_at_the_shared_server_save_hotspot() -> TestRe
 fn callback() -> TestResult<RewardCallback> {
     Ok(serde_json::from_value(json!({
         "key":KEY,"quest":QUEST, "npc":"oteryn:npc.gnomargery",
-        "keywords":["temperature"],"topic":0,"next_topic":0,"carried_item":THERMOMETER,
+        "keywords":["temperature"],"topic":0,"next_topic":0,"carried_item":CARRIED_TOOL,
         "server_save_hotspot":{
             "areas": POOLS.map(|(minimum,maximum)| json!({"minimum": minimum, "maximum": maximum})),
             "cold_reply":"This is not the hot spot!", "hot_effect":16
         },
         "storage":[{"track":TRACK,"minimum":0,"maximum":0,"set":1}],
-        "take":[{"item":THERMOMETER,"count":1}],
+        "take":[{"item":CARRIED_TOOL,"count":1}],
         "reply":["Whew! That was that hot, it melted the thermometer! At least you've found the hot spot!"],
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spike_tasks/actions_thermometer.lua:1-36"]
     }))?)
@@ -112,7 +114,7 @@ pub(super) async fn exercise(
                 x: hot.x - 1,
                 ..hot
             },
-            item: THERMOMETER.into(),
+            item: CARRIED_TOOL.into(),
             count: 1,
         },
         26421,
@@ -123,7 +125,7 @@ pub(super) async fn exercise(
         .active_generation
         .and_then(|g| g.native_gameplay())
         .and_then(|native| native.item_index())
-        .and_then(|index| index.definition_ref("Item", THERMOMETER, "definition-r1"))
+        .and_then(|index| index.definition_ref("Item", CARRIED_TOOL, "definition-r1"))
         .ok_or("native thermometer definition")?;
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::ItemByDefinition(tool),

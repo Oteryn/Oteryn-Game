@@ -1113,6 +1113,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.carried_target.is_none()
         && !temporal_payment::guarded(callback)
         && callback.self_target.is_none()
+        && callback.server_save_hotspot.is_none()
         && !callback
             .key
             .starts_with("oteryn:quest-reward/worldchg-m31/")

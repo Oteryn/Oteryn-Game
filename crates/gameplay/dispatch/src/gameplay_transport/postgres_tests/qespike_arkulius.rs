@@ -16,7 +16,8 @@ pub(super) const NAME: &str = "qespike-arkulius";
 const NPC: &str = "oteryn:npc.arkulius";
 const QUEST: &str = "oteryn:quest.elemental_spheres_quest";
 const TRACK: &str = "oteryn:quest-progress/elemental_spheres/quest_line";
-const PURE_ENERGY: &str = "oteryn:item.tibia.i948";
+// Crystal arkulius.lua:190; this source shop item already has native custody.
+const ENERGY_SOIL: &str = "oteryn:item.tibia.i945";
 const START: Position = Position {
     x: 33294,
     y: 31677,
@@ -43,11 +44,11 @@ fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
         "key":"oteryn:quest-npc/qespike/arkulius/mission", "npc":NPC, "quest":QUEST, "trigger":"say",
         "keywords":["mission"], "topics":[0],
         "guards":[{"kind":"storage","track":TRACK,"op":"eq","value":1},
-            {"kind":"item","item":PURE_ENERGY,"count":1,"op":"ge"}],
+            {"kind":"item","item":ENERGY_SOIL,"count":1,"op":"ge"}],
         "effects":[{"kind":"set","track":TRACK,"value":2}],
-        "reply":["Impressive!! Let me take a look.......Ahh, PURE ENERGY!"], "sources":[witness]
+        "reply":["Impressive!! Let me take a look.......Ahh, ENERGY SOIL!"], "sources":[witness]
     })];
-    for item in [940, 941, 942, 944, 945, 946, 947, 954, 8039, 8041] {
+    for item in [940, 941, 942, 944, 946, 947, 948, 954, 8039, 8041] {
         let key = format!("oteryn:item.tibia.i{item}");
         rules.push(json!({
             "key":format!("oteryn:quest-npc/qespike/arkulius/check-{item}"),
@@ -122,7 +123,7 @@ pub(super) async fn exercise(
         fence.item_fence(),
         &Offering {
             position: START,
-            item: PURE_ENERGY.into(),
+            item: ENERGY_SOIL.into(),
             count: 1,
         },
         5931,
@@ -131,7 +132,7 @@ pub(super) async fn exercise(
     .await?;
     super::classic_quests::talk(owner, admitted, arkulius, 5932, "hi").await?;
     let reply = super::classic_quests::talk(owner, admitted, arkulius, 5933, "mission").await?;
-    assert!(reply.iter().any(|line| line.contains("PURE ENERGY")));
+    assert!(reply.iter().any(|line| line.contains("ENERGY SOIL")));
     assert_eq!(
         super::classic_quests::progress(owner, admitted, authority, TRACK).await?,
         2
