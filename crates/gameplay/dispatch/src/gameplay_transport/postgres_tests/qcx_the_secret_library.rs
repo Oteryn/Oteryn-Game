@@ -102,7 +102,9 @@ pub(super) async fn assert_gail_reply(
                 // TibiaWiki Secret Library Quest/Spoiler, curid 85334, oldid 1194739.
                 assert_eq!(
                     reply.ok_or("Gail's reply")?.lines,
-                    ["I always feared that I lost her. And yet, all those years, I still had a gleam of hope. I'm devastated to learn about her fate - but at least I have certainty now. Thank you for telling me."]
+                    [
+                        "I always feared that I lost her. And yet, all those years, I still had a gleam of hope. I'm devastated to learn about her fate - but at least I have certainty now. Thank you for telling me."
+                    ]
                 );
             }
         }
@@ -120,4 +122,77 @@ pub(super) async fn assert_gail_reply(
         *admitted = current;
     }
     result
+}
+
+#[test]
+fn qcx_the_secret_library_hawser_claim() -> TestResult {
+    high_and_dry_claim("hawser", (32025, 32469, -7), 5951, 6330, 28707)
+}
+
+#[test]
+fn qcx_the_secret_library_sealed_scroll_claim() -> TestResult {
+    high_and_dry_claim("parchment", (32013, 32447, -8), 28828, 6326, 28650)
+}
+
+fn high_and_dry_claim(
+    name: &'static str,
+    position: (u16, u16, i8),
+    appearance: u16,
+    unique: u16,
+    reward: u16,
+) -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    super::kill_reward_e2e::scenario_thread::run(name, move || {
+        use super::fixture::{debug, id};
+        use crate::map::overlay::TilePos;
+
+        let claim = super::quest_catalogue_chests::CatalogueChest {
+            claim: format!(
+                "oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.{name}"
+            ),
+            position,
+            unique,
+            servable: true,
+            appearance,
+            root: format!("oteryn:item.tibia.i{reward}"),
+            quantity: 1,
+            contents: Vec::new(),
+            texts: Vec::new(),
+            key_number: None,
+            achievement: false,
+            charges: Vec::new(),
+            fluids: Vec::new(),
+        };
+        let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let activation =
+            super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?;
+        let native = activation
+            .0
+            .active()
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("native generation")?;
+        let (x, y, floor) = position;
+        let start = TilePos { x: x + 1, y, floor };
+        let world = super::source_world_crop::world(TilePos { x, y, floor }, start, start, native)?;
+        let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
+            world.base().as_ref(),
+            &|_| true,
+        )?;
+        assert!(
+            report
+                .served
+                .iter()
+                .any(|row| row.key.as_str() == claim.claim),
+            "shipped map must bind {name} at {position:?}"
+        );
+        super::quest_container_chests::catalogue_scenario(&claim, &activation)
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qcx_the_secret_library_{name} duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
