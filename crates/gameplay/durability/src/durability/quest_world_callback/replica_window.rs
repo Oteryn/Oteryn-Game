@@ -28,14 +28,10 @@ impl ReplicaKind {
         }
     }
 
-    pub(crate) fn from_death_transition(key: &str) -> Option<Self> {
+    pub fn from_creature(key: &str) -> Option<Self> {
         match key {
-            "oteryn:quest-transition/forgotten-knowledge/replica-credit/diamond" => {
-                Some(Self::Diamond)
-            }
-            "oteryn:quest-transition/forgotten-knowledge/replica-credit/golden" => {
-                Some(Self::Golden)
-            }
+            "oteryn:creature.diamond_servant_replica" => Some(Self::Diamond),
+            "oteryn:creature.golden_servant_replica" => Some(Self::Golden),
             _ => None,
         }
     }
@@ -126,7 +122,7 @@ impl DurabilityRoot {
                 "INSERT INTO game_forgotten_knowledge_replica_windows (world_id, replica_kind, expires_at)
                  VALUES (encode($1,'hex')::uuid, $2, statement_timestamp() + interval '10 minutes')
                  ON CONFLICT (world_id, replica_kind) DO UPDATE SET
-                    expires_at=EXCLUDED.expires_at, kills=0
+                    expires_at=EXCLUDED.expires_at, kills=0, credited_deaths=ARRAY[]::bytea[]
                  WHERE game_forgotten_knowledge_replica_windows.expires_at <= statement_timestamp()",
             )
             .bind(world_id.as_bytes().as_slice())
@@ -154,24 +150,59 @@ impl DurabilityRoot {
             Ok(opened.then_some(windows))
         })).await
     }
-}
 
-pub(crate) async fn credit(
-    tx: &mut sqlx::PgConnection,
-    scope: RuntimeScopeRefV1,
-    kind: ReplicaKind,
-) -> Result<(), DurabilityError> {
-    if let RuntimeScopeRefV1::Channel { world_id, .. } = scope {
-        sqlx::query(
-            "UPDATE game_forgotten_knowledge_replica_windows
-             SET kills=kills+1
-             WHERE world_id=encode($1,'hex')::uuid AND replica_kind=$2
-               AND expires_at > statement_timestamp() AND kills < 5",
-        )
-        .bind(world_id.as_bytes().as_slice())
-        .bind(kind.number())
-        .execute(&mut *tx)
-        .await?;
+    /// World credit follows the native death, independently of Character quest eligibility.
+    pub async fn credit_replica_death(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        scope: RuntimeScopeRefV1,
+        generation: crate::foundation::ScopeOwnershipGeneration,
+        death: (ReplicaKind, [u8; 16], u64),
+    ) -> Result<(), DurabilityError> {
+        let RuntimeScopeRefV1::Channel { world_id, .. } = scope else {
+            return Ok(());
+        };
+        let (kind, identity, occurred_ms) = death;
+        let occurred_ms =
+            i64::try_from(occurred_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        crate::durability::db::begin_type2_transaction(holder, deadline).await?;
+                    crate::durability::character_authority::assert_recovery_fence(&mut tx, &record)
+                        .await?;
+                    if !crate::durability::character_progression::assert_runtime_scope_fence(
+                        &mut tx, scope, generation, &node,
+                    )
+                    .await?
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    sqlx::query(
+                        "UPDATE game_forgotten_knowledge_replica_windows
+                 SET kills=kills+1, credited_deaths=array_append(credited_deaths,$3)
+                 WHERE world_id=encode($1,'hex')::uuid AND replica_kind=$2
+                   AND expires_at > statement_timestamp() AND kills < 5
+                   AND NOT ($3 = ANY(credited_deaths))
+                   AND $4 >= floor(extract(epoch FROM (expires_at - interval '10 minutes')) * 1000)
+                   AND $4 < floor(extract(epoch FROM expires_at) * 1000)",
+                    )
+                    .bind(world_id.as_bytes().as_slice())
+                    .bind(kind.number())
+                    .bind(identity.as_slice())
+                    .bind(occurred_ms)
+                    .execute(&mut **tx)
+                    .await?;
+                    tx.commit(deadline).await?;
+                    Ok(())
+                })
+            })
+            .await
     }
-    Ok(())
 }

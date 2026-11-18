@@ -2170,7 +2170,8 @@ pub fn record_creature_kill(
                 // donor. Missing a native corpse row must not lose these points.
                 // A missing native corpse cannot erase the independently frozen
                 // Prey kill counter. Its actual settled loot value remains zero.
-                if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() || astral {
+                if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() || astral
+                    || crate::durability::quest_world_callback::replica_window::ReplicaKind::from_creature(&creature).is_some() {
                     accept_encounter_kill(
                         runtime,
                         sink.queue,

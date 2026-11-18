@@ -4,6 +4,7 @@ CREATE TABLE game_forgotten_knowledge_replica_windows (
     replica_kind smallint NOT NULL CHECK (replica_kind IN (1, 2)),
     expires_at timestamptz NOT NULL,
     kills integer NOT NULL DEFAULT 0 CHECK (kills BETWEEN 0 AND 5),
+    credited_deaths bytea[] NOT NULL DEFAULT ARRAY[]::bytea[] CHECK (cardinality(credited_deaths) <= 5),
     PRIMARY KEY (world_id, replica_kind)
 );
 REVOKE ALL ON game_forgotten_knowledge_replica_windows FROM PUBLIC;

@@ -22,6 +22,31 @@ pub(super) async fn settle(
     if !owner.settle_lore_keeper_death(entry).await {
         return false;
     }
+    use crate::durability::quest_world_callback::replica_window::ReplicaKind;
+    if let Some(kind) = ReplicaKind::from_creature(&entry.creature) {
+        let death = entry.facts.death;
+        if owner
+            .root
+            .credit_replica_death(
+                owner.character,
+                owner.holder,
+                death.runtime_scope(),
+                death.scope_ownership_generation(),
+                (
+                    kind,
+                    super::boss_reward_settlement::personal_death_id(death),
+                    entry.facts.died_at_unix_ms,
+                ),
+            )
+            .await
+            .is_err()
+        {
+            return false;
+        }
+        owner
+            .project_replica_portal_after_death(&entry.creature, entry.facts.principal.session)
+            .await;
+    }
     // Encounter-only counters are absent from ordinary creature discovery.
     // Their admitted phase owner already froze exact recipients on this death;
     // the durable writer still revalidates each counter and its full source fence.
@@ -114,9 +139,6 @@ pub(super) async fn settle(
                     }
                 }
                 owner.refresh_quest_session(recipient.session, false).await;
-                owner
-                    .project_replica_portal_after_death(&entry.creature, recipient.session)
-                    .await;
             }
             Ok(QuestTransitionOutcome::Refused(_) | QuestTransitionOutcome::ObligationClosed) => {}
             Err(
