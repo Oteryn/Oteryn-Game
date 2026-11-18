@@ -1,6 +1,7 @@
 //! Source-gated dialogue on a character whose saved quest predates the new route.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
     QuestTransition, authored_bindings::Bindings, reward_callbacks, world_callbacks::Position,
@@ -125,7 +126,10 @@ pub(super) async fn exercise(
             "sources": [source],
         }}
     });
-    let digest = format!("{:x}", Sha256::digest(serde_json::to_vec(&stage)?));
+    let digest = Sha256::digest(serde_json::to_vec(&stage)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     let document = json!({"schema": 1, "quests": [{
         "quest": quest, "recipe_sha256": digest, "sources": [source],
         "tracks": definitions.iter().map(|t| json!({

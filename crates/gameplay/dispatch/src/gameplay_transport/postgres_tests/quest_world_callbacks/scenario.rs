@@ -906,6 +906,8 @@ fn scenario_case(
             )],
             &[],
         )?
+    } else if name.starts_with(super::super::qewrath_prison_release::PREFIX) {
+        super::super::qewrath_prison_release::world()?
     } else if name == super::super::qewrath_herald_escape::NAME {
         super::super::qewrath_herald_escape::world(&callback)?
     } else if name == "questpc7-outfits-formal" {
@@ -939,6 +941,7 @@ fn scenario_case(
                 "catalogue-npc" | "catalogue-npc-inventory" | "catalogue-npc-scoped"
             )
             || name == "qewrath-npc-handoff-dragon"
+            || name.starts_with(super::super::qewrath_prison_release::PREFIX)
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
@@ -2467,6 +2470,8 @@ fn scenario_case(
             .await?;
         } else if name.starts_with("qewrath-emiliana-") {
             Box::pin(super::super::qewrath_emiliana::exercise(&mut owner, &mut admitted, &h, name)).await?;
+        } else if name.starts_with(super::super::qewrath_prison_release::PREFIX) {
+            Box::pin(super::super::qewrath_prison_release::exercise(&mut owner, &mut admitted, &h, name.ends_with("-with-crate"))).await?;
         } else if name == super::super::qewrath_herald_escape::NAME {
             Box::pin(super::super::qewrath_herald_escape::exercise(&mut owner, &mut admitted)).await?;
         } else if name.starts_with("qewrath-npc-handoff-") {
