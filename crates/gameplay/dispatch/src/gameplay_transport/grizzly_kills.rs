@@ -192,7 +192,9 @@ fn freeze_at(
                 && counter.encounter_source.is_none()
                 && counter.damage_credit.is_none()
                 && oteryn_gameplay_quests::quest::native_kills::admits_death_position(
-                    counter.death_area, &counter.death_areas, death_position,
+                    counter.death_area,
+                    &counter.death_areas,
+                    death_position,
                 )
             {
                 use crate::durability::quest_state::native_kills::NativeDeathSource;

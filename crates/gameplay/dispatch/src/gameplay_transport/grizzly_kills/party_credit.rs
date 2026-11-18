@@ -23,9 +23,10 @@ pub(super) fn capture(
 ) -> Vec<super::super::quest_kills::Recipient> {
     let mut recipients = Vec::new();
     if !snapshots.iter().any(|snapshot| {
-        snapshot.native_counters.iter().any(|counter| {
-            counter.creature == entry.creature && counter.damage_credit.is_some()
-        })
+        snapshot
+            .native_counters
+            .iter()
+            .any(|counter| counter.creature == entry.creature && counter.damage_credit.is_some())
     }) || !runtime
         .companion_snapshot_including_dead(entry.target)
         .is_ok_and(|victim| victim.state.master.is_none())
@@ -41,19 +42,30 @@ pub(super) fn capture(
         return recipients;
     };
     let owner = runtime.borrow_combat_death();
-    let top = owner.top_damage_contributor(entry.target).ok().and_then(|top| top.present());
+    let top = owner
+        .top_damage_contributor(entry.target)
+        .ok()
+        .and_then(|top| top.present());
     let Ok(attributed) = owner.current_session_damage_shares(entry.target) else {
         return recipients;
     };
     for snapshot in snapshots {
-        let direct_hit = direct.iter().find(|hit| hit.total > 0
-            && hit.character.as_bytes() == &snapshot.character && hit.actor == snapshot.actor);
-        let owner_hit = attributed.iter().find(|hit| hit.total > 0
-            && hit.character.as_bytes() == &snapshot.character
-            && hit.session == Some(snapshot.session)
-            && hit.lease_generation == Some(snapshot.lease_generation));
+        let direct_hit = direct.iter().find(|hit| {
+            hit.total > 0
+                && hit.character.as_bytes() == &snapshot.character
+                && hit.actor == snapshot.actor
+                && hit.session == snapshot.session
+                && hit.lease_generation == snapshot.lease_generation
+        });
+        let owner_hit = attributed.iter().find(|hit| {
+            hit.total > 0
+                && hit.character.as_bytes() == &snapshot.character
+                && hit.session == Some(snapshot.session)
+                && hit.lease_generation == Some(snapshot.lease_generation)
+        });
         let is_top = top.is_some_and(|winner| {
-            winner.actor == snapshot.actor && winner.session == snapshot.session
+            winner.actor == snapshot.actor
+                && winner.session == snapshot.session
                 && winner.lease_generation == snapshot.lease_generation
         });
         for counter in &snapshot.native_counters {

@@ -27,7 +27,8 @@ pub struct DamageCredit {
 impl DamageCredit {
     pub fn admits_hit(self, at_ms: Option<u64>, death_ms: u64) -> bool {
         self.recent_damage_ms.is_none_or(|window| {
-            at_ms.and_then(|hit| death_ms.checked_sub(hit))
+            at_ms
+                .and_then(|hit| death_ms.checked_sub(hit))
                 .is_some_and(|age| age <= window)
         })
     }
@@ -92,13 +93,21 @@ impl KillCounter {
             || !super::super::valid_quest_key(&self.creature)
             || !self.creature.starts_with("oteryn:creature.")
             || self.track == self.gate
+                && (!self.set_to_maximum
+                    || self.advance_gate_to.is_some()
+                    || !(self.minimum..self.maximum).contains(&self.gate_value))
             || self.minimum >= self.maximum
             || self.death_area.is_some_and(|area| !area.valid())
             || self.death_areas.len() > 16
             || self.death_areas.iter().any(|area| !area.valid())
             || self.death_area.is_some() && !self.death_areas.is_empty()
-            || self.damage_credit.is_some_and(|credit| credit.recent_damage_ms == Some(0))
-            || self.encounter_source.is_some() && (self.damage_credit.is_some() || self.set_to_maximum || !self.death_areas.is_empty())
+            || self
+                .damage_credit
+                .is_some_and(|credit| credit.recent_damage_ms == Some(0))
+            || self.encounter_source.is_some()
+                && (self.damage_credit.is_some()
+                    || self.set_to_maximum
+                    || !self.death_areas.is_empty())
             || count
                 .is_none_or(|track| track.minimum > self.minimum || track.maximum < self.maximum)
             || gate.is_none_or(|track| {
@@ -141,6 +150,16 @@ impl KillCounter {
     }
 
     pub(super) fn effects(&self) -> Vec<QuestEffect> {
+        if self.track == self.gate {
+            // Crystal201189f the_new_frontier/creaturescripts_shard_of_corruption_kill.lua:5-10,
+            // an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua:3-8, and
+            // the_thieves_guild_quest/creaturescripts_nomad_kill.lua:2-7 advance one exact stage.
+            return vec![QuestEffect {
+                track: self.track.clone(),
+                from: QuestComparison::Eq(self.gate_value),
+                effect: QuestEffectKind::Set(self.maximum),
+            }];
+        }
         if self.encounter_source.is_some() && self.advance_gate_to.is_none() {
             // The source/epoch owner checks the gate without rewriting its revision
             // for every death queued from the same admission.
@@ -154,17 +173,19 @@ impl KillCounter {
             QuestEffect {
                 track: self.gate.clone(),
                 from: QuestComparison::Eq(self.gate_value),
-                effect: self.advance_gate_to.map_or(QuestEffectKind::Add(0), |value| {
-                    if self.set_to_maximum {
-                        QuestEffectKind::Set(value)
-                    } else {
-                        QuestEffectKind::SetWhenAtLeast {
-                            other_effect: 1,
-                            minimum: self.maximum - 1,
-                            value,
+                effect: self
+                    .advance_gate_to
+                    .map_or(QuestEffectKind::Add(0), |value| {
+                        if self.set_to_maximum {
+                            QuestEffectKind::Set(value)
+                        } else {
+                            QuestEffectKind::SetWhenAtLeast {
+                                other_effect: 1,
+                                minimum: self.maximum - 1,
+                                value,
+                            }
                         }
-                    }
-                }),
+                    }),
             },
             QuestEffect {
                 track: self.track.clone(),

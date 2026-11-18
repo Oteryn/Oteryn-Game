@@ -650,6 +650,8 @@ impl ChannelActorCarrier {
 pub struct SourcePlayerDamageShare {
     pub actor: ExactActorRef,
     pub character: CharacterId,
+    pub session: GameSessionId,
+    pub lease_generation: u64,
     pub total: u64,
     pub last_damage_at_ms: Option<u64>,
 }

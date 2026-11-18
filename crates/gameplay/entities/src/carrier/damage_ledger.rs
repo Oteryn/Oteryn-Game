@@ -262,12 +262,19 @@ impl DamageContributors {
         else {
             return;
         };
-        let previous = contributor
-            .source_player
-            .filter(|entry| entry.actor == actor);
+        let Some((lease_generation, session, _, _)) = contributor.high_water else {
+            return;
+        };
+        let previous = contributor.source_player.filter(|entry| {
+            entry.actor == actor
+                && entry.session == session
+                && entry.lease_generation == lease_generation
+        });
         contributor.source_player = Some(super::native_source_death::SourcePlayerDamageShare {
             actor,
             character,
+            session,
+            lease_generation,
             total: previous
                 .map_or(0, |entry| entry.total)
                 .saturating_add(damage),
