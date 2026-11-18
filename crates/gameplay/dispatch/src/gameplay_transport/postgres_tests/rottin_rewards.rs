@@ -125,7 +125,8 @@ pub(super) fn catalogue(repeat: bool) -> TestResult<QuestStateCatalogue> {
                         }}],
                         "outfit": null, "achievement": achievement, "experience": 100,
                         "per_occurrence_mint": repeat,
-                        "reply": ["Good hunt."], "sources": [DONOR]
+                        "reply": ["Good hunt."],
+                        "failure_reply": ["Bring seven lucky charms."], "sources": [DONOR]
                     }
                 }
             }]
@@ -140,7 +141,7 @@ pub(super) async fn seed_inventory(h: &Harness, count: usize) -> TestResult {
 }
 
 pub(super) async fn refuse_short_hand_in(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
 ) -> TestResult {
@@ -150,9 +151,9 @@ pub(super) async fn refuse_short_hand_in(
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
     talk(owner, admitted, npc, 1701, "hi").await?;
     let before_xp = experience(h).await?;
-    assert_ne!(
+    assert_eq!(
         talk(owner, admitted, npc, 1702, "yes").await?,
-        ["Good hunt."]
+        ["Bring seven lucky charms."]
     );
     assert_eq!(experience(h).await?, before_xp);
     let actual: (i64, i64, i64) = sqlx::query_as(

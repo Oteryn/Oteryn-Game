@@ -392,7 +392,7 @@ pub(super) fn scenario(
             } else if merchant_loot {
                 super::rottin_bushwhacking::exercise_mission(&mut owner, admitted, &h).await?;
             } else if short_reward {
-                super::rottin_rewards::refuse_short_hand_in(&owner, &admitted, &h).await?;
+                super::rottin_rewards::refuse_short_hand_in(&mut owner, &admitted, &h).await?;
             } else {
                 super::rottin_rewards::exercise(&mut owner, &mut admitted, &h, repeat_reward)
                     .await?;
