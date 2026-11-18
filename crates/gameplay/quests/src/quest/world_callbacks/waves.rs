@@ -9,13 +9,23 @@ pub struct WaveRun {
     pub timeout_ms: u32,
     pub timeout_exit: Position,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub clear_exit: Option<Position>,
+    pub victory: Option<WaveVictory>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub eject_room: bool,
     /// Stations can open a route that participants subsequently take themselves.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub stay_at_stations: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hatch: Option<TargetTransform>,
     pub waves: Vec<Wave>,
+}
+
+/// An exact spawned boss's native death opens the reward exit.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct WaveVictory {
+    pub creature: String,
+    pub exit: Position,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -70,9 +80,13 @@ pub(super) fn valid(callback: &Callback, room: &Encounter, run: &WaveRun) -> boo
         && room.timing.is_none()
         && room.monsters.is_empty()
         && outside(run.timeout_exit)
-        && run
-            .clear_exit
-            .is_none_or(|p| !run.waves.is_empty() && outside(p))
+        && run.victory.as_ref().is_none_or(|victory| {
+            outside(victory.exit)
+                && run.waves.last().is_some_and(|last| {
+                    matches!(&last.spawn, WaveSpawn::Fixed { monsters }
+                        if monsters.iter().filter(|monster| monster.creature == victory.creature).count() == 1)
+                })
+        })
         && run.hatch.as_ref().is_none_or(|hatch| {
             run.stay_at_stations
                 && outside(hatch.position)

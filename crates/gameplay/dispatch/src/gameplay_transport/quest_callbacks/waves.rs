@@ -17,7 +17,8 @@ pub(super) struct ActiveWaveRun {
     started: Instant,
     next: usize,
     creatures: Vec<ExactActorRef>,
-    missed_spawn: bool,
+    terminal: Option<ExactActorRef>,
+    exit: Option<Position>,
     lever: Option<(u64, crate::map::view::EntryFacts)>,
 }
 
@@ -37,7 +38,8 @@ impl ActiveWaveRun {
             started: Instant::now(),
             next: 0,
             creatures: Vec::new(),
-            missed_spawn: false,
+            terminal: None,
+            exit: None,
             lever,
         }
     }
@@ -70,13 +72,18 @@ impl ActiveWaveRun {
         self.creatures
             .retain(|actor| runtime.contains_live_creature(*actor));
         let timed_out = elapsed >= Duration::from_millis(plan.timeout_ms.into());
-        let cleared =
-            self.next == plan.waves.len() && !self.missed_spawn && self.creatures.is_empty();
-        if let Some(destination) = if timed_out {
-            Some(plan.timeout_exit)
-        } else {
-            plan.clear_exit.filter(|_| cleared)
-        } {
+        if self.exit.is_none() {
+            self.exit = if let Some(victory) = &plan.victory
+                && self
+                    .terminal
+                    .is_some_and(|actor| runtime.retains_corpse_projection(actor))
+            {
+                Some(victory.exit)
+            } else {
+                timed_out.then_some(plan.timeout_exit)
+            };
+        }
+        if let Some(destination) = self.exit {
             if !eject(
                 owner,
                 runtime,
@@ -107,7 +114,14 @@ impl ActiveWaveRun {
         if let Some(wave) = plan.waves.get(self.next)
             && elapsed >= Duration::from_millis(wave.at_ms.into())
         {
-            self.missed_spawn |= !spawn_wave(owner, runtime, map, wave, &mut self.creatures);
+            let terminal = if self.next + 1 == plan.waves.len() {
+                plan.victory
+                    .as_ref()
+                    .map(|victory| victory.creature.as_str())
+            } else {
+                None
+            };
+            self.terminal = spawn_wave(owner, runtime, map, wave, &mut self.creatures, terminal);
             self.next += 1;
         }
         true
@@ -136,10 +150,9 @@ fn spawn_wave(
     map: &BundleMap,
     wave: &Wave,
     actors: &mut Vec<ExactActorRef>,
-) -> bool {
-    let Ok(census) = runtime.positioned_melee_census() else {
-        return false;
-    };
+    terminal: Option<&str>,
+) -> Option<ExactActorRef> {
+    let census = runtime.positioned_melee_census().ok()?;
     let mut occupied: BTreeSet<_> = census
         .into_iter()
         .filter_map(|(_, at, _)| {
@@ -159,12 +172,11 @@ fn spawn_wave(
         }
         false
     };
-    let expected = match &wave.spawn {
+    match &wave.spawn {
         WaveSpawn::Fixed { monsters } => {
             for EncounterMonster { creature, position } in monsters {
                 place(creature, *position);
             }
-            monsters.len()
         }
         WaveSpawn::Scatter {
             creature,
@@ -197,19 +209,21 @@ fn spawn_wave(
                     spawned += 1;
                 }
             }
-            usize::from(*count)
         }
-    };
-    if actors.try_reserve(places.len()).is_err() {
-        return false;
     }
-    let before = actors.len();
+    actors.try_reserve(places.len()).ok()?;
+    let mut terminal_actor = None;
     for chunk in places.chunks(8) {
         let batch: Vec<_> = chunk
             .iter()
             .map(|(key, health, at)| (key.as_str(), *health, *at))
             .collect();
         if let Ok(spawned) = runtime.commit_quest_creature_spawn(&batch) {
+            for (actor, (creature, _, _)) in spawned.iter().zip(&batch) {
+                if terminal == Some(*creature) {
+                    terminal_actor = Some(*actor);
+                }
+            }
             actors.extend(spawned);
             for (_, _, at) in &batch {
                 if let Some(pos) = native(*at) {
@@ -218,7 +232,7 @@ fn spawn_wave(
             }
         }
     }
-    actors.len() - before == expected
+    terminal_actor
 }
 
 fn eject(
@@ -236,17 +250,19 @@ fn eject(
     let closed = crate::map::floor::BundleDoors(&map.facts);
     let mut players = Vec::new();
     let mut proofs = Vec::new();
+    let mut more = false;
     for (actor, position, session) in census {
         let Some(session) = session else { continue };
         if states.is_dead(actor)
             || !super::room_contains(room, position.position())
-            || (!room
-                .wave_run
-                .as_ref()
-                .is_some_and(|run| run.stay_at_stations)
+            || (!room.wave_run.as_ref().is_some_and(|run| run.eject_room)
                 && !participants.contains(&(actor, session)))
         {
             continue;
+        }
+        if proofs.len() == 16 {
+            more = true;
+            break;
         }
         let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
             runtime,
@@ -290,5 +306,5 @@ fn eject(
         );
         map.facts.emit_movement_effect(tile(destination), 11);
     }
-    true
+    !more
 }
