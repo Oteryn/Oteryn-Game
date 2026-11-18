@@ -145,15 +145,18 @@ async fn scenario(
             .execute(&mut *tx)
             .await?;
         for root in [91u8, 93] {
-            for (child, parent, key, quantity) in [
-                (root + 40, root, "oteryn:item.tibia.i2854", 1i64),
-                (root + 60, root + 40, "oteryn:item.tibia.i3607", 3),
+            for (child, parent, key, quantity, ordinal) in [
+                (root + 40, root, "oteryn:item.tibia.i2854", 1i64, 1i64),
+                (root + 60, root + 40, "oteryn:item.tibia.i3607", 3, 2),
+                (root + 80, root + 40, "oteryn:item.tibia.i2874", 1, 1),
             ] {
                 sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',$4,1,encode($1,'hex')::uuid)")
                     .bind(id(child).as_slice()).bind(id(WORLD).as_slice()).bind(key).bind(quantity).execute(&mut *tx).await?;
-                sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($1,'hex')::uuid)")
-                    .bind(id(child).as_slice()).bind(id(WORLD).as_slice()).bind(id(parent).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($1,'hex')::uuid)")
+                    .bind(id(child).as_slice()).bind(id(WORLD).as_slice()).bind(id(parent).as_slice()).bind(ordinal).execute(&mut *tx).await?;
             }
+            sqlx::query("INSERT INTO game_item_fluid_states SELECT item_instance_id,world_id,7,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(root + 80).as_slice()).execute(&mut *tx).await?;
         }
         tx.commit().await?;
     }
@@ -420,15 +423,31 @@ async fn scenario(
                 first.contents[1].is_empty(),
                 "counter tree stays undisclosed"
             );
-            assert_eq!(state.contents.each_ref().map(Vec::len), [3, 3]);
+            assert_eq!(state.contents.each_ref().map(Vec::len), [4, 4]);
             assert_eq!(
                 state.contents[0]
                     .iter()
                     .map(|node| node.parent)
                     .collect::<Vec<_>>(),
-                vec![None, Some(0), Some(1)]
+                vec![None, Some(0), Some(1), Some(1)]
             );
             a.trade_state(&state).await?;
+            let (_, partner_state, _) = owner
+                .trade_observation(admitted[1].game_session_id)
+                .await
+                .ok_or("partner ready")?;
+            b.trade_state(&partner_state).await?;
+            for peer in [&a, &b] {
+                let received = wire::decode_state_for(
+                    peer.last_trade.as_deref().ok_or("ready trade bytes")?,
+                    true,
+                )
+                .map_err(debug)?;
+                assert_eq!(
+                    received.contents.each_ref().map(|tree| tree[3].item.sub_type),
+                    [7, 7],
+                );
+            }
             let payload = oteryn_protocol_oteryn::inspection::encode_request(
                 oteryn_protocol_oteryn::inspection::Request::Trade {
                     counter: true,
