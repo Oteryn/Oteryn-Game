@@ -134,7 +134,10 @@ pub struct MatchRead {
 #[derive(Clone, Copy, Debug)]
 pub enum MatchCause {
     Command(CommandRef),
-    Halvar { command: CommandRef, rank: u8 },
+    Halvar {
+        command: CommandRef,
+        rank: u8,
+    },
     Step {
         command: CommandRef,
         actor: [u8; 16],
@@ -150,7 +153,9 @@ impl From<CommandRef> for MatchCause {
 impl MatchCause {
     pub fn command(self) -> CommandRef {
         match self {
-            Self::Command(command) | Self::Halvar { command, .. } | Self::Step { command, .. } => command,
+            Self::Command(command) | Self::Halvar { command, .. } | Self::Step { command, .. } => {
+                command
+            }
         }
     }
     fn ordinal(self) -> String {
@@ -206,17 +211,21 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
-                return Ok(Err(error));
-            }
-            let state = load_state(&mut tx, fence).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(state))
-        })).await?
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                        return Ok(Err(error));
+                    }
+                    let state = load_state(&mut tx, fence).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(state))
+                })
+            })
+            .await?
     }
 
     pub async fn read_arena_match(
@@ -490,7 +499,10 @@ pub(super) async fn claimed_masks(
         for category in 1..=4 {
             let command_key = donor::claim_key(rank, category);
             let chest_key = donor::chest_key(rank, category);
-            if keys.iter().any(|key| *key == command_key || chest_key == Some(key.as_str())) {
+            if keys
+                .iter()
+                .any(|key| *key == command_key || chest_key == Some(key.as_str()))
+            {
                 masks[usize::from(rank - 1)] |= 1 << (category - 1);
             }
         }
@@ -612,7 +624,10 @@ fn valid_transition(
             expected = MatchState {
                 completed: before.completed,
                 paid_rank: 0,
-                entry_revision: fence.expected_character_revision.get().saturating_add(u64::from(before.paid_rank == 0)),
+                entry_revision: fence
+                    .expected_character_revision
+                    .get()
+                    .saturating_add(u64::from(before.paid_rank == 0)),
                 rank: before.completed + 1,
                 pit: 1,
                 phase: 1,

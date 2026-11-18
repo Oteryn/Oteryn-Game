@@ -236,7 +236,12 @@ impl NpcConversations {
         &self,
         session: GameSessionId,
     ) -> Option<super::arena_match::HalvarPrompt> {
-        self.sessions.lock().ok()?.get_mut(&session)?.halvar_prompt.take()
+        self.sessions
+            .lock()
+            .ok()?
+            .get_mut(&session)?
+            .halvar_prompt
+            .take()
     }
 
     pub fn cancel_bank(&self, session: GameSessionId) {

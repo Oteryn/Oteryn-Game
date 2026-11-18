@@ -130,8 +130,10 @@ const CHEST_KEYS: [[&str; 3]; 3] = [
 ];
 
 pub(super) fn chest_key(rank: u8, category: u8) -> Option<&'static str> {
-    CHEST_KEYS.get(usize::from(rank.checked_sub(1)?))?
-        .get(usize::from(category.checked_sub(1)?)).copied()
+    CHEST_KEYS
+        .get(usize::from(rank.checked_sub(1)?))?
+        .get(usize::from(category.checked_sub(1)?))
+        .copied()
 }
 
 pub(in crate::durability) fn alternate_claim_key(key: &str) -> Option<String> {
