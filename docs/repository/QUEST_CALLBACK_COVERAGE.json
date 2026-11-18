@@ -1,8 +1,8 @@
 {
   "counts": {
-    "dispatch_pg_qualified": 209,
+    "dispatch_pg_qualified": 313,
     "not_playable": 2,
-    "supported_unqualified": 125
+    "supported_unqualified": 21
   },
   "native_authored_claims": [
     {
@@ -5296,8 +5296,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_oriental_outfits_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/oriental_outfits_quest"
@@ -5614,8 +5614,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_power_ring_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.powerring2",
@@ -5858,8 +5858,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_scale_armor_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/scale_armor_quest"
@@ -6177,8 +6177,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_serpentine_tower_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/serpentine_tower_quest"
@@ -6436,8 +6436,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_shaman_treasure_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/shaman_treasure_quest"
@@ -6470,8 +6470,8 @@
             }
           ],
           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_short_sword_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/short_sword_quest"
@@ -6536,8 +6536,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_silver_brooch_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/silver_brooch_quest"
@@ -6569,8 +6569,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_six_rubies_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/six_rubies_quest"
@@ -6602,8 +6602,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_spike_sword_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/spike_sword_quest"
@@ -6663,8 +6663,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_stealth_ring_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/stealth_ring_quest"
@@ -6814,8 +6814,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_strong_potions_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/strong_potions_quest"
@@ -6847,8 +6847,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_studded_shield_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.bananapremium",
@@ -6875,8 +6875,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_studded_shield_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/studded_shield_quest"
@@ -6908,8 +6908,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_thais_lighthouse_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.lighthouse2",
@@ -6936,8 +6936,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_thais_lighthouse_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/thais_lighthouse_quest"
@@ -7065,8 +7065,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_the_ape_city_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_6.whisper_moss",
@@ -7093,8 +7093,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_the_ape_city_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/the_ape_city_quest"
@@ -7503,8 +7503,8 @@
             }
           ],
           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_the_ice_islands_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton",
@@ -7531,8 +7531,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_the_ice_islands_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/the_ice_islands_quest"
@@ -7559,8 +7559,8 @@
             }
           ],
           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_the_inquisition_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.witches_grimoire",
@@ -7587,8 +7587,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_the_inquisition_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/the_inquisition_quest"
@@ -9212,8 +9212,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_the_shattered_isles_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/the_shattered_isles_quest"
@@ -9433,8 +9433,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_the_white_raven_monastery_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/the_white_raven_monastery_quest"
@@ -9466,8 +9466,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_threatened_dreams_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission02.dark_moon_mirror",
@@ -9494,8 +9494,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_threatened_dreams_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/threatened_dreams_quest"
@@ -9527,8 +9527,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_throwing_star_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/throwing_star_quest"
@@ -9560,8 +9560,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_time_ring_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.timering2",
@@ -9588,8 +9588,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_time_ring_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.timering3",
@@ -9766,8 +9766,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_to_outfox_a_fox_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/to_outfox_a_fox_quest"
@@ -10031,8 +10031,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_vampire_hunter_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/vampire_hunter_quest"
@@ -10064,8 +10064,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_vampire_shield_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.vampireshield2",
@@ -10092,8 +10092,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_vampire_shield_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.vampireshield3",
@@ -10120,8 +10120,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_vampire_shield_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/vampire_shield_quest"
@@ -10153,8 +10153,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk9_waterfall_quest_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/waterfall_quest"
@@ -10214,8 +10214,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk9_wedding_ring_quest_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/wedding_ring_quest"
@@ -10247,8 +10247,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_what_a_foolish_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.magical_watch",
@@ -10275,8 +10275,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_what_a_foolish_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/what_a_foolish_quest"
@@ -10308,8 +10308,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_wrath_of_the_emperor_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_bag",
@@ -10336,8 +10336,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk6_wrath_of_the_emperor_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items",
@@ -10536,8 +10536,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk9_skeleton_decoration_quest_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "crystalserver:quest/skeleton_decoration_quest"
@@ -10569,8 +10569,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk9_studded_legs_quest_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "crystalserver:quest/studded_legs_quest"
@@ -10596,8 +10596,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk9_targuna_quest_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u15_24.targuna.silver_amulet_chest",
@@ -10651,8 +10651,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_unlinked_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.witch_house_quest",
@@ -10679,8 +10679,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk7_unlinked_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.key.id3620",
