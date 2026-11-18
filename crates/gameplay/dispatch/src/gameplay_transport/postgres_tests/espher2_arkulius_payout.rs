@@ -1,0 +1,173 @@
+//! The four Crystal rewards use the existing Arkulius dialogue transaction.
+use super::fixture::{Harness, debug, run};
+use super::{Dependencies, TestResult, prepare_current_session};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, elemental_spheres,
+};
+use std::sync::Arc;
+
+const QUEST_LINE: &str = "oteryn:quest-progress/elemental_spheres/quest_line";
+const NEUTRAL_MATTER: &str = "oteryn:item.tibia.i954";
+
+#[test]
+fn espher2_arkulius_consumes_neutral_matter_and_pays_each_vocation_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    use crate::spell::Vocation::{Druid, Knight, Paladin, Sorcerer};
+    super::kill_reward_e2e::scenario_thread::run("espher2-arkulius", || {
+        run(async |admin| {
+            for (vocation, reward) in [
+                (Sorcerer, 8039),
+                (Druid, 8041),
+                (Paladin, 8025),
+                (Knight, 8055),
+            ] {
+                let h = Harness::create_with_admission_seed(admin, "espher2_arkulius", true, false)
+                    .await?;
+                let result = exercise(&h, vocation, reward).await;
+                h.cleanup().await?;
+                result?;
+            }
+            Ok(())
+        })
+    })
+}
+
+async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) -> TestResult {
+    prepare_current_session(h).await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let world = crate::foundation::WorldId::decode(&super::fixture::id(42)).map_err(debug)?;
+    let (controller, pin) =
+        super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+    let deps = Dependencies::with_content(
+        crate::content::channel_content_pin::ChannelContentPin::from_activation(
+            world,
+            pin.activation_sequence(),
+            pin.identity().server_artifact_digest(),
+            pin.identity().client_artifact_digest(),
+            pin.frame_binding().digest(),
+            pin.qualified_room().map_revision_digest(),
+            (2, 0, 7),
+        ),
+        pin.qualified_room().clone(),
+        crate::spell::cast::v1_spell_book().map_err(debug)?,
+    )?;
+    let admitted = deps.admitted;
+    let mut owner = deps.owner(h, &authority);
+    owner.active_generation = controller.active();
+    {
+        let mut runtime = deps.runtime.lock().await;
+        runtime
+            .initialize_first_entry_position(deps.actor)
+            .map_err(debug)?;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .initialize(
+                &runtime,
+                deps.actor,
+                admitted.game_session_id,
+                crate::spell::cast::CharacterCastFacts {
+                    level: 80,
+                    vocation,
+                    ..crate::gameplay_transport::actor_spell::tests::FACTS
+                },
+                (0, 0),
+                owner.owner_now(),
+            )
+            .ok_or("Arkulius vocation fixture")?;
+    }
+    let stage_seed = "oteryn:quest-transition/espher2-arkulius-fixture";
+    let catalogue = Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?
+            .catalogue()
+            .with_fixture_transition(QuestTransition {
+                key: stage_seed.into(),
+                quest: elemental_spheres::QUEST.into(),
+                effects: vec![QuestEffect {
+                    track: QUEST_LINE.into(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Set(2),
+                }],
+                completes: false,
+                experience: None,
+                world_change: None,
+            })
+            .map_err(debug)?,
+    );
+    owner.quest_catalogue = Some(catalogue.clone());
+    owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
+    let [arkulius] =
+        super::classic_quests::install(&owner, &admitted, ["oteryn:npc.arkulius"]).await?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?;
+    {
+        use crate::durability::quest_state::{
+            QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+        };
+        use crate::foundation::{CommandId, CommandRef};
+        let mut revision = owner.revision_sequencer.acquire(fence.character_id).await;
+        assert!(matches!(
+            revision
+                .commit_quest_transition(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: stage_seed.into(),
+                        cause: QuestCause::Command(CommandRef::new(
+                            admitted.game_session_id,
+                            CommandId::new(699).map_err(debug)?,
+                        )),
+                    },
+                    catalogue,
+                )
+                .await
+                .map_err(debug)?,
+            QuestTransitionOutcome::Committed(_)
+        ));
+    }
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    super::item_look::seed_main_backpack(h, &[(NEUTRAL_MATTER, 2)]).await?;
+
+    super::classic_quests::talk(&mut owner, &admitted, arkulius, 700, "hi").await?;
+    super::classic_quests::talk(&mut owner, &admitted, arkulius, 701, "mission").await?;
+    super::classic_quests::talk(&mut owner, &admitted, arkulius, 702, "mission").await?;
+    let carried: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT i.definition_production_key,i.quantity FROM game_item_instances i
+         JOIN game_item_container_entries e USING(item_instance_id)
+         WHERE e.character_id=encode($1,'hex')::uuid ORDER BY i.definition_production_key",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        carried,
+        vec![
+            (format!("oteryn:item.tibia.i{reward}"), 1),
+            (NEUTRAL_MATTER.into(), 1)
+        ]
+    );
+    assert_eq!(
+        super::classic_quests::progress(&owner, &admitted, &authority, QUEST_LINE).await?,
+        3
+    );
+    Ok(())
+}
