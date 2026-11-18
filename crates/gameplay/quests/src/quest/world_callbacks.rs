@@ -564,6 +564,16 @@ impl Callback {
             .any(|state| !state.preserve && !state.read_only)
             || self.operations().any(state_operations::mutates)
     }
+    fn is_preserving_offering_step(&self) -> bool {
+        self.trigger == Trigger::StepIn
+            && self.requires_world_admission
+            && self.teleport.is_some()
+            && !self.offerings.is_empty()
+            && self.operation_count() == 0
+            && !self.storage.is_empty()
+            && self.storage.iter().all(|state| state.preserve)
+    }
+
     /// Each accepted use has its own ordinary MINT occurrence, guarded by an
     /// elapsed-time predicate and timestamp write in that same transaction.
     pub fn has_repeating_clock(&self) -> bool {
@@ -660,10 +670,30 @@ pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>>
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 /// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
 pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
+    #[cfg(feature = "test-support")]
+    if let Some(callbacks) = &catalogue.world_callback_fixture {
+        return Ok(callbacks.clone());
+    }
     match catalogue.authored_world_callbacks() {
         Some(callbacks) => Ok(callbacks.to_vec()),
         None => load(),
     }
+}
+
+/// Validate a dispatch fixture with the production parser and bind its exact transitions.
+#[cfg(feature = "test-support")]
+pub fn fixture_catalogue(
+    mut catalogue: QuestStateCatalogue,
+    document: &str,
+) -> Result<QuestStateCatalogue, String> {
+    let callbacks = parse(document)?;
+    for callback in &callbacks {
+        catalogue = catalogue
+            .with_fixture_transition(primary_transition(callback)?)
+            .map_err(|error| format!("{error:?}"))?;
+    }
+    catalogue.world_callback_fixture = Some(callbacks);
+    Ok(catalogue)
 }
 
 pub fn load() -> Result<Vec<Callback>, String> {
@@ -1003,7 +1033,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
-                && (!callback.has_state_writes()
+                && ((!callback.has_state_writes() && !callback.is_preserving_offering_step())
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use
@@ -1548,6 +1578,12 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
                     value: state.set,
                 },
                 None if state.add.is_some() => QuestEffectKind::Add(state.add.unwrap_or(0)),
+                // A priced STEP can preserve the seal flag until a separate room
+                // completion. Bind the guarded cost to this receipt as well.
+                None if index == 0 && callback.is_preserving_offering_step() => match binding {
+                    Some(binding) => QuestEffectKind::AddWithBinding { delta: 0, binding },
+                    None => QuestEffectKind::Add(0),
+                },
                 None if state.preserve => QuestEffectKind::Add(0),
                 None if state.at_least => match binding.filter(|_| Some(index) == bound_index) {
                     Some(binding) => QuestEffectKind::RaiseToWithBinding {

@@ -605,6 +605,37 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    if let Some(offering) = &callback.effects.fluid_offering {
+        let position = offering.position;
+        let Some(key) =
+            oteryn_world_bundle::bundle::placement_key(position.floor, position.x, position.y, 0)
+        else {
+            return Ok(false);
+        };
+        let Some(map_digest) = context.map_revision.strip_prefix("sha256:") else {
+            return Ok(false);
+        };
+        // Splash placement is the 32-byte bundle digest followed by the
+        // 8-byte placement key. The low byte is the selected base entry's
+        // ordinal, so all placements on this exact cell share the prefix.
+        let consumed = sqlx::query(
+            "DELETE FROM game_item_fluid_splashes WHERE transaction_id = ( \
+             SELECT transaction_id FROM game_item_fluid_splashes \
+             WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid \
+             AND expires_at>clock_timestamp() AND fluid_subtype=$3 AND splash_item_id=2886 \
+             AND octet_length(placement)=40 \
+             AND substring(placement FROM 1 FOR 39)=decode($4,'hex') || $5::bytea \
+             ORDER BY created_at,transaction_id LIMIT 1 FOR UPDATE)",
+        )
+        .bind(world_id.as_bytes().as_slice())
+        .bind(channel_id.as_bytes().as_slice())
+        .bind(i16::from(offering.subtype))
+        .bind(map_digest)
+        .bind(&key.to_be_bytes()[..7])
+        .execute(&mut **tx)
+        .await?;
+        return Ok(consumed.rows_affected() == 1);
+    }
     if callback.offerings.is_empty()
         && callback.item_on_target.is_none()
         && callback.effects.carried_inputs.is_empty()

@@ -895,24 +895,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let tile =
                 crate::map::view::compose_tile(&at.map.overlay, &facts, resolved.pos).ok()??;
-            tile.entries
-                .iter()
-                .find(|entry| {
-                    entry.source.key()
-                        == crate::map::view::MapEntryKey::Base(resolved.placement_key)
-                })
-                .and_then(|entry| match entry.facts.definition {
-                    MapDefinition::Item(reference) => {
-                        let index = native.item_index()?;
-                        let definition = super::item_look::typed_definition(index, reference)?;
-                        definition
-                            .production_key
-                            .strip_prefix("oteryn:item.tibia.i")?
-                            .parse::<u32>()
-                            .ok()
-                    }
-                    _ => None,
-                })
+            let entry = tile.entries.iter().find(|entry| {
+                entry.source.key() == crate::map::view::MapEntryKey::Base(resolved.placement_key)
+            })?;
+            match entry.facts.definition {
+                MapDefinition::Item(reference) => {
+                    let index = native.item_index()?;
+                    let definition = super::item_look::typed_definition(index, reference)?;
+                    definition
+                        .production_key
+                        .strip_prefix("oteryn:item.tibia.i")?
+                        .parse::<u32>()
+                        .ok()
+                }
+                _ => None,
+            }
         };
         // Only read durable splash objects after the complete map target/range validation.
         // Refused USE_WITH commands must not mutate (or otherwise refresh) map state.
@@ -929,12 +926,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .find(|splash| splash.placement == placement)
             .map(|splash| splash.splash_item_id)
-            .or(base_target_item)?;
+            .or(base_target_item);
         let before = inventory.fluids.get(&source).copied().unwrap_or(0);
         let (after, splash) = if before == 0 {
-            (fluid_source_subtype(target_item)?, None)
+            (target_item.and_then(fluid_source_subtype)?, None)
         } else {
-            if fluid_source_subtype(target_item).is_some() {
+            if target_item.and_then(fluid_source_subtype).is_some() {
                 return Some(UseOutcome {
                     disposition: UseDisposition::NothingToUse,
                     ..UseOutcome::rejected()
@@ -1092,6 +1089,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start_drink(self.owner_ms())?;
         }
+        let placement_cues = splash.as_ref().and_then(|splash| {
+            let placement: &[u8; 40] = splash.placement.as_slice().try_into().ok()?;
+            let key = u64::from_be_bytes(placement[32..].try_into().ok()?);
+            let (position, _) = crate::map::view::placement_of(key)?;
+            Some((position, splash.fluid_subtype))
+        });
         let analyser_supply = restore.as_ref().map(|_| request.change.definition.clone());
         let commit =
             self.root
@@ -1109,6 +1112,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        if known_commit
+            && let Some((position, subtype)) = placement_cues
+            && let Some(map) = self.bundle_map()
+            && map.overlay.runtime_scope() == fence.runtime_scope
+            && runtime.binding().scope_generation() == fence.scope_ownership_generation
+        {
+            // Crystal movement-4-fourth_seal_sacrifice.lua:3-10 only signals
+            // when the matching typed splash is successfully added.
+            for offering in self
+                .callback_content()
+                .iter()
+                .filter_map(|callback| callback.effects.fluid_offering.as_ref())
+                .filter(|offering| {
+                    offering.subtype == subtype
+                        && offering.position.x == position.x
+                        && offering.position.y == position.y
+                        && offering.position.floor == position.floor
+                })
+            {
+                for cue in &offering.placement_cues {
+                    map.facts.emit_movement_effect(
+                        crate::map::overlay::TilePos {
+                            x: cue.position.x,
+                            y: cue.position.y,
+                            floor: cue.position.floor,
+                        },
+                        cue.effect,
+                    );
+                }
+            }
+        }
         if known_commit && let Some(restore) = restore {
             if let Some(definition) = &analyser_supply {
                 states.analyser.supply(actor, session, definition, 1);

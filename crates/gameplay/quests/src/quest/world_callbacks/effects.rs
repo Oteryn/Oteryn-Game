@@ -42,12 +42,26 @@ pub struct ItemDisguiseRequirement {
     pub condition: String,
 }
 
+/// An expiring, typed floor splash owned by the native fluid USE transaction.
+/// Crystal 201189f8 movement-4-fourth_seal_sacrifice.lua:3-10 and
+/// movement-4-fourth_seal_flame.lua:14-30.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct FluidOffering {
+    pub position: Position,
+    pub subtype: u8,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub placement_cues: Vec<MagicEffect>,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fluid_offering: Option<FluidOffering>,
     /// Opt in to source-script displacement onto a present blocked pad.
     #[serde(default, skip_serializing_if = "is_false")]
     pub scripted_teleport: bool,
@@ -450,6 +464,27 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
 
+    let pos = |p: Position| (-15..=0).contains(&p.floor);
+    if effects.fluid_offering.as_ref().is_some_and(|offering| {
+        callback.trigger != Trigger::StepIn
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !callback.has_state_writes()
+            || callback.teleport.is_none()
+            || !callback.offerings.is_empty()
+            || callback.item_on_target.is_some()
+            || !effects.carried_inputs.is_empty()
+            || offering.subtype == 0
+            || !pos(offering.position)
+            || offering.placement_cues.len() > 8
+            || offering
+                .placement_cues
+                .iter()
+                .any(|cue| cue.effect == 0 || !pos(cue.position))
+    }) {
+        return false;
+    }
+
     if effects.scripted_teleport
         && (callback.teleport.is_none()
             || callback.selector.native.is_none()
@@ -541,7 +576,6 @@ pub(super) fn valid(callback: &Callback) -> bool {
     {
         return false;
     }
-    let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
     if callback.item_reward().as_ref().is_some_and(|reward| {
         let item = |key: &str, count: u16| {
