@@ -244,12 +244,10 @@ impl Replacements {
                         .borrow_movement_position()
                         .commit_creature_relocation(actor, expected, to)?;
                     if let Some(effect) = relocate.arrival_effect
+                        && let Some(at) = super::super::quest_callbacks::native(to)
                         && let NativeMovementCollisionIndex::Bundle(map) = cells.index()
                     {
-                        map.map().facts.emit_movement_effect(
-                            super::super::quest_callbacks::tile(relocate.to),
-                            effect,
-                        );
+                        map.map().facts.emit_movement_effect(at, effect);
                     }
                 }
                 self.members.swap_remove(index);
