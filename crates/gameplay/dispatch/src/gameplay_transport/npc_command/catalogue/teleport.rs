@@ -17,6 +17,7 @@ pub(in crate::gameplay_transport) struct DepartureProof {
     pub intent: NpcTalkIntent,
     pub context: Context,
     pub magic: usize,
+    pub requires_pz_unlocked: bool,
 }
 
 pub(super) fn start(
@@ -165,6 +166,10 @@ pub(in crate::gameplay_transport) async fn commit(
             || position.revision() != capture.position_revision
             || states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, fence.game_session_id)
+            || (proof.requires_pz_unlocked
+                && crate::gameplay_transport::pvp_live::pz_blocked(
+                    &states, actor, fence.game_session_id, admission.owner_now(),
+                ))
             || admission.states.npc_conversations.current_npc(
                 &admission.states.chat,
                 &runtime,
@@ -191,7 +196,7 @@ pub(in crate::gameplay_transport) async fn commit(
             &super::super::super::item_ref_admission::NativeItemWeights(native)
                 .with_wheel(admission.premium_coordinator),
             &admission.premium_coordinator,
-            NpcTeleportAdmission { arrival },
+            NpcTeleportAdmission { arrival, pz_lock_checked: proof.requires_pz_unlocked },
         )
         .await;
     match result {

@@ -9,6 +9,7 @@ use oteryn_gameplay_quests::quest::npc_rules::teleport::NpcTeleportPlan;
 #[derive(Clone, Copy, Debug)]
 pub struct NpcTeleportAdmission {
     pub arrival: PendingArrival,
+    pub pz_lock_checked: bool,
 }
 impl NpcTeleportAdmission {
     /// Quest data stores native floor `-z`; movement and arrival records use legacy `z`.
@@ -31,7 +32,8 @@ impl NpcTeleportAdmission {
         fence: CurrentCharacterGameplayFence,
         plan: &NpcTeleportPlan,
     ) -> bool {
-        self.arrival.world_id == fence.runtime_scope.world_id()
+        (plan.pz_locked_reply.is_none() || self.pz_lock_checked)
+            && self.arrival.world_id == fence.runtime_scope.world_id()
             && Self::runtime_destination(plan.destination) == Some(self.arrival.destination)
     }
 }
@@ -56,16 +58,18 @@ impl DurabilityRoot {
         premium: &G,
         admission: NpcTeleportAdmission,
     ) -> Result<NpcProgramCommit> {
+        let source = NpcRuleCatalog::for_catalogue(&catalogue)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         self.commit_npc_program_source(
             authority,
             node,
             permit,
             fence,
             request,
-            catalogue,
+            Arc::clone(&catalogue),
             items,
             premium,
-            NpcRuleCatalog::runtime().map_err(|_| CharacterProgressionError::InvalidInput)?,
+            source,
             Some(admission),
         )
         .await
@@ -82,7 +86,7 @@ pub fn preview_teleport(
     Option<NpcTeleportPlan>,
     oteryn_gameplay_quests::quest::npc_rules::NpcRuleError,
 > {
-    let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
+    let Some(source) = NpcRuleCatalog::for_catalogue(catalogue)?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
     evaluate(

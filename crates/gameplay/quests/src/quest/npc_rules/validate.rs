@@ -350,8 +350,15 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                     | NpcRuleEffect::OutfitAddon { look_type, addon } => {
                         *look_type > 0 && *addon <= 3
                     }
-                    NpcRuleEffect::Teleport { position }
-                    | NpcRuleEffect::MapMark { position, .. } => {
+                    NpcRuleEffect::Teleport { position, pz_locked_reply } => {
+                        (0..=65535).contains(&position.x)
+                            && (0..=65535).contains(&position.y)
+                            && (-15..=0).contains(&position.floor)
+                            && pz_locked_reply.as_ref().is_none_or(|reply| {
+                                !reply.is_empty() && reply.len() <= 2048 && !reply.contains('\0')
+                            })
+                    }
+                    NpcRuleEffect::MapMark { position, .. } => {
                         (0..=65535).contains(&position.x)
                             && (0..=65535).contains(&position.y)
                             && (-15..=0).contains(&position.floor)

@@ -56,6 +56,7 @@ pub(super) struct CommitStep {
     fallback_lines: Vec<String>,
     teleport: Option<oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition>,
     magic: usize,
+    requires_pz_unlocked: bool,
     supersedes_topic: bool,
 }
 
@@ -262,6 +263,7 @@ pub(super) fn prepare(
                 player_name.as_deref(),
             )
             .ok()?;
+    let queen_confirmation = classic_quests::queen_confirmation(state, &context, actor, intent.npc_actor);
     let mut request = NpcProgramRequest {
         command: CommandRef::new(
             command.game_session_id,
@@ -276,6 +278,8 @@ pub(super) fn prepare(
         message: intent.text.clone(),
         topic: if greeting {
             0
+        } else if queen_confirmation {
+            8
         } else {
             previous.as_ref().map_or(0, |p| p.topic)
         },
@@ -351,7 +355,9 @@ pub(super) fn prepare(
     if teleport.as_ref().is_some_and(|p| {
         !matches!(
             p.source.quest.as_str(),
-            "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
+            "oteryn:quest.in_service_of_yalahar_quest"
+                | "oteryn:quest.the_paradox_tower_quest"
+                | "oteryn:quest.the_queen_of_the_banshees_quest"
         )
     }) {
         return Some(Step::Refused);
@@ -399,6 +405,28 @@ pub(super) fn prepare(
         npc_actor: admission.states.chat.engaged(command.game_session_id)?,
         topic: plan.next_topic,
     };
+    let pz_refusal = teleport.as_ref().and_then(|plan| plan.pz_locked_reply.as_ref());
+    if let Some(line) = pz_refusal {
+        let Ok(states) = admission.states.spell_states.try_lock() else {
+            return Some(Step::Refused);
+        };
+        if crate::gameplay_transport::pvp_live::pz_blocked(
+            &states, actor, command.game_session_id, admission.owner_now(),
+        ) {
+            // Crystal 201189f8 the_queen_of_the_banshees.lua:137-149 resets topic 8 on refusal.
+            if queen_confirmation {
+                state.classic = None;
+            }
+            return Some(Step::Reply(Box::new(ReplyStep {
+                lines: vec![line.clone()],
+                end: false,
+                end_delay_ms: 0,
+                previous,
+                next: Conversation { topic: 0, ..next },
+                supersedes_topic: false,
+            })));
+        }
+    }
     let has_track_mutation = super::catalogue_track_mutation::has_mutation(&plan);
     if !has_track_mutation
         && !plan.completes
@@ -471,6 +499,7 @@ pub(super) fn prepare(
         fallback_lines,
         supersedes_topic,
         magic: teleport.as_ref().map_or(0, |p| p.magic.len()),
+        requires_pz_unlocked: pz_refusal.is_some(),
         teleport: teleport.map(|p| p.destination),
     })))
 }
@@ -591,6 +620,7 @@ pub(super) async fn apply(
         fallback_lines,
         teleport,
         magic,
+        requires_pz_unlocked,
         supersedes_topic,
     } = match step {
         Step::Reply(step) => {
@@ -741,6 +771,7 @@ pub(super) async fn apply(
                     intent,
                     context: next.context.clone(),
                     magic,
+                    requires_pz_unlocked,
                 },
                 destination,
                 &mut runtime,

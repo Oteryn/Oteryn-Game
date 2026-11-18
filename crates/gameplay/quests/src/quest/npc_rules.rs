@@ -252,6 +252,8 @@ pub enum NpcRuleEffect {
     },
     Teleport {
         position: NpcRulePosition,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pz_locked_reply: Option<String>,
     },
     MagicEffect {
         effect: String,
@@ -575,6 +577,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
+                                | "oteryn:quest.the_queen_of_the_banshees_quest"
                                 | "oteryn:quest.the_rookie_guard_quest"
                                 | "oteryn:quest.the_thieves_guild_quest"
                                 | "oteryn:quest.tower_defence_quest"

@@ -9,6 +9,7 @@ pub struct NpcTeleportPlan {
     pub source: NpcRulePlan,
     pub destination: NpcRulePosition,
     pub magic: Vec<String>,
+    pub pz_locked_reply: Option<String>,
 }
 
 impl NpcRuleCatalog {
@@ -22,14 +23,16 @@ impl NpcRuleCatalog {
         };
         let mut destination = None;
         let mut magic = Vec::new();
+        let mut pz_locked_reply = None;
         for effect in &source.effects {
             match effect {
-                NpcRuleEffect::Teleport { position } => {
+                NpcRuleEffect::Teleport { position, pz_locked_reply: refusal } => {
                     if destination.replace(*position).is_some() {
                         return Err(NpcRuleError::Invalid(
                             "multiple NPC teleport destinations".into(),
                         ));
                     }
+                    pz_locked_reply.clone_from(refusal);
                 }
                 NpcRuleEffect::MagicEffect { effect } if effect == "CONST_ME_TELEPORT" => {
                     magic.push(effect.clone());
@@ -53,6 +56,7 @@ impl NpcRuleCatalog {
             source,
             destination,
             magic,
+            pz_locked_reply,
         }))
     }
 }

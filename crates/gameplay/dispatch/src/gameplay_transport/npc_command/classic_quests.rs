@@ -44,6 +44,17 @@ pub(super) enum Step {
     Held,
 }
 
+pub(super) fn queen_confirmation(
+    state: &SessionNpc,
+    context: &Context,
+    actor: ExactActorRef,
+    npc: EntityRef,
+) -> bool {
+    matches!(&state.classic, Some(Pending::Topic(previous))
+        if previous.context == *context && previous.actor == actor && previous.npc == npc
+            && previous.topic == classic_talk::Topic::Queen(8))
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
