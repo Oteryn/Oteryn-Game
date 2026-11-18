@@ -6,9 +6,11 @@ use oteryn_gameplay_domain::domain::condition::ConflictKey;
 use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
 
 fn has_world_cake_regeneration(conditions: &ConditionStore<String>) -> bool {
-    conditions.get(ConflictKey::Recovery).is_some_and(|condition| {
-        condition.definition().key() == super::cake_event::CAKE_REGENERATION_KEY
-    })
+    conditions
+        .get(ConflictKey::Recovery)
+        .is_some_and(|condition| {
+            condition.definition().key() == super::cake_event::CAKE_REGENERATION_KEY
+        })
 }
 
 /// Validate durable data before creating any actor state: a refused retry cannot
