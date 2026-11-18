@@ -337,7 +337,7 @@ fn run_gathering_at(
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
-            gathering_scenario(tool, target, after, yield_item, committed, in_sewers, false)
+            gathering_scenario(tool, target, after, yield_item, committed, in_sewers, None)
                 .map_err(|e| e.to_string())
         })?
         .join()
@@ -356,7 +356,7 @@ pub(super) fn gathering_scenario(
     yield_item: Option<u16>,
     committed: bool,
     in_sewers: bool,
-    shock: bool,
+    shock_skill: Option<u16>,
 ) -> TestResult {
     run(async |admin| {
         let harness =
@@ -516,6 +516,19 @@ pub(super) fn gathering_scenario(
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
+        let skill = shock_skill.unwrap_or(10);
+        if shock_skill.is_some() {
+            use crate::durability::character_build::DurableBuildState;
+            use oteryn_gameplay_progression::hit_training::SkillFamily;
+            let mut skills = [(10, 0); 7];
+            skills[SkillFamily::Fishing.index()] = (skill, 0);
+            let facts = crate::gameplay_transport::actor_spell::tests::FACTS;
+            let build = DurableBuildState::new("monk", (u16::try_from(facts.magic_level)?, 0), skills)
+                .map_err(debug)?;
+            let runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            assert!(states.load_owned_build(&runtime, deps.actor, deps.admitted.game_session_id, &build));
+        }
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
         )
@@ -652,10 +665,17 @@ pub(super) fn gathering_scenario(
                 )
                 .unwrap_or(0);
                 let attempt = oteryn_gameplay_items::fishing::gathering_attempt(
-                    tool, target_id, 10, catch_roll, roll,
+                    tool, target_id, skill, catch_roll, roll,
                 );
-                if shock {
-                    return attempt.is_none() && super::mechanical_fishing_shock::is_shock_draw(
+                if shock_skill.is_some() {
+                    // At skill 11, the donor misses on this interval, which an
+                    // unrounded fractional threshold would treat as a catch.
+                    let donor_miss = if skill == 11 {
+                        (10_001..=10_597).contains(&catch_roll)
+                    } else {
+                        catch_roll > 10_000
+                    };
+                    return donor_miss && super::mechanical_fishing_shock::is_shock_draw(
                         native.source_digest(),
                         occurrence,
                     );
@@ -669,7 +689,7 @@ pub(super) fn gathering_scenario(
             .ok_or("deterministic handle history exists")?;
         admitted.continuity.item_view.handle_counter = counter;
         let command_id = 1;
-        let before = if shock {
+        let before = if shock_skill.is_some() {
             Some(super::mechanical_fishing_shock::health(&owner, &admitted).await?)
         } else {
             None

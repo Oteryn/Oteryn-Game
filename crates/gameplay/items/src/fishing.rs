@@ -243,7 +243,7 @@ pub fn gathering_attempt(
     yield_roll: u32,
 ) -> Option<GatheringAttempt> {
     if tool == 9306 && MECHANICAL_FISHING_WATER.contains(&target) {
-        if !(1..=100_000).contains(&yield_roll) || !catches(skill, catch_roll) {
+        if !(1..=100_000).contains(&yield_roll) || !mechanical_sewer_catches(skill, catch_roll) {
             return None;
         }
         let MechanicalSewerAttempt::Caught { after } =
@@ -318,6 +318,12 @@ pub fn catch_threshold(skill: u16) -> u32 {
 
 pub fn catches(skill: u16, roll: u32) -> bool {
     (1..=100_000).contains(&roll) && roll <= catch_threshold(skill)
+}
+
+/// Crystal mechanical_fishing.lua:222-224 rolls an integer from 1 through 100.
+/// Group the existing deterministic roll into equal buckets of one percent.
+pub fn mechanical_sewer_catches(skill: u16, roll: u32) -> bool {
+    (1..=100_000).contains(&roll) && roll.div_ceil(1_000) <= catch_threshold(skill) / 1_000
 }
 
 /// Rod admission used before dispatch trains fishing or consumes bait.

@@ -394,7 +394,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             self.save_trained_levels(due).await;
             let consumable = if mechanical_sewer { nail } else { worm };
-            let caught = oteryn_gameplay_items::fishing::catches(skill, roll);
+            let caught = if mechanical_sewer {
+                oteryn_gameplay_items::fishing::mechanical_sewer_catches(skill, roll)
+            } else {
+                oteryn_gameplay_items::fishing::catches(skill, roll)
+            };
             if mechanical_sewer && consumable.is_some() && !caught && !map_target.2 {
                 self.project_sewer_fishing_miss(actor, command, native, map_target, occurrence)
                     .await;

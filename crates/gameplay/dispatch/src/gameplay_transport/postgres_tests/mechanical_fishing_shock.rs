@@ -8,14 +8,14 @@ use oteryn_simulation_determinism::{
 };
 
 #[test]
-fn mechanical_fishing_miss_can_shock_and_grant_temporary_outfit_without_burning_nail() -> TestResult
+fn mechanical_fishing_whole_percent_miss_shocks_without_burning_nail() -> TestResult
 {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run("mechanical-fishing-shock", || {
-        super::standard_fishing::gathering_scenario(9306, 4597, Some(4597), None, false, true, true)
+        super::standard_fishing::gathering_scenario(9306, 4597, Some(4597), None, false, true, Some(11))
     })
 }
 
@@ -27,7 +27,7 @@ fn mechanical_fishing_shock_reaches_sewer_water_exclusive_to_the_mechanical_rod(
     drop(admin);
     // Crystal mechanical_fishing.lua:11-24,203-237 includes 21312.
     super::kill_reward_e2e::scenario_thread::run("mechanical-fishing-shock-exclusive-water", || {
-        super::standard_fishing::gathering_scenario(9306, 21312, Some(21312), None, false, true, true)
+        super::standard_fishing::gathering_scenario(9306, 21312, Some(21312), None, false, true, Some(10))
     })
 }
 
