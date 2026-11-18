@@ -105,6 +105,8 @@ end-to-end reward-room claims, outfit prerequisites and teleport chain.
 
 ## Entry gate change and regression
 
+**Open dependency** — P1-3 tail. A fresh character needs the out-of-package Phantom Army acceptance and battlefield bindings to reach Children of the Revolution stage 20. This dependency is non-blocking for this package.
+
 The Zalamon opening now requires the existing Children of the Revolution
 questline to equal 21. The callback only reads the upstream track. The check
 runs again in the locked quest writer, so a stale NPC view cannot authorize
