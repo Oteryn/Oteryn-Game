@@ -41,8 +41,8 @@ pub fn route(npc: &str, keyword: &str, payment: Payment) -> Option<TravelRoute> 
     };
     let suffix = match payment {
         Payment::Fare => "",
-        Payment::DeclinedRing => "-declined-ring",
-        Payment::Ring => "-ring",
+        Payment::DeclinedRing => "_declined_ring",
+        Payment::Ring => "_ring",
     };
     let fare = npc == BUDDEL && payment != Payment::Ring;
     Some(TravelRoute {
@@ -75,7 +75,7 @@ pub fn route(npc: &str, keyword: &str, payment: Payment) -> Option<TravelRoute> 
 
 pub fn pays_ring(route: &TravelRoute) -> bool {
     route.service == BUDDEL_SERVICE
-        && route.route.key.strip_suffix("-ring") == Some(route.keyword.as_str())
+        && route.route.key.strip_suffix("_ring") == Some(route.keyword.as_str())
 }
 
 async fn track(
@@ -106,7 +106,7 @@ pub(super) async fn permitted(
     }
     let payment = if pays_ring(route) {
         Payment::Ring
-    } else if route.route.key.strip_suffix("-declined-ring") == Some(route.keyword.as_str()) {
+    } else if route.route.key.strip_suffix("_declined_ring") == Some(route.keyword.as_str()) {
         Payment::DeclinedRing
     } else {
         Payment::Fare

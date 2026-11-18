@@ -9,23 +9,18 @@ pub const HUSKY_KILL: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/h
 pub const ACCEPT: &str = "oteryn:quest-transition/ice-islands/iskan-accept";
 pub const REPORT: &str = "oteryn:quest-transition/ice-islands/iskan-report";
 
-pub(super) fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-    let quest = super::ice_islands_seals::QUEST;
-    let previous = catalogue
-        .definition_hash(quest)
-        .ok_or("missing Ice Islands definition")?;
-    let mut transitions = Vec::new();
+pub(super) fn transitions() -> [QuestTransition; 2] {
     let set = |track: &str, from, value| QuestEffect {
         track: track.into(),
         from,
         effect: QuestEffectKind::Set(value),
     };
-    for (key, before, after) in [(ACCEPT, 1, 1), (REPORT, 2, 3)] {
+    [(ACCEPT, 1, 1), (REPORT, 2, 3)].map(|(key, before, after)| {
         let mut effects = vec![
             QuestEffect {
                 track: BARBARIAN.into(),
                 from: QuestComparison::Ge(8),
-                effect: QuestEffectKind::RaiseTo(8),
+                effect: QuestEffectKind::Add(0),
             },
             set(QUESTLINE, QuestComparison::Eq(before), after),
             set(MISSION, QuestComparison::Any, after),
@@ -37,15 +32,23 @@ pub(super) fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCat
                 effect: QuestEffectKind::Add(0),
             });
         }
-        transitions.push(QuestTransition {
+        QuestTransition {
             key: key.into(),
-            quest: quest.into(),
+            quest: super::ice_islands_seals::QUEST.into(),
             effects,
             completes: false,
             experience: None,
             world_change: None,
-        });
-    }
+        }
+    })
+}
+
+pub(super) fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+    let quest = super::ice_islands_seals::QUEST;
+    let previous = catalogue
+        .definition_hash(quest)
+        .ok_or("missing Ice Islands definition")?;
+    let transitions = transitions();
     let checked = QuestStateCatalogue::new(
         catalogue.content_revision.clone(),
         catalogue.tracks.values().cloned().collect(),

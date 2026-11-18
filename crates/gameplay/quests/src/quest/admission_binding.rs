@@ -95,6 +95,10 @@ fn registry() -> Result<&'static Registry, String> {
             // Fugue's native kill. Only its complete gated operation may finish it.
             add(super::hero_of_bounac::transition(), false, true)?;
             add(super::arena_completion::transition()?, false, true)?;
+            // Iskan shares the questline protected by the Ice Islands map callbacks.
+            for transition in super::iskan::transitions() {
+                add(transition, false, false)?;
+            }
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
             }
