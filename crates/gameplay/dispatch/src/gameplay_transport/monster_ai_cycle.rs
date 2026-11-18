@@ -702,7 +702,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !ran_profile || (retained_work && thought_actors.is_empty()) {
             if !ran_profile && let Some(retry) = next_think {
                 // A resource-deferred quantum retries before the whole-Think cadence.
-                states.next_monster_ai_pass_us = states.next_monster_ai_pass_us.min(retry);
+                states.next_monster_ai_pass_us = if states.next_monster_ai_pass_us <= now.get() {
+                    retry
+                } else {
+                    states.next_monster_ai_pass_us.min(retry)
+                };
             }
             if ran_profile {
                 states.next_monster_ai_pass_us = next_monster_ai_pass_us(

@@ -199,11 +199,27 @@ fn review67_sql_watchdog_expires_during_replay_sql() -> TestResult {
 }
 
 #[test]
-fn review67_unconfigured_postgres_is_a_failure_before_the_case_body() -> TestResult {
+fn route_less_library_gate_omits_the_postgres_body() -> TestResult {
+    const PROBE: &str = "OTERYN_LOOP_MONSTER_ROUTELESS_PROBE";
+    if std::env::var_os(PROBE).is_some() {
+        return run_case(async |_| Err("route-less gate executed a database body".into()));
+    }
     let output = std::process::Command::new(std::env::current_exe()?)
-        .args(["--exact", "gameplay_transport::monk_save::postgres_tests::loop_monster::checkout_paths_keep_one_window_across_sql_wait", "--nocapture"])
-        .env_remove("OTERYN_TEST_POSTGRES_ADMIN_URL").output()?;
-    assert!(!output.status.success(), "an unconfigured PostgreSQL case must not be counted as passed");
-    assert!(String::from_utf8_lossy(&output.stdout).contains("1 failed"));
+        .args(["--exact", "gameplay_transport::monk_save::postgres_tests::loop_monster::route_less_library_gate_omits_the_postgres_body", "--nocapture"])
+        .env_remove("OTERYN_TEST_POSTGRES_ADMIN_URL").env(PROBE, "1").output()?;
+    assert!(output.status.success(), "the required route-less library gate must succeed");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("Loop Monster database body omitted; no PostgreSQL validation claimed"));
+    assert!(!stderr.contains("LOOP-MONSTER-PG: configured PostgreSQL"));
     Ok(())
+}
+
+#[test]
+fn consecutive_exhausted_windows_replace_the_expired_retry_deadline() -> TestResult {
+    run_case(async |harness| summon_transaction::consecutive_windows(harness).await)
+}
+
+#[test]
+fn initial_checkout_timeout_is_not_a_replay_watchdog_proof() -> TestResult {
+    run_case(async |harness| summon_transaction::blocked_initial_checkout(harness).await)
 }

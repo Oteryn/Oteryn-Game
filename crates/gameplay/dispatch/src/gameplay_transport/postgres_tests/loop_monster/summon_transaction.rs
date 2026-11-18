@@ -25,7 +25,7 @@ pub(super) async fn exhausted_window(harness: &Harness) -> TestResult {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Resume { None, CurrentBudget, SqlWindow, Exhausted, QueuedPlayer, BlockedReplay }
+enum Resume { None, CurrentBudget, SqlWindow, Exhausted, QueuedPlayer, BlockedReplay, Consecutive, BlockedInitial }
 
 pub(super) async fn queued_player(harness: &Harness) -> TestResult {
     scenario_with_resume(harness, false, false, Resume::QueuedPlayer).await
@@ -40,10 +40,24 @@ pub(super) async fn blocked_replay(harness: &Harness) -> TestResult {
     Ok(())
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SqlPhase { Checkout, ReplayBlocked, ReplayWaiting, ReplayAcquired }
+
+pub(super) async fn blocked_initial_checkout(harness: &Harness) -> TestResult {
+    let result = scenario_with_resume(harness, false, false, Resume::BlockedInitial).await;
+    assert_eq!(result.err().ok_or("initial checkout must time out")?.to_string(),
+        "replay regression never reached its blocked scope query");
+    Ok(())
+}
+
+pub(super) async fn consecutive_windows(harness: &Harness) -> TestResult {
+    scenario_with_resume(harness, false, false, Resume::Consecutive).await
+}
+
 async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_child: bool, resume: Resume) -> TestResult {
     let resumed = resume != Resume::None;
-    let sql_window = matches!(resume, Resume::SqlWindow | Resume::Exhausted | Resume::QueuedPlayer | Resume::BlockedReplay);
-    let exhausted = resume == Resume::Exhausted;
+    let sql_window = matches!(resume, Resume::SqlWindow | Resume::Exhausted | Resume::QueuedPlayer | Resume::BlockedReplay | Resume::Consecutive | Resume::BlockedInitial);
+    let exhausted = matches!(resume, Resume::Exhausted | Resume::Consecutive);
     let queued = resume == Resume::QueuedPlayer;
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -97,6 +111,7 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
         // A real player path admission advances the shared ledger between owner turns.
         assert!(owner.states.attack.lock().await.path_budget.admits(50_000, true, false));
     }
+    let phase = std::cell::Cell::new(SqlPhase::Checkout);
     let work = async {
     if sql_window {
             let execution = owner.owner_now();
@@ -118,6 +133,10 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
                 .bind(deps.admitted.channel_id.as_bytes().as_slice())
                 .execute(&mut *blocker).await?;
             let release = async {
+                if resume == Resume::BlockedInitial {
+                    // Fault injection: hold the real initial SQL scope beyond the deadline.
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
                 loop {
                     let waiting: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND wait_event='advisory')")
                         .fetch_one(&harness.pool).await?;
@@ -150,6 +169,28 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
                     assert!(!attack.chase_search_waiting(deps.actor, deps.admitted.game_session_id), "the real chase drain must use the reserved player work");
                 }
                 assert_eq!(deps.runtime.lock().await.native_summon_count(rat, None), 0);
+                if resume == Resume::Consecutive {
+                    let window = crate::movement::path_budget::PATH_WINDOW_US;
+                    let first_retry = owner.states.spell_states.lock().await.next_monster_ai_pass_us;
+                    let second_at = first_retry + 40_000;
+                    {
+                        let mut attack = owner.states.attack.lock().await;
+                        while attack.path_budget.admits(second_at, false, false) {
+                            attack.path_budget.charge(false, crate::movement::path_search::PATH_SEARCH_WORK);
+                        }
+                    }
+                    owner.drain_monster_melee_at(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(second_at)).await;
+                    let states = owner.states.spell_states.lock().await;
+                    assert!(states.monster_melee.creature_ai.last_report_for_test(rat).is_none());
+                    assert_eq!(states.monster_melee.creature_ai.due(rat), Some(0));
+                    assert_eq!(states.native_profile_pass.pending().ok_or("lost second-window reservation")?.ai_cursor(), 0);
+                    let retry = second_at + window - second_at % window;
+                    assert_eq!(states.next_monster_ai_pass_us, retry,
+                        "a second denial must replace the expired first-window deadline");
+                    assert_eq!(retry - second_at, 10_000, "the source owner must see ten milliseconds remaining, not an overdue cadence");
+                    drop(states);
+                    owner.clock_origin -= std::time::Duration::from_micros(retry.saturating_sub(owner.owner_now().get()));
+                }
                 owner.drain_monster_melee_at(owner.owner_now()).await;
             } else {
                 assert!(owner.states.attack.lock().await.path_budget.admits(execution.get(), false, false),
@@ -187,6 +228,7 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
         sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
             .bind(deps.admitted.world_id.as_bytes().as_slice()).bind(deps.admitted.channel_id.as_bytes().as_slice())
             .execute(&mut *tx).await?;
+        phase.set(SqlPhase::ReplayBlocked);
         Some(tx)
     } else { None };
     check_scope_replay(
@@ -198,6 +240,7 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
         replay_only,
         missing_child,
         crate::content::native_gameplay::test_support::loop_monster_inner_digest(&pin),
+        (resume == Resume::BlockedReplay).then_some(&phase),
     )
     .await?;
     if missing_child {
@@ -273,8 +316,12 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
     Ok(())
     };
     if sql_window {
-        tokio::time::timeout(std::time::Duration::from_secs(1), work).await
-            .map_err(|_| "SQL-wait watchdog expired during acquisition, query, rollback, replay or drain")?
+        let result = tokio::time::timeout(std::time::Duration::from_secs(1), work).await;
+        if result.is_err() && matches!(resume, Resume::BlockedReplay | Resume::BlockedInitial)
+            && phase.get() != SqlPhase::ReplayWaiting {
+            return Err("replay regression never reached its blocked scope query".into());
+        }
+        result.map_err(|_| "SQL-wait watchdog expired during acquisition, query, rollback, replay or drain")?
     } else {
         work.await
     }
@@ -290,6 +337,7 @@ async fn check_scope_replay(
     retire: bool,
     missing_child: bool,
     inner_digest: [u8; 32],
+    phase: Option<&std::cell::Cell<SqlPhase>>,
 ) -> TestResult {
     use crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction;
     let native = owner
@@ -306,6 +354,7 @@ async fn check_scope_replay(
     let objects = deps.door.lock().await;
     let mut tx = harness.pool.begin().await?;
     let scope = runtime.binding().runtime_scope();
+    if let Some(phase) = phase { phase.set(SqlPhase::ReplayWaiting); }
     let scope_authority = assert_spell_item_scope_in_transaction(
         &mut tx,
         &permit,
@@ -317,6 +366,7 @@ async fn check_scope_replay(
     )
     .await
     .map_err(debug)?;
+    if let Some(phase) = phase { phase.set(SqlPhase::ReplayAcquired); }
     let mut other_tx = harness.pool.begin().await?;
     let mut wrong = CurrentMonsterMap::new(
         &mut other_tx,
