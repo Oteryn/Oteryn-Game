@@ -39,6 +39,7 @@ use crate::foundation::runtime_actor_spell_types::CombatBatchReceipt;
 use {
     crate::foundation::{
         ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, GameSessionId,
+        MovementLocalPosition,
     },
     oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
