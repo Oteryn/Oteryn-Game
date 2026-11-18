@@ -48,7 +48,7 @@ fn scenario(name: &'static str, creature: &'static str) -> TestResult {
                 .find(|r| r.creature == format!("oteryn:creature.{creature}"))
                 .ok_or("source rule")?;
             let h = Harness::create_with_admission_seed(admin, "srvenc_m24", false, false).await?;
-            let result = exercise(&h, rule).await;
+            let result = exercise(&h, rule, None).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup?;
@@ -63,7 +63,16 @@ fn scenario(name: &'static str, creature: &'static str) -> TestResult {
     result
 }
 
-async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
+pub(super) async fn exercise_delivery(
+    h: &Harness, transition: &str, quest: &str, rule: &str,
+) -> TestResult {
+    let base = load_embedded_quest_state("content-1").map_err(debug)?;
+    let catalogue = source_deaths::with_fixture_rule(base.catalogue(), quest, rule)?;
+    let rule = source_deaths::rule_for(&catalogue, transition).ok_or("fixture death rule")?;
+    exercise(h, rule, Some(catalogue.clone())).await
+}
+
+async fn exercise(h: &Harness, rule: &source_deaths::Rule, catalogue: Option<QuestStateCatalogue>) -> TestResult {
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -126,10 +135,10 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     deps.runtime = tokio::sync::Mutex::new(runtime);
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(generation);
-    let catalogue = load_embedded_quest_state("content-1")
-        .map_err(debug)?
-        .catalogue()
-        .clone();
+    let catalogue = match catalogue {
+        Some(catalogue) => catalogue,
+        None => load_embedded_quest_state("content-1").map_err(debug)?.catalogue().clone(),
+    };
     // The fight starts at its source mission precondition. Seed that explicit
     // fixture stage through the same fenced writer; never update tracks by SQL.
     let native_transition = catalogue
@@ -341,7 +350,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     let queue = owner.states.attack.lock().await.kills().clone();
     // This second current native actor really deals damage. It remains an invalid
     // Herald recipient even with the same admitted mission snapshot as the winner.
-    let lesser_contributor = if rule.top_damage_only {
+    let secondary = if rule.top_damage_only || rule.delivery.is_some() {
         let mut runtime = owner.runtime.lock().await;
         let session = crate::foundation::GameSessionId::decode(&id(77)).map_err(debug)?;
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
@@ -350,7 +359,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             .initialize_pinned_test_position(
                 actor,
                 MovementLocalPosition {
-                    x: position[0] - 1,
+                    x: if rule.delivery.is_some() { position[0] + 2 } else { position[0] - 1 },
                     y: position[1],
                     floor: i16::try_from(-position[2])?,
                 },
@@ -405,7 +414,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 .bound_attacker_lease(actor, session)
                 .map_err(debug)?;
             let health = runtime.companion_snapshot(target).map_err(debug)?.health;
-            let damage = if let Some((other_actor, other_session, _, _)) = lesser_contributor {
+            let damage = if let Some((other_actor, other_session, _, _)) = secondary.filter(|_| rule.top_damage_only) {
                 assert!(
                     health > 2,
                     "Herald has distinct most-damage and lesser contributors"
@@ -469,7 +478,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 );
             }
             if let Some((other_actor, other_session, other_character, other_lease)) =
-                lesser_contributor
+                secondary
             {
                 use crate::gameplay_transport::{kill_reward::TakeOutcome, quest_batch3_c};
                 let TakeOutcome::Taken(taken) = queue.take(session, lease.generation()) else {
@@ -485,15 +494,13 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                     .find(|recipient| recipient.death.transition == rule.transition)
                     .ok_or("captured Herald winner")?;
                 assert_eq!(entry.facts.principal.actor, actor);
-                assert!(entry.damage_shares.iter().any(|share| {
+                assert_eq!(entry.damage_shares.iter().any(|share| {
                     share.character.as_bytes() == &other_character
                         && share.total > 0
                         && share.session == Some(other_session)
                         && share.lease_generation == Some(other_lease)
-                }));
-                let objective = source_deaths::rule(&rule.transition)
-                    .ok_or("Herald rule")?
-                    .clone();
+                }), rule.top_damage_only);
+                let objective = rule.clone();
                 let snapshots = [
                     quest_batch3_c::Snapshot {
                         actor,
@@ -514,18 +521,16 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 ];
                 let recipients =
                     quest_batch3_c::capture(&runtime, entry, true, snapshots.iter().cloned());
-                assert_eq!(
-                    recipients.len(),
-                    1,
-                    "damage alone cannot earn Herald credit"
-                );
+                let eligible = if rule.delivery.is_some() { 2 } else { 1 };
+                assert_eq!(recipients.len(), eligible);
                 assert_eq!(recipients[0].actor, actor);
                 assert_eq!(recipients[0].character, *lease.character_id().as_bytes());
-                assert!(
-                    quest_batch3_c::capture(&runtime, entry, false, snapshots.into_iter())
-                        .is_empty(),
-                    "a lethal fallback is not the present most-damage player"
-                );
+                if rule.delivery.is_some() {
+                    assert_eq!(recipients[1].actor, other_actor);
+                    assert!(!entry.damage_shares.iter().any(|share| share.character.as_bytes() == &other_character));
+                } else {
+                    assert!(quest_batch3_c::capture(&runtime, entry, false, snapshots.into_iter()).is_empty());
+                }
                 drop(taken); // Leave the real original queue entry for durable settlement below.
             }
         }

@@ -78,14 +78,15 @@ impl DeathDelivery {
     fn valid(self, rule: &Rule) -> bool {
         match self {
             Self::PoltergeistAndBeyonder => {
-                rule.quest == "oteryn:quest.feaster_of_souls_quest"
+                rule.quest == "oteryn:quest.poltergeist_outfits_quest"
                     && rule.creature == "oteryn:creature.the_pale_worm"
                     && rule.room == Some([33794, 31493, 33816, 31515, -14])
                     && !rule.top_damage_only
                     && rule.define_transition
                     && rule.effects.len() == 1
                     && rule.effects.iter().all(|effect| {
-                        effect.default == -1 && effect.from.kind == "any"
+                        effect.track == "oteryn:quest-progress/quest/u12_30/poltergeist_outfits/received"
+                            && effect.default == -1 && effect.from.kind == "any"
                             && effect.set == Some(1) && effect.add.is_none()
                     })
             }

@@ -121,7 +121,7 @@ pub(super) async fn apply_delivery(
     let catalogue = oteryn_gameplay_progression::achievement_catalogue::parse_shards(
         &oteryn_gameplay_progression::achievement_catalogue::SHARDS,
     ).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let key = "oteryn:achievement.beyonder";
+    let key = "oteryn:achievement/beyonder";
     let entry = catalogue.get(key).filter(|entry| !entry.retired)
         .ok_or(DurabilityError::InvalidStoredState)?;
     let source = AchievementSourceEvent {kind: "oteryn:quest-reward".into(),
