@@ -897,6 +897,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(plan) => plan,
             Err(refusal) => return refusal,
         };
+        let group = match self.prepare_encounter_group(runtime, states, &closed, callback, session)
+        {
+            Ok(group) => group,
+            Err(refusal) => return refusal,
+        };
+        let group_sessions = group.as_ref().map(|plan| plan.sessions());
+        if let Some(sessions) = &group_sessions
+            && !self
+                .states
+                .quest_callbacks
+                .records
+                .lock()
+                .is_ok_and(|records| {
+                    records.get(&session).is_none_or(|record| {
+                        record.participants.is_empty() || &record.participants == sessions
+                    })
+                })
+        {
+            return UseDisposition::StaleState;
+        }
         let party = if let Some(party) = &callback.effects.party_transfer {
             if after.appearance_id != party.activation_appearance {
                 return if map.facts.apply_quest_callback(
@@ -1052,7 +1072,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     context: None,
                     flame: None,
                     ingress_settled: false,
-                    participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
+                    participants: group_sessions
+                        .clone()
+                        .or_else(|| party.as_ref().map(|plan| plan.sessions()))
+                        .unwrap_or_default(),
                     flame_effect_sent: false,
                     projection_target: None,
                     selected_tool: None,
@@ -1062,6 +1085,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // that exact binding instead of the replaying caller's tool.
                 if record.context.is_none() {
                     record.selected_tool = selected_tool.cloned();
+                    if let Some(sessions) = &group_sessions {
+                        record.participants.clone_from(sessions);
+                    }
                 }
                 (
                     record.context.get_or_insert(context).clone(),
@@ -1475,7 +1501,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection.as_ref(),
                 )
             };
-            if !stationary.is_empty() {
+            if let Some(group) = group {
+                let Ok(snapshots) =
+                    runtime.commit_quest_group_spawn(group.proofs, &stationary, apply_scene)
+                else {
+                    return UseDisposition::Rejected;
+                };
+                for ((moved_actor, moved_session, before), after) in
+                    group.players.into_iter().zip(snapshots)
+                {
+                    let now = self.owner_now().get();
+                    states.stage_special_movement_step(
+                        runtime,
+                        map,
+                        moved_actor,
+                        moved_session,
+                        now,
+                        Some(before.position()),
+                        after.position(),
+                        optional_pvp,
+                    );
+                    states.stage_underwater_step(
+                        runtime,
+                        moved_actor,
+                        moved_session,
+                        now,
+                        underwater(map, before.position()),
+                        underwater(map, after.position()),
+                    );
+                    if let Some(to) = native(after.position()) {
+                        map.facts.emit_movement_effect(to, 11);
+                    }
+                }
+            } else if !stationary.is_empty() {
                 if runtime
                     .commit_quest_creature_spawn_with_projection(&stationary, apply_scene)
                     .is_err()

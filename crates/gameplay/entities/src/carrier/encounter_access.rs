@@ -377,23 +377,48 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
-        self.quest_creature_spawn(monsters, project, true)
+        self.quest_creature_spawn(monsters, |_| Ok(()), project, true)
+            .map(|(actors, ())| actors)
+    }
+
+    pub fn commit_quest_group_spawn<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        if !(1..=16).contains(&players.len()) {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.quest_creature_spawn(
+            monsters,
+            |runtime| {
+                players
+                    .into_iter()
+                    .map(|proof| runtime.commit_source_step(proof))
+                    .collect()
+            },
+            project,
+            true,
+        )
+        .map(|(_, snapshots)| snapshots)
     }
 
     pub fn preflight_quest_creature_spawn(
         &mut self,
         monsters: &[(&str, i64, MovementLocalPosition)],
     ) -> Result<(), CarrierError> {
-        self.quest_creature_spawn(monsters, || true, false)
+        self.quest_creature_spawn(monsters, |_| Ok(()), || true, false)
             .map(|_| ())
     }
 
-    fn quest_creature_spawn(
+    fn quest_creature_spawn<T>(
         &mut self,
         monsters: &[(&str, i64, MovementLocalPosition)],
+        prepare: impl FnOnce(&mut Self) -> Result<T, CarrierError>,
         project: impl FnOnce() -> bool,
         publish: bool,
-    ) -> Result<Vec<ExactActorRef>, CarrierError> {
+    ) -> Result<(Vec<ExactActorRef>, T), CarrierError> {
         if monsters.is_empty() || monsters.len() > 8 {
             return Err(CarrierError::PlanConflict);
         }
@@ -403,6 +428,7 @@ impl ChannelRuntimeV1 {
             .map_err(|_| CarrierError::AllocationFailed)?;
         let before = self.carrier.clone();
         let result = (|| {
+            let prepared = prepare(self)?;
             for (key, health, at) in monsters {
                 let actor = self.admit_encounter_actor(key, *health, *at)?;
                 self.install_creature_policy(actor, key)?;
@@ -411,7 +437,7 @@ impl ChannelRuntimeV1 {
             if !project() {
                 return Err(CarrierError::PlanConflict);
             }
-            Ok(actors)
+            Ok((actors, prepared))
         })();
         if !publish || result.is_err() {
             self.carrier = before;

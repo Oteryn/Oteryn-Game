@@ -115,6 +115,9 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    /// Move the current players in a bounded source rectangle before spawning.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub encounter_group: Option<EncounterGroup>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -344,6 +347,40 @@ pub struct EncounterMonster {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct EncounterGroup {
+    pub minimum: Position,
+    pub maximum: Position,
+    pub destination: Position,
+}
+
+impl EncounterGroup {
+    fn valid(&self) -> bool {
+        [self.minimum, self.maximum, self.destination]
+            .iter()
+            .all(|p| (-15..=0).contains(&p.floor))
+            && self.minimum.floor == self.maximum.floor
+            && self.minimum.floor != self.destination.floor
+            && self
+                .maximum
+                .x
+                .checked_sub(self.minimum.x)
+                .is_some_and(|span| span < 32)
+            && self
+                .maximum
+                .y
+                .checked_sub(self.minimum.y)
+                .is_some_and(|span| span < 32)
+    }
+
+    pub fn contains(&self, position: Position) -> bool {
+        position.floor == self.minimum.floor
+            && (self.minimum.x..=self.maximum.x).contains(&position.x)
+            && (self.minimum.y..=self.maximum.y).contains(&position.y)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Encounter {
     pub minimum_level: u32,
     pub players: Vec<EncounterPlayer>,
@@ -488,9 +525,19 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let stationary = &effects.stationary_encounter;
+    if effects
+        .encounter_group
+        .as_ref()
+        .is_some_and(|group| stationary.is_empty() || !group.valid())
+    {
+        return false;
+    }
     if !stationary.is_empty()
         && (stationary.len() > MAX_EFFECTS
-            || callback.trigger != Trigger::StepIn
+            || !matches!(
+                (callback.trigger, effects.encounter_group.as_ref()),
+                (Trigger::StepIn, None) | (Trigger::Use, Some(_))
+            )
             || callback.actor_kind != ActorKind::Player
             || !callback.requires_world_admission
             || callback.selector.native.is_none()
@@ -737,7 +784,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()
                 || effects.encounter.is_some()
-                || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
+                || (!callback.passages.is_empty()
+                    && effects.passages_reset_after_ms.is_none()
+                    && (effects.encounter_group.is_none()
+                        || callback
+                            .passages
+                            .iter()
+                            .any(|passage| passage.replacement.is_none())))
         })
         || effects.passages_reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)
