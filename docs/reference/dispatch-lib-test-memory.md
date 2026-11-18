@@ -20,10 +20,11 @@ Rust 1.100.0, 16 GiB cgroup, no swap. Linux `wait4` supplied peak RSS and
 wall time because `/usr/bin/time` was unavailable. RSS records the largest
 individual process peak. Concurrent processes also contribute to cgroup usage.
 
-The startup PostgreSQL identity guard saw a one-second difference between
+An earlier startup PostgreSQL identity guard saw a one-second difference between
 the PID file and the authenticated postmaster timestamp. The SQL
 probe reported the expected data directory and the connection and
 durability checks passed. The focused case used that retained cluster.
+The resubmission's startup verified both identity and SQL checks.
 
 | Run | Cargo jobs | Peak RSS (KiB) | Wall (s) | Result |
 | --- | ---: | ---: | ---: | --- |
@@ -312,6 +313,8 @@ process measurements establish the reproduced OOM.
 | Retained offline-death retry against PostgreSQL 18.6 | Passed in 76.76 s |
 | Default and tuned dispatch lib builds, two Cargo jobs | Hit the cgroup OOM limit |
 | Game-server lib build and inventory with the checked-in profile, two Cargo jobs | Passed, 861 tests and 863 output lines |
+| Focused dispatch and game-server unit tests | `stackable_count_boundaries` and `builds_the_bound_row` passed |
+| Release world-bundle `pin-check` | Passed for the Oteryn bundle in 96.918 s including compilation |
 | Clippy with the checked-in profile | Pending on the owner's PC |
 | Hosted archive with the serial workflow proposal | Pending |
 
