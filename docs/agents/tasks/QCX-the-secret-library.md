@@ -49,3 +49,8 @@ Paths below are relative to Crystal's `data-global/scripts/quests/the_secret_lib
 ## PARTIAL
 
 Six-report progression, entry-gate replacement and old-save handling, the remaining source placements and claims, full side-puzzle sequences, regional-access gates and the Library boss/final achievement chain remain open.
+
+## Verification
+
+- The baseline B3 decode found no unique attribute on appearance 5951 at `32025,32469,7`. The regenerated map binds UID 6330. The retained-map binder and the PostgreSQL claim dispatch fixture both accepted the same selector. The fixture checks one item and replay.
+- The baseline dispatch binary failed Gail's reply assertion with the abbreviated text. It passed the Hawser case against the regenerated on-disk map in 110.05 s. That was a mixed-input run, so the Hawser regression's baseline evidence is the B3 decode.
