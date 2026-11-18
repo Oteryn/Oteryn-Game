@@ -229,18 +229,32 @@ pub(super) fn is_slime(key: &str) -> bool {
 }
 
 #[derive(Debug, Default)]
-pub(super) struct SlimeExplosions(std::sync::Mutex<Vec<MovementLocalPosition>>);
+pub(super) struct SlimeExplosions(std::sync::Mutex<Vec<(ExactActorRef, MovementLocalPosition)>>);
 
 impl SlimeExplosions {
     pub(super) fn publish(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {
         const EXPLOSION_HIT: u16 = 6;
+        const MONSTER_YELL: u8 = 37;
         let Some(map) = owner.bundle_map() else {
             return;
         };
         let Ok(mut pending) = self.0.lock() else {
             return;
         };
-        for center in pending.drain(..) {
+        for (speaker, center) in pending.drain(..) {
+            if let Some(position) = super::soul_war_scene::wire_position(center)
+                && let Ok(name) =
+                    oteryn_protocol_oteryn::entity_names::EntityDisplayName::new("Snail Slime")
+            {
+                map.facts
+                    .emit_movement_speech(crate::map::facts::MovementSpeech {
+                        speaker,
+                        position,
+                        talk_type: MONSTER_YELL,
+                        text: "!!".into(),
+                        captured_name: Some(name),
+                    });
+            }
             for cell in slime_area(center).filter_map(super::soul_war_scene::wire_position) {
                 map.facts.emit_movement_effect(cell, EXPLOSION_HIT);
             }
@@ -283,7 +297,7 @@ pub(super) fn slime_death(
         && let Ok(mut pending) = states.warzone_explosions.0.lock()
         && pending.len() < 64
     {
-        pending.push(center);
+        pending.push((slime, center));
     }
     for (ordinal, cell) in slime_area(center).enumerate() {
         let Ok(Some(actor)) = runtime.current_top_actor_on_cell(cell) else {
