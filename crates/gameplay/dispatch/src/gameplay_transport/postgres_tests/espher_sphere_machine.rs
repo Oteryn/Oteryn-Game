@@ -311,11 +311,38 @@ async fn exercise(h: &Harness) -> TestResult {
         ),
         (842, 843)
     );
+    owner
+        .states
+        .quest_callbacks
+        .interrupt_after_commit
+        .store(true, std::sync::atomic::Ordering::Release);
     assert_eq!(
         click(&mut owner, &admitted, 745, right).await?,
-        UseDisposition::Committed
+        UseDisposition::Rejected
     );
+    assert!(owner.has_pending_quest_callback(session));
     assert_eq!(gems(h).await?, 3);
+    assert_eq!(
+        (
+            machine_appearance(&owner, left)?,
+            machine_appearance(&owner, right)?
+        ),
+        (842, 843),
+        "a lost commit acknowledgement leaves both halves unchanged until reconciliation"
+    );
+    assert_eq!(
+        deps.runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        before_entry
+    );
+    assert!(owner.reconcile_quest_callbacks(session).await);
+    assert!(!owner.has_pending_quest_callback(session));
+    assert!(owner.reconcile_quest_callbacks(session).await);
+    assert_eq!(gems(h).await?, 3, "reconciliation cannot debit twice");
     assert_eq!(
         (
             machine_appearance(&owner, left)?,
