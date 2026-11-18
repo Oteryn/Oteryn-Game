@@ -495,7 +495,7 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                                 item_fence: admitted.item_fence,
                             },
                             WorldObjectTarget {
-                                placement,
+                                placement: placement.clone(),
                                 expected_revision: after_timeout,
                             },
                         )
