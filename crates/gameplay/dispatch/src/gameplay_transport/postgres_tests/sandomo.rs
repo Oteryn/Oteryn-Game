@@ -169,6 +169,29 @@ fn scenario() -> TestResult {
             .bind(character.as_slice()).bind(quest).bind(quest_catalogue.content_revision())
             .bind(quest_catalogue.definition_hash(quest).ok_or("quest hash")?.as_slice())
             .bind(revision).execute(&mut *tx).await?;
+        // The revision chain requires a receipt at each step after creation.
+        // This fixture's first recorded silencer kill accounts for revision 2.
+        sqlx::query(
+            "INSERT INTO game_character_quest_receipts(
+                character_id,cause_kind,cause_id,cause_ordinal,transition_key,quest_key,request_binding,
+                pinned_content_revision,definition_hash,completes,track_keys,values_before,values_after,
+                original_character_revision,committed_character_revision,level_before,level_after,
+                experience_before,experience_after,profile_revision,ruleset_revision,content_revision,
+                simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at
+             ) SELECT character_id,'creature_death',encode($2,'hex')::uuid,0,
+                'oteryn:quest-transition/native-kills/roshamuul-silencer',$3,sha256('sandomo history'),
+                content_revision,$4,false,ARRAY['oteryn:quest-progress/roshamuul/silencers'],
+                ARRAY[0::bigint],ARRAY[1::bigint],1,2,level,level,total_experience,total_experience,
+                profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,
+                declaration_revision,policy_revision,reward_revision,0
+             FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(character.as_slice())
+        .bind(id(250).as_slice())
+        .bind(quest)
+        .bind(quest_catalogue.definition_hash(quest).ok_or("quest hash")?.as_slice())
+        .execute(&mut *tx)
+        .await?;
         for (key, value) in [
             ("oteryn:quest-progress/roshamuul/mortar", 2_i64),
             ("oteryn:quest-progress/roshamuul/silencers", 1),
