@@ -128,42 +128,46 @@ pub(super) async fn exercise(
         },
     )
     .await?;
-    let greeting = super::l6_paradox_story::conversation(owner, admitted, npc, &["hi"]).await?;
-    assert_eq!(greeting.len(), 1);
-    assert_eq!(greeting[0].disposition, NpcIntentDisposition::Ok);
-    for (word, topic) in [
-        ("test", 1),
-        ("yes", 2),
-        ("goshnar", 3),
-        ("demonbunny", 4),
-        ("tha'kull", 6),
-        ("yes", 7),
-        ("breath", 8),
-        ("silence", 9),
-        ("old", 10),
-        ("yes", 11),
-        ("green", 12),
-        ("none", 13),
-    ] {
-        let replies = super::l6_paradox_story::conversation(owner, admitted, npc, &[word]).await?;
-        assert_eq!(replies.len(), 1);
-        assert_eq!(
-            replies[0].disposition,
-            NpcIntentDisposition::Ok,
-            "Riddler {word}"
-        );
-        assert_eq!(
-            owner
-                .states
-                .npc_conversations
-                .catalogue_topic_for_test(admitted.game_session_id),
-            Some(topic),
-            "Riddler topic after {word}"
-        );
-    }
-    let replies = super::l6_paradox_story::conversation(owner, admitted, npc, &["1"]).await?;
-    assert_eq!(replies.len(), 1);
-    assert_eq!(replies[0].disposition, NpcIntentDisposition::Ok);
+    // A new connection snapshot clears focus. Keep the greeting and all answers
+    // on one transport, inspecting the topic before sending the next answer.
+    let steps = [
+        ("hi", None),
+        ("test", Some(1)),
+        ("yes", Some(2)),
+        ("goshnar", Some(3)),
+        ("demonbunny", Some(4)),
+        ("tha'kull", Some(6)),
+        ("yes", Some(7)),
+        ("breath", Some(8)),
+        ("silence", Some(9)),
+        ("old", Some(10)),
+        ("yes", Some(11)),
+        ("green", Some(12)),
+        ("none", Some(13)),
+        ("1", None),
+    ];
+    let words = steps.map(|(word, _)| word);
+    let states = owner.states.clone();
+    let session = admitted.game_session_id;
+    let replies = super::l6_paradox_story::conversation_observed(
+        owner,
+        admitted,
+        npc,
+        &words,
+        move |index, disposition| {
+            let (word, topic) = steps[index];
+            assert_eq!(disposition, NpcIntentDisposition::Ok, "Riddler {word}");
+            if let Some(topic) = topic {
+                assert_eq!(
+                    states.npc_conversations.catalogue_topic_for_test(session),
+                    Some(topic),
+                    "Riddler topic after {word}"
+                );
+            }
+        },
+    )
+    .await?;
+    assert_eq!(replies.len(), steps.len());
     let placed = owner
         .runtime
         .lock()

@@ -273,6 +273,16 @@ pub(super) async fn conversation(
     npc: EntityRef,
     words: &[&str],
 ) -> TestResult<Vec<Reply>> {
+    conversation_observed(owner, admitted, npc, words, |_, _| {}).await
+}
+
+pub(super) async fn conversation_observed(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    words: &[&str],
+    mut observe_reply: impl FnMut(usize, NpcIntentDisposition) + Send + 'static,
+) -> TestResult<Vec<Reply>> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     owner.clock_origin = owner
         .clock_origin
@@ -344,17 +354,18 @@ pub(super) async fn conversation(
                                 .map_err(debug)?;
                         let expected = &commands[replies.len()];
                         assert_eq!(command.command_id, expected.0);
+                        let disposition =
+                            decode_npc_intent_result(command.payload).map_err(debug)?;
                         eprintln!(
-                            "PARADOX_STORY_REPLY word={:?} result={:?}",
-                            labels[replies.len()],
-                            decode_npc_intent_result(command.payload).map_err(debug)?
+                            "PARADOX_STORY_REPLY word={:?} result={disposition:?}",
+                            labels[replies.len()]
                         );
+                        observe_reply(index, disposition);
                         replies.push(Reply {
                             id: command.command_id,
                             payload: expected.1.clone(),
                             body: command.payload.to_vec(),
-                            disposition: decode_npc_intent_result(command.payload)
-                                .map_err(debug)?,
+                            disposition,
                         });
                         break;
                     }

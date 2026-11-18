@@ -241,7 +241,7 @@ pub(super) fn scenario(case: u8) -> TestResult {
         )?;
         if case == 7 {
             deps.combat_room = Some(
-                deps.room
+                pin.qualified_room()
                     .bundle_view(
                         cells.clone(),
                         bundle.frame_binding_digest(world),
