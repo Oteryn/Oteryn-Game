@@ -901,6 +901,21 @@ fn logout_retries_failed_dock_save() -> TestResult {
 
 #[test]
 fn scaled_context_menu_keeps_its_last_entry_inside_the_window() -> TestResult {
+    check_scaled_context_menus(bevy::text::DEFAULT_FONT_DATA)
+}
+
+#[test]
+fn scaled_context_menus_fit_production_skin_font_when_available() -> TestResult {
+    // UI art is supplied separately from the repository, as at client startup.
+    let Some(root) = std::env::var_os("OTERYN_UI_ASSETS") else {
+        return Ok(());
+    };
+    check_scaled_context_menus(&std::fs::read(
+        std::path::Path::new(&root).join("fonts/verdanab.ttf"),
+    )?)
+}
+
+fn check_scaled_context_menus(font_bytes: &[u8]) -> TestResult {
     use super::super::{actions, chat};
     use crate::bevy_shell::gameplay_dialogs::popup;
     use bevy::ui::UiSystems;
@@ -924,10 +939,13 @@ fn scaled_context_menu_keeps_its_last_entry_inside_the_window() -> TestResult {
         app.insert_resource(UiScale(1.5))
             .add_systems(Update, popup::layout);
         let font = app.world().resource::<Skins>().font.clone();
-        app.world_mut().resource_mut::<Assets<Font>>().insert(
-            font.id(),
-            Font::from_bytes(bevy::text::DEFAULT_FONT_DATA.to_vec()),
-        )?;
+        assert_eq!(
+            font.path().map(|path| path.path()),
+            Some(std::path::Path::new("fonts/verdanab.ttf"))
+        );
+        app.world_mut()
+            .resource_mut::<Assets<Font>>()
+            .insert(font.id(), Font::from_bytes(font_bytes.to_vec()))?;
         let target = if speech {
             let owner = app.world().non_send::<HostOwner>();
             crate::play::feature_0007_chat::protocol::edit_chat_fixture(
@@ -999,6 +1017,20 @@ fn scaled_context_menu_keeps_its_last_entry_inside_the_window() -> TestResult {
             app.world_mut().get_mut::<Node>(frame).ok_or("frame")?.width = px(150.);
         }
         app.update();
+        let caption_font = &app
+            .world()
+            .get::<TextFont>(caption)
+            .ok_or("caption font")?
+            .font;
+        let bevy::text::FontSource::Handle(handle) = caption_font else {
+            return Err("popup caption must use the skin font handle".into());
+        };
+        assert_eq!(handle.id(), font.id());
+        let fonts = app.world().resource::<Assets<Font>>();
+        assert!(
+            fonts.get(handle).ok_or("loaded popup font")?.data.as_ref() == font_bytes,
+            "popup caption must be measured with the supplied font bytes"
+        );
         let menu = rect(&app, frame)?;
         assert!(menu.width() > 0. && menu.height() > 0.);
         let last = rect(&app, entry)?;

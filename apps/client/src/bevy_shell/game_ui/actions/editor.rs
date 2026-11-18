@@ -150,7 +150,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         "Text",
         "Keyboard chord",
         "Item subtype (blank: any)",
-        "Equip upgrade tier (blank: any)",
+        "Equip upgrade tier (0–10 on tiered worlds, otherwise blank)",
     ]
     .into_iter()
     .enumerate()
@@ -296,6 +296,25 @@ fn slot_binding(slot: usize) -> Option<crate::play::PreferenceBinding> {
         .find(|binding| binding.id == id)
 }
 
+pub(super) fn slot_chord<'a>(
+    prefs: &'a crate::play::ReferencePreferences,
+    binding: &'a crate::play::PreferenceBinding,
+    slot: usize,
+    chat_on: bool,
+) -> &'a str {
+    if binding.is_extra_action_bar_slot() {
+        return prefs.binding_chord(binding);
+    }
+    if let Some(chord) = prefs.action_keys.0.get(&slot) {
+        return chord;
+    }
+    prefs
+        .binding_maps(chat_on)
+        .ok()
+        .and_then(|(primary, _)| primary.get(binding.id))
+        .map_or(binding.default_chord, String::as_str)
+}
+
 fn activate(
     event: On<Activate>,
     guard: ModalGuard,
@@ -407,11 +426,12 @@ pub(super) fn project(
         if let Some((slot, _)) = state.selected {
             let mut values: [String; 6] = Default::default();
             if let Some(binding) = slot_binding(slot) {
-                values[3] = owner
-                    .settings
-                    .preferences
-                    .binding_chord(&binding)
-                    .to_owned();
+                let chat_on = owner
+                    .play
+                    .as_ref()
+                    .is_some_and(|play| play.link.preference_chat_open());
+                values[3] =
+                    slot_chord(&owner.settings.preferences, &binding, slot, chat_on).to_owned();
             }
             match owner.settings.preferences.bar_actions.0.get(&slot) {
                 Some(BarAction::Text { text, .. }) => values[2].clone_from(text),
@@ -428,7 +448,14 @@ pub(super) fn project(
                     upgrade_tier,
                 }) => {
                     values[1] = definition.to_string();
-                    values[5] = upgrade_tier.to_string();
+                    if *upgrade_tier != 0
+                        || owner
+                            .play
+                            .as_ref()
+                            .is_some_and(|play| play.link.hotkey_equip_panel().tiered)
+                    {
+                        values[5] = upgrade_tier.to_string();
+                    }
                 }
                 _ => {}
             }

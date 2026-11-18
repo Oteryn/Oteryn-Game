@@ -246,6 +246,11 @@ fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestRes
 }
 
 fn dispatch_click(app: &mut App, click: &PointerClick, button: PointerButton) {
+    press(app, click, button);
+    release(app, click, button);
+}
+
+fn press(app: &mut App, click: &PointerClick, button: PointerButton) {
     app.world_mut()
         .trigger(bevy::picking::events::PointerPress {
             entity: click.entity,
@@ -255,6 +260,9 @@ fn dispatch_click(app: &mut App, click: &PointerClick, button: PointerButton) {
             button,
         });
     app.world_mut().flush();
+}
+
+fn release(app: &mut App, click: &PointerClick, button: PointerButton) {
     app.world_mut().trigger(PointerClick {
         button,
         ..click.clone()
@@ -267,6 +275,27 @@ fn dispatch_click(app: &mut App, click: &PointerClick, button: PointerButton) {
             button,
         });
     app.world_mut().flush();
+}
+
+#[test]
+fn overlapping_pointer_presses_activate_only_the_primary_click() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    app.add_plugins(bevy::ui_widgets::ButtonPlugin);
+    let first = slot(&mut app, 0)?;
+    let click = secondary_click(first);
+    press(&mut app, &click, PointerButton::Middle);
+    press(&mut app, &click, PointerButton::Primary);
+    release(&mut app, &click, PointerButton::Middle);
+    assert!(commands.try_recv().is_err(), "middle release must not cast");
+    release(&mut app, &click, PointerButton::Primary);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(
+            crate::combat_input::CombatCommand::Cast(id)
+        ) if id.get() == 71
+    ));
+    assert!(commands.try_recv().is_err());
+    Ok(())
 }
 
 #[test]
@@ -300,13 +329,19 @@ fn nonprimary_clicks_leave_lock_and_scroll_arrows_alone() -> TestResult {
         .ok_or("play")?
         .link
         .bar_gesture(BarGesture::Scroll { bar: 0, by: 5 });
-    let before = layout(&app);
     for entity in controls {
+        let before = layout(&app);
         let click = secondary_click(entity);
         for button in [PointerButton::Secondary, PointerButton::Middle] {
             dispatch_click(&mut app, &click, button);
             assert_eq!(layout(&app), before);
         }
+        press(&mut app, &click, PointerButton::Middle);
+        press(&mut app, &click, PointerButton::Primary);
+        release(&mut app, &click, PointerButton::Middle);
+        assert_eq!(layout(&app), before);
+        release(&mut app, &click, PointerButton::Primary);
+        assert_ne!(layout(&app), before);
     }
     Ok(())
 }
@@ -598,6 +633,23 @@ fn unlocked_action_slot_still_executes_ordinary_activation() -> TestResult {
             locked: false,
         });
     app.world_mut().trigger(Activate { entity });
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
+    );
+    let window = app.world_mut().spawn(Window::default()).id();
+    app.world_mut().trigger(FocusedInput::new(
+        entity,
+        KeyboardInput {
+            key_code: KeyCode::Enter,
+            logical_key: bevy::input::keyboard::Key::Enter,
+            state: ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window,
+        },
+        window,
+    ));
+    app.world_mut().flush();
     assert!(
         matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
     );
@@ -915,5 +967,50 @@ fn disabled_bar_tooltips_hide_object_hint() -> TestResult {
             .0
             .is_empty()
     );
+    Ok(())
+}
+
+#[test]
+fn action_hint_obeys_global_tooltip_setting_and_delay() -> TestResult {
+    use bevy::time::TimeUpdateStrategy;
+    use std::time::Duration;
+    let (mut app, _) = fixture()?;
+    let first = slot(&mut app, 0)?;
+    let hint = app
+        .world_mut()
+        .query_filtered::<Entity, With<ActionHint>>()
+        .single(app.world())?;
+    let prefs = &mut app
+        .world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences;
+    prefs.tooltips_enabled = false;
+    prefs.action_bar.tooltips = true;
+    prefs.tooltip_delay_ms = 100;
+    app.world_mut()
+        .entity_mut(first)
+        .insert(bevy::picking::hover::Hovered(true));
+    for (enabled, ms, visible) in [
+        (false, 0, false),
+        (true, 0, false),
+        (true, 99, false),
+        (true, 1, true),
+        (false, 0, false),
+    ] {
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .tooltips_enabled = enabled;
+        app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(
+            ms,
+        )));
+        app.update();
+        assert_eq!(
+            !app.world().get::<Text>(hint).ok_or("hint")?.0.is_empty(),
+            visible
+        );
+    }
     Ok(())
 }

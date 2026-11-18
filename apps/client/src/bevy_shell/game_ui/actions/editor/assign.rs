@@ -88,14 +88,9 @@ pub(super) fn toggle_multi(
 fn object_action(action: Edit, values: &[String]) -> Option<BarAction> {
     let definition = values.get(1)?.trim().parse::<std::num::NonZeroU32>().ok()?;
     if matches!(action, Edit::Equip) {
-        let tier = values.get(5)?.trim();
         return Some(BarAction::Equip {
             definition,
-            upgrade_tier: if tier.is_empty() {
-                0
-            } else {
-                tier.parse().ok()?
-            },
+            upgrade_tier: 0,
         });
     }
     let sub_type = match values
@@ -146,7 +141,6 @@ pub(super) fn apply(
         Edit::Key => {
             owner.settings.sync_bar_actions(link);
             let mut prefs = owner.settings.preferences.clone();
-            prefs.action_keys.0.remove(&slot);
             let Some(binding) = slot_binding(slot) else {
                 return REFUSED.into();
             };
@@ -162,7 +156,27 @@ pub(super) fn apply(
             } else {
                 &chord
             };
-            if prefs.rebind(binding.id, chord).is_err() {
+            if !binding.is_extra_action_bar_slot() {
+                if prefs
+                    .action_keys
+                    .0
+                    .get(&slot)
+                    .is_some_and(|saved| saved.trim().eq_ignore_ascii_case(chord))
+                {
+                    return SAVED.into();
+                }
+                prefs.action_keys.0.remove(&slot);
+            }
+            let options_context = prefs.hotkey_contexts.chat_on;
+            let live_context = link.preference_chat_open();
+            let switch_context = !binding.is_extra_action_bar_slot()
+                && !prefs.manual_hotkey_profile
+                && !prefs.chat_context_hotkeys
+                && options_context != live_context;
+            if (switch_context && prefs.select_hotkey_context(live_context).is_err())
+                || prefs.rebind(binding.id, chord).is_err()
+                || (switch_context && prefs.select_hotkey_context(options_context).is_err())
+            {
                 return REFUSED.into();
             }
             owner.settings.apply(prefs);
@@ -197,9 +211,22 @@ pub(super) fn apply(
         | Edit::SelfActor
         | Edit::Target
         | Edit::Cursor => {
-            let Some(object) = object_action(action, values) else {
+            let Some(mut object) = object_action(action, values) else {
                 return REFUSED.into();
             };
+            if let BarAction::Equip { upgrade_tier, .. } = &mut object {
+                let entered = values[5].trim();
+                if link.hotkey_equip_panel().tiered {
+                    let Some(exact) = entered.parse::<u8>().ok().filter(|&tier| {
+                        tier <= oteryn_client_runtime::cui3::hotkey_equip::MAX_UPGRADE_TIER
+                    }) else {
+                        return "Enter the exact upgrade tier from 0 to 10.".into();
+                    };
+                    *upgrade_tier = exact;
+                } else if !entered.is_empty() {
+                    return "This world does not support exact upgrade tiers. Leave the tier blank.".into();
+                }
+            }
             if let Some(actions) = draft {
                 return add_to_multi(actions, object);
             }

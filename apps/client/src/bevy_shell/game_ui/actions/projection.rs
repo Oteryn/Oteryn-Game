@@ -1,5 +1,6 @@
 use super::*;
 use bevy::picking::hover::Hovered;
+use std::time::Duration;
 
 #[derive(bevy::ecs::system::SystemParam)]
 // Disjoint text/node filters are required for Bevy to prove the mutable queries do not alias.
@@ -63,6 +64,8 @@ pub(super) struct Projection<'w, 's> {
     /// The registered binding of each action-bar slot, by slot index.
     bindings: Local<'s, Option<Vec<Option<crate::play::PreferenceBinding>>>>,
     hovered: Query<'w, 's, (&'static Hovered, &'static ActionControl)>,
+    hover_since: Local<'s, Option<(u64, usize, Duration)>>,
+    time: Res<'w, Time<Real>>,
 }
 
 pub(super) fn project(
@@ -73,6 +76,12 @@ pub(super) fn project(
     mut page_sizes: ResMut<BarCapacities>,
 ) {
     let Some(play) = &owner.play else {
+        *ui.hover_since = None;
+        for mut hint in &mut ui.hints {
+            if !hint.0.is_empty() {
+                hint.0.clear();
+            }
+        }
         return;
     };
     let layout = play.link.bar_layout();
@@ -176,12 +185,13 @@ pub(super) fn project(
         }
         slots
     });
+    let chat_on = play.link.preference_chat_open();
     for (hotkey, mut text) in &mut ui.hotkeys {
         let chord = bindings
             .get(hotkey.0)
             .and_then(Option::as_ref)
             .map_or("", |binding| {
-                owner.settings.preferences.binding_chord(binding)
+                editor::slot_chord(&owner.settings.preferences, binding, hotkey.0, chat_on)
             });
         let label = hotkey_label(chord);
         if text.0 != label {
@@ -201,23 +211,39 @@ pub(super) fn project(
             icon.0 = slot;
         }
     }
+    let prefs = &owner.settings.preferences;
+    let target = if prefs.tooltips_enabled && prefs.action_bar.tooltips {
+        ui.hovered
+            .iter()
+            .find_map(|(hovered, control)| match control {
+                ActionControl::Slot(slot) if hovered.get() => Some((owner.generation(), *slot)),
+                _ => None,
+            })
+    } else {
+        None
+    };
+    let now = ui.time.elapsed();
+    if ui
+        .hover_since
+        .map(|(generation, slot, _)| (generation, slot))
+        != target
+    {
+        *ui.hover_since = target.map(|(generation, slot)| (generation, slot, now));
+    }
     let hint = ui
-        .hovered
-        .iter()
-        .find_map(|(interaction, control)| match control {
-            ActionControl::Slot(slot)
-                if interaction.get() && owner.settings.preferences.action_bar.tooltips =>
-            {
-                Some(match owner.settings.preferences.bar_actions.0.get(slot) {
-                    Some(
-                        crate::play::BarAction::Use { .. } | crate::play::BarAction::Equip { .. },
-                    ) => "Object appearance unavailable.",
-                    _ => tips.get(*slot).map(String::as_str).unwrap_or(""),
-                })
-            }
-            _ => None,
+        .hover_since
+        .filter(|(_, _, since)| {
+            now.saturating_sub(*since) >= Duration::from_millis(prefs.tooltip_delay_ms.into())
         })
-        .map_or(String::new(), |tip| tip.replace('\n', "  "));
+        .map_or_else(String::new, |(_, slot, _)| {
+            let tip = match prefs.bar_actions.0.get(&slot) {
+                Some(crate::play::BarAction::Use { .. } | crate::play::BarAction::Equip { .. }) => {
+                    "Object appearance unavailable."
+                }
+                _ => tips.get(slot).map_or("", String::as_str),
+            };
+            tip.replace('\n', "  ")
+        });
     for mut text in &mut ui.hints {
         if text.0 != hint {
             text.0.clone_from(&hint);

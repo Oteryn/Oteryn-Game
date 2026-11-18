@@ -21,7 +21,17 @@ fn bar_font(size: f32) -> ScaledFont {
     }
 }
 use crate::play::BarGesture;
-use bevy::{prelude::*, ui_widgets::Activate};
+use bevy::{
+    input::{ButtonState, keyboard::KeyboardInput},
+    input_focus::FocusedInput,
+    picking::{
+        events::{PointerCancel, PointerDragEnd, PointerRelease},
+        pointer::PointerButton,
+    },
+    prelude::*,
+    ui::{InteractionDisabled, Pressed},
+    ui_widgets::{Activate, Button as WidgetButton},
+};
 use oteryn_client_ui_bevy as source;
 
 mod cooldown;
@@ -175,13 +185,11 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
         commands.entity(row).add_child(previous);
         for local in 0..ROW_SLOTS {
             let slot = bar * ROW_SLOTS + local;
-            let entity = commands
-                .spawn((
-                    source::button(skins.buttons.clone(), SLOT_SIZE),
-                    ActionControl::Slot(slot),
-                    Generation(u64::MAX),
-                    bar_size(Vec2::splat(SLOT_SIZE)),
-                ))
+            let entity =
+                control_button(&mut commands, &skins, ActionControl::Slot(slot), SLOT_SIZE);
+            commands
+                .entity(entity)
+                .insert(bar_size(Vec2::splat(SLOT_SIZE)))
                 .insert(Node {
                     width: px(SLOT_SIZE),
                     min_width: px(SLOT_SIZE),
@@ -193,11 +201,8 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                     overflow: Overflow::clip(),
                     ..default()
                 })
-                .observe(primary_press)
-                .observe(activate)
                 .observe(edit_click)
-                .observe(dragdrop::drop_slot)
-                .id();
+                .observe(dragdrop::drop_slot);
             let caption = commands
                 .spawn((
                     SlotCaption(slot),
@@ -237,13 +242,10 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
             ">",
         );
         // The bar's lock replaces the old "1 on / Locked" configuration row.
-        let lock = commands
-            .spawn((
-                source::button(skins.buttons.clone(), LOCK_SIZE.x),
-                ActionControl::Lock(bar),
-                Generation(u64::MAX),
-                bar_size(LOCK_SIZE),
-            ))
+        let lock = control_button(&mut commands, &skins, ActionControl::Lock(bar), LOCK_SIZE.x);
+        commands
+            .entity(lock)
+            .insert(bar_size(LOCK_SIZE))
             .insert(Node {
                 width: px(LOCK_SIZE.x),
                 min_width: px(LOCK_SIZE.x),
@@ -254,10 +256,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 ..default()
-            })
-            .observe(primary_press)
-            .observe(activate)
-            .id();
+            });
         let icon = art::icon(
             &mut commands,
             ArtSlot::ActionBarLocked,
@@ -306,15 +305,7 @@ fn button(
     width: f32,
     caption: &str,
 ) -> Entity {
-    let button = commands
-        .spawn((
-            source::button(skins.buttons.clone(), width),
-            control,
-            Generation(u64::MAX),
-        ))
-        .observe(primary_press)
-        .observe(activate)
-        .id();
+    let button = control_button(commands, skins, control, width);
     let label = commands
         .spawn(source::button_caption(caption, skins.font.clone()))
         .id();
@@ -322,10 +313,88 @@ fn button(
     button
 }
 
-// ButtonPlugin marks every pointer press. Only primary presses arm these controls.
-fn primary_press(event: On<PointerPress>, mut commands: Commands) {
-    if event.button != bevy::picking::pointer::PointerButton::Primary {
-        commands.entity(event.entity).remove::<bevy::ui::Pressed>();
+fn control_button(
+    commands: &mut Commands,
+    skins: &Skins,
+    control: ActionControl,
+    width: f32,
+) -> Entity {
+    commands
+        .spawn((
+            source::button(skins.buttons.clone(), width),
+            control,
+            Generation(u64::MAX),
+        ))
+        // Bevy's ButtonPlugin shares Pressed across all pointer buttons. Use Bevy's
+        // per-button PointerClick for activation and keep Pressed for the skin only.
+        .remove::<WidgetButton>()
+        .observe(primary_press)
+        .observe(primary_click)
+        .observe(primary_release)
+        .observe(primary_drag_end)
+        .observe(cancel_press)
+        .observe(key_activate)
+        .observe(activate)
+        .id()
+}
+
+fn primary_press(
+    mut event: On<PointerPress>,
+    disabled: Query<(), With<InteractionDisabled>>,
+    mut commands: Commands,
+) {
+    event.propagate(false);
+    if event.button == PointerButton::Primary && !disabled.contains(event.entity) {
+        commands.entity(event.entity).insert(Pressed);
+    }
+}
+
+fn primary_click(
+    mut event: On<PointerClick>,
+    disabled: Query<(), With<InteractionDisabled>>,
+    mut commands: Commands,
+) {
+    event.propagate(false);
+    if event.button == PointerButton::Primary && !disabled.contains(event.entity) {
+        commands.trigger(Activate {
+            entity: event.entity,
+        });
+    }
+}
+
+fn primary_release(mut event: On<PointerRelease>, mut commands: Commands) {
+    event.propagate(false);
+    if event.button == PointerButton::Primary {
+        commands.entity(event.entity).remove::<Pressed>();
+    }
+}
+
+fn primary_drag_end(mut event: On<PointerDragEnd>, mut commands: Commands) {
+    event.propagate(false);
+    if event.button == PointerButton::Primary {
+        commands.entity(event.entity).remove::<Pressed>();
+    }
+}
+
+fn cancel_press(mut event: On<PointerCancel>, mut commands: Commands) {
+    event.propagate(false);
+    commands.entity(event.entity).remove::<Pressed>();
+}
+
+fn key_activate(
+    mut event: On<FocusedInput<KeyboardInput>>,
+    disabled: Query<(), With<InteractionDisabled>>,
+    mut commands: Commands,
+) {
+    if !event.input.repeat
+        && event.input.state == ButtonState::Pressed
+        && matches!(event.input.key_code, KeyCode::Enter | KeyCode::Space)
+        && !disabled.contains(event.focused_entity)
+    {
+        event.propagate(false);
+        commands.trigger(Activate {
+            entity: event.focused_entity,
+        });
     }
 }
 
@@ -338,8 +407,7 @@ fn activate(
     editor: Res<editor::EditorState>,
     menu: Res<SlotMenu>,
 ) {
-    // ButtonPlugin queues Activate for secondary clicks too. The menu claim is
-    // immediate, even before its deferred modal layer exists in the world.
+    // The menu claim is immediate, even before its deferred modal layer exists in the world.
     if menu.0.is_some() || !guard.allows(event.entity) {
         return;
     }

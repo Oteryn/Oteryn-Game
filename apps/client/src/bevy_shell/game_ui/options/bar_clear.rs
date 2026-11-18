@@ -76,10 +76,32 @@ mod tests {
 
     #[test]
     fn clear_buttons_empty_only_the_chosen_bar_of_each_side() -> TestResult {
-        for (side, rows) in SIDES {
+        for (side, rows) in [
+            ("bottom", [0, 3, 4]),
+            ("left", [1, 5, 6]),
+            ("right", [2, 7, 8]),
+        ] {
             for (number, target) in rows.into_iter().enumerate() {
                 let mut app = super::super::tests::app(Page::ActionBars, None)?;
-                let (link, _, _) = play_channel();
+                let (link, _, outbox) = play_channel();
+                use oteryn_session::spell_catalog::{SpellCatalogEntry, encode_catalog};
+                let catalogue = encode_catalog(&[SpellCatalogEntry {
+                    cast_index: 71,
+                    name: "Archived healing".into(),
+                    words: "exura".into(),
+                    level: 1,
+                    mana: 0,
+                    mana_percent: false,
+                    soul: 0,
+                    learned: true,
+                    available: true,
+                    cooldown_groups: vec![],
+                    rune_item: None,
+                }])
+                .map_err(|error| format!("{error:?}"))?;
+                crate::play::feature_0287_actor_spell_catalog::protocol::bevy_catalog_fixture(
+                    &outbox, catalogue,
+                )?;
                 let text = |slot: usize| BarAction::Text {
                     text: format!("{side} {slot}"),
                     send_automatically: false,
@@ -93,6 +115,15 @@ mod tests {
                     let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
                     owner.cancel();
                     owner.settings.sync_bar_actions(&link);
+                    for row in 0..9 {
+                        assert!(link.assign_spell_slot(row * ROW_SLOTS, Some(71)));
+                    }
+                    owner.settings.sync_archive_bindings(&link);
+                    for row in 0..9 {
+                        assert!(
+                            link.spell_slot_labels()[row * ROW_SLOTS].contains("Archived healing")
+                        );
+                    }
                     owner.open_graphics();
                     owner.play = Some(ActivePlay { view, link });
                 }
@@ -111,7 +142,7 @@ mod tests {
                             .chain(),
                     );
                 app.update();
-                let name = format!("action_bars.clear_{}_{}", side.to_lowercase(), number + 1);
+                let name = format!("action_bars.clear_{side}_{}", number + 1);
                 let button = app
                     .world_mut()
                     .query::<(Entity, &Name)>()
@@ -142,6 +173,13 @@ mod tests {
                     .filter(|slot| slot / ROW_SLOTS != target)
                     .collect();
                 assert_eq!(left, expected, "{side} clears only row {target}");
+                for row in 0..9 {
+                    assert_eq!(
+                        labels[row * ROW_SLOTS].contains("Archived healing"),
+                        row != target,
+                        "{side} archived spell in row {row}"
+                    );
+                }
             }
         }
         Ok(())

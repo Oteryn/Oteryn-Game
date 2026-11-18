@@ -624,11 +624,16 @@ fn vip_rows_project_saved_icon_and_description() -> TestResult {
         .iter(app.world())
         .find_map(|(entity, name)| (name.as_str() == "vip.description.73").then_some(entity))
         .ok_or("tooltip")?;
-    for (enabled, delay, expected) in [
-        (false, 0, Display::None),
-        (true, 1000, Display::None),
-        (true, 0, Display::Flex),
+    for (enabled, delay, elapsed_ms, expected) in [
+        (false, 0, 0, Display::None),
+        (true, 1000, 0, Display::None),
+        (true, 1000, 999, Display::None),
+        (true, 1000, 1, Display::Flex),
+        (true, 0, 0, Display::Flex),
     ] {
+        app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            std::time::Duration::from_millis(elapsed_ms),
+        ));
         let prefs = &mut app
             .world_mut()
             .non_send_mut::<HostOwner>()

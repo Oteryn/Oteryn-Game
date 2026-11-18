@@ -80,6 +80,7 @@ fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins:
                 source::font(skins.font.clone(), false),
             ),
         ))
+        .insert(bevy::picking::Pickable::default())
         .observe(toggle_details)
         .id();
     let details = commands
