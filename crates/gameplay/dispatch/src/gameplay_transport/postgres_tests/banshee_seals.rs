@@ -111,9 +111,9 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
     };
     let world = super::quest_callbacks::source_world_spatial(source, &objects)?;
     let cells = world
-        .movement_cells(deps.room.movement_cells())
+        .movement_cells(activated.qualified_room().movement_cells())
         .map_err(debug)?;
-    let frame = world.frame_binding_digest(deps.admitted.world_id);
+    let frame = activated.frame_binding().digest();
     let start = NativeEntryStart {
         x: i32::from(source.0) - 1,
         y: i32::from(source.1),
