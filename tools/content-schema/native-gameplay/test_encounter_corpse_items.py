@@ -23,7 +23,7 @@ def definitions():
 class EncounterCorpseItemsTests(unittest.TestCase):
     def test_source_capacity_and_complete_decay_chains_are_preserved(self):
         policies = encounter.source_policies()
-        self.assertEqual(set(policies), {4025, 4026, 4027, 4097, 4098, 4099, 5973, 5995, 33864, 33865, 33866, 33867, 44012, 44013, 44014})
+        self.assertEqual(set(policies), {4025, 4026, 4027, 4097, 4098, 4099, 5973, 5995, *range(27630, 27642), 33864, 33865, 33866, 33867, 44012, 44013, 44014})
         self.assertEqual(policies[5973], (12, 10000, 4025))
         self.assertEqual(policies[4025], (10, 300000, 4026))
         self.assertEqual(policies[4026], (10, 300000, 4027))
@@ -32,6 +32,11 @@ class EncounterCorpseItemsTests(unittest.TestCase):
         self.assertEqual(policies[4097], (24, 300000, 4098))
         self.assertEqual(policies[4098], (24, 300000, 4099))
         self.assertEqual(policies[4099], (None, 60000, None))
+        for root in (27633, 27637, 27641):
+            self.assertEqual(policies[root], (20, 10000, root - 1))
+            self.assertEqual(policies[root - 1], (20, 300000, root - 2))
+            self.assertEqual(policies[root - 2], (10, 300000, root - 3))
+            self.assertEqual(policies[root - 3], (None, 60000, None))
         self.assertEqual(policies[33867], (48, 10000, 33866))
         self.assertEqual(policies[33864], (None, 600000, None))
         self.assertEqual(policies[44012], (30, 60000, 44013))

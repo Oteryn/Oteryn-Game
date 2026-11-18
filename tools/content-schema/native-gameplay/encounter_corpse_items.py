@@ -21,9 +21,10 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[3]
 XML = 'imports/canary/items-xml/items.xml'
 SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
-ROOTS = (5973, 5995, 33867, 44012)
+WARZONE_ROOTS = (27633, 27637, 27641)
+ROOTS = (5973, 5995, *WARZONE_ROOTS, 33867, 44012)
 OBJECT_SHARDS = ('objects-00500-00999.json', 'objects-01000-01499.json', 'objects-01500-01999.json',
-                 'objects-10500-10999.json', 'objects-12000-12499.json')
+                 'objects-08500-08999.json', 'objects-10500-10999.json', 'objects-12000-12499.json')
 
 
 def source_policies(root=ROOT, roots=ROOTS, *, explicit_weights=False):

@@ -55,6 +55,47 @@ fn boss_admission_window_two_players_enter_and_return_postgres() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn ddepths_warzone_production_corpse_assets_activate_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| super::fixture::run(|admin| async move {
+            let h = Harness::create_with_admission_seed(admin, "warzone_corpse_assets", true, false).await?;
+            let result = check_production_corpse_assets();
+            let cleanup = h.cleanup().await;
+            result?;
+            cleanup
+        }).map_err(|error| error.to_string()))
+        .map_err(|error| error.to_string())?
+        .join()
+        .map_err(|_| "Warzone corpse activation panicked")??;
+    Ok(())
+}
+
+fn check_production_corpse_assets() -> TestResult {
+    let world = super::fixture::fence(1)?.runtime_scope.world_id();
+    let (controller, _) =
+        crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+    let active = controller.active().ok_or("active generation")?;
+    let rewards = active.native_gameplay().ok_or("active native gameplay")?.reward_table();
+    for (creature, corpse) in [
+        ("oteryn:creature.the_baron_from_below", "oteryn:item.tibia.i27633"),
+        ("oteryn:creature.the_count_of_the_core", "oteryn:item.tibia.i27637"),
+        ("oteryn:creature.the_duke_of_the_depths", "oteryn:item.tibia.i27641"),
+    ] {
+        let row = rewards.reward_boss_corpse(creature)
+            .ok_or_else(|| format!("production corpse unavailable for {creature}"))?;
+        assert_eq!(row.corpse_item.as_ref().map(|item| item.production_key.as_str()), Some(corpse));
+    }
+    Ok(())
+}
+
 fn window_scenario(admin: String) -> TestResult {
     let runtime = crate::bestiary_postgres_harness::runtime()?;
     let harness = runtime.block_on(Harness::create_with_admission_seed(
