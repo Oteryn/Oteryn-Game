@@ -285,6 +285,11 @@ pub(super) async fn return_in_transaction(
         vitals: r.current_vitals,
         rest: r.current_rest,
     };
+    if r.reason == ActivityReturnReason::Defeated
+        && let Some(cell) = first_dragon_reward_cell(tx, &r.handoff_id).await?
+    {
+        exit.cell = cell;
+    }
     if recovering {
         exit.vitals = match (
             row.try_get::<Option<i32>, _>("saved_health")?,
@@ -535,7 +540,17 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         source: CurrentCharacterItemFence,
     ) -> Result<Option<ActivityReturnPlacement>> {
-        self.read_return_placement_inner(authority, node, source, None)
+        self.read_return_placement_inner(authority, node, source, None, false)
+            .await
+    }
+
+    pub async fn read_victory_return_placement(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        source: CurrentCharacterItemFence,
+    ) -> Result<Option<ActivityReturnPlacement>> {
+        self.read_return_placement_inner(authority, node, source, None, true)
             .await
     }
 
@@ -549,7 +564,7 @@ impl ActivityHandoffOwner {
         if !uuid_v7(&occurrence) {
             return Ok(None);
         }
-        self.read_return_placement_inner(authority, node, source, Some(occurrence))
+        self.read_return_placement_inner(authority, node, source, Some(occurrence), false)
             .await
     }
 
@@ -559,6 +574,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         source: CurrentCharacterItemFence,
         death: Option<[u8; 16]>,
+        victory: bool,
     ) -> Result<Option<ActivityReturnPlacement>> {
         let RuntimeScopeRefV1::Instance {
             world_id,
@@ -600,10 +616,28 @@ impl ActivityHandoffOwner {
                 let Some(cell)=death_return_cell(&mut tx,source,occurrence).await? else{return Ok(None);};
                 result.exit_position.cell=cell;
                 result.boss_room=false;
+            } else if victory
+                && let Some(cell) = first_dragon_reward_cell(&mut tx, &result.handoff_id).await?
+            {
+                result.exit_position.cell=cell;
             }
             commit_semantic_transaction(tx,deadline).await?;Ok(Some(result))
         })).await
     }
+}
+
+// The database guard uses the same exact activity predicate and donor cell.
+async fn first_dragon_reward_cell(
+    tx: &mut Transaction<'_, Postgres>,
+    handoff: &[u8; 16],
+) -> Result<Option<LastPositionCell>> {
+    let cell: Option<(i32, i32, i16)> = sqlx::query_as(
+        "SELECT x,y,floor FROM game_first_dragon_reward_room(encode($1,'hex')::uuid)",
+    )
+    .bind(handoff.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    Ok(cell.map(|(x, y, floor)| LastPositionCell { x, y, floor }))
 }
 
 /// The existing death receipt and pending row own this placement; the return

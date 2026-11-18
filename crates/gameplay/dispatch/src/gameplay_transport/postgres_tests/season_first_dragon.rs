@@ -34,6 +34,11 @@ const EXIT: MovementLocalPosition = MovementLocalPosition {
     y: 30994,
     floor: 14,
 };
+const REWARD_ROOM: MovementLocalPosition = MovementLocalPosition {
+    x: 33617,
+    y: 31020,
+    floor: 13,
+};
 #[test]
 fn m18_selected_first_dragon_native_instance_timeout_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -482,7 +487,7 @@ fn scenario(victory: bool) -> TestResult {
                 .read_actor_position(admitted.runtime_actor.ok_or("returned player")?)
                 .map_err(debug)?
                 .position(),
-            EXIT
+            if victory { REWARD_ROOM } else { EXIT }
         );
         owner
             .activity_lifecycle_pass()

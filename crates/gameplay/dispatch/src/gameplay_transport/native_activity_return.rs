@@ -495,6 +495,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     .read_death_return_placement(self.character, self.holder, fence, occurrence)
                     .await
             }
+            ActivityReturnReason::Defeated => {
+                owner
+                    .read_victory_return_placement(self.character, self.holder, fence)
+                    .await
+            }
             _ => {
                 owner
                     .read_return_placement(self.character, self.holder, fence)
