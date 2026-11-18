@@ -464,6 +464,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
+            use crate::map::floor::EncounterLanding;
+            let landing = if encounter.solo_timeout.is_some() {
+                // Crystal Wanted portals:98 and Defiances movements_teleportTo.lua:68
+                // use Creature:teleportTo after the room and challenger guards.
+                EncounterLanding::PresentTile
+            } else if encounter.boss_phases.is_some() {
+                EncounterLanding::SharePlayers
+            } else {
+                EncounterLanding::Clear
+            };
             let Ok(proof) = crate::map::floor::prepare_quest_encounter_arrival(
                 runtime,
                 &self.movement_cells,
@@ -473,7 +483,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
-                encounter.boss_phases.is_some(),
+                landing,
             ) else {
                 return UseDisposition::NotPossible;
             };

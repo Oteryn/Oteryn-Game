@@ -95,14 +95,7 @@ fn present_tile(
     facing: Option<MovementFacing>,
     allow_control_lost: bool,
 ) -> ScriptedTeleport<'_> {
-    // creature_functions.cpp:895-906 makes horizontal displacement take priority.
-    let origin = expected.position();
-    let facing = facing.unwrap_or_else(|| match destination.x.cmp(&origin.x) {
-        std::cmp::Ordering::Less => MovementFacing::West,
-        std::cmp::Ordering::Greater => MovementFacing::East,
-        std::cmp::Ordering::Equal if destination.y > origin.y => MovementFacing::South,
-        std::cmp::Ordering::Equal => MovementFacing::North,
-    });
+    let facing = facing.unwrap_or_else(|| destination_facing(expected.position(), destination));
     ScriptedTeleport {
         cells,
         actor,
@@ -113,6 +106,31 @@ fn present_tile(
         allow_control_lost,
         landing_checks: None,
     }
+}
+
+pub(super) fn destination_facing(
+    origin: MovementLocalPosition,
+    destination: MovementLocalPosition,
+) -> MovementFacing {
+    // Crystal creature_functions.cpp:895-906 gives horizontal displacement priority.
+    match destination.x.cmp(&origin.x) {
+        std::cmp::Ordering::Less => MovementFacing::West,
+        std::cmp::Ordering::Greater => MovementFacing::East,
+        std::cmp::Ordering::Equal if destination.y > origin.y => MovementFacing::South,
+        std::cmp::Ordering::Equal => MovementFacing::North,
+    }
+}
+
+pub(super) fn qualify_present_tile_destination(
+    cells: &NativeEntryMovementCells,
+    origin: MovementLocalPosition,
+    destination: MovementLocalPosition,
+) -> Result<(), MovementError> {
+    let cell = (destination.x, destination.y, i32::from(destination.floor));
+    if origin == destination || ground_of(cells)(cell) == Ground::Absent {
+        return Err(MovementError::Blocked);
+    }
+    Ok(())
 }
 
 impl ScriptedTeleport<'_> {
@@ -143,19 +161,16 @@ impl ScriptedTeleport<'_> {
             self.allow_control_lost,
         )?;
         let to = self.destination;
+        let Some(checks) = &self.landing_checks else {
+            return qualify_present_tile_destination(self.cells, self.expected.position(), to);
+        };
         let cell = (to.x, to.y, i32::from(to.floor));
-        if ground_of(self.cells)(cell) == Ground::Absent {
-            return Err(MovementError::Blocked);
-        }
-        if let Some(checks) = &self.landing_checks {
-            if !landable_of(self.cells, checks.pz_blocked, checks.closed)(cell)
-                || runtime
-                    .position_occupied_by_other(self.actor, to)
-                    .map_err(MovementError::Actor)?
-            {
-                return Err(MovementError::Blocked);
-            }
-        } else if self.expected.position() == to {
+        if ground_of(self.cells)(cell) == Ground::Absent
+            || !landable_of(self.cells, checks.pz_blocked, checks.closed)(cell)
+            || runtime
+                .position_occupied_by_other(self.actor, to)
+                .map_err(MovementError::Actor)?
+        {
             return Err(MovementError::Blocked);
         }
         Ok(())

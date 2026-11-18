@@ -1,5 +1,13 @@
 //! Callback relocation uses the same sealed movement commit as stairs and rope.
+use super::scripted_teleport::{destination_facing, qualify_present_tile_destination};
 use super::*;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum EncounterLanding {
+    Clear,
+    SharePlayers,
+    PresentTile,
+}
 
 struct CallbackTeleport<'a> {
     cells: &'a NativeEntryMovementCells,
@@ -10,7 +18,7 @@ struct CallbackTeleport<'a> {
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
     facing: Option<MovementFacing>,
-    player_stack: bool,
+    landing: EncounterLanding,
     allow_control_lost: bool,
 }
 
@@ -62,14 +70,14 @@ pub fn prepare_quest_callback_teleport_facing<'a>(
         pz_blocked,
         closed,
         facing,
-        player_stack: false,
+        landing: EncounterLanding::Clear,
         allow_control_lost: false,
     };
     proof.check(runtime)?;
     Ok(proof)
 }
 
-/// Staged boss parties can share an arrival cell. Entry still requires live control.
+/// The encounter binds its landing policy after qualifying the staged players.
 #[allow(clippy::too_many_arguments)]
 pub fn prepare_quest_encounter_arrival<'a>(
     runtime: &ChannelRuntimeV1,
@@ -80,7 +88,7 @@ pub fn prepare_quest_encounter_arrival<'a>(
     destination: MovementLocalPosition,
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
-    player_stack: bool,
+    landing: EncounterLanding,
 ) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
     let proof = CallbackTeleport {
         cells,
@@ -90,8 +98,9 @@ pub fn prepare_quest_encounter_arrival<'a>(
         destination,
         pz_blocked,
         closed,
-        facing: None,
-        player_stack,
+        facing: (landing == EncounterLanding::PresentTile)
+            .then(|| destination_facing(expected.position(), destination)),
+        landing,
         allow_control_lost: false,
     };
     proof.check(runtime)?;
@@ -118,7 +127,7 @@ pub fn prepare_quest_encounter_ejection<'a>(
         closed,
         pz_blocked: false,
         facing: None,
-        player_stack: true,
+        landing: EncounterLanding::SharePlayers,
         allow_control_lost: true,
     };
     proof.check(runtime)?;
@@ -138,10 +147,13 @@ impl CallbackTeleport<'_> {
             self.allow_control_lost,
         )?;
         let to = self.destination;
+        if self.landing == EncounterLanding::PresentTile {
+            return qualify_present_tile_destination(self.cells, self.expected.position(), to);
+        }
         let cell = (to.x, to.y, i32::from(to.floor));
         if ground_of(self.cells)(cell) != Ground::Walkable
             || !landable_of(self.cells, self.pz_blocked, self.closed)(cell)
-            || if self.player_stack {
+            || if self.landing == EncounterLanding::SharePlayers {
                 runtime
                     .positioned_melee_census()
                     .map_err(MovementError::Actor)?
