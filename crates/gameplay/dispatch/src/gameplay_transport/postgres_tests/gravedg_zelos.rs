@@ -252,6 +252,33 @@ pub(super) async fn exercise(
                 .is_some_and(|hooks| hooks.contains(king))
         );
     }
+    let magnor = {
+        let runtime = owner.runtime.lock().await;
+        find(&runtime, KNIGHTS[0])?.ok_or("admitted Magnor")?
+    };
+    super::engenc2_cults::kill(owner, admitted, magnor, KNIGHTS[0], 103).await?;
+    tick_at(owner, now + 31_000_000).await;
+    let shard_key = "oteryn:creature.shard_of_magnor";
+    let shard = {
+        let runtime = owner.runtime.lock().await;
+        let shards: Vec<_> = runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter(|&actor| runtime.matches_live_creature_identity(actor, shard_key.as_bytes()))
+            .collect();
+        assert_eq!(shards.len(), 4, "Magnor splits into four linked shards");
+        shards[0]
+    };
+    super::engenc2_cults::kill(owner, admitted, shard, shard_key, 104).await?;
+    tick_at(owner, now + 32_000_000).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            find(&runtime, shard_key)?.is_none(),
+            "one hit kills the linked shards"
+        );
+    }
     tick_at(owner, now + 24 * 60 * 1_000_000).await;
     let runtime = owner.runtime.lock().await;
     for knight in KNIGHTS.into_iter().chain([
