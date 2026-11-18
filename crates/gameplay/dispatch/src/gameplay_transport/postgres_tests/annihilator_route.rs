@@ -27,6 +27,7 @@ enum Route {
     Entry,
     TimedSourceRepair,
     BloodBrothersMirror,
+    BloodBrothersTear,
     BloodBrothersVial,
     Combat,
     Complete,
@@ -74,11 +75,19 @@ pub(super) fn blood_brothers_vial() -> TestResult {
     run(Route::BloodBrothersVial)
 }
 
+pub(super) fn blood_brothers_tear() -> TestResult {
+    run(Route::BloodBrothersTear)
+}
+
 fn run(route: Route) -> TestResult {
+    let tear = route == Route::BloodBrothersTear;
     let vial = route == Route::BloodBrothersVial;
     let mirror = route == Route::BloodBrothersMirror;
-    let combat = !mirror && !vial && !matches!(route, Route::Entry | Route::TimedSourceRepair);
-    let start = if vial {
+    let combat =
+        !mirror && !vial && !tear && !matches!(route, Route::Entry | Route::TimedSourceRepair);
+    let start = if tear {
+        super::bbro2_arthei::START
+    } else if vial {
         super::bbro2_marziel::STARTS[0]
     } else if mirror {
         super::bbro2_lersatio_source::START
@@ -132,7 +141,9 @@ fn run(route: Route) -> TestResult {
             "content-1",
         )?;
         let generation = controller.active().ok_or("active generation")?;
-        let world = if vial {
+        let world = if tear {
+            super::bbro2_arthei::world(generation.native_gameplay().ok_or("native gameplay")?)?
+        } else if vial {
             super::bbro2_marziel::world(generation.native_gameplay().ok_or("native gameplay")?)?
         } else if mirror {
             super::bbro2_lersatio_source::world(
@@ -156,7 +167,7 @@ fn run(route: Route) -> TestResult {
         let mut operations = Vec::new();
         let member_count = if vial {
             3
-        } else if mirror {
+        } else if mirror || tear {
             2
         } else {
             4
@@ -326,7 +337,9 @@ fn run(route: Route) -> TestResult {
             crate::gameplay_transport::quest_log::QuestLogLines::new(journal.content)
                 .ok_or("journal line bounds")?,
         );
-        owner.quest_catalogue = Some(std::sync::Arc::new(if vial {
+        owner.quest_catalogue = Some(std::sync::Arc::new(if tear {
+            super::bbro2_arthei::catalogue(lowered.catalogue().content_revision())?
+        } else if vial {
             super::bbro2_marziel::catalogue(lowered.catalogue().content_revision())?
         } else if mirror {
             super::bbro2_lersatio_source::catalogue(lowered.catalogue().content_revision())?
@@ -411,7 +424,7 @@ fn run(route: Route) -> TestResult {
                 _ => return Err("durable cast facts unavailable".into()),
             };
             assert_eq!(facts.level, source_level);
-            if combat || vial {
+            if combat || vial || tear {
                 let native = generation.native_gameplay().ok_or("native")?;
                 owner
                     .root
@@ -501,6 +514,15 @@ fn run(route: Route) -> TestResult {
             return Err("native bundle collision index".into());
         };
         let map = index.map();
+        if tear {
+            let result =
+                super::bbro2_arthei::exercise(&mut owner, &mut admitted, map, &h.pool).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         if vial {
             let result =
                 super::bbro2_marziel::exercise(&mut owner, &mut admitted, map, &h.pool).await;
