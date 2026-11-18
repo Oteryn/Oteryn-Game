@@ -227,7 +227,7 @@ fn row(body: &[u8]) -> Result<Row> {
             14 => row.beds = n.try_into().map_err(|_| "Invalid beds")?,
             15 => x = n.try_into().map_err(|_| "Invalid entrance x")?,
             16 => y = n.try_into().map_err(|_| "Invalid entrance y")?,
-            17 if n == 0 || (n <= 29 && n & 1 == 1) => floor = ((n >> 1) as i8) ^ -((n & 1) as i8),
+            17 if n <= 30 && n & 1 == 0 => floor = ((n >> 1) as i8) ^ -((n & 1) as i8),
             _ => return Err("Invalid row value"),
         }
     }

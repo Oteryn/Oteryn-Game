@@ -8,10 +8,9 @@ pub(in crate::gameplay_transport) struct Viewport {
     pub(super) first_visible_floor: i16,
 }
 fn native_position(
-    mut position: world_spatial::ActorPosition,
+    position: world_spatial::ActorPosition,
 ) -> Option<world_spatial::ActorPosition> {
-    position.floor = position.floor.checked_abs()?.checked_neg()?;
-    (-15..=0).contains(&position.floor).then_some(position)
+    (0..=15).contains(&position.floor).then_some(position)
 }
 impl Viewport {
     pub(in crate::gameplay_transport) fn matches_runtime(
@@ -22,7 +21,7 @@ impl Viewport {
     }
     pub(super) fn visible(self, position: world_spatial::ActorPosition) -> bool {
         native_position(position).is_some_and(|p| {
-            p.floor <= self.first_visible_floor
+            p.floor >= self.first_visible_floor
                 && oteryn_protocol_oteryn::world_map::in_window(self.origin, p)
         })
     }
@@ -33,7 +32,7 @@ pub(super) fn display_map(
     let tiles: Vec<_> = snapshot
         .tiles
         .into_iter()
-        .filter(|t| t.position.floor <= snapshot.header.first_visible_floor)
+        .filter(|t| t.position.floor >= snapshot.header.first_visible_floor)
         .map(|t| DisplayTile {
             x: u16::try_from(t.position.x - snapshot.header.origin.x + 16).unwrap_or(0),
             y: u16::try_from(t.position.y - snapshot.header.origin.y + 16).unwrap_or(0),
@@ -100,7 +99,7 @@ pub(super) fn project_actor(
             .y
             .checked_sub(origin.y)?
             .checked_add(16)?
-            .checked_add(i32::from(native_position(entity.position)?.floor + 15) * 32)?,
+            .checked_add(i32::from(15 - native_position(entity.position)?.floor) * 32)?,
     )
     .ok()?;
     let appearance = if entity.kind == world_spatial::EntityKind::Player {

@@ -184,7 +184,7 @@ pub struct Placement {
     pub sub_type: u32,
     pub x: i32,
     pub y: i32,
-    /// Native floor `-15..=0`.
+    /// Global floor `0..=15`.
     pub floor: i32,
     /// The hook given by the entries of the same tile.
     pub hook: Hook,
@@ -229,7 +229,7 @@ pub struct AppearanceIndex {
 include!("appearance_methods_1.rs");
 
 /// The `(x, y, z)` pattern of `appearance` at `placement`, chosen as the Tibia client does. The
-/// depth pattern is selected from `z = -floor`, never from a negative index.
+/// depth pattern is selected directly from Global z.
 fn pattern(appearance: &Appearance, placement: Placement) -> (u32, u32, u32) {
     let Placement {
         count,
@@ -239,7 +239,7 @@ fn pattern(appearance: &Appearance, placement: Placement) -> (u32, u32, u32) {
         floor,
         hook,
     } = placement;
-    let z = floor.unsigned_abs();
+    let z = floor as u32;
     let (pattern_x, pattern_y) = if appearance.fluid {
         let color = fluid_color(sub_type);
         (

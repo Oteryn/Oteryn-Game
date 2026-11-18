@@ -65,10 +65,10 @@ published source policy; see `SRX3_ACTIVITY_STATIC_GEOMETRY_V1.md`. The resultin
 digests and receives its own source-map/frame digests. Qualification issues no
 Instance allocation, readiness, participant, session or teleport authority.
 
-Source positions retain donor `x,y,z`; the read-only source projection uses
-`(x,y,-z)`. The native bundle adapter materializes the same captured tiles through
-the repository bundle codec. Its map coordinates use negative floors and its
-runtime actor positions use the existing positive legacy floor convention.
+Source positions and the capture's native positions both retain donor `x,y,z`.
+The wire and activity physics use Global z from 0 through 15, with ground at 7.
+The read-only map qualification and the bundle tile index still use the signed
+World Bundle storage format and convert at the qualification and wire boundaries.
 The ordinary map snapshot (domain 17), item handles and activity scope barrier
 (domain 99) remain the native client path. No capability, command or protocol
 message number is allocated.

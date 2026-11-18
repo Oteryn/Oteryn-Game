@@ -198,14 +198,14 @@ impl Minimap {
             .iter()
             .filter(|tile| {
                 tile.ground_speed > 0
-                    && tile.position.floor <= map.header.first_visible_floor
+                    && tile.position.floor >= map.header.first_visible_floor
                     && in_window(origin, tile.position)
             })
             .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
             .collect();
         if let Some(floors) = floors_in_view(origin.floor) {
-            for floor in floors.filter(|f| *f <= map.header.first_visible_floor) {
-                let shift = i64::from(floor) - i64::from(origin.floor);
+            for floor in floors.filter(|f| *f >= map.header.first_visible_floor) {
+                let shift = i64::from(origin.floor) - i64::from(floor);
                 for y in 0..VIEW_HEIGHT {
                     for x in 0..VIEW_WIDTH {
                         let (Ok(x), Ok(y)) = (
@@ -295,14 +295,14 @@ impl Minimap {
 
         if !(0..=65_535).contains(&x)
             || !(0..=65_535).contains(&y)
-            || !(-15..=0).contains(&floor)
+            || !(0..=15).contains(&floor)
             || color > 3
             || label.trim().is_empty()
             || label.len() > 128
             || label.chars().any(char::is_control)
         {
             return Err(io::Error::other(tr!(
-                "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
+                "Use map coordinates 0-65535, floor 0 to 15 and a label of 1-128 bytes"
             )));
         }
         if let Some(marker) = self

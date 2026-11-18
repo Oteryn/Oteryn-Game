@@ -115,7 +115,7 @@ impl Saved {
             || self.cells.len() > MAX_CELLS
             || self.markers.len() > MAX_MARKERS
             || self.cells.iter().any(|[f, x, y, c]| {
-                !(-15..=0).contains(f)
+                !(0..=15).contains(f)
                     || !(0..=65535).contains(x)
                     || !(0..=65535).contains(y)
                     || ![55, 86].contains(c)
@@ -123,7 +123,7 @@ impl Saved {
             || self.markers.iter().any(|m| {
                 !(0..=65535).contains(&m.x)
                     || !(0..=65535).contains(&m.y)
-                    || !(-15..=0).contains(&m.floor)
+                    || !(0..=15).contains(&m.floor)
                     || m.color > 3
                     || m.label.trim().is_empty()
                     || m.label.len() > 128

@@ -644,7 +644,7 @@ pub fn qualify(
             || doc.native_frame.map_revision != map
             || doc.native_frame.origin_x != 0
             || doc.native_frame.origin_y != 0
-            || doc.native_frame.floor_transform != "native_floor=-source_z"
+            || doc.native_frame.floor_transform != "native_floor=source_z"
             || doc.source_entry.is_none()
             || doc.source_regions.is_empty()
             || doc.source_regions.len() > 64
@@ -788,7 +788,12 @@ pub fn qualify(
                 && !doc.source_regions.iter().any(|&[a, b, c, d, e, f]| {
                     (a..=c).contains(&x) && (b..=d).contains(&y) && (e..=f).contains(&z)
                 }))
-            || row.native_position != native
+            || row.native_position
+                != if activity.is_some() {
+                    row.source_position
+                } else {
+                    native
+                }
             || row.house_id.is_some()
         {
             return Err(invalid());
@@ -1096,7 +1101,11 @@ pub fn client_projection(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
         start: [
             entry[0] - doc.native_frame.origin_x,
             entry[1] - doc.native_frame.origin_y,
-            -entry[2],
+            if doc.source_entry.is_some() {
+                entry[2]
+            } else {
+                -entry[2]
+            },
         ],
         cells,
     })

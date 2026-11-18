@@ -235,7 +235,7 @@ def extract_many(raw, recipes):
             if facts.unknown_item_attrs or facts.unknown_tile_attrs or house is not None:
                 raise ValueError("unqualified activity tile attributes")
             row = {
-                "source_position": [x, y, z], "native_position": [x, y, -z],
+                "source_position": [x, y, z], "native_position": [x, y, z],
                 "otbm_flags": flags or 0, "house_id": house, "zones": list(zones),
                 "items": [{"server_item_id": item, "depth": depth,
                            "attributes": {str(k): v for k, v in attrs.items()}}
@@ -334,7 +334,7 @@ def build(directory, name, inputs=None, extracted=None):
         "native_frame": {"key": f"oteryn:frame/crystal-{name}-activity-201189f",
                          "map_revision": f"oteryn:map/crystal-{name}-activity-201189f",
                          "origin_x": 0, "origin_y": 0,
-                         "floor_transform": "native_floor=-source_z"},
+                         "floor_transform": "native_floor=source_z"},
         "source_identity_bindings": bindings,
         "native_item_bindings": [binding for binding in bindings
                                  if int(binding["external_id"]) in dynamic],

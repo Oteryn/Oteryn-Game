@@ -33,7 +33,7 @@ impl PublicMedia {
         let mut b = Vec::new();
         match self {
             Self::Camera { floor } => {
-                if !(-15..=0).contains(floor) {
+                if !(0..=15).contains(floor) {
                     return Err(WireError::Malformed);
                 }
                 // CLCAST lane: next free nested kind 4 + 30 = 34.
@@ -48,7 +48,7 @@ impl PublicMedia {
                 push_varint_field(&mut b, 2, u64::from(*reset));
                 push_varint_field(&mut b, 3, u64::from(*last));
                 for t in tiles {
-                    if !(-15..=0).contains(&t.floor) || t.appearances.len() > 10 {
+                    if !(0..=15).contains(&t.floor) || t.appearances.len() > 10 {
                         return Err(WireError::Malformed);
                     }
                     let mut v = Vec::new();
@@ -87,7 +87,7 @@ impl PublicMedia {
                 mode,
                 text,
             } => {
-                if !(-15..=0).contains(&position.floor) {
+                if !(0..=15).contains(&position.floor) {
                     return Err(WireError::Malformed);
                 }
                 let x = u16::try_from(position.x).map_err(|_| WireError::Malformed)?;
