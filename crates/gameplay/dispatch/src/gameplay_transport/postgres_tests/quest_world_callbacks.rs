@@ -453,6 +453,9 @@ fn world_cells(
     if let Some(group) = &callback.effects.encounter_group {
         effect_positions.push(group.destination);
     }
+    if let Some(rite) = &callback.effects.party_rite {
+        effect_positions.extend(rite.stations.iter().flat_map(|s| [s.from, s.to]));
+    }
     effect_positions.extend(callback.effects.stationary_encounter.iter().map(|m| m.position));
     for p in effect_positions {
         for x in p.x - 1..=p.x + 1 {

@@ -34,6 +34,7 @@ fn scenario_case(
     let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
     let arthei_tear = name == super::super::arthei_ghost_tear::NAME;
     let boreth_cleanup = name == super::super::boreth_death_cleanup::NAME;
+    let castle_rite = name == super::super::castle_crystal_rite::NAME;
     let lersatio_mirrors = name == super::super::lersatio_mirrors::NAME;
     let marziel_blood = name.starts_with(super::super::marziel_blood_step::NAME);
     let engenc_asura = name.starts_with("engenc-asura-native-");
@@ -378,6 +379,8 @@ fn scenario_case(
         super::super::arthei_ghost_tear::callback()?
     } else if boreth_cleanup {
         callback("unnatural-selection-ray-of-light")?
+    } else if castle_rite {
+        super::super::castle_crystal_rite::callback()?
     } else if lersatio_mirrors {
         super::super::lersatio_mirrors::callback()?
     } else if marziel_blood {
@@ -1049,6 +1052,9 @@ fn scenario_case(
         prepare_current_session(&h)
             .await
             .map_err(|e| format!("callback session: {e}"))?;
+        let peer_evidence = if castle_rite {
+            Some(super::super::house_transfer::RecoverySource::start(&h).await?)
+        } else { None };
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -1057,7 +1063,9 @@ fn scenario_case(
             .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
         use super::super::quest_npc_fluid_intake::{FixtureItem, generation_with_item};
-        let fixture_item = if arthei_tear {
+        let fixture_item = if castle_rite {
+            Some(FixtureItem::ChargedCrystal)
+        } else if arthei_tear {
             Some(FixtureItem::GhostTear)
         } else if skull_custody {
             Some(FixtureItem::Skull)
@@ -1588,7 +1596,7 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
-            } else if arthei_tear || lersatio_mirrors {
+            } else if arthei_tear || castle_rite || lersatio_mirrors {
                 6
             } else if classic_npc || qd_world || boreth_cleanup || marziel_blood {
                 5
@@ -1723,6 +1731,9 @@ fn scenario_case(
         let hydra_reset_drain =
             crate::gameplay_transport::gameplay_drain::GameplayDrain::at_reset_epoch(1);
         let mut owner = deps.owner(&h, &authority);
+        if let Some(source) = &peer_evidence {
+            owner.evidence = &source.evidence;
+        }
         owner.premium_coordinator = premium.as_ref();
         if mead || m07_lion || lion_trial || m44_lions || m07_realm || m07_too_hot {
             owner.premium_coordinator = Some(&mead_premium);
@@ -3340,6 +3351,8 @@ fn scenario_case(
             .await?;
         } else if arthei_tear {
             Box::pin(super::super::arthei_ghost_tear::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if castle_rite {
+            Box::pin(super::super::castle_crystal_rite::exercise(&mut owner, &mut admitted, &h, &authority)).await?;
         } else if lersatio_mirrors {
             Box::pin(super::super::lersatio_mirrors::exercise(&mut owner, &admitted, &h)).await?;
         } else if marziel_blood {
