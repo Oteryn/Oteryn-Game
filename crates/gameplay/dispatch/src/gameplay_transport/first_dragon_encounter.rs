@@ -253,6 +253,7 @@ impl Phase {
             {
                 self.terminal_pending = false;
                 self.terminal_spawned = true;
+                self.pending_waves = 0;
                 self.essences.clear();
             }
             return;
