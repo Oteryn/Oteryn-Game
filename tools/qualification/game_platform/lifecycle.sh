@@ -52,7 +52,7 @@ game_platform_cleanup() {
     [[ ! -f "$node_log" ]] || cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
     [[ ! -f "$WORK/portal-harness.log" ]] || cp "$WORK/portal-harness.log" "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log"
   fi
-  cleanup_owned_postgres "$WP5_PROJECT-portal-postgres" "$GP_PG_CONTAINER"
+  cleanup_owned_postgres "$PG_PORTAL_CONTAINER" "$GP_PG_CONTAINER"
 }
 game_platform_start() {
   local password port deadline ready=0
@@ -60,7 +60,7 @@ game_platform_start() {
   port="${GAME_PLATFORM_PLATFORM_PG_PORT:-15436}"
   [[ "$port" =~ ^[1-9][0-9]{3,4}$ && "$port" -le 65535 && "$port" != "$PG_PORT" ]] \
     || game_platform_fail preflight invalid_platform_pg_port
-  create_owned_postgres "$WP5_PROJECT-portal-postgres" --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --publish "127.0.0.1:$port:5432" \
+  create_owned_postgres "$PG_PORTAL_CONTAINER" --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --publish "127.0.0.1:$port:5432" \
     --env POSTGRES_USER=game_platform_admin --env POSTGRES_PASSWORD="$password" \
     --env POSTGRES_DB=postgres --cidfile "$WORK/portal-postgres.id" "$PG_IMAGE"
   GP_PG_CONTAINER="$(<"$WORK/portal-postgres.id")"

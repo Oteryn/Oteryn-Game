@@ -142,6 +142,7 @@ class ReuseTests(unittest.TestCase):
             REUSE_STATE={temp}/state.env
             BASE={temp}/base; mkdir -p "$BASE"
             SERVICE_USER=fixture; WP5_PROJECT=fixture; PG_CONTAINER_ID=fixture-container; COMPOSE_OWNER=0123456789abcdef0123456789abcdef
+            PG_CONTAINER="fixture-$COMPOSE_OWNER-postgres"
             NODE_PROCESS_DIR={temp}/kept/node-process.1
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; STACK_KEPT=0
             WORK={temp}/kept; node_log="$WORK/node.log"; failed_node_log="$WORK/failed-node.log"
@@ -167,6 +168,14 @@ class ReuseTests(unittest.TestCase):
             self.assertEqual(result.stdout.strip(), f'kept=1 work={temp}/kept pid=4242 fresh=no')
             arrays = bash(f'source {temp}/state.env; printf "%s|" "${{NODE_CLOCK_FEATURES[@]}}" "${{NODE_GAMEPLAY_ENV[@]}}"')
             self.assertEqual(arrays.stdout, '--features|qualification-clock|OTERYN_NATIVE_GAMEPLAY_MANIFEST=/srv/a b/m.json|')
+            state = Path(temp, 'state.env')
+            self.assertIn('declare -- PG_CONTAINER="fixture-0123456789abcdef0123456789abcdef-postgres"', state.read_text())
+            # A state file written before run-specific names used the project default.
+            state.write_text(''.join(line for line in state.read_text().splitlines(keepends=True)
+                                     if not line.startswith('declare -- PG_CONTAINER=')))
+            older = self.run_guard(temp, 1, 'NODE_PID=""')
+            self.assertEqual(older.returncode, 0, older.stdout + older.stderr)
+            self.assertEqual(older.stdout.strip(), result.stdout.strip())
 
     def test_reuse_refuses_missing_foreign_or_stopped_stacks(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -251,7 +260,7 @@ class ReuseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             result = bash('''
             set -Eeuo pipefail
-            PG_PORT=15433; PG_IMAGE=fixture; WP5_PROJECT=fixture; GP_PG_CONTAINER=""
+            PG_PORT=15433; PG_IMAGE=fixture; WP5_PROJECT=fixture; PG_PORTAL_CONTAINER=fixture-portal-postgres; GP_PG_CONTAINER=""
             COMPOSE_OWNER=fixture POSTGRES_JOURNAL=$WORK
             run_interruptible() { "$@"; }
             openssl() { echo fixture; }
@@ -440,6 +449,57 @@ class RoundTwoCallerTests(unittest.TestCase):
                     read = bash(setup + state + 'test -f "$POSTGRES_JOURNAL/record"', dict(env, TMPDIR=str(root / 'second')))
                     self.assertEqual(read.returncode, 0, read.stdout + read.stderr)
 
+    def test_fresh_postgres_create_ignores_legacy_name_reservation(self):
+        lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',
+                                        HERE.parent / 'game_platform/lifecycle.sh')).read_text()
+        game_create = section('create_owned_postgres "$PG_CONTAINER"', 'PG_CONTAINER_ID="$(<"$WORK/game-postgres.cid")"')
+        portal_create = re.search(r'(?ms)^  create_owned_postgres .*?(?=^  GP_PG_CONTAINER=)', lifecycle).group(0)
+        names = section('PG_CONTAINER=', 'REUSE_STATE_OWNED=0')
+        for service, create in [('postgres', game_create), ('portal-postgres', portal_create)]:
+            with self.subTest(service=service), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                owner = 'abcdef0123456789abcdef0123456789'
+                legacy_name = f'fixture-{service}'
+                legacy = root / 'old' / f'node-boot-locks-{os.getuid()}' / 'postgres/fixture'
+                legacy.parent.parent.mkdir(mode=0o700, parents=True)
+                legacy.mkdir(parents=True)
+                marker = legacy / f'{legacy_name}.0123456789abcdef0123456789abcdef'
+                marker.touch()
+                (root / 'new').mkdir()
+                setup = r"""
+                    set -Eeuo pipefail
+                    WP5_PROJECT=fixture NODE_BOOT_REUSE_STACK=0 PG_IMAGE=fixture
+                    WORK=$FIXTURE/new WP5_PKI=$WORK/pki
+                    port=5433 password=fixture
+                    lock_directory=$WORK/locks POSTGRES_JOURNALS=$WORK/journals
+                    POSTGRES_JOURNAL=$POSTGRES_JOURNALS/fixture
+                    mkdir -p "$lock_directory"
+                    unset NODE_BOOT_LEGACY_TMPDIR
+                    openssl() { echo "$OWNER"; }
+                    run_interruptible() { "$@"; }
+                    docker() {
+                        [[ "$1 $2" == 'create --name' ]] || return 99
+                        if [[ "$3" == "$LEGACY_NAME" ]]; then
+                            echo 'legacy container reserves the name' >&2
+                            return 1
+                        fi
+                        printf '%s\n' "$3" > "$WORK/created"
+                    }
+                """
+                recovery = '\n'.join(function(n) for n in (
+                    'cleanup_owned_postgres', 'recover_project_postgres',
+                    'import_legacy_postgres_project', 'recover_owned_postgres',
+                ))
+                recovery += '\n' + function('recover_legacy_postgres').replace(
+                    ' /tmp "${NODE_BOOT_LEGACY_TMPDIR:-}"', ' "$FIXTURE/default" "${NODE_BOOT_LEGACY_TMPDIR:-}"',
+                )
+                result = bash(setup + names + recovery + '\n' + function('create_owned_postgres')
+                              + '\nrecover_owned_postgres\n' + create,
+                              dict(FIXTURE=temp, OWNER=owner, LEGACY_NAME=legacy_name, TMPDIR=str(root / 'new')))
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual((root / 'new' / 'created').read_text().strip(), f'fixture-{owner}-{service}')
+                self.assertTrue(marker.exists())
+
     def test_postgres_recovery_with_legacy_and_concurrent_journals(self):
         owner = '0123456789abcdef0123456789abcdef'
         legacy_discovery = function('recover_legacy_postgres').replace(
@@ -452,7 +512,8 @@ class RoundTwoCallerTests(unittest.TestCase):
                              'legacy_replay_deadline', 'vanished_first',
                              'late_registration', 'inventory_failed', 'foreign_discovery_timeout',
                              'budget_starvation', 'probe_starvation', 'foreign_lock',
-                             'foreign_late_registration', 'foreign_probe_timeout'):
+                             'foreign_late_registration', 'foreign_probe_timeout',
+                             'run_named_requested', 'run_named_probe_starvation', 'run_named_late_foreign'):
                 with self.subTest(service=service, scenario=scenario), tempfile.TemporaryDirectory() as temp:
                     root = Path(temp)
                     current = root / 'tmp'
@@ -464,7 +525,8 @@ class RoundTwoCallerTests(unittest.TestCase):
                         path.mkdir()
                     work = root / 'work'
                     work.mkdir()
-                    name = f'fixture-{service}'
+                    prefix = f'fixture-{owner}' if scenario.startswith('run_named') else 'fixture'
+                    name = f'{prefix}-{service}'
                     if scenario.startswith('legacy'):
                         prior = {'legacy_custom': original, 'legacy_default': default}.get(scenario, current)
                         journal = prior / f'node-boot-locks-{os.getuid()}' / 'postgres/fixture'
@@ -482,21 +544,22 @@ class RoundTwoCallerTests(unittest.TestCase):
                     if scenario in ('vanished_first', 'late_registration', 'foreign_discovery_timeout'):
                         first.parent.mkdir()
                         first.touch()
-                    if scenario in ('budget_starvation', 'probe_starvation'):
-                        for index in range(28 if scenario == 'probe_starvation' else 13):
+                    if scenario == 'budget_starvation' or scenario.endswith('probe_starvation'):
+                        for index in range(28 if scenario.endswith('probe_starvation') else 13):
                             project = f'earlier{index:02}'
                             pending = journals / project
                             pending.mkdir()
                             (pending / f'{project}-postgres.{owner}').touch()
-                    if scenario not in ('late_registration', 'legacy_pending', 'foreign_late_registration', 'foreign_probe_timeout'):
+                    if scenario not in ('late_registration', 'legacy_pending', 'foreign_late_registration',
+                                        'foreign_probe_timeout', 'run_named_late_foreign'):
                         (root / 'registered').touch()
                     setup = r"""
                         set -Eeuo pipefail
                         WP5_PROJECT=fixture lock_directory=$FIXTURE/locks POSTGRES_JOURNALS=$FIXTURE/journal
                         WORK=$FIXTURE/work
                         if [[ "$SCENARIO" == foreign_lock || "$SCENARIO" == legacy_foreign_timeout ||
-                              "$SCENARIO" == foreign_late_registration || "$SCENARIO" == probe_starvation ||
-                              "$SCENARIO" == foreign_probe_timeout ]]; then
+                              "$SCENARIO" == foreign_late_registration || "$SCENARIO" == *probe_starvation ||
+                              "$SCENARIO" == foreign_probe_timeout || "$SCENARIO" == run_named_late_foreign ]]; then
                             WP5_PROJECT=other
                         fi
                         exec 9>>"$lock_directory/$WP5_PROJECT"
@@ -536,7 +599,7 @@ class RoundTwoCallerTests(unittest.TestCase):
                             case "$1" in
                               container)
                                 if [[ "$2" == inspect ]]; then
-                                    if [[ "$SCENARIO" == probe_starvation && " $* " == *earlier* ]]; then
+                                    if [[ "$SCENARIO" == *probe_starvation && " $* " == *earlier* ]]; then
                                         echo "$((SECONDS + 2))" > "$FIXTURE/clock"
                                         return 1
                                     fi
@@ -551,7 +614,8 @@ class RoundTwoCallerTests(unittest.TestCase):
                                     return 1
                                 fi
                                 if [[ " $* " == *" --format "* ]]; then
-                                    if [[ "$SCENARIO" == foreign_late_registration || "$SCENARIO" == foreign_probe_timeout ]] &&
+                                    if [[ "$SCENARIO" == foreign_late_registration || "$SCENARIO" == foreign_probe_timeout ||
+                                          "$SCENARIO" == run_named_late_foreign ]] &&
                                        [[ "${*: -1}" == '{{.Names}}' ]]; then
                                         touch "$FIXTURE/registered"
                                         return 0
@@ -600,7 +664,7 @@ class RoundTwoCallerTests(unittest.TestCase):
                                 rm -f -- "$FIRST"
                             fi' DEBUG
                         """
-                    if scenario in ('budget_starvation', 'probe_starvation'):
+                    if scenario == 'budget_starvation' or scenario.endswith('probe_starvation'):
                         setup += r"""
                             unset SECONDS
                             SECONDS=0
@@ -674,9 +738,12 @@ class RoundTwoCallerTests(unittest.TestCase):
                         self.assertTrue(first.exists())
                     if scenario == 'budget_starvation':
                         self.assertEqual((root / 'clock').read_text().strip(), '0')
-                    if scenario == 'probe_starvation':
+                    if scenario.endswith('probe_starvation'):
                         self.assertEqual((root / 'removed-at').read_text().strip(), '0')
                         self.assertEqual((root / 'clock').read_text().strip(), '56')
+                        for index in range(28):
+                            self.assertIn(f'postgres_recovery=probe_no_result project=earlier{index:02} exit=1',
+                                          result.stdout)
 
     def test_postgres_cleanup_failure_retains_node_boot_artifacts(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -763,7 +830,7 @@ class RoundTwoCallerTests(unittest.TestCase):
                     )
                     setup = r"""
                         set -Eeuo pipefail
-                        WP5_PROJECT=fixture PG_CONTAINER=fixture-postgres PG_PORT=5432 PG_IMAGE=fixture
+                        WP5_PROJECT=fixture PG_CONTAINER=fixture-postgres PG_PORTAL_CONTAINER=fixture-portal-postgres PG_PORT=5432 PG_IMAGE=fixture
                         COMPOSE_OWNER=0123456789abcdef0123456789abcdef ACTIVE_STAGE=setup
                         NODE_BOOT_WORLD=0 NODE_BOOT_SPELLS=0 NODE_BOOT_REUSE_STACK=0 result=NODE_BOOT_FAIL
                         COMPOSE_OWNED=0 GP_HARNESS_PID="" GP_PG_CONTAINER=""
@@ -916,7 +983,7 @@ class RoundTwoCallerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             setup = r"""
                 set -ETeu
-                GP_HARNESS_PID="" GP_PG_CONTAINER="" WP5_PROJECT=fixture
+                GP_HARNESS_PID="" GP_PG_CONTAINER="" WP5_PROJECT=fixture PG_PORTAL_CONTAINER=fixture-portal-postgres
                 game_platform_retain_test_logs() { :; }
                 cleanup_owned_postgres() { :; }
                 evidence() { :; }
@@ -970,7 +1037,7 @@ class RoundTwoCallerTests(unittest.TestCase):
                         invocation = 'secret_to root input output'
                     if phase == 'portal':
                         setup += r'''
-                            PG_PORT=15433 PG_IMAGE=fixture WP5_PROJECT=fixture COMPOSE_OWNER=fixture POSTGRES_JOURNAL=$WORK
+                            PG_PORT=15433 PG_IMAGE=fixture WP5_PROJECT=fixture PG_PORTAL_CONTAINER=fixture-portal-postgres COMPOSE_OWNER=fixture POSTGRES_JOURNAL=$WORK
                             docker() {
                                 if [[ "$1" == create ]]; then
                                     until [[ "$1" == --cidfile ]]; do shift; done

@@ -203,6 +203,7 @@ WP5_FSYNC_FAULT=none
 export GAME_SOURCE PLATFORM_SOURCE WP5_PKI WP5_SCRATCH WP5_PORT WP5_PROJECT
 export WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD WP5_APP_KEY WP5_TOPOLOGY_REVISION WP5_FSYNC_FAULT
 PG_CONTAINER="${WP5_PROJECT}-postgres"
+PG_PORTAL_CONTAINER="${WP5_PROJECT}-portal-postgres"
 PG_PORT="${NODE_BOOT_PG_PORT:-15433}"
 PG_ADMIN_PASSWORD="$(openssl rand -hex 24)"
 CONTROL_PASSWORD="$(openssl rand -hex 24)"
@@ -222,6 +223,11 @@ BASE_IDENTITY=""
 COMPOSE_OWNED=0
 COMPOSE_OWNER="$(openssl rand -hex 16)"
 export COMPOSE_OWNER
+if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
+  # Fresh databases own their Docker names independently of legacy journals.
+  PG_CONTAINER="$WP5_PROJECT-$COMPOSE_OWNER-postgres"
+  PG_PORTAL_CONTAINER="$WP5_PROJECT-$COMPOSE_OWNER-portal-postgres"
+fi
 REUSE_STATE_OWNED=0
 PG_CONTAINER_ID=""
 POSTGRES_CREATE_PENDING=""
@@ -288,6 +294,7 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
   if [[ ! "$COMPOSE_OWNER" =~ ^[a-f0-9]{32}$ || "${kept_base:-}" != "$BASE" || "${kept_service_user:-}" != "$SERVICE_USER" \
     || "${kept_project:-}" != "$WP5_PROJECT" || "${kept_lifecycle:-}" != "${NODE_BOOT_LIFECYCLE:-}" \
     || -z "${kept_base_identity:-}" || "$(stat -c '%d:%i' -- "$BASE" 2>/dev/null)" != "$kept_base_identity" \
+    || ( "$PG_CONTAINER" != "$WP5_PROJECT-postgres" && "$PG_CONTAINER" != "$WP5_PROJECT-$COMPOSE_OWNER-postgres" ) \
     || -z "${PG_CONTAINER_ID:-}" || "$(docker inspect -f '{{.Id}}' "$PG_CONTAINER" 2>/dev/null)" != "$PG_CONTAINER_ID" ]]; then
     echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_identity_mismatch'; exit 2
   fi
@@ -358,7 +365,7 @@ pg_observability_dump() { # stage exit: statements, lock waits and slow statemen
 save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
   local names=(WORK node_log failed_node_log WP5_PKI WP5_SCRATCH WP5_PORT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
     WP5_APP_KEY COMPOSE_OWNER PG_PORT PG_ADMIN_PASSWORD CONTROL_PASSWORD RUNTIME_PASSWORD ADMIN_URL FRESH_SEED_HEX
-    RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_PROCESS_DIR PG_CONTAINER_ID NODE_CLOCK_FEATURES NODE_SPAWN_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
+    RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_PROCESS_DIR PG_CONTAINER PG_CONTAINER_ID NODE_CLOCK_FEATURES NODE_SPAWN_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
   [[ -z "${OTERYN_QUALIFICATION_CLOCK_FILE:-}" ]] || names+=(OTERYN_QUALIFICATION_CLOCK_FILE)
   local pending identity
   identity=$(stat -c '%d:%i' -- "$BASE")
@@ -518,14 +525,18 @@ recover_project_postgres() {
   # Take the snapshot under the project lock, after any earlier project work.
   inventory=$(timeout --foreground --signal=KILL "${limit}s" docker container ls --all \
     --filter label=org.oteryn.node-boot.owner \
-    --filter "name=^/($project-postgres|$project-portal-postgres)$" \
+    --filter "name=^/($project-postgres|$project-portal-postgres|$project-[a-f0-9]{32}-(postgres|portal-postgres))$" \
     --format '{{.Names}} {{.Label "org.oteryn.node-boot.owner"}}') || {
       evidence "postgres_recovery=inventory_failed project=$project"
       return 1
     }
   while read -r name owner; do
-    [[ "$name" == "$project-postgres" || "$name" == "$project-portal-postgres" ]] || continue
-    [[ "$owner" =~ ^[a-f0-9]{32}$ && -f "$POSTGRES_JOURNAL/$name.$owner" ]] || continue
+    [[ "$owner" =~ ^[a-f0-9]{32}$ ]] || continue
+    case "$name" in
+      "$project-postgres"|"$project-portal-postgres"|"$project-$owner-postgres"|"$project-$owner-portal-postgres") ;;
+      *) continue ;;
+    esac
+    [[ -f "$POSTGRES_JOURNAL/$name.$owner" ]] || continue
     COMPOSE_OWNER=$owner
     cleanup_owned_postgres "$name" ""
     [[ $POSTGRES_CLEANUP_FAILED == 0 ]] || return 1
@@ -639,6 +650,9 @@ recover_owned_postgres() {
     while IFS= read -r name; do
       [[ "$name" =~ ^[a-z0-9][a-z0-9_-]*-postgres$ ]] || continue
       candidates["$name"]=1
+      if [[ "$name" =~ ^(.+)-[a-f0-9]{32}-(portal-postgres|postgres)$ ]]; then
+        candidates["${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"]=1
+      fi
     done <<< "$inventory"
     break
   done
@@ -654,6 +668,7 @@ recover_owned_postgres() {
     fi
   done
   # Spend the shared budget on discovered containers before probing misses.
+  local owner_glob='????????????????????????????????'
   for journal in "${discovered[@]}" "${misses[@]}"; do
     project=${journal##*/}
     if (( POSTGRES_RECOVERY_DEADLINE - SECONDS < 5 )); then
@@ -662,9 +677,11 @@ recover_owned_postgres() {
     fi
     (
       if flock -n 8; then
-        if [[ -z "${candidates["$project-postgres"]:-}" && -z "${candidates["$project-portal-postgres"]:-}" ]]; then
-          # A late registration can miss the broad snapshot. An exact name
-          # probe under the lock avoids a scoped list for still-empty projects.
+        # Run-specific journal names require a scoped list. Legacy snapshot
+        # misses can use an exact-name probe before that list.
+        if [[ -z "${candidates["$project-postgres"]:-}" && -z "${candidates["$project-portal-postgres"]:-}" ]] &&
+           ! compgen -G "$journal/$project-$owner_glob-postgres.*" >/dev/null &&
+           ! compgen -G "$journal/$project-$owner_glob-portal-postgres.*" >/dev/null; then
           probe_rc=0
           probe=$(timeout --foreground --signal=KILL 2s docker container inspect --format '{{.Name}}' \
             "$project-postgres" "$project-portal-postgres" 2>/dev/null) || probe_rc=$?
