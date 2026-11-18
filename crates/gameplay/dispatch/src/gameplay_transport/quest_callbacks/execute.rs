@@ -189,13 +189,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let tree_reset = oteryn_gameplay_quests::quest::dreamer_death_ring::shared_reset(callback);
-        let timed_switch = callback.reversible && callback.effects.passages_reset_after_ms.is_some();
+        let timed_switch =
+            callback.reversible && callback.effects.passages_reset_after_ms.is_some();
         let lever_was_on = callback
             .lever
             .is_some_and(|pair| after.appearance_id == pair[1]);
-        let close = tree_reset
-            || callback.trigger == Trigger::StepOut
-            || (lever_was_on && !timed_switch);
+        let close =
+            tree_reset || callback.trigger == Trigger::StepOut || (lever_was_on && !timed_switch);
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
@@ -225,7 +225,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             after.appearance_id = pair[usize::from(!close && !lever_was_on)];
         }
-        if timed_switch && map.facts.timed_passage_switch_active(key, self.owner_now().get()) {
+        if timed_switch
+            && map
+                .facts
+                .timed_passage_switch_active(key, self.owner_now().get())
+        {
             return if map.facts.apply_quest_callback(
                 key,
                 expected_revision,

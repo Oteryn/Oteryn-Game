@@ -121,14 +121,9 @@ impl BundleFacts {
                 .get(&owner)
                 .map_or(0, |(revision, _)| *revision)
                 != expected
-            || !states.has_capacity(
-                entries
-                    .len()
-                    .saturating_mul(3)
-                    .saturating_add(
-                        1 + usize::from(source_reset.is_some()) + usize::from(*independent_switch),
-                    ),
-            )
+            || !states.has_capacity(entries.len().saturating_mul(3).saturating_add(
+                1 + usize::from(source_reset.is_some()) + usize::from(*independent_switch),
+            ))
         {
             return false;
         }

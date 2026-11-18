@@ -520,7 +520,8 @@ impl CallbackStates {
         self.hidden.retain(|key| !key_inside(key));
         self.passable.retain(|key, _| !key_inside(key));
         self.movement_decays.retain(|(_, key), _| !key_inside(key));
-        self.timed_passage_switches.retain(|key, _| !key_inside(key));
+        self.timed_passage_switches
+            .retain(|key, _| !key_inside(key));
         let cleared = |p: &TilePos| {
             p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
         };
@@ -1639,12 +1640,9 @@ impl BundleFacts {
                 if !passages.is_empty() || !replacements.is_empty() {
                     return false;
                 }
-                entries
-                    .len()
-                    .saturating_mul(3)
-                    .saturating_add(
-                        1 + usize::from(source_reset.is_some()) + usize::from(*independent_switch),
-                    )
+                entries.len().saturating_mul(3).saturating_add(
+                    1 + usize::from(source_reset.is_some()) + usize::from(*independent_switch),
+                )
             }
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)
