@@ -31,6 +31,7 @@ const STEP: &str = "qengine-rewards-qonce-step";
 const SOCKET_WINDOW: &str = "qengine-rewards-qonce-socket-window";
 const SOCKET_REPEAT: &str = "qengine-rewards-qonce-socket-repeat";
 const SOCKET_CATCHUP: &str = "qengine-rewards-qonce-socket-catchup";
+const SOCKET_RECOVERY: &str = "qengine-rewards-qonce-socket-recovery";
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const CLAIM: &str = "oteryn:quest-callback/qonce-dispatch-claim";
 const LEDGER: &str = "oteryn:quest-progress/qonce-dispatch/ledger";
@@ -102,13 +103,17 @@ pub(super) fn map_fixture(name: &str, callback: &mut Callback) {
         callback.selector.appearance = Some(LIONS_FOUNTAIN);
         callback.effects.transform = Some(LIONS_SANCTUARY_ROCK);
     }
-    if matches!(name, SOCKET_WINDOW | SOCKET_REPEAT | SOCKET_CATCHUP) {
+    if is_socket_scenario(name) {
         callback.selector.appearance = Some(SOCKETS[0].1);
     }
 }
 
+fn is_socket_scenario(name: &str) -> bool {
+    matches!(name, SOCKET_WINDOW | SOCKET_REPEAT | SOCKET_CATCHUP | SOCKET_RECOVERY)
+}
+
 pub(super) fn socket_world(name: &str, callback: &Callback) -> Option<TestResult<crate::map::boot::BundleWorld>> {
-    matches!(name, SOCKET_WINDOW | SOCKET_REPEAT | SOCKET_CATCHUP).then(|| {
+    is_socket_scenario(name).then(|| {
         let mut objects: Vec<_> = SOCKETS.iter().skip(1).map(|(pos, appearance, _, _)| (*pos, *appearance)).collect();
         objects.push((CENTRE, LIONS_SANCTUARY_ROCK));
         let mut appearances: Vec<_> = SOCKETS.iter().map(|(_, _, _, field)| *field).collect();
@@ -157,6 +162,13 @@ fn interrupted_well_use_recovers_committed_heal_without_second_credit_postgres()
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::qengine_rewards::scenario(WELL_LOST_ACK)
+}
+
+#[test]
+fn interrupted_socket_use_keeps_the_paid_field_deadlines_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(SOCKET_RECOVERY)
 }
 
 #[test]
@@ -306,6 +318,9 @@ async fn socket_window(
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
     owner.states.chat.admit(admitted.game_session_id, "Claimant", owner.owner_now());
     let _clock = owner.freeze_owner_clock_for_test();
+    if name == SOCKET_RECOVERY {
+        return socket_recovery(owner, admitted, h).await;
+    }
     let centre = socket_key(CENTRE)?;
     if name == SOCKET_WINDOW {
         let wrong_gem = SOCKETS[1].2;
@@ -389,6 +404,44 @@ async fn socket_window(
         assert!(map.facts.movement_items(tile).is_empty());
     }
     assert_eq!(map.facts.object_revision(centre), 1, "fields expire while the fountain stays open for its claim");
+    Ok(())
+}
+
+async fn socket_recovery(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use std::sync::atomic::Ordering;
+
+    let (position, _, gem, field) = SOCKETS[0];
+    let session = admitted.game_session_id;
+    let paid = 5_000_000;
+    owner.states.test_owner_time.store(paid + 1, Ordering::Relaxed);
+    let before = super::qengine_voucher_stories::quantity(h, gem).await?;
+    owner.states.quest_callbacks.interrupt_after_commit.store(true, Ordering::Release);
+    assert!(use_socket(owner, admitted, position, gem).await.is_err());
+    assert!(owner.has_pending_quest_callback(session));
+    assert_eq!(track_value(h, SOCKET_PHASE).await?, 7);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, gem).await?, before - 1);
+
+    let map = owner.bundle_map().ok_or("socket map")?;
+    assert!(map.facts.next_movement_decay_time().is_none());
+    // The connection recovers after the original spawn deadline. Crystal gems.lua:187-188
+    // schedules spawn and expiry from the paid USE, so recovery cannot prolong the field.
+    let resumed = paid + 3_000_000;
+    owner.states.test_owner_time.store(resumed + 1, Ordering::Relaxed);
+    assert!(owner.reconcile_quest_callbacks(session).await);
+    assert!(!owner.has_pending_quest_callback(session));
+    assert_eq!(map.facts.next_movement_decay_time(), Some(paid + 2_000_000));
+    assert_eq!(map.facts.expire_movement_items(resumed), 1);
+    let tile = crate::map::overlay::TilePos { x: position.x, y: position.y, floor: position.floor };
+    assert!(map.facts.movement_items(tile).iter().any(|item| item.facts.appearance_id == field));
+    assert_eq!(map.facts.expire_movement_items(paid + 60_000_000), 1);
+    assert!(map.facts.movement_items(tile).is_empty());
+    assert!(owner.reconcile_quest_callbacks(session).await);
+    assert!(map.facts.next_movement_decay_time().is_none());
+    assert_eq!(super::qengine_voucher_stories::quantity(h, gem).await?, before - 1);
     Ok(())
 }
 
@@ -762,7 +815,7 @@ pub(super) async fn exercise(
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
-    if matches!(name, SOCKET_WINDOW | SOCKET_REPEAT | SOCKET_CATCHUP) {
+    if is_socket_scenario(name) {
         return Box::pin(socket_window(owner, admitted, h, name)).await;
     }
 
