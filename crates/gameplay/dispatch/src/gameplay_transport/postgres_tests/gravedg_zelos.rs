@@ -497,9 +497,20 @@ pub(super) async fn exercise(
                 .is_some_and(|hooks| hooks.contains(king))
         );
     }
+    let magnor_death = MovementLocalPosition {
+        x: 121,
+        y: 120,
+        floor: 7,
+    };
     let magnor = {
-        let runtime = owner.runtime.lock().await;
-        find(&runtime, KNIGHTS[0])?.ok_or("admitted Magnor")?
+        let mut runtime = owner.runtime.lock().await;
+        let actor = find(&runtime, KNIGHTS[0])?.ok_or("admitted Magnor")?;
+        let spawn = runtime.read_actor_position(actor).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(actor, spawn, magnor_death)
+            .map_err(debug)?;
+        actor
     };
     super::engenc2_cults::kill(owner, admitted, magnor, KNIGHTS[0], 103).await?;
     tick_at(owner, now + 31_000_000).await;
@@ -518,6 +529,17 @@ pub(super) async fn exercise(
             .filter(|&actor| runtime.matches_live_creature_identity(actor, shard_key.as_bytes()))
             .collect();
         assert_eq!(shards.len(), 4, "Magnor splits into four linked shards");
+        for &shard in &shards {
+            let at = runtime
+                .read_actor_position(shard)
+                .map_err(debug)?
+                .position();
+            assert_eq!(at.floor, magnor_death.floor);
+            assert!(
+                at.x.abs_diff(magnor_death.x) <= 1 && at.y.abs_diff(magnor_death.y) <= 1,
+                "shards spawn around the death tile"
+            );
+        }
         let player_at = runtime
             .read_actor_position(player)
             .map_err(debug)?
