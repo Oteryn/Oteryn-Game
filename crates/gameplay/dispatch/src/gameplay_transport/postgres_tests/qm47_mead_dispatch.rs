@@ -17,7 +17,7 @@ use oteryn_protocol_oteryn::{
 };
 use std::sync::Arc;
 
-const AT: Position = Position {
+pub(super) const AT: Position = Position {
     x: 32201,
     y: 31154,
     floor: -7,
@@ -64,7 +64,7 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    // Arrange Sven's external accepted state with one sip left and the winning streak at 8.
+    // Arrange Sven's accepted state with one attempt left in the round.
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             base.content_revision(),
@@ -79,7 +79,7 @@ pub(super) async fn exercise(
     owner.quest_catalogue = Some(catalogue.clone());
     let prerequisites = mead::TRACKS
         .into_iter()
-        .zip([2, 2, 8, 20])
+        .zip([2, 2, 8, 19])
         .map(|(key, value)| (key.to_owned(), value))
         .collect::<Vec<_>>();
     super::qengine_outfit_stories::seed_quest_prerequisites(
@@ -105,10 +105,13 @@ pub(super) async fn exercise(
     owner.states.chat.admit(session, "Mead", owner.owner_now());
     let mut failed = false;
     let mut won = false;
+    let mut ninth_stayed_active = false;
     // Randomness stays server-owned. Exercise both branches with a bounded number of real uses.
     for attempt in 0..128 {
+        let streak_before = if attempt % 2 == 0 { 8 } else { 9 };
         if attempt > 0 {
-            super::qm47_mead::seed_sven_state(h, owner, admitted, [2, 2, 8, 20]).await?;
+            super::qm47_mead::seed_sven_state(h, owner, admitted, [2, 2, streak_before, 19])
+                .await?;
         }
         let command = attempt + 1;
         let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
@@ -173,21 +176,26 @@ pub(super) async fn exercise(
                     .ok_or("source track")
             })
             .collect::<Result<_, _>>()?;
+        let completed = draw > 1 && streak_before == 9;
         assert_eq!(
             values,
             if draw == 1 {
-                vec![2, 2, 0, 21]
+                vec![2, 2, 0, 20]
+            } else if completed {
+                vec![3, 3, 10, 20]
             } else {
-                vec![3, 3, 9, 20]
+                vec![2, 2, 9, 20]
             }
         );
         let expected: Vec<_> = if draw == 1 {
             vec!["The mead was too strong. You passed out for a moment."]
-        } else {
+        } else if completed {
             vec![
                 "The world seems to spin but you manage to stay on your feet.",
                 "10 sips in a row. Yeah!",
             ]
+        } else {
+            vec!["The world seems to spin but you manage to stay on your feet."]
         }
         .into_iter()
         .map(|text| ChatLine::Private {
@@ -221,8 +229,10 @@ pub(super) async fn exercise(
                 "oteryn:item.tibia.i111"
             );
             failed = true;
-        } else {
+        } else if completed {
             won = true;
+        } else {
+            ninth_stayed_active = true;
         }
         drop(states);
         drop(runtime);
@@ -260,7 +270,7 @@ pub(super) async fn exercise(
                     None
                 })
         );
-        if failed && won {
+        if failed && won && ninth_stayed_active {
             round_states(owner, admitted, h, fence, receipt).await?;
             eprintln!(
                 "M47_NATIVE_POSTGRES_EXECUTED failed={failed} won={won} uses={}",
@@ -296,6 +306,7 @@ async fn round_states(
             [3, 3, 9, 17],
             "You already passed the test, no need to torture yourself anymore.",
         ),
+        ([2, 2, 4, 20], [1, 1, 4, 20], "Ask Sven for another round."),
         ([2, 2, 4, 21], [1, 1, 4, 21], "Ask Sven for another round."),
     ] {
         let command = admitted.continuity.next_command_id;
