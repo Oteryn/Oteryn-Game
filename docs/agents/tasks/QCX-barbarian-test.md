@@ -21,7 +21,14 @@ Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. Quest `oteryn:quest.barbarian_t
 - BLOCKER Svargrond citizenship shared citizenship storage binding `data-global/scripts/movements/teleport/citizen.lua:39-40`.
 - BLOCKER Arena access Barbarian Arena ingress belongs to the arena lane `data-global/scripts/quests/svargrond_arena/movements_arena_enter.lua:3-21`.
 - BLOCKER Buddel travel conditional randomized travel and ring exchange route `data-global/npc/buddel.lua:54-122`.
+- BLOCKER Ice Islands access Iskan continuation in the separate Ice Islands quest `data-global/npc/iskan.lua:53-84`.
 
 **OPEN-FACTS.** The wiki packet gives no numeric item/achievement IDs or exact native selectors, price or fluid encoding, blackout odds or exact duration, bear damage or reset timing, mammoth transform duration or delayed cue, or Buddel's fares, ring terms, misroute rate and destinations. The donor supplies some implementation values. Global says the blackout lasts a couple of seconds and the retained Crystal implementation uses 1,000 ms. The donor's 60-second mammoth follow-up cue is also absent from the active callback. Neither timing was changed. The packet specifies the three drinks but gives no dose accumulation window. It also leaves streak carryover between purchased rounds unspecified. Existing stored successes retain their recorded counts, including any incomplete streak affected by the donor offset.
 
 **PARTIAL.** Sven entry and Honeycomb debit/retry, journal and completion binding, horn delivery/fill, bear interaction and Bearhugger, mammoth drink sourcing/counting and final report, Honorary Barbarian, and end-to-end access and reward qualification. No new story text was added.
+
+## Verification
+
+- PG via shard (pgsplit build files applied on `40c6d7c47bf98741829896339a686c05b0c2c0d6`). The `qcx_barbarian_test` filter ran one case with PostgreSQL. Restoring the base runtime rule reproduced the first-success count bug (one failed, 49.25 s, stored 0 instead of 1). The corrected rule passed (one passed, 47.23 s). The case sends literal barrel USE commands with seeded Sven acceptance and checks durable receipts for the first, ninth, and tenth successes, blackout, attempt 20, exhaustion, and completed and legacy state, including replay.
+- Quest authoring ran 44 checks, including 269 passing schema cases. Workspace formatting passed.
+- With `OTERYN_TEST_POSTGRES_ADMIN_URL` unset, the same filter returned one pass in 0.00 s through the route-less guard. Dispatch library Clippy with `-D warnings` passed. The pin checker verified one world bundle using its required temporary output-directory argument.
