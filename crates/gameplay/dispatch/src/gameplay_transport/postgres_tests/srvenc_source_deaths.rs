@@ -41,7 +41,10 @@ fn nrwicked_arbaziloth_death_records_first_clear() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario("nrwicked_arbaziloth_death_records_first_clear", "arbaziloth")
+    scenario(
+        "nrwicked_arbaziloth_death_records_first_clear",
+        "arbaziloth",
+    )
 }
 
 fn scenario(name: &'static str, creature: &'static str) -> TestResult {
@@ -233,10 +236,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         // generic writer must not impersonate her protected quest operation.
         // Import only that predecessor, as the other native Quest fixtures do;
         // the death and all its rewards still use the real fenced owners.
-        super::qengine_outfit_stories::seed_quest_prerequisites(
-            h, &owner, &admitted, &seeds, 0xa6,
-        )
-        .await?;
+        super::qengine_outfit_stories::seed_quest_prerequisites(h, &owner, &admitted, &seeds, 0xa6)
+            .await?;
     } else if !seeds.is_empty() {
         let fence = owner
             .current_quest_fence(session)
@@ -574,6 +575,14 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         .fetch_optional(&h.pool)
         .await?;
         assert_eq!(questlog, Some(1), "death must start the quest log");
+        let outfits: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_appearance_unlock_receipts              WHERE granting_character_id=encode($1,'hex')::uuid AND unlock_key=$2",
+        )
+        .bind(id(41).as_slice())
+        .bind("oteryn:outfit.fiend_slayer/quest-grant/0")
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(outfits, 1, "duplicate death must grant Fiend Slayer once");
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
