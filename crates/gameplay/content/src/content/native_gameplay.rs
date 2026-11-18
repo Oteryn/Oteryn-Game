@@ -249,11 +249,63 @@ pub struct CreatureProfileRecord {
     /// References alone never enable execution.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attack_definitions: Option<NativeMonsterAttackDefinitions>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nearby_self_heal: Option<NativeNearbySelfHeal>,
     /// Owner decision 22: explicit provenance limitation retained in the pinned generation.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_qualification: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tile_self_heal: Option<NativeTileSelfHeal>,
+}
+
+/// Crystal data-global/scripts/spells/monster/the_ravager_heal.lua:6-16.
+/// The spell supplies an effect; the creature's native defence entry supplies its cadence.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativeNearbySelfHeal {
+    pub ability: ProjectV2DefinitionRef,
+    pub nearby_creature: String,
+    pub radius: u8,
+    pub amount: u32,
+    pub magic_effect: u16,
+    pub source: String,
+}
+
+impl NativeNearbySelfHeal {
+    fn valid(&self, record: &CreatureProfileRecord, creatures: &CreatureProfilesDocument) -> bool {
+        let Some(ProjectV2AuthoringProfileData::Behavior(behavior)) =
+            record.behavior.as_ref().map(|profile| &profile.data)
+        else {
+            return false;
+        };
+        self.ability.family == ProjectV2Family::Ability
+            && behavior
+                .defenses
+                .iter()
+                .filter(|entry| entry.ability == self.ability)
+                .count()
+                == 1
+            && record
+                .attack_definitions
+                .as_ref()
+                .is_some_and(|definitions| {
+                    definitions
+                        .profiles
+                        .iter()
+                        .any(|profile| profile.target == self.ability)
+                })
+            && creatures
+                .records
+                .iter()
+                .any(|row| row.profile.target.key == self.nearby_creature)
+            && (1..=32).contains(&self.radius)
+            && self.amount != 0
+            && self.magic_effect != 0
+            && self
+                .source
+                .starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/")
+            && self.source.len() <= 256
+    }
 }
 
 /// Crystal dark_trails/creaturescripts_think_the_ravager_heal.lua:3-13 uses
@@ -1958,6 +2010,13 @@ fn creature_policies(
         {
             return Err(invalid("invalid native creature tile heal"));
         }
+        if record
+            .nearby_self_heal
+            .as_ref()
+            .is_some_and(|heal| !heal.valid(record, creatures))
+        {
+            return Err(invalid("invalid native creature proximity heal"));
+        }
         let ProjectV2AuthoringProfileData::Creature(value) = &record.profile.data else {
             return Err(invalid("native gameplay creature profile kind"));
         };
@@ -2211,10 +2270,10 @@ pub mod test_support {
     mod activation_fixture;
     pub use activation_fixture::{
         activated_boss_slot_loot_fixture, activated_loop_monster,
-        activated_loop_monster_missing_child, activated_loop_monster_tile_heal,
-        activated_reward_boss_corpse_capacity_fixture, activated_reward_boss_fixture,
-        activated_with_custom_loot_tables, activated_with_loot_tables, loop_monster_inner_digest,
-        try_activate_input,
+        activated_loop_monster_missing_child, activated_loop_monster_nearby_heal,
+        activated_loop_monster_tile_heal, activated_reward_boss_corpse_capacity_fixture,
+        activated_reward_boss_fixture, activated_with_custom_loot_tables,
+        activated_with_loot_tables, loop_monster_inner_digest, try_activate_input,
     };
 }
 

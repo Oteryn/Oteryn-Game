@@ -50,6 +50,13 @@ pub(in crate::gameplay_transport) fn apply(
         .iter()
         .find(|row| row.profile.target.key == "oteryn:creature.fugue")
         .ok_or(CarrierError::PlanConflict)?;
+    if row
+        .nearby_self_heal
+        .as_ref()
+        .is_some_and(|heal| heal.ability == proposal.ability)
+    {
+        return Err(CarrierError::PlanConflict);
+    }
     let crate::content::ProjectV2AuthoringProfileData::Behavior(behavior) = &row
         .behavior
         .as_ref()

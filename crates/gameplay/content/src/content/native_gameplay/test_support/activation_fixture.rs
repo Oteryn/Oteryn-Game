@@ -763,6 +763,51 @@ pub fn activated_loop_monster_tile_heal(
     activate(world, &supplied)
 }
 
+pub fn activated_loop_monster_nearby_heal(
+    world: oteryn_protocol_oteryn::WorldId,
+    nearby_creature: &str,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
+    let mut supplied = loop_monster_input(false);
+    let mut creatures: CreatureProfilesDocument =
+        serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
+    // Use a real defence profile but make its fixture draw deterministic.
+    let source = creatures
+        .records
+        .iter_mut()
+        .find(|record| record.profile.target.key == "oteryn:creature.fugue")
+        .expect("admitted fixture healer");
+    let behavior = source.behavior.as_mut().expect("healer behavior");
+    let ProjectV2AuthoringProfileData::Behavior(schedule) = &mut behavior.data else {
+        panic!("healer behavior kind");
+    };
+    let entry = &mut schedule.defenses[0];
+    entry.chance_ppm = 1_000_000;
+    entry.interval_ms = 1_000;
+    let ability = entry.ability.clone();
+    let definitions = source
+        .attack_definitions
+        .as_mut()
+        .expect("healer source closure");
+    *definitions
+        .profiles
+        .iter_mut()
+        .find(|profile| profile.target == behavior.target)
+        .expect("healer behavior closure") = behavior.clone();
+    source.nearby_self_heal = Some(NativeNearbySelfHeal {
+        ability,
+        nearby_creature: nearby_creature.into(),
+        radius: 25,
+        amount: 10_000,
+        magic_effect: 13,
+        source: "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/the_ravager_heal.lua:6-16".into(),
+    });
+    supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
+    activate(world, &supplied)
+}
+
 fn loop_monster_input(summons: bool) -> NativeGameplayInput {
     let mut supplied = manifest_input();
     supplied.source_world = Some(pinned(include_bytes!(

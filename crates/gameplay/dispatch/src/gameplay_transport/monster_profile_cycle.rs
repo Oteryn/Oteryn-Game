@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 mod bloodjaw_targeting;
 pub(super) mod native_callbacks;
+mod nearby_heal;
 pub(super) mod physical_spell;
 pub(in crate::gameplay_transport) mod retained;
 pub(in crate::gameplay_transport) mod rotten_area;
@@ -711,6 +712,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let next_due = table.earliest_due().into_iter().chain(next_step).min();
                 if !pending.heals_known() {
                     source_heals::execute(runtime, &mut states.native_self_heals, &mut states.native_self_heal_content, native, &proposals);
+                    nearby_heal::execute(runtime, native, &map, &proposals);
                     tile_heal::think(runtime, native, &mut map, batch.occurrences(), &native_actors).await;
                     pending.finish_heals();
                 }
