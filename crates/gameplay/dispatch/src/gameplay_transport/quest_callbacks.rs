@@ -1748,6 +1748,9 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
         }) else {
             return false;
         };
+        if map.facts.projected_native_quest_portal(at) {
+            return true;
+        }
         if !self.callbacks.iter().any(|c| {
             oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
                 .is_some_and(|b| tile(b.position) == at)

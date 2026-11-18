@@ -1445,6 +1445,18 @@ impl BundleFacts {
             .unwrap_or_default()
     }
 
+    /// A timer-owned native placement routes through the quest projection.
+    pub fn projected_native_quest_portal(&self, pos: TilePos) -> bool {
+        self.callbacks.lock().is_ok_and(|state| {
+            state.portals.get(&pos).is_some_and(|portal| {
+                portal.owner_revision.is_some_and(|revision| {
+                    !state.hidden.contains(&portal.owner)
+                        && state.changed.get(&portal.owner).map_or(0, |(r, _)| *r) == revision
+                })
+            })
+        })
+    }
+
     /// Only current portals resolve, including a source retreat after its deadline.
     pub fn quest_portal_destination(&self, pos: TilePos, now: u64) -> Option<TilePos> {
         let states = self.callbacks.lock().ok()?;
