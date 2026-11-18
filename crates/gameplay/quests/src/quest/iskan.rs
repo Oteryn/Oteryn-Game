@@ -67,7 +67,7 @@ pub(super) fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCat
             .map(|transition| (transition.key.clone(), transition)),
     );
     catalogue.predecessors = catalogue.predecessors;
-    updated
+    catalogue
         .predecessors
         .entry(quest.into())
         .or_default()
