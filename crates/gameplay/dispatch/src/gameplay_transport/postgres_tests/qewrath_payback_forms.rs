@@ -408,7 +408,7 @@ pub(super) async fn exercise(
                     item_fence: Some(fence.item_fence()),
                 },
                 WorldObjectTarget {
-                    placement,
+                    placement: placement.clone(),
                     expected_revision: 2,
                 },
             )
@@ -424,6 +424,37 @@ pub(super) async fn exercise(
         assert_eq!(map.facts.object_revision(key), 2);
         assert_eq!(map.facts.movement_effects_since(effect_cursor), cues);
         assert!(owner.runtime.lock().await.contains_live_creature(active_boss));
+
+        // Neither player is staged. After expiry, the donor still starts a
+        // fresh room, retiring the old roster without moving either player.
+        owner.clock_origin -= std::time::Duration::from_secs(601);
+        let map = owner.bundle_map().ok_or("map")?;
+        let empty = owner
+            .use_object(
+                actor,
+                UseCommand {
+                    game_session_id: session,
+                    command_id: 101,
+                    item_fence: Some(fence.item_fence()),
+                },
+                WorldObjectTarget {
+                    placement,
+                    expected_revision: 2,
+                },
+            )
+            .await;
+        assert_eq!(empty.disposition, UseDisposition::Committed);
+        assert_eq!(map.facts.object_revision(key), 3);
+        assert_eq!(map.facts.movement_effects_since(effect_cursor), cues);
+        let runtime = owner.runtime.lock().await;
+        assert!(!runtime.contains_live_creature(active_boss));
+        assert!(find(&runtime, FORMS[0]).is_some());
+        for (member, expected) in [(actor, OUTSIDE_PAD), (partner, LANDING)] {
+            assert_eq!(
+                runtime.read_actor_position(member).map_err(debug)?.position(),
+                super::quest_world_callbacks::local(expected)
+            );
+        }
     }
     Ok(())
 }

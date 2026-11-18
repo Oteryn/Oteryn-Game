@@ -311,14 +311,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             proofs.push(proof);
         }
         // Crystal 201189f8 actions_mission11_payback_time_lever.lua:17,35–40
-        // keeps the lever user and the staging rectangle independent.
+        // keeps the lever user and the staging rectangle independent. It still
+        // replaces the roster and starts the room when the rectangle is empty.
         let accepts_outside_operator =
             gather_players && !callback.has_personal_state() && !callback.requires_world_admission;
-        if players.is_empty()
-            || (!accepts_outside_operator
-                && !players
-                    .iter()
-                    .any(|(who, s, _)| *who == actor && *s == session))
+        if !accepts_outside_operator
+            && !players
+                .iter()
+                .any(|(who, s, _)| *who == actor && *s == session)
         {
             return UseDisposition::Rejected;
         }

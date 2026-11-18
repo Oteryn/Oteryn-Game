@@ -196,6 +196,9 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, Vec<ExactActorRef>), CarrierError> {
+        if players.is_empty() {
+            return Err(CarrierError::PlanConflict);
+        }
         self.quest_encounter_with_phase(
             players,
             monsters,
@@ -205,6 +208,8 @@ impl ChannelRuntimeV1 {
             true,
         )
     }
+    /// A physical source phase may bind an empty staging roster. The caller's
+    /// phase admission determines whether the source allows it.
     pub fn commit_quest_encounter_with_phase<P: SourceStepCommitProof, T>(
         &mut self,
         players: Vec<P>,
@@ -277,6 +282,9 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
         publish: bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        if players.is_empty() {
+            return Err(CarrierError::PlanConflict);
+        }
         self.quest_encounter_with_phase(players, monsters, &[], |_, _, _| Ok(()), project, publish)
             .map(|(positions, ())| positions)
     }
@@ -293,7 +301,7 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
         publish: bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
-        if players.is_empty() || players.len() > 36 || monsters.is_empty() || monsters.len() > 16 {
+        if players.len() > 36 || monsters.is_empty() || monsters.len() > 16 {
             return Err(CarrierError::PlanConflict);
         }
         for proof in &players {
