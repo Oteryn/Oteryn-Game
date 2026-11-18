@@ -299,42 +299,48 @@ async fn exercise_ice(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let [npc] = install(owner, admitted, ["oteryn:npc.albinius"]).await?;
-    give(owner, admitted, FISH, 51, 9400).await?;
+    give(owner, admitted, "oteryn:item.tibia.i23986", 5, 9400).await?;
+    give(owner, admitted, FISH, 51, 9401).await?;
+    talk(owner, admitted, npc, 35299, "hi").await?;
+    let contribution = talk(owner, admitted, npc, 35300, "temple yes").await?;
+    assert!(
+        contribution
+            .iter()
+            .any(|line| line.contains("Your first step in the ways"))
+    );
     let (_, old_hash) = ICE_REVISION.get().ok_or("fixture revision")?;
     let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
     assert_ne!(catalogue.definition_hash(QUEST).as_ref(), Some(old_hash));
 
-    // Rehydrate a character who paid the tomes under the previous programme,
-    // and whose separate Contactman prerequisite has already been earned.
+    // The unchanged tome hand-in produced real progress and a valid character
+    // revision. Replace its state pin with the previously shipped definition.
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
     let character = id(41);
+    let stored = sqlx::query(
+        "UPDATE game_character_quest_states SET definition_hash=$3
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
+    )
+    .bind(character.as_slice())
+    .bind(QUEST)
+    .bind(old_hash.as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(stored.rows_affected(), 1);
+    // The Contactman was earned independently in the Ice Islands.
     sqlx::query(
-        "INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision)
-         SELECT character_id,$2,$3,$4,character_revision,character_revision
+        "INSERT INTO game_character_quest_tracks(character_id,quest_key,track_key,value,committed_character_revision)
+         SELECT character_id,'oteryn:quest.the_ice_islands_quest',$2,1,character_revision
          FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
     )
-    .bind(character.as_slice()).bind(QUEST).bind(catalogue.content_revision()).bind(old_hash.as_slice())
+    .bind(character.as_slice()).bind(CONTACTMAN)
     .execute(&mut *tx).await?;
-    for (quest, track) in [
-        (QUEST, format!("{PREFIX}tomes")),
-        ("oteryn:quest.the_ice_islands_quest", CONTACTMAN.into()),
-    ] {
-        sqlx::query(
-            "INSERT INTO game_character_quest_tracks(character_id,quest_key,track_key,value,committed_character_revision)
-             SELECT character_id,$2,$3,1,character_revision
-             FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-        )
-        .bind(character.as_slice()).bind(quest).bind(track)
-        .execute(&mut *tx).await?;
-    }
     tx.commit().await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    talk(owner, admitted, npc, 35301, "hi").await?;
     let offer = talk(owner, admitted, npc, 35302, "ice portal").await?;
     assert!(
         offer.iter().any(|line| line.contains("50 fish")),
