@@ -125,7 +125,7 @@ fn catalogue(boss: &str) -> TestResult<QuestStateCatalogue> {
                 "key": "oteryn:quest-callback/fixture-library-boss/entry",
                 "quest": QUEST, "trigger": "use",
                 "selector": {"position": LEVER, "ordinal": 1, "appearance": 2772},
-                "storage": [], "lever": [2772, 2773], "reversible": false,
+                "storage": [], "lever": (boss == OBERON).then_some([2772, 2773]), "reversible": false,
                 "effects": {"encounter": {
                     "players": [{"from": STAGING, "to": LANDING}, {"from": SECOND_STAGE, "to": LANDING}],
                     "monsters": monsters, "room_min": MIN, "room_max": MAX,

@@ -1011,9 +1011,23 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
+    // Crystal library_area/ghulosh.lua:40-42 registers a fixed source
+    // position. The native bookstand need not have a lever transformation.
+    let boss_station = effects.encounter.as_ref().is_some_and(|encounter| {
+        encounter.boss_phases.is_some()
+            && callback.trigger == Trigger::Use
+            && callback.lever.is_none()
+            && !callback.has_state()
+            && !callback.opening_only
+            && (callback.selector.native.is_some()
+                || (callback.selector.position.is_some()
+                    && callback.selector.ordinal.is_some()
+                    && callback.selector.appearance.is_some()))
+    });
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
+                && !boss_station
                 && !super::personal_trial::admitted(callback)
                 && (!lever
                     || (effects.scene.is_none()
