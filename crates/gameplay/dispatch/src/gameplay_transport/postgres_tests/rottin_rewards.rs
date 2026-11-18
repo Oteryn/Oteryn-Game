@@ -168,7 +168,7 @@ pub(super) async fn exercise(
     assert_eq!(retained_odds, 9);
     let percentile = percentile.ok_or("weighted payout receipt lacks the recorded draw")?;
     assert!((0..100).contains(&percentile));
-    assert_eq!(percentile < retained_odds, actual.2 == 1);
+    assert_eq!(percentile >= 100 - retained_odds, actual.2 == 1);
     assert_eq!(awarded_bundle["item"], PLATINUM);
     assert_eq!(awarded_bundle["count"], actual.1);
     if actual.2 == 1 {

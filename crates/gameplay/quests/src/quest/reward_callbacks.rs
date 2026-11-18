@@ -342,11 +342,19 @@ pub struct RewardCallback {
 }
 
 impl RewardCallback {
-    /// Select the entire bundle using a zero-based percentile.
-    pub fn reward_for_percentile(&self, mut percentile: u8) -> Option<&ItemReward> {
+    /// Select the entire bundle using a zero-based percentile. The ordinary
+    /// bundle comes first, followed by the alternatives in authored order.
+    pub fn reward_for_percentile(&self, percentile: u8) -> Option<&ItemReward> {
         if percentile >= 100 {
             return None;
         }
+        let ordinary_chance = self
+            .weighted_rewards
+            .iter()
+            .try_fold(100_u8, |left, entry| left.checked_sub(entry.chance))?;
+        let Some(mut percentile) = percentile.checked_sub(ordinary_chance) else {
+            return self.give.as_ref();
+        };
         for alternative in &self.weighted_rewards {
             if let Some(remaining) = percentile.checked_sub(alternative.chance) {
                 percentile = remaining;
@@ -354,7 +362,7 @@ impl RewardCallback {
                 return Some(&alternative.reward);
             }
         }
-        self.give.as_ref()
+        None
     }
 
     fn valid_weighted_rewards(&self) -> bool {
@@ -2876,11 +2884,11 @@ mod lane_counter_tests {
         for percentile in 0..100 {
             let reward = callback.reward_for_percentile(percentile).ok_or("bundle")?;
             match percentile {
-                0..=8 => {
+                90..=98 => {
                     assert_eq!((&*reward.item, reward.count), (platinum, 3));
                     assert_eq!(&reward.additional[0].item, "oteryn:item.tibia.i3053");
                 }
-                9 => assert_eq!(&reward.item, "oteryn:item.tibia.i12260"),
+                99 => assert_eq!(&reward.item, "oteryn:item.tibia.i12260"),
                 _ => assert_eq!((&*reward.item, reward.count), (platinum, 5)),
             }
         }
