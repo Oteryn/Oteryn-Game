@@ -24,7 +24,7 @@ fn plain_incantation_scroll_use_consumes_the_altar_skull_and_summons_the_ritual_
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-ritual", move || scenario(admin, false))
+    super::kill_reward_e2e::scenario_thread::run("gravedigger-ritual", move || scenario(admin, Altar::Free))
 }
 
 #[test]
@@ -33,11 +33,28 @@ fn plain_incantation_scroll_summons_ritual_chicken_next_to_occupied_altar() -> T
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("gravedigger-occupied-altar", move || {
-        scenario(admin, true)
+        scenario(admin, Altar::Occupied)
     })
 }
 
-fn scenario(admin: String, occupied_altar: bool) -> TestResult {
+#[test]
+fn plain_incantation_scroll_cannot_summon_ritual_chicken_onto_stairs() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("gravedigger-stair-altar", move || {
+        scenario(admin, Altar::StairRing)
+    })
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Altar {
+    Free,
+    Occupied,
+    StairRing,
+}
+
+fn scenario(admin: String, layout: Altar) -> TestResult {
     let altar = Position {
         x: 33015,
         y: 32418,
@@ -66,7 +83,18 @@ fn scenario(admin: String, occupied_altar: bool) -> TestResult {
             "wiki:https://tibia.fandom.com/wiki/The_Gravedigger_of_Drefia_Quest/Spoiler#Vol.3,_Ch.6:_The_Right_Rite"
         ]
     }))?;
-    let world = quest_world_callbacks::world_with_cells(&callback, altar, &[])?;
+    // Crystal 201189f8 src/items/tile.cpp:624-630 refuses floor changes
+    // for ordinary monsters. Terrain 293 is a downward floor change.
+    let stairs = if layout == Altar::StairRing {
+        (altar.x - 1..=altar.x + 1)
+            .flat_map(|x| (altar.y - 1..=altar.y + 1).map(move |y| Position { x, y, ..altar }))
+            .filter(|position| *position != altar)
+            .map(|position| (position, 293))
+            .collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
+    let world = quest_world_callbacks::world_with_objects(&callback, altar, &stairs, &[])?;
     let tracks = [(MISSION_74, 1), (MISSION_75, 0)].map(|(key, initial)| QuestTrack {
         key: key.into(),
         quest: QUEST.into(),
@@ -134,7 +162,31 @@ fn scenario(admin: String, occupied_altar: bool) -> TestResult {
             )
             .await?;
             let center = quest_world_callbacks::local(altar);
-            if occupied_altar {
+            if !stairs.is_empty() {
+                let map = owner.bundle_map().ok_or("ritual map")?;
+                let cells = owner.movement_cells();
+                assert_eq!(stairs.len(), 8);
+                for (position, _) in &stairs {
+                    let position = quest_world_callbacks::local(*position);
+                    let cell = crate::content::LogicalCell {
+                        x: position.x,
+                        y: position.y,
+                        z: i32::from(position.floor),
+                    };
+                    let tile = cells.spell_tiles().lookup(cells.scope(), cell).map_err(debug)?;
+                    assert!(tile.flags().floor_change);
+                    assert!(map.floors.contains(crate::map::overlay::TilePos {
+                        x: u16::try_from(position.x)?,
+                        y: u16::try_from(position.y)?,
+                        floor: -i8::try_from(position.floor)?,
+                    }));
+                    assert_eq!(
+                        cells.index().lookup(cells.scope(), cell),
+                        Ok(crate::content::CollisionClass::Walkable)
+                    );
+                }
+            }
+            if layout != Altar::Free {
                 let actor = admitted.runtime_actor.ok_or("ritual caster")?;
                 let mut runtime = owner.runtime.lock().await;
                 let before = runtime.read_actor_position(actor).map_err(debug)?;
@@ -175,13 +227,17 @@ fn scenario(admin: String, occupied_altar: bool) -> TestResult {
                 .into_iter()
                 .filter(|actor| runtime.matches_live_creature_identity(*actor, CHICKEN.as_bytes()))
                 .collect();
+            if layout == Altar::StairRing {
+                assert!(chickens.is_empty(), "every fallback tile changes floors");
+                return Ok(());
+            }
             let [chicken] = chickens.as_slice() else {
                 return Err("the ritual must summon exactly one chicken".into());
             };
             let position = runtime.read_actor_position(*chicken).map_err(debug)?.position();
             // Crystal 201189f8 src/map/map.cpp:234-313 places the creature
             // at the center when free, or within its one-tile ring when blocked.
-            assert_eq!(position == center, !occupied_altar);
+            assert_eq!(position == center, layout == Altar::Free);
             assert_eq!(position.floor, center.floor);
             assert!(position.x.abs_diff(center.x) <= 1);
             assert!(position.y.abs_diff(center.y) <= 1);
