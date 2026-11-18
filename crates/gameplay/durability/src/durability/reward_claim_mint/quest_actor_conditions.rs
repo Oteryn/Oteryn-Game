@@ -18,6 +18,7 @@ pub struct QuestActorConditionProof {
     callback: String,
     generation: [u8; 32],
     active: BTreeSet<ActorConditionRequirement>,
+    temporary_look: Option<u32>,
 }
 impl QuestActorConditionProof {
     /// The caller retains runtime -> current player-state locks while sampling.
@@ -66,8 +67,60 @@ impl QuestActorConditionProof {
             callback: callback.into(),
             generation: native.source_digest(),
             active,
+            temporary_look: Self::current_temporary_look(
+                runtime, actor, fence.game_session_id, native, spell_conditions, now,
+            ),
         })
     }
+    /// Reuse the displayed outfit qualification of both live condition owners.
+    /// If the stores disagree, no source may authorize a temporary-look reward.
+    pub fn current_temporary_look(
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        native: &NativeGameplayState,
+        spell: &ConditionStore<String>,
+        now: u64,
+    ) -> Option<u32> {
+        use oteryn_gameplay_domain::domain::condition::ConflictKey;
+        use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
+
+        let carrier = runtime.actor_conditions_at(actor, Some(session), now).ok()?;
+        if native.source_digest() != runtime.content_pin().server_artifact_digest()
+            || !spell.accepts_time(now)
+            || !carrier.accepts_time(now)
+        {
+            return None;
+        }
+        let qualified = |appearance, look: Option<u32>| {
+            let Some(TemporaryDisplayedAppearance::Outfit(selection)) = appearance else {
+                return None;
+            };
+            let look = look?;
+            native.spell_appearances()?.for_selection(look, selection)?;
+            Some(look)
+        };
+        let spell_look = qualified(spell.displayed_temporary_appearance_at(now), spell.outfit_at(now));
+        let carrier_look = qualified(carrier.displayed_temporary_appearance_at(now), carrier.outfit_at(now));
+        if (spell.active_at(ConflictKey::Outfit, now).is_some() && spell_look.is_none())
+            || (carrier.active_at(ConflictKey::Outfit, now).is_some() && carrier_look.is_none())
+            || (spell_look.is_some() && carrier_look.is_some() && spell_look != carrier_look)
+        {
+            return None;
+        }
+        spell_look.or(carrier_look)
+    }
+
+    pub(super) fn permits_temporary_look(
+        &self,
+        fence: CurrentCharacterGameplayFence,
+        request: &QuestTransitionRequest,
+        generation: [u8; 32],
+        look: u32,
+    ) -> bool {
+        self.permits(fence, request, generation, &[]) && self.temporary_look == Some(look)
+    }
+
     /// STEP uses the same sealed occurrence proof as command-only condition gates.
     #[allow(
         clippy::too_many_arguments,

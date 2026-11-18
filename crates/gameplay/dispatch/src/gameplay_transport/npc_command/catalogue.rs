@@ -496,7 +496,7 @@ fn response(
         window: None,
     }
 }
-fn end_response(
+pub(super) fn end_response(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
     npc_actor: ExactActorRef,

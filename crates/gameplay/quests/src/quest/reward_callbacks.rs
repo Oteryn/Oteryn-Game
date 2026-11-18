@@ -172,6 +172,22 @@ pub use super::map_marks::{MapMarkKind as QuestMapMarkIcon, QuestMapMark};
 /// Inclusive native bounds for an exact self-target carried quest action.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct NpcFireDamage {
+    pub ticks: u16,
+    pub interval_ms: u32,
+    pub amount: u16,
+}
+
+/// Effects applied in the Channel after a successful NPC dialogue receipt.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct NpcAfterCommit {
+    pub fire_damage: Option<NpcFireDamage>,
+    pub end_conversation_delay_ms: Option<u32>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct SelfTarget {
     pub minimum: super::world_callbacks::Position,
     pub maximum: super::world_callbacks::Position,
@@ -294,6 +310,8 @@ pub struct RewardCallback {
     pub forbids_outfits: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_actor_conditions: Vec<ActorConditionRequirement>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires_temporary_look: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub forbids_addons: Vec<OutfitReward>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -324,6 +342,8 @@ pub struct RewardCallback {
     pub experience: Option<i64>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub magic_effects: Vec<super::npc_magic::Cue>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub npc_after_commit: Option<NpcAfterCommit>,
     pub reply: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub failure_reply: Vec<String>,
@@ -921,6 +941,24 @@ fn validate_document_with_capacity(
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || c.minimum_level == Some(0)
             || tracks.len() != c.storage.len()
+            || c.requires_temporary_look.is_some_and(|look| {
+                look == 0 || c.carried_item.is_some() || c.world_claim.is_some()
+            })
+            || c.npc_after_commit.as_ref().is_some_and(|effects| {
+                c.carried_item.is_some()
+                    || c.world_claim.is_some()
+                    || (effects.fire_damage.is_none()
+                        && effects.end_conversation_delay_ms.is_none())
+                    || effects
+                        .end_conversation_delay_ms
+                        .is_some_and(|delay| delay > 60_000)
+                    || effects.fire_damage.as_ref().is_some_and(|fire| {
+                        !(1..=120).contains(&fire.ticks)
+                            || !(500..=60_000).contains(&fire.interval_ms)
+                            || !(1..=500).contains(&fire.amount)
+                            || c.take.is_empty()
+                    })
+            })
             || c.requires_actor_conditions.len() > 8
             || c.requires_actor_conditions
                 .iter()

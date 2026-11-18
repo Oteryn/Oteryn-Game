@@ -245,6 +245,13 @@ pub(crate) async fn apply(
     {
         return Ok(false);
     }
+    if callback.requires_temporary_look.is_some_and(|look| {
+        admission.actor_conditions.is_none_or(|proof| {
+            !proof.permits_temporary_look(fence, request, admission.native.source_digest(), look)
+        })
+    }) {
+        return Ok(false);
+    }
     // Reuse questpc7's read-only completion predicate. The caller holds the
     // Character root lock, which serializes this character's quest writes.
     if !callback.requires_completed_quests.is_empty() {

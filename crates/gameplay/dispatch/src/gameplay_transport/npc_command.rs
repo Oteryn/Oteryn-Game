@@ -58,6 +58,7 @@ mod liquid_black;
 mod magic_effects;
 mod marriage;
 mod monk;
+mod npc_after_commit;
 mod npc_item_exchanges;
 mod planegazer_finale;
 mod premium_purchase;

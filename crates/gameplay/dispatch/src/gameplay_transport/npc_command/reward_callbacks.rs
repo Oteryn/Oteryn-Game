@@ -137,6 +137,11 @@ pub(super) fn prepare(
                         && c.npc == context.2
                         && c.topic == topic.number
                         && c.keywords.contains(&text)
+                        && c.requires_temporary_look.is_none_or(|look| {
+                            super::npc_after_commit::temporary_look(
+                                admission, runtime, actor, command,
+                            ) == Some(look)
+                        })
                         && eligible(&c.storage)
                         && c.state_ops
                             .iter()

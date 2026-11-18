@@ -1243,6 +1243,7 @@ mod rotten_blood;
 mod scenario;
 #[path = "quest_world_callbacks/stateless.rs"]
 mod stateless;
+#[path = "quest_world_callbacks/tool_fixture.rs"]
 pub(super) mod tool_fixture;
 #[path = "quest_world_callbacks/unnatural_selection.rs"]
 mod unnatural_selection;

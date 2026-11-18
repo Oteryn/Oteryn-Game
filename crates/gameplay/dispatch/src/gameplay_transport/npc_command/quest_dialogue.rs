@@ -511,7 +511,7 @@ pub(super) async fn apply(
                     &callback.magic_effects,
                 );
             }
-            publish_committed_reply(
+            let mut outcome = publish_committed_reply(
                 admission.states.npc_conversations.current_npc(
                     &admission.states.chat,
                     &runtime,
@@ -521,7 +521,24 @@ pub(super) async fn apply(
                 ),
                 &step.context,
                 rendered,
-            )
+            );
+            if newly_committed
+                && let Some(effects) = reward_callback
+                    .as_ref()
+                    .and_then(|row| row.npc_after_commit.as_ref())
+            {
+                super::npc_after_commit::publish(
+                    admission,
+                    &runtime,
+                    actor,
+                    command,
+                    &intent,
+                    &step.context,
+                    effects,
+                    &mut outcome,
+                );
+            }
+            outcome
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,
