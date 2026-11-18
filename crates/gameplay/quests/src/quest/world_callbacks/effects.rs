@@ -537,20 +537,42 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     let effects = &callback.effects;
     if !effects.ground_supply.is_empty() {
-        let positions: BTreeSet<_> = effects.ground_supply.iter().map(|supply| supply.position).collect();
-        if callback.trigger != Trigger::Use || callback.actor_kind != ActorKind::Player
+        let positions: BTreeSet<_> = effects
+            .ground_supply
+            .iter()
+            .map(|supply| supply.position)
+            .collect();
+        if callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
             || !callback.key.starts_with(GROUND_SUPPLY_PREFIX)
-            || !callback.requires_world_admission || callback.selector.native.is_none()
-            || !callback.reversible || callback.lever.is_none() || callback.opening_only
-            || !callback.storage.is_empty() || callback.operation_count()!=0
-            || callback.teleport.is_some() || callback.item_reward().is_some()
-            || !callback.passages.is_empty() || !callback.offerings.is_empty() || callback.item_on_target.is_some()
-            || !(1..=8).contains(&effects.ground_supply.len()) || positions.len()!=effects.ground_supply.len()
+            || !callback.requires_world_admission
+            || callback.selector.native.is_none()
+            || !callback.reversible
+            || callback.lever.is_none()
+            || callback.opening_only
+            || !callback.storage.is_empty()
+            || callback.operation_count() != 0
+            || callback.teleport.is_some()
+            || callback.item_reward().is_some()
+            || !callback.passages.is_empty()
+            || !callback.offerings.is_empty()
+            || callback.item_on_target.is_some()
+            || !(1..=8).contains(&effects.ground_supply.len())
+            || positions.len() != effects.ground_supply.len()
             || effects.ground_supply.iter().any(|supply| {
-                !(1..=100).contains(&supply.count) || !(-15..=0).contains(&supply.position.floor)
-                    || !supply.item.strip_prefix("oteryn:item.tibia.i")
-                        .and_then(|value|value.parse::<u32>().ok()).is_some_and(|value|value!=0)
-            }) || **effects != (CallbackEffects {ground_supply:effects.ground_supply.clone(),..Default::default()})
+                !(1..=100).contains(&supply.count)
+                    || !(-15..=0).contains(&supply.position.floor)
+                    || !supply
+                        .item
+                        .strip_prefix("oteryn:item.tibia.i")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .is_some_and(|value| value != 0)
+            })
+            || **effects
+                != (CallbackEffects {
+                    ground_supply: effects.ground_supply.clone(),
+                    ..Default::default()
+                })
         {
             return false;
         }

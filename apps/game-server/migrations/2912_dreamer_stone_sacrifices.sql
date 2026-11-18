@@ -137,3 +137,101 @@ BEGIN
     EXECUTE overlay(body placing E'BEGIN\n'||proof from begin_at for 5);
 END
 $migration$;
+
+-- Physical USE/STEP consequences can have an empty journal delta. Keep their
+-- source proof separate from paid NPC grants and from synthetic quest tracks.
+CREATE TABLE game_quest_world_action_proofs (
+    character_id UUID NOT NULL,
+    cause_id UUID NOT NULL,
+    cause_ordinal NUMERIC(20,0) NOT NULL,
+    transition_key TEXT NOT NULL,
+    world_id UUID NOT NULL,
+    channel_id UUID NOT NULL,
+    scope_generation NUMERIC(20,0) NOT NULL CHECK(scope_generation>0),
+    request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=33),
+    callback JSONB NOT NULL CHECK(jsonb_typeof(callback)='object' AND octet_length(callback::text)<=16384),
+    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
+    PRIMARY KEY(character_id,cause_id,cause_ordinal,transition_key),
+    FOREIGN KEY(character_id,cause_id,cause_ordinal,transition_key)
+        REFERENCES game_character_quest_receipts(character_id,cause_id,cause_ordinal,transition_key)
+        DEFERRABLE INITIALLY DEFERRED
+);
+CREATE TRIGGER game_quest_world_action_proof_immutable BEFORE UPDATE OR DELETE ON game_quest_world_action_proofs
+    FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_quest_world_action_proof_no_truncate BEFORE TRUNCATE ON game_quest_world_action_proofs
+    EXECUTE FUNCTION game_item_reject_truncate();
+REVOKE ALL ON game_quest_world_action_proofs FROM PUBLIC;
+GRANT SELECT,INSERT ON game_quest_world_action_proofs TO oteryn_game_runtime;
+GRANT SELECT ON game_quest_world_action_proofs TO oteryn_game_control;
+
+DO $migration$
+DECLARE
+    constraint_body TEXT;
+    function_body TEXT;
+    anchor CONSTANT TEXT:='IF cardinality(NEW.track_keys)<>0 OR NEW.completes THEN RETURN NULL; END IF;';
+    proof CONSTANT TEXT := $proof$
+    IF EXISTS (
+        SELECT 1 FROM game_quest_world_action_proofs p
+        JOIN game_durability_reconnect_sessions s ON s.game_session_id=p.cause_id
+        WHERE (p.character_id,p.cause_id,p.cause_ordinal,p.transition_key)=
+              (NEW.character_id,NEW.cause_id,NEW.cause_ordinal,NEW.transition_key)
+          AND p.request_binding=NEW.request_binding AND p.callback->>'key'=NEW.transition_key
+          AND p.callback->>'quest'=NEW.quest_key AND p.callback->>'requires_world_admission'='true'
+          AND (jsonb_typeof(p.callback #> '{selector,native}')='object'
+            OR jsonb_typeof(p.callback #> '{selector,position}')='object')
+          AND s.character_id=p.character_id AND s.session_state=2
+          AND s.runtime_scope_world_id=p.world_id AND s.runtime_scope_channel_id=p.channel_id
+          AND s.scope_ownership_generation=p.scope_generation
+          AND p.created_xact_id=pg_current_xact_id() AND NEW.created_xact_id=p.created_xact_id
+          AND (
+            (NEW.cause_kind='use' AND p.callback->>'trigger'='use' AND (
+                (NEW.transition_key LIKE 'oteryn:quest-callback/ground-supply/%'
+                    AND jsonb_typeof(p.callback #> '{effects,ground_supply}')='array')
+                OR (NEW.transition_key LIKE 'oteryn:quest-callback/offering-portal/%'
+                    AND jsonb_typeof(p.callback #> '{effects,offering_portal}')='object')))
+            OR (NEW.cause_kind='step' AND p.callback->>'trigger'='step_in' AND (
+                (NEW.transition_key LIKE 'oteryn:quest-callback/ground-cleanup/%'
+                    AND p.callback #>> '{effects,cleanup_offerings}'='true')
+                OR (NEW.transition_key LIKE 'oteryn:quest-callback/ranked-toll/%'
+                    AND jsonb_typeof(p.callback #> '{effects,ranked_toll}')='object'
+                    AND EXISTS(
+                        SELECT 1 FROM game_quest_callback_consumptions c
+                        WHERE (c.character_id,c.cause_id,c.cause_ordinal,c.transition_key)=
+                              (p.character_id,p.cause_id,p.cause_ordinal,p.transition_key)
+                          AND c.created_xact_id=p.created_xact_id AND c.location_kind<>'ground'
+                          AND c.quantity=(p.callback #>> '{item_on_target,count}')::bigint
+                          AND c.before_item->>'definition_production_key'=p.callback #>> '{item_on_target,item}'
+                    ))
+                OR (NEW.transition_key LIKE 'oteryn:quest-callback/solo-room/%'
+                    AND jsonb_typeof(p.callback #> '{effects,encounter,solo_expiry}')='object'
+                    AND EXISTS(
+                        SELECT 1 FROM game_character_boss_cooldowns b
+                        WHERE b.character_id=p.character_id
+                          AND b.boss_key=p.callback #>> '{effects,encounter,monsters,0,creature}'
+                          AND b.xmin=pg_current_xact_id()::text::xid
+                    ))))
+          )
+    ) THEN RETURN NULL; END IF;
+$proof$;
+BEGIN
+    SELECT pg_get_expr(conbin,conrelid) INTO STRICT constraint_body FROM pg_constraint
+     WHERE conrelid='game_character_quest_receipts'::regclass
+       AND conname='game_character_quest_receipt_effects_shape';
+    ALTER TABLE game_character_quest_receipts DROP CONSTRAINT game_character_quest_receipt_effects_shape;
+    EXECUTE 'ALTER TABLE game_character_quest_receipts ADD CONSTRAINT game_character_quest_receipt_effects_shape CHECK (('
+        ||constraint_body||$shape$) OR (
+        NOT completes AND cardinality(track_keys)=0 AND cardinality(values_before)=0 AND cardinality(values_after)=0
+        AND level_after=level_before AND experience_after=experience_before AND (
+            (cause_kind='use' AND (transition_key LIKE 'oteryn:quest-callback/ground-supply/%'
+                OR transition_key LIKE 'oteryn:quest-callback/offering-portal/%'))
+            OR (cause_kind='step' AND (transition_key LIKE 'oteryn:quest-callback/ground-cleanup/%'
+                OR transition_key LIKE 'oteryn:quest-callback/ranked-toll/%'
+                OR transition_key LIKE 'oteryn:quest-callback/solo-room/%'))
+        )))$shape$;
+    function_body:=pg_get_functiondef('game_quest_reward_value_only_complete()'::regprocedure);
+    IF (length(function_body)-length(replace(function_body,anchor,'')))/length(anchor)<>1 THEN
+        RAISE EXCEPTION 'missing or ambiguous canonical value-only Quest guard';
+    END IF;
+    EXECUTE replace(function_body,anchor,anchor||proof);
+END
+$migration$;

@@ -370,6 +370,8 @@ fn scenario_case(
     use super::super::kroazur_solo_room;
     let kroazur = name == kroazur_solo_room::NAME;
     use super::super::{dreamers_board_exit, dreamers_board_portal};
+    use super::super::dreamers_board_supply;
+    let board_supply = name == dreamers_board_supply::NAME;
     let board_exit = name == dreamers_board_exit::NAME;
     let board_portal = matches!(name, dreamers_board_portal::READY | dreamers_board_portal::MISSING);
     use super::super::dreamers_color_grid;
@@ -398,6 +400,8 @@ fn scenario_case(
         dreamers_knightwatch_toll::binding()?
     } else if stone_offerings {
         dreamers_stone_offerings::binding()?
+    } else if board_supply {
+        dreamers_board_supply::binding()?
     } else if board_exit {
         dreamers_board_exit::binding()?
     } else if board_portal {
@@ -726,6 +730,8 @@ fn scenario_case(
         dreamers_knightwatch_toll::world(&callback)?
     } else if stone_offerings {
         dreamers_stone_offerings::world(&callback)?
+    } else if board_supply {
+        dreamers_board_supply::world(&callback)?
     } else if board_exit {
         dreamers_board_exit::world(&callback)?
     } else if board_portal {
@@ -1785,6 +1791,11 @@ fn scenario_case(
         ));
         if haunted_cellar {
             owner.quest_catalogue = Some(haunted_cellar_disguise::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback,
+            )?);
+        }
+        if board_supply {
+            owner.quest_catalogue = Some(dreamers_board_supply::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback,
             )?);
         }
@@ -3058,6 +3069,8 @@ fn scenario_case(
             Box::pin(dreamers_knightwatch_toll::exercise(&owner, &mut admitted, &h, fence, &callback)).await?;
         } else if stone_offerings {
             Box::pin(dreamers_stone_offerings::exercise(&owner, &mut admitted, &h, fence, name == dreamers_stone_offerings::FULL)).await?;
+        } else if board_supply {
+            Box::pin(dreamers_board_supply::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if board_exit {
             Box::pin(dreamers_board_exit::exercise(
                 &owner, &mut admitted, &h, fence, &callback,

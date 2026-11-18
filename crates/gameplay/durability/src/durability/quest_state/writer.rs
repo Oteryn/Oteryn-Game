@@ -2208,6 +2208,12 @@ impl DurabilityRoot {
                     if receipt.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
                     }
+                    if changes.is_empty() && let Some(callback) = &callback
+                        && callback.uses_empty_world_transition() {
+                        super::super::quest_world_callback::action_proofs::record(
+                            &mut tx, fence, &request, callback, &binding,
+                        ).await?;
+                    }
                     // The same native receipt that owns shared Hive/Deeplings credit
                     // also owns personal progress in this World occurrence. Historical
                     // replay returned earlier, so it cannot attach to a later save.
