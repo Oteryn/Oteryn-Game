@@ -196,7 +196,7 @@ pub enum SnapshotError {
     NotSupported,
     InvalidQuery,
     SnapshotExpired,
-    /// A concurrent publisher won the repeatable-read race. No automatic retry.
+    /// A concurrent publisher won the repeatable-read race.
     RetryableConflict,
     /// The World's cut exceeds HIGHSCORES0-RL-04; nothing is published and the previous
     /// snapshot stays current.

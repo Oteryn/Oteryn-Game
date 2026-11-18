@@ -48,6 +48,12 @@ fn planned_reset_retries_unknown_highscore_commit() -> crate::bestiary_postgres_
 }
 
 #[test]
+fn planned_reset_retries_rejected_highscore_commit() -> crate::bestiary_postgres_harness::TestResult
+{
+    reset_cut_retries(ResetCutFailure::TransactionTimeout)
+}
+
+#[test]
 fn planned_reset_retries_highscore_deadline() -> crate::bestiary_postgres_harness::TestResult {
     reset_cut_retries(ResetCutFailure::PassDeadline)
 }
@@ -55,6 +61,7 @@ fn planned_reset_retries_highscore_deadline() -> crate::bestiary_postgres_harnes
 enum ResetCutFailure {
     Write,
     CommitTimeout,
+    TransactionTimeout,
     PassDeadline,
 }
 
@@ -64,6 +71,11 @@ fn reset_cut_retries(failure: ResetCutFailure) -> crate::bestiary_postgres_harne
         ResetCutFailure::CommitTimeout => (
             "CREATE CONSTRAINT TRIGGER reset_cut_fail_once AFTER INSERT ON game_world_highscore_snapshots DEFERRABLE INITIALLY DEFERRED",
             "PERFORM set_config('transaction_timeout','0',true); PERFORM pg_sleep(2.3); RAISE EXCEPTION 'late commit rollback';",
+        ),
+        ResetCutFailure::TransactionTimeout => (
+            "CREATE CONSTRAINT TRIGGER reset_cut_fail_once AFTER INSERT ON game_world_highscore_snapshots DEFERRABLE INITIALLY DEFERRED",
+            // Rearm the active transaction timer so PostgreSQL expires it inside COMMIT.
+            "PERFORM set_config('transaction_timeout','0',true); PERFORM set_config('transaction_timeout','100ms',true); PERFORM pg_sleep(4);",
         ),
         ResetCutFailure::PassDeadline => (
             "CREATE TRIGGER reset_cut_fail_once BEFORE INSERT ON game_world_highscore_snapshots",

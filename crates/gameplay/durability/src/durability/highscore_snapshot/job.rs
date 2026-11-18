@@ -1,7 +1,7 @@
 //! One World's HIGHSCORES0 job. The composition root owns its dedicated projection-role Root
 //! and the actual planned-reset notifications. No client command can start or force this job.
 
-use super::{CutLimits, DurabilityError, DurabilityRoot, SnapshotCatalogues, SnapshotError, SnapshotInfo};
+use super::{CutLimits, DurabilityError, DurabilityRoot, SnapshotCatalogues, SnapshotError, SnapshotInfo, SnapshotRefresh};
 use crate::foundation::WorldId;
 use std::sync::Arc;
 use std::time::Duration;
@@ -42,8 +42,8 @@ impl HighscoreWorldJob {
     }
 
     /// First check is immediate. Every successful check schedules from durable database time,
-    /// including a recent snapshot skipped after restart. A scheduled pass retries transient
-    /// failures promptly until it can check for a pending reset or publish the pending epoch.
+    /// including a recent snapshot skipped after restart. A scheduled pass retries
+    /// failures promptly while a reset may still need publication.
     /// An ordinary periodic publication failure backs off one interval. A failed forced reset
     /// preserves the pending periodic deadline, and a contended forced reset retries as a reset.
     /// A message on `planned_resets` forces one complete cut. Closing the channel stops the job.
@@ -73,6 +73,7 @@ impl HighscoreWorldJob {
                     &mut retry_schedule,
                 )
                 .await;
+            let retry_soon = retry_soon_after_pass(&result, retry_schedule);
             match result {
                 Ok(refresh) => {
                     for snapshot in &refresh.snapshots {
@@ -81,18 +82,7 @@ impl HighscoreWorldJob {
                     due = started + refresh.next_check_after;
                 }
                 Err(error) => {
-                    let contended = contended(&error);
-                    retry_reset = reset && contended;
-                    let retry_soon = contended
-                        || (retry_schedule
-                            && matches!(
-                                &error,
-                                SnapshotError::Unavailable(
-                                    DurabilityError::Database(_)
-                                        | DurabilityError::RootPassDeadlineExceeded
-                                        | DurabilityError::CommitOutcomeUnknown
-                                )
-                            ));
+                    retry_reset = reset && contended(&error);
                     due = next_due_after_failure(retry_soon, reset, Instant::now(), due, interval);
                     let reason = match &error {
                         SnapshotError::Unavailable(source) => format!("unavailable {source:?}"),
@@ -108,6 +98,18 @@ impl HighscoreWorldJob {
             self.completed_passes
                 .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         }
+    }
+}
+
+/// Retry until the pass confirms publication or observes an already published epoch.
+fn retry_soon_after_pass(
+    outcome: &Result<SnapshotRefresh, SnapshotError>,
+    reset_may_be_pending: bool,
+) -> bool {
+    match outcome {
+        Ok(_) => false,
+        Err(error) if contended(error) => true,
+        _ => reset_may_be_pending,
     }
 }
 
