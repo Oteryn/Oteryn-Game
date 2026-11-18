@@ -541,19 +541,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(catalogue) = self.quest_catalogue.as_ref() else {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             };
-            let mut eligible = rules.iter().filter(|rule| {
-                rule.item == item.definition.production_key
-                    && copy
-                        .tracks()
-                        .get(&rule.track)
-                        .copied()
-                        .or_else(|| catalogue.track(&rule.track).map(|track| track.initial))
-                        == Some(rule.required)
-                    && rule
-                        .requires
-                        .iter()
-                        .all(|required| required.holds(catalogue, copy.tracks()))
-            });
+            let mut eligible =
+                rules.iter().filter(|rule| {
+                    rule.item == item.definition.production_key
+                        && (rule.track.is_empty()
+                            || copy.tracks().get(&rule.track).copied().or_else(|| {
+                                catalogue.track(&rule.track).map(|track| track.initial)
+                            }) == Some(rule.required))
+                        && rule
+                            .requires
+                            .iter()
+                            .all(|required| required.holds(catalogue, copy.tracks()))
+                });
             let rule = eligible.next();
             if eligible.next().is_some() {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
@@ -627,6 +626,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     || required.floor != position.floor
             }) {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            // Crystal 201189f8 what_a_foolish_quest/action_disguise.lua:1-13 retains
+            // the item and gives the actor its selected native look for ten seconds.
+            if let Some(duration_ms) = rule.timed_look_ms {
+                let Some(look) = native
+                    .spell_appearances()
+                    .and_then(|catalogue| catalogue.for_look_type(u32::from(rule.appearance)))
+                else {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                };
+                let Some(current) = states.get(&runtime, actor, command.game_session_id) else {
+                    return Err(());
+                };
+                let mut next = current.clone();
+                if crate::spell::actor_conditions::apply_appearance(
+                    &mut next,
+                    look.selection(),
+                    look.look_type(),
+                    duration_ms,
+                    self.owner_now().get() / 1000,
+                )
+                .is_err()
+                {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                }
+                next.advance_batch_revision().map_err(|_| ())?;
+                if !states.commit(&runtime, actor, command.game_session_id, next) {
+                    return Err(());
+                }
+                map.facts
+                    .emit_movement_speech(crate::map::facts::MovementSpeech {
+                        speaker: actor,
+                        position,
+                        talk_type: rule.speech_type,
+                        text: rule.use_text.clone(),
+                        captured_name: None,
+                    });
+                if rule.use_effect != 0 {
+                    map.facts.emit_movement_effect(position, rule.use_effect);
+                }
+                states.owner_wake.notify_one();
+                return Ok(Some(outcome(UseDisposition::Committed)));
             }
             let appearance = format!("oteryn:item.tibia.i{}", rule.appearance);
             if native

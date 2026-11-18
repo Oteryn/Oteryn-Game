@@ -288,6 +288,7 @@ pub fn disguises() -> Vec<super::item_disguises::Rule> {
             sources: document.sources.clone(),
             item: "oteryn:item.tibia.i12251".into(),
             appearance: form.appearance,
+            timed_look_ms: None,
             track: form.stage.clone(),
             required: 0,
             requires: vec![super::reward_callbacks::TrackRequirement {

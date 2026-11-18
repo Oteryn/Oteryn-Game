@@ -13,7 +13,12 @@ pub struct Rule {
     pub use_effect: u16,
     pub speech_type: u8,
     pub appearance: u16,
+    /// A native creature look with the source lifetime, in milliseconds.
+    #[serde(default)]
+    pub timed_look_ms: Option<u32>,
+    #[serde(default)]
     pub track: String,
+    #[serde(default)]
     pub required: i64,
     #[serde(default)]
     pub requires: Vec<super::reward_callbacks::TrackRequirement>,
@@ -34,11 +39,17 @@ pub(super) fn valid(rules: &[Rule]) -> bool {
                 && rule.use_text.len() <= 512
                 && (rule.restore.is_none() || !rule.restore_text.is_empty())
                 && rule.restore_text.len() <= 512
-                && rule.use_effect != 0
+                && (rule.use_effect != 0 || rule.timed_look_ms.is_some())
                 && rule.speech_type != 0
                 && rule.appearance != 0
-                && rule.track.starts_with("oteryn:quest-progress/")
+                && (rule.track.starts_with("oteryn:quest-progress/")
+                    || (rule.track.is_empty()
+                        && rule.required == 0
+                        && rule.timed_look_ms.is_some()))
                 && rule.track.len() <= 128
+                && rule
+                    .timed_look_ms
+                    .is_none_or(|ms| (1..=3_600_000).contains(&ms) && rule.restore.is_none())
                 && !rule.sources.is_empty()
                 && rule.sources.len() <= 4
                 && rule.sources.iter().all(|source| {

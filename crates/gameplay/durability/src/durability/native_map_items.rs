@@ -185,7 +185,7 @@ pub(crate) async fn initialize_with_recovery(
         super::ground_cell_limit::check_ground_cell_root_insert_with_recovery(
             tx,
             permit,
-            &record,
+            recovery,
             node,
             (scope, binding.scope_generation),
             &p.ground,
