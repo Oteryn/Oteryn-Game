@@ -36,6 +36,15 @@ fn overlordcr_all_four_overlords_credit_two_damagers_exclude_observer_and_replay
 }
 
 #[test]
+fn overlordcr_later_death_preserves_existing_boss_storage_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_already_flagged", "earth_overlord")
+}
+
+#[test]
 fn overlordcr_non_overlord_does_not_set_flag_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());

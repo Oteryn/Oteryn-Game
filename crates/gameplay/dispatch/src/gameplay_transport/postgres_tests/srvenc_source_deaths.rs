@@ -79,7 +79,9 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     let generation = controller.active().ok_or("generation")?;
     let native = generation.native_gameplay().ok_or("native policies")?;
     let without_rewards = crate::content::creature_reward::CreatureRewardTable::default();
-    let rewards = if mode == "overlordcr_rowless" {
+    let already_flagged = mode == "overlordcr_already_flagged";
+    let rowless = already_flagged || mode == "overlordcr_rowless";
+    let rewards = if rowless {
         &without_rewards
     } else {
         native.reward_table()
@@ -524,7 +526,13 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     } else {
         1
     };
-    let actual_kills = if kills == 20 { 21 } else { 1 };
+    let actual_kills = if already_flagged {
+        2
+    } else if kills == 20 {
+        21
+    } else {
+        1
+    };
     // Two deaths share each frozen quest snapshot. A preceding counter increment
     // must not invalidate the next queued death from the same admitted mission run.
     for batch in (0..actual_kills).step_by(2) {
@@ -588,7 +596,10 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     .commit_damage_for_bound_attacker(
                         target,
                         *peer_actor,
-                        CommandRef::new(*peer_session, CommandId::new(1).map_err(debug)?),
+                        CommandRef::new(
+                            *peer_session,
+                            CommandId::new(1 + u64::try_from(ordinal)?).map_err(debug)?,
+                        ),
                         0,
                         crate::foundation::OwnerDamageCommand {
                             target: rule.creature.as_bytes(),
@@ -704,10 +715,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     Some(observed),
                 );
             }
-            if matches!(
-                mode,
-                "overlordcr" | "overlordcr_crash_replay" | "overlordcr_rowless"
-            ) {
+            if rowless || matches!(mode, "overlordcr" | "overlordcr_crash_replay") {
                 crash_replay = Some((target, observed));
             }
             if let Some((other_actor, other_session, other_character, other_lease)) =
@@ -830,7 +838,11 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 sqlx::query_scalar("SELECT count(*) FROM game_boss_death_settlements")
                     .fetch_one(&h.pool)
                     .await?;
-            assert_eq!(canonical, 1, "the canonical death committed once");
+            assert_eq!(
+                canonical,
+                i64::try_from(actual_kills)?,
+                "each distinct death commits once"
+            );
             let before: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
             let private_admitted = rewards.row(&rule.creature).is_ok();
             assert_eq!(before.0, i64::from(private_admitted));
@@ -839,7 +851,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 if private_admitted { 2 } else { 0 },
                 "retained private-loot refusal never invents a chest"
             );
-            if mode == "overlordcr_rowless" {
+            if rowless {
                 assert_eq!(before, (0, 0, 0, 2), "only the two quest credits commit");
             } else {
                 assert!(
@@ -997,13 +1009,17 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             "the existing top-damager departure XP refusal is preserved"
         );
     }
-    if mode == "overlordcr_rowless" {
+    if rowless {
         let counts: (i64, i64, i64) = sqlx::query_as(
             "SELECT (SELECT count(*) FROM game_boss_death_settlements), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_boss_reward_chests)",
         )
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!(counts, (1, 0, 0), "the death settles quest credit alone");
+        assert_eq!(
+            counts,
+            (i64::try_from(actual_kills)?, 0, 0),
+            "each death settles without XP or chests"
+        );
     }
     Ok(())
 }
