@@ -773,6 +773,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.extend(super::elvenbane::callbacks());
     native_callbacks.extend(super::last_creep_native::callbacks()?);
     native_callbacks.extend(super::fire_feathered_native::callbacks());
+    native_callbacks.extend(super::frontier_tree::callbacks()?);
     native_callbacks.extend(super::goblin_merchant::callbacks()?);
     native_callbacks.extend(super::shared_world_progress::callbacks());
     native_callbacks.extend(super::hive_access::callbacks());

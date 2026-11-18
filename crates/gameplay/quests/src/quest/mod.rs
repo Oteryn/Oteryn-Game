@@ -47,6 +47,7 @@ pub mod elemental_spheres;
 pub mod elvenbane;
 pub mod falcon;
 pub mod fire_feathered_native;
+pub mod frontier_tree;
 pub mod goblin_merchant;
 pub mod grave_danger;
 pub mod grizzly_adams;
