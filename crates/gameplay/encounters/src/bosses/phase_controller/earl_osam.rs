@@ -259,7 +259,7 @@ impl EarlOsamEncounter {
         ) -> Result<(), CarrierError>,
     ) -> Result<(), CarrierError> {
         if runtime.read_actor_position(self.earl)?.position() != self.centre {
-            enter_centre(runtime, self.earl, self.centre)?;
+            relocate(runtime, self.earl, self.centre)?;
         }
         self.spheres
             .retain(|&sphere| runtime.contains_live_creature(sphere));
