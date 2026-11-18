@@ -193,6 +193,8 @@ impl ZelosEncounter {
     ) -> Result<bool, CarrierError> {
         let recorded = self.record_death(runtime, actor, now)?;
         if recorded && self.ritual_broken() {
+            // Measure the ritual at the native death so a delayed owner turn
+            // cannot extend the gate delay or change Zelos's damage modifier.
             self.ritual_completed_us.get_or_insert(now);
         }
         Ok(recorded)
