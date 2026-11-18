@@ -133,13 +133,15 @@ pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::Bund
     let mut tiles = Vec::new();
     for y in 0..=8 {
         for x in 0..=12 {
-            let mut palettes = vec![if trap == Some(12187) && (x, y) == (3, 2) {
-                10
-            } else if (x, y) == (3, 5) {
-                2
-            } else {
-                0
-            }];
+            let mut palettes = vec![
+                if trap == Some(12187) && matches!((x, y), (3, 2) | (3, 3)) {
+                    10
+                } else if (x, y) == (3, 5) {
+                    2
+                } else {
+                    0
+                },
+            ];
             if let Some(trap) = trap.filter(|id| *id != 12187)
                 && (x, y) == (4, 2)
             {
@@ -222,7 +224,7 @@ pub(super) fn scenario(
         if weighted_reward {
             super::rottin_rewards::seed_inventory(&h).await?;
         } else if merchant_wave {
-            super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i12186", 1)]).await?;
+            super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i12186", 1); 2]).await?;
         } else if merchant_loot {
             super::item_look::seed_main_backpack(&h, &[]).await?;
         }

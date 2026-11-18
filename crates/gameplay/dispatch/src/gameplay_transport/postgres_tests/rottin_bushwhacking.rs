@@ -20,9 +20,10 @@ use tokio::io::DuplexStream;
 
 #[test]
 fn rottin_merchant_step_in_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| scenario("rottin_bushwhacking", false, Some(12187)))?
@@ -38,9 +39,10 @@ const LOOT: &str = "oteryn:quest-callback/rottin-wood/loot-merchant";
 
 #[test]
 fn rottin_merchant_step_then_loot_use_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| scenario("rottin_merchant_loot", false, Some(12187)))?
@@ -50,13 +52,15 @@ fn rottin_merchant_step_then_loot_use_postgres() -> TestResult {
 }
 
 const NETS: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count";
+const EARLY_NET: &str = "oteryn:quest-callback/rottin-wood/place-net";
 const FINAL_NET: &str = "oteryn:quest-callback/rottin-wood/final-net";
 
 #[test]
 fn rottin_merchant_step_final_net_starts_scene_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| scenario("rottin_merchant_wave", false, Some(12187)))?
@@ -98,7 +102,7 @@ pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
     });
     if wave {
         let donor = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:65-123";
-        let track = json!({"key":NETS,"initial":4,"minimum":0,"maximum":5});
+        let track = json!({"key":NETS,"initial":3,"minimum":0,"maximum":5});
         authored["quests"][0]["tracks"]
             .as_array_mut()
             .ok_or("fixture tracks")?
@@ -106,7 +110,27 @@ pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
         let at = |x, y| json!({"x":x,"y":y,"floor":-7});
         let monsters: Vec<_> = [(2, 4), (3, 4), (4, 4), (5, 4), (3, 5), (4, 5), (5, 5)]
             .into_iter().map(|(x,y)| json!({"position":at(x,y),"creature":"oteryn:creature.travelling_merchant"})).collect();
-        authored["quests"][0]["stages"].as_array_mut().ok_or("fixture stages")?.push(json!({
+        let stages = authored["quests"][0]["stages"]
+            .as_array_mut()
+            .ok_or("fixture stages")?;
+        stages.push(json!({
+            "key":"place-net", "completes":false,
+            "trigger":{"kind":"map_use","callback":{
+                "key": EARLY_NET, "quest": quest, "trigger": "use",
+                "selector": {"position":at(3,3),"appearance":10480},
+                "reversible": false, "requires_world_admission": true,
+                "passages": [], "offerings": [], "return_on_failure": false,
+                "item_on_target": {"item":"oteryn:item.tibia.i12186","count":1,"selected_instance":true},
+                "storage": [
+                    {"track":MISSION,"minimum":1,"maximum":1,"set":1,"preserve":true},
+                    {"track":NETS,"minimum":0,"maximum":3,"set":4,"add":1}
+                ],
+                "activation":{"track":NETS,"minimum":0,"maximum":3},
+                "effects":{"place_item":12187},
+                "sources": [donor]
+            }}
+        }));
+        stages.push(json!({
             "key":"final-net", "completes":false,
             "trigger":{"kind":"map_use","callback":{
                 "key": FINAL_NET, "quest": quest, "trigger": "use",
@@ -218,18 +242,15 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-pub(super) async fn exercise_wave(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+async fn use_net(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
-    h: &Harness,
-) -> TestResult {
+    pos: TilePos,
+    command_id: u64,
+    source: u8,
+) -> TestResult<UseDisposition> {
     let actor = admitted.runtime_actor.ok_or("net player")?;
     let map = owner.bundle_map().ok_or("map")?;
-    let pos = TilePos {
-        x: 3,
-        y: 2,
-        floor: -7,
-    };
     let key = crate::map::view::placement_key(pos, 0).ok_or("net site")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
@@ -254,16 +275,54 @@ pub(super) async fn exercise_wave(
             actor,
             UseCommand {
                 game_session_id: admitted.game_session_id,
-                command_id: 1,
+                command_id,
                 item_fence: Some(fence.item_fence()),
             },
             map,
             &target,
-            Some((id(71), payload)),
+            Some((id(source), payload)),
         )
         .await
-        .ok_or("final net callback")?;
-    assert_eq!(outcome.disposition, UseDisposition::Committed);
+        .ok_or("net callback")?;
+    Ok(outcome.disposition)
+}
+
+pub(super) async fn exercise_wave(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("net player")?;
+    let map = owner.bundle_map().ok_or("map")?;
+    let early = TilePos {
+        x: 3,
+        y: 3,
+        floor: -7,
+    };
+    let pos = TilePos {
+        x: 3,
+        y: 2,
+        floor: -7,
+    };
+    assert_eq!(
+        use_net(owner, admitted, early, 1, 71).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(
+        map.facts.movement_items(early)[0].facts.appearance_id,
+        12187
+    );
+    assert!(
+        owner
+            .states
+            .quest_callbacks
+            .next_encounter_due_us()
+            .is_none()
+    );
+    assert_eq!(
+        use_net(owner, admitted, pos, 2, 72).await?,
+        UseDisposition::Committed
+    );
     assert!(
         map.facts
             .movement_items(pos)
@@ -294,12 +353,13 @@ pub(super) async fn exercise_wave(
         .map_err(super::fixture::debug)?;
     assert_eq!(snapshot.position(), at(2, 3));
     let receipts: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key IN ($1, $2)",
     )
+    .bind(EARLY_NET)
     .bind(FINAL_NET)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(receipts, 1);
+    assert_eq!(receipts, 2);
     let placed: i64 =
         sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
             .bind(NETS)
@@ -350,6 +410,7 @@ pub(super) async fn exercise_wave(
     drain_next(owner).await?;
     let map = owner.bundle_map().ok_or("map")?;
     assert!(map.facts.movement_items(pos).is_empty());
+    assert!(map.facts.movement_items(early).is_empty());
     Ok(())
 }
 
