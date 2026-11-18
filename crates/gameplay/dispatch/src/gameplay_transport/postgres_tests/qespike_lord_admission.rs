@@ -136,6 +136,30 @@ pub(super) fn install(
     Ok(())
 }
 
+async fn seed_station_progress(h: &Harness, character: &[u8], value: i64) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let changed = sqlx::query(
+        "INSERT INTO game_character_quest_tracks
+            (character_id, track_key, quest_key, value, committed_character_revision)
+         SELECT character_id, $2, $3, $4, character_revision FROM game_character_roots
+         WHERE character_id=encode($1,'hex')::uuid
+         ON CONFLICT (character_id, track_key) DO UPDATE SET value=EXCLUDED.value,
+            committed_character_revision=EXCLUDED.committed_character_revision",
+    )
+    .bind(character)
+    .bind(TRACK)
+    .bind(QUEST)
+    .bind(value)
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(changed.rows_affected(), 1);
+    tx.commit().await?;
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -198,6 +222,21 @@ pub(super) async fn exercise(
         true,
     )
     .await?;
+
+    // Crystal actions_lever.lua:45-57 also requires the holder's own QuestLine.
+    // Keep the runtime's cached progress so the fenced writer must check the peer.
+    let peer = fence.character_id.as_bytes().as_slice();
+    seed_station_progress(h, peer, 0).await?;
+    assert_eq!(
+        pull_next(owner, admitted, target).await?,
+        UseDisposition::Rejected
+    );
+    assert_eq!(positions(owner, members).await?, before);
+    assert_eq!(
+        owner.bundle_map().ok_or("map")?.facts.object_revision(key),
+        0
+    );
+    seed_station_progress(h, peer, 1).await?;
     assert_eq!(
         pull_next(owner, admitted, target).await?,
         UseDisposition::Committed
