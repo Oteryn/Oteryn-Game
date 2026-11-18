@@ -57,6 +57,7 @@ fn scenario_case(
     let m03_pits = name == super::super::qengine_m03_pits::NAME;
     let nomads_window = name.starts_with(super::super::qengine_m02_use::NAME);
     let m01b_explore = name.starts_with("m01b/");
+    let ice_tools = name == super::super::qcx60_carried_tools::NAME;
     let qready_craft = name == super::super::qready1_crafting::NAME;
     let qready_workbench = super::super::qready1_workbenches::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -929,7 +930,8 @@ fn scenario_case(
         world(&callback, trigger)?
     };
     run(async |admin| {
-        let h = if shared_rewards
+        let h = if ice_tools
+            || shared_rewards
             || qengine_reward
             || outfit_world
             || matches!(
@@ -1689,6 +1691,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if ice_tools {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::qcx60_carried_tools::catalogue(&callback)?,
+            ));
+        }
         if draconia_escape {
             owner.quest_catalogue =
                 Some(super::super::draconia_escape::catalogue(&callback, name)?);
@@ -2538,13 +2545,16 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
+        } else if ice_tools {
+            Box::pin(super::super::qcx60_carried_tools::exercise(
+                &mut owner, &mut admitted, &h,
+            )).await?;
         } else if name == "engitem-native-seal-paint" {
             Box::pin(super::super::engitem_seal_paint::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 &callback,
-                trigger,
             ))
             .await?;
         } else if name == super::super::engitem_seal_paint_lost_ack::NAME {

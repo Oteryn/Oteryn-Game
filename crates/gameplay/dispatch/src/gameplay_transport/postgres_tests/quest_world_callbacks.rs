@@ -11,6 +11,9 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
+    if name == super::qcx60_carried_tools::NAME {
+        return super::qcx60_carried_tools::callback();
+    }
     // The Stampede entry is an authored binding of the content catalogue.
     if name == "m01b/asura-palace/s1/entry" || name == super::m01c_stampede_entry::CALLBACK {
         let label = if name == super::m01c_stampede_entry::CALLBACK {
