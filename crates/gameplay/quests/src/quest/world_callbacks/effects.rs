@@ -1207,8 +1207,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 })
                     .contains(&encounter.players.len())
             }
-            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                .contains(&encounter.monsters.len())
+            // Crystal First Dragon admits five Challengers, five Unbeatable
+            // Dragons and the Spirit in one source-party encounter.
+            || !(1..=if source_party { 16 } else { 8 }).contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()

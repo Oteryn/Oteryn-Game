@@ -33,6 +33,8 @@ const PLANT_TILE: Position = at(33625, 31022);
 const BOWL_APPROACH: Position = at(33625, 31021);
 const FINALE_LEVER: Position = at(33583, 30992);
 const CHALLENGERS: [Position; 2] = [at(33592, 31013), at(33574, 31013)];
+const OTHER_CHALLENGERS: [Position; 3] = [at(33583, 31022), at(33574, 31031), at(33592, 31031)];
+const UNBEATABLE_SPAWN: Position = at(33622, 31021);
 const STAGING: [Position; 2] = [at(33583, 30993), at(33582, 30993)];
 const ARRIVALS: [Position; 2] = [at(33592, 31017), at(33574, 31017)];
 const FINALE: Position = at(33621, 31023);
@@ -154,6 +156,25 @@ fn dragon_essence_death_retires_the_five_siblings_and_summons_one_first_dragon()
 
 pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
     if name == BOWL {
+        let mut monsters = vec![json!({"creature": PLANT, "position": PLANT_TILE})];
+        monsters.extend(
+            CHALLENGERS
+                .into_iter()
+                .chain(OTHER_CHALLENGERS)
+                .map(|position| json!({"creature": CHALLENGER, "position": position})),
+        );
+        // Representative distinct coordinates from the donor's randomized bounds.
+        monsters.extend(
+            [
+                UNBEATABLE_SPAWN,
+                at(33610, 31016),
+                at(33611, 31016),
+                at(33612, 31016),
+                at(33613, 31016),
+            ]
+            .into_iter()
+            .map(|position| json!({"creature": UNBEATABLE, "position": position})),
+        );
         let data = json!({"schema": 1, "callbacks": [{
             "key": format!("oteryn:quest-callback/{BOWL}"),
             "quest": "oteryn:quest.the_first_dragon_quest", "trigger": "use",
@@ -161,12 +182,9 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
             "reversible": false, "passages": [], "storage": [], "offerings": [],
             "return_on_failure": false,
             "effects": {"encounter": {
-                "minimum_level": 0,
+                "minimum_level": 0, "shared_staging": true,
                 "players": [{"from": STAGING[0], "to": FINALE}],
-                "monsters": [
-                    {"creature": PLANT, "position": PLANT_TILE},
-                    {"creature": UNBEATABLE, "position": at(33622, 31021)}
-                ],
+                "monsters": monsters,
                 "room_min": at(33566, 31006), "room_max": at(33626, 31032),
                 "death_phases": {
                     "terminal": SOMEWHAT, "replacements": [],
@@ -396,21 +414,38 @@ async fn flower_bowl(
         .await?
         .try_into()
         .map_err(|_| "one Angry Plant")?;
-    let [dragon] = live(owner, UNBEATABLE)
-        .await?
-        .try_into()
-        .map_err(|_| "one Unbeatable Dragon")?;
+    assert_eq!(live(owner, CHALLENGER).await?.len(), 5);
+    let dragons = live(owner, UNBEATABLE).await?;
+    assert_eq!(dragons.len(), 5);
+    let dragon = {
+        let runtime = owner.runtime.lock().await;
+        dragons
+            .iter()
+            .copied()
+            .find(|actor| {
+                runtime
+                    .read_actor_position(*actor)
+                    .is_ok_and(|at| at.position() == local(UNBEATABLE_SPAWN))
+            })
+            .ok_or("dragon at source spawn")?
+    };
     super::engenc2_cults::kill(owner, admitted, plant, PLANT, 101).await?;
     put_dragon_on_approach(owner, dragon).await?;
     super::zamulosh_monster_step::step_monster(owner, h, dragon, PLANT_TILE).await?;
-    assert_eq!(live(owner, UNBEATABLE).await?, vec![dragon]);
+    assert_eq!(live(owner, UNBEATABLE).await?, dragons);
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
     );
     put_dragon_on_approach(owner, dragon).await?;
     super::zamulosh_monster_step::step_monster(owner, h, dragon, PLANT_TILE).await?;
-    assert!(live(owner, UNBEATABLE).await?.is_empty());
+    let remaining = live(owner, UNBEATABLE).await?;
+    assert_eq!(remaining.len(), 4);
+    assert!(
+        dragons
+            .iter()
+            .all(|actor| remaining.contains(actor) == (*actor != dragon))
+    );
     let [next] = live(owner, SOMEWHAT)
         .await?
         .try_into()
