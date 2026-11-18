@@ -1171,6 +1171,21 @@ pub(super) async fn move_loop_item_with_house_capacity(
         admission.states.loop_ground.invalidate();
     }
     drop(permit);
+    #[cfg(test)]
+    if at_basin
+        && committed.as_ref().is_ok_and(|result| {
+            result
+                .as_ref()
+                .is_ok_and(|receipt| receipt.floor_effect == Some(15))
+        })
+        && admission
+            .states
+            .quest_callbacks
+            .interrupt_after_commit
+            .swap(false, std::sync::atomic::Ordering::AcqRel)
+    {
+        return LoopMoveResult::Unknown;
+    }
     if at_basin
         && matches!(committed, Ok(Ok(_)))
         && !coal_basin::reconcile(admission, fence.character_id, command_ref).await

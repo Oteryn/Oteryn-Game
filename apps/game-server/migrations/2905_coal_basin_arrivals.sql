@@ -60,9 +60,10 @@ BEGIN
           AND m.transaction_id=NEW.move_transaction_id
           AND m.created_xact_id=pg_current_xact_id() AND l.created_xact_id=pg_current_xact_id()
           AND l.to_kind=3 AND l.to_spatial_position=g.spatial_position
-          AND (i.last_transaction_id,i.state_revision) IS NOT DISTINCT FROM
-              (m.transaction_id,coalesce(l.state_revision_before,0)+1)
-          AND (l.from_kind<>0 OR i.minted_transaction_id=m.transaction_id)
+          AND ((l.from_kind=0 AND i.minted_transaction_id=m.transaction_id
+              AND i.last_transaction_id IS NULL AND i.state_revision=1)
+            OR (l.from_kind<>0 AND i.last_transaction_id=m.transaction_id
+              AND i.state_revision=l.state_revision_before+1))
           AND g.world_id=m.world_id AND g.channel_id=m.channel_id
           AND g.runtime_scope_ownership_generation=m.scope_generation
           AND g.content_revision='sha256:'||encode(m.content_digest,'hex')
@@ -122,7 +123,8 @@ END $$;
 
 CREATE FUNCTION game_coal_basin_arrival_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-    IF TG_OP='UPDATE' AND OLD.source_coal_basin AND NEW IS DISTINCT FROM OLD THEN
+    IF TG_OP='UPDATE' AND OLD.source_coal_basin THEN
+        IF NEW IS NOT DISTINCT FROM OLD THEN RETURN NULL; END IF;
         RAISE EXCEPTION 'coal basin landing is immutable until consumed' USING ERRCODE='23514';
     END IF;
     IF NEW.source_coal_basin AND NOT EXISTS (
