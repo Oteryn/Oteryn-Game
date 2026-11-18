@@ -189,6 +189,19 @@ async fn prepare_fixture(
     Ok(())
 }
 
+async fn begin_assignment(db: &mut sqlx::PgConnection) -> TestResult<sqlx::Transaction<'_, sqlx::Postgres>> {
+    // Match the durability writer's budget on this dedicated connection before
+    // taking the writer lock. The server can release it even if the client stops polling.
+    let budget = crate::durability::DB_PASS_DEADLINE;
+    let mut tx = db.begin().await?;
+    sqlx::query(
+        "SELECT set_config('transaction_timeout',$1,true),
+                set_config('statement_timeout',$1,true),
+                set_config('lock_timeout',$1,true)",
+    ).bind(format!("{}ms", budget.as_millis())).execute(&mut *tx).await?;
+    Ok(tx)
+}
+
 async fn ensure_assignment(
     db: &mut sqlx::PgConnection, clients: &SeamClients<'_>, house: &str, item: &[u8; 16],
 ) -> TestResult {
@@ -198,7 +211,7 @@ async fn ensure_assignment(
     };
     use crate::durability::runtime_scope_assignment::{ControlActor, NodeRegistrationFact, OperationKey};
     let world_id = WorldId::decode(&clients.world)?;
-    let mut tx = db.begin().await?;
+    let mut tx = begin_assignment(db).await?;
     // The assignment writer takes this lock before any scope row.
     sqlx::query("SELECT writer_id FROM game_runtime_scope_assignment_writer WHERE writer_id=1 FOR UPDATE")
         .fetch_one(&mut *tx).await?;
@@ -405,6 +418,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn qualification_r5_assignment_sets_database_deadlines_before_any_lock() -> TestResult {
+        let Some(url) = crate::bestiary_postgres_harness::configured_admin() else { return Ok(()); };
+        let mut db = sqlx::PgConnection::connect(&url).await?;
+        let mut tx = begin_assignment(&mut db).await?;
+        let (transaction, statement, lock): (String, String, String) = sqlx::query_as(
+            "SELECT current_setting('transaction_timeout'), current_setting('statement_timeout'), current_setting('lock_timeout')",
+        ).fetch_one(&mut *tx).await?;
+        assert_eq!(transaction, "2s");
+        assert_eq!(statement, transaction);
+        assert_eq!(lock, transaction);
+        tx.rollback().await?;
+        Ok(())
+    }
 
     #[test]
     fn house_wrap_requires_commits_and_exact_stale_refusal() {
