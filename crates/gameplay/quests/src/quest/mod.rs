@@ -428,6 +428,8 @@ pub struct QuestStateCatalogue {
     transitions: BTreeMap<String, QuestTransition>,
     hashes: BTreeMap<String, [u8; 32]>,
     authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
+    #[cfg(feature = "test-support")]
+    fixture_npc_program: Option<String>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
@@ -617,6 +619,8 @@ impl QuestStateCatalogue {
             transitions: transition_map,
             hashes,
             completion_sets: BTreeMap::new(),
+            #[cfg(feature = "test-support")]
+            fixture_npc_program: None,
             npc_legacy: BTreeMap::new(),
             predecessors: BTreeMap::new(),
             authored_bindings: None,
@@ -684,6 +688,14 @@ impl QuestStateCatalogue {
         updated.authored_bindings = self.authored_bindings.clone();
         updated.native_recipe_evidence = self.native_recipe_evidence.clone();
         Ok(updated)
+    }
+
+    /// Supply a digest-bound NPC source to the ordinary preview and commit path in a fixture.
+    #[cfg(feature = "test-support")]
+    #[must_use]
+    pub fn with_fixture_npc_program(mut self, document: String) -> Self {
+        self.fixture_npc_program = Some(document);
+        self
     }
 
     /// A catalogue with no quest: every transition request is unknown.

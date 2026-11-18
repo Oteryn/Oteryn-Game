@@ -114,12 +114,15 @@ async fn exercise(h: &Harness, mission_fixture: Mission) -> TestResult {
     )
     .await?;
     admit_level_80_druid(&owner, &mut admitted, h, &authority).await?;
-    owner.quest_catalogue = Some(std::sync::Arc::new(
+    let catalogue = if mission_fixture == Mission::Published {
         oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
             .map_err(debug)?
             .catalogue()
-            .clone(),
-    ));
+            .clone()
+    } else {
+        eleven_item_catalogue()?
+    };
+    owner.quest_catalogue = Some(std::sync::Arc::new(catalogue));
     owner
         .refresh_quest_session(admitted.game_session_id, true)
         .await;
@@ -162,20 +165,13 @@ async fn exercise(h: &Harness, mission_fixture: Mission) -> TestResult {
         "{:?}",
         mission.conversation
     );
-    if mission_fixture != Mission::Published {
-        accept_with_eleven_item_identities(&owner, &admitted, carries_soil).await?;
-    } else {
-        let result = talk(&mut owner, &admitted, arkulius, 702, "yes").await?;
-        assert!(
-            result
-                .conversation
-                .iter()
-                .flat_map(|reply| &reply.lines)
-                .any(|line| line.contains("Come back here when you have the elemental object")),
-            "{:?}",
-            result.conversation
-        );
-    }
+    let result = talk(&mut owner, &admitted, arkulius, 702, "yes").await?;
+    let accepted = result
+        .conversation
+        .iter()
+        .flat_map(|reply| &reply.lines)
+        .any(|line| line.contains("Come back here when you have the elemental object"));
+    assert_eq!(accepted, !carries_soil, "{:?}", result.conversation);
     let stage: Option<i64> = sqlx::query_scalar(
         "SELECT value FROM game_character_quest_tracks
          WHERE character_id=encode($1,'hex')::uuid
@@ -188,24 +184,15 @@ async fn exercise(h: &Harness, mission_fixture: Mission) -> TestResult {
     Ok(())
 }
 
-// Extend the real acceptance rule in memory to isolate the planner bound.
-// The published Arkulius dialogue has only five inventory operands.
-async fn accept_with_eleven_item_identities(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
-    carries_soil: bool,
-) -> TestResult {
-    use crate::durability::quest_state::QuestTransitionOutcome;
-    use crate::durability::quest_state::npc_program::NpcProgramRequest;
-    use crate::foundation::{CommandId, CommandRef};
-    use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+// The published programme contains five item identities. Extend its acceptance
+// rule in memory to drive the eleven-item inventory plan through dialogue dispatch.
+fn eleven_item_catalogue() -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
     use oteryn_gameplay_quests::quest::elemental_spheres::{QUEST, QUEST_LINE};
-    use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleTrigger};
+    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog;
     use oteryn_gameplay_quests::quest::{
         QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
         QuestTransition,
     };
-    use std::sync::Arc;
 
     const ACCEPT: &str = "oteryn:quest-npc/elemental_spheres/arkulius/druid-accept";
     let mut document: serde_json::Value = serde_json::from_str(include_str!(
@@ -223,96 +210,37 @@ async fn accept_with_eleven_item_identities(
             })
         }),
     );
-    let source = NpcRuleCatalog::from_json_documents(&[&document.to_string()]).map_err(debug)?;
+    let document = document.to_string();
+    let source = NpcRuleCatalog::from_json_documents(&[&document]).map_err(debug)?;
     let digest = source.programs()[0]
         .digest
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
-    let catalogue = Arc::new(
-        QuestStateCatalogue::new(
-            "content-1",
-            vec![QuestTrack {
-                key: QUEST_LINE.into(),
-                quest: QUEST.into(),
-                initial: -1,
-                min: -1,
-                max: 3,
+    Ok(QuestStateCatalogue::new(
+        "content-1",
+        vec![QuestTrack {
+            key: QUEST_LINE.into(),
+            quest: QUEST.into(),
+            initial: -1,
+            min: -1,
+            max: 3,
+        }],
+        vec![QuestTransition {
+            key: format!("oteryn:quest-npc-pin/{digest}"),
+            quest: QUEST.into(),
+            effects: vec![QuestEffect {
+                track: QUEST_LINE.into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Computed,
             }],
-            vec![QuestTransition {
-                key: format!("oteryn:quest-npc-pin/{digest}"),
-                quest: QUEST.into(),
-                effects: vec![QuestEffect {
-                    track: QUEST_LINE.into(),
-                    from: QuestComparison::Any,
-                    effect: QuestEffectKind::Computed,
-                }],
-                completes: false,
-                experience: None,
-                world_change: None,
-            }],
-        )
-        .map_err(debug)?,
-    );
-    let session = admitted.game_session_id;
-    let topic = owner
-        .states
-        .npc_conversations
-        .catalogue_topic_for_test(session)
-        .ok_or("Arkulius mission topic")?;
-    let fence = super::death_ml_loss_composed::current_fence(owner, session).await?;
-    let native = owner
-        .active_generation
-        .and_then(|g| g.native_gameplay())
-        .ok_or("native gameplay")?;
-    let receipt = owner
-        .root
-        .commit_fixture_npc_program(
-            owner.character,
-            owner.holder,
-            &owner
-                .spell_lane_permit()
-                .await
-                .ok_or("NPC programme permit")?,
-            fence,
-            NpcProgramRequest {
-                command: CommandRef::new(session, CommandId::new(702).map_err(debug)?),
-                npc: ARKULIUS.into(),
-                trigger: NpcRuleTrigger::Say,
-                message: "yes".into(),
-                topic,
-                transition_key: ACCEPT.into(),
-            },
-            catalogue,
-            &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
-            &source,
-        )
-        .await
-        .map_err(debug)?;
-    if carries_soil {
-        assert!(
-            matches!(
-                receipt.transition,
-                QuestTransitionOutcome::Refused(
-                    oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch
-                )
-            ),
-            "{receipt:?}"
-        );
-    } else {
-        assert!(
-            matches!(receipt.transition, QuestTransitionOutcome::Committed(_)),
-            "{receipt:?}"
-        );
-    }
-    assert_eq!(
-        source
-            .item_exchange_keys(ARKULIUS)
-            .ok_or("exchange keys")?
-            .len(),
-        11
-    );
-    Ok(())
+            completes: false,
+            experience: None,
+            world_change: None,
+        }],
+    )
+    .map_err(debug)?
+    .with_fixture_npc_program(document))
 }
 
 pub(super) async fn premium_fixture(

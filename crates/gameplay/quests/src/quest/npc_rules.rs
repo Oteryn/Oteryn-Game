@@ -418,6 +418,11 @@ impl NpcRuleCatalog {
         npc: &str,
         native: &super::QuestStateCatalogue,
     ) -> Result<Option<Self>, NpcRuleError> {
+        #[cfg(feature = "test-support")]
+        if let Some(document) = native.fixture_npc_program.as_deref() {
+            let fixture = Self::from_json_documents(&[document])?;
+            return admission::for_npc(&fixture, npc, native);
+        }
         admission::for_npc(self, npc, native)
     }
     pub fn from_json_documents(documents: &[&str]) -> Result<Self, NpcRuleError> {
