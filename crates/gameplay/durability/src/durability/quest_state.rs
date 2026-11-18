@@ -771,24 +771,28 @@ pub(super) async fn inquisition_blessing_eligible(
 
 /// Durable source-expiry admissions and complete immutable proofs.
 pub mod server_timer;
+pub mod wave_egress;
 
 /// Private closed source union: causes alone never grant autonomous mutations.
 #[derive(Debug, Clone)]
 pub(super) enum QuestSourceAction {
     SoulWar(Box<soul_war_source::SoulWarSourceAction>),
     RottenArea(rotten_area::QualifiedRottenAreaThink),
+    WaveEgress(wave_egress::WaveEgress),
 }
 impl QuestSourceAction {
     fn request(&self, fence: &CurrentCharacterGameplayFence) -> Result<QuestTransitionRequest> {
         match self {
             Self::SoulWar(x) => x.request(fence),
             Self::RottenArea(x) => x.request(fence),
+            Self::WaveEgress(x) => x.request(fence),
         }
     }
     fn binding(&self, character: CharacterId, request: &QuestTransitionRequest) -> [u8; 33] {
         match self {
             Self::SoulWar(x) => x.binding(character, request),
             Self::RottenArea(x) => x.binding(character, request),
+            Self::WaveEgress(x) => x.binding(character, request),
         }
     }
 }

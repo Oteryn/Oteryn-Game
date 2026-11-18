@@ -962,37 +962,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let mut success_preface = None;
-        if callback.effects.encounter.is_some() && callback.has_personal_state() && !durable {
+        let read_only_wave = callback.is_read_only()
+            && callback
+                .effects
+                .encounter
+                .as_ref()
+                .is_some_and(|encounter| encounter.wave_run.is_some());
+        let personal_encounter = callback.effects.encounter.is_some()
+            && callback.has_personal_state()
+            && !read_only_wave;
+        if personal_encounter && !durable {
             return UseDisposition::Rejected;
         }
-        let mut personal_reservation =
-            if callback.effects.encounter.is_some() && callback.has_personal_state() {
-                let (Some(fence), Some(definition)) = (
-                    fence,
-                    self.quest_catalogue
-                        .as_ref()
-                        .and_then(|catalogue| catalogue.definition_hash(&callback.quest)),
-                ) else {
-                    return UseDisposition::Rejected;
-                };
-                match self.states.quest_callbacks.personal.reserve(
-                    runtime,
-                    &callback.key,
-                    personal_encounter::Origin::new(
-                        *fence.character_id.as_bytes(),
-                        cause,
-                        definition,
-                        &callback.quest,
-                        fence.expected_character_revision.get(),
-                    ),
-                ) {
-                    Ok(reservation) => Some(reservation),
-                    Err(disposition) => return disposition,
-                }
-            } else {
-                None
+        let mut personal_reservation = if personal_encounter {
+            let (Some(fence), Some(definition)) = (
+                fence,
+                self.quest_catalogue
+                    .as_ref()
+                    .and_then(|catalogue| catalogue.definition_hash(&callback.quest)),
+            ) else {
+                return UseDisposition::Rejected;
             };
-        if callback.effects.encounter.is_some() && callback.has_personal_state() {
+            match self.states.quest_callbacks.personal.reserve(
+                runtime,
+                &callback.key,
+                personal_encounter::Origin::new(
+                    *fence.character_id.as_bytes(),
+                    cause,
+                    definition,
+                    &callback.quest,
+                    fence.expected_character_revision.get(),
+                ),
+            ) {
+                Ok(reservation) => Some(reservation),
+                Err(disposition) => return disposition,
+            }
+        } else {
+            None
+        };
+        if personal_encounter {
             let ready = self.preflight_personal_quest_encounter(
                 runtime,
                 states,

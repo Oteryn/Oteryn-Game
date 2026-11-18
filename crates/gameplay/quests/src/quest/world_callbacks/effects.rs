@@ -782,7 +782,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let wave_encounter = effects.encounter.as_ref().is_some_and(|room| {
         room.wave_run.is_some()
             && callback.actor_kind == ActorKind::Player
-            && (personal_encounter || (!callback.has_state() && callback.offerings.is_empty()))
+            && (!callback.has_state() || callback.is_read_only())
+            && callback.offerings.is_empty()
+            && callback.item_on_target.is_none()
     });
     if operations > 1
         || (operations > 0

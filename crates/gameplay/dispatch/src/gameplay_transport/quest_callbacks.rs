@@ -104,6 +104,9 @@ pub(super) struct PendingCallbacks {
     periodic_bosses: std::sync::Mutex<periodic_bosses::PeriodicBosses>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
+    wave_credits: std::sync::Mutex<
+        std::collections::VecDeque<crate::durability::quest_state::wave_egress::WaveEgress>,
+    >,
     waves: std::sync::Mutex<Vec<waves::ActiveWaveRun>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,

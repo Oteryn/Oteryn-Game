@@ -1,5 +1,7 @@
 //! Timed waves use the same Channel source-owner turn as other quest encounters.
 use super::*;
+use crate::durability::character_progression::CharacterProgressionError;
+use crate::durability::quest_state::wave_egress::WaveEgress;
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_gameplay_quests::quest::world_callbacks::{
     Encounter, EncounterMonster,
@@ -12,13 +14,14 @@ use tokio::time::Instant;
 pub(super) struct ActiveWaveRun {
     pub(super) key: u64,
     pub(super) room: Encounter,
+    callback: String,
     pub(super) participants: Vec<(ExactActorRef, GameSessionId)>,
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     started: Instant,
     next: usize,
     creatures: Vec<ExactActorRef>,
     terminal: Option<ExactActorRef>,
-    exit: Option<Position>,
+    exit: Option<(Position, bool)>,
     lever: Option<(u64, crate::map::view::EntryFacts)>,
 }
 
@@ -27,12 +30,14 @@ impl ActiveWaveRun {
         runtime: &ChannelRuntimeV1,
         key: u64,
         room: Encounter,
+        callback: String,
         participants: Vec<(ExactActorRef, GameSessionId)>,
         lever: Option<(u64, crate::map::view::EntryFacts)>,
     ) -> Self {
         Self {
             key,
             room,
+            callback,
             participants,
             scope: runtime.encounter_owner_scope(),
             started: Instant::now(),
@@ -78,12 +83,12 @@ impl ActiveWaveRun {
                     .terminal
                     .is_some_and(|actor| runtime.retains_corpse_projection(actor))
             {
-                Some(victory.exit)
+                Some((victory.exit, true))
             } else {
-                timed_out.then_some(plan.timeout_exit)
+                timed_out.then_some((plan.timeout_exit, false))
             };
         }
-        if let Some(destination) = self.exit {
+        if let Some((destination, victory)) = self.exit {
             if !eject(
                 owner,
                 runtime,
@@ -92,6 +97,8 @@ impl ActiveWaveRun {
                 &self.room,
                 destination,
                 &self.participants,
+                plan.credit_transition(victory)
+                    .map(|key| (self.callback.as_str(), key, victory)),
             ) {
                 return true;
             }
@@ -129,6 +136,59 @@ impl ActiveWaveRun {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn drain_wave_credit(&self) {
+        let queue = &self.states.quest_callbacks.wave_credits;
+        let Some(credit) = queue.lock().ok().and_then(|q| q.front().cloned()) else {
+            return;
+        };
+        let Some(catalogue) = &self.quest_catalogue else {
+            return;
+        };
+        let command = credit.command();
+        let session = command.game_session_id();
+        let result = match self.current_quest_fence(session).await {
+            Ok(Some(fence)) => {
+                let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+                slot.commit_quest_wave_egress(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    credit,
+                    catalogue.clone(),
+                )
+                .await
+            }
+            Ok(None) => Err(CharacterProgressionError::AuthorityRejected),
+            Err(_) => return,
+        };
+        let retry = matches!(
+            result,
+            Err(CharacterProgressionError::Unavailable(_)
+                | CharacterProgressionError::CharacterRevisionMismatch)
+        );
+        if let Ok(mut queue) = queue.lock()
+            && queue
+                .front()
+                .is_some_and(|front| front.command() == command)
+            && let Some(credit) = queue.pop_front()
+            && retry
+        {
+            queue.push_back(credit);
+        }
+        match result {
+            Ok(
+                QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_),
+            ) => {
+                self.schedule_quest_refresh(session);
+            }
+            Err(error) => super::super::operator_event(&format!(
+                "quest_wave_credit_deferred={retry} reason={error}"
+            )),
+            Ok(_) => return,
+        }
+    }
+
     pub(super) fn tick_wave_runs(
         &self,
         runtime: &mut ChannelRuntimeV1,
@@ -235,6 +295,10 @@ fn spawn_wave(
     terminal_actor
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one bounded egress binds its room and exact survivor credit"
+)]
 fn eject(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
@@ -243,6 +307,7 @@ fn eject(
     room: &Encounter,
     destination: Position,
     participants: &[(ExactActorRef, GameSessionId)],
+    credit: Option<(&str, &str, bool)>,
 ) -> bool {
     let Ok(census) = runtime.positioned_melee_census() else {
         return false;
@@ -275,17 +340,53 @@ fn eject(
         ) else {
             return false;
         };
-        players.push((actor, session, position.position()));
+        let lease = if credit.is_some() {
+            let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+                return false;
+            };
+            Some(lease)
+        } else {
+            None
+        };
+        players.push((actor, session, position.position(), lease));
         proofs.push(proof);
     }
     if proofs.is_empty() {
         return true;
     }
+    let mut credits = if credit.is_some() {
+        let Ok(mut queue) = owner.states.quest_callbacks.wave_credits.lock() else {
+            return false;
+        };
+        if queue.len() + proofs.len() > 128 || queue.try_reserve(proofs.len()).is_err() {
+            return false;
+        }
+        Some(queue)
+    } else {
+        None
+    };
     let Ok(snapshots) = runtime.commit_quest_relocation(proofs, || true) else {
         return false;
     };
     let now = owner.owner_now().get();
-    for ((actor, session, from), after) in players.into_iter().zip(snapshots) {
+    for ((actor, session, from, lease), after) in players.into_iter().zip(snapshots) {
+        if let (Some(queue), Some((callback, transition, victory)), Some(lease)) =
+            (&mut credits, credit, lease)
+            && let Some(command) =
+                super::step_command(actor, session, after.revision(), owner.reset_epoch)
+        {
+            queue.push_back(WaveEgress::from_committed_movement(
+                callback.to_owned(),
+                transition.to_owned(),
+                actor,
+                command,
+                victory,
+                lease,
+                runtime.encounter_owner_scope().1,
+                after.revision(),
+                owner.reset_epoch,
+            ));
+        }
         states.stage_special_movement_step(
             runtime,
             map,

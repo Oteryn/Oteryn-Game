@@ -172,7 +172,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             }
         }
-        if callback.has_personal_state() && !preflight && reservation.is_none() {
+        if callback.has_personal_state()
+            && !(encounter.wave_run.is_some() && callback.is_read_only())
+            && !preflight
+            && reservation.is_none()
+        {
             return UseDisposition::Rejected;
         }
         if encounter.timing.is_some() {
@@ -286,6 +290,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         }
         if let Some(wave) = wave {
+            if [false, true]
+                .into_iter()
+                .filter_map(|victory| wave.credit_transition(victory))
+                .any(|credit| {
+                    self.quest_catalogue
+                        .as_ref()
+                        .and_then(|catalogue| catalogue.transition(credit))
+                        .is_none_or(|transition| {
+                            transition.quest != callback.quest
+                                || transition.completes
+                                || transition.experience.is_some()
+                        })
+                })
+            {
+                return UseDisposition::Rejected;
+            }
             let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
                 return UseDisposition::Rejected;
             };
@@ -362,6 +382,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime,
                 key,
                 encounter.clone(),
+                callback.key.clone(),
                 players
                     .iter()
                     .map(|(who, session, _)| (*who, *session))

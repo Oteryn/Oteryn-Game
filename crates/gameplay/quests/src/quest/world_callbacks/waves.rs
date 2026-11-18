@@ -9,6 +9,8 @@ pub struct WaveRun {
     pub timeout_ms: u32,
     pub timeout_exit: Position,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timeout_credit: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub victory: Option<WaveVictory>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub eject_room: bool,
@@ -26,6 +28,8 @@ pub struct WaveRun {
 pub struct WaveVictory {
     pub creature: String,
     pub exit: Position,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub credit: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -69,11 +73,27 @@ pub fn contains(room: &Encounter, at: Position) -> bool {
         && (room.room_min.y..=room.room_max.y).contains(&at.y)
 }
 
+pub const CREDIT_PREFIX: &str = "oteryn:quest-transition/wave-egress/";
+
+impl WaveRun {
+    pub fn credit_transition(&self, victory: bool) -> Option<&str> {
+        if victory {
+            self.victory.as_ref()?.credit.as_deref()
+        } else {
+            self.timeout_credit.as_deref()
+        }
+    }
+}
+
 pub(super) fn valid(callback: &Callback, room: &Encounter, run: &WaveRun) -> bool {
     let outside = |p: Position| (-15..=0).contains(&p.floor) && !contains(room, p);
     let area = (u32::from(room.room_max.x.saturating_sub(room.room_min.x)) + 1)
         .saturating_mul(u32::from(room.room_max.y.saturating_sub(room.room_min.y)) + 1);
+    let valid_credit =
+        |key: &str| key.starts_with(CREDIT_PREFIX) && crate::quest::valid_quest_key(key);
     matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
+        && run.credit_transition(false).is_none_or(valid_credit)
+        && run.credit_transition(true).is_none_or(valid_credit)
         && (1..=3_600_000).contains(&run.timeout_ms)
         && area <= 4096
         && room.phase.is_none()

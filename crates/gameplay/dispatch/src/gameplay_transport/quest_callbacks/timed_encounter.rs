@@ -155,6 +155,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(in crate::gameplay_transport) async fn drain_quest_encounter_deadlines(&self) {
+        if self
+            .states
+            .quest_callbacks
+            .wave_credits
+            .lock()
+            .is_ok_and(|q| !q.is_empty())
+        {
+            self.root
+                .with_background_operation(self.drain_wave_credit())
+                .await;
+        }
         let Some(_permit) = self.spell_lane_permit().await else {
             return;
         };

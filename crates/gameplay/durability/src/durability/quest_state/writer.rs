@@ -924,8 +924,21 @@ impl DurabilityRoot {
             &source_action,
             Some(super::QuestSourceAction::RottenArea(_))
         );
+        let wave_input = match &source_action {
+            Some(super::QuestSourceAction::WaveEgress(input)) => {
+                if !input.matches(&catalogue, &world_callbacks, &request) {
+                    return Err(CharacterProgressionError::InvalidInput);
+                }
+                true
+            }
+            _ => false,
+        };
+        let wave_key = request.transition_key.starts_with(
+            oteryn_gameplay_quests::quest::world_callbacks::waves::CREDIT_PREFIX,
+        );
         if source_key != soul_input
             || area_key != area_input
+            || wave_key != wave_input
             || source_action
                 .as_ref()
                 .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
