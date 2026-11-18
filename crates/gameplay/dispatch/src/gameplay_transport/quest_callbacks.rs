@@ -265,6 +265,13 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return false;
     }
     if let Some(binding) = &callback.selector.native {
+        if callback.effects.object_cycle.is_some() {
+            return tile(binding.position) == pos
+                && ordinal == binding.ordinal
+                && map
+                    .facts
+                    .quest_object_cycle_matches(key, binding.appearance);
+        }
         let matched = tile(binding.position) == pos
             && ordinal == binding.ordinal
             && map

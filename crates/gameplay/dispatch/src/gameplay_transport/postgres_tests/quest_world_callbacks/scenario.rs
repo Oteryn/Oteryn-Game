@@ -30,7 +30,7 @@ fn scenario_case(
     let native_dance = dance_hints || name == "unnatural-selection-dance-native";
     let npc_fluid = name.starts_with(super::super::quest_npc_fluid_intake::NAME);
     let skull_custody = name == super::super::quest_skull_custody::NAME;
-    let worm_punisher = name == super::super::worm_punisher_progress::NAME;
+    let worm_punisher = name.starts_with(super::super::worm_punisher_progress::NAME);
     let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
     let boreth_cleanup = name == super::super::boreth_death_cleanup::NAME;
     let lersatio_mirrors = name == super::super::lersatio_mirrors::NAME;
@@ -3247,6 +3247,8 @@ fn scenario_case(
                 },
             ))
             .await?;
+        } else if name == super::super::worm_punisher_progress::ROTATING {
+            Box::pin(super::super::worm_punisher_progress::exercise_rotation(&mut owner, &mut admitted, &h)).await?;
         } else if worm_punisher {
             Box::pin(super::super::worm_punisher_progress::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if callback.item_on_target.is_some()

@@ -121,6 +121,9 @@ pub struct CallbackEffects {
     /// Start an immutable source object's ItemType appearance sequence at Channel startup.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub object_cycle: Option<ObjectCycle>,
+    /// Require the admitted native object's current appearance as well as its base identity.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub source_must_match: bool,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -580,6 +583,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let stationary = &effects.stationary_encounter;
+    if effects.source_must_match
+        && (callback.trigger != Trigger::Use || callback.selector.native.is_none())
+    {
+        return false;
+    }
     if effects
         .object_cycle
         .as_ref()

@@ -46,7 +46,7 @@ fn lersatio_mirror_repairs_then_second_hit_moves_two_players_and_spawns_encounte
 fn binding(second: bool) -> Value {
     let count = i64::from(second);
     let mut effects = json!({
-        "transform":8721, "reset_after_ms":30000, "source_magic":3,
+        "transform":8721, "reset_after_ms":30000, "source_magic":3, "source_must_match":true,
         "player_speech": if second {
             "FINE. DIE PRETTY!"
         } else {
@@ -138,17 +138,10 @@ pub(super) async fn exercise(
         );
         assert!(runtime.visible_entities().creatures.is_empty());
     }
-    let key = placement(MIRROR)?;
     let due = {
         let map = owner.bundle_map().ok_or("map")?;
-        assert!(
-            map.facts
-                .quest_callback_matches(key, None, None, Some(8721))
-        );
-        assert!(
-            map.facts
-                .quest_callback_matches(placement(STATUE)?, None, None, Some(8326))
-        );
+        assert_eq!(appearance(map, MIRROR)?, 8721);
+        assert_eq!(appearance(map, STATUE)?, 8326);
         map.facts
             .next_movement_decay_time()
             .ok_or("mirror repair deadline")?
@@ -169,10 +162,7 @@ pub(super) async fn exercise(
     let stop = oteryn_foundation::CancellationToken::new();
     let wait_for_repair = async {
         let map = owner.bundle_map().ok_or("map")?;
-        while !map
-            .facts
-            .quest_callback_matches(key, None, None, Some(8667))
-        {
+        while appearance(map, MIRROR)? != 8667 {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
         stop.cancel();
@@ -214,6 +204,28 @@ pub(super) async fn exercise(
 fn placement(at: Position) -> TestResult<u64> {
     oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, 1)
         .ok_or_else(|| "mirror fixture placement".into())
+}
+
+fn appearance(map: &crate::map::boot::BundleMap, at: Position) -> TestResult<u16> {
+    use crate::map::{
+        overlay::TilePos,
+        view::{MapEntryKey, compose_tile},
+    };
+    let pos = TilePos {
+        x: at.x,
+        y: at.y,
+        floor: at.floor,
+    };
+    let key = MapEntryKey::Base(placement(at)?);
+    compose_tile(&map.overlay, &map.facts.pinned(), pos)
+        .map_err(debug)?
+        .and_then(|tile| {
+            tile.entries
+                .into_iter()
+                .find(|entry| entry.source.key() == key)
+        })
+        .map(|entry| entry.facts.appearance_id)
+        .ok_or_else(|| "mirror or statue appearance".into())
 }
 
 async fn use_mirror(

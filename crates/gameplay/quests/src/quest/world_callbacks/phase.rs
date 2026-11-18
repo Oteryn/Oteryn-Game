@@ -68,6 +68,8 @@ pub fn exclusive(left: &Callback, right: &Callback) -> bool {
     // Crystal 201189f8 actions_lersatio_mirrors.lua:38-79 uses the same
     // timed source transform on both hits and starts an encounter on the second.
     let timed_source = left.trigger == Trigger::Use
+        && left.effects.source_must_match
+        && right.effects.source_must_match
         && left.requires_world_admission
         && right.requires_world_admission
         && left.selector.native.is_some()

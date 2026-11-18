@@ -12,6 +12,7 @@ use oteryn_protocol_oteryn::world_object::{
 use serde_json::{Value, json};
 
 pub(super) const NAME: &str = "quest-worm-punisher-progress";
+pub(super) const ROTATING: &str = "quest-worm-punisher-progress-rotating";
 const CARRION: Position = Position {
     x: 32500,
     y: 32000,
@@ -36,6 +37,17 @@ fn worm_punisher_selected_hot_hammer_updates_debt_and_earns_worm_whacker_on_sixt
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
         super::quest_world_callbacks::scenario(NAME, CARRION, false)
+    })
+}
+
+#[test]
+fn wormholes_rotate_on_owner_clock_and_reject_a_stale_carrion_handle() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(ROTATING, || {
+        super::quest_world_callbacks::scenario(ROTATING, CARRION, false)
     })
 }
 
@@ -74,7 +86,109 @@ pub(super) fn callback() -> TestResult<Callback> {
 }
 
 pub(super) fn world(row: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    super::quest_world_callbacks::world_with_objects(row, CARRION, &[(DRILLING, 9196)], &[])
+    super::quest_world_callbacks::world_with_objects(
+        row,
+        CARRION,
+        &[(DRILLING, 9196)],
+        &[9194, 9195],
+    )
+}
+
+pub(super) async fn exercise_rotation(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use std::time::Duration;
+    let [mut carrion, mut drilling] = rows();
+    // Crystal 201189f8 data-global/items/items.xml:24775-24786.
+    let cycle = json!({"initial":9197,"stages":[
+        {"appearance":9197,"duration_ms":2000,"next":9195},
+        {"appearance":9195,"duration_ms":4000,"next":9196},
+        {"appearance":9196,"duration_ms":2000,"next":9194},
+        {"appearance":9194,"duration_ms":7000,"next":9197}
+    ]});
+    carrion["effects"]["object_cycle"] = cycle.clone();
+    drilling["selector"]["position"] = json!(CARRION);
+    drilling["selector"]["native"]["position"] = json!(CARRION);
+    drilling["effects"] = json!({"object_cycle":cycle});
+    let base = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
+    let fixture = json!({"schema":1,"callbacks":[carrion,drilling]}).to_string();
+    owner.quest_catalogue = Some(std::sync::Arc::new(
+        world_callbacks::with_fixture_callbacks(base.clone(), &fixture)?,
+    ));
+    let mission = format!("{}mission04", isle_of_evil::PREFIX);
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(mission.clone(), 2), (COUNTER.into(), 5), (DEBT.into(), 0)],
+        121,
+    )
+    .await?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("quest fence")?;
+    super::quest_world_callbacks::input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: CARRION,
+            item: HAMMER.into(),
+            count: 1,
+        },
+        87,
+        true,
+    )
+    .await?;
+
+    let key = oteryn_world_bundle::bundle::placement_key(CARRION.floor, CARRION.x, CARRION.y, 1)
+        .ok_or("worm placement")?;
+    let old_revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
+    let stop = oteryn_foundation::CancellationToken::new();
+    let observe = async {
+        let map = owner.bundle_map().ok_or("map")?;
+        while !map.facts.quest_object_cycle_matches(key, 9195) {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        stop.cancel();
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let (_, advanced) = tokio::time::timeout(
+        Duration::from_secs(10),
+        super::fixture::join_two(owner.run_source_owner_cycles(&stop), observe),
+    )
+    .await?;
+    advanced?;
+    assert_ne!(
+        strike_at_revision(owner, admitted, CARRION, 9195, Some(old_revision)).await?,
+        UseDisposition::Committed
+    );
+    assert_ne!(
+        strike(owner, admitted, CARRION, 9195).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(super::m39_bone_journey::stage(h, COUNTER).await?, Some(5));
+    {
+        let map = owner.bundle_map().ok_or("map")?;
+        let due = map
+            .facts
+            .next_movement_decay_time()
+            .ok_or("next worm stage")?;
+        assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+        assert_eq!(map.facts.expire_movement_items(due), 1);
+        assert!(map.facts.quest_object_cycle_matches(key, 9196));
+    }
+    assert_eq!(
+        strike(owner, admitted, CARRION, 9196).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(super::m39_bone_journey::stage(h, &mission).await?, Some(2));
+    assert_eq!(super::m39_bone_journey::stage(h, COUNTER).await?, Some(0));
+    assert_eq!(super::m39_bone_journey::stage(h, DEBT).await?, Some(1));
+    Ok(())
 }
 
 pub(super) async fn exercise(
@@ -171,6 +285,16 @@ async fn strike(
     target: Position,
     appearance: u16,
 ) -> TestResult<UseDisposition> {
+    strike_at_revision(owner, admitted, target, appearance, None).await
+}
+
+async fn strike_at_revision(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    target: Position,
+    appearance: u16,
+    expected_revision: Option<u64>,
+) -> TestResult<UseDisposition> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -196,7 +320,7 @@ async fn strike(
         use_with: None,
         use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
             placement,
-            expected_revision: map.facts.object_revision(key),
+            expected_revision: expected_revision.unwrap_or_else(|| map.facts.object_revision(key)),
         })),
         use_with_position: None,
     })

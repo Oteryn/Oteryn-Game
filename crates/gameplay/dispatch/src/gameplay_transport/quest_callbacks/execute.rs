@@ -169,7 +169,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
             callback,
             after.appearance_id,
-        ) {
+        ) || (callback.effects.source_must_match
+            && callback
+                .selector
+                .native
+                .as_ref()
+                .is_none_or(|source| source.appearance != after.appearance_id))
+        {
             return UseDisposition::NothingToUse;
         }
         if callback.effects.reward_door.is_some() {

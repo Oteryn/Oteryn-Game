@@ -19,6 +19,21 @@ struct Stage {
 }
 
 impl BundleFacts {
+    pub fn quest_object_cycle_matches(&self, key: u64, appearance: u16) -> bool {
+        self.callbacks.lock().is_ok_and(|state| {
+            !state.hidden.contains(&key)
+                && state.phase_revision(key).is_none()
+                && state
+                    .object_cycles
+                    .get(&key)
+                    .is_some_and(|cycle| cycle.current == appearance)
+                && state
+                    .changed
+                    .get(&key)
+                    .is_none_or(|(_, facts)| facts.appearance_id == appearance)
+        })
+    }
+
     /// Qualify an exact unmodified, immovable base entry once at owner startup.
     pub fn initialize_quest_object_cycle(
         &self,
@@ -30,6 +45,9 @@ impl BundleFacts {
         let Some((pos, ordinal)) = view::placement_of(key) else {
             return false;
         };
+        if !self.quest_callback_native_object(key, base_id, binding.initial) {
+            return false;
+        }
         let Some(base) = self.base_entry(pos, ordinal, base_id) else {
             return false;
         };
