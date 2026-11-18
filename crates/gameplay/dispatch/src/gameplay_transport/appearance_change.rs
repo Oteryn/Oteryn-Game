@@ -61,9 +61,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !current_runtime(runtime, actor, session, fence, &content) {
             return None;
         }
-        let state = self.root.read_current_character_appearance_state(
-            self.character, self.holder, *fence, content.earned_grant_keys(),
-        ).await.ok()?;
+        let state = self
+            .root
+            .read_current_character_appearance_state(
+                self.character,
+                self.holder,
+                *fence,
+                content.earned_grant_keys(),
+            )
+            .await
+            .ok()?;
         let (base, _) = catalogue::base(&content, &state);
         content.look_type(&base.outfit_key, state.sex)
     }
