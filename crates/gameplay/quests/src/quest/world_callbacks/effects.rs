@@ -471,7 +471,8 @@ pub struct DeathCrystal {
 
 impl DeathCrystalCircuit {
     fn valid(&self, encounter: &Encounter, in_room: &impl Fn(Position) -> bool) -> bool {
-        let creature = |key: &str| key.starts_with("oteryn:creature.") && valid_quest_key(key);
+        let creature =
+            |key: &str| key.starts_with("oteryn:creature.") && super::super::valid_quest_key(key);
         if !(1..=8).contains(&self.crystals.len())
             || !(1..=1000).contains(&self.charges_per_crystal)
             || self.dormant_appearance == 0
