@@ -31,7 +31,15 @@ const START: Position = Position {
     x: TRIGGER.x - 1,
     ..TRIGGER
 };
+const PEER_START: Position = Position {
+    y: START.y - 1,
+    ..START
+};
 const LANDING: Position = row(2);
+const PEER_LANDING: Position = Position {
+    y: LANDING.y + 1,
+    ..LANDING
+};
 const FIRST: Position = row(3);
 const SECOND: Position = row(4);
 const EXIT: Position = row(6);
@@ -51,7 +59,7 @@ fn periodic_boss_waits_for_interval_and_cooldown_and_keeps_one_live_actor() -> T
 }
 
 #[test]
-fn quest_use_refuses_occupied_room_then_runs_timed_waves_and_ejects_survivor() -> TestResult {
+fn quest_use_admits_two_staged_players_then_ejects_and_credits_both_survivors() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -87,11 +95,20 @@ fn scenario(admin: String, case: Case) -> TestResult {
         callback.effects.encounter = Some(Encounter {
             minimum_level: 0,
             room_min: LANDING,
-            room_max: SECOND,
-            players: vec![EncounterPlayer {
-                from: START,
-                to: LANDING,
-            }],
+            room_max: Position {
+                x: SECOND.x,
+                ..PEER_LANDING
+            },
+            players: vec![
+                EncounterPlayer {
+                    from: START,
+                    to: LANDING,
+                },
+                EncounterPlayer {
+                    from: PEER_START,
+                    to: PEER_LANDING,
+                },
+            ],
             monsters: Vec::new(),
             timing: None,
             phase: None,
@@ -146,7 +163,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let world = super::quest_world_callbacks::world_with_cells(
             &callback,
             TRIGGER,
-            &[FIRST, SECOND, EXIT],
+            &[FIRST, SECOND, EXIT, PEER_START, PEER_LANDING],
         )?;
         let h =
             Harness::create_with_admission_seed(admin, "quest_spawn_waves", false, false).await?;
@@ -246,7 +263,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let mut admitted = deps.admitted;
         super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 100).await?;
         match case {
-            Case::Waves => wave_scenario(&owner, &mut admitted, deps.actor).await?,
+            Case::Waves => wave_scenario(&h, &owner, &mut admitted, deps.actor).await?,
             Case::Periodic => periodic_scenario(&owner).await?,
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
         }
@@ -345,10 +362,18 @@ async fn periodic_scenario(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestRe
 }
 
 async fn wave_scenario(
+    h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     player: ExactActorRef,
 ) -> TestResult {
+    assert_eq!(
+        use_room(owner, admitted, 1).await?,
+        UseDisposition::Rejected
+    );
+    assert_eq!(position(owner, player).await?, local(START));
+    let peer = stage_peer(h, owner, admitted).await?;
+    let peer_actor = peer.runtime_actor.ok_or("staged peer actor")?;
     let blocker = {
         let mut runtime = owner.runtime.lock().await;
         let session = GameSessionId::decode(&id(58)).map_err(debug)?;
@@ -360,10 +385,11 @@ async fn wave_scenario(
         actor
     };
     assert_eq!(
-        use_room(owner, admitted, 1).await?,
+        use_room(owner, admitted, 2).await?,
         UseDisposition::Occupied
     );
     assert_eq!(position(owner, player).await?, local(START));
+    assert_eq!(position(owner, peer_actor).await?, local(PEER_START));
     owner
         .runtime
         .lock()
@@ -379,11 +405,12 @@ async fn wave_scenario(
     });
     started.await?;
     tokio::time::pause();
-    let result = use_room(owner, admitted, 2).await;
+    let result = use_room(owner, admitted, 3).await;
     drop(release);
     blocking.await?;
     assert_eq!(result?, UseDisposition::Committed);
     assert_eq!(position(owner, player).await?, local(LANDING));
+    assert_eq!(position(owner, peer_actor).await?, local(PEER_LANDING));
     advance(owner, 999).await;
     assert!(creatures(owner).await?.is_empty());
     advance(owner, 1).await;
@@ -396,34 +423,97 @@ async fn wave_scenario(
     assert!(both.iter().any(|(_, position)| *position == local(SECOND)));
     advance(owner, 7_000).await;
     assert_eq!(position(owner, player).await?, local(EXIT));
+    assert_eq!(position(owner, peer_actor).await?, local(EXIT));
     assert!(creatures(owner).await?.is_empty());
     tokio::time::resume();
+
+    let primary = admitted
+        .item_fence
+        .ok_or("primary item fence")?
+        .character_id;
+    let partner = peer.item_fence.ok_or("peer item fence")?.character_id;
+    assert_ne!(primary, partner);
     owner.drain_quest_encounter_deadlines().await;
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(|_| "fence read")?
-        .ok_or("current fence")?;
-    let saved = owner
-        .root
-        .read_character_quest_state(owner.character, fence.character_id)
-        .await
-        .map_err(debug)?;
-    assert_eq!(
-        saved.tracks().get(TRACK),
-        Some(&1),
-        "native timeout credits the survivor"
-    );
     owner.drain_quest_encounter_deadlines().await;
-    assert_eq!(
+    let read_credit = async |character| {
         owner
             .root
-            .read_character_quest_state(owner.character, fence.character_id)
+            .read_character_quest_state(owner.character, character)
             .await
-            .map_err(debug)?,
-        saved
-    );
+            .map_err(debug)
+    };
+    let primary_after = read_credit(primary).await?;
+    let partner_after = read_credit(partner).await?;
+    assert_eq!(primary_after.tracks().get(TRACK), Some(&1));
+    assert_eq!(partner_after.tracks().get(TRACK), Some(&1));
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(read_credit(primary).await?, primary_after);
+    assert_eq!(read_credit(partner).await?, partner_after);
     Ok(())
+}
+
+async fn stage_peer(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    leader: &AdmittedSession,
+) -> TestResult<AdmittedSession> {
+    use crate::gameplay_transport::connection::{
+        ControllerBinding, FirstEntryOutcome, SessionContinuity,
+    };
+    use crate::world_party_runtime_postgres_cases::{
+        FreshPlayerOwners, committed_fresh_player_from_source_owned,
+    };
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let (current, operation) = committed_fresh_player_from_source_owned(
+        &FreshPlayerOwners {
+            root: h.root.clone(),
+            node: h.node.clone(),
+            recovery: &h.recovery,
+        },
+        60,
+        63,
+        171,
+        now,
+        Some("platform-test"),
+    )
+    .await
+    .map_err(debug)?;
+    let fence = crate::gameplay_transport::item_fence_of(current).ok_or("peer item fence")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime
+            .reserve_fresh_session(fence.game_session_id)
+            .map_err(debug)?;
+        runtime.commit_fresh_session(reservation).map_err(debug)?
+    };
+    let mut peer = AdmittedSession {
+        game_session_id: fence.game_session_id,
+        world_id: leader.world_id,
+        channel_id: leader.channel_id,
+        runtime_actor: Some(actor),
+        first_entry: FirstEntryOutcome::Positioned,
+        controller: Some(ControllerBinding {
+            transport: current.current_transport().ok_or("peer transport")?,
+            account_id: id(63),
+        }),
+        continuity: SessionContinuity::FRESH,
+        item_fence: Some(fence),
+    };
+    super::srx3_activity_source_fixture::prepare_player_with_operation(
+        h, owner, &mut peer, 100, "knight", &operation,
+    )
+    .await?;
+    let (step, _) = owner
+        .paced_step(actor, peer.game_session_id, StepDirection::North)
+        .await;
+    assert_eq!(step.disposition, StepDisposition::Moved);
+    assert_eq!(position(owner, actor).await?, local(PEER_START));
+    Ok(peer)
 }
 
 async fn earth_step_scenario(
