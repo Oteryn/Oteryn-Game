@@ -457,6 +457,22 @@ pub fn apply_quest_haste(
     apply_definition(state, definition, now_ms, 0)
 }
 
+/// Crystal 201189f8 mission05_web_terror.lua:88-103 uses native invisibility.
+pub fn apply_quest_invisibility(
+    state: &mut PlayerSpellState,
+    duration_ms: u32,
+    now_ms: u64,
+) -> Result<(), SpellCastDisposition> {
+    let effect = definition(
+        "quest.world.invisibility",
+        ConditionValues::TimedStatus {
+            kind: oteryn_gameplay_domain::domain::condition::StatusKind::Invisible,
+            duration_ms,
+        },
+    )?;
+    apply_definition(state, effect, now_ms, 0)
+}
+
 pub fn apply_appearance(
     state: &mut PlayerSpellState,
     selection: crate::domain::appearance::AppearanceSelection<String>,

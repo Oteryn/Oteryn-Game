@@ -67,6 +67,9 @@ pub struct CallbackEffects {
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fluid_offering: Option<FluidOffering>,
+    /// Refresh the native Invisible condition after a successful world USE.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub invisibility_ms: Option<u32>,
     /// Opt in to source-script displacement onto a present blocked pad.
     #[serde(default, skip_serializing_if = "is_false")]
     pub scripted_teleport: bool,
@@ -522,6 +525,20 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 .placement_cues
                 .iter()
                 .any(|cue| cue.effect == 0 || !pos(cue.position))
+    }) {
+        return false;
+    }
+
+    if effects.invisibility_ms.is_some_and(|duration| {
+        !(1..=600_000).contains(&duration)
+            || callback.actor_kind != ActorKind::Player
+            || callback.trigger != Trigger::Use
+            || !callback.requires_world_admission
+            || !callback.has_state_writes()
+            || callback.teleport.is_some()
+            || callback.lever.is_some()
+            || effects.encounter.is_some()
+            || effects.party_transfer.is_some()
     }) {
         return false;
     }

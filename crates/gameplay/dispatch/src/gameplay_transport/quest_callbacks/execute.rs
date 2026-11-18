@@ -1602,6 +1602,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 states.owner_wake.notify_one();
             }
         }
+        if fresh_effects
+            && let Some(duration) = callback.effects.invisibility_ms
+            && let Some(current) = states.get(runtime, actor, session)
+        {
+            let mut next = current.clone();
+            if crate::spell::actor_conditions::apply_quest_invisibility(
+                &mut next, duration, self.owner_ms(),
+            ).is_ok() && next.advance_batch_revision().is_ok()
+                && states.commit(runtime, actor, session, next)
+            {
+                states.owner_wake.notify_one();
+            }
+        }
         if callback.effects.restore_disguise {
             let Some(current) = states.get(runtime, actor, session) else {
                 return UseDisposition::Rejected;
