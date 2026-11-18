@@ -7,13 +7,26 @@ use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAut
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[test]
+fn seclib2_brokul_unsupported_mechanics_refuse_through_use_wire() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("PostgreSQL test URL is empty".into());
+    }
+    super::kill_reward_e2e::scenario_thread::run("seclib2-brokul-use", || {
+        scenario(false, false, false, None, None, true)
+    })
+}
+
+#[test]
 fn m06q_placed_quest_door_use_wire_requires_durable_storage() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, false, false, None, None).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false, false, None, None, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M06Q wire panic")??;
     Ok(())
@@ -40,7 +53,7 @@ fn closing_case(item: bool, authored: bool) -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(true, item, authored, None, None).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(true, item, authored, None, None, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M06-CLOSE wire panic")??;
     Ok(())
@@ -74,7 +87,7 @@ fn player_ground_case(case: PlayerGroundCase) -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(false, false, false, Some(case), None).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(false, false, false, Some(case), None, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M06 player ground move panic")??;
     Ok(())
@@ -86,6 +99,7 @@ fn scenario(
     authored: bool,
     player_case: Option<PlayerGroundCase>,
     vampire_door: Option<u16>,
+    brokul: bool,
 ) -> TestResult {
     run(async |admin| {
         let harness =
@@ -123,12 +137,14 @@ fn scenario(
             "oteryn:item.tibia.i5113"
         };
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
+        let secondary = if brokul {
+            "oteryn:item.tibia.i2772"
+        } else {
+            "oteryn:item.tibia.i3031"
+        };
         let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
             (door, reference(door).ok_or("door")?.get() - 1),
-            (
-                "oteryn:item.tibia.i3031",
-                reference("oteryn:item.tibia.i3031").ok_or("coin")?.get() - 1,
-            ),
+            (secondary, reference(secondary).ok_or("secondary item")?.get() - 1),
         );
         let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
         if closing {
@@ -224,6 +240,17 @@ fn scenario(
             .ok_or("source door")?;
         assert_eq!(source.attrs.action, Some(action));
         entry.attrs = source.attrs.clone();
+        if brokul {
+            // Crystal actions_brokulLever.lua:31 supplies the selector.
+            data.sectors
+                .iter_mut()
+                .flat_map(|sector| &mut sector.tiles)
+                .find(|tile| tile.x == 7)
+                .and_then(|tile| tile.items.get_mut(1))
+                .ok_or("Brokul action placement")?
+                .attrs
+                .action = Some(34000);
+        }
         let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
             &data.manifest,
             &data.sectors,
@@ -351,6 +378,29 @@ fn scenario(
         let payload =
             oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
         owner.admit_quest_session(&admitted).await;
+        if brokul {
+            let placement = crate::map::view::placement_key(
+                crate::map::overlay::TilePos {
+                    x: 7,
+                    ..station_pos
+                },
+                1,
+            )
+            .ok_or("Brokul placement")?;
+            let target = WorldObjectTarget {
+                placement: map.base().digest().into_iter().chain(placement.to_be_bytes()).collect(),
+                expected_revision: 0,
+            };
+            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target)
+                .map_err(debug)?;
+            let (_, result, _) =
+                super::item_craft::exchange(&owner, admitted, 1, &payload, None).await?;
+            assert_eq!(result, UseDisposition::NotPossible);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if vampire_door.is_some() {
             owner.admit_progression_session(&mut admitted).await;
             vampire_gate(&mut owner, admitted, &authority, &map, &payload).await?;
@@ -1087,7 +1137,7 @@ fn vampire_shield_placed_level_doors_require_seventy_over_wire() -> TestResult {
         .stack_size(256 << 20)
         .spawn(|| {
             for x in [33190, 33195] {
-                scenario(false, false, false, None, Some(x)).map_err(|e| e.to_string())?;
+                scenario(false, false, false, None, Some(x), false).map_err(|e| e.to_string())?;
             }
             Ok::<(), String>(())
         })?
