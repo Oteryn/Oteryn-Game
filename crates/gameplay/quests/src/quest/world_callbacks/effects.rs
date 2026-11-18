@@ -142,6 +142,8 @@ pub struct CallbackEffects {
     /// Reads the named Character cooldown written by boss admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub boss_cooldown: Option<BossCooldownGate>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub use_summon: Option<UseSummon>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -188,6 +190,13 @@ impl From<&str> for QuestCompletion {
 pub struct BossCooldownGate {
     pub boss: String,
     pub name: String,
+}
+
+/// Spawn one native creature at the selected USE target after quest settlement.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct UseSummon {
+    pub creature: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -500,6 +509,23 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && !gate.name.is_empty()
             && gate.name.len() <= 96
             && !gate.name.chars().any(char::is_control);
+    }
+    if effects.use_summon.as_ref().is_some_and(|summon| {
+        callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !callback.has_state_writes()
+            || callback.reversible
+            || callback.teleport.is_some()
+            || callback.remote_teleport.is_some()
+            || callback.lever.is_some()
+            || effects.encounter.is_some()
+            || effects.scene.is_some()
+            || effects.reward_door.is_some()
+            || !summon.creature.starts_with("oteryn:creature.")
+            || !super::super::valid_quest_key(&summon.creature)
+    }) {
+        return false;
     }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();

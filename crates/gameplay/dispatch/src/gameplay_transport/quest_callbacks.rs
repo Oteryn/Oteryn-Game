@@ -38,6 +38,7 @@ mod source_transforms;
 mod step_damage;
 mod timed_encounter;
 mod timed_passages;
+mod use_summon;
 
 use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{

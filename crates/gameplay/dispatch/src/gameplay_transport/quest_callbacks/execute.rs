@@ -216,6 +216,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Occupied;
         }
+        let summon = match self.prepare_callback_summon(runtime, map, callback, pos) {
+            Ok(summon) => summon,
+            Err(disposition) => return disposition,
+        };
         let before = after;
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
@@ -1495,6 +1499,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             underwater(map, after.position()),
                         );
                     }
+                }
+            } else if let Some(monster) = summon {
+                if runtime
+                    .commit_quest_creature_spawn_with_projection(&[monster], apply_scene)
+                    .is_err()
+                {
+                    return UseDisposition::Rejected;
                 }
             } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
             {
