@@ -178,13 +178,14 @@
       },
       "return_on_failure": false,
       "failure_message": null,
-      "success_message": "You have purified a sacret pedestal with holy water. You have now passed the last testto enter thge inner sanctum.",
+      "success_message": "You have purified a sacred pedestal with holy water. You have now passed the last test to  enter the inner sanctum!",
       "effects": {
         "passages_reset_after_ms": 15000
       },
       "sources": [
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:30-79"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:30-79",
+        "https://tibia.fandom.com/?curid=69463&oldid=1041971"
       ]
     },
     {

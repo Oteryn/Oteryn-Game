@@ -31,7 +31,8 @@ const ITEMS: [u16; 3] = [9634, 21389, 21466];
 const MESSAGES: [&str; 3] = [
     "You have sacrificed a cobra tongue at an ancient statue. The light in the small pyramid nearby begins to shine.",
     "You burnt a lion's mane flower. The light in the small pyramid nearby begins to shine.",
-    "You have purified a sacret pedestal with holy water. You have now passed the last testto enter thge inner sanctum.",
+    // TibiaWiki Lion's Rock Quest/Spoiler, curid 69463, oldid 1041971.
+    "You have purified a sacred pedestal with holy water. You have now passed the last test to  enter the inner sanctum!",
 ];
 
 pub fn binding(key: &str) -> Option<usize> {
