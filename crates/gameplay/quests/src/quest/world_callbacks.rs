@@ -1013,7 +1013,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 && ((!callback.has_state_writes()
                     && !(callback.has_state()
                         && (callback.effects.timed_outfit.is_some()
-                            || callback.effects.transform_requires_current)))
+                            || callback.effects.transform_requires_current
+                            || callback.effects.party_transfer.as_ref()
+                                .is_some_and(PartyTransfer::checks_station_custody))))
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use
