@@ -1,16 +1,10 @@
-//! A creature push drives the mounted StepIn callback and credits both room players.
+//! Physical creature movement drives StepIn and credits both room players.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult};
-use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     world_callbacks::{Callback, Position},
     zamulosh,
-};
-use oteryn_protocol_oteryn::{
-    creature_push::{CreaturePushIntent, encode_creature_push_intent},
-    world_spatial::ActorPosition,
-    world_spatial_entities::EntityRef,
 };
 
 pub(super) const NAME: &str = "bosscred-zamulosh-lovely-step";
@@ -57,7 +51,7 @@ pub(super) async fn exercise(
     deps: &Dependencies,
     harness: &Harness,
 ) -> TestResult {
-    use super::quest_world_callbacks::{local, wire};
+    use super::quest_world_callbacks::local;
     super::questpc7_native_deaths::prepare_native_hunter(owner, first).await?;
     let (_, second) =
         super::grizzly_boss::vacancy::second_player(owner, deps, harness, local(WITNESS)).await?;
@@ -73,34 +67,36 @@ pub(super) async fn exercise(
         runtime
             .install_creature_policy(target, CREATURE)
             .map_err(debug)?;
-        let generation = runtime
-            .visible_entities()
-            .creatures
-            .into_iter()
-            .find(|row| row.actor == target)
-            .ok_or("visible lovely creature")?
-            .generation;
-        (target, generation)
+        let map = owner.bundle_map().ok_or("habitat map")?;
+        let blockers = crate::map::floor::BundleDoors(&map.facts);
+        let moved = crate::movement::relocate::relocate_creature(
+            &mut runtime,
+            target,
+            owner.movement_cells(),
+            &blockers,
+            local(PLATE),
+        )
+        .map_err(debug)?;
+        assert_eq!(moved.position(), local(PLATE));
+        assert!(
+            map.facts
+                .record_monster_step(crate::map::facts::MonsterStep {
+                    actor: target,
+                    from: local(CREATURE_START),
+                    to: moved.position(),
+                })
+        );
+        let states = owner.states.spell_states.lock().await;
+        crate::gameplay_transport::paced_movement::monster_trap::apply_monster_trap_steps(
+            &mut runtime,
+            &states,
+            map,
+            owner.owner_now().get(),
+        );
+        target
     };
-    first.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 13, 82])
-            .ok_or("creature push capability")?;
-    let destination = local(PLATE);
-    let payload = encode_creature_push_intent(&CreaturePushIntent {
-        target: EntityRef {
-            identity: target.0.placement_identity(),
-            generation: target.1,
-        },
-        destination: ActorPosition {
-            x: destination.x,
-            y: destination.y,
-            floor: destination.floor,
-        },
-    })
-    .map_err(debug)?;
-    let command = first.continuity.next_command_id;
-    assert_eq!(wire(owner, first, command, 98, payload).await?, [8, 1]);
-    assert!(!owner.runtime.lock().await.contains_live_creature(target.0));
+    owner.settle_zamulosh_steps().await;
+    assert!(!owner.runtime.lock().await.contains_live_creature(target));
     for player in [&*first, &second] {
         assert_eq!(
             super::questpc7_ferumbras::value(owner, player, zamulosh::TRACK).await?,
