@@ -46,3 +46,26 @@ The wiki does not state the new-world rebuild total, server-side item IDs, drop 
 ## PARTIAL
 
 Full route parity remains open for physical portal bindings and Fire admission, alternate Ivalisse route removal or migration, Death desk and lantern admission, Dragon Mother and egg, Forest Fury exchanges, Holy Time Machine and crystal placement verification, the final six-kill gate, individual shrine unlocks and all encounter dependencies above.
+
+## Verification
+
+PG via shard (pgsplit build files applied on 5794a1013b3fa0b89e33bb4e85a57ebe73414ad2). PostgreSQL 18.6 served the real dispatch calls. The filter reported one pass and one failure in 146.25 seconds. The claim case passed in 68.02 seconds. The blocked Ice case failed in 77.01 seconds because Albinius returned no offer after the fixture established The Contactman.
+
+| Claim | Corrected run |
+| --- | --- |
+| Tome 6001 | 11.30 s |
+| Tome 6002 | 5.00 s |
+| Tome 6003 | 4.81 s |
+| Tome 6004 | 8.25 s |
+| Tome 6005 | 6.32 s |
+| Ghostsilver Lantern 6310 | 6.29 s |
+| Painting of a Girl 6311 | 5.96 s |
+| Imbuing Crystal 6312 | 7.49 s |
+
+The baseline claim case took 79.15 seconds. Six placements returned `NothingToUse` on the real USE route before the aliases. The 6002 baseline attempt stopped at the blocked fixture start, and the 6003 attempt selected a floor prop. Neither counts as a baseline reproduction for that individual claim. The corrected case uses each retained chest's own ordinal. For 6002 it boots on nearby bare ground and places the fixture actor in use range, to exercise claim dispatch. Travel to the platform is outside this fixture.
+
+Quest authoring passed all 44 invocations, including 27 Python tests. Workspace formatting passed.
+
+World pin refresh reported the existing digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`.
+
+The same final shard binary returned two passes in 0.01 seconds with the PostgreSQL admin URL unset. Dispatch library Clippy passed with warnings denied. The world compiler pin check passed for the single Oteryn world, producing a 33,688,785-byte bundle in the temporary output directory.
