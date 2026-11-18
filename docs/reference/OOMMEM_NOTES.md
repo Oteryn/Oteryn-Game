@@ -123,8 +123,7 @@ investigation report only.
 ```diff
 --- a/.github/workflows/pr-postgres-harness.yml
 +++ b/.github/workflows/pr-postgres-harness.yml
-@@ -341,5 +341,11 @@
-           test "${#args[@]}" -gt 0
+@@ -342,3 +342,9 @@
            mkdir -p "$RUNNER_TEMP/pg-archives"
 -          cargo +1.100.0 nextest archive --locked "${args[@]}" --lib \
 +          pg_targets=()
@@ -135,11 +134,9 @@ investigation report only.
 +          done
 +          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked "${args[@]}" --lib "${pg_targets[@]}" \
              --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
- 
 --- a/.github/workflows/merge-gate.yml
 +++ b/.github/workflows/merge-gate.yml
-@@ -1006,5 +1006,9 @@
-           code=0
+@@ -1007,3 +1007,7 @@
            mapfile -t package_args < "$RUNNER_TEMP/rust-fast-package-args.txt"
 -          cargo +1.100.0 nextest run --locked "${package_args[@]}" --lib --bins \
 +          pg_targets=()
@@ -148,23 +145,17 @@ investigation report only.
 +          fi
 +          cargo +1.100.0 nextest run --locked "${package_args[@]}" --lib --bins "${pg_targets[@]}" \
              --config-file "$RUNNER_TEMP/nextest.toml" --profile rust-fast -E "$expression" \
-             --partition "hash:${SHARD}" --no-tests=pass --no-fail-fast < /dev/null || code=$?
 --- a/.github/workflows/merge-group-gate.yml
 +++ b/.github/workflows/merge-group-gate.yml
-@@ -833,5 +833,5 @@
-         run: |
+@@ -834,2 +834,2 @@
            set -euo pipefail
 -          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
 +          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3 --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
- 
-       - name: Record archive digests and candidate
 --- a/.github/workflows/integration-regressions.yml
 +++ b/.github/workflows/integration-regressions.yml
-@@ -168,5 +168,5 @@
-           set -euo pipefail
+@@ -169,3 +169,3 @@
            test -n "$OTERYN_TEST_POSTGRES_ADMIN_URL"
 -          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --lib \
 +          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --test dispatch-pg-1 \
              'gameplay_transport::monk_save::postgres_tests::boss_activity::boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger' \
-             -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/offline-death-retry-postgres.log"
 ```
