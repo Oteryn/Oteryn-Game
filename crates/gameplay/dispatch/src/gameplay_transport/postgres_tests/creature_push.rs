@@ -293,6 +293,23 @@ pub(super) fn scenario(
                 },
             )
             .ok_or("push combat room")?;
+        if merchant_loot || merchant_wave {
+            sqlx::query(
+                "INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)",
+            )
+            .bind(deps.admitted.world_id.as_bytes().as_slice())
+            .bind(deps.admitted.channel_id.as_bytes().as_slice())
+            .execute(&h.pool).await?;
+            sqlx::query(
+                "SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)",
+            )
+            .bind(deps.admitted.world_id.as_bytes().as_slice())
+            .bind(deps.admitted.channel_id.as_bytes().as_slice())
+            .bind(active.identity().server_artifact_digest().as_slice())
+            .bind(active.identity().client_artifact_digest().as_slice())
+            .bind(pin.frame_binding().digest().as_slice())
+            .execute(&h.pool).await?;
+        }
         let channel_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
