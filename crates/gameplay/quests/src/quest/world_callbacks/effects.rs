@@ -765,11 +765,17 @@ pub(super) fn valid(callback: &Callback) -> bool {
     {
         return false;
     }
+    let mission_active = || {
+        callback.storage.iter().any(|track| {
+        track.track == "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission03"
+            && track.minimum == 1 && track.maximum == 1 && track.preserve
+    })
+    };
     if effects.loot_merchant
         && (callback.trigger != Trigger::Use
             || callback.actor_kind != ActorKind::Player
             || !callback.requires_world_admission
-            || !callback.has_state_writes()
+            || !mission_active()
             || callback.selector.appearance != Some(12189)
             || callback.selector.native.is_some()
             || callback.selector.ordinal.is_some()
@@ -781,10 +787,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.lever.is_some()
             || callback.reversible
             || effects.place_item.is_some()
-            || !callback
-                .storage
-                .iter()
-                .any(|track| track.add == Some(1) && track.set == 5)
+            || !callback.storage.iter().any(|track| {
+                track.track == "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount"
+                    && track.minimum == 0
+                    && track.maximum == 4
+                    && track.add == Some(1)
+                    && track.set == 5
+            })
             || callback.item_reward().is_none_or(|reward| {
                 reward.item != "oteryn:item.tibia.i3035"
                     || reward.count != 1
@@ -801,7 +810,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.trigger != Trigger::Use
             || callback.actor_kind != ActorKind::Player
             || !callback.requires_world_admission
-            || !callback.has_personal_state()
+            || !mission_active()
+            || !callback.storage.iter().any(|track| {
+                let final_net = callback.starts_merchant_wave();
+                track.track == "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count"
+                    && track.minimum == if final_net { 4 } else { 0 }
+                    && track.maximum == if final_net { 4 } else { 3 }
+                    && track.set == if final_net { 5 } else { 4 }
+                    && track.add == Some(1)
+            })
             || callback.reversible
             || callback.opening_only
             || callback.item_on_target.as_ref().is_none_or(|item| {
