@@ -116,7 +116,7 @@ async fn window_case(h: &Harness) -> TestResult {
         }
         let outcome = owner.enter_boss_admission_window(
             &authority, &h.node, request.clone(), window,
-        ).await.map_err(|error| format!("window entrant {}: {error:?}", request.initiating_character_id))?;
+        ).await.map_err(|error| format!("window entrant {:?}: {error:?}", request.initiating_character_id))?;
         let ActivityEnterOutcome::Entered(receipt) = outcome else {
             return Err(format!("window admission refused: {outcome:?}").into());
         };
