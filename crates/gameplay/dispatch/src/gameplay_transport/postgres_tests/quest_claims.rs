@@ -306,8 +306,8 @@ async fn full_backpack_retry(
          ORDER BY nested.placement_ordinal",
     ).bind(CLAIM).fetch_all(&h.pool).await?;
     assert_eq!(children, [
-        ("oteryn:item.tibia.i3039".into(), 1, true),
-        ("oteryn:item.tibia.i3037".into(), 1, true),
+        ("oteryn:item.tibia.i3039".to_owned(), 1_i64, true),
+        ("oteryn:item.tibia.i3037".to_owned(), 1_i64, true),
     ], "the retry places both children in the claimed backpack in the claim transaction");
     Ok(())
 }
