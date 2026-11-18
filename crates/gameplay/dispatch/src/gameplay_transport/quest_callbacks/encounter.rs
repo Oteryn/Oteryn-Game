@@ -98,43 +98,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let [(actor, session)] = visit.participants.as_slice() else {
                 return false;
             };
-            let boss_room = visit.room.boss_cooldown_seconds.is_some();
-            let targets = if boss_room {
-                // Crystal grimvale/actions_portal_minis_grimvale.lua:127-132
-                // and actions_portal_minis_ancient_feud.lua:119-124 rescan
-                // the arena and remove its players. The boss stays until
-                // the next successful admission clears the room.
-                let Ok(census) = runtime.positioned_melee_census() else {
-                    return true;
-                };
-                census
-                    .into_iter()
-                    .filter_map(|(actor, position, session)| {
-                        session
-                            .filter(|_| room_contains(&visit.room, position.position()))
-                            .map(|session| (actor, session, position))
-                    })
-                    .collect::<Vec<_>>()
-            } else {
-                // Crystal data/libs/functions/functions.lua:226-238 clears
-                // monsters when the Cave Spider timer expires. Retire only
-                // this visit's exact actors.
-                visit.creatures.retain(|creature| {
-                    runtime
-                        .read_actor_position(*creature)
-                        .is_ok_and(|position| room_contains(&visit.room, position.position()))
-                        && runtime.remove_encounter_actor(*creature).is_err()
-                });
-                runtime
-                    .player_control_facts(*actor, *session)
-                    .and_then(|_| runtime.read_actor_position(*actor))
-                    .ok()
-                    .filter(|position| room_contains(&visit.room, position.position()))
-                    .map(|position| (*actor, *session, position))
-                    .into_iter()
-                    .collect()
+            let Ok(census) = runtime.positioned_melee_census() else {
+                return true;
             };
-            let pending_cleanup = !boss_room && !visit.creatures.is_empty();
+            let boss_room = visit.room.boss_cooldown_seconds.is_some();
+            let mut targets = Vec::new();
+            let mut pending_cleanup = false;
+            for (occupant, position, occupant_session) in census {
+                if !room_contains(&visit.room, position.position()) {
+                    continue;
+                }
+                if let Some(occupant_session) = occupant_session {
+                    // Crystal Grimvale mini-boss callbacks remove all players.
+                    // clearBossRoom only moves the matching player UID.
+                    if boss_room || (occupant == *actor && occupant_session == *session) {
+                        targets.push((occupant, occupant_session, position));
+                    }
+                } else if !boss_room && runtime.contains_live_creature(occupant) {
+                    // Crystal data/libs/functions/functions.lua:226-238
+                    // removes every monster currently inside the Cave Spider room.
+                    pending_cleanup |= runtime.remove_encounter_actor(occupant).is_err();
+                }
+            }
             if targets.is_empty() {
                 return pending_cleanup;
             }
@@ -590,8 +575,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(phases);
         if let Some(visits) = &mut visits {
-            // The room timer begins after successful admission. An earlier
-            // boss visit cannot eject players from this new visit.
+            // Start the timer after successful admission and retire any
+            // earlier timer for the same room before it can affect this visit.
             let ejection = encounter.ejection.map(|rule| ScheduledEjection {
                 due_us: self
                     .owner_now()
@@ -603,13 +588,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             if ejection.is_some() {
                 states.owner_wake.notify_one();
-                if encounter.boss_cooldown_seconds.is_some() {
-                    visits.retain(|visit| {
-                        visit.room.boss_cooldown_seconds.is_none()
-                            || visit.room.room_min != encounter.room_min
-                            || visit.room.room_max != encounter.room_max
-                    });
-                }
+                visits.retain(|visit| {
+                    visit.ejection.is_none()
+                        || visit.room.room_min != encounter.room_min
+                        || visit.room.room_max != encounter.room_max
+                });
             }
             visits.push(EncounterVisit {
                 room: encounter.clone(),

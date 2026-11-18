@@ -51,18 +51,24 @@ fn solo_quest_room_ejects_the_admitted_player_after_the_last_monster_dies() -> T
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    cave_case(admin, "solo_quest_room_ejection", false)
+}
+
+#[test]
+fn cave_spider_timeout_clears_monsters_inside_the_room_without_clearing_neighbours() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    cave_case(admin, "cave_spider_room_cleanup", true)
+}
+
+fn cave_case(admin: String, name: &'static str, keep_cave_monsters: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
             run(async |_| {
-                let h = Harness::create_with_admission_seed(
-                    admin,
-                    "solo_quest_room_ejection",
-                    false,
-                    false,
-                )
-                .await?;
-                let result = Box::pin(exercise(&h, None)).await;
+                let h = Harness::create_with_admission_seed(admin, name, false, false).await?;
+                let result = Box::pin(exercise_world(&h, None, None, keep_cave_monsters)).await;
                 let cleanup = h.cleanup().await;
                 result?;
                 cleanup
@@ -86,14 +92,19 @@ pub(super) struct BossRoom {
 }
 
 pub(super) async fn exercise(h: &Harness, boss: Option<BossRoom>) -> TestResult {
-    exercise_world(h, boss, None).await
+    exercise_world(h, boss, None, false).await
 }
 
 pub(super) async fn exercise_step_buff(h: &Harness, buff: StepBuff) -> TestResult {
-    exercise_world(h, None, Some(buff)).await
+    exercise_world(h, None, Some(buff), false).await
 }
 
-async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBuff>) -> TestResult {
+async fn exercise_world(
+    h: &Harness,
+    boss: Option<BossRoom>,
+    buff: Option<StepBuff>,
+    keep_cave_monsters: bool,
+) -> TestResult {
     let mut source = boss.map_or(
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua:31-58",
         |room| room.source
@@ -516,7 +527,7 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
     if boss.is_none() {
         assert_eq!(read_progress().await?, 10);
     }
-    let room_visitor = {
+    let (room_visitor, cave_creatures) = {
         let mut runtime = deps.runtime.lock().await;
         assert_eq!(
             runtime
@@ -527,12 +538,26 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
         );
         let creatures = runtime.current_live_creature_census().map_err(debug)?;
         assert_eq!(creatures.len(), 1);
-        if boss.is_none() {
+        let cave_creatures = if keep_cave_monsters {
+            let [boss] = creatures.try_into().map_err(|_| "Cave Spider boss")?;
+            // clearBossRoom scans current spectators. The two later monsters
+            // share a native profile and differ only by their room positions.
+            let rat = "oteryn:creature.rat";
+            let health = runtime.companion_policy(rat).map_err(debug)?.maximum_health;
+            let [inside, outside] = runtime.commit_quest_creature_spawn(&[
+                (rat, health, local(ROOM_VISITOR)),
+                (rat, health, local(BYSTANDER)),
+            ]).map_err(debug)?.try_into().map_err(|_| "Cave Spider cleanup fixtures")?;
+            Some((boss, inside, outside))
+        } else if boss.is_none() {
             for creature in creatures {
                 runtime.remove_encounter_actor(creature).map_err(debug)?;
             }
-        }
-        if eventual_bystander.is_some() {
+            None
+        } else {
+            None
+        };
+        let visitor = if eventual_bystander.is_some() {
             let session = crate::foundation::GameSessionId::decode(&id(98)).map_err(debug)?;
             let reserve = runtime.reserve_fresh_session(session).map_err(debug)?;
             let visitor = runtime.commit_fresh_session(reserve).map_err(debug)?;
@@ -542,7 +567,8 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
             Some(visitor)
         } else {
             None
-        }
+        };
+        (visitor, cave_creatures)
     };
     let mut due = enter_at + u64::from(after_ms) * 1_000;
     assert_eq!(
@@ -668,6 +694,12 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
             1,
             "Crystal boss-room timeout clears the players and leaves the live boss"
         );
+    }
+    if let Some((boss, inside, outside)) = cave_creatures {
+        let runtime = deps.runtime.lock().await;
+        assert!(!runtime.contains_live_creature(boss));
+        assert!(!runtime.contains_live_creature(inside));
+        assert!(runtime.contains_live_creature(outside));
     }
     if boss.is_none() {
         assert_eq!(read_progress().await?, 10);
