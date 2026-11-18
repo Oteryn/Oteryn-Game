@@ -54,7 +54,31 @@ pub(super) async fn exercise(
     let wall=crate::map::overlay::TilePos { x:32762,y:32288,floor:-14 };
     assert!(owner.bundle_map().ok_or("map")?.facts.quest_callback_blocked(owner.bundle_map().ok_or("map")?.overlay.base(),wall,true));
     owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(1)).ok_or("clock")?;
-    let response=super::quest_world_callbacks::wire(owner,admitted,1,2,use_source(0)?).await?;
+    // Global spoiler 12355/891457, Mission 3, puts the northwest lever last.
+    let response = super::quest_world_callbacks::wire(owner, admitted, 1, 2, use_source(0)?).await?;
+    assert_eq!(
+        oteryn_protocol_oteryn::world_object::decode_use_result(&response).map_err(debug)?,
+        UseDisposition::Rejected,
+        "the northwest lever must wait for the other three"
+    );
+    // Seed the prerequisite lever states without scheduling their timers, so
+    // the assertions below still measure only the northwest wall and lever.
+    {
+        let map = owner.bundle_map().ok_or("map")?;
+        for (x, y) in [(32763, 32291), (32761, 32291), (32763, 32289)] {
+            let position = crate::map::overlay::TilePos { x, y, floor: -14 };
+            let key = placement_key(position, 1).ok_or("prerequisite lever key")?;
+            let tile = map.overlay.base().tile(x, y, -14).ok_or("prerequisite tile")?;
+            let id = *tile.ids().get(1).ok_or("prerequisite palette")?;
+            let mut after = map.facts.base_entry(position, 1, id).ok_or("prerequisite lever")?;
+            after.appearance_id = 2773;
+            assert!(map.facts.transform_movement_item_facts(key, after));
+        }
+    }
+    owner.clock_origin = owner.clock_origin
+        .checked_sub(std::time::Duration::from_secs(1))
+        .ok_or("clock")?;
+    let response=super::quest_world_callbacks::wire(owner,admitted,2,2,use_source(0)?).await?;
     assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&response).map_err(debug)?,UseDisposition::Committed);
     let due={
         let map=owner.bundle_map().ok_or("map")?;
@@ -69,7 +93,7 @@ pub(super) async fn exercise(
         map.facts.next_movement_decay_time().ok_or("remote deadline")?
     };
     owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(1)).ok_or("clock")?;
-    let response=super::quest_world_callbacks::wire(owner,admitted,2,2,use_source(1)?).await?;
+    let response=super::quest_world_callbacks::wire(owner,admitted,3,2,use_source(1)?).await?;
     assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&response).map_err(debug)?,UseDisposition::NothingToUse);
     {
         let map=owner.bundle_map().ok_or("map")?;
@@ -91,7 +115,7 @@ pub(super) async fn exercise(
         assert_eq!(corner.ids().len(),2,"the absent1027 is never created");
     }
     owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(1)).ok_or("clock")?;
-    let response=super::quest_world_callbacks::wire(owner,admitted,3,2,use_source(0)?).await?;
+    let response=super::quest_world_callbacks::wire(owner,admitted,4,2,use_source(0)?).await?;
     assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&response).map_err(debug)?,UseDisposition::StaleState);
     assert_eq!(owner.bundle_map().ok_or("map")?.facts.next_movement_decay_time(),None);
     assert_eq!(counts(harness).await?,initial,"a world switch grants no item or quest receipt");
