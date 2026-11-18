@@ -907,12 +907,56 @@ async fn exercise_queen(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(75))
         .ok_or("PZ lock clock")?;
+    // A kill deadline can remain in PostgreSQL after the live PZ deadline expires.
+    // Keep the live cache clear to exercise the arrival transaction's own check.
+    let character_id = fence.character_id.as_bytes().as_slice();
+    sqlx::query(
+        "INSERT INTO game_character_pvp_state (character_id, world_id, kill_block_until)
+         SELECT character_id, world_id, clock_timestamp() + interval '5 minutes'
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character_id)
+    .execute(&h.pool)
+    .await?;
+    let before = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
     super::classic_quests::talk(owner, admitted, queen, 13, "seventh seal").await?;
     for command in 14..=19 {
         super::classic_quests::talk(owner, admitted, queen, command, "yes").await?;
     }
     super::classic_quests::talk(owner, admitted, queen, 20, "kiss").await?;
     super::classic_quests::talk(owner, admitted, queen, 21, "yes").await?;
+    let after = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
+    assert_eq!(
+        after, before,
+        "a durable kill deadline must refuse the kiss"
+    );
+    let blocked_receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_npc_teleport_receipts WHERE transition_key=$1",
+    )
+    .bind(KISS)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(blocked_receipts, 0);
+    sqlx::query("DELETE FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character_id)
+        .execute(&h.pool)
+        .await?;
+    super::classic_quests::talk(owner, admitted, queen, 22, "seventh seal").await?;
+    for command in 23..=28 {
+        super::classic_quests::talk(owner, admitted, queen, command, "yes").await?;
+    }
+    super::classic_quests::talk(owner, admitted, queen, 29, "kiss").await?;
+    super::classic_quests::talk(owner, admitted, queen, 30, "yes").await?;
     let at = owner
         .runtime
         .lock()
