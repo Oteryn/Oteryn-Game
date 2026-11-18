@@ -1,7 +1,7 @@
 //! The four source switches share one encounter in the Edron chamber.
 use super::*;
 
-const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:63-129";
+const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:1-189";
 const KEY: &str = "oteryn:quest-callback/elemental-spheres/lord-switch";
 
 pub(super) fn callbacks() -> Result<Vec<Callback>, String> {
@@ -104,7 +104,7 @@ pub(super) fn callbacks() -> Result<Vec<Callback>, String> {
         }],
         "offerings": [],
         "return_on_failure": false,
-        "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lever.lua:1-67"],
+        "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lever.lua:1-73"],
         "effects": {
             "party_transfer": {
                 "activation_appearance": 2773,
