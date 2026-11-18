@@ -46,7 +46,7 @@ fn next_observable_window(remaining: i64) -> Option<u64> {
         .and_then(|wait| u64::try_from(wait).ok())
 }
 fn packet_status(notice: bool) -> &'static str {
-    if notice { "CAPTURED" } else { "MISSING-SERVER" }
+    if notice { "CAPTURED" } else { "FAIL" }
 }
 #[test]
 fn countdown_window_includes_poll_and_ignores_open_minutes() {
@@ -57,8 +57,72 @@ fn countdown_window_includes_poll_and_ignores_open_minutes() {
 }
 #[test]
 fn absent_countdown_has_no_capture_verdict() {
-    assert_eq!(packet_status(false), "MISSING-SERVER");
+    assert_eq!(packet_status(false), "FAIL");
     assert_eq!(packet_status(true), "CAPTURED");
+}
+
+fn packet_outcome(notice: bool, observed: &str) -> String {
+    format!(
+        "e2e_all scenario=W05a.client status={} evidence={observed}",
+        packet_status(notice)
+    )
+}
+
+async fn wait_for_notice<C, T, E>(
+    client: &mut C,
+    deadline: tokio::time::Instant,
+    mut take_notice: impl FnMut(&mut C) -> Option<T>,
+    mut service: impl AsyncFnMut(&mut C, Duration) -> Result<(), E>,
+) -> Result<Option<T>, E> {
+    loop {
+        if let Some(notice) = take_notice(client) {
+            return Ok(Some(notice));
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Ok(None);
+        }
+        // Let liveness finish its final slice so queued frames can be drained at the deadline.
+        service(client, remaining.min(Duration::from_secs(7))).await?;
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn notice_queued_in_last_liveness_interval_is_observed() -> TestResult {
+    let start = tokio::time::Instant::now();
+    let delivery = start + Duration::from_millis(49_500);
+    let deadline = start + Duration::from_secs(54);
+    let mut pending = None;
+    let notice = wait_for_notice(
+        &mut pending,
+        deadline,
+        Option::take,
+        async |pending, interval| {
+            let end = tokio::time::Instant::now() + interval;
+            if (tokio::time::Instant::now()..end).contains(&delivery) {
+                tokio::time::sleep_until(delivery).await;
+                *pending = Some(5);
+            }
+            tokio::time::sleep_until(end).await;
+            Ok::<_, std::convert::Infallible>(())
+        },
+    )
+    .await?;
+    assert_eq!(notice, Some(5));
+    assert_eq!(tokio::time::Instant::now(), deadline);
+    Ok(())
+}
+
+#[test]
+fn absent_reset_window_emits_a_reportable_failure() {
+    let line = crate::qualification::e2e_result_line(&packet_outcome(
+        false,
+        "countdown=no-observable-reset-window",
+    ));
+    assert_eq!(
+        line,
+        "e2e_all scenario=W05a.client status=FAIL seconds=0.000 evidence=countdown=no-observable-reset-window"
+    );
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<(bool, String)> {
@@ -124,28 +188,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<(bool, String)> {
     let wait_ms = next_opening.map_or(7_000, |wait| wait + 10_000);
     let deadline = tokio::time::Instant::now() + Duration::from_millis(wait_ms);
     verdict::Harness::global().bounded_wait(deadline, "reset-countdown");
-    let notice = tokio::time::timeout_at(deadline, async {
-        loop {
-            if let Some(delta) = client
+    let notice = wait_for_notice(
+        &mut client,
+        deadline,
+        |client| {
+            client
                 .take_events()
                 .into_iter()
                 .find_map(|event| match event {
                     SessionEvent::ServerSaveCountdown(delta) => Some(delta),
                     _ => None,
                 })
-            {
-                return Ok::<_, oteryn_dev_client::DevClientError>(delta);
-            }
-            client.service_liveness(Duration::from_secs(7)).await?;
-        }
-    })
-    .await;
+        },
+        async |client, interval| client.service_liveness(interval).await,
+    )
+    .await?;
     let notice = match notice {
-        Ok(result) => result?,
-        Err(elapsed) if next_opening.is_some() => {
-            return Err(elapsed.into());
+        Some(delta) => delta,
+        None if next_opening.is_some() => {
+            return Err(verdict::HarnessError::boxed(
+                verdict::Cause::Deadline {
+                    phase: "reset-countdown",
+                },
+                "expected reset countdown was absent at deadline",
+            ));
         }
-        Err(_) => {
+        None => {
             let expected = format!(
                 "snapshot_revision={}\ncountdown=absent\n",
                 snapshot.revision
@@ -190,10 +258,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
         .await
     {
-        Ok(Ok((notice, observed))) => evidence(&format!(
-            "e2e_all scenario=W05a.client status={} evidence={observed}",
-            packet_status(notice)
-        )),
+        Ok(Ok((notice, observed))) => evidence(&packet_outcome(notice, &observed)),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W05a.client status=FAIL evidence={error}"
         )),
