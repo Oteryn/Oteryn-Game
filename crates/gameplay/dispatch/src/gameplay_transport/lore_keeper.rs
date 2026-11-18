@@ -200,7 +200,6 @@ impl AstralEncounter {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         death: &PendingKillSettlement,
-        now: u64,
     ) -> Result<(), CarrierError> {
         if self.boss_spawned {
             return Ok(());
@@ -236,7 +235,11 @@ impl AstralEncounter {
                 let at = POWER_CELLS[(index + 1) % POWER_CELLS.len()];
                 let health = runtime.companion_policy(POWER)?.maximum_health;
                 let actors = runtime.commit_quest_creature_spawn(&[(POWER, health, at)])?;
-                self.power_until = now.saturating_add(60_000_000);
+                self.power_until = death
+                    .facts
+                    .death_at_ms
+                    .saturating_mul(1_000)
+                    .saturating_add(60_000_000);
                 Some(actors[0])
             } else {
                 None
@@ -282,10 +285,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match state.as_mut() {
             None => true,
             Some(state) => {
-                runtime.owner_fence().is_ok()
-                    && state
-                        .death(&mut runtime, death, self.owner_now().get())
-                        .is_ok()
+                runtime.owner_fence().is_ok() && state.death(&mut runtime, death).is_ok()
             }
         }
     }

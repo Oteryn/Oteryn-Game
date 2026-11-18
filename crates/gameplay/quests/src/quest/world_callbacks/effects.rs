@@ -797,6 +797,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && !(effects.scene.is_some() && super::scene::earth_tree_scene(callback))
                 && (!lever
                     || (effects.scene.is_none()
                         && effects.party_transfer.is_none()
