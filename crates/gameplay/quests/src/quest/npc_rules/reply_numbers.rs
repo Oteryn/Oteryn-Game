@@ -74,10 +74,10 @@ pub(super) fn append(
         };
         values.insert(name.as_str(), number.to_string());
     }
-    rule.reply
-        .iter()
-        .map(|line| expand(line, &values))
-        .collect()
+    for line in &rule.reply {
+        reply.push(expand(line, &values)?);
+    }
+    Ok(())
 }
 
 fn expand(line: &str, values: &BTreeMap<&str, String>) -> Result<String, NpcRuleError> {

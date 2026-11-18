@@ -502,9 +502,7 @@ fn plan_with_teleport(
             }
             completes |= rule.completes;
             selected_rule_keys.push(rule.key.clone());
-            reply.extend(super::reply_numbers::render(rule, |track| {
-                state.track(track)
-            })?);
+            super::reply_numbers::append(rule, |track| state.track(track), &mut reply)?;
             if reply.len() > 32 {
                 return Err(NpcRuleError::LimitExceeded);
             }
