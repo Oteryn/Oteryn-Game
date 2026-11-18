@@ -116,45 +116,9 @@
       "failure_message": null,
       "sources": [
         "oteryn-authored:chosen-recipe:tinder-box:quest-r1",
-        "https://tibia.fandom.com/index.php?curid=76272&oldid=800663",
-        "Crystal9f5a72c6 tinder_box_quest_chyllfroest/actions_reward.lua: item20357 UID3263; native summit exact ordinal documented in CONTRACT-NOTES.md"
-      ],
-      "key": "oteryn:quest-callback/authored-tinder-box",
-      "trigger": "step_in",
-      "selector": {
-        "position": {
-          "x": 32084,
-          "y": 31025,
-          "floor": -1
-        },
-        "unique": null,
-        "action": null,
-        "appearance": null,
-        "ordinal": 0
-      },
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen/tinder-box/stage",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 1
-        }
-      ],
-      "premium_required": true
-    },
-    {
-      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
-      "lever": null,
-      "reversible": false,
-      "passages": [],
-      "teleport": null,
-      "offerings": [],
-      "return_on_failure": false,
-      "failure_message": null,
-      "sources": [
-        "oteryn-authored:chosen-recipe:tinder-box:quest-r1",
-        "https://tibia.fandom.com/index.php?curid=76272&oldid=800663",
-        "Crystal9f5a72c6 tinder_box_quest_chyllfroest/actions_reward.lua: item20357 UID3263; native summit exact ordinal documented in CONTRACT-NOTES.md"
+        "https://tibia.fandom.com/?curid=76271&oldid=791138",
+        "https://tibia.fandom.com/?curid=76272&oldid=800663",
+        "crystalserver:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_reward.lua:15-22"
       ],
       "key": "oteryn:quest-callback/authored-tinder-box-bones",
       "trigger": "use",
@@ -169,14 +133,7 @@
         "appearance": 4285,
         "ordinal": 1
       },
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen/tinder-box/stage",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 3
-        }
-      ],
+      "storage": [],
       "premium_required": true,
       "completes": true,
       "effects": {
@@ -184,8 +141,21 @@
           "item": "oteryn:item.tibia.i20357",
           "count": 1,
           "contents": []
+        },
+        "item_reward_cycle": "oteryn:quest-progress/chosen/tinder-box/last-claim"
+      },
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/tinder-box/last-claim",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
         }
-      }
+      ]
     },
     {
       "quest": "oteryn:quest.authored.voodoo_doll_quest",

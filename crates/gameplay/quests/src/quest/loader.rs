@@ -27,6 +27,9 @@ use super::{
     QuestTrack, QuestTransition,
 };
 
+#[path = "tinder_box.rs"]
+mod tinder_box;
+
 const EMBEDDED: &str = include_str!("../../../../../content/quests/missions/quest-state.json");
 const SCHEMA: &str = "OTERYN_QUEST_STATE_LOWERING/v1";
 
@@ -375,6 +378,7 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
+    tinder_box::retain_approach_predecessor(&mut lowered.catalogue);
     restrict_runtime_scope(lowered, content_revision)
 }
 

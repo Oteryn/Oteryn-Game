@@ -350,7 +350,10 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let tinder_box = name == "authored-tinder-box" || name.starts_with("authored-tinder-box-qcx-");
+    let mut callback = if tinder_box {
+        callback("authored-tinder-box-bones")?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
@@ -699,7 +702,7 @@ fn scenario_case(
             2472,
             2,
         )?
-    } else if name == "authored-tinder-box" {
+    } else if tinder_box {
         super::super::quest_callbacks::source_world((32085, 31025, -1), 0, 4285, 0)?
     } else if name == "mintwallin-cyclops-scene" {
         super::super::questpc8_native_scenes::world()?
@@ -2832,6 +2835,14 @@ fn scenario_case(
                 &mut owner,
                 &mut admitted,
                 &h,
+            ))
+            .await?;
+        } else if name.starts_with("authored-tinder-box-qcx-") {
+            Box::pin(super::super::qcx_tinder_box::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                name == "authored-tinder-box-qcx-repeat",
             ))
             .await?;
         } else if name == "authored-tinder-box" {
