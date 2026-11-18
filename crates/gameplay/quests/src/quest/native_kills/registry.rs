@@ -19,6 +19,7 @@ pub struct CounterRef<'a> {
     pub required_outcome: Option<&'a crate::quest::world_callbacks::OutcomeRequirement>,
     pub record_defeat_time: bool,
     pub encounter_source: Option<&'a str>,
+    pub first_defeat_outfit: Option<&'a crate::quest::reward_callbacks::OutfitReward>,
 }
 
 impl Counter {
@@ -38,6 +39,7 @@ impl Counter {
             required_outcome: None,
             record_defeat_time: false,
             encounter_source: None,
+            first_defeat_outfit: None,
         }
     }
 }

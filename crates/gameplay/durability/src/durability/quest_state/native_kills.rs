@@ -405,6 +405,7 @@ impl DurabilityRoot {
         death: NativeQuestDeath,
         catalogue: Arc<QuestStateCatalogue>,
         gate: &G,
+        appearance: Option<&crate::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome> {
         let request = QuestTransitionRequest {
             transition_key: death.transition.clone(),
@@ -424,7 +425,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            Some(death.into()),
+            Some(super::native_observation::NativeQuestObservation::Death(death, appearance)),
             None,
             None,
             None,

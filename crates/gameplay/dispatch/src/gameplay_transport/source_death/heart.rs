@@ -291,6 +291,7 @@ impl HeartAction {
                     &recipient.death,
                     std::sync::Arc::clone(catalogue),
                     &owner.premium_coordinator,
+                    None,
                 )
                 .await;
             drop(slot);

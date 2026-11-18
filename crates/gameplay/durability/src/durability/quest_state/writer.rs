@@ -603,7 +603,7 @@ impl DurabilityRoot {
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
-        native: Option<super::native_observation::NativeQuestObservation>,
+        native: Option<super::native_observation::NativeQuestObservation<'_>>,
         benevola: Option<(
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
@@ -668,7 +668,7 @@ impl DurabilityRoot {
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
-        native: Option<super::native_observation::NativeQuestObservation>,
+        native: Option<super::native_observation::NativeQuestObservation<'_>>,
         benevola: Option<(
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
@@ -1200,8 +1200,15 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
+        let first_defeat_outfit = oteryn_gameplay_quests::quest::native_kills::counter_for(
+            &catalogue,
+            &request.transition_key,
+        )
+        .and_then(|counter| counter.first_defeat_outfit)
+        .cloned();
         let mut context = (
             context,
+            native,
             grizzly_gate,
             grizzly_boss,
             grizzly_policy,
@@ -1211,7 +1218,7 @@ impl DurabilityRoot {
         #[cfg(any(test, feature = "test-support"))]
         let test_clock = self.quest_test_clock_handle();
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy, reward_admission, benevola)| {
+            .run_with_context(&mut context, move |holder, deadline, (context, native, grizzly_gate, grizzly_boss, grizzly_policy, reward_admission, benevola)| {
                 Box::pin(async move {
                     let character = fence.character_id;
                     let mut reward_tuple=None;
@@ -1297,7 +1304,7 @@ impl DurabilityRoot {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
                     if unavailable_personal_event(transition, request.cause, context.is_some(), callback.as_ref(),
-                        matches!(native.as_ref(), Some(super::native_observation::NativeQuestObservation::Death(_)))) {
+                        matches!(native.as_ref(), Some(super::native_observation::NativeQuestObservation::Death(..)))) {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::NotSupported)));
                     }
                     let arena = if transition.quest == oteryn_gameplay_quests::quest::arena_completion::QUEST && transition.completes {
@@ -1696,7 +1703,7 @@ impl DurabilityRoot {
                             .then_some(QuestRefusal::StageMismatch)
                     });
                     let refusal=if refusal.is_none() {
-                        if let Some(death)=&native {(!death.admit(&mut tx,fence,&catalogue).await?).then_some(QuestRefusal::StageMismatch)} else {None}
+                        if let Some(death)=native.as_ref() {(!death.admit(&mut tx,fence,&catalogue).await?).then_some(QuestRefusal::StageMismatch)} else {None}
 
                     } else {refusal};
                     let mut grizzly_plan = None;
@@ -1970,6 +1977,25 @@ impl DurabilityRoot {
                             || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,claim,reward,admission,legacy_world_claim).await?.is_none()
 
                         { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    }
+                    if let Some(reward) = &first_defeat_outfit {
+                        // Crystal 201189f8 arbaziloth_death.lua:29-41 awards 1808/1809
+                        // with the first clear. Use the same transaction as the journal.
+                        let content = match native.as_ref() {
+                            Some(super::native_observation::NativeQuestObservation::Death(_, content)) => *content,
+                            _ => None,
+                        };
+                        let Some(content) = content.filter(|content| {
+                            super::super::character_appearance::quest_grants::outfit_compatible(content, reward)
+                        }) else {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        let occurrence = serde_json::to_vec(&(request.cause.key(), &request.transition_key))
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        super::super::character_appearance::grant_content_outfit(
+                            &mut tx, fence.character_id, &occurrence, reward, content,
+                        ).await?;
                     }
                     if let Some(world) = &callback
                         && let Some(reward) = &world.effects.outfit_reward

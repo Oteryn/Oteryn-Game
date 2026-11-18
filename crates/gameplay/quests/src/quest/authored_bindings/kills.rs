@@ -2,6 +2,7 @@
 //! Threshold gate effects reuse questpc3 262618b3's original-snapshot operation.
 use super::BoundQuest;
 use crate::quest::{QuestComparison, QuestEffect, QuestEffectKind};
+use crate::quest::reward_callbacks::OutfitReward;
 use serde::{Deserialize, Serialize};
 
 pub const MAX_KILL_BINDINGS: usize = 128;
@@ -86,6 +87,10 @@ pub struct KillCounter {
     /// Exact native encounter callback; absent for ordinary party hunts.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub encounter_source: Option<String>,
+    /// Crystal 201189f8 arbaziloth_death.lua:29-41 grants the base outfit on
+    /// the first credited defeat. Bind the outfit to a one-way journal write.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub first_defeat_outfit: Option<OutfitReward>,
 }
 
 impl KillCounter {
@@ -102,6 +107,17 @@ impl KillCounter {
                     || self.advance_gate_to.is_some()
                     || !(self.minimum..self.maximum).contains(&self.gate_value))
             || self.minimum >= self.maximum
+            || self.first_defeat_outfit.as_ref().is_some_and(|reward| {
+                self.track != self.gate
+                    || !self.set_to_maximum
+                    || self.damage_credit.is_none()
+                    || reward.addons != 0
+                    || reward.sex.is_some()
+                    || !reward.outfit.strip_prefix("oteryn:outfit.").is_some_and(|key| {
+                        !key.is_empty() && key.len() <= 145
+                            && key.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+                    })
+            })
             || self.required_outcome.as_ref().is_some_and(|required| {
                 !required.valid()
                     || self.damage_credit.is_none()
@@ -248,6 +264,7 @@ impl KillCounter {
             required_outcome: self.required_outcome.as_ref(),
             record_defeat_time: self.record_defeat_time,
             encounter_source: self.encounter_source.as_deref(),
+            first_defeat_outfit: self.first_defeat_outfit.as_ref(),
         }
     }
 }

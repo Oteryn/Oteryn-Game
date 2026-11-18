@@ -49,6 +49,7 @@ impl RevisionSlot {
         death: &NativeQuestDeath,
         catalogue: Arc<QuestStateCatalogue>,
         gate: &G,
+        appearance: Option<&crate::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
@@ -63,6 +64,7 @@ impl RevisionSlot {
                     death.clone(),
                     Arc::clone(&catalogue),
                     gate,
+                    appearance,
                 )
             },
         )

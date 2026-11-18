@@ -183,6 +183,7 @@ impl ReadyReset {
                 &death,
                 std::sync::Arc::clone(catalogue),
                 &owner.premium_coordinator,
+                None,
             )
             .await;
         drop(runtime);

@@ -1372,6 +1372,7 @@ async fn production_grimvale_hunt(
                     death.clone(),
                     Arc::clone(catalogue),
                     premium,
+                    None,
                 )
                 .await
                 .map_err(f::debug)?;

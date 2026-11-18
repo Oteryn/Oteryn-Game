@@ -451,6 +451,7 @@ async fn stampede(h: &f::Harness) -> f::TestResult {
                     &death,
                     Arc::clone(&catalogue),
                     &premium,
+                    None,
                 )
                 .await
                 .map_err(f::debug)?;
