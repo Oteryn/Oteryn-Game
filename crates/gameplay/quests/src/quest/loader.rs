@@ -695,6 +695,7 @@ mod tests {
         }
         assert!(expected.insert(crate::quest::schrodinger_island::callback().key));
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        assert!(expected.insert("oteryn:quest-callback/cwarlock/lever".to_owned()));
         // Collector main adds these exact native World cohorts; no donor
         // exclusion becomes an automatic admission through a loaded key.
         let before_native = expected.len();
