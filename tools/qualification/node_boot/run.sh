@@ -633,7 +633,7 @@ start_pg_sampler
 ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
 start_node() {
   # Detached from the stage's output pipe, so the stage ends while it serves.
-  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
+  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" OTERYN_NODE_BOOT_WITNESSES=1 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
     < /dev/null > /dev/null 2> "$node_log" &
   NODE_PID=$!
 }
@@ -1155,7 +1155,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_env=("RUST_MIN_STACK=${RUST_MIN_STACK:-16777216}")
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-    test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
+    test_env+=("NODE_BOOT_PRIMARY_LOG=$node_log" "NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
     local extra_index
     for extra_index in "${!EXTRA_WORLD_ACCOUNTS[@]}"; do

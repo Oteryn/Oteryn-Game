@@ -557,12 +557,21 @@ async fn nopvp_attack_refused(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> 
             .await?)
     })
     .await?;
+    let session = uuid_text(bots[0].client()?.join_snapshot().game_session_id.as_bytes());
+    let witness = client_world::primary_node_witness(
+        "attack_world_refusal_witness",
+        &[
+            ("session", &session),
+            ("command_id", &outcome.command_id.to_string()),
+        ],
+    )?;
     if !proves_optional_world_refusal(
         levels[0],
         levels[1],
         outcome.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected,
+        witness.is_some(),
     ) {
-        return Err(format!("attack on a player in a no-PvP World must be Rejected for level-eligible actors;levels={levels:?};status={:?};disposition={:?};source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs:62;pvp_live.rs:184;legality.rs:90", outcome.status, outcome.disposition).into());
+        return Err(format!("attack on a player in a no-PvP World must be Rejected for level-eligible actors;levels={levels:?};status={:?};disposition={:?};world_refusal_witness={};source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs:62;pvp_live.rs:184;legality.rs:90", outcome.status, outcome.disposition, witness.is_some()).into());
     }
     let mut damaged = false;
     let mut hit_seen = false;
@@ -1029,12 +1038,17 @@ async fn pvp_journey(
     Ok(())
 }
 
-fn proves_optional_world_refusal(actor_level: u32, target_level: u32, rejected: bool) -> bool {
+fn proves_optional_world_refusal(
+    actor_level: u32,
+    target_level: u32,
+    rejected: bool,
+    world_refusal: bool,
+) -> bool {
     use oteryn_gameplay_combat_rules::pvp::{
         ExpertMode, PVP_MIN_LEVEL, PvpActor, PvpRefusal, PvpRelation, PvpTarget, WorldPvpType,
         check_pvp_legality,
     };
-    if !rejected || actor_level < PVP_MIN_LEVEL || target_level < PVP_MIN_LEVEL {
+    if !world_refusal || !rejected || actor_level < PVP_MIN_LEVEL || target_level < PVP_MIN_LEVEL {
         return false;
     }
     // Optional Worlds force Dove on the wire. Isolate the World rule as well, using the
@@ -1071,11 +1085,17 @@ mod tests {
     use super::*;
 
     #[test]
+    fn dove_refusal_without_live_world_refusal_does_not_qualify() {
+        assert!(!proves_optional_world_refusal(100, 100, true, false));
+        assert!(proves_optional_world_refusal(100, 100, true, true));
+    }
+
+    #[test]
     fn attack_refusal_below_the_pvp_level_cannot_prove_world_authority() {
         let minimum = oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL;
-        assert!(!proves_optional_world_refusal(100, minimum - 1, true));
-        assert!(!proves_optional_world_refusal(minimum - 1, 100, true));
-        assert!(!proves_optional_world_refusal(100, minimum, false));
-        assert!(proves_optional_world_refusal(100, minimum, true));
+        assert!(!proves_optional_world_refusal(100, minimum - 1, true, true));
+        assert!(!proves_optional_world_refusal(minimum - 1, 100, true, true));
+        assert!(!proves_optional_world_refusal(100, minimum, false, true));
+        assert!(proves_optional_world_refusal(100, minimum, true, true));
     }
 }

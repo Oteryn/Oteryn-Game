@@ -1382,6 +1382,26 @@ fn record_join_progress(phase: &str, first_entry: connection::FirstEntryOutcome)
 
 /// One structured stderr event line for the operator, as the node's own events are written
 /// (OPS-NODE-BOOT-01 D6).
+fn qualification_witnesses_enabled() -> bool {
+    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var_os("OTERYN_NODE_BOOT_WITNESSES").is_some())
+}
+
+fn qualification_death_witness(
+    event: &str,
+    death: oteryn_gameplay_entities::carrier::CreatureDeathOccurrenceKey,
+    fields: &str,
+) {
+    if qualification_witnesses_enabled() {
+        let death: String = death
+            .native_bytes()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        operator_event(&format!("event={event} death={death}{fields}"));
+    }
+}
+
 fn operator_event(line: &str) {
     operator_event_with_trace(line, connection::diagnostic_connection_trace());
 }

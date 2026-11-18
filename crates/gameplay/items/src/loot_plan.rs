@@ -612,6 +612,34 @@ fn factored_success(
     draw_ppm(draw) * 100 < chance + gut
 }
 
+/// Double Loot adds complete independent sets, including guaranteed and nested drops.
+/// Crystal ff7ede59 data/libs/functions/monstertype.lua:4-10,123-124 gives each call its own
+/// uniqueness set. DailyBoosted domain-separates rolls and their durable MINT ordinals.
+pub fn apply_scheduled_loot_rate(table: &mut LootTableDefinition, rate: u32) {
+    if rate >= 200 && rate.is_multiple_of(100) {
+        let multiplier = u8::try_from(rate / 100).unwrap_or(u8::MAX);
+        let (rolls, boosted_entries) = match table.algorithm {
+            LootSelectionAlgorithm::DailyBoosted {
+                extra_rolls,
+                boosted_entries,
+            } => (
+                extra_rolls
+                    .saturating_add(1)
+                    .saturating_mul(multiplier)
+                    .saturating_sub(1),
+                boosted_entries,
+            ),
+            _ => (multiplier - 1, table.entries.len()),
+        };
+        table.algorithm = LootSelectionAlgorithm::DailyBoosted {
+            extra_rolls: rolls,
+            boosted_entries,
+        };
+    } else {
+        apply_configured_loot_rate(table, rate);
+    }
+}
+
 /// Applies the configured loot-rate percentage before a table reaches the deterministic planner.
 /// Crystal 201189f8 `data/libs/functions/functions.lua:68-71` divides the random threshold by
 /// `RATE_LOOT`; the capped chance remains available to other consumers, while the uncapped value

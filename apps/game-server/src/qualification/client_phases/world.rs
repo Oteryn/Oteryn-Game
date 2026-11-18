@@ -6025,3 +6025,61 @@ fn qualification_peer_answers_probes_during_a_pending_observation() {
     assert!(matches!(task.as_mut().poll(&mut cx), Poll::Ready(Ok(91))));
     assert!(serviced.get());
 }
+
+pub(super) fn primary_node_witness(
+    event: &str,
+    identifiers: &[(&str, &str)],
+) -> TestResult<Option<String>> {
+    use std::io::{Read, Seek};
+    const MAX_TAIL: u64 = 1024 * 1024;
+    let mut log = std::fs::File::open(required("NODE_BOOT_PRIMARY_LOG")?)?;
+    let offset = log.metadata()?.len().saturating_sub(MAX_TAIL);
+    log.seek(std::io::SeekFrom::Start(offset))?;
+    let mut tail = Vec::new();
+    log.take(MAX_TAIL).read_to_end(&mut tail)?;
+    let complete_end = tail
+        .iter()
+        .rposition(|byte| *byte == b'\n')
+        .map_or(0, |end| end + 1);
+    let text = String::from_utf8_lossy(&tail[..complete_end]);
+    let complete = if offset == 0 {
+        &text
+    } else {
+        text.split_once('\n').map_or("", |(_, remaining)| remaining)
+    };
+    Ok(complete
+        .lines()
+        .rfind(|line| witness_matches(line, event, identifiers))
+        .map(str::to_owned))
+}
+
+fn witness_matches(line: &str, event: &str, identifiers: &[(&str, &str)]) -> bool {
+    let has = |key, value| {
+        line.split_ascii_whitespace()
+            .any(|field| field.split_once('=') == Some((key, value)))
+    };
+    line.starts_with("oteryn-game-server ")
+        && has("module", "gameplay_transport")
+        && has("event", event)
+        && identifiers.iter().all(|(key, value)| has(key, value))
+}
+
+#[test]
+fn witness_matches_only_the_exact_live_occurrence() {
+    let pvp = "oteryn-game-server ts=1 level=warn module=gameplay_transport event=attack_world_refusal_witness session=session-a command_id=7";
+    let is_attack = |session, command| {
+        witness_matches(
+            pvp,
+            "attack_world_refusal_witness",
+            &[("session", session), ("command_id", command)],
+        )
+    };
+    assert!(is_attack("session-a", "7"));
+    assert!(!is_attack("session-b", "7"));
+    assert!(!is_attack("session-a", "70"));
+    assert!(!witness_matches(
+        pvp,
+        "creature_death_witness",
+        &[("death", "session-a")],
+    ));
+}

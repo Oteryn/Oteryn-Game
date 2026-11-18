@@ -93,6 +93,19 @@ pub(super) async fn pair(
         .inventory()
         .cloned()
         .ok_or("trade counter inventory")?;
+    let keys = client_world::native_input()?
+        .item_keys
+        .as_ref()
+        .ok_or("qualification Item keys missing")?;
+    let index = crate::content::item_ref::ItemDefinitionIndex::decode(&keys.bytes)?;
+    let offered_instances = with_trade_peer(
+        client,
+        with_trade_peer(
+            &mut partner,
+            offered_trade_instances(clients, &index, [item, counter]),
+        ),
+    )
+    .await???;
     let mut panel = ui::PlayerTradePanel {
         selected: true,
         ..Default::default()
@@ -160,6 +173,8 @@ pub(super) async fn pair(
     );
     let command =
         ui::request(&mut other_panel, ui::Intent::Accept).ok_or("trade counter accept")?;
+    let completion_session = *partner.join_snapshot().game_session_id.as_bytes();
+    let completion_command = partner.session_mut().next_command_id();
     let completed_revision = trade_revision(client);
     let reply = with_trade_peer(client, runtime::send(partner.session_mut(), &command)).await??;
     if reply.result != ui::player_trade::ResultCode::Completed {
@@ -195,8 +210,19 @@ pub(super) async fn pair(
         client.take_events();
         partner.take_events();
     }
+    let received_instances = with_trade_peer(
+        client,
+        with_trade_peer(
+            &mut partner,
+            received_trade_instances(clients, &completion_session, completion_command),
+        ),
+    )
+    .await???;
+    if !durable_offers_exchanged(offered_instances, received_instances) {
+        return Err("completed trade did not move the exact offered item instances".into());
+    }
     evidence(
-        "mechanic=player_trade completion=committed offered_handles=departed received_items=matched unrelated_custody=retained",
+        "mechanic=player_trade completion=committed durable_instances=exchanged offered_handles=departed received_items=matched unrelated_custody=retained",
     );
     let (result, logout, attempts, busy_timed_out) =
         with_trade_peer(client, client_world::logout_retrying_busy(&mut partner)).await??;
@@ -204,6 +230,112 @@ pub(super) async fn pair(
         return Err(format!("trade partner logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     Ok(())
+}
+
+// The fixture requires two distinct offers. Resolve each wire offer to a unique
+// direct entry in its owner's durable main backpack before the swap.
+async fn offered_trade_instances(
+    clients: &SeamClients<'_>,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    entries: [ItemEntry; 2],
+) -> TestResult<[[u8; 16]; 2]> {
+    tokio::time::timeout(Duration::from_secs(15), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        let mut instances = [[0; 16]; 2];
+        for (side, (entry, character)) in entries.into_iter().zip([1, 0]).enumerate() {
+            let rows = sqlx::query_as::<_, (Vec<u8>, String, String, String, i64)>(
+                "SELECT uuid_send(i.item_instance_id), i.definition_family, \
+                        i.definition_production_key, i.definition_revision_ref, i.quantity::bigint \
+                 FROM game_item_container_slots s \
+                 JOIN game_item_container_entries e \
+                   ON e.parent_item_instance_id=s.item_instance_id AND e.character_id=s.character_id \
+                 JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id AND i.world_id=e.world_id \
+                 WHERE s.character_id=encode($1,'hex')::uuid \
+                    AND s.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 LIMIT 21",
+            )
+            .bind(clients.characters[character].as_slice())
+            .bind(clients.world.as_slice())
+            .fetch_all(&mut connection)
+            .await?;
+            if rows.len() > 20 {
+                return Err("trade fixture backpack exceeds the supported capacity".into());
+            }
+            let mut matching = rows.into_iter().filter(|(_, family, key, revision, quantity)| {
+                *quantity == i64::from(entry.count.get())
+                    && index.definition_ref(family, key, revision) == Some(entry.item_definition_ref)
+            });
+            let (id, ..) = matching.next().ok_or("wire trade item absent from durable backpack")?;
+            if matching.next().is_some() {
+                return Err("wire trade item is ambiguous in the durable backpack".into());
+            }
+            instances[side] = id.try_into().map_err(|_| "malformed durable trade item ID")?;
+        }
+        Ok(instances)
+    })
+    .await
+    .map_err(|_| "durable trade custody observation deadline")?
+}
+
+async fn received_trade_instances(
+    clients: &SeamClients<'_>,
+    session: &[u8; 16],
+    command: u64,
+) -> TestResult<[[u8; 16]; 2]> {
+    tokio::time::timeout(Duration::from_secs(15), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        let rows = sqlx::query_as::<_, (Vec<u8>, Vec<u8>, Vec<u8>)>(
+            "SELECT uuid_send(r.item_instance_id), uuid_send(r.source_character_id), \
+                    uuid_send(r.destination_character_id) \
+             FROM game_player_trade_participants p \
+             JOIN game_player_trade_receipts r USING(occurrence_id) \
+             JOIN game_item_container_entries e ON e.item_instance_id=r.item_instance_id \
+                 AND e.character_id=r.destination_character_id \
+                 AND e.parent_item_instance_id=r.destination_parent \
+                 AND e.placement_ordinal=r.destination_ordinal \
+             JOIN game_item_container_slots s ON s.item_instance_id=e.parent_item_instance_id \
+                 AND s.character_id=e.character_id AND s.world_id=e.world_id \
+             WHERE p.game_session_id=encode($1,'hex')::uuid AND p.command_id=$2::text::numeric \
+                 AND p.character_id=encode($3,'hex')::uuid AND e.world_id=encode($4,'hex')::uuid",
+        )
+        .bind(session.as_slice())
+        .bind(command.to_string())
+        .bind(clients.characters[0].as_slice())
+        .bind(clients.world.as_slice())
+        .fetch_all(&mut connection)
+        .await?;
+        let mut received = [None; 2];
+        for (id, source, destination) in rows {
+            let side = match (source.as_slice(), destination.as_slice()) {
+                (source, destination)
+                    if source == clients.characters[0] && destination == clients.characters[1] =>
+                {
+                    0
+                }
+                (source, destination)
+                    if source == clients.characters[1] && destination == clients.characters[0] =>
+                {
+                    1
+                }
+                _ => return Err("trade receipt names an unexpected custody transfer".into()),
+            };
+            let id = id
+                .try_into()
+                .map_err(|_| "malformed received trade item ID")?;
+            if received[side].replace(id).is_some() {
+                return Err("trade receipt repeats a custody transfer".into());
+            }
+        }
+        match received {
+            [Some(first), Some(second)] => Ok([first, second]),
+            _ => Err("trade completion has no reciprocal durable custody receipt".into()),
+        }
+    })
+    .await
+    .map_err(|_| "durable trade receipt observation deadline")?
+}
+
+fn durable_offers_exchanged(offered: [[u8; 16]; 2], received: [[u8; 16]; 2]) -> bool {
+    received == [offered[1], offered[0]]
 }
 
 async fn with_trade_peer<T>(
@@ -278,6 +410,14 @@ fn offers_exchanged(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn identical_replacement_items_do_not_prove_durable_trade_custody() {
+        let offered = [[1; 16], [2; 16]];
+        assert!(!durable_offers_exchanged(offered, [[4; 16], [3; 16]]));
+        assert!(!durable_offers_exchanged(offered, offered));
+        assert!(durable_offers_exchanged(offered, [[2; 16], [1; 16]]));
+    }
 
     #[test]
     fn unrelated_inventory_change_cannot_prove_trade_custody() -> TestResult {

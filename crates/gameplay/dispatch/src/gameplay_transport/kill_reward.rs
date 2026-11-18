@@ -13,6 +13,7 @@
 //! moves the mark to `committing` just before it sends the transaction. An append for a marked
 //! principal is parked under the mark with the mark's phase at that moment.
 
+use oteryn_gameplay_items::loot_plan::apply_scheduled_loot_rate;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 
@@ -1698,37 +1699,6 @@ impl KillSettlementQueue {
     }
 }
 
-// SV09: Double Loot adds complete independent sets, including guaranteed and nested drops.
-// Crystal ff7ede59 data/libs/functions/monstertype.lua:4-10,123-124 gives each call its own
-// uniqueness set. DailyBoosted already domain-separates rolls and their durable MINT ordinals.
-fn apply_scheduled_loot_rate(
-    table: &mut oteryn_gameplay_items::loot_plan::LootTableDefinition,
-    rate: u32,
-) {
-    if rate >= 200 && rate.is_multiple_of(100) {
-        let multiplier = u8::try_from(rate / 100).unwrap_or(u8::MAX);
-        let (rolls, boosted_entries) = match table.algorithm {
-            crate::combat::LootSelectionAlgorithm::DailyBoosted {
-                extra_rolls,
-                boosted_entries,
-            } => (
-                extra_rolls
-                    .saturating_add(1)
-                    .saturating_mul(multiplier)
-                    .saturating_sub(1),
-                boosted_entries,
-            ),
-            _ => (multiplier - 1, table.entries.len()),
-        };
-        table.algorithm = crate::combat::LootSelectionAlgorithm::DailyBoosted {
-            extra_rolls: rolls,
-            boosted_entries,
-        };
-    } else {
-        oteryn_gameplay_items::loot_plan::apply_configured_loot_rate(table, rate);
-    }
-}
-
 fn loot_table_mint_ceiling(
     death: CreatureDeathOccurrenceKey,
     row: &CreatureRewardRow,
@@ -1888,6 +1858,7 @@ pub fn record_creature_kill(
                 .committed_lethal_receipt(target)
                 && let Ok(death) = receipt.statistics_death_key()
             {
+                super::qualification_death_witness("creature_death_witness", death, "");
                 sink.queue.statistics().capture(
                     runtime,
                     target,
@@ -4079,6 +4050,21 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             )
             .await
         };
+        if super::qualification_witnesses_enabled()
+            && outcome
+                .as_ref()
+                .is_ok_and(|result| result.rewards.loot.is_ok())
+        {
+            let stamina = live_stamina.map_or_else(|| "none".to_owned(), |value| value.to_string());
+            super::qualification_death_witness(
+                "physical_loot_inputs",
+                entry.facts.death,
+                &format!(
+                    " stamina={stamina} loot_rate={} xp_rate={}",
+                    self.event_rates.loot, self.event_rates.experience
+                ),
+            );
+        }
         if let Ok(outcome) = &outcome {
             admission
                 .analyser_loot(&entry, &outcome.rewards.committed_loot)

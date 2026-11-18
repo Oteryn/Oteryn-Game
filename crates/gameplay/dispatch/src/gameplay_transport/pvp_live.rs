@@ -30,7 +30,7 @@ pub(super) async fn legal_player(
     modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
 ) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
     legal_player_at(
-        tx, root, authority, runtime, states, room, objects, actor, target, modes, None,
+        tx, root, authority, runtime, states, room, objects, actor, target, modes, None, None,
     )
     .await
 }
@@ -89,6 +89,7 @@ pub(super) async fn legal_player_field(
             expert: oteryn_protocol_oteryn::pvp_expert::ExpertMode::RedFist,
         },
         Some(destination),
+        None,
     )
     .await
 }
@@ -106,6 +107,7 @@ async fn legal_player_at(
     target: ExactActorRef,
     modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     field_destination: Option<crate::foundation::MovementLocalPosition>,
+    selection: Option<CommandRef>,
 ) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
     let reject = || SpellCastDisposition::TargetIllegal;
     if runtime.actor_staff_visibility(actor).is_ok_and(|f| f.0)
@@ -181,7 +183,19 @@ async fn legal_player_at(
         on_no_pvp_tile: target_tile.no_pvp_zone(),
         marked: facts.marked,
     };
-    check_pvp_legality(facts.world, &a, &t, &facts.relation).map_err(|_| reject())?;
+    check_pvp_legality(facts.world, &a, &t, &facts.relation).map_err(|reason| {
+        if super::qualification_witnesses_enabled()
+            && reason == oteryn_gameplay_combat_rules::pvp::PvpRefusal::WorldType
+            && let Some(command) = selection
+        {
+            super::operator_event(&format!(
+                "event=attack_world_refusal_witness session={} command_id={}",
+                super::format_connection_trace(*command.game_session_id().as_bytes()),
+                command.command_id().get()
+            ));
+        }
+        reject()
+    })?;
     if field_destination.is_none()
         && !storage::unarmoured_pvp_target_in_transaction(tx, &facts)
             .await
@@ -289,9 +303,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
                 .map_err(|_| DurabilityError::Unavailable)?;
-                let result = legal_player(
-                    &mut tx, owner.root, &authority, runtime, states, room, objects, actor, target,
+                let result = legal_player_at(
+                    &mut tx,
+                    owner.root,
+                    &authority,
+                    runtime,
+                    states,
+                    room,
+                    objects,
+                    actor,
+                    target,
                     modes,
+                    None,
+                    Some(command),
                 )
                 .await
                 .ok()
