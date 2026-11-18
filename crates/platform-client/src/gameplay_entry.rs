@@ -14,6 +14,7 @@ pub enum GameplayEntryError {
     InvalidConfiguration,
     /// The Platform directory does not list the configured World; nothing was requested.
     WorldUnavailable,
+    ChannelFull,
     /// Login or admission ended with this FND-04A public class.
     Rejected(PublicClass),
 }
@@ -23,6 +24,7 @@ impl Display for GameplayEntryError {
         formatter.write_str(match self {
             Self::NativeProtocolUnavailable => "native gameplay protocol is not available",
             Self::InvalidConfiguration => "native login configuration is invalid",
+            Self::ChannelFull => "This channel is full.",
             Self::WorldUnavailable => "the selected World is not available",
             Self::Rejected(PublicClass::RetryLogin) => "login failed; please try again",
             Self::Rejected(PublicClass::AuthenticationRequired) => "please sign in again",

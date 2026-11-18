@@ -254,6 +254,7 @@ fn party(link: &PlayLink, outbox: &Outbox) -> Result<(), Box<dyn std::error::Err
     outbox.bevy_party_selected(true, true, "Fixture leader");
     link.open_party();
     let member = |handle, name: &str, leader, expires_at| party::PartyEntry {
+        channel: None,
         handle,
         name: name.into(),
         leader,

@@ -15,6 +15,7 @@ pub(super) fn publish(
         revision,
         VipPresenceBatch {
             entries: vec![VipPresenceEntry {
+                channel: None,
                 entry: 73,
                 name: "Alice".into(),
                 status,
