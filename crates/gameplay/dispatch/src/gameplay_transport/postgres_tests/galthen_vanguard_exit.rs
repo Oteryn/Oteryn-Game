@@ -86,7 +86,7 @@ pub(super) async fn exercise(
     assert!(barrier.is_none());
     assert_eq!(admitted.runtime_actor, Some(actor));
     exercise_exit(h, origin, view, &mut admitted).await?;
-    if let Some(peer) = peer {
+    if let Some(mut peer) = peer {
         let returns: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_runtime_returns")
             .fetch_one(&h.pool)
             .await?;
@@ -109,6 +109,23 @@ pub(super) async fn exercise(
                 .filter(|(_, _, session)| *session == Some(peer.game_session_id))
                 .count(),
             1
+        );
+        super::m25_ahau_push::walk(
+            origin,
+            admitted,
+            MovementLocalPosition {
+                x: LANDING.x - 1,
+                ..LANDING
+            },
+        )
+        .await?;
+        exercise_exit(h, origin, view, &mut peer).await?;
+        let returns: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_runtime_returns")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(
+            returns, 2,
+            "both participants have independent return receipts"
         );
     }
     Ok(())
