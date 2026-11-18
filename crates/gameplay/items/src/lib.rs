@@ -10,6 +10,7 @@ pub mod event_planting;
 pub mod fishing;
 pub mod floor_assembly;
 pub mod forge;
+pub mod haunted_cellar;
 pub mod hotkey_search;
 pub mod imbuement;
 pub mod item_capacity;
