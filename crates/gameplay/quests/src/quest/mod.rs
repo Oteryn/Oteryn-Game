@@ -24,6 +24,7 @@ pub mod admission_binding;
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
 pub mod arena_completion;
+pub mod armenius;
 pub mod authored_bindings;
 pub mod barbarian_arena;
 pub mod barbarian_mead;

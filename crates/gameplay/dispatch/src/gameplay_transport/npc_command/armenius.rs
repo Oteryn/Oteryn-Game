@@ -2,8 +2,7 @@
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::*;
 
-const NPC: &str = "oteryn:npc.armenius";
-const MISSION: &str = "oteryn:quest-progress/quest/u8_4/blood_brothers/mission03";
+use oteryn_gameplay_quests::quest::armenius::{FINAL_TOPIC, MISSION, NPC, RESOLVED_MISSION};
 
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
@@ -24,7 +23,7 @@ pub(super) fn prepare(
             if context.2 != NPC
                 || intent.text == "cookie"
                 || intent.text == "yes"
-                || !(mission == Some(2) || (mission == Some(1) && speaks_spell))
+                || !(mission == Some(RESOLVED_MISSION) || (mission == Some(1) && speaks_spell))
             {
                 return None;
             }
@@ -32,7 +31,10 @@ pub(super) fn prepare(
                 0 => (2, "Speak plainly or leave me alone."),
                 2 => (3, "Those words unsettle me. You should leave."),
                 3 => (4, "What do you think those words mean?"),
-                4 => (5, "Go on, say it again. I could use another laugh."),
+                4 => (
+                    FINAL_TOPIC,
+                    "Go on, say it again. I could use another laugh.",
+                ),
                 _ => return None,
             };
             Some(quest_dialogue::Choice {
