@@ -131,7 +131,7 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(sources, 1);
-    Ok(())
+    super::qcx_the_rookie_guard::shield(owner, admitted, h, authority, npc, &callback).await
 }
 
 async fn items(h: &Harness) -> TestResult<Vec<(String, i64)>> {
