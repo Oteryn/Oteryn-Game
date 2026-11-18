@@ -136,7 +136,7 @@ fn srx3_malice_actual_source_entry_cage_and_retained_buff_postgres() -> TestResu
             drop(view);
             owner.clock_origin = owner
                 .clock_origin
-                .checked_sub(std::time::Duration::from_secs(40))
+                .checked_sub(std::time::Duration::from_secs(14))
                 .ok_or("owner clock")?;
             let view = owner.runtime_view(&registered);
             view.drain_monster_melee().await;
@@ -144,7 +144,7 @@ fn srx3_malice_actual_source_entry_cage_and_retained_buff_postgres() -> TestResu
             assert!(
                 !runtime.visible_entities().creatures.iter().any(|c| runtime
                     .matches_live_creature_identity(c.actor, b"oteryn:creature.soul_cage")),
-                "source 40-second removal consumes the surviving Cage"
+                "fourteen-second expiry consumes the surviving Cage"
             );
             assert_eq!(
                 runtime.soul_war_reflection(boss, "death").map_err(debug)?,
