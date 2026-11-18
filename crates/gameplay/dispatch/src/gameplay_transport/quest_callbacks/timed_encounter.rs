@@ -221,11 +221,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             if memo.callback.starts_merchant_wave() && now >= memo.reset_at {
-                if let Some((pos, key)) = map.facts.merchant_barricade(memo.key)
-                    && !map.facts.remove_movement_item(pos, key, 3682)
-                {
-                    index += 1;
-                    continue;
+                if let Some((pos, key)) = map.facts.merchant_barricade(memo.key) {
+                    if !map.facts.remove_movement_item(pos, key, 3682) {
+                        index += 1;
+                        continue;
+                    }
+                    map.facts.emit_movement_effect(pos, 46);
+                }
+                for actor in &memo.spawned {
+                    if let Some(pos) = runtime
+                        .read_actor_position(*actor)
+                        .ok()
+                        .and_then(|snapshot| native(snapshot.position()))
+                    {
+                        map.facts.emit_movement_effect(tile(pos), 45);
+                    }
                 }
                 super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
                 let mut loot = Vec::new();

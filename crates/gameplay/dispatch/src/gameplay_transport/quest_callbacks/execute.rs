@@ -1651,11 +1651,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
+        if callback.effects.loot_merchant {
+            map.facts.emit_movement_effect(pos, 46);
+        }
         if let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
         }
-        if let Some(effect) = callback.effects.teleport_effect
+        if let Some(effect) = callback
+            .effects
+            .teleport_effect
+            .or_else(|| callback.starts_merchant_wave().then_some(45))
             && let Some(destination) = callback.teleport
         {
             map.facts.emit_movement_effect(tile(destination), effect);

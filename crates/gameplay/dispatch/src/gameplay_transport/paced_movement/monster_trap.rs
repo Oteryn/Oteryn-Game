@@ -1,6 +1,6 @@
 //! Crystal `data/scripts/movements/trap.lua:23-44,59-69` (201189f8) for monsters.
 
-use super::special_movement::{TileEntries, Trap, tile_entries, transform, trap};
+use super::special_movement::{TileEntries, Trap, tile_entries, tile_position, transform, trap};
 use crate::content::ReferenceResistanceKind;
 use crate::foundation::ChannelRuntimeV1;
 use crate::foundation::owner_timer::SemanticTimeMicros;
@@ -68,6 +68,9 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
                 },
             )
         {
+            if let Some(pos) = tile_position(step.to) {
+                map.facts.emit_movement_effect(pos, 45);
+            }
             continue;
         }
         if destination.protection_zone
