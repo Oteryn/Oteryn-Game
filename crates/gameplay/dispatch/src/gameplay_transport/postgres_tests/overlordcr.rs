@@ -129,6 +129,15 @@ fn overlordcr_proficiency_fallback_storage_without_xp_postgres() -> TestResult {
 }
 
 #[test]
+fn overlordcr_reconnectable_damager_keeps_credit_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_reconnectable", "earth_overlord")
+}
+
+#[test]
 fn overlordcr_ordinary_boss_damager_chest_excludes_healer_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());

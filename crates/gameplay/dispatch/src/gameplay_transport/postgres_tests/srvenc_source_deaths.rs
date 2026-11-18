@@ -600,6 +600,35 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     .map_err(debug)?;
                 health -= 1;
             }
+            if mode == "overlordcr_reconnectable" {
+                use crate::gameplay_transport::connection::{ControlLossResult, ControllerBinding};
+                let (peer_actor, peer_session, _) = overlord_peers[0];
+                drop(runtime);
+                let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                    h.root.clone(),
+                )
+                .current_session_at(peer_session)
+                .await?
+                .0;
+                let controller = ControllerBinding {
+                    transport: current.current_transport().ok_or("peer transport")?,
+                    account_id: id(121),
+                };
+                assert_eq!(
+                    owner
+                        .commit_control_loss(peer_session, peer_actor, controller)
+                        .await,
+                    ControlLossResult::Recorded
+                );
+                runtime = owner.runtime.lock().await;
+                assert!(
+                    runtime
+                        .player_control_facts(peer_actor, peer_session)
+                        .map_err(debug)?
+                        .control_loss
+                        .is_some()
+                );
+            }
             let (actor, session, lease) = if mode == "overlordcr_fallback" {
                 runtime
                     .remove_terminal_session(session, actor)
