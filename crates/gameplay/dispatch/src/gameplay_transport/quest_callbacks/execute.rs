@@ -1438,10 +1438,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 *due = deadline;
             }
-            // A per-character gift does not consume or revise its shared source object.
+            // A per-character gift or reservoir recharge leaves its shared source object intact.
             // Real scene changes and shared-world progress still publish their original CAS,
             // including the revision consumed by the post-publication removal below.
-            let personal_gift_preserves_object = callback.item_reward().is_some()
+            let personal_effect_preserves_object = (callback.item_reward().is_some()
+                || callback.operations().any(|operation| {
+                    matches!(
+                        operation.effect,
+                        oteryn_gameplay_quests::quest::reward_callbacks::StateMutation::Recharge { .. }
+                    )
+                }))
                 && callback.effects.item_reward_cycle.is_none()
                 && !callback.effects.item_reward_per_use
                 && callback.world_change.is_none()
@@ -1503,7 +1509,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
+            } else if !callback.is_read_only()
+                && !personal_effect_preserves_object
+                && !apply_scene()
             {
                 return UseDisposition::Rejected;
             }

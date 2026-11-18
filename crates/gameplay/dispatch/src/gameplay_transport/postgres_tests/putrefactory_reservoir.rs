@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ExactActorRef;
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::rotten_blood::putrefactory::{
     CHARGE_TRACK as CHARGE, PASSIVE_CLOCK, PASSIVE_TICK, RESERVOIR_ACTION,
 };
@@ -156,6 +157,11 @@ pub(super) async fn exercise(
     };
     let reply = wire(owner, admitted, 1, 2, payload.clone()).await?;
     assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+    assert_eq!(
+        owner.bundle_map().ok_or("map")?.facts.object_revision(key),
+        0,
+        "a personal recharge must leave the shared reservoir usable at the same revision",
+    );
     let values = tracks().await?;
     assert_eq!(values.len(), 2);
     let first_charge = match name {
