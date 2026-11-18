@@ -120,6 +120,7 @@ fn house_list_window() -> TestResult {
             String::new(),
             String::new(),
         ],
+        [None; 7],
         &oteryn_client_ui::house::Panel::default(),
         "",
     );
