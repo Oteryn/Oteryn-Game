@@ -86,7 +86,7 @@ pub(super) struct BossRoom {
     pub player_level: Option<i64>,
     pub already_fought: bool,
     pub with_occupant: bool,
-    pub replace_visit: bool,
+    pub reenter_before_timeout: bool,
     pub allowed: bool,
     pub source: &'static str,
 }
@@ -134,7 +134,7 @@ async fn exercise_world(
             serde_json::json!(room.minimum_level);
         callback_json["effects"]["encounter"]["boss_cooldown_seconds"] = serde_json::json!(36_000);
         callback_json["failure_teleport"] = serde_json::Value::Null;
-        if room.replace_visit {
+        if room.reenter_before_timeout {
             // The fixture's adjacent western tile is reachable by STEP and
             // lies beyond the room boundary.
             callback_json["effects"]["encounter"]["room_min"]["x"] =
@@ -595,12 +595,13 @@ async fn exercise_world(
         };
         (visitor, cave_creatures)
     };
-    let mut due = enter_at + u64::from(after_ms) * 1_000;
+    let due = enter_at + u64::from(after_ms) * 1_000;
+    let mut next_due = None;
     assert_eq!(
         owner.states.quest_callbacks.next_encounter_due_us(),
         Some(due)
     );
-    if boss.is_some_and(|room| room.replace_visit) {
+    if boss.is_some_and(|room| room.reenter_before_timeout) {
         let session = admitted.game_session_id;
         owner
             .states
@@ -659,11 +660,9 @@ async fn exercise_world(
             oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
             StepDisposition::Moved
         );
-        let prior_due = due;
-        due = reentry + u64::from(after_ms) * 1_000;
+        next_due = Some(reentry + u64::from(after_ms) * 1_000);
+        // Crystal does not cancel the first addEvent when another player enters.
         assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), Some(due));
-        owner.states.test_owner_time.store(prior_due + 1, Ordering::Relaxed);
-        owner.drain_quest_encounter_deadlines().await;
         let runtime = deps.runtime.lock().await;
         assert_eq!(runtime.read_actor_position(deps.actor).map_err(debug)?.position(), local(ROOM));
         assert!(!runtime.contains_live_creature(old_boss));
@@ -694,6 +693,13 @@ async fn exercise_world(
             .position(),
         local(EXIT)
     );
+    assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), next_due);
+    if let Some(next_due) = next_due {
+        owner.states.test_owner_time.store(next_due + 1, Ordering::Relaxed);
+        owner.drain_quest_encounter_deadlines().await;
+        let runtime = deps.runtime.lock().await;
+        assert_eq!(runtime.read_actor_position(deps.actor).map_err(debug)?.position(), local(EXIT));
+    }
     assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
     if let Some((other, bystander)) = eventual_bystander {
         let runtime = deps.runtime.lock().await;

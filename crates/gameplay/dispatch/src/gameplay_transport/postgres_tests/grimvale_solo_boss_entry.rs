@@ -15,7 +15,7 @@ fn ancient_feud_step_admits_at_level_250_and_refuses_the_active_boss_cooldown() 
         player_level: Some(250),
         already_fought: false,
         with_occupant: false,
-        replace_visit: false,
+        reenter_before_timeout: false,
         allowed: true,
         source: ANCIENT_FEUD,
     };
@@ -44,7 +44,7 @@ fn curse_spreads_step_records_the_boss_cooldown_and_refuses_early_reentry() -> T
             player_level: None,
             already_fought: false,
             with_occupant: false,
-            replace_visit: false,
+            reenter_before_timeout: false,
             allowed: true,
             source: CURSE_SPREADS,
         },
@@ -57,7 +57,7 @@ fn curse_spreads_step_records_the_boss_cooldown_and_refuses_early_reentry() -> T
             player_level: None,
             already_fought: true,
             with_occupant: false,
-            replace_visit: false,
+            reenter_before_timeout: false,
             allowed: false,
             source: CURSE_SPREADS,
         },
@@ -77,7 +77,7 @@ fn ancient_feud_step_refuses_the_level_gate_without_writing_a_cooldown() -> Test
             player_level: Some(249),
             already_fought: false,
             with_occupant: false,
-            replace_visit: false,
+            reenter_before_timeout: false,
             allowed: false,
             source: ANCIENT_FEUD,
         },
@@ -97,7 +97,7 @@ fn occupied_boss_room_refuses_entry_then_ejects_current_players_without_removing
             player_level: None,
             already_fought: false,
             with_occupant: true,
-            replace_visit: false,
+            reenter_before_timeout: false,
             allowed: true,
             source: CURSE_SPREADS,
         },
@@ -105,7 +105,7 @@ fn occupied_boss_room_refuses_entry_then_ejects_current_players_without_removing
 }
 
 #[test]
-fn reentered_boss_room_restarts_the_timer_and_replaces_the_previous_boss() -> TestResult {
+fn reentered_boss_room_keeps_the_prior_timer_and_replaces_the_previous_boss() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -117,7 +117,7 @@ fn reentered_boss_room_restarts_the_timer_and_replaces_the_previous_boss() -> Te
             player_level: None,
             already_fought: false,
             with_occupant: false,
-            replace_visit: true,
+            reenter_before_timeout: true,
             allowed: true,
             source: CURSE_SPREADS,
         },
