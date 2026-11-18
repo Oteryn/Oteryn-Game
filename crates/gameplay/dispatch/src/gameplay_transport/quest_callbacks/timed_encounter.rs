@@ -143,8 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
-        {
-            let mut states = self.states.spell_states.lock().await;
+        if let Ok(mut states) = self.states.spell_states.try_lock() {
             for phase in states.encounter_phases.take_followups(&runtime) {
                 let Some(next) = phase
                     .callback
