@@ -9,19 +9,25 @@ pub struct NativeArenaAdmission {
     command: CommandRef,
     binding: Vec<u8>,
     payment: bool,
+    quoted_rank: u8,
 }
 
 impl NativeArenaAdmission {
-    pub fn payment(actor: ExactActorRef, command: CommandRef) -> Option<Self> {
+    pub fn payment(actor: ExactActorRef, command: CommandRef, quoted_rank: u8) -> Option<Self> {
         actor.channel_id()?;
+        if !(1..=3).contains(&quoted_rank) {
+            return None;
+        }
         let mut binding = b"oteryn:svargrond-halvar-payment:v1".to_vec();
         binding.extend_from_slice(&actor.placement_identity());
         binding.extend_from_slice(&actor.scope_generation().get().to_be_bytes());
+        binding.push(quoted_rank);
         Some(Self {
             actor,
             command,
             binding,
             payment: true,
+            quoted_rank,
         })
     }
 
@@ -54,6 +60,7 @@ impl NativeArenaAdmission {
             command,
             binding,
             payment: false,
+            quoted_rank: 0,
         })
     }
 
@@ -75,7 +82,7 @@ impl NativeArenaAdmission {
         fence: CurrentCharacterGameplayFence,
     ) -> bool {
         let ready = if self.payment {
-            before.paid_rank == 0
+            before.paid_rank == 0 && Some(self.quoted_rank) == before.completed.checked_add(1)
         } else {
             before.paid_rank == before.completed + 1
         };

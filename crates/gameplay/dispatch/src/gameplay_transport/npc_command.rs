@@ -952,6 +952,11 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
+    if admission.halvar_has_offer(actor, session, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return admission.halvar_talk(actor, command, intent).await;
+    }
     if let Some(step) = catalogue::prepare(
         admission,
         actor,

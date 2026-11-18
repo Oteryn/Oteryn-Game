@@ -21,6 +21,8 @@ pub(super) mod concession;
 mod death_poll;
 #[path = "arena_match/departure_poll.rs"]
 mod departure_poll;
+#[path = "arena_match/halvar.rs"]
+mod halvar;
 #[path = "arena_match/pillar.rs"]
 mod pillar;
 #[path = "arena_match/pit_reset.rs"]
@@ -67,6 +69,7 @@ struct ArenaCaller {
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct Matches {
     command: tokio::sync::Mutex<()>,
+    halvar_prompts: Mutex<HashMap<GameSessionId, halvar::Prompt>>,
     live: Mutex<HashMap<GameSessionId, LiveMatch>>,
     victory_poll: Mutex<Option<(u64, u64)>>,
     #[cfg(test)]
@@ -464,10 +467,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 A::Enter if self.runtime.lock().await.is_tibiadrome(actor) => {
                     disposition = D::WrongState;
                 }
+                A::Enter if after.paid_rank != 0 || self.callback_content().iter().any(halvar::owns_callback) => {
+                    disposition = D::WrongState;
+                }
                 A::Enter if after.rank == 0 && after.completed < 3 => {
-                    if after.paid_rank != 0 {
-                        return None;
-                    }
                     let rank = after.completed + 1;
                     let runtime = self.runtime.lock().await;
                     let at = runtime.read_actor_position(actor).ok()?.position();
