@@ -359,6 +359,8 @@ fn scenario_case(
         super::super::qengine_m03_use::callback()?
     } else if name == super::super::cooldmech_essence::NAME {
         super::super::cooldmech_essence::geometry(trigger)?
+    } else if name == super::super::cooldmech_fountain::NAME {
+        super::super::cooldmech_fountain::geometry(trigger)?
     } else if qd_world {
         super::super::qd_world::callback(name)?
     } else if engenc_asura {
@@ -3115,6 +3117,10 @@ fn scenario_case(
         } else if name == super::super::cooldmech_essence::NAME {
             Box::pin(super::super::cooldmech_essence::exercise(
                 &mut owner, &mut admitted, &h, start,
+            )).await?;
+        } else if name == super::super::cooldmech_fountain::NAME {
+            Box::pin(super::super::cooldmech_fountain::exercise(
+                &mut owner, &mut admitted, &h,
             )).await?;
         } else if name == super::super::cooldmech_gerimor::NAME {
             Box::pin(super::super::cooldmech_gerimor::exercise(
