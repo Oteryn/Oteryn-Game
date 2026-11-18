@@ -2170,8 +2170,10 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.len(), 207 + 59 + 124 + 1 + 1);
+        // Shared (including three Frontier callbacks), QuestPC7, other registered
+        // shards, M43 peer, Kingsday journal, and three callbacks each for
+        // Children of the Revolution and Secret Service.
+        assert_eq!(load()?.len(), 210 + 59 + 124 + 1 + 1 + 3 + 3);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2209,6 +2211,9 @@ mod tests {
             "oteryn:quest-reward/m36-rock-steady-second",
             "oteryn:quest-reward/m36-rock-steady-start",
             "oteryn:quest-reward/m36-rock-steady-weapon",
+            "oteryn:quest-reward/qcx51-frontier-finish",
+            "oteryn:quest-reward/qcx51-frontier-report-victory",
+            "oteryn:quest-reward/qcx51-frontier-start",
         ];
         let added: BTreeSet<_> = legacy
             .iter()
@@ -2216,7 +2221,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 207);
+        assert_eq!(legacy.len(), 210);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
