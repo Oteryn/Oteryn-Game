@@ -72,7 +72,11 @@ impl ArbazilothEncounter {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
     ) -> Result<bool, CarrierError> {
-        self.phase.projected_death(runtime, actor)
+        let recorded = self.phase.projected_death(runtime, actor)?;
+        if recorded {
+            runtime.open_arbaziloth_doomforge(actor)?;
+        }
+        Ok(recorded)
     }
 
     pub fn victors<'a>(

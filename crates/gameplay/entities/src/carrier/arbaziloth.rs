@@ -87,7 +87,35 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::PlanConflict);
         }
         spell_combat.arbaziloth_shields = Some(ShieldSequence::default());
+        self.carrier.arbaziloth_victory = None;
         Ok(())
+    }
+
+    pub fn open_arbaziloth_doomforge(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let Slot::CreatureOccupied {
+            health: 0,
+            target_identity,
+            ..
+        } = &self.carrier.slots[index]
+        else {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        };
+        if target_identity.as_ref() != b"oteryn:creature.enraged_arbaziloth" {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        let (death, _) = self.borrow_combat_death().projected_death(actor)?;
+        self.carrier.arbaziloth_victory = Some(death);
+        Ok(())
+    }
+
+    pub fn arbaziloth_doomforge_open(&self) -> bool {
+        self.owner_fence().is_ok()
+            && self.carrier.arbaziloth_victory.is_some_and(|death| {
+                let (scope, generation) = self.encounter_owner_scope();
+                death.runtime_scope() == scope && death.scope_ownership_generation() == generation
+            })
     }
 
     pub fn arbaziloth_shields(&self, actor: ExactActorRef) -> Option<ShieldSequence> {

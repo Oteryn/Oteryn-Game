@@ -679,6 +679,7 @@ pub fn prepare_bundle_step<'a>(
     let table = table_of(cells).ok_or(MovementError::NotQualified)?;
     qualify_origin(runtime, cells, actor, session, expected, Some(direction))?;
     let (destination, starts_stairhop) = destination(
+        runtime,
         cells,
         table,
         expected.position(),
@@ -746,6 +747,7 @@ fn qualify_origin_control(
 }
 
 fn destination(
+    runtime: &ChannelRuntimeV1,
     cells: &NativeEntryMovementCells,
     table: &FloorTable,
     origin: MovementLocalPosition,
@@ -754,6 +756,7 @@ fn destination(
     closed: &dyn CellBlocker,
 ) -> Result<(MovementLocalPosition, bool), MovementError> {
     let floor = i32::from(origin.floor);
+    let doomforge_open = runtime.arbaziloth_doomforge_open();
     // A closed door blocks the entered tile and every tile a floor change resolves onto
     // before any teleport on it applies (WORLD-INTERACTION-0 §6.6); `landable` guards the
     // teleport destination.
@@ -763,7 +766,7 @@ fn destination(
             x: cell.0,
             y: cell.1,
             z: cell.2,
-        }) || cold_doomforge(cells, cell)
+        }) || (!doomforge_open && cold_doomforge(cells, cell))
         {
             Ground::Blocked
         } else {
@@ -787,7 +790,22 @@ fn destination(
             }
             table.mask(cell)
         },
-        |at| current_teleport(cells, at),
+        |at| {
+            if doomforge_open
+                && cold_doomforge(
+                    cells,
+                    (i32::from(at.x), i32::from(at.y), -i32::from(at.floor)),
+                )
+            {
+                Some(TilePos {
+                    x: 34062,
+                    y: 32334,
+                    floor: -14,
+                })
+            } else {
+                current_teleport(cells, at)
+            }
+        },
         &|(x, y, z)| closed.suppresses_native_teleport(LogicalCell { x, y, z }),
     )
     .map_err(movement_error)?;
@@ -821,6 +839,7 @@ impl BundleStepProof<'_> {
             Some(self.direction),
         )?;
         let observed = destination(
+            runtime,
             self.cells,
             self.table,
             self.expected.position(),
