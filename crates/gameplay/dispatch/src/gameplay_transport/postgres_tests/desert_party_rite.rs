@@ -48,10 +48,13 @@ fn desert_dungeon_four_station_rite_uses_real_fenced_players() -> TestResult {
 }
 
 pub(super) fn scenario(earned: bool) -> TestResult {
-    scenario_with_station_custody(earned, false)
+    scenario_with_station_custody(earned, None)
 }
 
-pub(super) fn scenario_with_station_custody(earned: bool, station_custody: bool) -> TestResult {
+pub(super) fn scenario_with_station_custody(
+    earned: bool,
+    station_custody_count: Option<usize>,
+) -> TestResult {
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "desert_party_rite", false, false).await?;
@@ -63,15 +66,23 @@ pub(super) fn scenario_with_station_custody(earned: bool, station_custody: bool)
             .into_iter()
             .find(|row| row.key == KEY)
             .ok_or("source four-vocation party/offering callback missing")?;
-        if station_custody {
+        if let Some(count) = station_custody_count {
             super::qespike_lord_admission::configure(&mut callback)?;
+            if count == 2 {
+                callback.effects.party_transfer.as_mut().ok_or("party transfer")?.stations.drain(..2);
+            }
         }
         let party = callback
             .effects
             .party_transfer
             .as_ref()
             .ok_or("party transfer")?;
-        assert_eq!(party.stations.len(), 4);
+        assert_eq!(party.stations.len(), station_custody_count.unwrap_or(4));
+        let initiator_station = if let Some(position) = party.initiator_position {
+            party.stations.iter().position(|station| station.from == position).ok_or("initiator station")?
+        } else {
+            2
+        };
         let fresh = prepare_current_session(&h).await?;
         let evidence = super::house_transfer::RecoverySource::start(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -177,7 +188,7 @@ pub(super) fn scenario_with_station_custody(earned: bool, station_custody: bool)
         super::tutorial_vitals_fixture::publish_native_activation(&h, &activated).await?;
         super::maintain_ready(&h.root).await?;
         let mut sessions = Vec::new();
-        for n in 0..3 {
+        for n in 0..u8::try_from(party.stations.len() - 1)? {
             let character = create_peer(&h, &authority, &evidence.evidence, n).await?;
             sessions.push(
                 super::activity_deadline_paging::admit_created_member(
@@ -200,7 +211,7 @@ pub(super) fn scenario_with_station_custody(earned: bool, station_custody: bool)
                 .catalogue()
                 .clone(),
         ));
-        if station_custody {
+        if station_custody_count.is_some() {
             super::qespike_lord_admission::install(&mut owner, &callback)?;
         }
         let mut admitted = deps.admitted;
@@ -239,15 +250,8 @@ pub(super) fn scenario_with_station_custody(earned: bool, station_custody: bool)
 
         owner.admit_progression_session(&mut admitted).await;
         let mut members = Vec::new();
-        for (station, session) in [
-            sessions[0],
-            sessions[1],
-            admitted.game_session_id,
-            sessions[2],
-        ]
-        .into_iter()
-        .enumerate()
-        {
+        sessions.insert(initiator_station, admitted.game_session_id);
+        for (station, session) in sessions.into_iter().enumerate() {
             let actor = if session == admitted.game_session_id {
                 deps.actor
             } else {
@@ -364,7 +368,7 @@ pub(super) fn scenario_with_station_custody(earned: bool, station_custody: bool)
         }
         let real_sessions:i64 = sqlx::query_scalar("SELECT count(DISTINCT character_id) FROM game_durability_reconnect_sessions WHERE session_state=2").fetch_one(&h.pool).await?;
         assert_eq!(
-            real_sessions, 4,
+            real_sessions, i64::try_from(party.stations.len())?,
             "every station uses an independently admitted Character"
         );
         if earned {
@@ -376,8 +380,15 @@ pub(super) fn scenario_with_station_custody(earned: bool, station_custody: bool)
             placement: placement.clone(),
             expected_revision: revision,
         };
-        if station_custody {
-            return super::qespike_lord_admission::exercise(&owner, &mut admitted, &members, &h, key, &target(0), &callback).await;
+        if station_custody_count.is_some() {
+            let result = super::qespike_lord_admission::exercise(&owner, &mut admitted, &members, &h, key, &target(0), &callback).await;
+            drop(owner);
+            drop(evidence);
+            drop(authority);
+            drop(seal);
+            let cleanup = h.cleanup().await;
+            result?;
+            return cleanup;
         }
         // First pull only transforms. A missing member on the return pull consumes nothing.
         assert_eq!(
