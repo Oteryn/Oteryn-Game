@@ -980,6 +980,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 .any(|r| r.ground.is_some())
                 && !callback.has_personal_state())
             || !effects::valid(callback)
+            || !reactive_waves::valid(callback)
             || !state_operations::valid(callback)
             || !solid_repairs::valid(callback)
             || callback
@@ -1063,6 +1064,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || callback.effects.outfit_reward.is_some()
                     || callback.effects.mount_reward.is_some()))
             || !effects::valid(callback)
+            || !reactive_waves::valid(callback)
             || callback
                 .facing
                 .is_some_and(|facing| facing > 3 || callback.teleport.is_none())
@@ -1649,6 +1651,7 @@ mod ground_requirement_tests;
 #[cfg(test)]
 mod timed_tests;
 
+pub mod reactive_waves;
 mod rewards;
 
 #[cfg(test)]

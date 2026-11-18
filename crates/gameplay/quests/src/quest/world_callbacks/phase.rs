@@ -62,8 +62,10 @@ pub fn select_storage_phase<'a>(
 
 pub fn exclusive(left: &Callback, right: &Callback) -> bool {
     let source_trial = left.trigger == Trigger::Use
-        && left.effects.target_transform.is_some()
-        && left.effects.target_transform == right.effects.target_transform
+        && ((left.effects.target_transform.is_some()
+            && left.effects.target_transform == right.effects.target_transform)
+            || (left.effects.retaliation.is_some() && right.effects.finish_area.is_some())
+            || (right.effects.retaliation.is_some() && left.effects.finish_area.is_some()))
         && left.item_on_target == right.item_on_target;
     left.actor_kind == ActorKind::Player
         && right.actor_kind == ActorKind::Player

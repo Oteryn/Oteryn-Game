@@ -26,6 +26,7 @@ mod personal_encounter;
 mod personal_trial;
 mod phase;
 mod rafzane_elevator;
+mod reactive_waves;
 mod reward_door;
 mod rewards;
 mod rotten_flame;

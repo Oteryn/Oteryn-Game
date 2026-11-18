@@ -8,8 +8,9 @@ use crate::foundation::{
 };
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_quests::quest::world_callbacks::{
-    Callback, Encounter, EncounterMonster, EncounterPlayer, Position,
+    Callback, Encounter, EncounterMonster, EncounterPlayer, Position, Trigger,
     periodic_bosses::{PeriodicBoss, WeightedBoss},
+    reactive_waves::{Chance, EarthHit},
     waves::{Wave, WaveRun, WaveSpawn},
 };
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
@@ -45,7 +46,7 @@ fn periodic_boss_waits_for_interval_and_cooldown_and_keeps_one_live_actor() -> T
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("quest-periodic-boss", move || {
-        scenario(admin, false)
+        scenario(admin, Case::Periodic)
     })
 }
 
@@ -54,10 +55,29 @@ fn quest_use_refuses_occupied_room_then_runs_timed_waves_and_ejects_survivor() -
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-timed-waves", move || scenario(admin, true))
+    super::kill_reward_e2e::scenario_thread::run("quest-timed-waves", move || {
+        scenario(admin, Case::Waves)
+    })
 }
 
-fn scenario(admin: String, waves: bool) -> TestResult {
+#[test]
+fn quest_step_earth_hit_updates_current_vitals_once() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-earth-step", move || {
+        scenario(admin, Case::EarthStep)
+    })
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Case {
+    Periodic,
+    Waves,
+    EarthStep,
+}
+
+fn scenario(admin: String, case: Case) -> TestResult {
     run(async move |_| {
         let started = std::time::Instant::now();
         let mut callback = super::authored_world_rewards::placeholder(TRIGGER)?;
@@ -107,6 +127,21 @@ fn scenario(admin: String, waves: bool) -> TestResult {
                     .collect(),
             }),
         });
+        if matches!(case, Case::EarthStep) {
+            // Crystal movements_area_damage.lua:3-16. The fixture forces a
+            // fixed roll so it can verify the real HP owner deterministically.
+            callback.trigger = Trigger::StepIn;
+            callback.selector.ordinal = Some(0);
+            callback.selector.unique = None;
+            callback.selector.appearance = None;
+            callback.effects.encounter = None;
+            callback.effects.earth_hit = Some(EarthHit {
+                chance: Chance { wins: 1, rolls: 1 },
+                minimum: 35,
+                maximum: 35,
+                effect: 51,
+            });
+        }
         // Use the real typed callback decode in addition to the composed PG fixture.
         let callback: Callback = serde_json::from_value(serde_json::to_value(callback)?)?;
         let world = super::quest_world_callbacks::world_with_cells(
@@ -171,8 +206,17 @@ fn scenario(admin: String, waves: bool) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        if waves {
+        if matches!(case, Case::Waves) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback)?));
+        } else if matches!(case, Case::EarthStep) {
+            assert!(
+                owner
+                    .states
+                    .quest_callbacks
+                    .fixture
+                    .set(vec![callback])
+                    .is_ok()
+            );
         } else {
             // Crystal globalevents_pits_of_inferno_bosses.lua:12-14,23. This
             // fixture uses a nonzero cooldown to prove the shared owner gate.
@@ -202,13 +246,13 @@ fn scenario(admin: String, waves: bool) -> TestResult {
         }
         let mut admitted = deps.admitted;
         super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 100).await?;
-        if waves {
-            wave_scenario(&owner, &mut admitted, deps.actor).await?;
-        } else {
-            periodic_scenario(&owner).await?;
+        match case {
+            Case::Waves => wave_scenario(&owner, &mut admitted, deps.actor).await?,
+            Case::Periodic => periodic_scenario(&owner).await?,
+            Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
         }
         eprintln!(
-            "POSTGRES_CASE_COMPLETED quest_spawn waves={waves} duration={:?}",
+            "POSTGRES_CASE_COMPLETED quest_spawn case={case:?} duration={:?}",
             started.elapsed()
         );
         drop(owner);
@@ -380,6 +424,43 @@ async fn wave_scenario(
             .map_err(debug)?,
         saved
     );
+    Ok(())
+}
+
+async fn earth_step_scenario(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    player: ExactActorRef,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{
+        StepDirection, StepDisposition, decode_step_result, encode_step_intent,
+    };
+    let health = async |session| -> TestResult<_> {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        Ok(states
+            .get(&runtime, player, session)
+            .ok_or("vitals")?
+            .vitals()
+            .health)
+    };
+    let before = health(admitted.game_session_id).await?;
+    let reply = super::quest_world_callbacks::wire(
+        owner,
+        admitted,
+        1,
+        1,
+        encode_step_intent(StepDirection::East),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
+    );
+    assert_eq!(position(owner, player).await?, local(TRIGGER));
+    assert_eq!(before - health(admitted.game_session_id).await?, 35);
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(before - health(admitted.game_session_id).await?, 35);
     Ok(())
 }
 

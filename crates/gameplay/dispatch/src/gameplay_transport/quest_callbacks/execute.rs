@@ -198,7 +198,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
-                || !super::clear_area::area_is_clear(runtime, callback))
+                || !super::clear_area::area_is_clear(runtime, callback)
+                || !super::reactive_waves::finish_area_clear(runtime, callback))
         {
             if !world_requirements_match(map, callback)
                 && self.ground_requirements_match(runtime, map, callback)
@@ -948,6 +949,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !callback.is_read_only()
             && !(close && callback.opening_only);
         let mut fresh_effects = !durable;
+        let mut reactive_wave: &[String] = &[];
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
@@ -1238,6 +1240,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
+                    if let Some(plan) = &callback.effects.retaliation {
+                        reactive_wave = super::reactive_waves::selected_wave(plan, &committed.changes);
+                    }
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.
@@ -1618,6 +1623,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.owner_now().get(),
                 underwater(map, expected.position()),
                 underwater(map, snapshot.position()),
+            );
+        }
+        if callback.effects.earth_hit.is_some()
+            && (fresh_effects || callback.effects.retaliation.is_some())
+        {
+            super::reactive_waves::publish(
+                self,
+                runtime,
+                states,
+                map,
+                actor,
+                session,
+                callback,
+                reactive_wave,
             );
         }
         if let Some(magic) = &callback.effects.magic {

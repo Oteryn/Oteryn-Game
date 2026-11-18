@@ -103,6 +103,12 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub earth_hit: Option<super::reactive_waves::EarthHit>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retaliation: Option<super::reactive_waves::Retaliation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub finish_area: Option<super::reactive_waves::FinishArea>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
