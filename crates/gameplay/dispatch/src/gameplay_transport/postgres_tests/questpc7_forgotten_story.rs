@@ -5,9 +5,10 @@ use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 #[test]
 fn questpc7_forgotten_whole_native_paths_and_learning() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    assert!(!admin.is_empty());
     let started = std::time::Instant::now();
     let result = super::kill_reward_e2e::scenario_thread::run("questpc7-forgotten-story", || {
         super::quest_world_callbacks::scenario(
