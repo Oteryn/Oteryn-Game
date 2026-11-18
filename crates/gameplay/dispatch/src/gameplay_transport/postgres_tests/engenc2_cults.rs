@@ -77,6 +77,18 @@ fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
 }
 
 fn cults_scenario(reenter: bool) -> TestResult {
+    run_encounter(reenter, false)
+}
+
+#[test]
+fn dcourts2_dream_scar_uses_startup_roster_on_lever_use_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_encounter(false, true)
+}
+
+fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -87,13 +99,35 @@ fn cults_scenario(reenter: bool) -> TestResult {
             let h =
                 Harness::create_with_admission_seed(admin, "engenc2_cults", true, false).await?;
             prepare_current_session(&h).await?;
-            let callback = callback()?;
+            let mut callback = callback()?;
+            if dream_scar {
+                callback.reversible = false;
+                let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+                let position = encounter.monsters.first().ok_or("monster position")?.position;
+                encounter.phase = None;
+                encounter.minimum_level = 1;
+                encounter.weekday_monsters = Some([
+                    "alptramun",
+                    "izcandar_the_banished",
+                    "malofur_mangrinder",
+                    "maxxenius",
+                    "izcandar_the_banished",
+                    "plagueroot",
+                    "maxxenius",
+                ].map(|boss| vec![oteryn_gameplay_quests::quest::world_callbacks::EncounterMonster {
+                    position,
+                    creature: format!("oteryn:creature.{boss}"),
+                }]));
+            }
             let trigger = Position {
                 x: 100,
                 y: 100,
                 floor: -7,
             };
             let world = super::quest_world_callbacks::world(&callback, trigger)?;
+            if dream_scar {
+                callback.effects.encounter.as_mut().ok_or("encounter")?.monsters.clear();
+            }
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -288,6 +322,10 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
+            if dream_scar {
+                // Noon on Monday, deliberately away from the day boundary.
+                super::HOST_NOW.set(Some(4 * 86_400 + 43_200));
+            }
             let outcome = owner
                 .use_object(
                     deps.actor,
@@ -302,11 +340,24 @@ fn cults_scenario(reenter: bool) -> TestResult {
                     },
                 )
                 .await;
+            if dream_scar {
+                super::HOST_NOW.set(None);
+            }
             assert_eq!(
                 outcome.disposition,
                 UseDisposition::Committed,
                 "phase admission"
             );
+            if dream_scar {
+                let runtime = owner.runtime.lock().await;
+                let spawned = runtime.current_live_creature_census().map_err(debug)?;
+                assert_eq!(spawned.len(), 1);
+                assert!(runtime.matches_live_creature_identity(
+                    spawned[0],
+                    b"oteryn:creature.alptramun",
+                ));
+                return Ok(());
+            }
             assert_eq!(
                 owner
                     .states
