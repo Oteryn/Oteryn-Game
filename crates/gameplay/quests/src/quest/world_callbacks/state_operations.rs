@@ -13,6 +13,17 @@ pub(super) fn refreshes_clock(callback: &Callback) -> bool {
 }
 pub(super) fn valid(callback: &Callback) -> bool {
     callback.operations().all(StateOperation::valid)
+        && callback.effects.recharge_cooldown_message.as_ref().is_none_or(|message| {
+            !message.trim().is_empty()
+                && message.len() <= 255
+                && !message.chars().any(char::is_control)
+                && callback.storage.is_empty()
+                && callback.state_ops.is_empty()
+                && matches!(callback.state_operations.as_slice(), [clock, charge]
+                    if matches!(clock.from, StateCondition::ElapsedAtLeast { seconds: 1.. })
+                        && clock.effect == StateMutation::SetNow
+                        && matches!(charge.effect, StateMutation::Recharge { .. }))
+        })
         && callback.state_ops.iter().all(|operation| {
             !matches!(operation.effect, StateMutation::Recharge { .. })
         })

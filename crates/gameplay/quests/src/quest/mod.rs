@@ -388,6 +388,8 @@ pub struct QuestTransition {
 pub enum QuestRefusal {
     /// A `from` comparison does not hold on the locked value.
     StageMismatch,
+    /// A recharge clock has not reached its minimum elapsed time.
+    RechargeCoolingDown,
     /// A source entrance proved absence of its carried offering.
     SourceOfferingMissing,
     /// A carried source offering exists, but current Premium admission denied entry.
@@ -408,6 +410,7 @@ impl QuestRefusal {
     pub const fn code(self) -> &'static str {
         match self {
             Self::StageMismatch
+            | Self::RechargeCoolingDown
             | Self::SourceOfferingMissing
             | Self::SourceOfferingPremiumRequired => "STAGE_MISMATCH",
             Self::RevisionMismatch => "REVISION_MISMATCH",
@@ -810,6 +813,14 @@ impl QuestStateCatalogue {
                 .ok_or(QuestRefusal::NotSupported)?;
             let value = stored.get(&effect.track).copied().unwrap_or(track.initial);
             if !effect.from.holds(value, now) {
+                if matches!(effect.from, QuestComparison::ElapsedAtLeast(_))
+                    && transition
+                        .effects
+                        .iter()
+                        .any(|effect| matches!(effect.effect, QuestEffectKind::Recharge { .. }))
+                {
+                    return Err(QuestRefusal::RechargeCoolingDown);
+                }
                 return Err(QuestRefusal::StageMismatch);
             }
             current.push((track, value));

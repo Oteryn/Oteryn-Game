@@ -20,6 +20,8 @@ const CHARGE: &str =
     "oteryn:quest-progress/crystalserver/quest/u13_20/rotten_blood/putrefactory_task";
 const CLOCK: &str = "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-1-used-at";
 const STARTED_AT: i64 = 1_800_000_000;
+// Crystal creaturescripts_putrefactory-x.lua:195-199.
+const EXHAUSTED: &str = "You already exhausted this reservoir.";
 const AT: Position = Position {
     x: 34081,
     y: 31704,
@@ -73,11 +75,12 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let mut reservoir = serde_json::to_value(callback()?)?;
     reservoir["effects"]["magic"] = json!({"position":AT,"effect":241});
+    reservoir["effects"]["recharge_cooldown_message"] = json!(EXHAUSTED);
     reservoir["state_operations"] = json!([
-        {"track":CHARGE,"from":{"kind":"between","minimum":-1,"maximum":99},
-            "effect":{"kind":"recharge","amount":20,"empty":0,"capacity":100}},
         {"track":CLOCK,"from":{"kind":"elapsed_at_least","seconds":20},
-            "effect":{"kind":"set_now"}}
+            "effect":{"kind":"set_now"}},
+        {"track":CHARGE,"from":{"kind":"between","minimum":-1,"maximum":99},
+            "effect":{"kind":"recharge","amount":20,"empty":0,"capacity":100}}
     ]);
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
         "schema":1,
@@ -96,6 +99,8 @@ pub(super) async fn exercise(
     let base = QuestStateCatalogue::empty("content-1").ok_or("test catalogue")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
     h.root.set_test_quest_clock(STARTED_AT).map_err(debug)?;
+    let session = admitted.game_session_id;
+    owner.states.chat.admit(session, "Reservoir fixture", owner.owner_now());
     let key = oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1)
         .ok_or("reservoir placement")?;
     let mut placement = owner.bundle_map().ok_or("map")?.overlay.base().digest().to_vec();
@@ -126,9 +131,17 @@ pub(super) async fn exercise(
     let reply = wire(owner, admitted, 2, 2, payload.clone()).await?;
     assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Rejected);
     assert_eq!(tracks().await?, values, "refused use and replay preserve both tracks");
+    assert_eq!(
+        owner.states.chat.drain(session),
+        vec![oteryn_protocol_oteryn::chat::ChatLine::Private {
+            speaker_name: "Game".into(),
+            text: EXHAUSTED.into(),
+        }]
+    );
     h.root.advance_test_quest_clock(1).map_err(debug)?;
     let reply = wire(owner, admitted, 3, 2, payload).await?;
     let disposition = decode_use_result(&reply).map_err(debug)?;
+    assert!(owner.states.chat.drain(session).is_empty());
     if cap {
         assert_eq!(disposition, UseDisposition::Rejected);
         assert_eq!(tracks().await?, values, "full charge leaves the expired clock alone");

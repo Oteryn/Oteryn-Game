@@ -105,6 +105,9 @@ pub struct CallbackEffects {
     pub magic: Option<MagicEffect>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub step_health_loss: Option<StepHealthLoss>,
+    /// Feedback from a failed transaction-clock check, before the recharge guard.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recharge_cooldown_message: Option<String>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
