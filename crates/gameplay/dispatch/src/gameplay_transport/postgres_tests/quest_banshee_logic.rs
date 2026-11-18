@@ -6,7 +6,7 @@ use super::{
 };
 use crate::map::boot::BundleMap;
 use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::{Callback,Position},
+    QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::{self,Callback,Position},
 };
 use oteryn_protocol_oteryn::{world_object::UseDisposition, world_spatial::StepDirection};
 use serde_json::json;
@@ -80,7 +80,8 @@ pub(super) async fn exercise(
             "stages":[{"key":"flame","completes":false,"trigger":{"kind":"step_in","callback":flame}}]
         }]
     }))?)?;
-    callbacks.push(serde_json::from_value(flame)?);
+    let mut callbacks = world_callbacks::load_with_source_fixture(&callbacks)?;
+    callbacks.extend(bindings.world_callbacks().cloned());
     assert!(owner.states.quest_callbacks.fixture.set(callbacks).is_ok());
     let base = QuestStateCatalogue::empty("content-1").ok_or("Logic catalogue")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
