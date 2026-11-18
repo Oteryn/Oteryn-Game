@@ -3,6 +3,7 @@ use super::{
     fixture::{Harness, debug},
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::gameplay_transport::FreshAdmissionAuthority;
 use crate::map::view::{MapFacts, placement_key};
 use oteryn_gameplay_quests::quest::{
     classic_talk::ROTTIN_WALLCOUNT,
