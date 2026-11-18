@@ -227,17 +227,23 @@ PG_CONTAINER_ID=""
 POSTGRES_CREATE_PENDING=""
 POSTGRES_CLEANUP_FAILED=0
 REUSE_STATE="${TMPDIR:-/tmp}/node-boot-reuse-$WP5_PROJECT.env"
-# Keep reuse and teardown mutually exclusive. Docker's container name also
-# serializes acquisition across callers using different temporary directories.
-lock_directory="${TMPDIR:-/tmp}/node-boot-locks-$(id -u)"
-mkdir -m 700 -- "$lock_directory" 2>/dev/null || true
-if [[ ! -d "$lock_directory" || -L "$lock_directory" || ! -O "$lock_directory" \
-  || "$(stat -c %a "$lock_directory")" != 700 ]] \
-  || ! { exec 9>>"$lock_directory/$WP5_PROJECT"; flock -n 9; }; then
+# Keep reuse and teardown mutually exclusive. The lock and recovery journal
+# belong to the host and UID, independently of the invocation's scratch path.
+state_directory="/tmp/node-boot-state-$(id -u)"
+mkdir -m 700 -- "$state_directory" 2>/dev/null || true
+if [[ ! -d "$state_directory" || -L "$state_directory" || ! -O "$state_directory" \
+  || "$(stat -c %a "$state_directory")" != 700 ]]; then
+  rm -rf -- "$WORK"
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=unsafe_project_state'; exit 2
+fi
+lock_directory="$state_directory/locks"
+POSTGRES_JOURNALS="$state_directory/postgres"
+POSTGRES_JOURNAL="$POSTGRES_JOURNALS/$WP5_PROJECT"
+mkdir -p -- "$lock_directory"
+if ! { exec 9>>"$lock_directory/$WP5_PROJECT"; flock -n 9; }; then
   rm -rf -- "$WORK"
   echo 'NODE_BOOT_RESULT=BLOCKED reason=project_in_use'; exit 2
 fi
-POSTGRES_JOURNAL="$lock_directory/postgres/$WP5_PROJECT"
 if [[ "$NODE_BOOT_REUSE_STACK" == 0 && -e "$REUSE_STATE" ]]; then
   rm -rf -- "$WORK"
   echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_exists'; exit 2
@@ -456,8 +462,9 @@ cleanup_owned_postgres() {
   fi
   if [[ -z "$id" && "${COMPOSE_OWNER:-}" =~ ^[a-f0-9]{32}$ ]]; then
     local limit=5 deadline=$((SECONDS + 30))
+    [[ -z "${POSTGRES_RECOVERY_DEADLINE:-}" ]] || deadline=$POSTGRES_RECOVERY_DEADLINE
     while :; do
-      if [[ "${POSTGRES_CREATE_PENDING:-}" == "$name" ]]; then
+      if [[ "${POSTGRES_CREATE_PENDING:-}" == "$name" || -n "${POSTGRES_RECOVERY_DEADLINE:-}" ]]; then
         limit=$((deadline - SECONDS))
         (( limit > 0 )) || break
         (( limit <= 5 )) || limit=5
@@ -474,7 +481,13 @@ cleanup_owned_postgres() {
     done
   fi
   if [[ -n "$id" ]]; then
-    if timeout --foreground --kill-after=5s 45s docker rm --force --volumes "$id" >/dev/null 2>&1; then
+    local remove_seconds=45
+    if [[ -n "${POSTGRES_RECOVERY_DEADLINE:-}" ]]; then
+      remove_seconds=$((POSTGRES_RECOVERY_DEADLINE - SECONDS))
+      (( remove_seconds <= 45 )) || remove_seconds=45
+    fi
+    if (( remove_seconds > 0 )) &&
+      timeout --foreground --signal=KILL "${remove_seconds}s" docker rm --force --volumes "$id" >/dev/null 2>&1; then
       [[ -z "$record" ]] || rm -f -- "$record" || POSTGRES_CLEANUP_FAILED=1
       return 0
     fi
@@ -485,6 +498,10 @@ cleanup_owned_postgres() {
     evidence "postgres_create_cleanup=remove_failed container=$name"
   elif [[ -n "$record" && -f "$record" ]]; then
     evidence "postgres_create_cleanup=pending container=$name lookup_failed=$lookup_failed"
+    if [[ -n "${POSTGRES_RECOVERY_DEADLINE:-}" && $lookup_failed == 0 ]] &&
+      (( SECONDS < POSTGRES_RECOVERY_DEADLINE )); then
+      return 0
+    fi
   else
     return 0
   fi
@@ -496,31 +513,44 @@ recover_project_postgres() {
     for record in "$POSTGRES_JOURNAL/$name".*; do
       [[ -f "$record" ]] || continue
       COMPOSE_OWNER=${record##*.}
+      [[ -n "${registered["$name.$COMPOSE_OWNER"]:-}" ]] || continue
       cleanup_owned_postgres "$name" ""
+      [[ $POSTGRES_CLEANUP_FAILED == 0 ]] || return 1
     done
   done
   rmdir -- "$POSTGRES_JOURNAL" 2>/dev/null || true
 }
 recover_owned_postgres() {
-  local journal project
-  for journal in "$lock_directory/postgres/"*; do
+  local journal project inventory name owner POSTGRES_CLEANUP_FAILED=0
+  local POSTGRES_RECOVERY_DEADLINE=$((SECONDS + 60))
+  local records=("$POSTGRES_JOURNALS/"*/*)
+  [[ -f "${records[0]}" ]] || return 0
+  # An empty lookup cannot disprove a pending create. Keep its record, but
+  # use one inventory query to avoid a Docker call for every absent owner.
+  inventory=$(timeout --foreground --signal=KILL 5s docker container ls --all \
+    --filter label=org.oteryn.node-boot.owner \
+    --format '{{.Names}} {{.Label "org.oteryn.node-boot.owner"}}') || return 1
+  local -A registered=()
+  while read -r name owner; do
+    [[ "$name" =~ ^[a-z0-9][a-z0-9_-]*$ && "$owner" =~ ^[a-f0-9]{32}$ ]] || continue
+    registered["$name.$owner"]=1
+  done <<< "$inventory"
+  for journal in "$POSTGRES_JOURNALS/"*; do
     [[ -d "$journal" ]] || continue
+    (( SECONDS < POSTGRES_RECOVERY_DEADLINE )) || return 1
     project=${journal##*/}
     [[ "$project" =~ ^[a-z0-9][a-z0-9_-]*$ ]] || continue
     if [[ "$project" == "$WP5_PROJECT" ]]; then
-      recover_project_postgres "$project" "$journal"
+      recover_project_postgres "$project" "$journal" || return 1
     else
-      # The caller already holds its own project lock. Skip any other project
-      # whose current run could still be provisioning or tearing down.
+      # The caller already holds its own project lock. Skip active projects.
       (
         if flock -n 8; then
           recover_project_postgres "$project" "$journal"
         fi
-      ) 8>>"$lock_directory/$project"
+      ) 8>>"$lock_directory/$project" || return 1
     fi
   done
-  # An unresolved record remains available for later recovery.
-  return 0
 }
 cleanup_owned_compose() {
   [[ "${COMPOSE_OWNER:-}" =~ ^[a-f0-9]{32}$ ]] || return 0
@@ -589,6 +619,10 @@ cleanup() {
     fi
     [[ ${REUSE_STATE_OWNED:-0} != 1 ]] || rm -f -- "$REUSE_STATE"
   fi
+  if [[ ${POSTGRES_CLEANUP_FAILED:-0} == 1 ]]; then
+    result=NODE_BOOT_FAIL
+    (( rc != 0 )) || rc=1
+  fi
   if [[ $rc != 0 && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     mkdir -p "$NODE_BOOT_FAILURE_LOG_DIR"
     if [[ -f "$failed_node_log" ]]; then
@@ -621,8 +655,6 @@ cleanup() {
   [[ -z "${POSTGRES_JOURNAL:-}" ]] || rmdir -- "$POSTGRES_JOURNAL" 2>/dev/null || true
   if [[ ${POSTGRES_CLEANUP_FAILED:-0} == 1 ]]; then
     evidence "cleanup=incomplete"
-    result=NODE_BOOT_FAIL
-    (( rc != 0 )) || rc=1
   else
     evidence "cleanup=complete"
   fi
@@ -634,7 +666,10 @@ trap cleanup EXIT
 trap 'interrupted INT 130' INT
 trap 'interrupted TERM 143' TERM
 if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
-  run_interruptible recover_owned_postgres
+  if ! run_interruptible recover_owned_postgres; then
+    POSTGRES_CLEANUP_FAILED=1
+    exit 1
+  fi
 fi
 if [[ "$NODE_BOOT_REUSE_STACK" == teardown ]]; then
   result=NODE_BOOT_TEARDOWN
@@ -698,7 +733,7 @@ create_owned_postgres "$PG_CONTAINER" --label "org.oteryn.node-boot.owner=$COMPO
   --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
   --env POSTGRES_DB=postgres --volume "$WP5_PKI/db.crt:/tls/db.crt:ro" \
   --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
-  'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key -c log_lock_waits=on -c deadlock_timeout=200ms -c log_min_duration_statement=500 -c log_parameter_max_length=0 -c log_parameter_max_length_on_error=0 -c shared_preload_libraries=pg_stat_statements -c "log_line_prefix=%m [%p] %u "' >/dev/null
+  'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key -c log_lock_waits=on -c deadlock_timeout=200ms -c log_min_duration_statement=500 -c log_parameter_max_length=0 -c log_parameter_max_length_on_error=0 -c shared_preload_libraries=pg_stat_statements -c "log_line_prefix=%m [%p] %u "'
 PG_CONTAINER_ID="$(<"$WORK/game-postgres.cid")"
 BASE_PENDING="$(dirname -- "$BASE")/.oteryn-node-boot-$COMPOSE_OWNER"
 if ! run_interruptible acquire_base; then

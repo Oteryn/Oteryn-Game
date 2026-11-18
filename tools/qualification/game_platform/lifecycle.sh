@@ -62,7 +62,7 @@ game_platform_start() {
     || game_platform_fail preflight invalid_platform_pg_port
   create_owned_postgres "$WP5_PROJECT-portal-postgres" --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --publish "127.0.0.1:$port:5432" \
     --env POSTGRES_USER=game_platform_admin --env POSTGRES_PASSWORD="$password" \
-    --env POSTGRES_DB=postgres "$PG_IMAGE" > "$WORK/portal-postgres.id"
+    --env POSTGRES_DB=postgres --cidfile "$WORK/portal-postgres.id" "$PG_IMAGE"
   GP_PG_CONTAINER="$(<"$WORK/portal-postgres.id")"
   run_interruptible docker start "$GP_PG_CONTAINER" >/dev/null
   deadline=$((SECONDS + 60))

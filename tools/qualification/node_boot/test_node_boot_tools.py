@@ -422,16 +422,93 @@ class RoundTwoCallerTests(unittest.TestCase):
             self.assertEqual(result.returncode, 143, result.stderr)
             self.assertFalse(Path(temp, 'base').exists())
 
+    def test_postgres_project_state_survives_tmpdir_changes(self):
+        state = section('# Keep reuse and teardown mutually exclusive.', 'if [[ "$NODE_BOOT_REUSE_STACK" == 0 && -e "$REUSE_STATE" ]]')
+        # Isolate the host state root while keeping the production TMPDIR expression.
+        state = state.replace('/tmp/node-boot', '$FIXTURE/node-boot')
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for directory in ('first', 'second'):
+                (root / directory).mkdir()
+            for project in ('ordinary', 'postgres'):
+                with self.subTest(project=project):
+                    setup = 'set -eu\nWORK=$TMPDIR; WP5_PROJECT=$PROJECT\n'
+                    journal = 'mkdir -p "$POSTGRES_JOURNAL"; touch "$POSTGRES_JOURNAL/record"\n'
+                    env = dict(FIXTURE=temp, PROJECT=project, TMPDIR=str(root / 'first'))
+                    write = bash(setup + state + journal, env)
+                    self.assertEqual(write.returncode, 0, write.stdout + write.stderr)
+                    read = bash(setup + state + 'test -f "$POSTGRES_JOURNAL/record"', dict(env, TMPDIR=str(root / 'second')))
+                    self.assertEqual(read.returncode, 0, read.stdout + read.stderr)
+
+    def test_postgres_cleanup_failure_retains_node_boot_artifacts(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            work = root / 'work'
+            work.mkdir()
+            (work / 'node.log').write_text('node evidence\n')
+            (work / 'postgres').mkdir()
+            (work / 'postgres' / 'samples').write_text('database evidence\n')
+            setup = r"""
+                set -eu
+                result=NODE_BOOT_PASS PG_CONTAINER=test PG_CONTAINER_ID=id
+                NODE_BOOT_WORLD=1 NODE_BOOT_SPELLS=0 ACTIVE_STAGE=finished
+                node_log=$WORK/node.log failed_node_log=$WORK/failed.log PG_OBS=$WORK/postgres
+                stop_runtime_diagnostics() { :; }
+                stop_pg_sampler() { :; }
+                cleanup_owned_postgres() { POSTGRES_CLEANUP_FAILED=1; }
+                evidence() { echo "$*"; }
+            """
+            artifacts = root / 'artifacts'
+            result = bash(setup + function('cleanup') + '\ntrap cleanup EXIT\nexit 0',
+                          {'WORK': str(work), 'NODE_BOOT_FAILURE_LOG_DIR': str(artifacts)})
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn('cleanup=incomplete', result.stdout)
+            self.assertEqual((artifacts / 'node.log').read_text(), 'node evidence\n')
+            self.assertEqual((artifacts / 'postgres-world1-spells0' / 'samples').read_text(), 'database evidence\n')
+
+    def test_platform_wrapper_rejects_pass_on_node_boot_failure(self):
+        wrapper = (HERE.parent / 'game_platform/run.sh').read_text()
+        cleanup = re.search(r'(?ms)^cleanup\(\).*?^}', wrapper).group(0)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            scratch = root / 'scratch'
+            scratch.mkdir()
+            (scratch / 'node-boot.log').touch()
+            (scratch / 'diagnostics').mkdir()
+            (scratch / 'result').write_text('GAME_PLATFORM_RESULT=PASS\n')
+            result = bash(cleanup + '\ntrap cleanup EXIT\nexit 1', {
+                'scratch': str(scratch), 'TMPDIR': temp,
+                'GAME_PLATFORM_RESULT_FILE': str(scratch / 'result'),
+            })
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertIn('GAME_PLATFORM_RESULT=FAIL', result.stdout)
+            self.assertNotIn('GAME_PLATFORM_RESULT=PASS', result.stdout)
+
     def test_reconciles_postgres_after_create_timeout(self):
         lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',
                                         HERE.parent / 'game_platform/lifecycle.sh')).read_text()
         platform_cleanup = re.search(r'(?ms)^game_platform_cleanup\(\).*?^}', lifecycle).group(0)
+        platform_start = re.search(r'(?ms)^game_platform_start\(\).*?^}', lifecycle).group(0)
+        platform_entry = section('# Each Compose object carries this run', 'else\nrun_interruptible compose config --quiet') + 'fi\n'
+
+        def check_fixture_processes(token):
+            leaked = []
+            for environ in Path('/proc').glob('[0-9]*/environ'):
+                try:
+                    if token in environ.read_bytes().split(b'\0'):
+                        os.kill(int(environ.parent.name), signal.SIGKILL)
+                        leaked.append(environ.parent.name)
+                except (ProcessLookupError, FileNotFoundError, PermissionError):
+                    continue
+            self.assertEqual(leaked, [], 'fixture leaked live processes')
+
         entry_traps = section('trap cleanup EXIT', 'if [[ "$NODE_BOOT_REUSE_STACK" == teardown ]]')
         for service, source in [('game', RUN_TEXT), ('portal', lifecycle)]:
             for client_status, send_term, outcome in [
                 (124, True, 'late'),
                 (137, False, 'late'),
                 (1, False, 'immediate'),
+                (1, False, 'lookup_budget'),
                 (1, False, 'remove_failed'),
                 (1, False, 'fixture_timeout'),
             ]:
@@ -442,30 +519,45 @@ class RoundTwoCallerTests(unittest.TestCase):
                     journal = root / 'locks/postgres/fixture'
                     journal.mkdir(parents=True)
                     name = f'fixture-{"portal-" if service == "portal" else ""}postgres'
-                    create = next(line.strip().removesuffix(' \\') for line in source.splitlines()
-                                  if line.lstrip().startswith('create_owned_postgres '))
+                    create = platform_entry if service == 'portal' else next(
+                        line.strip().removesuffix(' \\') for line in source.splitlines()
+                        if line.lstrip().startswith('create_owned_postgres ')
+                    )
                     setup = r"""
                         set -Eeuo pipefail
-                        WP5_PROJECT=fixture PG_CONTAINER=fixture-postgres PG_PORT=5432 port=5433
+                        WP5_PROJECT=fixture PG_CONTAINER=fixture-postgres PG_PORT=5432 PG_IMAGE=fixture
                         COMPOSE_OWNER=0123456789abcdef0123456789abcdef ACTIVE_STAGE=setup
                         NODE_BOOT_WORLD=0 NODE_BOOT_SPELLS=0 NODE_BOOT_REUSE_STACK=0 result=NODE_BOOT_FAIL
                         COMPOSE_OWNED=0 GP_HARNESS_PID="" GP_PG_CONTAINER=""
                         if [[ "$SERVICE" == portal ]]; then
-                            COMPOSE_OWNED=1 NODE_BOOT_LIFECYCLE=game_platform
+                            NODE_BOOT_LIFECYCLE=game_platform
                         fi
-                        lock_directory=$FIXTURE/locks POSTGRES_JOURNAL=$FIXTURE/locks/postgres/fixture
+                        lock_directory=$FIXTURE/locks POSTGRES_JOURNALS=$FIXTURE/locks/postgres
+                        POSTGRES_JOURNAL=$POSTGRES_JOURNALS/fixture
                         stop_runtime_diagnostics() { :; }
                         stop_pg_sampler() { :; }
                         game_platform_retain_test_logs() { :; }
                         evidence() { echo "$*"; }
-                        timeout() { while [[ $1 == --* ]]; do shift; done; shift; "$@"; }
+                        openssl() { echo fixture; }
+                        timeout() {
+                            while [[ $1 == --* ]]; do shift; done
+                            if [[ "$2 $3" == 'docker container' &&
+                                  " $* " == *" --filter name=^/$CONTAINER_NAME$ "* ]]; then
+                                echo "$1" >> "$FIXTURE/lookup-budgets"
+                            fi
+                            shift
+                            "$@"
+                        }
                         sleep() {
-                            if [[ "$OUTCOME" == late ]]; then SECONDS=31; fi
+                            case "$OUTCOME" in
+                              late) SECONDS=31 ;;
+                              lookup_budget) SECONDS=$((SECONDS + 29)) ;;
+                            esac
                         }
                         docker() {
                             case "$1" in
                               create)
-                                echo creating
+                                echo creating >&2
                                 local end=$((SECONDS + 2))
                                 until [[ -f "$FIXTURE/allow-client-exit" ]]; do
                                     (( SECONDS < end )) || return 99
@@ -474,8 +566,14 @@ class RoundTwoCallerTests(unittest.TestCase):
                                 touch "$FIXTURE/client-exited"
                                 return "$CLIENT_STATUS" ;;
                               container)
+                                if [[ " $* " == *" --format "* ]]; then
+                                    if [[ -f "$FIXTURE/registered" ]]; then
+                                        echo "$CONTAINER_NAME 0123456789abcdef0123456789abcdef"
+                                    fi
+                                    return 0
+                                fi
                                 [[ " $* " == *" --filter name=^/$CONTAINER_NAME$ "* &&
-                                   " $* " == *" --filter label=org.oteryn.node-boot.owner=$COMPOSE_OWNER "* ]] || return 0
+                                   " $* " == *" --filter label=org.oteryn.node-boot.owner=0123456789abcdef0123456789abcdef "* ]] || return 0
                                 echo lookup >> "$FIXTURE/lookups"
                                 if [[ -f "$FIXTURE/registered" ]]; then
                                     echo owned-id
@@ -491,9 +589,12 @@ class RoundTwoCallerTests(unittest.TestCase):
                     script = setup + '\n'.join(function(n) for n in (
                         'interrupted', 'run_interruptible', 'create_owned_postgres',
                         'cleanup_owned_postgres', 'recover_project_postgres', 'recover_owned_postgres', 'cleanup',
-                    )) + '\n' + platform_cleanup + '\n'
+                    )) + '\n' + platform_cleanup + '\n' + platform_start + '\n'
                     env = dict(os.environ, WORK=str(root / 'work'), FIXTURE=temp, SERVICE=service,
-                               CLIENT_STATUS=str(client_status), CONTAINER_NAME=name, OUTCOME=outcome)
+                               CLIENT_STATUS=str(client_status), CONTAINER_NAME=name, OUTCOME=outcome,
+                               QUALIFICATION_FIXTURE_TOKEN=temp)
+                    token = f'QUALIFICATION_FIXTURE_TOKEN={temp}'.encode()
+                    self.addCleanup(check_fixture_processes, token)
                     with subprocess.Popen(
                         ['bash', '-c', script + entry_traps + create],
                         env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -520,6 +621,7 @@ class RoundTwoCallerTests(unittest.TestCase):
                                 except subprocess.TimeoutExpired:
                                     proc.kill()
                                     raise
+                    check_fixture_processes(token)
                     if outcome == 'fixture_timeout':
                         self.assertEqual(proc.returncode, client_status, output)
                         self.assertTrue((root / 'client-exited').exists(), output)
@@ -527,8 +629,10 @@ class RoundTwoCallerTests(unittest.TestCase):
                         continue
                     self.assertEqual(proc.returncode, 143 if send_term else client_status, output)
                     self.assertTrue((root / 'client-exited').exists(), output)
-                    if outcome == 'immediate':
+                    if outcome in ('immediate', 'lookup_budget'):
                         self.assertTrue((root / 'removed').exists(), output)
+                        if outcome == 'lookup_budget':
+                            self.assertEqual((root / 'lookup-budgets').read_text().splitlines(), ['5s', '1s'])
                         continue
                     self.assertIn('cleanup=incomplete', output)
                     self.assertEqual(len(list(journal.iterdir())), 1)
@@ -540,13 +644,19 @@ class RoundTwoCallerTests(unittest.TestCase):
                     # Start with a fresh owner and run the same recovery call used
                     # by the entry shell before it begins a new provisioning pass.
                     recover = next((line.strip() for line in RUN_TEXT.splitlines()
-                                    if line.strip() == 'run_interruptible recover_owned_postgres'), ':')
+                                    if line.strip() == 'run_interruptible recover_owned_postgres'), 'run_interruptible recover_owned_postgres')
                     recovery = 'WP5_PROJECT=next-project COMPOSE_OWNER=ffffffffffffffffffffffffffffffff\n' + recover
                     recovery_env = dict(env, OUTCOME='late')
                     locked = bash(script + 'exec 7>>"$lock_directory/fixture"; flock -n 7\n' + recovery,
                                   recovery_env)
                     self.assertEqual(locked.returncode, 0, locked.stdout + locked.stderr)
                     self.assertTrue((root / 'registered').exists(), locked.stdout + locked.stderr)
+                    for project in ('fixture', 'next-project'):
+                        failed = bash(script + f'WP5_PROJECT={project} COMPOSE_OWNER=ffffffffffffffffffffffffffffffff\n'
+                                      + entry_traps + 'echo provisioned', dict(env, OUTCOME='remove_failed'))
+                        self.assertEqual(failed.returncode, 1, failed.stdout + failed.stderr)
+                        self.assertIn('cleanup=incomplete', failed.stdout)
+                        self.assertNotIn('provisioned', failed.stdout)
                     result = bash(script + recovery, recovery_env)
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                     self.assertTrue((root / 'removed').exists(), result.stdout + result.stderr)
@@ -619,7 +729,12 @@ class RoundTwoCallerTests(unittest.TestCase):
                         setup += r'''
                             PG_PORT=15433 PG_IMAGE=fixture WP5_PROJECT=fixture COMPOSE_OWNER=fixture POSTGRES_JOURNAL=$WORK
                             docker() {
-                                if [[ "$1" == create ]]; then echo fixture-id; else blocked; fi
+                                if [[ "$1" == create ]]; then
+                                    until [[ "$1" == --cidfile ]]; do shift; done
+                                    echo fixture-id > "$2"
+                                else
+                                    blocked
+                                fi
                             }
                         ''' + portal + '\n'
                         invocation = 'game_platform_start'
