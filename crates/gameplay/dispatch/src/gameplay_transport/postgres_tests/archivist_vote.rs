@@ -29,7 +29,8 @@ fn archivist_confirmation_credits_dark_trails_after_votes_are_exhausted() -> Tes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    vote_case(admin, "archivist_vote_exhausted", 0, 0)
+    vote_case(admin.clone(), "archivist_vote_exhausted", 0, 0)?;
+    vote_case(admin, "archivist_vote_unset", -1, -1)
 }
 
 fn vote_case(admin: String, database: &'static str, before: i64, after: i64) -> TestResult {
@@ -66,24 +67,34 @@ fn catalogue(before: i64) -> TestResult<QuestStateCatalogue> {
     .map_err(debug)?;
     let source =
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marvin.lua:77-85";
+    // Crystal marvin.lua:79-83 decrements a positive balance and always
+    // credits the mission. The conditional branches use existing authored
+    // state operations and recheck the selected balance under the owner lock.
+    let debit = serde_json::json!({
+        "key":"oteryn:quest-reward/fixture/archive-vote","quest":DARK_TRAILS,"npc":"oteryn:npc.marvin",
+        "topic":0,"next_topic":0,"keywords":["yes"],
+        "storage":[{"track":ARCHIVES,"minimum":-1,"maximum":0,"set":1}],
+        "participants":[{
+            "quest":ORAMOND,"storage":[],"state_ops":[{
+                "track":VOTES,
+                "from":{"kind":"between","minimum":0,"maximum":i64::MAX},
+                "effect":{"kind":"add_at_least","value":-1,"minimum":0}
+            }]
+        }],
+        "take":[],"reply":["Vote recorded."],"sources":[source]
+    });
+    let mut unset = debit.clone();
+    unset["key"] = serde_json::json!("oteryn:quest-reward/fixture/archive-vote-unset");
+    unset["participants"] = serde_json::json!([]);
+    unset["requires"] = serde_json::json!([{"track":VOTES,"minimum":-1,"maximum":-1}]);
     let binding = Bindings::parse(serde_json::json!({
         "schema":1,"quests":[{
             "quest":DARK_TRAILS,
             "recipe_sha256":<sha2::Sha256 as sha2::Digest>::digest(source).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
             "tracks":[{"key":ARCHIVES,"initial":-1,"minimum":-1,"maximum":1}],
-            "stages":[{"key":"s1","completes":false,"trigger":{"kind":"npc_dialogue","callback":{
-                "key":"oteryn:quest-reward/fixture/archive-vote","quest":DARK_TRAILS,"npc":"oteryn:npc.marvin",
-                "topic":0,"next_topic":0,"keywords":["yes"],
-                "storage":[{"track":ARCHIVES,"minimum":-1,"maximum":0,"set":1}],
-                "participants":[{
-                    "quest":ORAMOND,"storage":[],"state_ops":[{
-                        "track":VOTES,
-                        "from":{"kind":"any"},
-                        "effect":{"kind":"subtract_if_at_least","amount":1}
-                    }]
-                }],
-                "take":[],"reply":["Vote recorded."],"sources":[source]
-            }}}],
+            "stages":[{"key":"s1","completes":false,"trigger":{
+                "kind":"npc_dialogue","callback":debit,"alternatives":[unset]
+            }}],
             "sources":[source]
         }]
     }).to_string().as_bytes())?;
@@ -101,10 +112,12 @@ async fn exercise(h: &Harness, before: i64, after: i64) -> TestResult {
         ).bind(id(41).as_slice()).bind(ARCHIVES).bind(VOTES).fetch_all(&h.pool).await
     };
     let rows = read().await?;
-    assert_eq!(rows.len(), 2);
+    assert_eq!(rows.len(), if before < 0 { 1 } else { 2 });
     assert_eq!((&*rows[0].0, rows[0].1), (ARCHIVES, 1));
-    assert_eq!((&*rows[1].0, rows[1].1), (VOTES, after));
-    assert_eq!(rows[0].2, rows[1].2);
+    if before >= 0 {
+        assert_eq!((&*rows[1].0, rows[1].1), (VOTES, after));
+        assert_eq!(rows[0].2, rows[1].2);
+    }
     let _ = talk(owner, admitted, marvin, 2, "yes").await?;
     assert_eq!(read().await?, rows);
     Ok(())

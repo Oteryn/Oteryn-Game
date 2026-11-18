@@ -806,9 +806,7 @@ fn validate_document_with_capacity(
                 != c.participants.len()
             || op_keys.len() != c.state_ops.len()
             || !op_keys.is_disjoint(&tracks)
-            || c.state_ops
-                .iter()
-                .any(|s| !s.valid() || matches!(s.effect, StateMutation::SubtractIfAtLeast { .. }))
+            || c.state_ops.iter().any(|s| !s.valid())
             || participant_keys.len() != participant_count
             || !participant_keys.is_disjoint(&op_keys)
             || !participant_keys.is_disjoint(&tracks)
@@ -1166,8 +1164,7 @@ pub fn participant_key(callback: &str, index: usize) -> String {
 
 /// Lower the same bounded cross-quest receipt participants for embedded and
 /// explicit NPC bindings. Crystal npc/marvin.lua:77-85 debits Oramond while
-/// granting Dark Trails progress in the same confirmation. The debit preserves
-/// an exhausted balance while the primary mission credit still commits.
+/// granting Dark Trails progress in the same confirmation.
 pub(super) fn participant_transitions(
     callback: &RewardCallback,
     tracks: &[QuestTrack],

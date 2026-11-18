@@ -17,7 +17,6 @@ pub enum StateMutation {
     Add { value: i64 },
     AddAtLeast { value: i64, minimum: i64 },
     SetNow,
-    SubtractIfAtLeast { amount: u32 },
 }
 
 // Serde's internally tagged unit variants discard remaining fields even with
@@ -50,13 +49,11 @@ impl<'de> Deserialize<'de> for StateMutation {
             Add { value: i64 },
             AddAtLeast { value: i64, minimum: i64 },
             SetNow {},
-            SubtractIfAtLeast { amount: u32 },
         }
         Ok(match Wire::deserialize(deserializer)? {
             Wire::Add { value } => Self::Add { value },
             Wire::AddAtLeast { value, minimum } => Self::AddAtLeast { value, minimum },
             Wire::SetNow {} => Self::SetNow,
-            Wire::SubtractIfAtLeast { amount } => Self::SubtractIfAtLeast { amount },
         })
     }
 }
@@ -80,7 +77,6 @@ impl StateOperation {
             }
         };
         condition
-            && !matches!(self.effect, StateMutation::SubtractIfAtLeast { amount: 0 })
             && self.track.len() <= 128
             && self.track.strip_prefix("oteryn:").is_some_and(|tail| {
                 !tail.is_empty()
@@ -128,9 +124,6 @@ impl StateOperation {
                     minimum,
                 },
                 StateMutation::SetNow => QuestEffectKind::SetNow,
-                StateMutation::SubtractIfAtLeast { amount } => {
-                    QuestEffectKind::SubtractIfAtLeast(amount)
-                }
             },
         }
     }

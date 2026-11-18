@@ -55,8 +55,6 @@ pub(super) fn valid(quest: &BoundQuest, operation: &StateOperation) -> bool {
                     None => value == 0 && floor <= track.minimum,
                 }
         }
-        // Only a cross-quest reward participant may conditionally debit a balance.
-        StateMutation::SubtractIfAtLeast { .. } => false,
         // Only the existing SQL transaction clock stamps a native timestamp track.
         StateMutation::SetNow => track.minimum == 0 && track.maximum == i64::MAX,
     }

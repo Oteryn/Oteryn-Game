@@ -247,8 +247,6 @@ pub enum QuestEffectKind {
         delta: i64,
         minimum: i64,
     },
-    /// Debit a locked balance only when it covers the full amount.
-    SubtractIfAtLeast(u32),
     /// Checked addition while pinning physical admission terms.
     AddWithBinding {
         delta: i64,
@@ -309,10 +307,6 @@ impl QuestEffectKind {
                 out.push(13);
                 out.extend_from_slice(&delta.to_be_bytes());
                 out.extend_from_slice(&minimum.to_be_bytes());
-            }
-            Self::SubtractIfAtLeast(amount) => {
-                out.push(14);
-                out.extend_from_slice(&amount.to_be_bytes());
             }
             Self::AddWithBinding { delta, binding } => {
                 out.push(8);
@@ -554,9 +548,6 @@ impl QuestStateCatalogue {
                     }
                     QuestEffectKind::AddAtLeast { minimum, .. } => {
                         (track.min..=track.max).contains(&minimum)
-                    }
-                    QuestEffectKind::SubtractIfAtLeast(amount) => {
-                        amount > 0 && track.min <= 0 && i64::from(amount) <= track.max
                     }
 
                     _ => true,
@@ -825,14 +816,6 @@ impl QuestStateCatalogue {
                     }
                     QuestEffectKind::AddAtLeast { delta, minimum } => {
                         before.checked_add(delta).map(|value| value.max(minimum))
-                    }
-                    QuestEffectKind::SubtractIfAtLeast(amount) => {
-                        let amount = i64::from(amount);
-                        Some(if before >= amount {
-                            before - amount
-                        } else {
-                            before
-                        })
                     }
                     QuestEffectKind::SetNow | QuestEffectKind::SetNowWithBinding { .. } => {
                         Some(now)
