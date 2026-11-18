@@ -4,6 +4,11 @@ use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
+use oteryn_gameplay_encounters::bosses::phase_controller::{
+    SingleBoss,
+    ravager::{self, RavagerHealing},
+    shargon::{self, ShargonGrowth},
+};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
@@ -13,10 +18,79 @@ const MAX_ENCOUNTERS: usize = 64;
 #[derive(Debug)]
 pub(super) struct ActivePhase {
     key: u64,
-    fight: CultsEncounter,
+    fight: Fight,
     credits: Vec<grizzly_kills::EncounterCredit>,
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
+}
+
+#[derive(Debug)]
+enum Fight {
+    Cults(CultsEncounter),
+    Single(SingleBoss, SingleBossMechanic),
+}
+
+#[derive(Debug)]
+enum SingleBossMechanic {
+    Ravager(RavagerHealing),
+    Shargon(ShargonGrowth),
+}
+
+impl Fight {
+    fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        match self {
+            Self::Cults(fight) => fight.is_current(runtime),
+            Self::Single(fight, _) => fight.is_current(runtime),
+        }
+    }
+
+    fn contains(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(fight) => fight.contains(actor),
+            Self::Single(fight, _) => fight.actor() == actor,
+        }
+    }
+
+    fn contains_terminal(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(fight) => fight.contains_terminal(actor),
+            Self::Single(fight, _) => fight.actor() == actor,
+        }
+    }
+
+    fn projected_death(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Result<bool, CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.projected_death(runtime, actor),
+            Self::Single(fight, _) => fight.projected_death(runtime),
+        }
+    }
+
+    fn victors(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.victors(runtime),
+            Self::Single(fight, _) => fight.victors(runtime),
+        }
+    }
+
+    fn advance(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+    ) -> Result<(), CarrierError> {
+        match self {
+            Self::Cults(fight) => {
+                fight.advance(runtime, |runtime, at| placement(cells, runtime, at))
+            }
+            Self::Single(..) => Ok(()),
+        }
+    }
 }
 
 #[derive(Default, Debug)]
@@ -40,9 +114,7 @@ impl Registry {
                     // Credit was captured in the lethal turn. Release the lever
                     // only after exact terminal decorations retire; tick retries failures.
                     let ActivePhase { fight, cells, .. } = phase;
-                    fight
-                        .advance(runtime, |runtime, at| placement(cells, runtime, at))
-                        .is_err()
+                    fight.advance(runtime, cells).is_err()
                 }
                 Ok(None) => phase
                     .frozen
@@ -71,7 +143,7 @@ impl Registry {
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
             if phase.fight.projected_death(runtime, actor).is_ok() {
                 let ActivePhase { fight, cells, .. } = phase;
-                let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
+                let _ = fight.advance(runtime, cells);
             }
         }
         // Keep terminal admission credit until the same lethal turn captures it.
@@ -139,6 +211,26 @@ pub(super) fn bind(
         .encounter
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
+    let source = match encounter.phase {
+        Some(EncounterPhase::Ravager) => Some((
+            ravager::plan(),
+            SingleBossMechanic::Ravager(RavagerHealing::default()),
+        )),
+        Some(EncounterPhase::Shargon) => Some((
+            shargon::plan(),
+            SingleBossMechanic::Shargon(ShargonGrowth::default()),
+        )),
+        _ => None,
+    };
+    if let Some((plan, mechanic)) = source {
+        return Ok(ActivePhase {
+            key,
+            fight: Fight::Single(SingleBoss::bind(runtime, plan, players, actors)?, mechanic),
+            credits,
+            frozen: None,
+            cells,
+        });
+    }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
         return Err(CarrierError::PlanConflict);
     }
@@ -188,7 +280,9 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: CultsEncounter::bind(runtime, players, pillars, stops, centre)?,
+        fight: Fight::Cults(CultsEncounter::bind(
+            runtime, players, pillars, stops, centre,
+        )?),
         credits,
         frozen: None,
         cells,
@@ -233,7 +327,7 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) {
+pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
@@ -242,7 +336,17 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) 
         let ActivePhase {
             key, fight, cells, ..
         } = phase;
-        if let Err(error) = fight.advance(runtime, |runtime, at| placement(cells, runtime, at)) {
+        if let Err(error) = fight.advance(runtime, cells).and_then(|()| match fight {
+            Fight::Cults(_) => Ok(()),
+            Fight::Single(fight, mechanic) => match mechanic {
+                SingleBossMechanic::Ravager(healing) => {
+                    healing.think(runtime, cells, fight.actor(), now_us)
+                }
+                SingleBossMechanic::Shargon(growth) => {
+                    growth.think(runtime, cells, fight.actor(), now_us)
+                }
+            },
+        }) {
             super::operator_event(&format!(
                 "encounter_phase_deferred key={key} reason={error:?}"
             ));

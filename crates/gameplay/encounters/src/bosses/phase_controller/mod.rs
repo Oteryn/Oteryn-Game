@@ -8,6 +8,8 @@ use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeOwnershipGe
 
 pub mod cults;
 pub mod gates;
+pub mod ravager;
+pub mod shargon;
 #[cfg(test)]
 mod tests;
 
@@ -215,6 +217,59 @@ impl NativePhaseOwner {
             .progress
             .completed()
             .then_some(self.participants.as_slice()))
+    }
+}
+
+/// A source boss whose native death is the only completion role.
+#[derive(Debug)]
+pub struct SingleBoss {
+    phase: NativePhaseOwner,
+    actor: ExactActorRef,
+}
+
+impl SingleBoss {
+    pub fn bind(
+        runtime: &ChannelRuntimeV1,
+        plan: Plan,
+        players: &[(ExactActorRef, GameSessionId)],
+        actors: &[ExactActorRef],
+    ) -> Result<Self, CarrierError> {
+        let [role] = plan.roles else {
+            return Err(CarrierError::PlanConflict);
+        };
+        let mut bosses = actors.iter().copied().filter(|&actor| {
+            runtime.matches_live_creature_identity(actor, role.creature.as_bytes())
+        });
+        let actor = bosses.next().ok_or(CarrierError::CreatureTargetMismatch)?;
+        if bosses.next().is_some() {
+            return Err(CarrierError::PlanConflict);
+        }
+        let mut phase = NativePhaseOwner::bind(runtime, plan, players)?;
+        phase.attach(runtime, 0, actor)?;
+        Ok(Self { phase, actor })
+    }
+
+    pub fn actor(&self) -> ExactActorRef {
+        self.actor
+    }
+
+    pub fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.phase.current(runtime).is_ok()
+            && (self.phase.progress.completed() || runtime.contains_live_creature(self.actor))
+    }
+
+    pub fn projected_death(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+    ) -> Result<bool, CarrierError> {
+        self.phase.projected_death(runtime, self.actor)
+    }
+
+    pub fn victors(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
+        self.phase.victors(runtime)
     }
 }
 
