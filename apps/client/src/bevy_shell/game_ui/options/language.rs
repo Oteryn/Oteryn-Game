@@ -81,6 +81,7 @@ mod tests {
             assert_eq!(stored.language(), Language::De);
             Ok(())
         })();
+        fixture.close()?;
         result
     }
 }

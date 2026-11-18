@@ -273,6 +273,7 @@ mod tests {
             );
             Ok(())
         })();
+        fixture.close()?;
         result
     }
 
@@ -328,6 +329,7 @@ mod tests {
             }
             Ok(())
         })();
+        fixture.close()?;
         result
     }
 

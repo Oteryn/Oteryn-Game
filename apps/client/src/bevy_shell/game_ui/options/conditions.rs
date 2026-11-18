@@ -183,6 +183,7 @@ mod tests {
             assert_eq!(link.condition_status_panel().hidden, [1]);
             Ok(())
         })();
+        fixture.close()?;
         result
     }
 
@@ -214,6 +215,7 @@ mod tests {
             assert_eq!(link.condition_status_panel().order[..2], [2, 1]);
             Ok(())
         })();
+        fixture.close()?;
         result
     }
 }

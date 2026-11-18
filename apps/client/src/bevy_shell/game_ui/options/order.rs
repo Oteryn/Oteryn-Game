@@ -106,6 +106,7 @@ mod tests {
             );
             Ok(())
         })();
+        fixture.close()?;
         result
     }
 }

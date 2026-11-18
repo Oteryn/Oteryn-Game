@@ -335,6 +335,7 @@ mod session_options_tests {
             );
             Ok(())
         })();
+        fixture.close()?;
         result
     }
 }

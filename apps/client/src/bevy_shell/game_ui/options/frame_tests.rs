@@ -74,5 +74,6 @@ fn graphics_frame_limit_and_fps_indicator_apply_and_pace_frames() -> TestResult 
         assert_eq!(node.display, Display::Flex);
         Ok(())
     })();
+    fixture.close()?;
     result
 }

@@ -88,6 +88,7 @@ fn native_slider_apply_reaches_the_existing_persistence_owner() -> TestResult {
         assert_eq!(restored.preferences.audio.master_volume, 37);
         Ok(())
     })();
+    fixture.close()?;
     result
 }
 #[test]
@@ -438,6 +439,7 @@ fn hud_resource_toggles_edit_apply_and_save_each_display() -> TestResult {
         );
         Ok(())
     })();
+    fixture.close()?;
     result
 }
 
