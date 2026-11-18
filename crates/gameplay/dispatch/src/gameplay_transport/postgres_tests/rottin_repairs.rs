@@ -93,7 +93,6 @@ pub(super) fn generation(
         .collect();
     crate::content::native_gameplay::test_support::try_activate_input(world, &input)
         .map_err(super::fixture::debug)
-        .map_err(Into::into)
 }
 
 #[test]
