@@ -8,6 +8,9 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
+mod wrath_incarnation;
+pub(super) mod wrath_payback;
+
 const MAX_ENCOUNTERS: usize = 64;
 
 #[derive(Debug)]
@@ -22,6 +25,8 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    incarnations: Mutex<Vec<wrath_incarnation::Incarnation>>,
+    pub(super) payback: Mutex<Option<wrath_payback::Payback>>,
 }
 
 impl Registry {
@@ -65,6 +70,8 @@ impl Registry {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
     ) {
+        self.incarnation_death(actor);
+        self.payback_death(runtime, actor);
         let Ok(mut active) = self.active.lock() else {
             return;
         };
@@ -233,7 +240,9 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) {
+pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
+    states.encounter_phases.tick_payback(runtime, now_us);
+    states.encounter_phases.reset_incarnations(runtime);
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };

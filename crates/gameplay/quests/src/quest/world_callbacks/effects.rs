@@ -317,6 +317,10 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "wrath_incarnation")]
+    WrathIncarnation,
+    #[serde(rename = "wrath_payback")]
+    WrathPayback,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -777,8 +781,20 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
+    let incarnation = effects.encounter.as_ref().is_some_and(|encounter| {
+        encounter.phase == Some(EncounterPhase::WrathIncarnation)
+            && callback.quest == super::super::wrath_sleeping_dragon::QUEST
+            && matches!(callback.selector.unique, Some(3193..=3196))
+            && callback.requires_world_admission
+            && callback.item_on_target.as_ref().is_some_and(|item| {
+                item.item == "oteryn:item.tibia.i11362" && item.selected_instance
+                    && item.reusable && item.target_replacement == Some(10797)
+            })
+            && encounter.players.is_empty()
+            && encounter.monsters.len() == 1
+    });
     if operations > 1
-        || (operations > 0
+        || (operations > 0 && !incarnation
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
                 && (!lever
@@ -840,8 +856,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        let payback = encounter.phase == Some(EncounterPhase::WrathPayback)
+            && callback.quest == super::super::wrath_sleeping_dragon::QUEST
+            && callback.selector.unique == Some(3198);
+        let source_party = encounter.phase == Some(EncounterPhase::Cults) || payback;
+        if (encounter.minimum_level == 0 && !source_party && !incarnation)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -859,7 +878,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+                !incarnation && !(1..=if payback { 36 } else if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
             }
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })

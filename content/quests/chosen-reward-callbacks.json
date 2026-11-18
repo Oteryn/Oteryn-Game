@@ -1345,6 +1345,44 @@
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
         "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/wrath/spiritual-charm",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 41,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 28,
+          "maximum": 28,
+          "set": 29
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission10",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i10343",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The transfer is complete. The Spiritual Charm will let you seek my counsel."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sleeping_dragon.lua#L199-L223"
+      ]
     }
   ]
 }

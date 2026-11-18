@@ -970,6 +970,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
+                    && (!c.effects.encounter.as_ref().is_some_and(|encounter| {
+                        encounter.phase == Some(world_callbacks::EncounterPhase::WrathIncarnation)
+                    }) || selected_tool.is_some())
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {
@@ -994,6 +997,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        if selected_tool.is_some() && selected.iter().any(|callback| {
+            callback.effects.encounter.as_ref().is_some_and(|encounter| {
+                encounter.phase == Some(world_callbacks::EncounterPhase::WrathIncarnation)
+            })
+        }) {
+            selected.retain(|callback| callback.item_on_target.as_ref().is_some_and(|tool| tool.selected_instance));
+        }
         let source_trial = selected
             .iter()
             .any(|c| c.effects.target_transform.is_some());

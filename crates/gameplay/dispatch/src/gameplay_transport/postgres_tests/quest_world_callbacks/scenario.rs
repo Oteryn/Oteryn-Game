@@ -939,6 +939,7 @@ fn scenario_case(
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
+            || name == "nx6-wayfarer"
             || name == "engitem-targuna-selected-tool"
             || name == "engitem-native-seal-paint"
             || name == super::super::engitem_seal_paint_lost_ack::NAME

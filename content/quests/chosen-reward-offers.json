@@ -80,6 +80,25 @@
       "reply": [
         "I can make the crimson sword for three iron ores and 250 gold. Agreed?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 41,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 28,
+          "maximum": 28,
+          "set": 28
+        }
+      ],
+      "reply": [
+        "I can share a part of my mind so you can pass the gate. Are you prepared to receive my key?"
+      ]
     }
   ]
 }

@@ -1,0 +1,305 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/wrath/incarnation-3193",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3193,
+        "action": null,
+        "appearance": 11427,
+        "native": {
+          "position": {
+            "x": 33049,
+            "y": 31089,
+            "floor": -15
+          },
+          "ordinal": 1,
+          "appearance": 11427
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 29
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11362",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": 10797,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua:17-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_bosses_kill.lua:22-37"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 0,
+          "players": [],
+          "monsters": [
+            {
+              "position": {
+                "x": 33053,
+                "y": 31089,
+                "floor": -15
+              },
+              "creature": "oteryn:creature.fury_of_the_emperor"
+            }
+          ],
+          "room_min": {
+            "x": 33049,
+            "y": 31089,
+            "floor": -15
+          },
+          "room_max": {
+            "x": 33053,
+            "y": 31089,
+            "floor": -15
+          },
+          "phase": "wrath_incarnation"
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/wrath/incarnation-3194",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3194,
+        "action": null,
+        "appearance": 11427,
+        "native": {
+          "position": {
+            "x": 33095,
+            "y": 31091,
+            "floor": -15
+          },
+          "ordinal": 1,
+          "appearance": 11427
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 29
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11362",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": 10797,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua:17-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_bosses_kill.lua:22-37"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 0,
+          "players": [],
+          "monsters": [
+            {
+              "position": {
+                "x": 33099,
+                "y": 31091,
+                "floor": -15
+              },
+              "creature": "oteryn:creature.wrath_of_the_emperor"
+            }
+          ],
+          "room_min": {
+            "x": 33095,
+            "y": 31091,
+            "floor": -15
+          },
+          "room_max": {
+            "x": 33099,
+            "y": 31091,
+            "floor": -15
+          },
+          "phase": "wrath_incarnation"
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/wrath/incarnation-3195",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3195,
+        "action": null,
+        "appearance": 11427,
+        "native": {
+          "position": {
+            "x": 33096,
+            "y": 31114,
+            "floor": -15
+          },
+          "ordinal": 2,
+          "appearance": 11427
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 29
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11362",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": 10797,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua:17-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_bosses_kill.lua:22-37"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 0,
+          "players": [],
+          "monsters": [
+            {
+              "position": {
+                "x": 33100,
+                "y": 31114,
+                "floor": -15
+              },
+              "creature": "oteryn:creature.scorn_of_the_emperor"
+            }
+          ],
+          "room_min": {
+            "x": 33096,
+            "y": 31114,
+            "floor": -15
+          },
+          "room_max": {
+            "x": 33100,
+            "y": 31114,
+            "floor": -15
+          },
+          "phase": "wrath_incarnation"
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/wrath/incarnation-3196",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3196,
+        "action": null,
+        "appearance": 11427,
+        "native": {
+          "position": {
+            "x": 33049,
+            "y": 31115,
+            "floor": -15
+          },
+          "ordinal": 1,
+          "appearance": 11427
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 29
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11362",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": 10797,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua:17-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_bosses_kill.lua:22-37"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 0,
+          "players": [],
+          "monsters": [
+            {
+              "position": {
+                "x": 33053,
+                "y": 31115,
+                "floor": -15
+              },
+              "creature": "oteryn:creature.spite_of_the_emperor"
+            }
+          ],
+          "room_min": {
+            "x": 33049,
+            "y": 31115,
+            "floor": -15
+          },
+          "room_max": {
+            "x": 33053,
+            "y": 31115,
+            "floor": -15
+          },
+          "phase": "wrath_incarnation"
+        }
+      }
+    }
+  ]
+}

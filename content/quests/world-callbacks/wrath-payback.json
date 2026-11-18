@@ -1,0 +1,524 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/wrath/payback",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3198,
+        "action": null,
+        "appearance": null
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "opening_only": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The arena is already in use.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission11_payback_time_lever.lua:1-54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua:1-47"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 0,
+          "players": [
+            {
+              "from": {
+                "x": 33357,
+                "y": 31404,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33357,
+                "y": 31405,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33357,
+                "y": 31406,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33357,
+                "y": 31407,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33357,
+                "y": 31408,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33357,
+                "y": 31409,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33358,
+                "y": 31404,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33358,
+                "y": 31405,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33358,
+                "y": 31406,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33358,
+                "y": 31407,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33358,
+                "y": 31408,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33358,
+                "y": 31409,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33359,
+                "y": 31404,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33359,
+                "y": 31405,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33359,
+                "y": 31407,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33359,
+                "y": 31408,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33359,
+                "y": 31409,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33360,
+                "y": 31404,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33360,
+                "y": 31405,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33360,
+                "y": 31406,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33360,
+                "y": 31407,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33360,
+                "y": 31408,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33360,
+                "y": 31409,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33361,
+                "y": 31404,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33361,
+                "y": 31405,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33361,
+                "y": 31406,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33361,
+                "y": 31407,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33361,
+                "y": 31408,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33361,
+                "y": 31409,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33362,
+                "y": 31404,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33362,
+                "y": 31405,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33362,
+                "y": 31406,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33362,
+                "y": 31407,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33362,
+                "y": 31408,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            },
+            {
+              "from": {
+                "x": 33362,
+                "y": 31409,
+                "floor": -9
+              },
+              "to": {
+                "x": 33359,
+                "y": 31406,
+                "floor": -10
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "creature": "oteryn:creature.snake_god_essence",
+              "position": {
+                "x": 33365,
+                "y": 31407,
+                "floor": -10
+              }
+            },
+            {
+              "creature": "oteryn:creature.plaguethrower",
+              "position": {
+                "x": 33355,
+                "y": 31403,
+                "floor": -10
+              }
+            },
+            {
+              "creature": "oteryn:creature.plaguethrower",
+              "position": {
+                "x": 33364,
+                "y": 31403,
+                "floor": -10
+              }
+            },
+            {
+              "creature": "oteryn:creature.plaguethrower",
+              "position": {
+                "x": 33355,
+                "y": 31410,
+                "floor": -10
+              }
+            },
+            {
+              "creature": "oteryn:creature.plaguethrower",
+              "position": {
+                "x": 33364,
+                "y": 31410,
+                "floor": -10
+              }
+            }
+          ],
+          "room_min": {
+            "x": 33349,
+            "y": 31396,
+            "floor": -10
+          },
+          "room_max": {
+            "x": 33369,
+            "y": 31416,
+            "floor": -10
+          },
+          "phase": "wrath_payback"
+        }
+      }
+    }
+  ]
+}

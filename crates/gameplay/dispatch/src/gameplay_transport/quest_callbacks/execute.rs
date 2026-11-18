@@ -191,9 +191,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let tree_reset = oteryn_gameplay_quests::quest::dreamer_death_ring::shared_reset(callback);
         let close = tree_reset
             || callback.trigger == Trigger::StepOut
-            || callback
-                .lever
-                .is_some_and(|pair| after.appearance_id == pair[1]);
+            || (callback.lever.is_some_and(|pair| after.appearance_id == pair[1])
+                && !callback.effects.encounter.as_ref().is_some_and(|encounter| {
+                    encounter.phase == Some(world_callbacks::EncounterPhase::WrathPayback)
+                }));
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
@@ -218,7 +219,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let before = after;
         if let Some(pair) = callback.lever {
-            after.appearance_id = pair[usize::from(!close)];
+            after.appearance_id = if callback.effects.encounter.as_ref().is_some_and(|encounter| {
+                encounter.phase == Some(world_callbacks::EncounterPhase::WrathPayback)
+            }) && before.appearance_id == pair[1] {
+                pair[0]
+            } else {
+                pair[usize::from(!close)]
+            };
         }
         if let Some(appearance) = callback.effects.transform {
             let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
@@ -966,7 +973,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         }
         let mut personal_reservation =
-            if callback.effects.encounter.is_some() && callback.has_personal_state() {
+            if callback.effects.encounter.as_ref().is_some_and(|encounter| {
+                encounter.phase != Some(world_callbacks::EncounterPhase::WrathIncarnation)
+            }) && callback.has_personal_state() {
                 let (Some(fence), Some(definition)) = (
                     fence,
                     self.quest_catalogue
@@ -992,7 +1001,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-        if callback.effects.encounter.is_some() && callback.has_personal_state() {
+        if callback.effects.encounter.as_ref().is_some_and(|encounter| {
+            encounter.phase != Some(world_callbacks::EncounterPhase::WrathIncarnation)
+        }) && callback.has_personal_state() {
             let ready = self.preflight_personal_quest_encounter(
                 runtime,
                 states,

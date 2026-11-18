@@ -88,6 +88,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        if encounter.phase == Some(world_callbacks::EncounterPhase::WrathIncarnation) {
+            let Some(monster) = encounter.monsters.first() else {
+                return UseDisposition::Rejected;
+            };
+            let Some(native) = self.active_generation.and_then(|active| active.native_gameplay()) else {
+                return UseDisposition::Rejected;
+            };
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            if native.install_companion_policies(runtime).is_err() {
+                return UseDisposition::Rejected;
+            }
+            return states.encounter_phases.incarnation(
+                runtime, map, self.movement_cells(), monster, key, expected_revision, after, preflight,
+            );
+        }
+        let payback = encounter.phase == Some(world_callbacks::EncounterPhase::WrathPayback);
+        let mut payback_room = if payback {
+            let Some(native) = self.active_generation.and_then(|active| active.native_gameplay()) else {
+                return UseDisposition::Rejected;
+            };
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            if native.install_companion_policies(runtime).is_err() {
+                return UseDisposition::Rejected;
+            }
+            states.encounter_phases.tick_payback(runtime, self.owner_now().get());
+            let Ok(room) = states.encounter_phases.payback.lock() else {
+                return UseDisposition::Rejected;
+            };
+            if room.is_some() {
+                return UseDisposition::Occupied;
+            }
+            Some(room)
+        } else {
+            None
+        };
         if preflight && callback.has_personal_state() {
             if !callback.requires_world_admission {
                 return UseDisposition::Rejected;
@@ -136,7 +171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .contains(&at.y)
         };
         let personal_entry = callback.personal_room_entry().map(local);
-        if census.iter().any(|(who, pos, occupant_session)| {
+        if !payback && census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
                 && in_room(pos.position())
                 && !(Some(pos.position()) == personal_entry
@@ -154,8 +189,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
+                if payback || encounter.phase == Some(world_callbacks::EncounterPhase::Cults)
                 {
                     continue;
                 }
@@ -297,7 +331,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let credits = if encounter.phase.is_some() {
+        let credits = if encounter.phase.is_some() && !payback {
             let Ok(credits) =
                 super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
             else {
@@ -307,7 +341,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let mut phases = if encounter.phase.is_some() {
+        let mut phases = if encounter.phase.is_some() && !payback {
             let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
                 return UseDisposition::Occupied;
             };
@@ -315,7 +349,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
+        let Ok((snapshots, (phase, chain, actors, roster))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
             |runtime, actors| {
@@ -324,6 +358,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
                     )?)
                 } else { None };
+                let chain = payback.then(|| {
+                    super::super::encounter_phases::wrath_payback::Payback::bind(
+                        runtime, actors, &party, self.movement_cells().clone(), self.owner_now().get(),
+                    )
+                }).transpose()?;
                 credits
                     .map(|credits| {
                         super::super::encounter_phases::bind(
@@ -336,7 +375,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             self.movement_cells().clone(),
                         )
                     })
-                    .transpose().map(|phase| (phase, actors.to_vec(), roster))
+                    .transpose().map(|phase| (phase, chain, actors.to_vec(), roster))
             },
             || {
                 map.facts
@@ -353,6 +392,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             phases.push(phase);
         }
         drop(phases);
+        if let (Some(room), Some(chain)) = (&mut payback_room, chain) {
+            **room = Some(chain);
+        }
+        drop(payback_room);
         if let Some(reservation) = reservation
             && let Err(disposition) = reservation.publish(runtime, actors)
         {

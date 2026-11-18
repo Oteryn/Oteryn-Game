@@ -99,7 +99,7 @@ impl NativePhaseOwner {
         participants: &[(ExactActorRef, GameSessionId)],
     ) -> Result<Self, CarrierError> {
         runtime.owner_fence()?;
-        if participants.is_empty() || participants.len() > 16 {
+        if participants.is_empty() || participants.len() > 36 {
             return Err(CarrierError::PlanConflict);
         }
         for (i, (actor, session)) in participants.iter().enumerate() {

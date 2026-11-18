@@ -15,9 +15,9 @@ use std::sync::Arc;
 
 #[test]
 fn nx6_wayfarer_real_npc_atomic_finale_replay_and_fences() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     super::kill_reward_e2e::scenario_thread::run("nx6-wayfarer", || {
         super::quest_world_callbacks::scenario(
             "nx6-wayfarer",
@@ -305,6 +305,22 @@ pub(super) async fn exercise(
         "these exact server bytes are decoded by the native client play test"
     );
     super::questpc8_wrath_dream::after(owner, admitted, dragon, h, authority).await?;
+    let charm_count = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i10343'",
+        )
+        .fetch_one(&h.pool)
+        .await
+    };
+    assert_eq!(charm_count().await?, 0);
+    talk(owner, admitted, dragon, 6310, "hi").await?;
+    talk(owner, admitted, dragon, 6312, "mission").await?;
+    assert_eq!(charm_count().await?, 0, "offer alone cannot mint");
+    talk(owner, admitted, dragon, 6313, "yes").await?;
+    assert_eq!(charm_count().await?, 1);
+    assert_eq!(progress(owner, admitted, authority, quest::QUESTLINE).await?, 29);
+    talk(owner, admitted, dragon, 6313, "yes").await?;
+    assert_eq!(charm_count().await?, 1);
     eprintln!(
         "NX6_POSTGRES_CASE_COMPLETED elapsed={:?}",
         started.elapsed()

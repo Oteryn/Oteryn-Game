@@ -55,6 +55,11 @@ def generate():
             or len(authored["callbacks"]) > 128 or len(authored["offers"]) > 128
             or len(authored["greetings"]) > 64 or len(authored["tracks"]) > 64):
         raise ValueError("chosen route reward authoring bounds")
+    charm = json.loads(Path(__file__).with_name("wrath-spiritual-charm.json").read_text())
+    if charm["callback"]["quest"] != charm["quest"]:
+        raise ValueError("Wrath charm reward quest mismatch")
+    authored["callbacks"].append(charm["callback"])
+    authored["offers"].append(charm["offer"])
     keys = [row["key"] for row in authored["callbacks"]]
     if len(keys) != len(set(keys)) or callback["key"] in keys:
         raise ValueError("duplicate chosen reward callback")
