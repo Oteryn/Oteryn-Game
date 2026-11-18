@@ -130,13 +130,16 @@ pub(super) async fn exercise(
         if name == SATCHEL {
             return exercise_satchel(owner, admitted, h, actor, start, expected, target, key).await;
         }
-        let outcomes = super::quest_callbacks::wire_use_targets_retained(
-            owner, admitted, &[(1, &target)],
-        )
-        .await?;
+        let outcomes =
+            super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(1, &target)])
+                .await?;
         assert_eq!(
             outcomes.first().map(|(_, result)| *result),
-            Some(if refused { UseDisposition::Rejected } else { UseDisposition::Committed })
+            Some(if refused {
+                UseDisposition::Rejected
+            } else {
+                UseDisposition::Committed
+            })
         );
     }
     assert_eq!(
@@ -151,7 +154,10 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments, reason = "the fixture supplies the exact actor, map placement and two tiles")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the fixture supplies the exact actor, map placement and two tiles"
+)]
 async fn exercise_satchel(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -174,13 +180,15 @@ async fn exercise_satchel(
             h.root.advance_test_quest_clock(advance)?;
         }
         target.expected_revision = map.facts.object_revision(key);
-        let outcomes = super::quest_callbacks::wire_use_targets_retained(
-            owner, admitted, &[(id, &target)],
-        )
-        .await?;
+        let outcomes =
+            super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(id, &target)])
+                .await?;
         assert_eq!(
             outcomes.as_slice(),
-            &[(oteryn_protocol_oteryn::CommandStatus::Accepted, UseDisposition::Committed)],
+            &[(
+                oteryn_protocol_oteryn::CommandStatus::Accepted,
+                UseDisposition::Committed
+            )],
         );
         {
             let mut runtime = owner.runtime.lock().await;
@@ -189,8 +197,15 @@ async fn exercise_satchel(
             if id < 3 {
                 let doors = crate::map::floor::BundleDoors(map.facts.doors());
                 let return_to_tree = crate::map::floor::prepare_quest_callback_teleport_facing(
-                    &runtime, owner.movement_cells(), actor, admitted.game_session_id, at,
-                    local(start), false, &doors, None,
+                    &runtime,
+                    owner.movement_cells(),
+                    actor,
+                    admitted.game_session_id,
+                    at,
+                    local(start),
+                    false,
+                    &doors,
+                    None,
                 )
                 .map_err(debug)?;
                 runtime.commit_source_step(return_to_tree).map_err(debug)?;
@@ -210,12 +225,11 @@ async fn exercise_satchel(
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(nested, rewards);
-        let claim: i64 = sqlx::query_scalar(
-            "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
-        )
-        .bind("oteryn:quest-progress/galthen/satchel-at")
-        .fetch_one(&h.pool)
-        .await?;
+        let claim: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind("oteryn:quest-progress/galthen/satchel-at")
+                .fetch_one(&h.pool)
+                .await?;
         assert_eq!(claim, last_claim);
     }
     Ok(())
