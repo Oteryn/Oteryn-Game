@@ -85,7 +85,7 @@ pub(super) async fn exercise(
     world: &crate::map::boot::BundleWorld,
     lamp: bool,
 ) -> TestResult {
-    let callback = fixture(lamp)?;
+    let mut callback = fixture(lamp)?;
     let lever_at = callback.selector.position.ok_or("lever position")?;
     let [passage] = callback.passages.as_slice() else {
         return Err("timed passage fixture".into());
@@ -97,6 +97,19 @@ pub(super) async fn exercise(
         y: passage.position.y,
         floor: passage.position.floor,
     };
+    if lamp {
+        // Crystal 201189f8 actions_mission01_lights.lua:8–12,21–29
+        // looks up each lamp independently and still toggles the source lever.
+        let mut optional = passage.clone();
+        optional.position.x = 33372;
+        assert!(
+            world
+                .base()
+                .tile(optional.position.x, optional.position.y, optional.position.floor)
+                .is_none()
+        );
+        callback.passages.push(optional);
+    }
     owner
         .states
         .quest_callbacks

@@ -408,6 +408,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Occupied;
             }
             let Some(t) = map.overlay.base().tile(p.x, p.y, p.floor) else {
+                if passage.if_present && callback.effects.passages_independent_toggle {
+                    // The shrine's optional lamp lookups leave the lever and other lamps active.
+                    continue;
+                }
                 return UseDisposition::Rejected;
             };
             let candidates = t
