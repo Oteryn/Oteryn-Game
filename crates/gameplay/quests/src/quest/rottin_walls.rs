@@ -1,12 +1,16 @@
 //! Crystal hammer.lua:13-20,64-101. Bind the six broken walls on the retained map.
-use super::world_callbacks::{Callback, ItemOnTarget, NativeSelector, Position, Selector, Storage};
+use super::world_callbacks::{
+    Callback, CallbackEffectSet, ItemOnTarget, NativeSelector, Position, Selector, Storage, Trigger,
+};
+use std::sync::LazyLock;
 
 pub const PREFIX: &str = "oteryn:quest-callback/rottin-repair-";
 pub const QUEST: &str = "oteryn:quest.rottin_wood_and_the_married_men_quest";
 
 /// Admit only the published hammer bindings to the carried-tool route.
 pub fn accepts(callback: &Callback) -> bool {
-    callback.key.starts_with(PREFIX) && callbacks().contains(callback)
+    static BINDINGS: LazyLock<[Callback; 6]> = LazyLock::new(callbacks);
+    callback.key.starts_with(PREFIX) && BINDINGS.contains(callback)
 }
 
 pub(crate) fn callbacks() -> [Callback; 6] {
@@ -20,49 +24,87 @@ pub(crate) fn callbacks() -> [Callback; 6] {
     ]
     .map(|(action, x, y, floor, ordinal, appearance, repaired)| {
         let position = Position { x, y, floor };
-        let mut callback = super::source_world_objects::uneasy_crystal();
-        callback.key = format!("{PREFIX}{action}");
-        callback.quest = QUEST.into();
-        callback.requires_world_admission = true;
-        callback.selector = Selector {
-            native: Some(NativeSelector { position, ordinal, appearance }),
-            position: Some(position),
-            action: Some(action),
-            appearance: Some(appearance),
-            position_aliases: Vec::new(),
-            ordinal: None,
-            unique: None,
-        };
-        callback.storage = vec![Storage {
-            track: super::classic_talk::ROTTIN_WALLCOUNT.into(),
-            minimum: 0,
-            maximum: 5,
-            set: 1,
-            increment: true,
-            preserve: false,
-            at_least: false,
-            read_only: false,
-            set_if: None,
-            add: None,
-        }];
-        callback.effects.transform = Some(repaired);
-        callback.effects.reset_after_ms = Some(120_000);
-        callback.item_on_target = Some(ItemOnTarget {
-            item: "oteryn:item.tibia.i3460".into(),
-            alternatives: Vec::new(),
-            count: 1,
-            replacement: None,
-            target_replacement: None,
-            target_remove: false,
-            reusable: true,
-            on_step: false,
-            selected_instance: true,
-            ingredients: Vec::new(),
-        });
-        callback.success_message = Some("You fixed this broken wall.".into());
-        callback.failure_message = Some("You already fixed many broken walls today.".into());
-        callback.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/hammer.lua:13-20,64-101".into()];
-        callback
+        let mut effects = CallbackEffectSet::default();
+        effects.transform = Some(repaired);
+        effects.reset_after_ms = Some(120_000);
+        Callback {
+            key: format!("{PREFIX}{action}"),
+            quest: QUEST.into(),
+            trigger: Trigger::Use,
+            selector: Selector {
+                native: Some(NativeSelector { position, ordinal, appearance }),
+                position: Some(position),
+                action: Some(action),
+                appearance: Some(appearance),
+                position_aliases: Vec::new(),
+                ordinal: None,
+                unique: None,
+            },
+            use_range: 1,
+            requires_world_admission: true,
+            storage: vec![Storage {
+                track: super::classic_talk::ROTTIN_WALLCOUNT.into(),
+                minimum: 0,
+                maximum: 5,
+                set: 1,
+                increment: true,
+                preserve: false,
+                at_least: false,
+                read_only: false,
+                set_if: None,
+                add: None,
+            }],
+            item_on_target: Some(ItemOnTarget {
+                item: "oteryn:item.tibia.i3460".into(),
+                alternatives: Vec::new(),
+                count: 1,
+                replacement: None,
+                target_replacement: None,
+                target_remove: false,
+                reusable: true,
+                on_step: false,
+                selected_instance: true,
+                ingredients: Vec::new(),
+            }),
+            effects,
+            success_message: Some("You fixed this broken wall.".into()),
+            failure_message: Some("You already fixed many broken walls today.".into()),
+            sources: vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/hammer.lua:13-20,64-101".into()],
+            actor_kind: Default::default(),
+            activation: None,
+            admission: None,
+            achievements: Vec::new(),
+            character_requirements: None,
+            completes: false,
+            disguise: None,
+            experience: None,
+            facing: None,
+            failure_teleport: None,
+            item_reward: None,
+            lever: None,
+            minimum_level: None,
+            monk_reward: None,
+            native_rule: None,
+            offerings: Vec::new(),
+            opening_only: false,
+            passages: Vec::new(),
+            premium_required: false,
+            present: Vec::new(),
+            remote_teleport: None,
+            required_completed_quests: Vec::new(),
+            required_travel: Vec::new(),
+            requirements: None,
+            requires_premium: false,
+            return_on_failure: false,
+            reversible: false,
+            reward_bundle: false,
+            state_operations: Vec::new(),
+            state_ops: Vec::new(),
+            teleport: None,
+            track_initials: Default::default(),
+            world_change: None,
+            world_requirements: Vec::new(),
+        }
     })
 }
 
