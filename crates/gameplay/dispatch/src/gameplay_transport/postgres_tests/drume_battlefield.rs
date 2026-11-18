@@ -49,6 +49,7 @@ pub(super) fn bind(callback: &mut Callback) -> TestResult {
         "exit": EXIT,
         "captain": {"x":116,"y":112,"floor":-7},
         "boss": {"x":116,"y":113,"floor":-7},
+        "timeout_ms":1_200_000,
     });
     json["effects"]["encounter"]["phase"] = "drume_skirmish".into();
     let encounter = json["effects"]["encounter"]["monsters"]
@@ -130,6 +131,24 @@ pub(super) async fn exercise(
         assert_eq!(list(owner, DRUME).await?.len(), 1);
         assert_eq!(list(owner, KESAR).await?.len(), 1);
         assert_positions(owner, actors, LANDING).await?;
+        let target = list(owner, DRUME)
+            .await?
+            .into_iter()
+            .next()
+            .ok_or("Drume")?;
+        kill(owner, leader, target, DRUME, 103).await?;
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            crate::gameplay_transport::encounter_phases::tick(
+                &mut runtime,
+                &states,
+                owner.owner_now().get() + 1_200_000_000,
+            );
+        }
+        assert!(list(owner, LION).await?.is_empty());
+        assert!(list(owner, KESAR).await?.is_empty());
+        assert_positions(owner, actors, super::quest_world_callbacks::local(EXIT)).await?;
     } else {
         assert!(list(owner, USURPER).await?.is_empty());
         assert!(list(owner, DRUME).await?.is_empty());

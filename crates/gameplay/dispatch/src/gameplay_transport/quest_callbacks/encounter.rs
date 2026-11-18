@@ -393,6 +393,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &party,
                             credits,
                             self.movement_cells().clone(),
+                            self.owner_now().get(),
                         )
                     })
                     .transpose().map(|phase| (phase, actors.to_vec(), roster))

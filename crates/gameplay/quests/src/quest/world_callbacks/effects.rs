@@ -339,6 +339,7 @@ pub struct Battlefield {
     pub exit: Position,
     pub captain: Position,
     pub boss: Position,
+    pub timeout_ms: u32,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -887,6 +888,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || !in_room(battlefield.captain)
                 || !in_room(battlefield.boss)
                 || battlefield.captain == battlefield.boss
+                || !(1..=3_600_000).contains(&battlefield.timeout_ms)
                 || encounter.monsters.len() != 6
                 || encounter
                     .monsters

@@ -45,6 +45,7 @@ pub(super) struct Skirmish {
     pub(super) phase: NativePhaseOwner,
     battlefield: Battlefield,
     pub(super) ejected: bool,
+    deadline: u64,
 }
 
 impl Skirmish {
@@ -53,6 +54,7 @@ impl Skirmish {
         participants: &[(ExactActorRef, GameSessionId)],
         actors: &[ExactActorRef],
         battlefield: Battlefield,
+        now_us: u64,
     ) -> Result<Self, CarrierError> {
         let mut phase = NativePhaseOwner::bind(
             runtime,
@@ -82,6 +84,9 @@ impl Skirmish {
             phase,
             battlefield,
             ejected: false,
+            deadline: now_us
+                .checked_add(u64::from(battlefield.timeout_ms) * 1000)
+                .ok_or(CarrierError::PlanConflict)?,
         })
     }
 
@@ -121,7 +126,24 @@ impl Skirmish {
         Ok(())
     }
 
-    fn eject(
+    pub(super) fn maintain(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        room: &Encounter,
+        cells: &crate::content::NativeEntryMovementCells,
+        now_us: u64,
+    ) -> Result<(), CarrierError> {
+        // Crystal action_drume.lua:16-17,21-32,115-120 schedules physical teardown
+        // even when the boss has fallen and normal terminal credit already settled.
+        if now_us >= self.deadline {
+            self.eject(runtime, room, cells)?;
+            self.ejected = true;
+            return Ok(());
+        }
+        self.advance(runtime, room, cells)
+    }
+
+    pub(super) fn eject(
         &self,
         runtime: &mut ChannelRuntimeV1,
         room: &Encounter,

@@ -123,6 +123,18 @@ impl Registry {
             if !phase.fight.is_current(runtime) {
                 return false;
             }
+            if let Fight::Drume(fight) = &phase.fight {
+                // A new party may replace a vacated same-key battlefield. It
+                // must remove the previous roster before admitting a new one.
+                return phase.key != key
+                    || runtime.positioned_melee_census().map_or(true, |census| {
+                        census.into_iter().any(|(_, at, session)| {
+                            session.is_some()
+                                && super::quest_callbacks::room_contains(&phase.room, at.position())
+                        })
+                    })
+                    || fight.eject(runtime, &phase.room, &phase.cells).is_err();
+            }
             match phase.fight.victors(runtime) {
                 Ok(Some(_)) => {
                     // Credit was captured in the lethal turn. Release the lever
@@ -215,6 +227,10 @@ impl Registry {
     }
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "atomic phase admission binds the roster, source map and owner clock"
+)]
 pub(super) fn bind(
     runtime: &mut ChannelRuntimeV1,
     callback: &Callback,
@@ -223,6 +239,7 @@ pub(super) fn bind(
     players: &[(ExactActorRef, GameSessionId)],
     credits: Vec<grizzly_kills::EncounterCredit>,
     cells: crate::content::NativeEntryMovementCells,
+    now_us: u64,
 ) -> Result<ActivePhase, CarrierError> {
     let encounter = callback
         .effects
@@ -243,6 +260,7 @@ pub(super) fn bind(
                 players,
                 actors,
                 battlefield,
+                now_us,
             )?),
             room: encounter.clone(),
             participants: players.to_vec(),
@@ -349,7 +367,7 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) {
+pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
@@ -362,11 +380,18 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) 
             room,
             ..
         } = phase;
-        if let Err(error) = fight.advance(runtime, room, cells) {
+        let result = match fight {
+            Fight::Cults(_) => fight.advance(runtime, room, cells),
+            Fight::Drume(fight) => fight.maintain(runtime, room, cells, now_us),
+        };
+        if let Err(error) = result {
             super::operator_event(&format!(
                 "encounter_phase_deferred key={key} reason={error:?}"
             ));
             return true;
+        }
+        if let Fight::Drume(fight) = fight {
+            return !fight.ejected;
         }
         fight.is_current(runtime)
             && fight
