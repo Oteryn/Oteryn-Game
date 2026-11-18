@@ -143,6 +143,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        {
+            let mut states = self.states.spell_states.lock().await;
+            for phase in states.encounter_phases.take_followups(&runtime) {
+                let Some(next) = phase
+                    .callback
+                    .effects
+                    .encounter
+                    .as_ref()
+                    .and_then(|entry| entry.after_defeats.as_ref())
+                    .map(|plan| &plan.next)
+                else {
+                    continue;
+                };
+                let Some(area) = next.staging_area else {
+                    continue;
+                };
+                if map.facts.object_revision(phase.key) != phase.revision {
+                    continue;
+                }
+                let Ok(census) = runtime.positioned_melee_census() else {
+                    continue;
+                };
+                let Some((actor, session)) = census.into_iter().find_map(|(actor, at, session)| {
+                    let position = native(at.position())?;
+                    area.contains(Position {
+                        x: position.x,
+                        y: position.y,
+                        floor: position.floor,
+                    })
+                    .then_some((actor, session?))
+                }) else {
+                    continue;
+                };
+                let _ = self.quest_encounter(
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    map,
+                    &phase.callback,
+                    next,
+                    phase.key,
+                    phase.revision,
+                    None,
+                    false,
+                    None,
+                    None,
+                    None,
+                );
+            }
+        }
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };

@@ -1955,6 +1955,7 @@ pub fn record_creature_kill(
         native_room_placement_context: pin.frame_binding_digest().to_vec(),
     };
     let daily_boost = runtime.daily_boost().cloned();
+    let death_position = runtime.read_actor_position(target).ok();
     // Freeze the principal's Prey boost on the death turn, before any command can reroll it.
     if crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), target)
         .is_err()
@@ -1965,6 +1966,14 @@ pub fn record_creature_kill(
         states
             .encounter_phases
             .note_projected_death(runtime, target);
+        if wild
+            && let (Some(at), Ok(creature)) = (death_position, creature.as_ref())
+            && states
+                .encounter_phases
+                .note_defender_death(runtime, at.position(), creature, now_ms)
+        {
+            states.owner_wake.notify_one();
+        }
     }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");

@@ -318,6 +318,9 @@ pub struct Encounter {
     /// Spawn an immediate encounter in the room the triggering player stepped into.
     #[serde(default, skip_serializing_if = "is_false")]
     pub spawn_in_place: bool,
+    /// A completed distinct-tile defeat phase advances through shared area admission.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub after_defeats: Option<Box<EncounterAfterDefeats>>,
     pub room_min: Position,
     pub room_max: Position,
     /// A value-free source switch schedules native monsters without moving a party.
@@ -326,6 +329,67 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterAfterDefeats {
+    pub creature: String,
+    pub minimum: Position,
+    pub maximum: Position,
+    pub count: u8,
+    pub tile_cooldown_ms: u32,
+    pub next: Encounter,
+}
+
+impl EncounterAfterDefeats {
+    fn valid(&self, encounter: &Encounter) -> bool {
+        let next = &self.next;
+        let Some(area) = next.staging_area else {
+            return false;
+        };
+        let area_valid = |min: Position, max: Position| {
+            (-15..=0).contains(&min.floor)
+                && min.floor == max.floor
+                && min.x <= max.x
+                && max.x - min.x < 64
+                && min.y <= max.y
+                && max.y - min.y < 64
+        };
+        let inside = |p: Position, min: Position, max: Position| {
+            p.floor == min.floor && (min.x..=max.x).contains(&p.x) && (min.y..=max.y).contains(&p.y)
+        };
+        encounter.spawn_in_place
+            && (1..=16).contains(&self.count)
+            && (1..=60_000).contains(&self.tile_cooldown_ms)
+            && area_valid(self.minimum, self.maximum)
+            && encounter
+                .monsters
+                .iter()
+                .any(|m| m.creature == self.creature)
+            && next.phase.is_none()
+            && next.timing.is_none()
+            && next.after_defeats.is_none()
+            && !next.spawn_in_place
+            && next.players.is_empty()
+            && area_valid(area.minimum, area.maximum)
+            && area.minimum.floor != next.room_min.floor
+            && area_valid(next.room_min, next.room_max)
+            && inside(area.destination, next.room_min, next.room_max)
+            && (1..=8).contains(&next.monsters.len())
+            && next
+                .monsters
+                .iter()
+                .map(|m| m.position)
+                .collect::<BTreeSet<_>>()
+                .len()
+                == next.monsters.len()
+            && next.monsters.iter().all(|m| {
+                inside(m.position, next.room_min, next.room_max)
+                    && m.creature.starts_with("oteryn:creature.")
+                    && super::super::valid_quest_key(&m.creature)
+            })
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -905,12 +969,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
         let gathering = encounter.staging_area.is_some();
-        if (encounter.spawn_in_place
-            && (callback.trigger != Trigger::StepIn
-                || !personal_encounter
-                || gathering
-                || !encounter.players.is_empty()
-                || encounter.phase.is_some()))
+        if encounter
+            .after_defeats
+            .as_ref()
+            .is_some_and(|phase| !phase.valid(encounter))
+            || (encounter.spawn_in_place
+                && (callback.trigger != Trigger::StepIn
+                    || !personal_encounter
+                    || gathering
+                    || !encounter.players.is_empty()
+                    || encounter.phase.is_some()))
             || encounter.staging_area.is_some_and(|area| {
                 !encounter.players.is_empty()
                     || encounter.timing.is_some()

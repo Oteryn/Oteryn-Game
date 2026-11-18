@@ -24,6 +24,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
     ) -> UseDisposition {
+        let Some(encounter) = &callback.effects.encounter else {
+            return UseDisposition::Rejected;
+        };
         self.quest_encounter(
             runtime,
             states,
@@ -31,12 +34,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             session,
             map,
             callback,
+            encounter,
             key,
             expected_revision,
-            after,
+            Some(after),
             preflight,
             projection,
-            cause,
+            Some(cause),
             reservation,
         )
     }
@@ -55,7 +59,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         after: EntryFacts,
         cause: QuestCause,
     ) -> UseDisposition {
-        self.quest_encounter(
+        self.execute_quest_encounter(
             runtime,
             states,
             actor,
@@ -73,7 +77,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn quest_encounter(
+    pub(super) fn quest_encounter(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
@@ -81,18 +85,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         map: &BundleMap,
         callback: &Callback,
+        encounter: &world_callbacks::Encounter,
         key: u64,
         expected_revision: u64,
-        after: EntryFacts,
+        after: Option<EntryFacts>,
         preflight: bool,
         projection: Option<&crate::map::facts::QuestCallbackProjection>,
-        cause: QuestCause,
+        cause: Option<QuestCause>,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
     ) -> UseDisposition {
-        let Some(encounter) = &callback.effects.encounter else {
-            return UseDisposition::Rejected;
-        };
-        if preflight && callback.has_personal_state() {
+        if preflight && cause.is_some() && callback.has_personal_state() {
             if !callback.requires_world_admission {
                 return UseDisposition::Rejected;
             }
@@ -113,10 +115,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             }
         }
-        if callback.has_personal_state() && !preflight && reservation.is_none() {
+        if cause.is_some() && callback.has_personal_state() && !preflight && reservation.is_none() {
             return UseDisposition::Rejected;
         }
         if encounter.timing.is_some() {
+            let Some(after) = after else {
+                return UseDisposition::Rejected;
+            };
             return self.schedule_timed_quest_encounter(
                 runtime,
                 states,
@@ -220,16 +225,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .lock()
                             .is_ok_and(|pending| {
                                 pending.get(&session).is_some_and(|record| {
-                                    pending_encounter_matches(
-                                        record,
-                                        actor,
-                                        member_session,
-                                        expected,
-                                        &callback.key,
-                                        key,
-                                        expected_revision,
-                                        cause,
-                                    )
+                                    cause.is_some_and(|cause| {
+                                        pending_encounter_matches(
+                                            record,
+                                            actor,
+                                            member_session,
+                                            expected,
+                                            &callback.key,
+                                            key,
+                                            expected_revision,
+                                            cause,
+                                        )
+                                    })
                                 })
                             })))
             {
@@ -285,7 +292,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
+        let project = || {
+            after.is_none_or(|after| {
+                map.facts.apply_quest_callback(
+                    key,
+                    expected_revision,
+                    after,
+                    &[],
+                    &[],
+                    false,
+                    projection,
+                )
+            })
+        };
         if encounter.spawn_in_place {
+            let mut phases = if encounter.after_defeats.is_some() {
+                let Ok(phases) = states.encounter_phases.reserve_followup(runtime, key) else {
+                    return UseDisposition::Occupied;
+                };
+                Some(phases)
+            } else {
+                None
+            };
             if !runtime
                 .read_actor_position(actor)
                 .is_ok_and(|at| in_room(at.position()))
@@ -305,19 +333,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(reservation) = reservation else {
                 return UseDisposition::Rejected;
             };
-            let Ok(actors) = runtime.commit_quest_creature_spawn_with_projection(&monsters, || {
-                map.facts.apply_quest_callback(
-                    key,
-                    expected_revision,
-                    after,
-                    &[],
-                    &[],
-                    false,
-                    projection,
-                )
-            }) else {
+            let Ok(actors) =
+                runtime.commit_quest_creature_spawn_with_projection(&monsters, project)
+            else {
                 return UseDisposition::Rejected;
             };
+            if let (Some(phases), Some(_)) = (&mut phases, &encounter.after_defeats) {
+                phases.push(super::super::encounter_phases::Followup::new(
+                    runtime,
+                    key,
+                    expected_revision + 1,
+                    callback.clone(),
+                ));
+            }
             return match reservation.publish(runtime, actors) {
                 Ok(()) => UseDisposition::Committed,
                 Err(disposition) => disposition,
@@ -340,7 +368,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
             let bindings = catalogue.authored_bindings()?;
             bindings.quests.iter().find(|quest| quest.stages.iter().any(|stage|
-                matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::MapUse { callback: source }
+                matches!(&stage.trigger,
+                    oteryn_gameplay_quests::quest::authored_bindings::Trigger::MapUse { callback: source }
+                    | oteryn_gameplay_quests::quest::authored_bindings::Trigger::StepIn { callback: source }
                     if source.as_ref() == callback))
                 && quest.stages.iter().any(|stage|
                     matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::Kill { counter }
@@ -412,10 +442,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                     .transpose().map(|phase| (phase, actors.to_vec(), roster))
             },
-            || {
-                map.facts
-                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, projection)
-            },
+            project,
         ) else {
             return UseDisposition::Rejected;
         };

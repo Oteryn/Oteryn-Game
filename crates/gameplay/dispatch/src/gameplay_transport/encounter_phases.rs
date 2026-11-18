@@ -22,9 +22,145 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    followups: Mutex<Vec<Followup>>,
+}
+
+#[derive(Debug)]
+pub(super) struct Followup {
+    pub(super) callback: Callback,
+    pub(super) key: u64,
+    pub(super) revision: u64,
+    scope: (
+        crate::foundation::RuntimeScopeRefV1,
+        crate::foundation::ScopeOwnershipGeneration,
+    ),
+    map: [u8; 32],
+    content: [u8; 32],
+    deaths:
+        std::collections::BTreeMap<oteryn_gameplay_quests::quest::world_callbacks::Position, u64>,
+}
+
+impl Followup {
+    pub(super) fn new(
+        runtime: &ChannelRuntimeV1,
+        key: u64,
+        revision: u64,
+        callback: Callback,
+    ) -> Self {
+        Self {
+            callback,
+            key,
+            revision,
+            scope: runtime.encounter_owner_scope(),
+            map: runtime.content_pin().map_revision_digest(),
+            content: runtime.content_pin().server_artifact_digest(),
+            deaths: std::collections::BTreeMap::new(),
+        }
+    }
+
+    fn current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.scope == runtime.encounter_owner_scope()
+            && self.map == runtime.content_pin().map_revision_digest()
+            && self.content == runtime.content_pin().server_artifact_digest()
+    }
+
+    fn plan(
+        &self,
+    ) -> Option<&oteryn_gameplay_quests::quest::world_callbacks::EncounterAfterDefeats> {
+        self.callback
+            .effects
+            .encounter
+            .as_ref()?
+            .after_defeats
+            .as_deref()
+    }
 }
 
 impl Registry {
+    pub(super) fn reserve_followup(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        key: u64,
+    ) -> Result<std::sync::MutexGuard<'_, Vec<Followup>>, CarrierError> {
+        let mut phases = self
+            .followups
+            .lock()
+            .map_err(|_| CarrierError::PlanConflict)?;
+        phases.retain(|phase| phase.current(runtime));
+        if phases.len() >= MAX_ENCOUNTERS || phases.iter().any(|phase| phase.key == key) {
+            return Err(CarrierError::PlanConflict);
+        }
+        phases
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        Ok(phases)
+    }
+
+    pub(super) fn note_defender_death(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        at: MovementLocalPosition,
+        creature: &str,
+        now_ms: u64,
+    ) -> bool {
+        use oteryn_gameplay_quests::quest::world_callbacks::Position;
+        let (Ok(x), Ok(y), Some(floor)) = (
+            u16::try_from(at.x),
+            u16::try_from(at.y),
+            at.floor
+                .checked_neg()
+                .and_then(|floor| i8::try_from(floor).ok()),
+        ) else {
+            return false;
+        };
+        let position = Position { x, y, floor };
+        let Ok(mut phases) = self.followups.lock() else {
+            return false;
+        };
+        let mut ready = false;
+        for phase in phases.iter_mut().filter(|phase| phase.current(runtime)) {
+            let Some(plan) = phase.plan() else { continue };
+            let count = usize::from(plan.count);
+            let cooldown = u64::from(plan.tile_cooldown_ms);
+            if phase.deaths.len() >= count
+                || creature != plan.creature
+                || floor != plan.minimum.floor
+                || !(plan.minimum.x..=plan.maximum.x).contains(&x)
+                || !(plan.minimum.y..=plan.maximum.y).contains(&y)
+                || phase
+                    .deaths
+                    .get(&position)
+                    .is_some_and(|last| now_ms.saturating_sub(*last) <= cooldown)
+            {
+                continue;
+            }
+            phase.deaths.insert(position, now_ms);
+            ready |= phase.deaths.len() == count;
+        }
+        ready
+    }
+
+    pub(super) fn take_followups(&self, runtime: &ChannelRuntimeV1) -> Vec<Followup> {
+        let Ok(mut phases) = self.followups.lock() else {
+            return Vec::new();
+        };
+        phases.retain(|phase| phase.current(runtime));
+        let mut ready = Vec::new();
+        let mut cursor = 0;
+        while cursor < phases.len() {
+            let phase = &phases[cursor];
+            if phase
+                .plan()
+                .is_some_and(|plan| phase.deaths.len() == usize::from(plan.count))
+            {
+                ready.push(phases.remove(cursor));
+            } else {
+                cursor += 1;
+            }
+        }
+        ready
+    }
+
     pub(super) fn reserve<'a>(
         &'a self,
         runtime: &mut ChannelRuntimeV1,
