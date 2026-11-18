@@ -19,7 +19,16 @@ impl DurabilityRoot {
             let rows=sqlx::query("SELECT proof,item_instance_id FROM (SELECT c.proof,c.item_instance_id FROM game_quest_callback_consumptions c LEFT JOIN game_quest_reward_sources s USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.character_id=encode($1,'hex')::uuid AND c.cause_id=encode($2,'hex')::uuid AND c.cause_ordinal=$3::text::numeric AND (((s.plan ? 'carried_item' OR s.plan ? 'recipe_source') AND c.before_item->>'definition_production_key'=coalesce(s.plan->>'carried_item',s.plan->>'recipe_source')) OR (convert_from(c.proof,'UTF8')::jsonb #>> '{callback,item_on_target,selected_instance}'='true' AND c.location_kind<>'ground')) UNION ALL SELECT r.proof,r.item_instance_id FROM game_quest_world_tool_reads r WHERE r.character_id=encode($1,'hex')::uuid AND r.cause_id=encode($2,'hex')::uuid AND r.cause_ordinal=$3::text::numeric) bound_tool_proofs LIMIT 2")
                 .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_all(&mut *tx).await?;
             let answer=match rows.as_slice() {
-                []=>None,
+                []=>{
+                    let retained=sqlx::query_scalar::<_,Vec<u8>>(
+                        "SELECT ingress FROM game_quest_corpse_samples WHERE character_id=encode($1,'hex')::uuid AND cause_id=encode($2,'hex')::uuid AND cause_ordinal=$3::text::numeric AND before_source IS NOT NULL LIMIT 2"
+                    ).bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_all(&mut *tx).await?;
+                    match retained.as_slice() {
+                        []=>None,
+                        [proof]=>Some(*proof==intent),
+                        _=>return Err(DurabilityError::InvalidStoredState),
+                    }
+                },
                 [row]=>{
                     let proof:serde_json::Value=serde_json::from_slice(&row.try_get::<Vec<u8>,_>("proof")?).map_err(|_|DurabilityError::InvalidStoredState)?;
                     let selected=proof.get("carried_use").or_else(||proof.get("context").and_then(|context|context.get("selected_tool"))).ok_or(DurabilityError::InvalidStoredState)?;
@@ -603,9 +612,20 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
                 });
             }
         }
-        for helper in [oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST, oteryn_gameplay_quests::quest::shared_world_progress::DEEPLING_QUEST] {
-            if oteryn_gameplay_quests::quest::shared_world_progress::counter_progress_track(helper, track) {
-                return self.save_event_snapshot_valid.then(|| self.counter_quests.get(helper).and_then(|progress| progress.tracks.get(track)).copied().unwrap_or(0));
+        for helper in [
+            oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST,
+            oteryn_gameplay_quests::quest::shared_world_progress::DEEPLING_QUEST,
+        ] {
+            if oteryn_gameplay_quests::quest::shared_world_progress::counter_progress_track(
+                helper, track,
+            ) {
+                return self.save_event_snapshot_valid.then(|| {
+                    self.counter_quests
+                        .get(helper)
+                        .and_then(|progress| progress.tracks.get(track))
+                        .copied()
+                        .unwrap_or(0)
+                });
             }
         }
         self.tracks().get(track).copied()
@@ -618,9 +638,14 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
         let state = self.states().get(quest)?;
         let helper = oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest);
         if let Some(helper) = helper {
-            return self.save_event_snapshot_valid.then(|| oteryn_gameplay_quests::quest::log::QuestLogState {
-                pinned_content_revision: &state.pinned_content_revision,
-                completed: self.counter_quests.get(helper).is_some_and(|progress| progress.completed),
+            return self.save_event_snapshot_valid.then(|| {
+                oteryn_gameplay_quests::quest::log::QuestLogState {
+                    pinned_content_revision: &state.pinned_content_revision,
+                    completed: self
+                        .counter_quests
+                        .get(helper)
+                        .is_some_and(|progress| progress.completed),
+                }
             });
         }
         let scoped = self.save_restart_defaults.contains_key(quest);

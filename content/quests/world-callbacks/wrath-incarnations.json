@@ -30,7 +30,7 @@
           "minimum": 30,
           "maximum": 32,
           "set": 30,
-          "preserve": true
+          "at_least": true
         }
       ],
       "offerings": [],
@@ -106,7 +106,7 @@
           "minimum": 30,
           "maximum": 32,
           "set": 30,
-          "preserve": true
+          "at_least": true
         }
       ],
       "offerings": [],
@@ -182,7 +182,7 @@
           "minimum": 30,
           "maximum": 32,
           "set": 30,
-          "preserve": true
+          "at_least": true
         }
       ],
       "offerings": [],
@@ -258,7 +258,7 @@
           "minimum": 30,
           "maximum": 32,
           "set": 30,
-          "preserve": true
+          "at_least": true
         }
       ],
       "offerings": [],

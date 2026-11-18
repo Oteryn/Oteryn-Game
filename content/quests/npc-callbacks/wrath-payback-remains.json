@@ -39,6 +39,12 @@
           "maximum": 1,
           "set": 2
         }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i11362",
+          "count": 1
+        }
       ]
     }
   ]

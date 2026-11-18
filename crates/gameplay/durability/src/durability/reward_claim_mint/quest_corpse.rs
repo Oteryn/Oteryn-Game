@@ -33,7 +33,9 @@ pub(super) async fn record(
     // come from any of the four native incarnations.
     let incarnation = spec.appearance == 11361
         && callback.quest == oteryn_gameplay_quests::quest::wrath_sleeping_dragon::QUEST
-        && callback.key.starts_with("oteryn:quest-reward/wrath/banish-");
+        && callback
+            .key
+            .starts_with("oteryn:quest-reward/wrath/banish-");
     let one_species = [species.as_str()];
     let allowed_species: &[&str] = if incarnation {
         &[
@@ -74,14 +76,31 @@ pub(super) async fn record(
     {
         return Ok(false);
     }
+    let before_source = if callback.retains_wrath_replica() {
+        let source = sqlx::query_scalar::<_, serde_json::Value>(
+            "SELECT to_jsonb(i) FROM game_item_instances i
+             WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid
+             AND i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i11362'",
+        )
+        .bind(carried.source.as_slice())
+        .bind(world_id.as_bytes().as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
+        let Some(source) = source else {
+            return Ok(false);
+        };
+        Some(source)
+    } else {
+        None
+    };
     let before: serde_json::Value = row.try_get("item")?;
     let ground: serde_json::Value = row.try_get("ground")?;
-    Ok(sqlx::query("INSERT INTO game_quest_corpse_samples(character_id,cause_id,cause_ordinal,transition_key,world_id,channel_id,scope_generation,corpse_item,source_item,appearance,maximum_age_ms,actor_position,before_item,before_ground,ingress) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13,$14,$15) ON CONFLICT DO NOTHING")
+    Ok(sqlx::query("INSERT INTO game_quest_corpse_samples(character_id,cause_id,cause_ordinal,transition_key,world_id,channel_id,scope_generation,corpse_item,source_item,appearance,maximum_age_ms,actor_position,before_item,before_ground,ingress,before_source) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13,$14,$15,$16) ON CONFLICT DO NOTHING")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
         .bind(command.command_id().get().to_string()).bind(&callback.key).bind(world_id.as_bytes().as_slice())
         .bind(channel_id.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
         .bind(corpse.as_slice()).bind(carried.source.as_slice()).bind(i64::from(spec.appearance))
         .bind(i32::try_from(spec.maximum_age_ms).map_err(|_|DurabilityError::InvalidStoredState)?)
-        .bind(serde_json::json!(position)).bind(before).bind(ground).bind(&carried.intent)
+        .bind(serde_json::json!(position)).bind(before).bind(ground).bind(&carried.intent).bind(before_source)
         .execute(&mut **tx).await?.rows_affected()==1)
 }

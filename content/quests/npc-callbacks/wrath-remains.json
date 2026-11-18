@@ -72,6 +72,12 @@
       ],
       "failure_reply": [
         "You must wait before using this again."
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i11362",
+          "count": 1
+        }
       ]
     },
     {
@@ -132,6 +138,12 @@
       ],
       "failure_reply": [
         "You must wait before using this again."
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i11362",
+          "count": 1
+        }
       ]
     },
     {
@@ -192,6 +204,12 @@
       ],
       "failure_reply": [
         "You must wait before using this again."
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i11362",
+          "count": 1
+        }
       ]
     },
     {
@@ -252,6 +270,12 @@
       ],
       "failure_reply": [
         "You must wait before using this again."
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i11362",
+          "count": 1
+        }
       ]
     },
     {

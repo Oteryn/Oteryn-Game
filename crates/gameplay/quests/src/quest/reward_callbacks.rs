@@ -391,6 +391,12 @@ impl RewardCallback {
             }
             (None, Some(_)) => false,
             (Some(source), None) => {
+                if self.retains_wrath_replica() {
+                    return matches!(self.present.as_slice(), [input]
+                        if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
+                        && self.take.is_empty()
+                        && self.give.is_none();
+                }
                 matches!(self.take.as_slice(), [input]
                 if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
                     && (self.give.is_none() || self.creature_target.is_some())
@@ -398,6 +404,17 @@ impl RewardCallback {
             (None, None) => true,
         }
     }
+    /// The donor's sceptre is evidence of custody, never a corpse-sampling debit.
+    pub fn retains_wrath_replica(&self) -> bool {
+        self.quest == super::wrath_sleeping_dragon::QUEST
+            && self.carried_item.as_deref() == Some("oteryn:item.tibia.i11362")
+            && self.key.starts_with("oteryn:quest-reward/wrath/banish-")
+            && self
+                .corpse_target
+                .as_ref()
+                .is_some_and(|target| matches!(target.appearance, 11361 | 11429))
+    }
+
     pub fn cosmetic_targets(&self) -> impl Iterator<Item = &OutfitReward> {
         self.outfit.iter().chain(&self.outfits)
     }
