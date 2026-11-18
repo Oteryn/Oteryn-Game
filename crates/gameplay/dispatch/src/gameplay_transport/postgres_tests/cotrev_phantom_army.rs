@@ -239,8 +239,10 @@ fn scenario(admin: String) -> TestResult {
             .execute(&mut *seed)
             .await?;
         for character in [id(41), *guest_character.as_bytes()] {
-            sqlx::query("UPDATE game_character_roots SET character_revision=greatest(character_revision,2) WHERE character_id=encode($1,'hex')::uuid")
-                .bind(character.as_slice()).execute(&mut *seed).await?;
+            for relation in ["game_character_roots", "game_character_progression_state"] {
+                sqlx::query(&format!("UPDATE {relation} SET character_revision=greatest(character_revision,2) WHERE character_id=encode($1,'hex')::uuid"))
+                    .bind(character.as_slice()).execute(&mut *seed).await?;
+            }
             sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,'oteryn:quest.children_of_the_revolution_quest',19,2)")
                 .bind(character.as_slice()).bind(QUESTLINE).execute(&mut *seed).await?;
         }
