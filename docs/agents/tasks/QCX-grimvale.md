@@ -52,3 +52,7 @@ The production correction is confined to Grimvale's existing calendar and Feroxa
 ## Validation
 
 With the pre-fix production rules, both PostgreSQL cases refused the active-side movement and failed at the expected destination assertion. The 12th case ran in 23.61s and the 14th case in 43.20s. The fixtures used the same dates and committed reset epochs as the post-fix cases. The quest-authoring suite exited successfully after 44 checks.
+
+PG via shard (pgsplit build files applied on 6c6f034edef314bd346e22840255f8864e65e200) passed 2 dispatch cases. The opening boundary (11th closed, 12th open) took 20.76s. The closing boundary (14th open, 15th closed) took 34.96s. The same filter without the admin URL returned `Ok(())` twice in 0.00s. The timings from the live database runs are the PostgreSQL evidence.
+
+Formatting, dispatch Clippy with `-D warnings`, and world-bundle `pin-check` passed. The pin checker required its output-directory argument, so it wrote its check output to a temporary directory. The live dispatch cases prove the calendar boundary. The Feroxa selection assertion is in the existing QN5 authority test, outside the requested focused dispatch filter.
