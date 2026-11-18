@@ -204,6 +204,12 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                 'source_binding': {'project_position': copy.deepcopy(placement['position']),
                     'legacy_unique_ids': [{'server': server, 'unique_id': uid} for server, uid in uids]},
                 'reward': reward}
+            if (source['identity']['key'] == 'canary:reward-claim/quest/key/id3667'
+                    and placement['position'] == {'x': 32576, 'y': 32216, 'z': 15}
+                    and p['appearance_tibia_id'] == 3204
+                    and ('crystalserver', 5016) in uids):
+                # Crystal chest.lua:492-497 selects the corpse on the donor tile.
+                p['appearance_tibia_id'] = 4240
             grants = [g for g in row['achievement_grants'] if g['placement_index'] == pi]
             if grants:
                 if len(grants) != 1:

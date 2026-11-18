@@ -1273,6 +1273,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         - authored_clock_items
         - engclaim_delta(summary)
         - shared_source_delta(summary)
+        - count(summary.get("source", {}).get("quest_chests", {}), "items_added")
         - count(fill, "items_added")
         - count(replace, "items_added")
         - count(rework, "items_added")

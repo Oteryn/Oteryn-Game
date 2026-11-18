@@ -8,6 +8,7 @@ Run --apply [--check]; convert_world_base also applies the same overlay.
 import argparse
 import hashlib
 import json
+from collections import Counter
 from pathlib import Path
 
 import world_region_codec as codec
@@ -18,6 +19,12 @@ INDEX = "content/world/placements/index.json"
 SUMMARY = "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
 TABLE_SHA256 = "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
+CREATE_ITEM_SHA256 = "587ef236d016bed8505c9ccde65a2acf9ea3de8c37c477dd8bd550d07f0f818f"
+STARTUP_CREATED = frozenset({6331, 6333, 6334, 6337, 6338, 6339})
+KEY_CLAIMS = {
+    "oteryn:reward-claim.quest.key.id3667": 3667,
+    "oteryn:reward-claim.quest.key.id4055": 4055,
+}
 CURRENT_REVISION = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
 TABLE_PINS = {
     REVISION: TABLE_SHA256,
@@ -133,7 +140,7 @@ def supported_claim(definition):
     native = definition.get("native_contents", {})
     return (
         definition["readiness"] == "ready"
-        or panpipe_key_claim(definition)
+        or verified_key_claim(definition)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -152,11 +159,12 @@ def supported_claim(definition):
     )
 
 
-def panpipe_key_claim(definition):
+def verified_key_claim(definition):
     """Select the existing key-only lowering, with its exact source key number."""
     variant = definition.get("source_variant", {})
+    number = KEY_CLAIMS.get(definition["identity"]["key"])
     return (
-        definition["identity"]["key"] == "oteryn:reward-claim.quest.key.id4055"
+        number is not None
         and definition.get("definition_profile") == "authored_variant_v1"
         and definition.get("readiness") == "waiting_implementation"
         and definition.get("native_admission") == "WAITING_IMPLEMENTATION"
@@ -182,8 +190,17 @@ def panpipe_key_claim(definition):
                     "count": 1,
                 }
             ],
-            "key_binding": "canary:door-key/4055",
+            "key_binding": f"canary:door-key/{number}",
         }
+    )
+
+
+def wrath_canary_only_position(key, binding):
+    """The donor-specific duplicate remains in the claim as historical evidence."""
+    return (
+        key == "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items"
+        and binding["project_position"] == {"x": 33074, "y": 31170, "z": 8}
+        and binding["legacy_unique_ids"] == [{"server": "canary", "unique_id": 14092}]
     )
 
 
@@ -232,16 +249,19 @@ def capture(source_root, selected, root=ROOT):
         if not supported_claim(definition):
             raise ValueError("QUEST_CHEST_REWARD_NOT_READY")
         for placement in definition["placements"]:
+            binding = placement["source_binding"]
+            if wrath_canary_only_position(key, binding):
+                continue
             ids = [
                 u["unique_id"]
-                for u in placement["source_binding"]["legacy_unique_ids"]
+                for u in binding["legacy_unique_ids"]
                 if u["server"] == "crystalserver"
             ]
             if len(ids) != 1:
                 raise ValueError("QUEST_CHEST_SOURCE_UID")
             unique = ids[0]
             line, setting = entries[unique]
-            position = placement["source_binding"]["project_position"]
+            position = binding["project_position"]
             reward = [
                 [int(item["item"]["key"].rsplit(".i", 1)[1]), item["count"]]
                 for item in placement["reward"]["items"]
@@ -262,9 +282,10 @@ def capture(source_root, selected, root=ROOT):
                 or setting.get("container") != container_id
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_SELECTOR_OR_REWARD_DRIFT")
-            if panpipe_key_claim(definition) and (
+            if key in KEY_CLAIMS and (
                 setting.get("isKey") is not True
-                or setting.get("storage") != {"expr": "Storage.Quest.Key.ID4055"}
+                or setting.get("storage")
+                != {"expr": f"Storage.Quest.Key.ID{KEY_CLAIMS[key]}"}
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
             rows.append(
@@ -293,6 +314,26 @@ def capture(source_root, selected, root=ROOT):
     if startup_sha256 is not None:
         document["startup_sha256"] = startup_sha256
         document["startup"] = "data-global/startup/others/functions.lua:97-120"
+    created = [row for row in rows if row["unique"] in STARTUP_CREATED]
+    if created:
+        path = "data-global/startup/tables/create_item.lua"
+        raw = (source_root / path).read_bytes()
+        if (
+            revision != REVISION
+            or hashlib.sha256(raw).hexdigest() != CREATE_ITEM_SHA256
+        ):
+            raise ValueError("QUEST_CHEST_CREATE_ITEM_SOURCE_PIN")
+        fields = lua_tables.assignments(raw.decode(), {"CreateItemOnMap"})[
+            "CreateItemOnMap"
+        ]["fields"]
+        settings = {f["key"]: lua_tables.as_python(f["value"]) for f in fields}
+        for row in created:
+            setting = settings[row["appearance"]]
+            position = dict(zip("xyz", row["position"]))
+            if position not in setting["itemPos"] or "removeItemId" in setting:
+                raise ValueError("QUEST_CHEST_CREATE_ITEM_SOURCE_DRIFT")
+            row["create_on_map"] = True
+        document["create_item_source"] = {"path": path, "sha256": CREATE_ITEM_SHA256}
     if set(selected) & ITEM_ACCESS.keys():
         item_raw = (source_root / "data-global/startup/tables/item.lua").read_bytes()
         if hashlib.sha256(item_raw).hexdigest() != ITEM_SHA256:
@@ -342,6 +383,16 @@ def selections(root=ROOT):
             }
         )
         for row in document["bindings"]:
+            if row.get("create_on_map") and (
+                document["revision"] != REVISION
+                or document.get("create_item_source")
+                != {
+                    "path": "data-global/startup/tables/create_item.lua",
+                    "sha256": CREATE_ITEM_SHA256,
+                }
+                or row["unique"] not in STARTUP_CREATED
+            ):
+                raise ValueError("QUEST_CHEST_CREATE_ITEM_SOURCE_DRIFT")
             position = tuple(row["position"])
             definition = claims[row["claim"]]
             if not supported_claim(definition):
@@ -434,8 +485,8 @@ def selections(root=ROOT):
     return {"unique": bindings, "action": doors}, sources
 
 
-def overlay_region(raw, palette, bindings, attribute="unique"):
-    """Only a single top-level source appearance may receive its captured attribute."""
+def overlay_region(raw, palette, bindings, attribute="unique", *, created=None):
+    """Stamp recorded selectors on source appearances, restoring startup-created chests."""
     z, rx, ry, table = codec.parse_region(raw)
     selected = {
         p: r
@@ -462,6 +513,23 @@ def overlay_region(raw, palette, bindings, attribute="unique"):
                 for slot, (index, depth, _) in enumerate(items)
                 if depth == 0 and palette[index]["source_item_id"] == row["appearance"]
             ]
+            if (
+                not slots
+                and row.get("create_on_map")
+                and not house
+                and items
+                and created is not None
+            ):
+                (entry,) = [
+                    index
+                    for index, item in enumerate(palette)
+                    if item["source_item_id"] == row["appearance"]
+                    and not item["provisional"]
+                    and item["key"] == f"oteryn:item.tibia.i{row['appearance']}"
+                ]
+                slots.append(len(items))
+                items.append((entry, 0, None))
+                created[entry] += 1
             if house or len(slots) != 1:
                 raise ValueError(f"QUEST_CHEST_AMBIGUOUS_OR_MISSING: {position}")
             slot = slots[0]
@@ -511,22 +579,42 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
     paths &= regions.keys()
     if not paths:
         return 0
+    created = Counter()
     for path in sorted(paths):
         previous = outputs[path]
         raw = previous
+        region_created = Counter()
         for attribute, rows in selections_by_attribute.items():
-            raw, count, delta = overlay_region(raw, index["palette"], rows, attribute)
+            raw, count, delta = overlay_region(
+                raw, index["palette"], rows, attribute, created=region_created
+            )
             imported += count
             added[attribute] += delta
+        if region_created:
+            regions[path]["items"] += region_created.total()
+            created.update(region_created)
         byte_delta += len(raw) - len(previous)
         outputs[path] = raw
         regions[path]["sha256"] = hashlib.sha256(raw).hexdigest()
     if require_all and imported != len(bindings):
         raise ValueError("QUEST_CHEST_INCOMPLETE_OVERLAY")
     index["source"]["quest_chests"] = {"captures": sources, "imported": imported}
+    creation_count = sum(
+        1
+        for (x, y, z), row in bindings.items()
+        if row.get("create_on_map")
+        and f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
+        in paths
+    )
+    if creation_count:
+        index["source"]["quest_chests"]["items_added"] = creation_count
+        index["totals"]["items"] += created.total()
     outputs[INDEX] = canonical(index)
     summary = json.loads(outputs[SUMMARY])
     summary["source"] = index["source"]
+    if created:
+        summary["totals"]["items"] += created.total()
+        summary["palette"]["families"]["item"]["occurrences"] += created.total()
     for attribute, count in added.items():
         if count:
             summary["item_attributes"][attribute] = (

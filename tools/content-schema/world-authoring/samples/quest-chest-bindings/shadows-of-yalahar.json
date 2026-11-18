@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.kv.deep_crystal",
+      "position": [
+        32693,
+        31565,
+        13
+      ],
+      "appearance": 4285,
+      "unique": 6334,
+      "source_line": 3097,
+      "create_on_map": true
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.golem_blueprint",
+      "position": [
+        32903,
+        31281,
+        11
+      ],
+      "appearance": 2469,
+      "unique": 6331,
+      "source_line": 3070,
+      "create_on_map": true
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.golem_head",
+      "position": [
+        32548,
+        31244,
+        13
+      ],
+      "appearance": 2469,
+      "unique": 6338,
+      "source_line": 3142,
+      "create_on_map": true
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.golem_wrench",
+      "position": [
+        33239,
+        31798,
+        11
+      ],
+      "appearance": 2472,
+      "unique": 6339,
+      "source_line": 3150,
+      "create_on_map": true
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.stabilizer",
+      "position": [
+        32944,
+        31195,
+        13
+      ],
+      "appearance": 2473,
+      "unique": 6333,
+      "source_line": 3088,
+      "create_on_map": true
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.worm_queen_tooth",
+      "position": [
+        32249,
+        32473,
+        10
+      ],
+      "appearance": 2472,
+      "unique": 6337,
+      "source_line": 3133,
+      "create_on_map": true
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": [],
+  "create_item_source": {
+    "path": "data-global/startup/tables/create_item.lua",
+    "sha256": "587ef236d016bed8505c9ccde65a2acf9ea3de8c37c477dd8bd550d07f0f818f"
+  }
+}

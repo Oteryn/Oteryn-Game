@@ -8,15 +8,17 @@ import struct
 import sys
 import tempfile
 import unittest
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 from unittest import mock
 
 import convert_world_base as convert
 import otbm_reader
+import quest_chest_bindings as chests
 import test_world_authoring as fixtures
 import validate_world_base as validate
 import world_region_codec as codec
+from edron_rework import appearance_ids
 
 ALL_ATTRS = {
     "count": 255,
@@ -1676,6 +1678,156 @@ class ConvertAndValidateTest(unittest.TestCase):
         path.write_text(path.read_text() + " ")
         with self.assertRaises(validate.ValidationError):
             validate.validate(self.root)
+
+
+REWARD_PLACEMENT_EXCLUSIONS = {
+    "oteryn:reward-claim.kv.legiondawnport",
+    "oteryn:reward-claim.kv.rookgaard05_brown_mushrooms",
+    "oteryn:reward-claim.quest.key.id0010",
+    "oteryn:reward-claim.quest.u10_55.dawnport.torn_log_book",
+}
+
+
+class RewardChestPlacements(unittest.TestCase):
+    def test_startup_reward_chests_are_present_with_the_exact_claim(self):
+        source = {
+            "kv.deep_crystal": (6334, 4285, (32693, 31565, 13), 9240),
+            "kv.golem_blueprint": (6331, 2469, (32903, 31281, 11), 9247),
+            "kv.golem_head": (6338, 2469, (32548, 31244, 13), 9255),
+            "kv.golem_wrench": (6339, 2472, (33239, 31798, 11), 16251),
+            "kv.stabilizer": (6333, 2473, (32944, 31195, 13), 9248),
+            "kv.worm_queen_tooth": (6337, 2472, (32249, 32473, 10), 9239),
+            "quest.key.id3667": (5016, 4240, (32576, 32216, 15), 2969),
+            "quest.u8_6.wrath_of_the_emperor.chest_items": [
+                (6308, 2473, (33076, 31170, 8), 11687),
+                (6299, 2473, (33078, 31170, 8), 11686),
+                (7825, 2473, (33079, 31173, 8), 50263),
+                (6300, 2473, (33080, 31170, 8), 11689),
+            ],
+        }
+        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
+        palette = index["palette"]
+        blocking, _ = appearance_ids(chests.ROOT)
+        claims = chests.claim_definitions(chests.ROOT)
+        cases = defaultdict(list)
+        for name, rows in source.items():
+            rows = rows if isinstance(rows, list) else [rows]
+            key = f"oteryn:reward-claim.{name}"
+            placements = [
+                placement
+                for placement in claims[key]["placements"]
+                if not chests.wrath_canary_only_position(
+                    key, placement["source_binding"]
+                )
+            ]
+            with self.subTest(claim=name):
+                self.assertEqual(len(placements), len(rows))
+            for uid, appearance, position, reward in rows:
+                x, y, z = position
+                cases[codec.region_name(z, x // 256, y // 256)].append(
+                    (name, uid, appearance, position, reward)
+                )
+        for region, rows in cases.items():
+            _, _, _, sectors = codec.decode_region(
+                (chests.ROOT / "content/world/placements" / region).read_bytes()
+            )
+            tiles = {(tile[0], tile[1]): tile for _, tiles in sectors for tile in tiles}
+            for name, uid, appearance, (x, y, z), reward in rows:
+                with self.subTest(claim=name):
+                    (placement,) = [
+                        p
+                        for p in claims[f"oteryn:reward-claim.{name}"]["placements"]
+                        if p["source_binding"]["project_position"]
+                        == {"x": x, "y": y, "z": z}
+                    ]
+                    binding = placement["source_binding"]
+                    self.assertIn(
+                        {"server": "crystalserver", "unique_id": uid},
+                        binding["legacy_unique_ids"],
+                    )
+                    self.assertEqual(placement["appearance_tibia_id"], appearance)
+                    (item,) = placement["reward"]["items"]
+                    self.assertEqual(
+                        item["item"]["key"], f"oteryn:item.tibia.i{reward}"
+                    )
+                    self.assertEqual(item["count"], 1)
+                    tile = tiles[x, y]
+                    self.assertFalse(tile[3])
+                    matches = [
+                        palette[entry]["source_item_id"]
+                        for entry, depth, attrs in tile[5]
+                        if depth == 0 and (attrs or {}).get("unique") == uid
+                    ]
+                    self.assertEqual(matches, [appearance])
+                    approachable = False
+                    for dx, dy in ((-1, 0), (0, -1), (1, 0), (0, 1)):
+                        neighbor = tiles.get((x + dx, y + dy))
+                        if neighbor is None or neighbor[3]:
+                            continue
+                        stack = [
+                            (palette[entry]["source_item_id"], attrs or {})
+                            for entry, depth, attrs in neighbor[5]
+                            if depth == 0
+                        ]
+                        if name == "kv.deep_crystal":
+                            # Crystal door_quest.lua:1011-1019: the existing
+                            # Hellgate quest door is the entrance to this cell.
+                            stack = [
+                                (entry, attrs)
+                                for entry, attrs in stack
+                                if (entry, attrs.get("action")) != (5104, 42521)
+                            ]
+                        approachable |= bool(stack) and not any(
+                            entry in blocking for entry, _ in stack
+                        )
+                    self.assertTrue(approachable, "no walkable adjacent use position")
+
+        placements = defaultdict(list)
+        shard_dir = chests.ROOT / "content/interactions/reward_claims"
+        for shard in json.loads((shard_dir / "index.json").read_bytes())["shards"]:
+            for record in json.loads((chests.ROOT / shard).read_bytes())["records"]:
+                claim = record["definition"]
+                key = claim["identity"]["key"]
+                if key in REWARD_PLACEMENT_EXCLUSIONS:
+                    continue
+                for placement in claim["placements"]:
+                    binding = placement["source_binding"]
+                    if chests.wrath_canary_only_position(key, binding):
+                        continue
+                    position = binding["project_position"]
+                    x, y, z = (position[axis] for axis in "xyz")
+                    sector = ((y % 256) // 32) * 8 + (x % 256) // 32
+                    region = codec.region_name(z, x // 256, y // 256)
+                    placements[region, sector].append(
+                        (key, x, y, placement["appearance_tibia_id"])
+                    )
+        decompressor = codec.zstandard.ZstdDecompressor()
+        for region in sorted({region for region, _ in placements}):
+            raw = (chests.ROOT / "content/world/placements" / region).read_bytes()
+            _, rx, ry, sectors = codec.parse_region(raw)
+            for sector, offset, length in sectors:
+                for_sector = placements.pop((region, sector), None)
+                if not for_sector:
+                    continue
+                payload = decompressor.decompress(
+                    raw[offset : offset + length],
+                    max_output_size=codec.MAX_SECTOR_BYTES,
+                )
+                tiles = {
+                    (x, y): {
+                        palette[entry]["source_item_id"]
+                        for entry, depth, _ in items
+                        if not depth
+                    }
+                    for x, y, _, _, _, items in codec.decode_sector(
+                        payload, rx * 8 + sector % 8, ry * 8 + sector // 8
+                    )
+                }
+                for key, x, y, appearance in for_sector:
+                    self.assertIn(
+                        appearance, tiles.get((x, y), ()), (key, region, x, y)
+                    )
+        self.assertFalse(placements, "claims have no sector")
 
 
 if __name__ == "__main__":
