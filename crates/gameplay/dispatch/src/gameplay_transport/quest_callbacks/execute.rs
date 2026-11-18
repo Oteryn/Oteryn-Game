@@ -1460,18 +1460,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 *due = deadline;
             }
-            // A per-character gift does not consume or revise its shared source object.
-            // Real scene changes and shared-world progress still publish their original CAS,
-            // including the revision consumed by the post-publication removal below.
-            let personal_gift_preserves_object = callback.item_reward().is_some()
+            let personal_gift = callback.item_reward().is_some()
                 && callback.effects.item_reward_cycle.is_none()
                 && !callback.effects.item_reward_per_use
+                && callback.teleport.is_none()
+                && callback.remote_teleport.is_none();
+            // Crystal actions_mission09.lua:26-49 changes the reader's state
+            // and position without changing the shared object. Actual scene
+            // changes and shared progress still use the map revision CAS.
+            let personal_use_preserves_object = (personal_gift
+                || callback.effects.random_use.is_some())
                 && callback.world_change.is_none()
                 && oteryn_gameplay_quests::quest::shared_world_progress::binding(&callback.key)
                     .is_none()
                 && callback.lever.is_none()
-                && callback.teleport.is_none()
-                && callback.remote_teleport.is_none()
                 && !callback.reversible
                 && !close
                 && before == after
@@ -1525,8 +1527,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
-            {
+            } else if !callback.is_read_only() && !personal_use_preserves_object && !apply_scene() {
                 return UseDisposition::Rejected;
             }
         }
