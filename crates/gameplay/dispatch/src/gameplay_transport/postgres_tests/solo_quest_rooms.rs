@@ -4,7 +4,8 @@ use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{
-    CharacterId, CharacterLease, GameSessionId, MovementFacing, MovementLocalPosition,
+    CharacterId, CharacterLease, ExactActorRef, GameSessionId, MovementFacing,
+    MovementLocalPosition,
 };
 use crate::gameplay_transport::connection::{AdmittedSession, FirstEntryOutcome};
 use oteryn_gameplay_quests::quest::{
@@ -194,6 +195,13 @@ async fn exercise(admin: String, room: Room) -> TestResult {
     if !room.wanted {
         h.root.set_test_quest_clock(1_800_000_000).map_err(debug)?;
     }
+    let landing_occupant = if room.wanted {
+        None
+    } else {
+        // Crystal movements_teleportTo.lua:65-90 resets matching scorpions
+        // within five tiles, then teleports the challenger to the landing.
+        Some(place_fire_devil(&owner, room.landing).await?)
+    };
     let result = wire(
         &owner,
         &mut admitted,
@@ -208,13 +216,18 @@ async fn exercise(admin: String, room: Room) -> TestResult {
     );
     let boss = {
         let runtime = owner.runtime.lock().await;
-        assert_eq!(
-            runtime
-                .read_actor_position(deps.actor)
-                .map_err(debug)?
-                .position(),
-            local(room.landing)
-        );
+        let arrival = runtime.read_actor_position(deps.actor).map_err(debug)?;
+        assert_eq!(arrival.position(), local(room.landing));
+        assert_eq!(arrival.facing(), Some(MovementFacing::West));
+        if let Some(occupant) = landing_occupant {
+            assert_eq!(
+                runtime
+                    .read_actor_position(occupant)
+                    .map_err(debug)?
+                    .position(),
+                local(room.landing)
+            );
+        }
         runtime
             .current_live_creature_census()
             .map_err(debug)?
@@ -305,20 +318,8 @@ async fn exercise(admin: String, room: Room) -> TestResult {
             room.landing,
         )
     };
-    let exit_occupant = {
-        // The donor timeout uses Creature:teleportTo even if a creature is
-        // standing at the destination. The occupant keeps its exact tile.
-        let mut runtime = owner.runtime.lock().await;
-        let creature = "oteryn:creature.fire_devil";
-        let health = runtime
-            .companion_policy(creature)
-            .map_err(debug)?
-            .maximum_health;
-        let occupants = runtime
-            .commit_quest_creature_spawn(&[(creature, health, local(room.exit))])
-            .map_err(debug)?;
-        occupants.first().copied().ok_or("exit occupant")?
-    };
+    // The donor timeout accepts the exit even when a creature is standing there.
+    let exit_occupant = place_fire_devil(&owner, room.exit).await?;
     let due = entered_at + u64::from(room.timeout_ms) * 1_000;
     set_time(due - 1);
     owner.drain_quest_encounter_deadlines().await;
@@ -508,6 +509,15 @@ async fn exercise(admin: String, room: Room) -> TestResult {
                 .position(),
             local(room.exit)
         );
+        if let Some(occupant) = landing_occupant {
+            assert_eq!(
+                runtime
+                    .read_actor_position(occupant)
+                    .map_err(debug)?
+                    .position(),
+                local(room.landing)
+            );
+        }
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
@@ -520,6 +530,22 @@ async fn exercise(admin: String, room: Room) -> TestResult {
     drop(authority);
     drop(seal);
     h.cleanup().await
+}
+
+async fn place_fire_devil(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    position: Position,
+) -> TestResult<ExactActorRef> {
+    let mut runtime = owner.runtime.lock().await;
+    let creature = "oteryn:creature.fire_devil";
+    let health = runtime
+        .companion_policy(creature)
+        .map_err(debug)?
+        .maximum_health;
+    let occupants = runtime
+        .commit_quest_creature_spawn(&[(creature, health, local(position))])
+        .map_err(debug)?;
+    Ok(occupants.first().copied().ok_or("occupied room tile")?)
 }
 
 async fn step(
