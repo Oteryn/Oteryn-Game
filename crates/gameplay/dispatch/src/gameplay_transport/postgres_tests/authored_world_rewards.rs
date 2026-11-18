@@ -116,6 +116,28 @@ pub(super) async fn exercise_warzone_portal_cooldown(
            AND boss_key=$2",
     ).bind(fence.character_id.as_bytes().as_slice()).bind(boss).fetch_one(&h.pool).await?;
     assert_eq!(preserved, until);
+
+    // This fixture has no active room definition for the portal. Clearing the
+    // cooldown still must not leave the player standing on a failed entrance.
+    sqlx::query(
+        "DELETE FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid
+         AND boss_key=$2",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(boss)
+    .execute(&h.pool)
+    .await?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(3))
+        .ok_or("portal retry clock")?;
+    let (outcome, _) = owner
+        .ordinary_paced_step(actor, session, StepDirection::East, Some(returned), None)
+        .await;
+    assert_eq!(outcome.disposition, StepDisposition::Moved);
+    let refused = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+    assert_eq!(refused.position(), origin.position());
+    assert!(refused.revision() > returned.revision());
     Ok(())
 }
 

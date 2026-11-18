@@ -76,11 +76,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 moved_to: None,
             };
         }
+        let message = if result == Some(Err(ActivityRefusal::Cooldown)) {
+            "You have to wait to face this boss again!"
+        } else {
+            "Sorry, not possible."
+        };
         let mut arrived = entered;
-        if result == Some(Err(ActivityRefusal::Cooldown)) {
-            self.states
-                .chat
-                .push_quest_feedback(session, "You have to wait to face this boss again!");
+        self.states.chat.push_quest_feedback(session, message);
             if let (Some(origin), Some(map), Some(_permit)) =
                 (origin, self.bundle_map(), self.spell_lane_permit().await)
                 && let Some((mut runtime, states)) = self.lock_quest_teleport_owners().await
@@ -103,7 +105,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     arrived = returned;
                 }
             }
-        }
         let runtime = self.runtime.lock().await;
         StepOutcome {
             disposition: StepDisposition::Moved,
@@ -126,6 +127,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
+        // The paced step has released the spell lane. The first entrant can
+        // now publish its room before a second entrant selects an allocation.
+        let _admission = self.states.warzone_admission.lock().await;
         let origin_pin = {
             let runtime = self.runtime.lock().await;
             if runtime.read_actor_position(actor) != Ok(entered) {
