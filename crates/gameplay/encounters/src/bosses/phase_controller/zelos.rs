@@ -20,6 +20,7 @@ const SOLDIER: &str = "oteryn:creature.risen_soldier";
 const REFILL_US: u64 = 10_000_000;
 const FETTER: &str = "oteryn:creature.fetter";
 const REWAR_IMMUNE: &str = "oteryn:creature.rewar_the_bloody_inv";
+const REWAR_ENTRY_POLL_US: u64 = 1_000_000;
 const FETTER_WAVE_US: u64 = 20_000_000;
 const FETTER_LIMIT: usize = 6;
 const HALF_AFTER_US: u64 = 6 * 60 * 1_000_000;
@@ -84,7 +85,8 @@ pub struct ZelosEncounter {
     nargol_at: MovementLocalPosition,
     rewar_at: MovementLocalPosition,
     fetters: Vec<ExactActorRef>,
-    fetter_due_us: Option<u64>,
+    fetter_due_us: u64,
+    rewar_room_entered: bool,
     rewar_immune: bool,
     king_gate_released: bool,
     king_at: MovementLocalPosition,
@@ -146,7 +148,8 @@ impl ZelosEncounter {
             nargol_at: position(NARGOL)?,
             rewar_at: position(REWAR)?,
             fetters: Vec::with_capacity(FETTER_LIMIT),
-            fetter_due_us: None,
+            fetter_due_us: now.saturating_add(REWAR_ENTRY_POLL_US),
+            rewar_room_entered: false,
             rewar_immune: false,
             king_gate_released: false,
             king_at: position(KING)?,
@@ -297,10 +300,8 @@ impl ZelosEncounter {
         {
             due = due.min(mass);
         }
-        if self.phase.progress.dead() & (1 << REWAR) == 0
-            && let Some(fetters) = self.fetter_due_us
-        {
-            due = due.min(fetters);
+        if self.phase.progress.dead() & (1 << REWAR) == 0 {
+            due = due.min(self.fetter_due_us);
         }
         if !self.magnor_bursts.is_empty() || self.phase.pending().next().is_some() {
             due = due.min(self.start_us);
@@ -499,6 +500,7 @@ impl ZelosEncounter {
         let Some(rewar) =
             self.phase.actors[REWAR].filter(|actor| runtime.contains_live_creature(*actor))
         else {
+            self.fetter_due_us = u64::MAX;
             return Ok(());
         };
         self.fetters
@@ -508,9 +510,11 @@ impl ZelosEncounter {
             self.rewar_immune = false;
         }
 
-        let due = match self.fetter_due_us {
-            Some(due) => now >= due,
-            None => self.phase.participants.iter().any(|&(actor, session)| {
+        if now < self.fetter_due_us {
+            return Ok(());
+        }
+        if !self.rewar_room_entered
+            && !self.phase.participants.iter().any(|&(actor, session)| {
                 runtime.player_control_facts(actor, session).is_ok()
                     && runtime.read_actor_position(actor).is_ok_and(|pos| {
                         let pos = pos.position();
@@ -518,9 +522,9 @@ impl ZelosEncounter {
                             && pos.x.abs_diff(self.rewar_at.x) <= 8
                             && pos.y.abs_diff(self.rewar_at.y) <= 8
                     })
-            }),
-        };
-        if !due {
+            })
+        {
+            self.fetter_due_us = now.saturating_add(REWAR_ENTRY_POLL_US);
             return Ok(());
         }
         let count = (FETTER_LIMIT - self.fetters.len()).min(2);
@@ -548,7 +552,8 @@ impl ZelosEncounter {
             }
             self.fetters.extend(spawned);
         }
-        self.fetter_due_us = Some(now.saturating_add(FETTER_WAVE_US));
+        self.rewar_room_entered = true;
+        self.fetter_due_us = now.saturating_add(FETTER_WAVE_US);
         Ok(())
     }
 
