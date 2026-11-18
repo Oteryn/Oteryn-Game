@@ -655,6 +655,10 @@ impl Callback {
         };
         let exit = self.failure_teleport?;
         (self.trigger == Trigger::StepIn
+            && self.actor_kind == ActorKind::Player
+            && self.requires_world_admission
+            && self.has_personal_state()
+            && self.lever.is_none()
             && self.return_on_failure
             && self.selector.position == Some(member.from)
             && self.selector.position_aliases.is_empty()

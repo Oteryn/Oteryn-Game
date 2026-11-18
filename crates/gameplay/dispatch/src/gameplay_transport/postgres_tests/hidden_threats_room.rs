@@ -26,11 +26,11 @@ const KEY: &str = "oteryn:quest-world/m01c-stampede-entry";
 
 #[test]
 fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("hidden-threats-room", || {
-        run(async |admin| {
+    super::kill_reward_e2e::scenario_thread::run("hidden-threats-room", move || {
+        run(async move |_| {
             reset();
             let h = Harness::create_with_admission_seed(admin, "hidden_threats_room", true, false)
                 .await?;
@@ -211,17 +211,25 @@ fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResu
             )
             .await?;
 
-            let _ = owner
+            let (step, _) = owner
                 .paced_step(deps.actor, admitted.game_session_id, StepDirection::East)
                 .await;
+            assert_eq!(
+                step.disposition,
+                oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
+            );
             assert_eq!(
                 position(&owner, deps.actor).await?,
                 local(INSIDE),
                 "STEP commits the solo transfer"
             );
-            let _ = owner
+            let (step, _) = owner
                 .paced_step(other, second.game_session_id, StepDirection::South)
                 .await;
+            assert_eq!(
+                step.disposition,
+                oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
+            );
             assert_eq!(position(&owner, other).await?, local(EXIT));
             assert_eq!(position(&owner, deps.actor).await?, local(INSIDE));
             assert_eq!(

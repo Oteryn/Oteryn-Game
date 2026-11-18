@@ -14,7 +14,12 @@ pub fn admitted(callback: &Callback) -> bool {
             .effects
             .encounter
             .as_ref()
-            .is_some_and(|e| e.timing.is_some())
+            .is_some_and(|encounter| {
+                encounter.players.is_empty()
+                    && encounter
+                        .timing
+                        .is_some_and(|timing| timing.spawn_after_ms > 0)
+            })
         && !callback.effects.completes_quest
         && callback.effects.quest_completion.is_none()
         && callback.effects.portals.is_none()
