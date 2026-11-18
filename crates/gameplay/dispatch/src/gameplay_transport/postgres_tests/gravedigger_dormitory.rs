@@ -95,7 +95,21 @@ fn heart_and_ritual_pads_use_distinct_mission_gates_and_destinations() -> TestRe
                 ready,
             )?;
         }
-        Ok(())
+        let heart_return = Pad {
+            at: Position {
+                x: 32987,
+                y: 32400,
+                floor: -9,
+            },
+            ordinal: 2,
+            ..heart
+        };
+        gate_landing(
+            admin,
+            &heart_return,
+            [(MISSION_05, 1, 1), (MISSION_06, 1, 0)],
+            false,
+        )
     })
 }
 
