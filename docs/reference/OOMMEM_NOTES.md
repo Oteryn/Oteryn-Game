@@ -122,6 +122,16 @@ measurement still reaches the local memory limit before linking. Serial
 Cargo scheduling limits overlapping dependency builds while one large
 dispatch compiler process can still exhaust the available RAM.
 
+On the pinned main push
+([run 44254498335](https://github.com/Oteryn/Oteryn-Game/actions/runs/44254498335)),
+the Merge Queue PostgreSQL build completed its registered E2E archive.
+The job was cancelled at 55 minutes with the library archive step still
+open, about 48 minutes after that step started. The same run's workspace
+library jobs had different outcomes: `lib-rest` completed successfully
+while `lib-content` reached 55 minutes with its test step open. These CI
+statuses establish where the jobs stopped. The local cgroup counter and
+process measurements establish the reproduced OOM.
+
 ## Proposed structural fix
 
 Keep the remaining library unit tests in dispatch. Extract the shared
