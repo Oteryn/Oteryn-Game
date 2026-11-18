@@ -372,6 +372,11 @@ fn world_cells(
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
+    let haunted_ground = callback.key == super::haunted_ruin::NATIVE_KEY;
+    if haunted_ground {
+        data.manifest.palette[0].key =
+            format!("oteryn:terrain.tibia.i{}", super::haunted_ruin::APPEARANCE);
+    }
     let distinct_seals = matches!(
         callback.native_rule,
         Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { seal: 122 })
@@ -642,32 +647,34 @@ fn world_cells(
                 attrs: Default::default(),
             });
     }
-    cells
-        .entry((trigger.floor, trigger.x, trigger.y))
-        .or_default()
-        .push(sector::Item {
-            palette: 1,
-            depth: 0,
-            attrs: sector::Attrs {
-                // The source plate starts without its startup UID in the binary map.
-                // Require the production source-binding projection instead of seeding it.
-                unique: if callback.key.ends_with("/thais-lighthouse-plate")
-                    || callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
-                {
-                    None
-                } else {
-                    callback.selector.unique
+    if !haunted_ground {
+        cells
+            .entry((trigger.floor, trigger.x, trigger.y))
+            .or_default()
+            .push(sector::Item {
+                palette: 1,
+                depth: 0,
+                attrs: sector::Attrs {
+                    // The source plate starts without its startup UID in the binary map.
+                    // Require the production source-binding projection instead of seeding it.
+                    unique: if callback.key.ends_with("/thais-lighthouse-plate")
+                        || callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
+                    {
+                        None
+                    } else {
+                        callback.selector.unique
+                    },
+                    action: if callback.key.ends_with("deeper-fibula-well") {
+                        None
+                    } else {
+                        callback.selector.action
+                    },
+                    text: (callback.key == super::goshnar_fluid::NATIVE_KEY)
+                        .then(|| "Fixture gravestone inscription".into()),
+                    ..Default::default()
                 },
-                action: if callback.key.ends_with("deeper-fibula-well") {
-                    None
-                } else {
-                    callback.selector.action
-                },
-                text: (callback.key == super::goshnar_fluid::NATIVE_KEY)
-                    .then(|| "Fixture gravestone inscription".into()),
-                ..Default::default()
-            },
-        });
+            });
+    }
     if callback.key == oteryn_gameplay_quests::quest::dreamer_death_ring::RESET {
         // Synthetic literal UID2244; no production-map position correspondence is claimed.
         cells

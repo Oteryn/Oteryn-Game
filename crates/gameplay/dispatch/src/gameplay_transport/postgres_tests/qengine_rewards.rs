@@ -959,8 +959,10 @@ pub(super) async fn exercise(
             owner, admitted, h, authority, name,
         )).await;
     }
-    if name == super::haunted_ruin::NAME {
-        return Box::pin(super::haunted_ruin::exercise(owner, admitted, h)).await;
+    if super::haunted_ruin::is_scenario(name) {
+        return Box::pin(super::haunted_ruin::exercise(
+            owner, admitted, h, name == super::haunted_ruin::NATIVE_NAME,
+        )).await;
     }
     if name == super::gerimor_reports::NAME {
         return Box::pin(super::gerimor_reports::exercise(owner, admitted, h, authority)).await;

@@ -8,6 +8,9 @@ use oteryn_protocol_oteryn::world_object::{
 use std::{num::NonZeroU64, sync::Arc};
 
 pub(super) const NAME: &str = "qengine-rewards-haunted-ruin";
+pub(super) const NATIVE_NAME: &str = "qengine-rewards-haunted-ruin-native-ground";
+pub(super) const NATIVE_KEY: &str = "oteryn:quest-callback/haunted-ruin-native-ground-fixture";
+pub(super) const APPEARANCE: u16 = 7867;
 const TARGET: Position = Position { x: 101, y: 100, floor: -7 };
 pub(super) const DOOR: Position = Position { x: 102, y: 100, floor: -7 };
 const QUEST: &str = "oteryn:quest.the_inquisition_quest";
@@ -25,11 +28,34 @@ fn haunted_ruin_holy_water_sets_mission_spawns_ghost_and_opens_timed_door() -> T
     })
 }
 
-pub(super) fn callback(at: Position) -> TestResult<Callback> {
+#[test]
+fn haunted_ruin_holy_water_reaches_the_native_ground_and_resets_the_door() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(NATIVE_NAME, || {
+        super::quest_world_callbacks::scenario(NATIVE_NAME, TARGET, false)
+    })
+}
+
+pub(super) fn is_scenario(name: &str) -> bool {
+    matches!(name, NAME | NATIVE_NAME)
+}
+
+pub(super) fn callback(at: Position, native: bool) -> TestResult<Callback> {
+    // Crystal startup/tables/item.lua:337-342 stamps AID 2003 on this floor object.
+    let (key, selector) = if native {
+        (NATIVE_KEY, serde_json::json!({
+            "native":{"position":at,"ordinal":0,"appearance":APPEARANCE}
+        }))
+    } else {
+        ("oteryn:quest-callback/haunted-ruin-fixture", serde_json::json!({
+            "position":at,"ordinal":1,"action":2003
+        }))
+    };
     Ok(serde_json::from_value(serde_json::json!({
-        "key":"oteryn:quest-callback/haunted-ruin-fixture",
+        "key":key,
         "quest":QUEST, "trigger":"use",
-        "selector":{"position":at,"ordinal":1,"action":2003},
+        "selector":selector,
         "requires_world_admission":true,
         "reversible":false, "passages":[], "offerings":[], "return_on_failure":false,
         "storage":[
@@ -41,7 +67,10 @@ pub(super) fn callback(at: Position) -> TestResult<Callback> {
             "use_summon":{"creature":"oteryn:creature.pirate_ghost"},
             "target_transform":{"position":DOOR,"from":7869,"to":7868,"reset_after_ms":10000,"if_present":true}
         },
-        "sources":[SOURCE]
+        "sources":[
+            SOURCE,
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:337-342"
+        ]
     }))?)
 }
 
@@ -49,6 +78,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    native_ground: bool,
 ) -> TestResult {
     {
         use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -58,7 +88,7 @@ pub(super) async fn exercise(
     }
     let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
     let digest = catalogue.definition_hash(QUEST).ok_or("prior quest definition")?;
-    owner.quest_catalogue = Some(Arc::new(catalogue.with_world_callback_fixtures(vec![callback(TARGET)?])?));
+    owner.quest_catalogue = Some(Arc::new(catalogue.with_world_callback_fixtures(vec![callback(TARGET, native_ground)?])?));
     sqlx::query(
         "INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision)
          SELECT character_id,$2,'content-1',$3,character_revision,character_revision
@@ -82,7 +112,8 @@ pub(super) async fn exercise(
         .and_then(|native| native.item_index())
         .and_then(|index| index.definition_ref("Item", WATER, "definition-r1"))
         .ok_or("holy water reference")?;
-    let target = oteryn_world_bundle::bundle::placement_key(-7, TARGET.x, TARGET.y, 1).ok_or("target")?;
+    let ordinal = u8::from(!native_ground);
+    let target = oteryn_world_bundle::bundle::placement_key(-7, TARGET.x, TARGET.y, ordinal).ok_or("target")?;
     let map = owner.bundle_map().ok_or("map")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&target.to_be_bytes());

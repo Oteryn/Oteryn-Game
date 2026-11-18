@@ -406,8 +406,8 @@ fn scenario_case(
         callback(name)?
     } else if super::super::goshnar_fluid::is_scenario(name) {
         super::super::goshnar_fluid::callback(trigger, name == super::super::goshnar_fluid::NATIVE_NAME)?
-    } else if name == super::super::haunted_ruin::NAME {
-        super::super::haunted_ruin::callback(trigger)?
+    } else if super::super::haunted_ruin::is_scenario(name) {
+        super::super::haunted_ruin::callback(trigger, name == super::super::haunted_ruin::NATIVE_NAME)?
     } else if name == super::super::rahemos_chance::NAME {
         super::super::rahemos_chance::callback(trigger)?
     } else if name == super::super::shadow_nexus::NAME {
@@ -660,7 +660,7 @@ fn scenario_case(
     }
     let world = if name == super::super::goshnar_fluid::NATIVE_NAME {
         world_ordinal(&callback, trigger, super::super::goshnar_fluid::APPEARANCE, 1)?
-    } else if name == super::super::haunted_ruin::NAME {
+    } else if super::super::haunted_ruin::is_scenario(name) {
         world_with_objects(&callback, trigger, &[(super::super::haunted_ruin::DOOR, 7869)], &[7868])?
     } else if name == super::super::shadow_nexus::NAME {
         world_with_objects(&callback, trigger, &[], &[7926, 7927, 7928, 7929, 7930, 7931])?
