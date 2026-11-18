@@ -7,6 +7,7 @@ use crate::map::view::MapFacts;
 /// and the_first_dragon/movements_heaven_blossom.lua:3-14.
 pub(in crate::gameplay_transport) fn settle_monster_step(
     runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
     map: &BundleMap,
     step: crate::map::facts::MonsterStep,
     entries: &[(u64, crate::map::view::EntryFacts)],
@@ -36,36 +37,59 @@ pub(in crate::gameplay_transport) fn settle_monster_step(
             .find(|(key, _)| !map.facts.base_hidden(*key) && matches(map, callback, *key))?;
         Some((effect, key, before))
     }) else {
-        return false;
+        // Crystal 201189f8, movements_flower_bowl.lua:3-16.
+        let Some(next) = runtime
+            .quest_corpse_monster_replacement(step.actor, step.to)
+            .map(str::to_owned)
+        else {
+            return false;
+        };
+        return replace_monster(runtime, states, step, &next, || true);
     };
     let Some(next) = effect.replace_with.as_deref() else {
         return runtime.remove_encounter_actor(step.actor).is_ok();
     };
+    let revision = map.facts.object_revision(key);
+    replace_monster(runtime, states, step, next, || {
+        !effect.consume_source
+            || map.facts.apply_quest_callback(
+                key,
+                revision,
+                before,
+                &[],
+                &[],
+                false,
+                Some(&QuestCallbackProjection::Scene {
+                    mutations: Vec::new(),
+                    remove_self: true,
+                }),
+            )
+    })
+}
+
+fn replace_monster(
+    runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    step: crate::map::facts::MonsterStep,
+    next: &str,
+    project: impl FnOnce() -> bool,
+) -> bool {
     let Ok(policy) = runtime.companion_policy(next) else {
         return false;
     };
-    let revision = map.facts.object_revision(key);
-    runtime
-        .commit_quest_creature_replacement(
-            &[step.actor],
-            &[(next, policy.maximum_health, step.to)],
-            || {
-                !effect.consume_source
-                    || map.facts.apply_quest_callback(
-                        key,
-                        revision,
-                        before,
-                        &[],
-                        &[],
-                        false,
-                        Some(&QuestCallbackProjection::Scene {
-                            mutations: Vec::new(),
-                            remove_self: true,
-                        }),
-                    )
-            },
-        )
-        .is_ok()
+    let Ok(actors) = runtime.commit_quest_creature_replacement(
+        &[step.actor],
+        &[(next, policy.maximum_health, step.to)],
+        project,
+    ) else {
+        return false;
+    };
+    for actor in actors {
+        states
+            .encounter_phases
+            .replace_member(runtime, step.actor, actor, next);
+    }
+    true
 }
 
 pub(in crate::gameplay_transport) fn settle_monster_puzzles(

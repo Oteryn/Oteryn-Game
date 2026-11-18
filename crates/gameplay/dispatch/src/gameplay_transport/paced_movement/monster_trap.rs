@@ -47,6 +47,7 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         };
         if crate::gameplay_transport::quest_callbacks::monsters::settle_monster_step(
             runtime,
+            states,
             map,
             step,
             &destination.entries,

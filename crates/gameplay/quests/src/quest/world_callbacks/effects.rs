@@ -385,12 +385,23 @@ pub struct DeathPhases {
     pub terminal: String,
     pub replacements: Vec<DeathReplacement>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub corpse_monster_step: Option<CorpseMonsterStep>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub corpse_portal: Option<CorpsePortal>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub terminal_portal: Option<TerminalPortal>,
     /// Room movement on the sealed terminal death. Quest credit uses its own writer.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub terminal_transfer: Option<TerminalTransfer>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CorpseMonsterStep {
+    pub defeated: String,
+    pub item: String,
+    pub creature: String,
+    pub replace_with: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -508,12 +519,15 @@ fn valid_death_phases(
     in_room: impl Fn(Position) -> bool,
 ) -> bool {
     use super::super::valid_quest_key;
+    let corpse_item = |key: &str| key.starts_with("oteryn:item.tibia.i") && valid_quest_key(key);
+    let creature = |key: &str| key.starts_with("oteryn:creature.") && valid_quest_key(key);
     if encounter.phase.is_some()
         || encounter.timing.is_some()
         || encounter.personal_cooldown_seconds.is_some()
         || !valid_quest_key(&plan.terminal)
         || plan.replacements.len() > 8
         || (plan.replacements.is_empty()
+            && plan.corpse_monster_step.is_none()
             && plan.corpse_portal.is_none()
             && plan.terminal_portal.is_none()
             && plan.terminal_transfer.is_none())
@@ -531,6 +545,9 @@ fn valid_death_phases(
         .iter()
         .map(|actor| actor.creature.as_str())
         .collect();
+    if let Some(step) = &plan.corpse_monster_step {
+        known.insert(step.replace_with.as_str());
+    }
     let mut defeated = BTreeSet::new();
     for rule in &plan.replacements {
         if rule.defeated == plan.terminal
@@ -563,9 +580,19 @@ fn valid_death_phases(
     known.contains(plan.terminal.as_str())
         && plan.corpse_portal.as_ref().is_none_or(|portal| {
             known.contains(portal.defeated.as_str())
-                && portal.item.starts_with("oteryn:item.tibia.i")
-                && valid_quest_key(&portal.item)
+                && corpse_item(&portal.item)
                 && in_room(portal.destination)
+        })
+        && plan.corpse_monster_step.as_ref().is_none_or(|step| {
+            corpse_item(&step.item)
+                && creature(&step.defeated)
+                && creature(&step.creature)
+                && creature(&step.replace_with)
+                && step.creature != step.replace_with
+                && plan
+                    .corpse_portal
+                    .as_ref()
+                    .is_none_or(|portal| portal.defeated != step.defeated)
         })
 }
 

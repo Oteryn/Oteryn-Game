@@ -90,6 +90,22 @@ pub(super) struct Registry {
 }
 
 impl Registry {
+    pub(super) fn replace_member(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        from: ExactActorRef,
+        to: ExactActorRef,
+        creature: &str,
+    ) {
+        if let Ok(mut active) = self.active.lock() {
+            for phase in active.iter_mut().filter(|phase| phase.fight.contains(from)) {
+                if let Fight::Replacements(fight) = &mut phase.fight {
+                    fight.replace_member(runtime, from, to, creature);
+                }
+            }
+        }
+    }
+
     pub(super) fn blocks_channel_switch(
         &self,
         runtime: &ChannelRuntimeV1,

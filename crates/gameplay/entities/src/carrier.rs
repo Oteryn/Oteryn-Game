@@ -232,9 +232,10 @@ pub use runtime_actor_conditions::{
 use runtime_actor_conditions::{CreatureCommitState, PlayerRuntimeState};
 
 pub use actor_memos::ActorMemoTable;
+pub use corpse_views::QuestCorpseStep;
 pub use corpse_views::RuntimeCorpseItem;
 pub use corpse_views::VisibleRuntimeCorpse;
-use corpse_views::{CorpseItemBinding, CorpsePortalBinding};
+use corpse_views::{CorpseItemBinding, CorpseStepBinding};
 pub use creature_heal::CreatureSelfHealLedger;
 pub use creature_heal::CreatureSelfHealRegistration;
 pub use damage_ledger::ABILITY01_EFFECT_PLAN_ENTRIES_MAX;
@@ -1030,8 +1031,8 @@ pub struct ChannelActorCarrier {
     /// MAP-ITEM-REF-1 Part B: the corpse Item bound to each retained corpse projection, at most
     /// one per projection; [`ChannelRuntimeV1::bind_corpse_item`] drops the evicted ones.
     corpse_item_bindings: Vec<CorpseItemBinding>,
-    /// Portal destinations share the bound and eviction of their sealed corpse projections.
-    corpse_portal_bindings: Vec<CorpsePortalBinding>,
+    /// Step-in bindings share the bound and eviction of their sealed corpse projections.
+    corpse_step_bindings: Vec<CorpseStepBinding>,
     /// Codex 4248192466 (LOOT-LIVE-1): the killed actors whose retained corpse projection an
     /// accepted, not yet final kill settlement still binds to. A pinned projection is never
     /// evicted ([`ChannelRuntimeV1::pin_corpse_projection`]); at most
@@ -1816,7 +1817,7 @@ impl ChannelActorCarrier {
             attackers: Vec::new(),
             occupied,
             corpse_item_bindings: Vec::new(),
-            corpse_portal_bindings: Vec::new(),
+            corpse_step_bindings: Vec::new(),
             corpse_projection_pins: Vec::new(),
             source_corpse_projection_pin: None,
             soulpit: None,

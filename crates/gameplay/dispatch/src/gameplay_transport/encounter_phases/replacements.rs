@@ -2,6 +2,7 @@
 //! and the_first_dragon/creaturescripts_death_dragon_essence.lua:3-12.
 use super::{CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
+use oteryn_gameplay_entities::carrier::QuestCorpseStep;
 use oteryn_gameplay_quests::quest::world_callbacks::{DeathPhases, Encounter};
 
 use super::terminal_portal::Portal;
@@ -100,10 +101,23 @@ impl Replacements {
             && member.creature == portal.defeated
         {
             // Crystal 201189f8, creaturescripts_death_fallen.lua:10-14.
-            runtime.bind_quest_corpse_portal(
+            runtime.bind_quest_corpse_step(
                 actor,
                 &portal.item,
-                super::super::quest_callbacks::local(portal.destination),
+                QuestCorpseStep::Portal(super::super::quest_callbacks::local(portal.destination)),
+            )?;
+        }
+        if let Some(step) = &self.plan.corpse_monster_step
+            && member.creature == step.defeated
+        {
+            // Crystal 201189f8, creaturescripts_death_angry_plant.lua:3-7.
+            runtime.bind_quest_corpse_step(
+                actor,
+                &step.item,
+                QuestCorpseStep::ReplaceMonster {
+                    creature: step.creature.clone(),
+                    replacement: step.replace_with.clone(),
+                },
             )?;
         }
         let finished = member.creature == self.plan.terminal;
@@ -123,6 +137,23 @@ impl Replacements {
 
     pub(super) fn transfer_pending(&self) -> bool {
         self.transfer.as_ref().is_some_and(Transfer::is_pending)
+    }
+
+    pub(super) fn replace_member(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        from: ExactActorRef,
+        to: ExactActorRef,
+        creature: &str,
+    ) {
+        if self.is_current(runtime)
+            && !self.finished
+            && let Some(member) = self.members.iter_mut().find(|member| member.actor == from)
+            && member.death_at.is_none()
+        {
+            member.actor = to;
+            member.creature = creature.to_owned();
+        }
     }
 
     pub(super) fn completion_pending(&self) -> bool {

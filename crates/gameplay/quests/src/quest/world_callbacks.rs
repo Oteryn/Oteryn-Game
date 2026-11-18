@@ -82,10 +82,11 @@ mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
 pub use effects::{
-    CallbackEffectSet, CallbackEffects, CorpsePortal, DeathPhases, Encounter, EncounterMonster,
-    EncounterPhase, EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement,
-    ItemPresence, MagicEffect, MonsterStepEffect, MountReward, PartyStation, PartyTransfer, Portal,
-    PortalPair, QuestCompletion, RewardDoor, TargetTransform, TerminalPortal, TerminalTransfer,
+    CallbackEffectSet, CallbackEffects, CorpseMonsterStep, CorpsePortal, DeathPhases, Encounter,
+    EncounterMonster, EncounterPhase, EncounterPlayer, EncounterTiming, Facing, ItemCycle,
+    ItemDisguiseRequirement, ItemPresence, MagicEffect, MonsterStepEffect, MountReward,
+    PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion, RewardDoor, TargetTransform,
+    TerminalPortal, TerminalTransfer,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,

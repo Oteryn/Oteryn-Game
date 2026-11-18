@@ -32,12 +32,21 @@ pub(super) struct CorpseItemBinding {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct CorpsePortalBinding {
+pub enum QuestCorpseStep {
+    Portal(MovementLocalPosition),
+    ReplaceMonster {
+        creature: String,
+        replacement: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct CorpseStepBinding {
     pub(super) actor: ExactActorRef,
     position: MovementLocalPosition,
     context: PreProductionPositionContext,
     item_key: String,
-    destination: MovementLocalPosition,
+    effect: QuestCorpseStep,
 }
 
 impl ChannelActorCarrier {
@@ -121,12 +130,12 @@ impl ChannelActorCarrier {
 }
 
 impl ChannelRuntimeV1 {
-    /// Give this projected death a destination that becomes live with its exact corpse Item.
-    pub fn bind_quest_corpse_portal(
+    /// Attach a StepIn effect to a projected death and its eventual bound corpse Item.
+    pub fn bind_quest_corpse_step(
         &mut self,
         actor: ExactActorRef,
         item_key: &str,
-        destination: MovementLocalPosition,
+        effect: QuestCorpseStep,
     ) -> Result<(), CarrierError> {
         self.owner_fence()?;
         let projection = self
@@ -135,23 +144,23 @@ impl ChannelRuntimeV1 {
             .iter()
             .find(|projection| projection.occurrence.actor == actor)
             .ok_or(CarrierError::CommittedLethalUnavailable)?;
-        let portals = &mut self.carrier.corpse_portal_bindings;
-        if let Some(portal) = portals.iter().find(|portal| portal.actor == actor) {
-            return if portal.item_key == item_key && portal.destination == destination {
+        let bindings = &mut self.carrier.corpse_step_bindings;
+        if let Some(binding) = bindings.iter().find(|binding| binding.actor == actor) {
+            return if binding.item_key == item_key && binding.effect == effect {
                 Ok(())
             } else {
                 Err(CarrierError::CorpseProjectionConflict)
             };
         }
-        portals
+        bindings
             .try_reserve(1)
             .map_err(|_| CarrierError::AllocationFailed)?;
-        portals.push(CorpsePortalBinding {
+        bindings.push(CorpseStepBinding {
             actor,
             context: projection.position.context,
             position: projection.position(),
             item_key: item_key.to_owned(),
-            destination,
+            effect,
         });
         Ok(())
     }
@@ -161,26 +170,47 @@ impl ChannelRuntimeV1 {
         at: MovementLocalPosition,
     ) -> Option<(ExactActorRef, MovementLocalPosition)> {
         self.owner_fence().ok()?;
+        self.quest_corpse_steps(at)
+            .find_map(|binding| match &binding.effect {
+                QuestCorpseStep::Portal(to) if *to != at => Some((binding.actor, *to)),
+                _ => None,
+            })
+    }
+
+    pub fn quest_corpse_monster_replacement(
+        &self,
+        actor: ExactActorRef,
+        at: MovementLocalPosition,
+    ) -> Option<&str> {
+        self.owner_fence().ok()?;
+        self.quest_corpse_steps(at)
+            .find_map(|binding| match &binding.effect {
+                QuestCorpseStep::ReplaceMonster {
+                    creature,
+                    replacement,
+                } if self.matches_live_creature_identity(actor, creature.as_bytes()) => {
+                    Some(replacement.as_str())
+                }
+                _ => None,
+            })
+    }
+
+    fn quest_corpse_steps(
+        &self,
+        at: MovementLocalPosition,
+    ) -> impl Iterator<Item = &CorpseStepBinding> {
         self.carrier
-            .corpse_portal_bindings
+            .corpse_step_bindings
             .iter()
             .rev()
-            .find_map(|portal| {
-                if portal.context != self.pinned_position_context()
-                    || portal.position != at
-                    || at == portal.destination
-                {
-                    return None;
-                }
-                self.carrier
-                    .corpse_item_bindings
-                    .iter()
-                    .any(|binding| {
-                        binding.actor == portal.actor
-                            && binding.minted_item.production_key == portal.item_key
-                            && binding.item.production_key == portal.item_key
+            .filter(move |step| {
+                step.context == self.pinned_position_context()
+                    && step.position == at
+                    && self.carrier.corpse_item_bindings.iter().any(|binding| {
+                        binding.actor == step.actor
+                            && binding.minted_item.production_key == step.item_key
+                            && binding.item.production_key == step.item_key
                     })
-                    .then_some((portal.actor, portal.destination))
             })
     }
 
