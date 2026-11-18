@@ -72,18 +72,6 @@ pub(super) async fn exercise(
             &[4, 6, 11, 15, 18],
         )
         .ok_or("capabilities")?;
-    super::quest_world_callbacks::input_item(
-        owner,
-        fence.item_fence(),
-        &Offering {
-            position: TARGET,
-            item: "oteryn:item.tibia.i3460".into(),
-            count: 1,
-        },
-        951,
-        true,
-    )
-    .await?;
     let position = crate::map::overlay::TilePos {
         x: TARGET.x,
         y: TARGET.y,
@@ -100,8 +88,34 @@ pub(super) async fn exercise(
         .ids()
         .get(2)
         .ok_or("wall source")?;
+    assert_eq!(
+        use_hammer(owner, admitted, key, false).await?,
+        UseDisposition::NothingToUse,
+        "a hammer definition request must resolve to a carried hammer",
+    );
+    let state = owner
+        .root
+        .read_character_quest_state(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?;
+    assert_eq!(
+        state.tracks().get(ROTTIN_WALLCOUNT).copied().unwrap_or(0),
+        0
+    );
+    super::quest_world_callbacks::input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: TARGET,
+            item: "oteryn:item.tibia.i3460".into(),
+            count: 1,
+        },
+        951,
+        true,
+    )
+    .await?;
     for count in 1..=7 {
-        let result = use_hammer(owner, admitted, key).await?;
+        let result = use_hammer(owner, admitted, key, true).await?;
         assert_eq!(
             result,
             if count == 7 {
@@ -132,7 +146,7 @@ pub(super) async fn exercise(
         assert!((119_000_000..=120_000_000).contains(&due.saturating_sub(now)));
         if count == 1 {
             assert_eq!(
-                use_hammer(owner, admitted, key).await?,
+                use_hammer(owner, admitted, key, true).await?,
                 UseDisposition::NothingToUse,
                 "a wall must break again before it can earn more credit",
             );
@@ -165,6 +179,7 @@ async fn use_hammer(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     key: u64,
+    carried: bool,
 ) -> TestResult<UseDisposition> {
     owner.clock_origin = owner
         .clock_origin
@@ -173,8 +188,18 @@ async fn use_hammer(
     let map = owner.bundle_map().ok_or("map")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
+    let reference = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .and_then(|n| n.item_index())
+        .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i3460", "definition-r1"))
+        .ok_or("hammer reference")?;
     let payload = encode_item_use_intent(&UseIntent {
-        target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?),
+        target: if carried {
+            UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?)
+        } else {
+            UseTarget::ItemByDefinition(reference)
+        },
         use_with: None,
         use_with_position: None,
         use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
@@ -183,18 +208,12 @@ async fn use_hammer(
         })),
     })
     .map_err(debug)?;
-    let reference = owner
-        .active_generation
-        .and_then(|g| g.native_gameplay())
-        .and_then(|n| n.item_index())
-        .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i3460", "definition-r1"))
-        .ok_or("hammer reference")?;
     let (next, result, _) = super::item_craft::exchange(
         owner,
         *admitted,
         admitted.continuity.next_command_id,
         &payload,
-        Some(reference),
+        carried.then_some(reference),
     )
     .await?;
     *admitted = next;
