@@ -445,7 +445,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 replacements.push((
                     *passage,
                     facts,
-                    passage_definition.replacement_passable.unwrap_or(!close),
+                    passage_definition.replacement_passable.unwrap_or_else(|| {
+                        if callback.effects.stationary_encounter.is_empty() {
+                            !close
+                        } else {
+                            !map.facts
+                                .quest_callback_blocked(map.overlay.base(), p, false)
+                        }
+                    }),
                 ));
             } else {
                 if tree_reset && map.facts.base_hidden(*passage) {
@@ -886,6 +893,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        let stationary = match self.prepare_stationary_encounter(runtime, map, callback) {
+            Ok(plan) => plan,
+            Err(refusal) => return refusal,
+        };
         let party = if let Some(party) = &callback.effects.party_transfer {
             if after.appearance_id != party.activation_appearance {
                 return if map.facts.apply_quest_callback(
@@ -1464,7 +1475,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection.as_ref(),
                 )
             };
-            if let Some(proof) = scene_moves {
+            if !stationary.is_empty() {
+                if runtime
+                    .commit_quest_creature_spawn_with_projection(&stationary, apply_scene)
+                    .is_err()
+                {
+                    return UseDisposition::Rejected;
+                }
+            } else if let Some(proof) = scene_moves {
                 let committed = match runtime.commit_source_scene_relocations(proof, apply_scene) {
                     Ok(committed) => committed,
                     Err(error) => {

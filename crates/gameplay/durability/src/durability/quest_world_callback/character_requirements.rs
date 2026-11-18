@@ -2,13 +2,26 @@
 //! Evidence: content/quests/definitions/quests-00200-00299.json:1, record 67,
 //! requirements. Promotion uses the permanent purchase owner, not a session vocation.
 use crate::{domain::CharacterId, durability::DurabilityError};
-use oteryn_gameplay_quests::quest::world_callbacks::CharacterRequirements;
+use oteryn_gameplay_quests::quest::world_callbacks::{CharacterRequirements, CharacterSex};
 
 pub(super) async fn satisfied(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
     requirements: &CharacterRequirements,
 ) -> Result<bool, DurabilityError> {
+    // Crystal movements_marziel_blood.lua:14-25. Sex belongs to the same
+    // current Character root as the carried input and quest receipt.
+    if let Some(required) = requirements.sex {
+        use crate::domain::appearance::Sex;
+        let current =
+            crate::durability::character_appearance::item_action_sex(tx, character).await?;
+        if !matches!(
+            (required, current),
+            (CharacterSex::Female, Sex::Female) | (CharacterSex::Male, Sex::Male)
+        ) {
+            return Ok(false);
+        }
+    }
     if requirements.promoted
         && !crate::durability::character_promotion::read_durable_promotion(tx, character).await?
     {
@@ -117,7 +130,7 @@ mod tests {
                 // The production quest writer already owns this root before consume().
                 sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
                     .bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-                let mut requirements = CharacterRequirements { premium: false, promoted: true, blessings: vec![] };
+                let mut requirements = CharacterRequirements { premium: false, promoted: true, blessings: vec![], sex: None };
                 assert!(!satisfied(&mut tx, character, &requirements).await?);
                 // A deferred purchase FK is deliberately never committed: this fixture
                 // tests observation, not the independent promotion purchase owner.

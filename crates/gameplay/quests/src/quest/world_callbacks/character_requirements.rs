@@ -16,11 +16,20 @@ pub struct CharacterRequirements {
     pub promoted: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub blessings: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sex: Option<CharacterSex>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CharacterSex {
+    Female,
+    Male,
 }
 
 impl CharacterRequirements {
     pub(super) fn valid(&self) -> bool {
-        (self.premium || self.promoted || !self.blessings.is_empty())
+        (self.premium || self.promoted || !self.blessings.is_empty() || self.sex.is_some())
             && self.blessings.len() <= 8
             && self.blessings.iter().all(|key| {
                 key.len() <= 128
@@ -118,6 +127,7 @@ pub(super) fn entry_admitted(callback: &super::Callback) -> bool {
     };
     shape
         && requirements.premium
+        && requirements.sex.is_none()
         && callback.requires_world_admission
         && callback.actor_kind == ActorKind::Player
         && callback.return_on_failure

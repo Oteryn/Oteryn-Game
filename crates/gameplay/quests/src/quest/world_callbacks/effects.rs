@@ -101,6 +101,9 @@ pub struct CallbackEffects {
     /// Magic at the admitted object's tile, independent of its authored coordinates.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_magic: Option<u16>,
+    /// Spawn an immediate encounter in the player's current room without moving the player.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stationary_encounter: Vec<EncounterMonster>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
@@ -450,6 +453,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || unique.len() != inputs.len()
         || inputs.iter().any(|input| {
             input.count == 0
+                || input.fluid_subtype == Some(0)
                 || input.count > 100
                 || !super::super::valid_quest_key(&input.item)
                 || callback
@@ -459,12 +463,42 @@ pub(super) fn valid(callback: &Callback) -> bool {
         })
         || (!inputs.is_empty()
             && (callback.trigger != Trigger::Use
+                && !(callback.trigger == Trigger::StepIn
+                    && callback.requires_world_admission
+                    && callback.selector.native.is_some())
                 || !callback.has_state()
                 || callback.is_read_only()
                 || effects.scene.is_some()
                 || effects.portals.is_some()
                 || effects.encounter.is_some()
                 || effects.item_cycle.is_some()))
+    {
+        return false;
+    }
+    let stationary = &effects.stationary_encounter;
+    if !stationary.is_empty()
+        && (stationary.len() > MAX_EFFECTS
+            || callback.trigger != Trigger::StepIn
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || callback.selector.native.is_none()
+            || !callback.has_personal_state()
+            || callback.is_read_only()
+            || callback.teleport.is_some()
+            || callback.reversible
+            || effects.encounter.is_some()
+            || effects.scene.is_some()
+            || effects.portals.is_some()
+            || stationary
+                .iter()
+                .map(|monster| monster.position)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != stationary.len()
+            || stationary.iter().any(|monster| {
+                !(-15..=0).contains(&monster.position.floor)
+                    || !super::super::valid_quest_key(&monster.creature)
+            }))
     {
         return false;
     }

@@ -40,7 +40,7 @@ pub enum Trigger {
 mod admission_tests;
 mod asura_authored;
 mod character_requirements;
-pub use character_requirements::CharacterRequirements;
+pub use character_requirements::{CharacterRequirements, CharacterSex};
 mod clear_area;
 pub use clear_area::ClearArea;
 mod clock;

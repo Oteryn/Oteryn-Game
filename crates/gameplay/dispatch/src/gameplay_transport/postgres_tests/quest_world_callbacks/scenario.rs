@@ -31,6 +31,7 @@ fn scenario_case(
     let skull_custody = name == super::super::quest_skull_custody::NAME;
     let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
     let boreth_cleanup = name == super::super::boreth_death_cleanup::NAME;
+    let marziel_blood = name.starts_with(super::super::marziel_blood_step::NAME);
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -371,6 +372,8 @@ fn scenario_case(
         super::super::quest_skull_custody::bone_pile()?
     } else if boreth_cleanup {
         callback("unnatural-selection-ray-of-light")?
+    } else if marziel_blood {
+        super::super::marziel_blood_step::callback()?
     } else if native_dance {
         callback("unnatural-selection-dance-2")?
     } else if name.starts_with("qengine-rewards-m39-bone") {
@@ -941,12 +944,17 @@ fn scenario_case(
             });
         world(&physical, trigger)?
     } else {
-        world(&callback, trigger)?
+        if marziel_blood {
+            super::super::marziel_blood_step::world(&callback)?
+        } else {
+            world(&callback, trigger)?
+        }
     };
     run(async |admin| {
         let h = if shared_rewards
             || qengine_reward
             || outfit_world
+            || marziel_blood
             || matches!(
                 name,
                 "catalogue-npc" | "catalogue-npc-inventory" | "catalogue-npc-scoped"
@@ -961,7 +969,7 @@ fn scenario_case(
             Harness::create_quest_reward(
                 admin,
                 "quest_rewards",
-                !name.ends_with("pirate") && !name.contains("-male-"),
+                !name.ends_with("pirate") && !name.contains("-male-") && !(marziel_blood && name.ends_with("-male")),
             )
             .await
         } else {
@@ -1554,7 +1562,7 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
-            } else if classic_npc || qd_world || boreth_cleanup {
+            } else if classic_npc || qd_world || boreth_cleanup || marziel_blood {
                 5
             } else if monk {
                 4
@@ -3291,6 +3299,10 @@ fn scenario_case(
                 origin,
             ))
             .await?;
+        } else if marziel_blood {
+            Box::pin(super::super::marziel_blood_step::exercise(
+                &mut owner, &mut admitted, &h, &authority, name.ends_with("-female"),
+            )).await?;
         } else if boreth_cleanup {
             Box::pin(super::super::boreth_death_cleanup::exercise(&owner, &admitted)).await?;
         } else if skull_custody {

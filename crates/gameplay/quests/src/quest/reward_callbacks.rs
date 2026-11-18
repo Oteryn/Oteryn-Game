@@ -50,7 +50,7 @@ pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 pub struct ItemAmount {
     pub item: String,
     pub count: u16,
-    /// A freshly minted variable-fluid vessel; never an intake matching shortcut.
+    /// Exact variable-fluid subtype where the owning admission supports typed custody.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fluid_subtype: Option<u8>,
 }

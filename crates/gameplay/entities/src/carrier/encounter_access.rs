@@ -377,6 +377,23 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        self.quest_creature_spawn(monsters, project, true)
+    }
+
+    pub fn preflight_quest_creature_spawn(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<(), CarrierError> {
+        self.quest_creature_spawn(monsters, || true, false)
+            .map(|_| ())
+    }
+
+    fn quest_creature_spawn(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+        publish: bool,
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
         if monsters.is_empty() || monsters.len() > 8 {
             return Err(CarrierError::PlanConflict);
         }
@@ -396,7 +413,7 @@ impl ChannelRuntimeV1 {
             }
             Ok(actors)
         })();
-        if result.is_err() {
+        if !publish || result.is_err() {
             self.carrier = before;
         }
         result

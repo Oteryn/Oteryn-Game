@@ -6,10 +6,11 @@ pub(super) async fn resolve(
     fence: CurrentCharacterGameplayFence,
     required: &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount,
 ) -> Result<Option<Vec<Input>>, DurabilityError> {
-    let rows = sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.quantity>0 AND i.definition_family='Item' AND i.definition_production_key=$3 ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+    let rows = sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.quantity>0 AND i.definition_family='Item' AND i.definition_production_key=$3 AND ($4::smallint IS NULL OR EXISTS (SELECT 1 FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id AND f.fluid_subtype=$4)) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
         .bind(&required.item)
+        .bind(required.fluid_subtype.map(i16::from))
         .fetch_all(&mut **tx).await?;
     if rows.len() > 500 {
         return Ok(None);
