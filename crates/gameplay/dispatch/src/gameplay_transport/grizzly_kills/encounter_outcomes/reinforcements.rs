@@ -86,9 +86,10 @@ impl Roster {
         if self.pulse.is_none()
             && let Some(rule) = &self.rule.low_health_pulse
             && let Some(demon) = self.slots.iter().map(|slot| slot.actor).find(|actor| {
-                runtime
-                    .live_creature_health(*actor)
-                    .is_some_and(|health| health < u64::from(rule.below_health))
+                runtime.matches_live_creature_identity(*actor, self.rule.creature.as_bytes())
+                    && runtime
+                        .live_creature_health(*actor)
+                        .is_some_and(|health| health < u64::from(rule.below_health))
             })
         {
             self.pulse = pulse::Pending::begin(runtime, boss, demon, rule, map);

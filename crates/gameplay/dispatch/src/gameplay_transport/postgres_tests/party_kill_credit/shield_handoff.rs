@@ -259,7 +259,11 @@ async fn exercise_pulse(
     let center = MovementLocalPosition { x: base.x + 7, ..base };
     move_to(owner, players[1], MovementLocalPosition { x: base.x - 1, ..base }).await?;
     let map = owner.bundle_map().ok_or("pulse bundle")?;
-    {
+    let health = |states: &crate::gameplay_transport::actor_spell::ChannelSpellStates,
+                  runtime: &ChannelRuntimeV1, player: Player| -> TestResult<u32> {
+        Ok(states.get(runtime, player.actor, player.session).ok_or("pulse recipient")?.vitals().health)
+    };
+    let second = {
         let mut runtime = owner.runtime.lock().await;
         let before = runtime.read_actor_position(boss).map_err(debug)?;
         runtime.borrow_movement_position().commit_creature_relocation(boss, before, center).map_err(debug)?;
@@ -270,10 +274,6 @@ async fn exercise_pulse(
         let [first, second] = demons.as_slice() else { return Err("two exact Demons".into()); };
         runtime.set_test_creature_health(*first, 5_000).map_err(debug)?;
         let mut states = owner.states.spell_states.lock().await;
-        let health = |states: &crate::gameplay_transport::actor_spell::ChannelSpellStates,
-                      runtime: &ChannelRuntimeV1, player: Player| -> TestResult<u32> {
-            Ok(states.get(runtime, player.actor, player.session).ok_or("pulse recipient")?.vitals().health)
-        };
         assert_eq!(health(&states, &runtime, players[0])?, 4_000);
         assert_eq!(health(&states, &runtime, players[1])?, 4_000);
 
@@ -292,13 +292,38 @@ async fn exercise_pulse(
             assert_eq!(health(&states, &runtime, players[1])?, 4_000);
         }
 
+        *second
+    };
+    move_to(owner, players[1], landing).await?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let withheld = states.actors.iter().position(|(actor, session, _)| {
+            *actor == players[1].actor && *session == players[1].session
+        }).ok_or("second recipient")?;
+        let held = states.actors.remove(withheld);
+        runtime.set_test_creature_health(boss, max_hp - 1).map_err(debug)?;
+        runtime.set_test_creature_health(second, 4_999).map_err(debug)?;
+        owner.tick_encounter_outcomes(&mut runtime, &mut states, 2_002);
+        assert!(!runtime.contains_live_creature(second));
+        assert_eq!(health(&states, &runtime, players[0])?, 1_000);
+        assert_eq!(runtime.live_creature_health(boss), Some(u64::try_from(max_hp)?));
+
+        runtime.set_test_creature_health(boss, max_hp - 1).map_err(debug)?;
+        states.actors.insert(withheld, held);
+        for now in [2_003, 2_004] {
+            owner.tick_encounter_outcomes(&mut runtime, &mut states, now);
+            assert_eq!(health(&states, &runtime, players[0])?, 1_000);
+            assert_eq!(health(&states, &runtime, players[1])?, 2_500);
+            assert_eq!(runtime.live_creature_health(boss), Some(u64::try_from(max_hp - 1)?));
+        }
+
         let effects = map.facts.movement_effects_since(0);
         let center = TilePos { x: u16::try_from(center.x)?, y: u16::try_from(center.y)?, floor: i8::try_from(-center.floor)? };
-        assert_eq!(effects.iter().filter(|(_, at, effect)| *at == center && *effect == 170).count(), 1);
+        assert_eq!(effects.iter().filter(|(_, at, effect)| *at == center && *effect == 170).count(), 2);
         let before = runtime.read_actor_position(boss).map_err(debug)?;
         runtime.borrow_movement_position().commit_creature_relocation(boss, before, spawn_at).map_err(debug)?;
     }
-    move_to(owner, players[1], landing).await?;
     Ok(())
 }
 
