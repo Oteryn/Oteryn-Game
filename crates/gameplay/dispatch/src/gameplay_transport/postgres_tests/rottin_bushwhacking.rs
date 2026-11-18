@@ -71,7 +71,7 @@ pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
         "schema": 1,
         "quests": [{
             "quest": quest,
-            "recipe_sha256": format!("{:x}", Sha256::digest(source.as_bytes())),
+            "recipe_sha256": Sha256::digest(source.as_bytes()).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
             "tracks": [
                 {"key": MISSION, "initial": 1, "minimum": 0, "maximum": 2},
                 {"key": CAPTURES, "initial": 0, "minimum": 0, "maximum": 5}

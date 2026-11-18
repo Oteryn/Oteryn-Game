@@ -35,7 +35,10 @@ fn rottin_lucky_loop_talk_mints_one_weighted_bundle_postgres() -> TestResult {
 pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
     // This transaction fixture exercises the two gold bundles with admitted
     // output definitions. The quest unit case also checks the horn interval.
-    let digest = format!("{:x}", Sha256::digest(DONOR.as_bytes()));
+    let digest = Sha256::digest(DONOR.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
         "schema": 1,
         "quests": [{
