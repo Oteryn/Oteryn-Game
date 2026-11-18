@@ -171,6 +171,9 @@
         "kind": "keyword_handler"
       }
     ],
+    "wiki_overrides": {
+      "report_missing": "https://tibia.fandom.com/?curid=88737&oldid=1176165"
+    },
     "greeting_lines": [
       65,
       67

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Capture Jack Springer's Crystal201189f text and closed QuestState changes.
 
-The start and outfit final remain source-only artifacts: PR2844 ANSWER6589521017
-point5 holds the thirteen-effect start; Q20 holds the outfit final. No partial
-start or completed-without-outfit transition is emitted.
+The outfit final remains source-only pending a native reward binding.
 """
 
 from __future__ import annotations
@@ -73,8 +71,14 @@ def build(crystal):
         if not match:
             raise ValueError(f"Pinned Jack Springer greeting moved: {line}")
         greetings.append(json.loads(match[1]))
+    # TibiaWiki Grave Danger Quest/Spoiler, curid 88737, oldid 1176165,
+    # The Lich Knights transcript supersedes the donor's unconfirmed line 99.
+    next(entry for entry in keywords if entry["key"] == "report_missing")["reply"] = [
+        "Sadly, I have no news yet. But I can give you information about the {locations} of the graves that we learned about. If you need more holy water just ask me for a {trade}."
+    ]
     source = {"repository": "zimbadev/crystalserver", "revision": PIN, "path": SOURCE,
               "sha256": hashlib.sha256(raw).hexdigest(), "speech": witnesses,
+              "wiki_overrides": {"report_missing": "https://tibia.fandom.com/?curid=88737&oldid=1176165"},
               "greeting_lines": [65, 67],
               "keyword_precedence": "data/npclib/npc_system/npc_handler.lua:448-451",
               "keyword_matcher": "data/npclib/npc_system/keyword_handler.lua:58-67"}
@@ -108,10 +112,15 @@ def build(crystal):
                 "requested_by": {"npc": "crystal:npc/jack_springer", "keywords": [keyword], "topics": topics},
                 "source": {"repository": "zimbadev/crystalserver", "revision": PIN, "path": SOURCE, "line": line}}
 
+    start_transition = transition(START, "late", [], 127,
+                                  [effect(QUESTLINE, "LT", 1, 1)] +
+                                  [effect(PREFIX + "graves/" + name, "ANY", None, 1) for name in GRAVES])
+    start = {"source": {**source, "line": 127}, "runtime_status": "ACTIVE_ATOMIC",
+             "transition": start_transition}
     state = {"schema": "OTERYN_QUEST_STATE_LOWERING/v1", "classification": "OTS_HYPOTHESIS_ONLY",
              "family": "Quest",
              "contract": "docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
-             "authoring_sources": [source], "counts": {"quests": 1, "tracks": 3, "transitions": 1},
+             "authoring_sources": [source], "counts": {"quests": 1, "tracks": 3, "transitions": 2},
              "quests": [{"quest": QUEST, "source_quest": "crystal:quest/grave_danger",
                          "completion": "NOT_LOWERED_MULTI_TRACK",
                          "tracks": [track(QUESTLINE, 0, 0, 14, "QuestLine"),
@@ -120,13 +129,8 @@ def build(crystal):
                          "transitions": [
                              transition(ACCESS, "threat", [2], 119,
                                         [effect(QUESTLINE, "EQ", 2, 3), effect(DOOR, "ANY", None, 1)]),
+                             start_transition,
                          ]}]}
-    start = {"source": {**source, "line": 127}, "runtime_status": "LEFT_OUT_COORDINATOR_OWNER",
-             "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017",
-             "reason": "Point5 reserves the existing8-effect bound; atomic start must not be split",
-             "transition": transition(START, "late", [], 127,
-                                      [effect(QUESTLINE, "LT", 1, 1)] +
-                                      [effect(PREFIX + "graves/" + name, "ANY", None, 1) for name in GRAVES])}
     final = {"source": {**source, "line": 80}, "runtime_status": "LEFT_OUT_APPEARANCE_MAPPING",
              "question": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589624980",
              "reason": "No admitted selectable mapping for both source outfits; no completion flag without reward",

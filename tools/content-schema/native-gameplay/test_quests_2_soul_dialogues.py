@@ -35,12 +35,13 @@ class SourceDialogueGuards(unittest.TestCase):
         self.assertEqual(liquid_keys, {liquid.START, liquid.ACCESS})
         grave_state = json.loads((ROOT / 'content/quests/grave-danger-npc-state.json').read_text())
         grave_keys = {t['key'] for q in grave_state['quests'] for t in q['transitions']}
-        self.assertEqual(grave_keys, {grave.ACCESS})
+        # TibiaWiki spoiler oldid 1176165 starts the quest on "late".
+        self.assertEqual(grave_keys, {grave.ACCESS, grave.START})
         held_start = json.loads((ROOT / 'content/quests/grave-danger-start-source.json').read_text())
         held_final = json.loads((ROOT / 'content/quests/grave-danger-final-source.json').read_text())
         self.assertEqual(len(held_start['transition']['effects']), 13)
         self.assertEqual({t['key'] for t in held_final['transitions']}, {grave.FINISH, grave.FINISH_HELD})
-        self.assertEqual(held_start['runtime_status'], 'LEFT_OUT_COORDINATOR_OWNER')
+        self.assertEqual(held_start['runtime_status'], 'ACTIVE_ATOMIC')
         self.assertEqual(held_final['runtime_status'], 'LEFT_OUT_APPEARANCE_MAPPING')
 
     def test_all_held_primal_source_speeches_remain_present_without_native_admission(self):
