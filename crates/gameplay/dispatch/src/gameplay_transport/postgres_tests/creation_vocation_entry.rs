@@ -66,11 +66,13 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                     &session,
                     &h.root,
                 );
-                let (outcome, _, _) = Box::pin(
+                let (outcome, item_fence, placement) = Box::pin(
                     owner.enter_committed_actor(&budget, &request, session, transport, deps.actor),
                 )
                 .await;
                 assert_eq!(outcome, FirstEntryOutcome::Positioned, "{vocation}");
+                assert!(item_fence.is_some(), "{vocation}: missing item authority");
+                assert!(placement.is_some(), "{vocation}: missing entry placement");
                 let familiar = h.root.read_character_familiar_state(&authority, character).await?;
                 assert!(familiar.committed_character_revision().is_none());
                 let loaded = crate::gameplay_transport::load_character_cast_facts(&h.root, &authority, character).await;
