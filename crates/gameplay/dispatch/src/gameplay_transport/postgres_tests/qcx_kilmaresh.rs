@@ -1,9 +1,14 @@
 //! Kilmaresh Quest/Spoiler (curid 88780, oldid 1199254), The Boards that Mean the World.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::durability::quest_state::{QuestTransitionOutcome, npc_program::NpcProgramRequest};
+use crate::durability::quest_state::{
+    QuestCause, QuestTransitionOutcome, QuestTransitionRequest, npc_program::NpcProgramRequest,
+};
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_gameplay_quests::quest::{loader, npc_rules::NpcRuleTrigger};
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, loader,
+    npc_rules::NpcRuleTrigger,
+};
 use std::sync::Arc;
 
 const QUEST: &str = "oteryn:quest.kilmaresh_quest";
@@ -50,12 +55,47 @@ fn alyxo() -> TestResult {
             .active()
             .and_then(|active| active.native_gameplay())
             .ok_or("native items")?;
-        let catalogue = Arc::new(
-            loader::load_embedded_quest_state("content-1")
-                .map_err(debug)?
-                .catalogue()
-                .clone(),
-        );
+        let mut catalogue = loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?
+            .catalogue()
+            .clone();
+        let cases = [
+            (
+                "oteryn:quest-transition/qcx54/no-lyre",
+                &[(FAFNAR, 301), (LYRE, 3), (TORTOISE, 3)][..],
+                false,
+            ),
+            (
+                "oteryn:quest-transition/qcx54/no-tortoise",
+                &[(LYRE, 4), (TORTOISE, 2)][..],
+                false,
+            ),
+            (
+                "oteryn:quest-transition/qcx54/ready",
+                &[(TORTOISE, 3)][..],
+                true,
+            ),
+        ];
+        for (key, tracks, _) in cases {
+            catalogue = catalogue
+                .with_fixture_transition(QuestTransition {
+                    key: key.into(),
+                    quest: QUEST.into(),
+                    effects: tracks
+                        .iter()
+                        .map(|&(track, value)| QuestEffect {
+                            track: track.into(),
+                            from: QuestComparison::Any,
+                            effect: QuestEffectKind::Set(value),
+                        })
+                        .collect(),
+                    completes: false,
+                    experience: None,
+                    world_change: None,
+                })
+                .map_err(debug)?;
+        }
+        let catalogue = Arc::new(catalogue);
         let fence = owner
             .current_quest_fence(deps.admitted.game_session_id)
             .await
@@ -74,23 +114,34 @@ fn alyxo() -> TestResult {
         super::item_look::seed_main_backpack(&h, &[]).await?;
         let permit = owner.spell_lane_permit().await.ok_or("NPC item lane")?;
 
-        // Create durable hand-in states at the claim boundary.
-        for (command, lyre, tortoise) in [(100, 3, 3), (101, 4, 2), (102, 4, 3)] {
-            for (track, value) in [(FAFNAR, 301), (LYRE, lyre), (TORTOISE, tortoise)] {
-                sqlx::query(
-                    "INSERT INTO game_character_quest_tracks
-                     (character_id, track_key, quest_key, value, committed_character_revision)
-                     VALUES (encode($1,'hex')::uuid, $2, $3, $4, 2)
-                     ON CONFLICT (character_id, track_key) DO UPDATE SET value=excluded.value",
-                )
-                .bind(id(41).as_slice())
-                .bind(track)
-                .bind(QUEST)
-                .bind(i64::from(value))
-                .execute(&h.pool)
-                .await?;
-            }
+        // Each boundary state is written with the same receipt checks as live progress.
+        for (index, (key, _, complete)) in cases.into_iter().enumerate() {
+            let command = |id| -> TestResult<_> {
+                Ok(CommandRef::new(
+                    fence.game_session_id,
+                    CommandId::new(id).map_err(debug)?,
+                ))
+            };
+            let id = 100 + u64::try_from(index)? * 2;
             let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            let seeded = slot
+                .commit_quest_transition(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: key.into(),
+                        cause: QuestCause::Command(command(id)?),
+                    },
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(debug)?;
+            assert!(
+                matches!(seeded, QuestTransitionOutcome::Committed(_)),
+                "{seeded:?}"
+            );
             let result = slot
                 .commit_npc_program(
                     owner.root,
@@ -99,10 +150,7 @@ fn alyxo() -> TestResult {
                     &permit,
                     fence,
                     NpcProgramRequest {
-                        command: CommandRef::new(
-                            fence.game_session_id,
-                            CommandId::new(command).map_err(debug)?,
-                        ),
+                        command: command(id + 1)?,
                         npc: "oteryn:npc.alyxo".into(),
                         trigger: NpcRuleTrigger::Say,
                         message: "yes".into(),
@@ -117,11 +165,10 @@ fn alyxo() -> TestResult {
                 )
                 .await
                 .map_err(debug)?;
-            let complete = lyre == 4 && tortoise == 3;
             assert_eq!(
                 matches!(result.transition, QuestTransitionOutcome::Committed(_)),
                 complete,
-                "Unexpected Alyxo claim result with lyre={lyre} and tortoise={tortoise}: {result:?}"
+                "Unexpected Alyxo claim result after {key}: {result:?}"
             );
             let quantity: i64 = sqlx::query_scalar(
                 "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances
