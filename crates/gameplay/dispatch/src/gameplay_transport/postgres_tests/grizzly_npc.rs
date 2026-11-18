@@ -60,6 +60,14 @@ fn grizzly_npc_wire_task_xp_crosses_level_50_and_unlocks_live_promotion() -> Tes
 }
 
 #[test]
+fn grizzly_npc_wire_trophy_hunter_backpack_request_refused() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("grizzly-backpack-refusal", || scenario(7))
+}
+
+#[test]
 fn questpc8_grizzly_production_placement_native_join_and_task() -> TestResult {
     let started = std::time::Instant::now();
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -177,6 +185,8 @@ fn scenario(case: u8) -> TestResult {
             130
         } else if case == 4 {
             49
+        } else if case == 7 {
+            80
         } else {
             8
         };
@@ -482,6 +492,25 @@ fn scenario(case: u8) -> TestResult {
                 value(&owner, &authority, quest::KILL_COUNTER_BASE + 1).await?,
                 0
             );
+        } else if case == 7 {
+            seed(&h, &[(quest::POINTS_STORAGE, 70), (quest::PROMOTION_STORAGE, 4)]).await?;
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
+            wire::talk_with_line(
+                &mut owner,
+                &mut admitted,
+                npc,
+                &[(3, "hi"), (4, "promotion"), (5, "demon backpack")],
+                "Sorry, not possible.",
+            )
+            .await?;
+            assert_eq!(value(&owner, &authority, quest::PROMOTION_STORAGE).await?, 6);
+            let (entitlements, backpacks): (i64, i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_character_grizzly_reward_entitlements), \
+                 (SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i9601')",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!((entitlements, backpacks), (0, 0));
         } else if case == 5 {
             questpc8_campaign::exercise(&mut owner, &mut admitted, npc, &h, &authority, &journal)
                 .await?;

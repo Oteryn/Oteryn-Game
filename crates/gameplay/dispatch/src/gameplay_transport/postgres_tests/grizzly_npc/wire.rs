@@ -102,6 +102,7 @@ pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn talk(
         commands,
         Some(NpcIntentDisposition::Ok),
         None,
+        None,
     )
     .await
 }
@@ -118,6 +119,7 @@ pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn talk_refus
         npc,
         commands,
         Some(NpcIntentDisposition::Rejected),
+        None,
         None,
     )
     .await
@@ -141,6 +143,7 @@ pub(super) async fn talk_refused_with_parked_confirmation(
         commands,
         Some(NpcIntentDisposition::Rejected),
         Some(*command_id),
+        None,
     )
     .await
 }
@@ -151,7 +154,17 @@ pub(super) async fn talk_interrupted(
     npc: EntityRef,
     commands: &[(u64, &str)],
 ) -> TestResult {
-    conversation(owner, admitted, npc, commands, None, None).await
+    conversation(owner, admitted, npc, commands, None, None, None).await
+}
+
+pub(super) async fn talk_with_line(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    commands: &[(u64, &str)],
+    line: &str,
+) -> TestResult {
+    conversation(owner, admitted, npc, commands, Some(NpcIntentDisposition::Ok), None, Some(line)).await
 }
 
 async fn conversation(
@@ -161,6 +174,7 @@ async fn conversation(
     commands: &[(u64, &str)],
     expected_last: Option<NpcIntentDisposition>,
     park_before: Option<u64>,
+    expected_line: Option<&str>,
 ) -> TestResult {
     let fresh = commands
         .iter()
@@ -258,6 +272,24 @@ async fn conversation(
                         expected,
                         "{command_id}: {text}"
                     );
+                    if expected_line.is_some() {
+                        use oteryn_protocol_oteryn::npc_service::{
+                            STATE_DOMAIN_NPC_CONVERSATION, decode_npc_conversation,
+                        };
+                        loop {
+                            let frame = read_frame(&mut client).await?;
+                            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                            if envelope.message_type() == MessageType::StateDelta {
+                                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+                                if delta.domain_id == STATE_DOMAIN_NPC_CONVERSATION {
+                                    if let Some(line) = expected_line.filter(|_| last) {
+                                        assert_eq!(decode_npc_conversation(delta.payload).map_err(debug)?.lines, [line]);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
                     break;
                 }
             }
