@@ -46,6 +46,7 @@ pub(super) enum Case {
     Expiry,
     NativeDeath,
     ProductionNativeDeath,
+    WarzoneNativeDeath(&'static str),
     OfflineReward,
     LivePrivacy,
     ConcurrentCollection,
@@ -84,6 +85,24 @@ fn boss_rewards_postgres_live_rewards_are_private_between_current_characters() -
 #[test]
 fn boss_rewards_postgres_concurrent_collectors_on_two_roots_transfer_once() -> TestResult {
     run_case(Case::ConcurrentCollection)
+}
+
+#[test]
+fn ddepths_warzone_bosses_use_native_death_reward_eligibility_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    for creature in [
+        "oteryn:creature.the_baron_from_below",
+        "oteryn:creature.the_count_of_the_core",
+        "oteryn:creature.the_duke_of_the_depths",
+    ] {
+        run_case(Case::WarzoneNativeDeath(creature))?;
+    }
+    Ok(())
 }
 
 pub(super) fn run_case(case: Case) -> TestResult {
@@ -277,12 +296,13 @@ fn scenario(case: Case) -> TestResult {
             supported.as_slice(),
             "the physical reward fixture must negotiate every required capability"
         );
-        if matches!(case, Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse) {
-            let creature = if matches!(case, Case::ProductionNativeDeath) {
-                "oteryn:creature.grand_mother_foulscale"
-            } else {
-                "oteryn:creature.rat"
-            };
+        let native_creature = match case {
+            Case::ProductionNativeDeath => Some("oteryn:creature.grand_mother_foulscale"),
+            Case::WarzoneNativeDeath(creature) => Some(creature),
+            Case::NativeDeath | Case::LargePrivateCorpse => Some("oteryn:creature.rat"),
+            _ => None,
+        };
+        if let Some(creature) = native_creature {
             native_death(&h, &owner, &mut admitted, fence, creature).await?;
             eprintln!("BOSS_REWARDS POSTGRES_NATIVE_DEATH_COMPLETED");
             drop(owner);
@@ -303,6 +323,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::LargePrivateCorpse
             | Case::NativeDeath
             | Case::ProductionNativeDeath
+            | Case::WarzoneNativeDeath(_)
             | Case::OfflineReward
             | Case::LivePrivacy
             | Case::ConcurrentCollection => now,
@@ -441,7 +462,7 @@ fn scenario(case: Case) -> TestResult {
             )
             .await
             .map_err(|error| format!("W03 expiry scenario: {error}"))?,
-            Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse => return Err("native scenario already returned".into()),
+            Case::NativeDeath | Case::ProductionNativeDeath | Case::WarzoneNativeDeath(_) | Case::LargePrivateCorpse => return Err("native scenario already returned".into()),
             Case::OfflineReward => {
                 assert_eq!(
                     sqlx::query_scalar::<_, i32>(
