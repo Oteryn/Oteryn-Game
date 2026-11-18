@@ -16,6 +16,7 @@ pub struct CounterRef<'a> {
     pub death_area: Option<crate::quest::authored_bindings::kills::DeathArea>,
     pub death_areas: &'a [crate::quest::authored_bindings::kills::DeathArea],
     pub damage_credit: Option<crate::quest::authored_bindings::kills::DamageCredit>,
+    pub required_outcome: Option<&'a crate::quest::world_callbacks::OutcomeRequirement>,
     pub record_defeat_time: bool,
     pub encounter_source: Option<&'a str>,
 }
@@ -34,6 +35,7 @@ impl Counter {
             death_area: None,
             death_areas: &[],
             damage_credit: None,
+            required_outcome: None,
             record_defeat_time: false,
             encounter_source: None,
         }

@@ -74,6 +74,8 @@ pub struct KillCounter {
     pub death_areas: Vec<DeathArea>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub damage_credit: Option<DamageCredit>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_outcome: Option<super::super::world_callbacks::OutcomeRequirement>,
     /// Store the credited defeat's Unix second for elapsed-time callback gates.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub record_defeat_time: bool,
@@ -100,6 +102,17 @@ impl KillCounter {
                     || self.advance_gate_to.is_some()
                     || !(self.minimum..self.maximum).contains(&self.gate_value))
             || self.minimum >= self.maximum
+            || self.required_outcome.as_ref().is_some_and(|required| {
+                !required.valid()
+                    || self.damage_credit.is_none()
+                    || self.encounter_source.is_some()
+                    || !quest.stages.iter().any(|stage| {
+                        matches!(&stage.trigger, super::Trigger::MapUse { callback }
+                        if callback.effects.encounter_outcome.as_ref().is_some_and(|source| {
+                            source.outcome == *required && source.terminal == self.creature
+                        }))
+                    })
+            })
             || self.record_defeat_time
                 && (self.damage_credit.is_none()
                     || self.set_to_maximum
@@ -232,6 +245,7 @@ impl KillCounter {
             death_area: self.death_area,
             death_areas: &self.death_areas,
             damage_credit: self.damage_credit,
+            required_outcome: self.required_outcome.as_ref(),
             record_defeat_time: self.record_defeat_time,
             encounter_source: self.encounter_source.as_deref(),
         }

@@ -57,6 +57,10 @@ pub struct CallbackEffects {
     /// A shared exit is usable during the window opened by a qualifying death.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub death_window: Option<DeathWindow>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub encounter_outcome: Option<EncounterOutcome>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub require_encounter_outcome: Option<OutcomeRequirement>,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
@@ -421,6 +425,34 @@ pub enum EncounterPhase {
     Cults,
 }
 
+/// Crystal 201189f8 arbaziloth_death.lua:18-27 and forge_teleport.lua:17-29.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum EncounterMode {
+    Easy,
+    Hard,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct OutcomeRequirement {
+    pub group: String,
+    pub mode: EncounterMode,
+}
+
+impl OutcomeRequirement {
+    pub(crate) fn valid(&self) -> bool {
+        self.group.starts_with("oteryn:encounter.") && crate::quest::valid_quest_key(&self.group)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterOutcome {
+    pub outcome: OutcomeRequirement,
+    pub terminal: String,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct EncounterTiming {
@@ -495,6 +527,37 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.encounter_outcome.as_ref().is_some_and(|outcome| {
+        !outcome.outcome.valid()
+            || !outcome.terminal.starts_with("oteryn:creature.")
+            || effects.encounter.as_ref().is_none_or(|room| {
+                room.phase.is_some()
+                    || room.timing.is_some()
+                    || room
+                        .monsters
+                        .iter()
+                        .filter(|spawn| spawn.creature == outcome.terminal)
+                        .count()
+                        != 1
+            })
+            || callback.trigger != Trigger::Use
+            || callback.requires_durable_commit()
+    }) || effects
+        .require_encounter_outcome
+        .as_ref()
+        .is_some_and(|required| {
+            !required.valid()
+                || callback.trigger != Trigger::StepIn
+                || callback.selector.position.is_none()
+                || callback.teleport.is_none()
+                || !callback.return_on_failure
+                || callback.requires_durable_commit()
+                || effects.encounter.is_some()
+                || effects.death_window.is_some()
+        })
+    {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

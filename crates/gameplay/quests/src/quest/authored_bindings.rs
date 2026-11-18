@@ -337,6 +337,14 @@ impl Bindings {
                         super::world_callbacks::validate_callbacks(std::slice::from_ref(
                             callback.as_ref(),
                         ))?;
+                        if let Some(required) = &callback.effects.require_encounter_outcome
+                            && !quest.stages.iter().any(|stage| {
+                                matches!(&stage.trigger, Trigger::MapUse { callback }
+                                    if callback.effects.encounter_outcome.as_ref().is_some_and(|source| source.outcome == *required))
+                            })
+                        {
+                            return Err("authored exit lacks its encounter outcome source".into());
+                        }
                         if let Some(reset) = stage.death_reset()
                             && (!transitions.insert(&reset.transition)
                                 || super::native_kills::counter(&reset.transition).is_some()
@@ -371,7 +379,7 @@ impl Bindings {
                     || !transitions.insert(key)
                     || (storage.is_empty()
                         && !stage.is_native_encounter()
-                        && !stage.is_stateless_death_window()
+                        && !stage.is_stateless_encounter_exit()
                         && !matches!(&stage.trigger,
                             Trigger::MapUse { callback } | Trigger::StepIn { callback }
                             if callback.operation_count() > 0))
@@ -483,7 +491,7 @@ impl Bindings {
                         world_change: None,
                     });
                 }
-                if stage.is_native_encounter() || stage.is_stateless_death_window() {
+                if stage.is_native_encounter() || stage.is_stateless_encounter_exit() {
                     continue;
                 }
                 for mut transition in stage.transitions(&quest.quest)? {
@@ -576,10 +584,10 @@ impl Stage {
             .character_reset
             .as_ref()
     }
-    fn is_stateless_death_window(&self) -> bool {
+    fn is_stateless_encounter_exit(&self) -> bool {
         matches!(&self.trigger, Trigger::StepIn { callback }
             if !self.completes && !callback.has_state()
-                && callback.effects.death_window.is_some()
+                && (callback.effects.death_window.is_some() || callback.effects.require_encounter_outcome.is_some())
                 && callback.item_reward().is_none()
                 && callback.effects.encounter.is_none()
                 && callback.offerings.is_empty()
