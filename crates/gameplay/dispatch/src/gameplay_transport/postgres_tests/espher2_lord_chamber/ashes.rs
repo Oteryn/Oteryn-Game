@@ -137,7 +137,7 @@ pub(super) async fn exercise(
     );
     let target_handle = NonZeroU64::new(2).ok_or("target handle")?;
     let use_knife =
-        |(actor, item_fence): (ExactActorRef, CurrentCharacterItemFence), bag, command_id| {
+        |(actor, item_fence): (ExactActorRef, CurrentCharacterItemFence), bag: u8, command_id| {
             owner.use_craft(
                 actor,
                 UseCommand {
