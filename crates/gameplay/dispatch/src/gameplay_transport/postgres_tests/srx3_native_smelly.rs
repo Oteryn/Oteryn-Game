@@ -14,7 +14,7 @@ fn srx3_smelly_actual_native_callback_damages_top_player_after500ms_postgres() -
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-native-smelly", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-native-smelly", || {
         run(async |admin| {
             super::reset();
             // Relative source area uses an actual authenticated source map; no
@@ -31,8 +31,8 @@ fn srx3_smelly_actual_native_callback_damages_top_player_after500ms_postgres() -
             let deps = scene.dependencies()?;
             let h = Harness::create_with_admission_seed(admin, "srx3_native_smelly", false, false)
                 .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -42,7 +42,7 @@ fn srx3_smelly_actual_native_callback_damages_top_player_after500ms_postgres() -
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, kind)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
             let player = admitted.runtime_actor.ok_or("real native Player")?;

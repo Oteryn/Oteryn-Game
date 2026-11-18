@@ -66,22 +66,22 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     let base = Dependencies::new()?;
     let world = if case == Case::StaticAqueduct {
-        super::super::house_wrap::static_timed_decoration_bundle(
+        super::super::house_wrap_fixtures::static_timed_decoration_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
     } else if matches!(case, Case::BedKit(_)) {
-        super::super::house_wrap::static_bed_decoration_bundle(
+        super::super::house_wrap_fixtures::static_bed_decoration_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
     } else if case == Case::StaticWindow {
-        super::super::house_wrap::static_decoration_bundle(
+        super::super::house_wrap_fixtures::static_decoration_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
     } else {
-        super::super::house_wrap::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?
+        super::super::house_wrap_fixtures::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?
     };
     let (controller, native_pin) =
         crate::content::native_gameplay::test_support::activated_with_loot_tables(
@@ -263,7 +263,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             .bind([2_u8; 32].as_slice()).bind([3_u8; 32].as_slice())
             .execute(&h.pool).await?;
     }
-    super::super::item_look::seed_main_backpack(h, &contents).await?;
+    super::super::item_look_fixtures::seed_main_backpack(h, &contents).await?;
     let body = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?),
         use_with: None,
@@ -285,7 +285,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::BedKit(_)
             | Case::CarpetTile { .. }
     ) {
-        let (next, refused, _) = super::super::rust_lottery::exchange(
+        let (next, refused, _) = super::super::rust_lottery_fixtures::exchange(
             &owner,
             admitted,
             1,

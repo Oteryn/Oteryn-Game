@@ -1,5 +1,5 @@
 use super::TestResult;
-use super::quest_catalogue_chests::{cases, execute, phase_a_cohort};
+use super::quest_catalogue_chests_fixtures::{cases, execute, phase_a_cohort};
 
 #[test]
 fn quest_catalogue_chests_qchk1_ring_quest_use_replay_and_refusal() -> TestResult {

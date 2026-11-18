@@ -1,6 +1,6 @@
 //! A fresh admission waiting for the busy holder keeps the scheduled monster passes behind it.
 use super::fixture::{Harness, debug};
-use super::kill_reward_e2e::scenario_thread::run_async as run;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult};
 use std::time::Duration;
 
@@ -14,7 +14,7 @@ fn fresh_admission_waiting_for_the_holder_refuses_background_passes_postgres() -
         let h = Harness::create_with_admission_seed(admin, "fresh_holder_preference", true, false)
             .await?;
         let result: TestResult = async {
-            let source = super::house_transfer::RecoverySource::start(&h).await?;
+            let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)?
                 .as_secs();
@@ -44,7 +44,7 @@ fn fresh_admission_waiting_for_the_holder_refuses_background_passes_postgres() -
             let deps = Dependencies::new()?;
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &source.evidence;
-            let token = super::house_transfer::RecoverySource::fresh_token(91)?;
+            let token = super::house_transfer_fixtures::RecoverySource::fresh_token(91)?;
             let session = GameSessionId::decode(&super::fixture::id(91)).map_err(debug)?;
             let attempt = FreshAdmissionAttempt {
                 character_id: CharacterId::decode(&super::fixture::id(41)).map_err(debug)?,

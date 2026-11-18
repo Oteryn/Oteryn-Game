@@ -1,4 +1,6 @@
 //! SV15: real command-436 connection, production combat, fee and complete backpack MINT.
+use super::arena_match_fixtures::{fixture};
+
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::ComposedFreshAdmission;
@@ -7,8 +9,6 @@ use crate::gameplay_transport::connection::{
     AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
 };
 use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction as A, ArenaDisposition as D};
-#[path = "arena_match/fixture.rs"]
-pub(super) mod fixture;
 
 #[test]
 fn arena_match_real_connection_status_and_full_match() -> TestResult {
@@ -47,7 +47,7 @@ async fn command(
     action: A,
 ) -> TestResult<wire::ArenaResult> {
     let id = admitted.continuity.next_command_id;
-    let (status, bytes) = super::guild_wire::exchange(
+    let (status, bytes) = super::guild_wire_fixtures::exchange(
         owner,
         admitted,
         id,
@@ -192,7 +192,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
         )?;
@@ -314,7 +314,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         } else {
             "oteryn:item.tibia.i3035"
         };
-        super::item_look::seed_main_backpack(&harness, &[(coins, 2)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&harness, &[(coins, 2)]).await?;
         fixture::equip_sword(&harness).await?;
         owner.admit_progression_session(&mut admitted).await;
         assert!(
@@ -904,7 +904,6 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         Ok(())
     })
 }
-
 
 // Positive setup uses the same fenced quest writer, never a raw state insert.
 async fn finish_barbarian_test(owner: &ComposedFreshAdmission<'_, '_, '_>, session: crate::foundation::GameSessionId) -> TestResult {

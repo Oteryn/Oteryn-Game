@@ -11,7 +11,7 @@ use serde_json::Value;
 #[path="coin_market/peer.rs"]mod peer;
 fn uuid(v:&[u8;16])->String{let h=v.iter().map(|b|format!("{b:02x}")).collect::<String>();format!("{}-{}-{}-{}-{}",&h[..8],&h[8..12],&h[12..16],&h[16..20],&h[20..])}
 async fn call(owner:&crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,session:&mut crate::gameplay_transport::connection::AdmittedSession,id:u64,r:Request)->TestResult<Value>{
- let bytes=wire::encode(&r).map_err(debug)?;let (status,result)=super::cyclopedia::support::exchange(owner,session,id,wire::COMMAND,&bytes).await?;
+ let bytes=wire::encode(&r).map_err(debug)?;let (status,result)=super::cyclopedia_fixtures::support::exchange(owner,session,id,wire::COMMAND,&bytes).await?;
  assert_eq!(status,oteryn_protocol_oteryn::CommandStatus::Accepted);Ok(serde_json::from_str(&wire::decode_reply(&result).map_err(debug)?)?)
 }
 #[test]fn coin_market_postgres_real_wire_reserve_partial_fill_replay_restart_and_gold_conservation()->TestResult{
@@ -23,7 +23,7 @@ fn scenario(gift:bool)->TestResult{run(async |admin|{
  let seal=harness.recovery.seal_current().map_err(debug)?;let authority=harness.root.open_character_authority(&seal).await.map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

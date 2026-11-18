@@ -8,8 +8,8 @@ fn children_of_the_revolution_completion_unlocks_zalamon() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("qcx-wrath-entry", || {
-        super::quest_world_callbacks::scenario(
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("qcx-wrath-entry", || {
+        super::quest_world_callbacks_fixtures::scenario(
             "authored-wrath-opening",
             Position {
                 x: 33354,

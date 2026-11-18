@@ -1,4 +1,4 @@
-use super::{TestResult, quest_catalogue_chests::phase_a_cohort};
+use super::{TestResult, quest_catalogue_chests_fixtures::phase_a_cohort};
 
 fn use_reward_chests(quests: &[&str]) -> TestResult {
     // The shared executor skips SQL without a route. Skip catalogue loading too.

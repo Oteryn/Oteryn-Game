@@ -106,9 +106,9 @@ fn scenario() -> TestResult {
                 generation: placed.actors[0].actor_local_generation(),
             }
         };
-        super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 100)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 100)]).await?;
         for (command, text) in [(1, "hi"), (2, "deposit 20 gold"), (3, "yes")] {
-            super::npc_paid_travel::talk(&owner, &deps, npc, command, text).await?;
+            super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, command, text).await?;
         }
         let balance = || async {
             sqlx::query_scalar::<_, i64>(
@@ -120,7 +120,7 @@ fn scenario() -> TestResult {
         assert_eq!(balance().await?, 20);
         owner.clock_origin -= std::time::Duration::from_secs(1);
         for (command, text) in [(4, "withdraw 5 gold"), (5, "yes")] {
-            super::npc_paid_travel::talk(&owner, &deps, npc, command, text).await?;
+            super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, command, text).await?;
         }
         assert_eq!(balance().await?, 15);
         let entries: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_bank_entries")

@@ -3,7 +3,7 @@
 //! The cohort helper selects ledger rows by quest slug across donor namespaces.
 //! It also exercises the already-qualified sibling chests in Wedding Ring and Targuna.
 
-use super::{TestResult, quest_catalogue_chests::phase_a_cohort};
+use super::{TestResult, quest_catalogue_chests_fixtures::phase_a_cohort};
 
 #[test]
 fn quest_catalogue_chests_qchk9_waterfall_quest_use_replay_and_refusal() -> TestResult {

@@ -1,7 +1,7 @@
 //! QCHK-8 reward chests at their authored source placements.
 
 use super::TestResult;
-use super::quest_catalogue_chests::phase_a_cohort;
+use super::quest_catalogue_chests_fixtures::phase_a_cohort;
 
 #[test]
 fn quest_catalogue_chests_qchk8_six_rubies_use_replay_and_refusal() -> TestResult {

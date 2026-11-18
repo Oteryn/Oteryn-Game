@@ -1,4 +1,4 @@
-use super::{TestResult, quest_catalogue_chests::phase_a_cohort};
+use super::{TestResult, quest_catalogue_chests_fixtures::phase_a_cohort};
 
 #[test]
 fn quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal() -> TestResult {
