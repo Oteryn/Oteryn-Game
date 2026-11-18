@@ -6,7 +6,7 @@ use super::{
     item_view::ItemKey,
 };
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef};
-use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
+use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 // A possibly committed capture cannot leave the target available to another
@@ -79,7 +79,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (UseTarget::Item(_), Some(ItemKey::Instance(item))) => Some(item),
             (UseTarget::ItemByDefinition(_), None)
                 if intent.use_with.is_none()
-                    && intent.use_with_map_item.is_none()
+                    && matches!(
+                        (&intent.use_with_map_item, corpse),
+                        (None, None) | (Some(MapUseTarget::Item(_)), Some(_))
+                    )
                     && intent.use_with_position.is_none() =>
             {
                 None
@@ -136,12 +139,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
-            // Crystal actions_ghost_detector.lua:67 and actions_thermometer.lua:18
-            // handle hotkeys and inventory clicks with the same carried tool.
+            // Crystal 201189f8: actions_ghost_detector.lua:67, actions_thermometer.lua:18
+            // and actions/tools/skinning.lua:259-268 accept either way of using the tool.
             .filter(|c| {
                 selected.is_some()
                     || c.carried_tracker.is_some()
                     || c.server_save_hotspot.is_some()
+                    || c.corpse_target
+                        .as_ref()
+                        .is_some_and(|target| target.reusable_tool)
             })
             // Selected two-input recipes retain their own M20 admission owner.
             .filter(|c| c.carried_target.is_none() && !c.fresh_corpse)
@@ -179,10 +185,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if (corpse.is_none() && intent.use_with_map_item.is_some())
             || (corpse.is_some()
-                && (!matches!(
-                    intent.use_with_map_item,
-                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
-                ) || intent.use_with.is_some()))
+                && (!matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
+                    || intent.use_with.is_some()))
             || intent.use_with_position.is_some()
             || !self
                 .states

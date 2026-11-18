@@ -18,7 +18,7 @@ const TOOL: &str = "oteryn:item.tibia.i5908";
 const CREATURE: &str = "oteryn:creature.minotaur";
 
 #[test]
-fn ashes_sampling_requires_current_age_and_preserves_knife_and_corpse() -> TestResult {
+fn ashes_click_and_hotkey_share_the_age_gate_and_preserve_knife_and_corpse() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -89,6 +89,10 @@ pub(super) async fn exercise(
         .race
         .clone()
         .ok_or("source race")?;
+    let knife_definition = native
+        .item_index()
+        .and_then(|index| index.definition_ref("Item", TOOL, "definition-r1"))
+        .ok_or("native obsidian knife definition")?;
     super::item_look::seed_main_backpack(harness, &[(TOOL, 1)]).await?;
     let corpse =
         super::srx2_scavenge::mint_corpse(owner, harness, native, 5969, Some(race), 9401).await?;
@@ -104,10 +108,10 @@ pub(super) async fn exercise(
         use_with_position: None,
     };
     let mut last = None;
-    for (offset, earliest, expected) in [
-        (0, 30_000, UseDisposition::Rejected),
-        (1, 0, UseDisposition::Committed),
-        (2, 0, UseDisposition::Committed),
+    for (offset, earliest, hotkey, expected) in [
+        (0, 30_000, false, UseDisposition::Rejected),
+        (1, 0, false, UseDisposition::Committed),
+        (2, 0, true, UseDisposition::Committed),
     ] {
         owner.quest_catalogue = Some(catalogue(&content, earliest)?);
         owner.refresh_quest_session(session, false).await;
@@ -121,22 +125,27 @@ pub(super) async fn exercise(
             command_id: first_command_id + offset,
             item_fence: Some(fence.item_fence()),
         };
+        let mut intent = intent.clone();
+        if hotkey {
+            intent.target = UseTarget::ItemByDefinition(knife_definition);
+        }
         let result = owner
             .use_quest_tool(
                 actor,
                 command,
                 intent.clone(),
-                Some(ItemKey::Instance(id(71))),
+                (!hotkey).then_some(ItemKey::Instance(id(71))),
                 Some(ItemKey::Instance(corpse)),
             )
             .await
             .map_err(debug)?
             .ok_or("quest USE")?;
         assert_eq!(result.disposition, expected);
-        last = Some(command);
+        last = Some((command, intent));
     }
+    let (command, intent) = last.ok_or("committed command")?;
     let replay = owner
-        .use_quest_tool(actor, last.ok_or("committed command")?, intent, None, None)
+        .use_quest_tool(actor, command, intent, None, None)
         .await
         .map_err(debug)?
         .ok_or("reusable replay")?;
