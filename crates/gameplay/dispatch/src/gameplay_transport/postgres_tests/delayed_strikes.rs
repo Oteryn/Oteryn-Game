@@ -229,7 +229,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 crate::content::NativeEntryStart {
                     x: 1,
                     y: 11,
-                    floor: -7,
+                    floor: 7,
                 },
             )
             .ok_or("shielded strike room")?
