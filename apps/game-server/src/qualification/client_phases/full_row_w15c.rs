@@ -141,6 +141,14 @@ fn to_walkway(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> 
     route(world, from, |at| at == WALKWAY)
 }
 
+fn from_walkway(
+    world: &BundleWorld,
+    npc: &oteryn_world_bundle::npc::Npc,
+) -> TestResult<Vec<StepDirection>> {
+    route(world, WALKWAY, |at| near(at, npc))
+        .ok_or_else(|| "step=reach observed=no-walk-route-from-walkway-to-grizzly-adams".into())
+}
+
 fn near(at: TilePos, npc: &oteryn_world_bundle::npc::Npc) -> bool {
     npc.placements
         .iter()
@@ -350,9 +358,12 @@ async fn reach(
         return actor_at(client, npc);
     }
 
+    let approach = from_walkway(world, npc)?;
     let path = if let Some(path) = to_walkway(world, from) {
         path
     } else {
+        let harbor = to_walkway(world, PORT_HOPE)
+            .ok_or("step=reach observed=no-walk-route-from-port-hope-to-walkway")?;
         sail(
             client,
             world,
@@ -360,13 +371,10 @@ async fn reach(
             &metadata.spawns,
         )
         .await?;
-        to_walkway(world, PORT_HOPE)
-            .ok_or("step=reach observed=no-walk-route-from-port-hope-to-walkway")?
+        harbor
     };
     walk_leg(client, world, "port-hope-walkway", &path).await?;
-    let path = route(world, WALKWAY, |at| near(at, npc))
-        .ok_or("step=reach observed=no-walk-route-from-walkway-to-grizzly-adams")?;
-    walk_leg(client, world, "grizzly-adams", &path).await?;
+    walk_leg(client, world, "grizzly-adams", &approach).await?;
     actor_at(client, npc)
 }
 
@@ -553,8 +561,8 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
     )?;
     assert_eq!(walkway, WALKWAY);
     assert!(route(&world, PORT_HOPE, |at| near(at, grizzly)).is_none());
-    let approach =
-        route(&world, walkway, |at| near(at, grizzly)).ok_or("Grizzly Adams unreachable")?;
+    let captain = placement(&metadata.npcs, CAPTAIN).inspect_err(|error| eprintln!("{error}"));
+    let approach = from_walkway(&world, grizzly)?;
     let reached = check_leg(
         "Walkway to Grizzly Adams, including replay",
         walkway,
@@ -575,7 +583,7 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         TOWN,
         route(&world, TOWN, near_boarding_ladder).ok_or("boarding ladder unreachable")?,
     )?;
-    let captain = placement(&metadata.npcs, CAPTAIN)?;
+    let captain = captain?;
     let deck = TilePos {
         y: BOARDING_LADDER.y + 1,
         floor: BOARDING_LADDER.floor + 1,
