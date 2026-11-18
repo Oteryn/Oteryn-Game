@@ -384,9 +384,37 @@ pub enum EncounterPhase {
 pub struct DeathPhases {
     pub terminal: String,
     pub replacements: Vec<DeathReplacement>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub terminal_portal: Option<TerminalPortal>,
     /// Room movement on the sealed terminal death. Quest credit uses its own writer.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub terminal_transfer: Option<TerminalTransfer>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TerminalPortal {
+    pub position: Position,
+    pub original_appearance: u16,
+    pub open_appearance: u16,
+    pub destination: Position,
+    pub return_destination: Position,
+    pub duration_ms: u32,
+}
+
+impl TerminalPortal {
+    fn valid(self) -> bool {
+        [self.position, self.destination, self.return_destination]
+            .iter()
+            .all(|p| (-15..=0).contains(&p.floor))
+            && self.original_appearance != 0
+            && self.open_appearance != 0
+            && self.original_appearance != self.open_appearance
+            && self.position != self.destination
+            && self.position != self.return_destination
+            && self.destination != self.return_destination
+            && (1..=3_600_000).contains(&self.duration_ms)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -474,7 +502,13 @@ fn valid_death_phases(
         || encounter.timing.is_some()
         || encounter.personal_cooldown_seconds.is_some()
         || !valid_quest_key(&plan.terminal)
-        || !(1..=8).contains(&plan.replacements.len())
+        || plan.replacements.len() > 8
+        || (plan.replacements.is_empty()
+            && plan.terminal_portal.is_none()
+            && plan.terminal_transfer.is_none())
+        || plan
+            .terminal_portal
+            .is_some_and(|portal| !portal.valid() || !in_room(portal.position))
         || plan
             .terminal_transfer
             .is_some_and(|transfer| !transfer.valid())

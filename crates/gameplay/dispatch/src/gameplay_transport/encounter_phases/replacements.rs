@@ -4,6 +4,7 @@ use super::{CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, Moveme
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_gameplay_quests::quest::world_callbacks::{DeathPhases, Encounter};
 
+use super::terminal_portal::Portal;
 use super::terminal_transfer::{Movement, Transfer};
 
 #[derive(Debug)]
@@ -22,6 +23,7 @@ pub(super) struct Replacements {
     activation: u64,
     finished: bool,
     transfer: Option<Transfer>,
+    portal: Option<Portal>,
 }
 
 impl Replacements {
@@ -62,6 +64,7 @@ impl Replacements {
             activation: runtime.content_pin().activation_sequence(),
             finished: false,
             transfer: None,
+            portal: None,
         })
     }
 
@@ -79,6 +82,7 @@ impl Replacements {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        now_us: u64,
     ) -> Result<bool, CarrierError> {
         if !self.is_current(runtime) || self.finished {
             return Ok(false);
@@ -96,6 +100,12 @@ impl Replacements {
         if finished && let Some(plan) = self.plan.terminal_transfer {
             self.transfer = Some(Transfer::capture(runtime, plan)?);
         }
+        if finished {
+            self.portal = self
+                .plan
+                .terminal_portal
+                .and_then(|plan| Portal::open(plan, now_us));
+        }
         member.death_at = Some(at);
         self.finished = finished;
         Ok(true)
@@ -103,6 +113,24 @@ impl Replacements {
 
     pub(super) fn transfer_pending(&self) -> bool {
         self.transfer.as_ref().is_some_and(Transfer::is_pending)
+    }
+
+    pub(super) fn completion_pending(&self) -> bool {
+        self.portal.is_some() || self.transfer_pending()
+    }
+
+    pub(super) fn project_portal(
+        &mut self,
+        cells: &crate::content::NativeEntryMovementCells,
+        now_us: u64,
+    ) {
+        if self
+            .portal
+            .as_ref()
+            .is_some_and(|portal| portal.project(cells, now_us))
+        {
+            self.portal = None;
+        }
     }
 
     pub(super) fn project_transfer(

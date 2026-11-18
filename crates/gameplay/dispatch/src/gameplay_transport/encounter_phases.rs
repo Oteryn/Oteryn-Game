@@ -9,6 +9,7 @@ use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
 mod replacements;
+mod terminal_portal;
 mod terminal_transfer;
 
 #[derive(Debug)]
@@ -40,10 +41,11 @@ impl Fight {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        now_us: u64,
     ) -> Result<bool, CarrierError> {
         match self {
             Self::Cults(fight) => fight.projected_death(runtime, actor),
-            Self::Replacements(fight) => fight.projected_death(runtime, actor),
+            Self::Replacements(fight) => fight.projected_death(runtime, actor, now_us),
         }
     }
 
@@ -123,7 +125,7 @@ impl Registry {
                     // Credit was captured in the lethal turn. Release the lever
                     // only after exact terminal decorations retire; tick retries failures.
                     let ActivePhase { fight, cells, .. } = phase;
-                    matches!(fight, Fight::Replacements(fight) if fight.transfer_pending())
+                    matches!(fight, Fight::Replacements(fight) if fight.completion_pending())
                         || fight
                             .advance(runtime, |runtime, at| placement(cells, runtime, at))
                             .is_err()
@@ -148,14 +150,18 @@ impl Registry {
         &self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        now_us: u64,
     ) {
         let Ok(mut active) = self.active.lock() else {
             return;
         };
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
-            if phase.fight.projected_death(runtime, actor).is_ok() {
+            if phase.fight.projected_death(runtime, actor, now_us).is_ok() {
                 let ActivePhase { fight, cells, .. } = phase;
                 let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
+                if let Fight::Replacements(fight) = fight {
+                    fight.project_portal(cells, now_us);
+                }
             }
         }
         // Keep terminal admission credit until the same lethal turn captures it.
@@ -364,13 +370,16 @@ pub(super) fn tick(
             ));
             return true;
         }
-        if let Fight::Replacements(fight) = fight
-            && fight.transfer_pending()
-        {
-            if let Some(map) = map {
+        if let Fight::Replacements(fight) = fight {
+            fight.project_portal(cells, now_us);
+            if fight.transfer_pending()
+                && let Some(map) = map
+            {
                 fight.project_transfer(runtime, states, cells, map, &mut transfers);
             }
-            return fight.transfer_pending();
+            if fight.completion_pending() {
+                return true;
+            }
         }
         fight
             .victors(runtime)
