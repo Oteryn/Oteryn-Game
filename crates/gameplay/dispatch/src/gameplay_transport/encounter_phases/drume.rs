@@ -20,6 +20,14 @@ enum Ejection {
     Timeout,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum BattlefieldState {
+    Fighting,
+    Exiting(Ejection),
+    AwaitingTimeout,
+    Finished,
+}
+
 const ROLES: &[Role] = &[
     Role {
         creature: LION,
@@ -56,8 +64,7 @@ pub(super) struct Skirmish {
     pub(super) phase: NativePhaseOwner,
     battlefield: Battlefield,
     feedback: QuestFeedback,
-    pub(super) ejected: bool,
-    pending_exit: Option<Ejection>,
+    state: BattlefieldState,
     deadline: u64,
 }
 
@@ -98,8 +105,7 @@ impl Skirmish {
             phase,
             battlefield,
             feedback,
-            ejected: false,
-            pending_exit: None,
+            state: BattlefieldState::Fighting,
             deadline: now_us
                 .checked_add(u64::from(battlefield.timeout_ms) * 1000)
                 .ok_or(CarrierError::PlanConflict)?,
@@ -110,24 +116,41 @@ impl Skirmish {
         self.phase.role_actor(DRUME) == Some(actor)
     }
 
+    pub(super) fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        !matches!(self.state, BattlefieldState::Finished) && self.phase.is_current(runtime)
+    }
+
+    pub(super) fn blocks_channel_switch(&self) -> bool {
+        matches!(
+            self.state,
+            BattlefieldState::Fighting | BattlefieldState::Exiting(_)
+        )
+    }
+
     pub(super) fn advance(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         room: &Encounter,
         cells: &crate::content::NativeEntryMovementCells,
     ) -> Result<(), CarrierError> {
-        if self.ejected {
-            return Ok(());
-        }
-        if self.phase.dead_roles() & ALL_LIONS == ALL_LIONS {
+        if matches!(self.state, BattlefieldState::Fighting)
+            && self.phase.dead_roles() & ALL_LIONS == ALL_LIONS
+        {
             // Crystal commander_kills.lua:8-25 selects defeat when the last
             // Lion dies. An obstructed exit must retain the selected outcome.
-            self.pending_exit.get_or_insert(Ejection::Defeat);
+            self.state = BattlefieldState::Exiting(Ejection::Defeat);
         }
-        if let Some(reason) = self.pending_exit {
-            self.eject(runtime, room, cells, reason)?;
-            self.ejected = true;
-            return Ok(());
+        match self.state {
+            BattlefieldState::Exiting(reason) => {
+                self.eject(runtime, room, cells, reason)?;
+                self.state = match reason {
+                    Ejection::Defeat => BattlefieldState::AwaitingTimeout,
+                    Ejection::Timeout => BattlefieldState::Finished,
+                };
+                return Ok(());
+            }
+            BattlefieldState::AwaitingTimeout | BattlefieldState::Finished => return Ok(()),
+            BattlefieldState::Fighting => {}
         }
         if self.phase.pending().any(|(role, _)| role == DRUME) {
             self.phase.spawn_role(
@@ -154,10 +177,15 @@ impl Skirmish {
         cells: &crate::content::NativeEntryMovementCells,
         now_us: u64,
     ) -> Result<(), CarrierError> {
-        // Crystal action_drume.lua:16-18,23-32,113-122 schedules physical teardown
-        // even when the boss has fallen and normal terminal credit already settled.
-        if now_us >= self.deadline {
-            self.pending_exit.get_or_insert(Ejection::Timeout);
+        // Crystal action_drume.lua:23-34,119-122 keeps the timer after defeat.
+        // A subsequent successful lever admission replaces the scheduled clear.
+        if now_us >= self.deadline
+            && matches!(
+                self.state,
+                BattlefieldState::Fighting | BattlefieldState::AwaitingTimeout
+            )
+        {
+            self.state = BattlefieldState::Exiting(Ejection::Timeout);
         }
         self.advance(runtime, room, cells)
     }

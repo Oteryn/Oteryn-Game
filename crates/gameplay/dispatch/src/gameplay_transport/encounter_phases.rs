@@ -25,7 +25,7 @@ impl Fight {
     fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
         match self {
             Self::Cults(fight) => fight.is_current(runtime),
-            Self::Drume(fight) => !fight.ejected && fight.phase.is_current(runtime),
+            Self::Drume(fight) => fight.is_current(runtime),
         }
     }
 
@@ -114,6 +114,7 @@ impl Registry {
                 phase.participants.contains(&(actor, session))
                     && super::quest_callbacks::room_contains(&phase.room, position)
                     && phase.fight.is_current(runtime)
+                    && !matches!(&phase.fight, Fight::Drume(fight) if !fight.blocks_channel_switch())
                     && phase
                         .fight
                         .victors(runtime)
@@ -396,8 +397,8 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, 
             ));
             return true;
         }
-        if let Fight::Drume(fight) = fight {
-            return !fight.ejected;
+        if matches!(fight, Fight::Drume(_)) {
+            return fight.is_current(runtime);
         }
         fight.is_current(runtime)
             && fight
