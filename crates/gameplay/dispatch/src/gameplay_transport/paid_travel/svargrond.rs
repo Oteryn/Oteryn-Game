@@ -43,7 +43,7 @@ pub(super) fn select_buddel_arrival(route: &mut TravelRoute) -> Option<()> {
     // The second success samples all four islands, including the named one.
     fn succeeds() -> Option<bool> {
         loop {
-            let [roll] = super::super::SecureIdentifiers::random()?;
+            let [roll] = crate::gameplay_transport::SecureIdentifiers::random()?;
             if roll < 255 {
                 return Some(roll % 5 != 0);
             }
@@ -55,7 +55,7 @@ pub(super) fn select_buddel_arrival(route: &mut TravelRoute) -> Option<()> {
     if !succeeds()? {
         return None;
     }
-    let [index] = super::super::SecureIdentifiers::random()?;
+    let [index] = crate::gameplay_transport::SecureIdentifiers::random()?;
     let (_, x, y) = DESTINATIONS[usize::from(index & 3)];
     route.route.destination.x = x;
     route.route.destination.y = y;

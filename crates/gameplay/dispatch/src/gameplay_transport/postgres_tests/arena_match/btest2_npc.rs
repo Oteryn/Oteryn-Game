@@ -14,7 +14,7 @@ pub(super) async fn exercise(
     harness: &Harness,
     route: NativeScenario,
 ) -> TestResult {
-    let buddel = matches!(route, NativeScenario::Buddel);
+    let buddel = matches!(route, NativeScenario::Buddel | NativeScenario::BuddelFare);
     let key = if buddel {
         "oteryn:npc.buddel"
     } else {
@@ -80,52 +80,32 @@ pub(super) async fn exercise(
             .bind(id(41).as_slice()).bind(track).bind(value).execute(&harness.pool).await?;
     }
     owner.refresh_quest_session(session, true).await;
-    let messages = if buddel {
-        ["hi", "okolnir", "yes"]
+    let mut command_id = 44000;
+    let greeting = talk(&mut owner, deps, npc_actor, &mut command_id, "hi").await?;
+    assert!(!greeting.is_empty());
+    if matches!(route, NativeScenario::BuddelFare) {
+        let denied = talk(&mut owner, deps, npc_actor, &mut command_id, "helheim").await?;
+        assert_eq!(denied, "Sorry, not possible.");
+        let quoted = talk(&mut owner, deps, npc_actor, &mut command_id, "okolnir").await?;
+        assert!(quoted.contains("50 gold"));
+        for _ in 0..32 {
+            let line = talk(&mut owner, deps, npc_actor, &mut command_id, "yes").await?;
+            if line == "Set the sails!" {
+                break;
+            }
+            assert_eq!(line, "Sorry, not possible.");
+        }
+    } else if buddel {
+        let ring = talk(&mut owner, deps, npc_actor, &mut command_id, "okolnir").await?;
+        assert!(ring.contains("ring"), "{ring}");
+        talk(&mut owner, deps, npc_actor, &mut command_id, "yes").await?;
     } else {
-        ["hi", "mission", "passage"]
-    };
-    let mut lines = Vec::new();
-    for (index, text) in messages
-        .into_iter()
-        .enumerate()
-        .chain((!buddel).then_some((3, "yes")))
-    {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(2))
-            .ok_or("clock")?;
-        let fence = owner
-            .current_quest_fence(session)
-            .await
-            .map_err(|()| "fence")?
-            .ok_or("fence")?;
-        let result = owner
-            .npc_talk(
-                deps.actor,
-                UseCommand {
-                    game_session_id: session,
-                    command_id: 44000 + u64::try_from(index)?,
-                    item_fence: Some(fence.item_fence()),
-                },
-                NpcTalkIntent {
-                    npc_actor,
-                    text: text.into(),
-                },
-            )
-            .await;
-        assert_eq!(
-            result.disposition,
-            NpcIntentDisposition::Ok,
-            "{key}: {text}: {:?}",
-            result.conversation
-        );
-        lines.push(
-            result
-                .conversation
-                .map(|reply| reply.lines.join(" "))
-                .unwrap_or_default(),
-        );
+        talk(&mut owner, deps, npc_actor, &mut command_id, "passage").await?;
+        let denied = talk(&mut owner, deps, npc_actor, &mut command_id, "yes").await?;
+        assert!(denied.contains("mission"));
+        talk(&mut owner, deps, npc_actor, &mut command_id, "mission").await?;
+        talk(&mut owner, deps, npc_actor, &mut command_id, "passage").await?;
+        talk(&mut owner, deps, npc_actor, &mut command_id, "yes").await?;
     }
     let actor = deps
         .runtime
@@ -134,8 +114,23 @@ pub(super) async fn exercise(
         .read_actor_position(deps.actor)
         .map_err(debug)?
         .position();
-    if buddel {
-        assert!(lines[1].contains("ring"), "{lines:?}");
+    if matches!(route, NativeScenario::BuddelFare) {
+        assert_eq!(actor.floor, 7);
+        assert!(
+            [
+                (32225, 31381),
+                (32462, 31174),
+                (32333, 31227),
+                (32021, 31294)
+            ]
+            .contains(&(actor.x, actor.y))
+        );
+        let fares: Vec<i64> =
+            sqlx::query_scalar("SELECT fare_gold_units FROM game_newhaven_travel_receipts")
+                .fetch_all(&harness.pool)
+                .await?;
+        assert_eq!(fares, [50]);
+    } else if buddel {
         assert_eq!((actor.x, actor.y, actor.floor), (32225, 31381, 7));
         let ring: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3097' AND lifecycle=1")
             .fetch_one(&harness.pool).await?;
@@ -153,4 +148,48 @@ pub(super) async fn exercise(
         }
     }
     Ok(())
+}
+
+async fn talk(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    npc_actor: EntityRef,
+    command_id: &mut u64,
+    text: &str,
+) -> TestResult<String> {
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let session = deps.admitted.game_session_id;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let result = owner
+        .npc_talk(
+            deps.actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: *command_id,
+                item_fence: Some(fence.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor,
+                text: text.into(),
+            },
+        )
+        .await;
+    *command_id += 1;
+    assert_eq!(
+        result.disposition,
+        NpcIntentDisposition::Ok,
+        "{text}: {:?}",
+        result.conversation
+    );
+    Ok(result
+        .conversation
+        .map(|reply| reply.lines.join(" "))
+        .unwrap_or_default())
 }

@@ -159,6 +159,23 @@ fn btest2_buddel_exchanges_ring_for_confirmed_destination() -> TestResult {
 }
 
 #[test]
+fn btest2_buddel_gates_helheim_and_charges_one_randomized_fare() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_route(true, Some(NativeScenario::BuddelFare)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "Buddel fare worker panicked")??;
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    eprintln!("BTEST2 REAL POSTGRES Buddel fare duration={:?}", started.elapsed());
+    Ok(())
+}
+
+#[test]
 fn btest2_iskan_reports_sniffler_and_unlocks_passage() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -178,6 +195,7 @@ fn btest2_iskan_reports_sniffler_and_unlocks_passage() -> TestResult {
 #[derive(Clone, Copy)]
 enum NativeScenario {
     Buddel,
+    BuddelFare,
     CompletionGate,
     Iskan,
     Portals,
@@ -480,7 +498,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         } else {
             None
         };
-        if let Some(route @ (NativeScenario::Buddel | NativeScenario::Iskan)) = route {
+        if let Some(route @ (NativeScenario::Buddel | NativeScenario::BuddelFare | NativeScenario::Iskan)) = route {
             btest2_npc::exercise(owner, &deps, &harness, route).await?;
             drop(authority);
             drop(seal);

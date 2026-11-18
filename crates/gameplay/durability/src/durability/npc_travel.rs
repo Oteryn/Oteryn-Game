@@ -29,8 +29,8 @@ use crate::foundation::{RuntimeScopeRefV1, WorldId};
 use sqlx::Row;
 
 mod paid;
-pub mod svargrond;
 mod return_port;
+pub mod svargrond;
 pub use paid::{NpcTravelGate, PaidTravelRequest, TravelRefusal};
 
 /// The confirming command's occurrence. Construction checks representation only; the
