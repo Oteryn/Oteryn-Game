@@ -1155,8 +1155,11 @@ async fn exercise_rabbit(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(attempts, 1);
-    let feet: i64 = sqlx::query_scalar("SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i12172' AND lifecycle=1")
-        .fetch_one(&h.pool).await?;
+    let feet_count = || {
+        sqlx::query_scalar::<_, i64>("SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i12172' AND lifecycle=1")
+            .fetch_one(&h.pool)
+    };
+    let feet = feet_count().await?;
     assert_eq!(feet, 2);
     let knife_quantity: i64 = sqlx::query_scalar(
         "SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1",
@@ -1191,7 +1194,7 @@ async fn exercise_rabbit(
         .await?;
     tx.commit().await?;
 
-    let corpse = mint_corpse(owner, h, native, 6017, Some(race), 901).await?;
+    let corpse = mint_corpse(owner, h, native, 6017, Some(race.clone()), 901).await?;
     advance_rabbit_decay(owner, h, corpse, 11_000).await?;
     assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
     let failure = UseCommand {
@@ -1242,9 +1245,35 @@ async fn exercise_rabbit(
         [ChatLine::Private { text, .. }]
             if text.starts_with("Your attempt to skin the rabbit failed.")
     ));
-    let feet_after_failure: i64 = sqlx::query_scalar("SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i12172' AND lifecycle=1")
-        .fetch_one(&h.pool).await?;
-    assert_eq!(feet_after_failure, feet);
+    assert_eq!(feet_count().await?, feet);
+
+    let corpse = mint_corpse(owner, h, native, 6017, Some(race), 902).await?;
+    advance_rabbit_decay(owner, h, corpse, 11_000).await?;
+    let single_foot = UseCommand {
+        command_id: draw_command(
+            native,
+            session,
+            corpse,
+            0,
+            250_000_000,
+            failure.command_id + 1,
+        )?,
+        ..command
+    };
+    assert_eq!(
+        attempt(corpse, single_foot, obsidian_knife)
+            .await
+            .ok_or("one-foot rabbit USE")?
+            .disposition,
+        UseDisposition::Committed
+    );
+    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
+    assert!(matches!(
+        owner.states.chat.drain(session).as_slice(),
+        [ChatLine::Private { text, .. }]
+            if text == "You successfully gathered a rabbit's foot in excellent condition."
+    ));
+    assert_eq!(feet_count().await?, feet + 1);
     Ok(())
 }
 
