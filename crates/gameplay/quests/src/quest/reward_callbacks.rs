@@ -779,7 +779,7 @@ fn validate_document_with_capacity(
                 != c.participants.len()
             || op_keys.len() != c.state_ops.len()
             || !op_keys.is_disjoint(&tracks)
-            || c.state_ops.iter().any(|s| !s.valid())
+            || c.state_ops.iter().any(|s| !s.valid_for_reward())
             || participant_keys.len() != participant_count
             || !participant_keys.is_disjoint(&op_keys)
             || !participant_keys.is_disjoint(&tracks)
@@ -797,7 +797,7 @@ fn validate_document_with_capacity(
                     || (p.storage.is_empty() && p.state_ops.is_empty())
                     // Foreign participant receipts retain their separate eight-track contract.
                     || p.storage.len() + p.state_ops.len() > 8
-                    || p.state_ops.iter().any(|s| !s.valid())
+                    || p.state_ops.iter().any(|s| !s.valid_for_reward())
                     || p.storage
                         .iter()
                         .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
@@ -1281,7 +1281,7 @@ fn extend_callbacks(
                 .find(|track| track.key == operation.track)
                 .ok_or_else(|| format!("undeclared reward operation {}", operation.track))?;
             if track.quest != callback.quest
-                || !operation.valid()
+                || !operation.valid_for_reward()
                 || ((matches!(operation.effect, StateMutation::SetNow)
                     || matches!(
                         operation.from,

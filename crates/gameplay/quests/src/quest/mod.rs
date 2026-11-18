@@ -247,6 +247,14 @@ pub enum QuestEffectKind {
         delta: i64,
         minimum: i64,
     },
+    /// Treat legacy values below empty as empty, then replenish up to capacity.
+    /// Crystal 201189f8, rotten_blood_quest/creaturescripts_putrefactory-x.lua:203-214.
+    Recharge {
+        amount: i64,
+        empty: i64,
+        capacity: i64,
+        binding: Option<[u8; 32]>,
+    },
     /// Checked addition while pinning physical admission terms.
     AddWithBinding {
         delta: i64,
@@ -307,6 +315,21 @@ impl QuestEffectKind {
                 out.push(13);
                 out.extend_from_slice(&delta.to_be_bytes());
                 out.extend_from_slice(&minimum.to_be_bytes());
+            }
+            Self::Recharge {
+                amount,
+                empty,
+                capacity,
+                binding,
+            } => {
+                out.push(14);
+                out.extend_from_slice(&amount.to_be_bytes());
+                out.extend_from_slice(&empty.to_be_bytes());
+                out.extend_from_slice(&capacity.to_be_bytes());
+                out.push(u8::from(binding.is_some()));
+                if let Some(binding) = binding {
+                    out.extend_from_slice(&binding);
+                }
             }
             Self::AddWithBinding { delta, binding } => {
                 out.push(8);
@@ -547,6 +570,18 @@ impl QuestStateCatalogue {
                     }
                     QuestEffectKind::AddAtLeast { minimum, .. } => {
                         (track.min..=track.max).contains(&minimum)
+                    }
+                    QuestEffectKind::Recharge {
+                        amount,
+                        empty,
+                        capacity,
+                        ..
+                    } => {
+                        amount > 0
+                            && track.min <= empty
+                            && empty < capacity
+                            && capacity <= track.max
+                            && matches!(effect.from, QuestComparison::Between(_, high) if high < capacity)
                     }
 
                     _ => true,
@@ -815,6 +850,12 @@ impl QuestStateCatalogue {
                     QuestEffectKind::AddAtLeast { delta, minimum } => {
                         before.checked_add(delta).map(|value| value.max(minimum))
                     }
+                    QuestEffectKind::Recharge {
+                        amount,
+                        empty,
+                        capacity,
+                        ..
+                    } => Some(before.max(empty).saturating_add(amount).min(capacity)),
                     QuestEffectKind::SetNow | QuestEffectKind::SetNowWithBinding { .. } => {
                         Some(now)
                     }

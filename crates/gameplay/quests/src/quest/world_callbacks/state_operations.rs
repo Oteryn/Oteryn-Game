@@ -13,10 +13,16 @@ pub(super) fn refreshes_clock(callback: &Callback) -> bool {
 }
 pub(super) fn valid(callback: &Callback) -> bool {
     callback.operations().all(StateOperation::valid)
+        && callback.state_ops.iter().all(|operation| {
+            !matches!(operation.effect, StateMutation::Recharge { .. })
+        })
         // The main spelling keeps its original Add/SetNow binding vocabulary.
         // QMECH's floor operation remains admitted through state_ops.
         && callback.state_operations.iter().all(|operation| {
             !matches!(operation.effect, StateMutation::AddAtLeast { .. })
+                && (!matches!(operation.effect, StateMutation::Recharge { .. })
+                    || (callback.requires_world_admission
+                        && callback.trigger == super::Trigger::Use))
         })
         && (callback.operation_count() == 0 || callback.native_rule.is_none())
 }
@@ -57,6 +63,16 @@ pub(super) fn append_effects(
                 StateMutation::Add { value: delta } => QuestEffectKind::AddWithBinding {
                     delta,
                     binding: value,
+                },
+                StateMutation::Recharge {
+                    amount,
+                    empty,
+                    capacity,
+                } => QuestEffectKind::Recharge {
+                    amount,
+                    empty,
+                    capacity,
+                    binding: Some(value),
                 },
                 // Rejected for this spelling by valid(); state_ops above owns
                 // the floor operation and keeps its original unbound lowering.

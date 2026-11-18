@@ -14,8 +14,18 @@ pub enum StateCondition {
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum StateMutation {
-    Add { value: i64 },
-    AddAtLeast { value: i64, minimum: i64 },
+    Add {
+        value: i64,
+    },
+    AddAtLeast {
+        value: i64,
+        minimum: i64,
+    },
+    Recharge {
+        amount: i64,
+        empty: i64,
+        capacity: i64,
+    },
     SetNow,
 }
 
@@ -46,13 +56,32 @@ impl<'de> Deserialize<'de> for StateMutation {
         #[derive(Deserialize)]
         #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
         enum Wire {
-            Add { value: i64 },
-            AddAtLeast { value: i64, minimum: i64 },
+            Add {
+                value: i64,
+            },
+            AddAtLeast {
+                value: i64,
+                minimum: i64,
+            },
+            Recharge {
+                amount: i64,
+                empty: i64,
+                capacity: i64,
+            },
             SetNow {},
         }
         Ok(match Wire::deserialize(deserializer)? {
             Wire::Add { value } => Self::Add { value },
             Wire::AddAtLeast { value, minimum } => Self::AddAtLeast { value, minimum },
+            Wire::Recharge {
+                amount,
+                empty,
+                capacity,
+            } => Self::Recharge {
+                amount,
+                empty,
+                capacity,
+            },
             Wire::SetNow {} => Self::SetNow,
         })
     }
@@ -77,6 +106,18 @@ impl StateOperation {
             }
         };
         condition
+            && match self.effect {
+                StateMutation::Recharge {
+                    amount,
+                    empty,
+                    capacity,
+                } => {
+                    amount > 0
+                        && empty < capacity
+                        && matches!(self.from, StateCondition::Between { maximum, .. } if maximum < capacity)
+                }
+                _ => true,
+            }
             && self.track.len() <= 128
             && self.track.strip_prefix("oteryn:").is_some_and(|tail| {
                 !tail.is_empty()
@@ -84,6 +125,10 @@ impl StateOperation {
                         b.is_ascii_lowercase() || b.is_ascii_digit() || b"._/:-".contains(&b)
                     })
             })
+    }
+
+    pub(super) fn valid_for_reward(&self) -> bool {
+        self.valid() && !matches!(self.effect, StateMutation::Recharge { .. })
     }
     /// Time remains authoritative in the SQL transaction, not the conversation clock.
     pub fn advisory_holds(
@@ -122,6 +167,16 @@ impl StateOperation {
                 StateMutation::AddAtLeast { value, minimum } => QuestEffectKind::AddAtLeast {
                     delta: value,
                     minimum,
+                },
+                StateMutation::Recharge {
+                    amount,
+                    empty,
+                    capacity,
+                } => QuestEffectKind::Recharge {
+                    amount,
+                    empty,
+                    capacity,
+                    binding: None,
                 },
                 StateMutation::SetNow => QuestEffectKind::SetNow,
             },
