@@ -392,6 +392,10 @@ fn jerom(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Op
     })
 }
 
+pub fn queen_kiss_confirmation(text: &str, topic: Topic) -> bool {
+    topic == Topic::Queen(8) && contains(text, "yes")
+}
+
 fn queen(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Option<Choice> {
     // the_queen_of_the_banshees.lua:62-72,89-136. Six independent confirmations;
     // "seventh seal" is an offer, never evidence that the six flags are set.

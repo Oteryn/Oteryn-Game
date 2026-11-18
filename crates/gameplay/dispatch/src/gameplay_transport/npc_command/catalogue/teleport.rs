@@ -164,6 +164,13 @@ pub(in crate::gameplay_transport) async fn commit(
         if position.context() != capture.content
             || position.revision() != capture.position_revision
             || states.is_dead(actor)
+            || (proof.request.npc == oteryn_gameplay_quests::quest::classic_talk::QUEEN
+                && super::super::super::pvp_live::pz_blocked(
+                    &states,
+                    actor,
+                    fence.game_session_id,
+                    admission.owner_now(),
+                ))
             || !states.spell_idle(&runtime, actor, fence.game_session_id)
             || admission.states.npc_conversations.current_npc(
                 &admission.states.chat,

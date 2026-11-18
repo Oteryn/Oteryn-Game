@@ -605,6 +605,37 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    if let Some(offering) = &callback.effects.splash_offering {
+        let Position { x, y, floor } = offering.position;
+        let key = oteryn_world_bundle::bundle::placement_key(floor, x, y, 0)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let digest = context
+            .map_revision
+            .strip_prefix("sha256:")
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        // A splash is bound to the bundle and tile. The low placement byte
+        // identifies the clicked object, so any object on that tile qualifies.
+        let deleted = sqlx::query(
+            "DELETE FROM game_item_fluid_splashes WHERE transaction_id = (
+                 SELECT transaction_id FROM game_item_fluid_splashes
+                 WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
+                   AND octet_length(placement)=40
+                   AND substring(placement FROM 1 FOR 39) = (decode($3,'hex') || $4)
+                   AND fluid_subtype=$5 AND splash_item_id=2886 AND expires_at>clock_timestamp()
+                 ORDER BY created_at,transaction_id LIMIT 1 FOR UPDATE
+             )",
+        )
+        .bind(world_id.as_bytes().as_slice())
+        .bind(channel_id.as_bytes().as_slice())
+        .bind(digest)
+        .bind(&key.to_be_bytes()[..7])
+        .bind(i16::from(offering.subtype))
+        .execute(&mut **tx)
+        .await?;
+        if deleted.rows_affected() != 1 {
+            return Ok(false);
+        }
+    }
     if callback.offerings.is_empty()
         && callback.item_on_target.is_none()
         && callback.effects.carried_inputs.is_empty()

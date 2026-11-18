@@ -524,6 +524,18 @@ impl DurabilityRoot {
                 }
             } else { None };
             if let (Some(admission), Some(plan)) = (teleport, &teleport_plan) {
+                if request.npc == oteryn_gameplay_quests::quest::classic_talk::QUEEN {
+                    let blocked: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_character_pvp_state
+                         WHERE character_id=encode($1,'hex')::uuid AND pz_block_until>clock_timestamp())",
+                    )
+                    .bind(id)
+                    .fetch_one(&mut **tx)
+                    .await?;
+                    if blocked {
+                        return Ok(Ok(refused(QuestRefusal::StageMismatch)));
+                    }
+                }
                 if !admission.matches(fence, plan) { return Ok(Err(CharacterProgressionError::InvalidInput)); }
                 let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid)").bind(id).fetch_one(&mut **tx).await?;
                 if pending { return Ok(Ok(refused(QuestRefusal::StageMismatch))); }

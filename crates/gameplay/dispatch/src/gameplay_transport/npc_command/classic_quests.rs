@@ -44,6 +44,20 @@ pub(super) enum Step {
     Held,
 }
 
+/// Hand the Queen's final confirmation to the storage-and-teleport owner.
+pub(super) fn queen_kiss_confirmation(
+    pending: Option<&Pending>,
+    context: &Context,
+    actor: ExactActorRef,
+    intent: &NpcTalkIntent,
+) -> bool {
+    matches!(pending, Some(Pending::Topic(conversation))
+        if &conversation.context == context
+            && conversation.actor == actor
+            && conversation.npc == intent.npc_actor
+            && classic_talk::queen_kiss_confirmation(&intent.text, conversation.topic))
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,

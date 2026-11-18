@@ -139,6 +139,7 @@ pub struct Passage {
     pub position: Position,
     pub appearance: u16,
     /// Literal source lookup: skip an absent object, never an ambiguous one.
+    /// For a reversible replacement, look for the object in its expected direction.
     #[serde(default, skip_serializing_if = "is_false")]
     pub if_present: bool,
     #[serde(default)]
@@ -1076,7 +1077,14 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback
                 .passages
                 .iter()
-                .any(|p| p.if_present && callback.effects.passages_reset_after_ms.is_none())
+                .any(|p| {
+                    p.if_present
+                        && callback.effects.passages_reset_after_ms.is_none()
+                        && !(callback.reversible
+                            && callback.lever.is_some()
+                            && p.replacement.is_some()
+                            && p.replacement_passable == Some(true))
+                })
             || unique_storage.len() != callback.storage.len()
             || callback.storage.iter().filter(|s| s.add.is_some()).count() > 1
             || callback.storage.iter().any(|s| {
