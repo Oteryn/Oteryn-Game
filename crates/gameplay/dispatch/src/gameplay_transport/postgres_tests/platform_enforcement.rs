@@ -387,6 +387,9 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
         None
     );
     drop(busy);
+    // Dropping an unused pass lets SQLx return its connection asynchronously.
+    // Observe the idle holder without checking out another pass just to probe it.
+    h.root.await_ready().await.map_err(debug)?;
     let mut c = command(h, 101).await?;
     decide(h, a, &c).await?;
     // Captured data still must not change main's behavior while the flag is OFF.
@@ -403,7 +406,7 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
     );
     crate::gameplay_transport::staff::test_clock::set_enforcement(true);
     // The enabled gate retries a busy holder instead of treating contention as mute truth.
-    let busy = h.root.try_issue_semantic_pass().map_err(debug)?;
+    let busy = h.root.issue_ready_semantic_pass().await.map_err(debug)?;
     let pending = owner.staff_mute_wait(deps.admitted.game_session_id);
     let mut pending = std::pin::pin!(pending);
     assert!(
@@ -411,6 +414,7 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
             .await
     );
     drop(busy);
+    h.root.await_ready().await.map_err(debug)?;
     assert!(pending.await.is_some());
     assert_eq!(
         owner
