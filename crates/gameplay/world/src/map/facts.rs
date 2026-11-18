@@ -561,14 +561,9 @@ impl BundleFacts {
                                 || (super::door_registry::quest_door_of(appearance).is_some()
                                     && required_storage.is_none())
                         });
-                let door = if dropped
-                    || (!zalamon && missing_predicate)
-                    || (bound(&item.attrs)
-                        && !key_action
-                        && !level_action
-                        && !quest_action
-                        && !zalamon)
-                {
+                let dedicated_binding =
+                    bound(&item.attrs) && !key_action && !level_action && !quest_action;
+                let door = if dropped || (!zalamon && (missing_predicate || dedicated_binding)) {
                     PaletteDoor::No
                 } else if tile.house != 0 && matches!(door, PaletteDoor::Pair { .. }) {
                     // A house door belongs to the house runtime, never to the channel DoorBook.

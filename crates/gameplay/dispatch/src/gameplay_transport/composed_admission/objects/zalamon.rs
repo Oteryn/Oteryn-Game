@@ -1,6 +1,6 @@
 //! Crystal 201189f8, actions_zalamon_door.lua:5-17 and startup/tables/item.lua:4372-4375.
 use super::*;
-use crate::map::{boot::BundleMap, door::DoorUse};
+use crate::map::{boot::BundleMap, door::DoorUse, view::MapFacts};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 const FRONTIER: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08";
@@ -104,7 +104,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !doors.contains(key) {
             return outcome(UseDisposition::NotPossible);
         }
-        if !doors.blocks(at) {
+        let Some(current) = map.facts.base_entry(at, ordinal, *id) else {
+            return outcome(UseDisposition::Rejected);
+        };
+        if current.appearance_id != 9874 {
             // Crystal's successful USE of the already-open form has no effect.
             return outcome(UseDisposition::Committed);
         }
