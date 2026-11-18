@@ -536,7 +536,8 @@ pub(super) async fn apply(
                     &step.context,
                     effects,
                     &mut outcome,
-                );
+                )
+                .await;
             }
             outcome
         }
@@ -673,7 +674,8 @@ pub(in crate::gameplay_transport) async fn resume(
                         &pending.context,
                         effects,
                         &mut outcome,
-                    );
+                    )
+                    .await;
                 }
                 Some(outcome)
             } else {

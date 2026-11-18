@@ -44,7 +44,7 @@ pub(super) fn temporary_look(
     clippy::too_many_arguments,
     reason = "the receipt retains the exact NPC and current customer"
 )]
-pub(super) fn publish(
+pub(super) async fn publish(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
     actor: ExactActorRef,
@@ -68,7 +68,7 @@ pub(super) fn publish(
         return;
     }
     if let Some(fire) = &effects.fire_damage {
-        apply_fire(admission, runtime, actor, command, fire);
+        apply_fire(admission, runtime, actor, command, fire).await;
     }
     // Crystal 201189f8 data-global/npc/the_orc_king.lua:48-59 births eight public creatures.
     if !effects.nearby_creatures.is_empty()
@@ -92,7 +92,7 @@ pub(super) fn publish(
 }
 
 // Crystal 201189f8 data-global/npc/wyda.lua:52-54,87-103.
-fn apply_fire(
+async fn apply_fire(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
@@ -101,7 +101,9 @@ fn apply_fire(
 ) -> Option<()> {
     use crate::domain::condition::DotElement;
     let session = command.game_session_id;
-    let mut states = admission.states.spell_states.try_lock().ok()?;
+    // The receipt already spent the cookie. Follow the Channel's runtime then
+    // spell-state lock order so a transient reader cannot discard Soulfire.
+    let mut states = admission.states.spell_states.lock().await;
     if states.is_dead(actor) || !states.spell_idle(runtime, actor, session) {
         return None;
     }
