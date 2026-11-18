@@ -14,7 +14,7 @@ const ALL_USURPERS: u64 = 0b011_1000;
 const DRUME: usize = 6;
 const TELEPORT_EFFECT: u16 = 11;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Ejection {
     Defeat,
     Timeout,
@@ -57,6 +57,7 @@ pub(super) struct Skirmish {
     battlefield: Battlefield,
     feedback: QuestFeedback,
     pub(super) ejected: bool,
+    pending_exit: Option<Ejection>,
     deadline: u64,
 }
 
@@ -98,6 +99,7 @@ impl Skirmish {
             battlefield,
             feedback,
             ejected: false,
+            pending_exit: None,
             deadline: now_us
                 .checked_add(u64::from(battlefield.timeout_ms) * 1000)
                 .ok_or(CarrierError::PlanConflict)?,
@@ -118,7 +120,12 @@ impl Skirmish {
             return Ok(());
         }
         if self.phase.dead_roles() & ALL_LIONS == ALL_LIONS {
-            self.eject(runtime, room, cells, Ejection::Defeat)?;
+            // Crystal commander_kills.lua:8-25 selects defeat when the last
+            // Lion dies. An obstructed exit must retain the selected outcome.
+            self.pending_exit.get_or_insert(Ejection::Defeat);
+        }
+        if let Some(reason) = self.pending_exit {
+            self.eject(runtime, room, cells, reason)?;
             self.ejected = true;
             return Ok(());
         }
@@ -147,12 +154,10 @@ impl Skirmish {
         cells: &crate::content::NativeEntryMovementCells,
         now_us: u64,
     ) -> Result<(), CarrierError> {
-        // Crystal action_drume.lua:16-17,21-32,115-120 schedules physical teardown
+        // Crystal action_drume.lua:16-18,23-32,113-122 schedules physical teardown
         // even when the boss has fallen and normal terminal credit already settled.
         if now_us >= self.deadline {
-            self.eject(runtime, room, cells, Ejection::Timeout)?;
-            self.ejected = true;
-            return Ok(());
+            self.pending_exit.get_or_insert(Ejection::Timeout);
         }
         self.advance(runtime, room, cells)
     }
