@@ -1874,14 +1874,18 @@ fn scenario_case(
         }
         owner.admit_quest_session(&admitted).await;
         if name == super::super::stag_engine::CATHEDRAL {
-            return Box::pin(super::super::stag_engine::exercise_cathedral(
+            let result = Box::pin(super::super::stag_engine::exercise_cathedral(
                 &mut owner, &mut admitted, &h, fence, deps.actor,
             )).await;
+            let cleanup = h.cleanup().await;
+            return result.and(cleanup);
         }
         if name == super::super::stag_engine::COURT {
-            return Box::pin(super::super::stag_engine::exercise_court(
+            let result = Box::pin(super::super::stag_engine::exercise_court(
                 &mut owner, &mut admitted, &h, fence, &deps,
             )).await;
+            let cleanup = h.cleanup().await;
+            return result.and(cleanup);
         }
         if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
