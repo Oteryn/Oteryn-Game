@@ -176,9 +176,16 @@ pub(super) async fn exercise(
             .active_generation
             .and_then(|generation| generation.native_gameplay())
             .ok_or("native creature content")?;
-        native
-            .install_companion_policies(&mut *owner.runtime.lock().await)
-            .map_err(super::fixture::debug)?;
+        {
+            let mut runtime = owner.runtime.lock().await;
+            // This fixture has a classic map room with no qualified Soul War death owner.
+            runtime
+                .use_classic_creature_deaths()
+                .map_err(super::fixture::debug)?;
+            native
+                .install_companion_policies(&mut runtime)
+                .map_err(super::fixture::debug)?;
+        }
         let attack_command = 100;
         prepare_infernal_demon_killer(owner, admitted, attack_command).await?;
         super::grizzly_npc::questpc8_campaign::hunt(
