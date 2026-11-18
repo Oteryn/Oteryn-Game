@@ -438,6 +438,11 @@ impl ChannelRuntimeV1 {
                         after.conditions.remove_type(
                             oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
                         );
+                        after.conditions.remove_type(
+                            oteryn_gameplay_domain::domain::condition::ConditionType::Status(
+                                oteryn_gameplay_domain::domain::condition::StatusKind::Invisible,
+                            ),
+                        );
                     }
                     self.record_periodic_contributor(
                         &mut contributors_after,
@@ -501,6 +506,11 @@ impl ChannelRuntimeV1 {
                         after.conditions.remove_type(
                             oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
                         );
+                        after.conditions.remove_type(
+                            oteryn_gameplay_domain::domain::condition::ConditionType::Status(
+                                oteryn_gameplay_domain::domain::condition::StatusKind::Invisible,
+                            ),
+                        );
                     }
                     self.record_periodic_contributor(
                         &mut contributors_after,
@@ -554,6 +564,12 @@ impl ChannelRuntimeV1 {
         if had_damage {
             conditions_after.remove_type_at(
                 oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
+                now_us,
+            )?;
+            conditions_after.remove_type_at(
+                oteryn_gameplay_domain::domain::condition::ConditionType::Status(
+                    oteryn_gameplay_domain::domain::condition::StatusKind::Invisible,
+                ),
                 now_us,
             )?;
         }
@@ -1278,6 +1294,97 @@ mod tests {
                     .is_none()
             );
         }
+    }
+
+    #[test]
+    fn a_periodic_hit_reveals_a_creature_with_timed_status_invisibility() {
+        use super::super::runtime_actor_conditions::{ActorConditionTransition, ConditionSource};
+        use oteryn_gameplay_domain::domain::condition::StatusKind;
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        let (mut runtime, player, session) = owner();
+        let creature = runtime
+            .create_companion(
+                player,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        let invisible = ConditionDefinition::new(
+            "test.timed-invisible",
+            1,
+            ConditionValues::TimedStatus {
+                kind: StatusKind::Invisible,
+                duration_ms: 10_000,
+            },
+        )
+        .unwrap();
+        let now = SemanticTimeMicros::from_micros(0);
+        let plan = runtime
+            .prepare_actor_condition(
+                creature,
+                None,
+                ActorConditionTransition::Apply {
+                    definition: &invisible,
+                    source: ConditionSource {
+                        actor: creature,
+                        session: None,
+                        kind: ConditionSourceKind::SelfUse,
+                    },
+                    immunities: &[],
+                    facts: ApplicationFacts {
+                        now: 0,
+                        base_speed: 220,
+                        mana_shield_capacity: 0,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: false,
+                        decision_root: &GameplayDecisionRoot::from_bytes([7; 32]),
+                        occurrence: DecisionOccurrenceId::from_bytes([6; 16]),
+                    },
+                },
+                now,
+            )
+            .unwrap();
+        runtime.commit_actor_condition(&plan, now).unwrap();
+        let before = runtime.companion_snapshot(creature).unwrap();
+        let mut after = before.state.clone();
+        after.conditions = runtime.actor_conditions(creature, None).unwrap().clone();
+        runtime.compare_companion_state(&before, after).unwrap();
+        install_dot(&mut runtime, creature, 100, 1);
+        let at = 1_000_000;
+        assert!(
+            runtime
+                .actor_conditions(creature, None)
+                .unwrap()
+                .invisible_at(at)
+        );
+        let prepared = runtime
+            .stage_creature_periodic_turn(creature, at, TickFacts::default())
+            .unwrap();
+        let receipt = runtime.commit_creature_periodic_turn(prepared).unwrap();
+        assert!(receipt.health_after < receipt.health_before);
+        assert!(
+            !runtime
+                .actor_conditions(creature, None)
+                .unwrap()
+                .invisible_at(at)
+        );
+        assert!(
+            !runtime
+                .companion_snapshot(creature)
+                .unwrap()
+                .state
+                .conditions
+                .invisible_at(at)
+        );
     }
 
     #[test]

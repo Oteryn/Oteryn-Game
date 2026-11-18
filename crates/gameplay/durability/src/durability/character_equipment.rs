@@ -340,6 +340,20 @@ pub(super) async fn assert_current_equipment_in_transaction(
         account: uuid(character.try_get("account_id")?)?,
     })
 }
+/// Qualify a worn-item clock against the actual committed activity and return
+/// its origin Channel for the existing timed-expiry audit envelope.
+pub(super) async fn activity_clock_origin_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    content_digest: [u8; 32],
+) -> Result<[u8; 16]> {
+    Ok(activity_read::assert_current_activity_equipment_in_transaction(
+        tx, recovery, node, fence, content_digest,
+    ).await?.channel)
+}
+
 /// Read paths may use a real activity Instance. The Channel-only writer
 /// authority above remains unchanged and no Instance authority is returned.
 /// Read portable equipment under the actual current tagged session in the

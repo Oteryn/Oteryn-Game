@@ -31,6 +31,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .is_ok_and(|at| super::tutorial_session::tutorial_cell(at.position()))
     }
 
+    async fn newhaven_kit_has_room(
+        &self,
+        fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+        choice: Option<u8>,
+    ) -> Option<()> {
+        use crate::durability::item_loop_move::ItemLoopContent;
+        use oteryn_gameplay_items::starter_grant::{NewhavenStarterDestination, newhaven_starter_items};
+        let backpack = self.root.read_character_backpack(self.character, fence.character_id).await.ok()??;
+        if let Some(choice) = choice {
+            let native = self.active_generation?.native_gameplay()?;
+            let weights = super::item_ref_admission::NativeItemWeights(native);
+            let capacity = weights.loop_facts(&backpack.backpack.definition)?.container_capacity?.min(20);
+            let equipment = super::equipment_move::read_current_equipment(self, fence.game_session_id).await?;
+            let kit = newhaven_starter_items(wire::VOCATIONS[usize::from(choice - 1)])?;
+            let needed = kit.iter().filter(|item| match item.destination {
+                NewhavenStarterDestination::Quiver => false,
+                NewhavenStarterDestination::Equipment(slot) => equipment.items.iter().any(|item| item.slot == slot),
+                _ => true,
+            }).count();
+            if backpack.entries.len() + needed > capacity as usize {
+                return None;
+            }
+        }
+        Some(())
+    }
+
     pub(super) async fn tutorial_vocation_wire(
         &self,
         admitted: AdmittedSession,
@@ -89,6 +115,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .position(|key| *key == before.vocation())
                 .map_or(0, |index| (index + 1) as u8);
             let offered = progress && before.vocation() == NO_VOCATION;
+            if offered {
+                self.newhaven_kit_has_room(initial, choice).await?;
+            }
             if choice.is_none() || choice == Some(chosen) {
                 if chosen != 0
                     && self

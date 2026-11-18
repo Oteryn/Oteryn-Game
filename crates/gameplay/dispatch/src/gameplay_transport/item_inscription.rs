@@ -17,6 +17,19 @@ pub(super) fn reply(
     definition: &TypedDefinitionRef,
     text: String,
 ) -> Option<Reply> {
+    // MAIL keeps the original letter text when it stamps the carried item. The
+    // stamped definition's zero write limit still permits reading that text.
+    if definition.production_key == oteryn_gameplay_items::mail::STAMPED_LETTER_KEY {
+        native.item_index()?.definition_ref(
+            &definition.family, &definition.production_key, &definition.revision_ref,
+        )?;
+        let reply = Reply {
+            text,
+            max_length: u32::try_from(crate::domain::mail::LETTER_TEXT_SCALARS_MAX).ok()?,
+            writable: false,
+        };
+        return reply.valid().then_some(reply);
+    }
     let policy = native.item_policy(&definition.production_key, &definition.revision_ref)?;
     let Known(profile) = &policy.record().semantics.readable_writeable else {
         return None;
@@ -125,6 +138,8 @@ mod tests {
                 writable: true,
             }
         );
+        let stamped = reply(native, &definition(3506), "Delivered".into()).ok_or("stamped letter")?;
+        assert_eq!(stamped, Reply { text: "Delivered".into(), max_length: 1_999, writable: false });
         // The write-once document target 2834 shows its text and refuses a rewrite.
         let sealed = reply(native, &definition(2834), "Sealed".into()).ok_or("read-only")?;
         assert!(!sealed.writable);

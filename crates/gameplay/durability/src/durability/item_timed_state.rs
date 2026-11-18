@@ -678,16 +678,16 @@ pub(super) async fn write_expiry(
     write_expiry_in_scope(connection, fence, request, tuple, None).await
 }
 
-/// The House clock has already locked and validated the original Channel binding.
+/// The private-scope clock has already locked and validated the original Channel binding.
 /// The audit retains that Channel ID and the actual current scope generation.
 pub(super) async fn write_expiry_in_scope(
     connection: &mut PgConnection,
     fence: &CurrentCharacterGameplayFence,
     request: &TimedExpiryRequest,
     tuple: SelectedType2Tuple,
-    house_origin: Option<[u8; 16]>,
+    origin_channel: Option<[u8; 16]>,
 ) -> Result<TimedWriteOutcome> {
-    let channel_id = match (fence.runtime_scope, house_origin) {
+    let channel_id = match (fence.runtime_scope, origin_channel) {
         (RuntimeScopeRefV1::Channel { channel_id, .. }, None) => *channel_id.as_bytes(),
         (RuntimeScopeRefV1::Instance { .. }, Some(origin)) => origin,
         _ => return Err(TimedWriteError::AuthorityRejected),

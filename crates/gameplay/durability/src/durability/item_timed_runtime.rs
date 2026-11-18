@@ -12,7 +12,7 @@ use super::item_timed_state::{
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
-use crate::foundation::GameSessionId;
+use crate::foundation::{GameSessionId, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::timed_item::{
     TimedDisposition, TimedItemResult, decode_timed_item_result, encode_timed_item_result,
 };
@@ -198,7 +198,7 @@ impl DurabilityRoot {
             .await
     }
 
-    /// Named House custody admits only server-owned elapsed equipment time.
+    /// Private scopes admit only server-owned elapsed equipment time.
     pub async fn commit_timed_action_in_scope(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -207,7 +207,9 @@ impl DurabilityRoot {
         request: TimedRequest,
         house_origin: Option<[u8; 16]>,
     ) -> Result<TimedItemResult> {
-        if house_origin.is_some() && !matches!(request.operation, TimedOperation::Advance(_)) {
+        if (house_origin.is_some() || matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }))
+            && !matches!(request.operation, TimedOperation::Advance(_))
+        {
             return Err(TimedWriteError::InvalidInput);
         }
         if check_uuid_v7(&request.transaction_id).is_err()
@@ -237,18 +239,34 @@ impl DurabilityRoot {
                 return Ok(Err(TimedWriteError::AuthorityRejected));
             }
             let item_fence = fence.item_fence();
-            let equipment_authorized = match house_origin {
-                Some(origin) => super::character_equipment::assert_house_equipment_content(
-                    &mut tx, &node, &item_fence, origin, request.content_digest, super::character_equipment::HouseEquipmentAccess::Clock,
-                ).await.is_ok(),
-                None => super::character_equipment::assert_current_equipment_in_transaction(
-                    &mut tx, &recovery, &node, &item_fence, None, request.content_digest,
-                ).await.is_ok(),
+            let origin_channel = match (house_origin, fence.runtime_scope) {
+                (Some(origin), _) => {
+                    if super::character_equipment::assert_house_equipment_content(
+                        &mut tx, &node, &item_fence, origin, request.content_digest,
+                        super::character_equipment::HouseEquipmentAccess::Clock,
+                    ).await.is_err() {
+                        return Ok(Err(TimedWriteError::AuthorityRejected));
+                    }
+                    Some(origin)
+                }
+                (None, RuntimeScopeRefV1::Instance { .. }) => {
+                    let Ok(origin) = super::character_equipment::activity_clock_origin_in_transaction(
+                        &mut tx, &recovery, &node, &item_fence, request.content_digest,
+                    ).await else {
+                        return Ok(Err(TimedWriteError::AuthorityRejected));
+                    };
+                    Some(origin)
+                }
+                (None, RuntimeScopeRefV1::Channel { .. }) => {
+                    if super::character_equipment::assert_current_equipment_in_transaction(
+                        &mut tx, &recovery, &node, &item_fence, None, request.content_digest,
+                    ).await.is_err() {
+                        return Ok(Err(TimedWriteError::AuthorityRejected));
+                    }
+                    None
+                }
             };
-            if !equipment_authorized {
-                return Ok(Err(TimedWriteError::AuthorityRejected));
-            }
-            let result = match apply(&mut tx, &fence, &request, house_origin).await {
+            let result = match apply(&mut tx, &fence, &request, origin_channel).await {
                 Ok(result) => result,
                 Err(TimedWriteError::Unavailable(error)) => return Err(error),
                 Err(error) => return Ok(Err(error)),

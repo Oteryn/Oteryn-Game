@@ -1121,6 +1121,35 @@ mod tests {
     }
 
     #[test]
+    fn bundle_teleport_landing_can_share_a_cell_with_a_creature() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        let landing = MovementLocalPosition {
+            x: 5,
+            y: 1,
+            floor: 8,
+        };
+        let creature = runtime.admit_pinned_test_creature(landing).unwrap();
+        let (after, _) = step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::South,
+            &std::collections::BTreeSet::new(),
+            None,
+        )
+        .unwrap();
+        assert_eq!(after.position(), landing);
+        assert_eq!(
+            runtime.read_actor_position(creature).unwrap().position(),
+            landing
+        );
+    }
+
+    #[test]
     fn newhaven_teleport_a_step_onto_a_teleport_keeps_the_step_rules() {
         let (mut runtime, mut states, cells, actor, session) =
             bundle_owner_of(crate::map::boot::tests::teleport_bundle);

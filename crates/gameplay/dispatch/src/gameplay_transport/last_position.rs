@@ -706,6 +706,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// respawn) is not captured. Vitals that cannot be read (no spell state, or a health of 0 not
     /// yet recorded as a death) keep the ones the track last wrote, so a capture never saves the
     /// maxima it did not see.
+    #[cfg(test)]
+    pub(super) async fn last_position_capture_is_held(&self, session: GameSessionId) -> bool {
+        let Some(track) = self.states.last_positions.tracked(session) else {
+            return false;
+        };
+        matches!(
+            self.capture_last_position(&track, session).await,
+            Captured::Held
+        )
+    }
+
     async fn capture_last_position(&self, track: &Track, session: GameSessionId) -> Captured {
         let actor = track.actor;
         let kept = track.written.and_then(|saved| saved.vitals);
@@ -713,6 +724,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // A retained build may have committed its refill before live installation. Keep
         // the transaction's projection until the actor has the committed pools too.
         if self.states.dawnport_departures.held(session)
+            || self
+                .states
+                .tutorial_sessions
+                .vocation(session)
+                .map_or(true, |retained| retained.is_some())
             || self
                 .states
                 .npc_conversations

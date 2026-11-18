@@ -23,13 +23,26 @@ fn house_transfer_postgres_real_dispatch_entry_exit_recovery_and_fences() -> Tes
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "House transfer thread panicked")??;
     eprintln!("HOUSE_TRANSFER POSTGRES_CASE_COMPLETED");
     Ok(())
 }
-fn scenario() -> TestResult {
+#[test]
+fn house_handoff_charges_worn_imbuements_without_a_timed_item_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "House imbuement transfer thread panicked")??;
+    Ok(())
+}
+
+fn scenario(check_imbuements: bool) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         return Ok(());
     };
@@ -40,7 +53,7 @@ fn scenario() -> TestResult {
         true,
         false,
     ))?;
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| rt.block_on(case(&h))));
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| rt.block_on(case(&h, check_imbuements))));
     let cleanup = rt.block_on(h.cleanup());
     match result {
         Ok(result) => {
@@ -526,7 +539,22 @@ async fn resume_same_session(
     assert_eq!(envelope.message_type(), MessageType::ServerResumeAccepted);
     Ok(admitted)
 }
-async fn case(h: &Harness) -> TestResult {
+async fn seed_house_transfer_imbuement(h: &Harness) -> TestResult {
+    super::item_look::seed_main_backpack(h, &[]).await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_imbuements(item_instance_id,slot,category,imbuement_key,imbuement_revision,tier,remaining_ms,applying_occurrence_id,applying_transaction_id) VALUES(encode($1,'hex')::uuid,0,8,'oteryn:imbuement.featherweight','r1',1,72000000,game_character_uuid_v7(),game_character_uuid_v7())")
+        .bind(id(70).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn house_transfer_imbuement_remaining(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT remaining_ms FROM game_item_imbuements WHERE item_instance_id=encode($1,'hex')::uuid AND slot=0")
+        .bind(id(70).as_slice()).fetch_one(&h.pool).await?)
+}
+
+async fn case(h: &Harness, check_imbuements: bool) -> TestResult {
     let recovery_source = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -688,6 +716,16 @@ async fn case(h: &Harness) -> TestResult {
     let mut owner = deps.owner(h, &authority);
     owner.movement_cells = (&cells).into();
     owner.evidence = &recovery_source.evidence;
+    if check_imbuements {
+    owner.active_generation = Some(generation);
+    seed_house_transfer_imbuement(h).await?;
+    let source_fence = owner.current_quest_fence(admitted.game_session_id).await
+        .map_err(|()| "source gameplay fence")?.ok_or("source gameplay fence")?;
+    let permit = owner.spell_lane_permit().await.ok_or("source spell lane")?;
+    assert!(owner.checkpoint_imbuement_equipment(deps.actor, admitted.game_session_id, source_fence).await);
+    drop(permit);
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    }
     let (inside, status, ack) = drive(&owner, admitted, false)
         .await
         .map_err(|error| format!("House current source entry: {error}"))?;
@@ -710,6 +748,15 @@ async fn case(h: &Harness) -> TestResult {
             .read_actor_position(deps.actor)
             .is_err()
     );
+    let after_entry = if check_imbuements {
+    let after_entry = house_transfer_imbuement_remaining(h).await?;
+    assert!(after_entry < 72_000_000, "entry must charge a worn imbuement without an ordinary timed item");
+    assert!(owner.states.timed_items.imbuements.lock().await.contains_key(&inside.game_session_id));
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+        Some(after_entry)
+    } else {
+        None
+    };
     let (outside, status, ack) = drive(&owner, inside, true)
         .await
         .map_err(|error| format!("House current destination exit: {error}"))?;
@@ -722,6 +769,11 @@ async fn case(h: &Harness) -> TestResult {
             .character_lease_generation,
         4
     );
+    if let Some(after_entry) = after_entry {
+    assert!(house_transfer_imbuement_remaining(h).await? < after_entry, "exit must charge time spent in the House");
+    assert!(owner.states.timed_items.imbuements.lock().await.contains_key(&outside.game_session_id));
+        return Ok(());
+    }
     assert_eq!(outside.channel_id, source.channel_id);
     let runtime = owner.runtime.lock().await;
     assert_eq!(

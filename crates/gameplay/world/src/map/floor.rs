@@ -798,14 +798,19 @@ impl BundleStepProof<'_> {
             self.pz_blocked,
             self.closed,
         )?;
-        if runtime
-            .position_occupied_by_other(self.actor, self.destination)
-            .map_err(MovementError::Actor)?
-        {
-            return Err(MovementError::Blocked);
-        }
         if observed != (self.destination, self.starts_stairhop) {
             return Err(MovementError::SnapshotMismatch);
+        }
+        let origin = self.expected.position();
+        let (dx, dy) = self.direction.delta();
+        if Some(self.destination.x) == origin.x.checked_add(dx)
+            && Some(self.destination.y) == origin.y.checked_add(dy)
+            && self.destination.floor == origin.floor
+            && runtime
+                .position_occupied_by_other(self.actor, self.destination)
+                .map_err(MovementError::Actor)?
+        {
+            return Err(MovementError::Blocked);
         }
         Ok(())
     }

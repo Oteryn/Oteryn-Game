@@ -93,6 +93,39 @@ async fn authority(
 }
 
 #[test]
+fn active_war_lookup_excludes_expired_and_frag_complete_wars() -> TestResult {
+    run("pvp_war_terms", async |h| {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        target(&mut tx).await?;
+        sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,revision,created_at)
+            VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,'Declaring Guild',2,9999999999999,1,1),
+                  (encode($2,'hex')::uuid,encode($3,'hex')::uuid,'Opposing Guild',2,9999999999999,1,1)")
+            .bind(id(71).as_slice()).bind(id(72).as_slice()).bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at)
+            VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,3,1),
+                  (encode($2,'hex')::uuid,encode($4,'hex')::uuid,3,1)")
+            .bind(id(CHARACTER).as_slice()).bind(id(61).as_slice()).bind(id(71).as_slice()).bind(id(72).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_guild_wars(war_id,world_id,declaring_guild,opposing_guild,state,frag_limit,duration_days,declared_at,started_at,ends_at)
+            VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,10,7,1,1,9999999999999)")
+            .bind(id(73).as_slice()).bind(id(WORLD).as_slice()).bind(id(71).as_slice()).bind(id(72).as_slice()).execute(&mut *tx).await?;
+        for (ends_at, declaring, opposing, active) in [
+            (9_999_999_999_999_i64, 0, 0, true),
+            (2, 0, 0, false),
+            (9_999_999_999_999, 10, 0, false),
+            (9_999_999_999_999, 0, 10, false),
+        ] {
+            sqlx::query("UPDATE game_guild_wars SET ends_at=$1,declaring_frags=$2,opposing_frags=$3")
+                .bind(ends_at).bind(declaring).bind(opposing).execute(&mut *tx).await?;
+            assert_eq!(war_between_in_transaction(&mut tx, &id(CHARACTER), &id(61)).await?, active,
+                "war terms: ends_at={ends_at}, frags={declaring}:{opposing}");
+        }
+        tx.rollback().await?;
+        Ok(())
+    })
+}
+
+#[test]
 fn active_war_harm_does_not_assign_white_skull_or_unjustified_receipt() -> TestResult {
     run("pvp_war_harm", async |h| {
         let mut tx = h.pool.begin().await?;

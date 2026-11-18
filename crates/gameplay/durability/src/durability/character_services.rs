@@ -515,7 +515,16 @@ mod lock_order_tests {
 
     #[test]
     fn service_waits_for_admission_before_holding_portfolio() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        waits_for_admission_before_holding_portfolio(false)
+    }
+
+    #[test]
+    fn fresh_admission_waits_for_relations_before_holding_portfolio() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        waits_for_admission_before_holding_portfolio(true)
+    }
+
+    fn waits_for_admission_before_holding_portfolio(fresh_admission: bool) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
             tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
                 use sqlx::Connection;
                 let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
@@ -547,7 +556,12 @@ mod lock_order_tests {
                 super::super::db::lock_admission_relations(&mut blocker).await?;
                 let pending = tokio::spawn(async move {
                     let mut tx = worker.begin().await?;
-                    portfolio(&mut tx, "00000000-0000-7000-8000-000000000001").await?;
+                    let account = "00000000-0000-7000-8000-000000000001";
+                    if fresh_admission {
+                        super::super::fresh_admission::lock_admission_portfolio(&mut tx, account).await?;
+                    } else {
+                        portfolio(&mut tx, account).await?;
+                    }
                     tx.commit().await?;
                     Ok::<_, DurabilityError>(())
                 });

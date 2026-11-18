@@ -201,10 +201,10 @@ impl DurabilityRoot {
    }
    if rejection.is_none() {
     // Validate the subject before creating portfolio state. Then take the
-    // canonical portfolio-before-CharacterLease fences and revalidate under lock.
+    // admission relations before the portfolio row and revalidate under lock.
+    lock_admission_relations(&mut tx).await?;
     sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES($1::uuid) ON CONFLICT DO NOTHING").bind(&c.account_id).execute(&mut *tx).await?;
     sqlx::query("SELECT 1 FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE").bind(&c.account_id).fetch_one(&mut *tx).await?;
-    lock_admission_relations(&mut tx).await?;
     let root=sqlx::query("SELECT account_id::text,lifecycle FROM game_character_roots WHERE character_id=$1::uuid FOR UPDATE").bind(&c.character_id).fetch_optional(&mut *tx).await?;
     now=sqlx::query_scalar("SELECT game_platform_enforcement_now_ms()").fetch_one(&mut *tx).await?;
     if now<=0 {return Err(DurabilityError::Unavailable);}

@@ -858,7 +858,8 @@ impl ChannelActorCarrier {
         // Source prepareDeath can cancel the complete hit while healing or
         // transforming HP. This fact is independent of before/after HP deltas.
         let mut source_damage_canceled = false;
-        if let Slot::CreatureOccupied {
+        if !health_change_resolved
+            && let Slot::CreatureOccupied {
             spell_combat,
             companion: Some(companion),
             ..

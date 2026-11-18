@@ -8,20 +8,25 @@ use crate::gameplay_transport::connection::{ControlLossResult, FreshAdmissionAut
 
 #[test]
 fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
-    vocation_scenario(false, false)
+    vocation_scenario(false, false, false)
 }
 
 #[test]
 fn tutorial_vocation_waits_for_main_backpack() -> TestResult {
-    vocation_scenario(true, false)
+    vocation_scenario(true, false, false)
 }
 
 #[test]
 fn tutorial_vocation_resumes_retained_request() -> TestResult {
-    vocation_scenario(false, true)
+    vocation_scenario(false, true, false)
 }
 
-fn vocation_scenario(missing_bag: bool, retained: bool) -> TestResult {
+#[test]
+fn tutorial_vocation_logout_keeps_refill_when_live_installation_is_pending() -> TestResult {
+    vocation_scenario(false, true, true)
+}
+
+fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -169,6 +174,12 @@ fn vocation_scenario(missing_bag: bool, retained: bool) -> TestResult {
                     "observation retries the kit"
                 );
                 move_fixture_bag(&h, 98, 41).await?;
+                fill_fixture_backpack(&h, true).await?;
+                assert!(owner.tutorial_vocation_wire(admitted, &[4]).await.is_none());
+                let build = h.root.read_character_build_state(&authority, fence.character_id).await.map_err(debug)?;
+                assert_eq!(build.vocation(), crate::durability::character_build::NO_VOCATION);
+                fill_fixture_backpack(&h, false).await?;
+
             }
             if retained {
                 use crate::durability::character_build::{BuildFormula, BuildOccurrence};
@@ -205,6 +216,46 @@ fn vocation_scenario(missing_bag: bool, retained: bool) -> TestResult {
                         formula_digest: formula.digest()
                     }
                 ));
+                assert!(owner.track_restored(
+                    admitted.game_session_id,
+                    deps.actor,
+                    &crate::gameplay_transport::last_position::AdmissionPosition::FirstLogin,
+                    fence,
+                ));
+                if post_commit {
+                    use crate::gameplay_transport::vocation_choice::commit_retained_npc_vocation;
+                    let session = admitted.game_session_id;
+                    {
+                        let runtime = owner.runtime.lock().await;
+                        let mut states = owner.states.spell_states.lock().await;
+                        states.get_mut(&runtime, deps.actor, session).ok_or("live spell state")?.set_health_for_test(1);
+                    }
+                    let retained = owner.states.tutorial_sessions.vocation(session)
+                        .map_err(|()| "retained choice")?.ok_or("retained choice")?;
+                    assert!(owner.save_first_vocation_vitals(deps.actor, session, old, &retained.request.before).await);
+                    let mut slot = owner.revision_sequencer.acquire(old.character_id).await;
+                    commit_retained_npc_vocation(
+                        &mut slot, owner.root, owner.character, owner.holder, &retained, formula,
+                    ).await.map_err(debug)?;
+                    drop(slot);
+                    // Stop at the same state a failed post-commit read leaves behind:
+                    // the refill has committed while the live actor still has 1 HP.
+                    let refill = saved_vitals(&h).await?;
+                    assert!(refill.0 > 1, "first vocation refilled the wounded actor");
+                    assert!(owner.last_position_capture_is_held(session).await);
+                    assert_eq!(owner.write_due_last_positions(true).await, 0);
+                    assert_eq!(saved_vitals(&h).await?, refill);
+                    let _ = owner.logout_session(admitted).await;
+                    assert_eq!(saved_vitals(&h).await?, refill, "logout must preserve the committed refill");
+                    drop(owner);
+                    drop(authority);
+                    drop(seal);
+                    return h.cleanup().await;
+                }
+                assert!(
+                    owner.last_position_capture_is_held(admitted.game_session_id).await,
+                    "the retained choice must fence stale vitals even if post-commit installation fails"
+                );
                 owner.states.command_ingress.admit(admitted.game_session_id);
                 assert_eq!(
                     owner.lose_control(admitted, std::time::Duration::ZERO, None).await,
@@ -302,4 +353,30 @@ async fn move_fixture_bag(h: &Harness, from: u8, to: u8) -> TestResult {
     assert_eq!(moved.rows_affected(), 1);
     tx.commit().await?;
     Ok(())
+}
+
+async fn fill_fixture_backpack(h: &Harness, fill: bool) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    if fill {
+        sqlx::query("WITH bag AS (SELECT character_id,item_instance_id,world_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid),
+            items AS (INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+                SELECT game_character_uuid_v7(),world_id,'Item','oteryn:item.tibia.i3031','definition-r1',1,1,game_character_uuid_v7() FROM bag CROSS JOIN generate_series(1,20)
+                RETURNING item_instance_id,world_id,minted_transaction_id)
+            INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id)
+                SELECT bag.character_id,bag.item_instance_id,items.item_instance_id,items.world_id,100+row_number() OVER (ORDER BY items.item_instance_id),items.minted_transaction_id FROM items CROSS JOIN bag")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+    } else {
+        sqlx::query("WITH removed AS (DELETE FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid AND placement_ordinal>100 RETURNING item_instance_id)
+            DELETE FROM game_item_instances WHERE item_instance_id IN (SELECT item_instance_id FROM removed)")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+
+async fn saved_vitals(h: &Harness) -> TestResult<(i64, i64, i64)> {
+    Ok(sqlx::query_as("SELECT health::bigint,mana::bigint,write_sequence::bigint FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }

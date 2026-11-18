@@ -338,7 +338,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if kit_result.is_some_and(|result| {
                     !matches!(result,
                     Ok(crate::durability::starter_grant::NewhavenStarterOutcome::Granted
-                        | crate::durability::starter_grant::NewhavenStarterOutcome::AlreadyGranted))
+                        | crate::durability::starter_grant::NewhavenStarterOutcome::AlreadyGranted
+                        | crate::durability::starter_grant::NewhavenStarterOutcome::NotAdmitted))
                 }) {
                     return (FirstEntryOutcome::RefusedUnavailable, None, None);
                 }

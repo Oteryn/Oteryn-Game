@@ -1528,7 +1528,9 @@ fn npc_update_frames<A: FreshAdmissionAuthority>(
         let details =
             selected.contains(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
         let window = if details {
-            authority.npc_quote_window(game_session_id, window)?
+            authority
+                .npc_quote_window(game_session_id, window)
+                .unwrap_or_else(|| window.clone())
         } else {
             window.clone()
         };

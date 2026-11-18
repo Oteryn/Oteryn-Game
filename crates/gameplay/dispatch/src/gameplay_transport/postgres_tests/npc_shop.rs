@@ -54,6 +54,19 @@ fn npc_shop_postgres_real_wire_look_sell_all_replay_and_nothing_left() -> TestRe
     Ok(())
 }
 
+#[test]
+fn npc_shop_quotes_remain_available_without_an_item_profile() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_for(ShopScenario::MissingProfile).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "npc shop PostgreSQL thread panicked")??;
+    Ok(())
+}
+
 /// One connection: when `greet` names two CommandIds, the real NPC_TALK "hi" and "trade" open
 /// the conversation and its window first, as every connection starts without one; then the
 /// command 97 under `command_id`. Answers that command's result.
@@ -209,6 +222,7 @@ enum ShopScenario {
     Rashid,
     Bulk,
     WeightLimit,
+    MissingProfile,
 }
 
 fn scenario_for(case: ShopScenario) -> TestResult {
@@ -260,6 +274,29 @@ fn scenario_for(case: ShopScenario) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         deps.initialize(&owner).await;
+        if matches!(case, ShopScenario::MissingProfile) {
+            use oteryn_protocol_oteryn::npc_service::{NpcOffer, NpcTradeWindow};
+            let native = active.native_gameplay().ok_or("native gameplay")?;
+            let index = native.item_index().ok_or("item index")?;
+            let key = "oteryn:item.tibia.i2863";
+            let revision = index.revision(key).ok_or("golden bag revision")?;
+            assert!(native.item_policy(key, revision).is_none());
+            let window = NpcTradeWindow {
+                open: Some((EntityRef { identity: [7; 16], generation: 1 }, 1)),
+                offers: vec![NpcOffer {
+                    item_definition_ref: index.definition_ref("Item", key, revision).ok_or("golden bag reference")?.get(),
+                    side: NpcTradeSide::Buy,
+                    count: 1,
+                    unit_price: 10,
+                }],
+                details: Vec::new(),
+            };
+            let quoted = owner.npc_quote_window(deps.admitted.game_session_id, &window)
+                .ok_or("missing profile closed the quote window")?;
+            assert_eq!(quoted.offers, window.offers);
+            oteryn_protocol_oteryn::npc_service::encode_npc_trade_window_for(&quoted, true).map_err(debug)?;
+            return Ok(());
+        }
         // Rashid's captured source buys white cloth at 150 gold, after the quest.
         // Alice retains the synthetic four-gold meat offer for the generic case.
         let sold_item = if wandering_rashid {
@@ -480,7 +517,7 @@ fn scenario_for(case: ShopScenario) -> TestResult {
             drop(owner);
             drop(authority);
             drop(seal);
-            return h.cleanup().await;
+            return Ok(());
         }
         if bulk {
             let (window, bought) = bulk_exchange(
@@ -726,7 +763,7 @@ fn scenario_for(case: ShopScenario) -> TestResult {
             drop(owner);
             drop(authority);
             drop(seal);
-            return h.cleanup().await;
+            return Ok(());
         }
 
         // A visible Rashid outside today's server-owned Canary destination cannot trade. This

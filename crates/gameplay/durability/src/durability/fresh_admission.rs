@@ -374,6 +374,17 @@ pub trait TerminalReleaseParticipant: Send + Sync {
     where
         'c: 'a;
 }
+pub(super) async fn lock_admission_portfolio(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    account: &str,
+) -> Result<()> {
+    // Match character services and coin custody: admission relations first.
+    super::db::lock_admission_relations(tx).await?;
+    sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE")
+        .bind(account).fetch_optional(&mut **tx).await?;
+    Ok(())
+}
+
 impl FreshAdmissionStore {
     /// Require a current stream read at PREPARE and COMMIT, independently of entry checks.
     pub fn with_security_revocation_freshness(mut self, required: bool) -> Self {
@@ -627,10 +638,7 @@ impl FreshAdmissionStore {
             .collect::<Result<_>>()?;
         let replay = b.facts.replay_key().to_bytes();
         let mut tx = super::admission_journal::begin_pass_transaction(holder, deadline).await?;
-        // Match service decisions: account portfolio before CharacterLease relations.
-        sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE")
-            .bind(&b.account_id).fetch_optional(&mut *tx).await?;
-        super::db::lock_admission_relations(&mut tx).await?;
+        lock_admission_portfolio(&mut tx, &b.account_id).await?;
         if let Some(receipt) = store.receipt_locked(&mut tx, &replay).await? {
             let outcome = receipt.classify_retry(operation);
             super::admission_journal::commit_pass_transaction(tx, deadline).await?;

@@ -380,6 +380,7 @@ async fn decide(tx: &mut Tx<'_>, r: &Request) -> Result<Option<Decision>, Durabi
     }
     accounts.sort();
     accounts.dedup();
+    super::db::lock_admission_relations(tx).await?;
     for account in &accounts {
         sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES($1::uuid) ON CONFLICT DO NOTHING").bind(account).execute(&mut **tx).await?;
         sqlx::query(
@@ -389,7 +390,6 @@ async fn decide(tx: &mut Tx<'_>, r: &Request) -> Result<Option<Decision>, Durabi
         .fetch_one(&mut **tx)
         .await?;
     }
-    super::db::lock_admission_relations(tx).await?;
     let mut characters = Vec::new();
     for name in ["character_id", "seller_character_id", "buyer_character_id"] {
         if let Some(character) = value.get(name).and_then(serde_json::Value::as_str) {

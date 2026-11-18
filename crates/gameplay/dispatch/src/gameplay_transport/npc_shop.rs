@@ -192,14 +192,21 @@ pub(super) fn quote_window(
             .hireling_quote(session, npc)
     });
     for offer in &window.offers {
-        let (key, revision) =
-            index.definition_at(std::num::NonZeroU32::new(offer.item_definition_ref)?)?;
-        let policy = native.item_policy(key, revision)?;
-        let Known(presentation) = &policy.record().semantics.presentation else {
-            return None;
-        };
-        let Known(name) = &presentation.name else {
-            return None;
+        let identity = std::num::NonZeroU32::new(offer.item_definition_ref)
+            .and_then(|reference| index.definition_at(reference));
+        let Some(((key, revision), name)) = identity.and_then(|(key, revision)| {
+            let policy = native.item_policy(key, revision)?;
+            let Known(presentation) = &policy.record().semantics.presentation else {
+                return None;
+            };
+            let Known(name) = &presentation.name else {
+                return None;
+            };
+            Some(((key, revision), name.clone()))
+        }) else {
+            // Quote details are positional on the wire and must cover every offer.
+            enriched.details.clear();
+            return Some(enriched);
         };
         let definition = crate::durability::item_mint::TypedDefinitionRef {
             family: "Item".into(),
@@ -222,7 +229,7 @@ pub(super) fn quote_window(
             u32::try_from(total_maximum / u64::from(offer.unit_price)).unwrap_or(u32::MAX)
         };
         enriched.details.push(NpcQuoteDetails {
-            name: name.clone(),
+            name,
             maximum_quantity: ((if stack_maximum == 0 {
                 0
             } else if stackable {

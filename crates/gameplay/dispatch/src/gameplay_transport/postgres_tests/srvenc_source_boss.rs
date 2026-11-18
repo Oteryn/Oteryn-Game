@@ -161,13 +161,26 @@ fn srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewa
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "source boss scenario panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn activity_equipment_clocks_charge_worn_items_and_imbuements_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "activity equipment scenario panicked")??;
+    Ok(())
+}
+
+fn scenario(check_equipment: bool) -> TestResult {
     run(async |admin| {
         reset();
         let h =
@@ -407,7 +420,7 @@ fn scenario() -> TestResult {
         assert_eq!(barrier.handoff, handoff);
         assert_eq!(barrier.source_session, *old.game_session_id.as_bytes());
         assert_eq!(barrier.session, *admitted.game_session_id.as_bytes());
-        let destination = owner
+        let mut destination = owner
             .resolve_runtime_view(admitted)
             .await
             .map_err(|_| "resolve production Instance")?
@@ -451,6 +464,9 @@ fn scenario() -> TestResult {
                     .definition_key,
                 CREATURE
             );
+        }
+        if check_equipment {
+            return activity_equipment_clocks_charge_worn_items(&h, &mut destination, admitted).await;
         }
         settle_source_boss(&h, &destination, admitted, policy).await?;
         let exit_deadline: (i64,i64) = sqlx::query_as("SELECT terminal_at,exit_deadline FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid")
@@ -514,6 +530,52 @@ fn scenario() -> TestResult {
         );
         Ok(())
     })
+}
+
+async fn activity_equipment_clocks_charge_worn_items(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use super::fixture::id;
+    use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+    use crate::gameplay_transport::item_move::{EquipmentMove, EquipmentMoveResult};
+    use crate::gameplay_transport::item_view::ItemKey;
+    use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+    let actor = admitted.runtime_actor.ok_or("activity actor")?;
+    let equip = owner.move_equipment(actor, UseCommand {
+        game_session_id: admitted.game_session_id, command_id: 100,
+        item_fence: admitted.item_fence,
+    }, EquipmentMove::Equip { item: ItemKey::Instance(id(71)), to: EquipmentSlot::Feet }).await;
+    assert!(!matches!(equip, EquipmentMoveResult::Unknown), "{equip:?}");
+    let native = owner.active_generation.and_then(|active| active.native_gameplay()).ok_or("native content")?;
+    let boots = "oteryn:item.tibia.i6529";
+    let revision = native.item_index().and_then(|index| index.revision(boots)).ok_or("boots revision")?;
+    sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
+        .execute(&h.pool).await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_imbuements(item_instance_id,slot,category,imbuement_key,imbuement_revision,tier,remaining_ms,applying_occurrence_id,applying_transaction_id) VALUES(encode($1,'hex')::uuid,0,8,'oteryn:imbuement.featherweight','r1',1,72000000,game_character_uuid_v7(),game_character_uuid_v7())")
+        .bind(id(70).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,game_character_uuid_v7())")
+        .bind(id(72).as_slice()).bind(id(42).as_slice()).bind(boots).bind(revision).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id)
+        VALUES(encode($1,'hex')::uuid,7,encode($2,'hex')::uuid,encode($3,'hex')::uuid,game_character_uuid_v7())")
+        .bind(id(41).as_slice()).bind(id(72).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let permit = owner.spell_lane_permit().await.ok_or("activity spell lane")?;
+    assert!(owner.checkpoint_timed_equipment(actor, admitted.game_session_id, true).await);
+    drop(permit);
+    owner.clock_origin -= std::time::Duration::from_secs(61);
+    owner.tick_timed_items().await;
+    let remaining: i64 = sqlx::query_scalar("SELECT remaining_ms FROM game_item_imbuements WHERE item_instance_id=encode($1,'hex')::uuid AND slot=0")
+        .bind(id(70).as_slice()).fetch_one(&h.pool).await?;
+    assert!(remaining < 72_000_000, "a worn imbuement must tick in an activity");
+    let boots_remaining: i64 = sqlx::query_scalar("SELECT remaining_ms FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(id(72).as_slice()).fetch_one(&h.pool).await?;
+    assert!(boots_remaining < 14_400_000, "timed equipment must tick in an activity");
+    Ok(())
 }
 
 async fn settle_source_boss(

@@ -380,6 +380,15 @@ impl ChannelRuntimeV1 {
                 _ => continue,
             };
             let Some(version) = version else {
+                if matches!(slot, Slot::Occupied { .. })
+                    && self
+                        .carrier
+                        .house_custody
+                        .iter()
+                        .any(|resident| resident.actor.actor_local_id() as usize - 1 == index)
+                {
+                    continue;
+                }
                 if require_position {
                     return Err(CarrierError::PositionSnapshotMismatch);
                 }

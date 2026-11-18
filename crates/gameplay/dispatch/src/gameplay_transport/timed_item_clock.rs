@@ -3,7 +3,7 @@ use super::timed_item::*;
 use crate::durability::character_equipment::EquipmentSnapshot;
 use crate::durability::item_timed_runtime::{TimedOperation, TimedRequest};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
-use crate::foundation::{ExactActorRef, GameSessionId, RuntimeScopeRefV1};
+use crate::foundation::{ExactActorRef, GameSessionId};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 
@@ -165,10 +165,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
         };
-        let house = matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. });
-        let house_origin = house.then(|| *self.channel_id.as_bytes());
-        let native = {
+        let (native, house) = {
             let runtime = self.runtime.lock().await;
+            let house = runtime.house_actor_state(actor, session).is_ok();
             if (!house
                 && (runtime.owner_fence().is_err()
                     || runtime.player_control_facts(actor, session).is_err()))
@@ -183,13 +182,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return false;
             };
-            native
+            (native, house)
         };
+        let house_origin = house.then(|| *self.channel_id.as_bytes());
         // A retained actor keeps its item clock during reconnect grace. The item reader
         // proves the current active/reconnectable fence independently of a client view.
         let item_fence = fence.item_fence();
         let Some(equipment) = self
-            .read_clock_equipment(actor, item_fence, native.source_digest())
+            .read_clock_equipment(actor, item_fence, native.source_digest(), house)
             .await
         else {
             return false;
@@ -472,8 +472,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         fence: CurrentCharacterItemFence,
         digest: [u8; 32],
+        house: bool,
     ) -> Option<EquipmentSnapshot> {
-        if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
+        if house {
             return super::equipment_move::read_house_clock_equipment(
                 self,
                 actor,

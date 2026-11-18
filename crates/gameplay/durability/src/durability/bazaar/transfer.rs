@@ -146,6 +146,7 @@ pub(super) async fn decide(
     }
     accounts.sort();
     accounts.dedup();
+    lock_admission_relations(tx).await?;
     for account in &accounts {
         sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES($1::uuid) ON CONFLICT DO NOTHING").bind(account).execute(&mut **tx).await?;
         sqlx::query(
@@ -155,7 +156,6 @@ pub(super) async fn decide(
         .fetch_one(&mut **tx)
         .await?;
     }
-    lock_admission_relations(tx).await?;
     let Some(root)=sqlx::query("SELECT account_id::text,world_id::text,character_revision::text,lifecycle FROM game_character_roots WHERE character_id=$1::uuid FOR UPDATE").bind(character).fetch_optional(&mut **tx).await? else{return rejected(tx,r,"CHAR_CMD_CHARACTER_NOT_FOUND",now).await;};
     if root.try_get::<String, _>("account_id")? != from || from == to {
         return rejected(tx, r, "CHAR_CMD_OWNER_MISMATCH", now).await;

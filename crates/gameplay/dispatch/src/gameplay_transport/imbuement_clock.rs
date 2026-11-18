@@ -37,11 +37,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(combat) = self.observe_actor_combat_state(actor, session).await else {
             return false;
         };
-        let house_origin = matches!(
-            fence.runtime_scope,
-            crate::foundation::RuntimeScopeRefV1::Instance { .. }
-        )
-        .then(|| *self.channel_id.as_bytes());
+        let house_origin = self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session)
+            .is_ok()
+            .then(|| *self.channel_id.as_bytes());
         let observed = match house_origin {
             Some(origin) => {
                 self.root
