@@ -47,7 +47,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn cake_regeneration_remaining_ms(&self) -> Option<u32> {
         use std::time::{Duration, Instant};
         const REFRESH_INTERVAL: Duration = Duration::from_secs(5);
-        let mut cache = self.states.cake_bonus.0.lock().await;
+        // A concurrent refresh must not hold up other players' condition ticks.
+        // Those ticks can install the bonus on their next turn.
+        let mut cache = self.states.cake_bonus.0.try_lock().ok()?;
         if cache
             .as_ref()
             .is_none_or(|sample| sample.checked_at.elapsed() >= REFRESH_INTERVAL)
