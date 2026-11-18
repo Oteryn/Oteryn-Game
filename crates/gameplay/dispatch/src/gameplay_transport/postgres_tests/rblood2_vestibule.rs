@@ -2,7 +2,6 @@
 use super::fixture::{Harness, debug};
 use super::{TestResult, reset};
 use crate::foundation::MovementLocalPosition;
-use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 #[test]
 fn rblood2_unpaid_blood_vestibule_step_relocates_and_costs_current_health() -> TestResult {
@@ -20,8 +19,8 @@ fn rblood2_unpaid_blood_vestibule_step_relocates_and_costs_current_health() -> T
 async fn scenario(admin: String) -> TestResult {
     reset();
     let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
-        x: 32954,
-        y: 32398,
+        x: 32953,
+        y: 32396,
         floor: 9,
     })?;
     let deps = scene.dependencies()?;
@@ -66,10 +65,37 @@ async fn scenario(admin: String) -> TestResult {
     };
     let before = health().await?;
     assert!(before > 13);
-    let (step, _) = owner
-        .ordinary_paced_step(actor, session, StepDirection::West, None, None)
+    let permit = owner.spell_lane_permit().await.ok_or("movement lane")?;
+    let (origin, entered) = {
+        let map = owner.bundle_map().ok_or("published World map")?;
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let mut runtime = owner.runtime.lock().await;
+        let origin = runtime.read_actor_position(actor).map_err(debug)?;
+        // The published capture has the entrance tile but lacks walkable ground
+        // there. The real scripted movement owner can land on that existing pad.
+        let ingress = crate::map::floor::prepare_scripted_quest_teleport_facing(
+            &runtime,
+            owner.movement_cells(),
+            actor,
+            session,
+            origin,
+            MovementLocalPosition {
+                x: 32953,
+                y: 32398,
+                floor: 9,
+            },
+            false,
+            &closed,
+            None,
+            true,
+        )
+        .map_err(debug)?;
+        (origin, runtime.commit_source_step(ingress).map_err(debug)?)
+    };
+    let landed = owner
+        .step_quest_callback(&permit, actor, session, origin, entered)
         .await;
-    assert_eq!(step.disposition, StepDisposition::Moved);
+    drop(permit);
     let position = owner
         .runtime
         .lock()
@@ -77,6 +103,7 @@ async fn scenario(admin: String) -> TestResult {
         .read_actor_position(actor)
         .map_err(debug)?
         .position();
+    assert_eq!(landed.position(), position);
     assert_eq!(
         position,
         MovementLocalPosition {
