@@ -392,6 +392,16 @@ struct RefusedSourceDrop {
     reason: SourceDropRefusalReason,
 }
 
+use crate::durability::quest_world_callback::replica_window::ReplicaKind;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ReplicaWorldDeath {
+    kind: ReplicaKind,
+    death: CreatureDeathOccurrenceKey,
+    occurred_ms: u64,
+    observer: GameSessionId,
+}
+
 #[derive(Debug, Default)]
 struct KillQueueState {
     /// Advisory deduplication follows the already bounded, exact corpse projections.
@@ -415,6 +425,7 @@ struct KillQueueState {
     /// Their existing carrier ceilings bound this metadata; no loot or principal is retained.
     source_refusals: Vec<RefusedSourceDrop>,
     queued: VecDeque<PendingKillSettlement>,
+    replica_world_deaths: VecDeque<ReplicaWorldDeath>,
     /// Admission order survives retries and release parks. Bounded by KILLRW-RL-01.
     accepted_order: VecDeque<CreatureDeathOccurrenceKey>,
     /// Each in-flight entry's death, principal and killed actor.
@@ -2023,6 +2034,26 @@ pub fn record_creature_kill(
         return;
     };
     facts.died_at_unix_ms = u64::try_from(super::npc_trade_command::unix_ms_now()).unwrap_or(0);
+    if let Some(kind) = ReplicaKind::from_creature(&creature) {
+        let mut state = sink.queue.state();
+        if !state
+            .replica_world_deaths
+            .iter()
+            .any(|entry| entry.death == facts.death)
+        {
+            if state.replica_world_deaths.len() == KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
+                refuse("replica_world_death_capacity", &creature);
+            } else {
+                state.replica_world_deaths.push_back(ReplicaWorldDeath {
+                    kind,
+                    death: facts.death,
+                    occurred_ms: facts.died_at_unix_ms,
+                    observer: facts.principal.session,
+                });
+            }
+        }
+    }
+
     if untracked {
         // The lethal hit is the untracked principal's own clocked damage.
         facts.principal_last_damage_at_ms = Some(facts.death_at_ms);
@@ -2170,8 +2201,12 @@ pub fn record_creature_kill(
                 // donor. Missing a native corpse row must not lose these points.
                 // A missing native corpse cannot erase the independently frozen
                 // Prey kill counter. Its actual settled loot value remains zero.
-                if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() || astral
-                    || crate::durability::quest_world_callback::replica_window::ReplicaKind::from_creature(&creature).is_some() {
+                if echo.is_some()
+                    || prey_checkpoint.is_some()
+                    || world_change.is_some()
+                    || astral
+                    || ReplicaKind::from_creature(&creature).is_some()
+                {
                     accept_encounter_kill(
                         runtime,
                         sink.queue,
@@ -3174,8 +3209,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Drain in death-admission order, including other principals: a shared member's
     /// bounty may be changed by any earlier kill. Each entry gets its own current
     /// fence, and no later entry passes an in-flight, parked or retrying predecessor.
+    /// Replica World receipts survive personal reward queue discard and do not need
+    /// a current Character lease. The scope owner retains them until durable ACK.
+    pub(super) async fn drain_replica_world_deaths(&self) -> bool {
+        let queue = self.states.attack.lock().await.kills().clone();
+        for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
+            let entry = queue.state().replica_world_deaths.front().copied();
+            let Some(entry) = entry else { return true };
+            if self
+                .root
+                .credit_replica_death(
+                    self.character,
+                    self.holder,
+                    entry.death.runtime_scope(),
+                    entry.death.scope_ownership_generation(),
+                    (
+                        entry.kind,
+                        personal_death_id(entry.death),
+                        entry.occurred_ms,
+                    ),
+                )
+                .await
+                .is_err()
+            {
+                return false;
+            }
+            {
+                let mut state = queue.state();
+                if state.replica_world_deaths.front() != Some(&entry) {
+                    continue;
+                }
+                state.replica_world_deaths.pop_front();
+            }
+            self.project_replica_portal_after_death(entry.observer)
+                .await;
+        }
+        true
+    }
+
     pub(super) async fn drain_kill_rewards(&self, _session: GameSessionId) -> DrainOutcome {
-        if !self.drain_native_quest_hits().await {
+        if !self.drain_replica_world_deaths().await || !self.drain_native_quest_hits().await {
             return DrainOutcome::Deferred;
         }
         for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {

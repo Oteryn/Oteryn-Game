@@ -134,15 +134,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     pub(in crate::gameplay_transport) async fn project_replica_portal_after_death(
         &self,
-        creature: &str,
         session: GameSessionId,
     ) {
-        if matches!(
-            creature,
-            "oteryn:creature.diamond_servant_replica" | "oteryn:creature.golden_servant_replica"
-        ) {
-            self.replica_portal_access(session).await;
-        }
+        self.replica_portal_access(session).await;
     }
 
     pub(super) fn announce_replica_portal(
