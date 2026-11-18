@@ -294,19 +294,15 @@ async fn place(
         if tokio::time::Instant::now() >= deadline {
             return Err(fence("qualification spawn publication deadline".into()));
         }
-        // Keep the same scope advisory lock used by Ground writers through
-        // publication. The transaction only reads and will be rolled back.
-        let mut collision_guard =
-            crate::durability::spell_item_transaction::begin_spell_owner_transaction(
-                &mut holder,
-                deadline.into_std(),
-            )
+        // Own the socket directly while holding the Ground fence. Cancellation
+        // closes it instead of handing a locked transaction to the pool.
+        use sqlx::Connection as _;
+        let mut connection = holder.detach();
+        let mut collision_guard = tokio::time::timeout_at(deadline, connection.begin())
             .await
+            .map_err(|_| fence("qualification spawn collision begin deadline".into()))?
             .map_err(|error| fence(format!("qualification collision guard: {error:?}")))?;
         let fresh = tokio::time::timeout_at(deadline, async {
-            // The local deadline cancels the read and drops the transaction.
-            // PostgreSQL must keep the lock even if the task is descheduled
-            // after the final SELECT and before synchronous publication.
             keep_collision_fence(&mut collision_guard)
                 .await
                 .map_err(|error| {
@@ -314,22 +310,38 @@ async fn place(
                 })?;
             wild_spawn::read_spawn_tiles(&mut collision_guard, root, authority, proof, &plan).await
         })
-        .await
-        .map_err(|_| fence("qualification spawn collision read deadline".into()))??;
-        if let Ok(mut runtime) = owners.runtime.try_lock() {
-            if tokio::time::Instant::now() >= deadline {
-                return Err(fence("qualification spawn publication deadline".into()));
+        .await;
+        let result = match fresh {
+            Ok(Ok(fresh)) => {
+                if let Ok(mut runtime) = owners.runtime.try_lock() {
+                    let placed = if tokio::time::Instant::now() >= deadline {
+                        Err(fence("qualification spawn publication deadline".into()))
+                    } else {
+                        let eligible = publication_candidates(fresh, eligible);
+                        wild_spawn::publish_spawn(&mut runtime, plan, source, key, &eligible)
+                    };
+                    drop(runtime);
+                    let _ = tokio::time::timeout(
+                        Duration::from_millis(500),
+                        collision_guard.rollback(),
+                    )
+                    .await;
+                    drop(connection);
+                    return placed;
+                }
+                Ok(())
             }
-            let eligible = publication_candidates(fresh, eligible);
-            return wild_spawn::publish_spawn(&mut runtime, plan, source, key, &eligible);
-        }
-        // Gameplay can own the runtime while waiting on Ground. Release the
-        // read guard and holder before waiting, then refresh the evidence again.
-        collision_guard
-            .rollback()
-            .await
+            Ok(Err(error)) => Err(error),
+            Err(_) => Err(fence("qualification spawn collision read deadline".into())),
+        };
+        // The raw socket closes even if the rollback cannot receive a reply.
+        let release =
+            tokio::time::timeout(Duration::from_millis(500), collision_guard.rollback()).await;
+        drop(connection);
+        result?;
+        release
+            .map_err(|_| fence("qualification spawn collision release deadline".into()))?
             .map_err(|error| fence(format!("qualification collision release: {error:?}")))?;
-        drop(holder);
         drop(owners.runtime.lock().await);
         holder = acquire_holder().await?;
     }
@@ -339,9 +351,15 @@ async fn place(
 async fn keep_collision_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
 ) -> Result<(), sqlx::Error> {
+    // PostgreSQL retains an already armed shorter timer when the setting
+    // increases. Disarm it before installing the fallback and taking any locks.
+    sqlx::query("SET LOCAL transaction_timeout = 0")
+        .execute(&mut **tx)
+        .await?;
     sqlx::query(
-        "SELECT set_config('transaction_timeout', '0', true), \
-         set_config('idle_in_transaction_session_timeout', '0', true)",
+        "SELECT set_config('transaction_timeout', '10s', true), \
+         set_config('idle_in_transaction_session_timeout', '10s', true), \
+         set_config('statement_timeout', '8s', true), set_config('lock_timeout', '8s', true)",
     )
     .execute(&mut **tx)
     .await?;
@@ -751,49 +769,63 @@ mod tests {
             .find("tx.commit()")
             .ok_or("missing first fence commit")?;
         let release = source
-            .find("collision_guard\n            .rollback()")
+            .find("collision_guard.rollback()")
             .ok_or("missing collision rollback")?;
         assert!(commit < guard && guard < fresh && fresh < publish && publish < release);
         assert!(source[fresh..publish].contains(">= deadline"));
         Ok(())
     }
 
+    #[cfg(feature = "test-support")]
     #[tokio::test]
     async fn qualification_collision_guard_outlives_server_transaction_timeout()
     -> Result<(), Box<dyn std::error::Error>> {
         use sqlx::Connection as _;
-        let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-            return Ok(());
-        };
-        let mut reader = sqlx::PgConnection::connect(&url).await?;
-        let mut writer = sqlx::PgConnection::connect(&url).await?;
-        let mut tx = reader.begin().await?;
-        let key: i64 = sqlx::query_scalar("SELECT pg_backend_pid()::bigint")
-            .fetch_one(&mut *tx)
-            .await?;
-        sqlx::query("SET LOCAL transaction_timeout = '250ms'")
-            .execute(&mut *tx)
-            .await?;
-        keep_collision_fence(&mut tx).await?;
-        sqlx::query("SELECT pg_advisory_xact_lock($1)")
-            .bind(key)
-            .execute(&mut *tx)
-            .await?;
-        tokio::time::sleep(Duration::from_millis(300)).await;
-        let mut ground = writer.begin().await?;
-        let lock = "SELECT pg_try_advisory_xact_lock($1)";
-        let could_write: bool = sqlx::query_scalar(lock)
-            .bind(key)
-            .fetch_one(&mut *ground)
-            .await?;
-        assert!(!could_write, "Ground writer bypassed the publishing fence");
-        tx.rollback().await?;
-        let released: bool = sqlx::query_scalar(lock)
-            .bind(key)
-            .fetch_one(&mut *ground)
-            .await?;
-        assert!(released);
-        Ok(())
+        let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+        tokio::time::timeout(Duration::from_secs(15), async {
+            let mut reader = sqlx::PgConnection::connect(&url).await?;
+            let mut writer = sqlx::PgConnection::connect(&url).await?;
+            let mut tx = reader.begin().await?;
+            let key: i64 = sqlx::query_scalar("SELECT pg_backend_pid()::bigint")
+                .fetch_one(&mut *tx)
+                .await?;
+            sqlx::query("SET LOCAL transaction_timeout = '250ms'")
+                .execute(&mut *tx)
+                .await?;
+            keep_collision_fence(&mut tx).await?;
+            sqlx::query("SELECT pg_advisory_xact_lock($1)")
+                .bind(key)
+                .execute(&mut *tx)
+                .await?;
+            tokio::time::sleep(Duration::from_millis(300)).await;
+            let mut ground = writer.begin().await?;
+            let lock = "SELECT pg_try_advisory_xact_lock($1)";
+            let could_write: bool = sqlx::query_scalar(lock)
+                .bind(key)
+                .fetch_one(&mut *ground)
+                .await?;
+            assert!(!could_write, "Ground writer bypassed the publishing fence");
+            let timeout: String = sqlx::query_scalar("SHOW transaction_timeout")
+                .fetch_one(&mut *tx)
+                .await?;
+            assert_eq!(timeout, "10s", "database must bound a stalled reader");
+            let idle_timeout: String =
+                sqlx::query_scalar("SHOW idle_in_transaction_session_timeout")
+                    .fetch_one(&mut *tx)
+                    .await?;
+            assert_eq!(idle_timeout, "10s");
+            drop(tx);
+            drop(reader);
+            tokio::time::timeout(
+                Duration::from_secs(2),
+                sqlx::query("SELECT pg_advisory_xact_lock($1)")
+                    .bind(key)
+                    .execute(&mut *ground),
+            )
+            .await??;
+            Ok(())
+        })
+        .await?
     }
 
     #[test]

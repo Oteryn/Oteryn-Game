@@ -637,6 +637,29 @@ fn confirmed_kill(death_distance: u32, has_death_receipt: bool) -> bool {
     death_distance <= 2 && has_death_receipt
 }
 
+async fn sweep_reward_selection<S, T>(
+    session: &mut Option<S>,
+    query: impl AsyncFnOnce(&mut S) -> TestResult<T>,
+) -> TestResult<T> {
+    let mut current = session.take().ok_or("session absent after setup")?;
+    let selection = query(&mut current).await?;
+    *session = Some(current);
+    Ok(selection)
+}
+
+fn boss_bonus_rolls(occurrence: [u8; 16]) -> u8 {
+    use sha2::{Digest, Sha256};
+
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:daily-boost:boss-roll:v1")
+        .chain_update(occurrence)
+        .finalize();
+    let draw = u64::from_be_bytes([
+        digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7],
+    ]);
+    2 + u8::from(draw % 101 < 50)
+}
+
 async fn hunt(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -658,6 +681,9 @@ async fn hunt(
         *session = None;
         return Err(failure("spawn", "precondition", format!("setup:{error}")));
     }
+    let selection = sweep_reward_selection(session, client_daily_boost::reward_selection)
+        .await
+        .map_err(|error| failure("xp", "protocol", error))?;
     let client = session
         .as_mut()
         .ok_or_else(|| failure("spawn", "precondition", "session absent after setup"))?;
@@ -665,9 +691,6 @@ async fn hunt(
         .await
         .map_err(|error| failure("spawn", "precondition", format!("stats:{error}")))?;
 
-    let selection = client_daily_boost::reward_selection(client)
-        .await
-        .map_err(|error| failure("xp", "protocol", error))?;
     let name = definition.name.as_str();
     // Leftovers of an earlier species never count as this species' spawn.
     let existing: BTreeSet<_> = client
@@ -846,6 +869,7 @@ async fn hunt(
     let HuntDeath {
         actor: dead,
         stamina: death_stamina,
+        reward_occurrence,
         ..
     } = receipt.map_err(|error| failure("kill", "unconfirmed_death", error))?;
     let corpse_identity = dead.corpse_identity();
@@ -965,14 +989,17 @@ async fn hunt(
             if !entries.is_empty()
                 && expects_physical_loot(definition.reward_boss, death_stamina) =>
         {
-            // Non-private bosses use two or three extra equipment rolls. The
-            // third-roll draw uses a server-only occurrence, so check both exact plans.
-            let rolls: &[u8] = if boss_boosted {
-                &[2, 3]
-            } else if creature_boosted {
-                &[1]
+            let extra_rolls = if boss_boosted {
+                let occurrence = reward_occurrence.ok_or_else(|| {
+                    failure(
+                        "loot",
+                        "protocol",
+                        "boosted boss death receipt has no reward occurrence",
+                    )
+                })?;
+                boss_bonus_rolls(occurrence)
             } else {
-                &[0]
+                u8::from(creature_boosted)
             };
             let row = rewards.row(&species.key).map_err(|error| {
                 failure("loot", "content", format!("pinned loot row: {error:?}"))
@@ -981,17 +1008,11 @@ async fn hunt(
                 .loot_table_ref
                 .as_ref()
                 .ok_or_else(|| failure("loot", "content", "pinned loot table has no identity"))?;
-            let mut plans = Vec::new();
-            for &extra_rolls in rolls {
-                let table = boosted_loot_table(&row.loot_table, extra_rolls, boss_boosted, rewards);
-                plans.push(
-                    seeded_loot(reference, &table, dead, clients, items)
-                        .map_err(|error| failure("loot", "content", error))?,
-                );
-            }
-            plans
+            let table = boosted_loot_table(&row.loot_table, extra_rolls, boss_boosted, rewards);
+            seeded_loot(reference, &table, dead, clients, items)
+                .map_err(|error| failure("loot", "content", error))?
         }
-        _ => vec![BTreeMap::new()],
+        _ => BTreeMap::new(),
     };
     match open_corpse(client, handle).await {
         Err(error) => rows.fail("loot", "protocol", &error.to_string()),
@@ -1095,7 +1116,7 @@ fn judge_loot(
     items: &crate::content::item_ref::ItemDefinitionIndex,
     binding: &LootBinding,
     got: &BTreeMap<std::num::NonZeroU32, u64>,
-    expected: &[BTreeMap<std::num::NonZeroU32, u64>],
+    expected: &BTreeMap<std::num::NonZeroU32, u64>,
     extra_rolls: bool,
 ) {
     let entries = match binding {
@@ -1181,7 +1202,7 @@ fn judge_loot(
             Some(_) => {}
         }
     }
-    if !expected.iter().any(|plan| matches_seeded_loot(got, plan)) {
+    if !matches_seeded_loot(got, expected) {
         rows.fail(
             "loot",
             "seed_mismatch",
@@ -1373,6 +1394,30 @@ mod evidence_tests {
     use oteryn_dev_client::{EntityRef, WorldSpatialEntity};
     use oteryn_protocol_oteryn::{entity_names::EntityDisplayName, world_spatial::ActorPosition};
 
+    #[tokio::test]
+    async fn qualification_daily_query_discards_failed_session() -> TestResult {
+        let mut session = Some(1);
+        let result = sweep_reward_selection(&mut session, async |_| -> TestResult<()> {
+            Err(std::io::Error::from(std::io::ErrorKind::UnexpectedEof).into())
+        })
+        .await;
+        assert!(result.is_err());
+        assert!(session.is_none());
+        session = Some(2);
+        assert_eq!(
+            sweep_reward_selection(&mut session, async |id| Ok(*id)).await?,
+            2
+        );
+        assert_eq!(session, Some(2));
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_boss_bonus_uses_exact_occurrence() {
+        assert_eq!(boss_bonus_rolls([0; 16]), 3);
+        assert_eq!(boss_bonus_rolls([6; 16]), 2);
+    }
+
     #[test]
     fn qualification_sweep_recovery_does_not_repeat_fresh_build() -> TestResult {
         let (_, ready) = include_str!("creature_sweep.rs")
@@ -1403,7 +1448,7 @@ mod evidence_tests {
             &items,
             &binding,
             &BTreeMap::new(),
-            &[BTreeMap::from([(item, 1)])],
+            &BTreeMap::from([(item, 1)]),
             false,
         );
         assert_eq!(missing.counts.fail, 1);
@@ -1413,7 +1458,7 @@ mod evidence_tests {
             &items,
             &binding,
             &BTreeMap::new(),
-            &[BTreeMap::new()],
+            &BTreeMap::new(),
             false,
         );
         assert_eq!(missed_roll.counts.pass, 1);
@@ -1436,7 +1481,7 @@ mod evidence_tests {
             &items,
             &LootBinding::Table(vec![entry("oteryn:item.tibia.i101", 1, 1)]),
             &BTreeMap::new(),
-            &[BTreeMap::new()],
+            &BTreeMap::new(),
             false,
         );
         assert_eq!(unmapped.counts.fail, 1);
@@ -1451,7 +1496,7 @@ mod evidence_tests {
                 entry("oteryn:item.tibia.i100", 4, 4),
             ]),
             &BTreeMap::from([(item, 2)]),
-            &[BTreeMap::new()],
+            &BTreeMap::new(),
             false,
         );
         assert_eq!(wrong_count.counts.fail, 1);
@@ -1498,7 +1543,9 @@ mod evidence_tests {
             .and_then(|(_, body)| body.split_once("fn seeded_loot("))
             .map(|(body, _)| body)
             .ok_or("missing sweep hunt boundary")?;
-        assert!(hunt.contains("reward_selection("));
+        assert!(
+            hunt.contains("sweep_reward_selection(session, client_daily_boost::reward_selection)")
+        );
         assert!(hunt.contains("boosted_xp("));
         assert!(hunt.contains("expects_physical_loot(definition.reward_boss, death_stamina)"));
         assert!(hunt.contains("boosted_loot_table("));
@@ -1542,16 +1589,9 @@ mod evidence_tests {
             min: 1,
             max: 1,
         }]);
-        let expected = [BTreeMap::from([(item, 2)])];
+        let expected = BTreeMap::from([(item, 2)]);
         let mut observed = Rows::new("boosted_rat");
-        judge_loot(
-            &mut observed,
-            &items,
-            &binding,
-            &expected[0],
-            &expected,
-            true,
-        );
+        judge_loot(&mut observed, &items, &binding, &expected, &expected, true);
         assert_eq!(observed.counts.pass, 1);
         let mut missing_extra = Rows::new("boosted_rat");
         judge_loot(
