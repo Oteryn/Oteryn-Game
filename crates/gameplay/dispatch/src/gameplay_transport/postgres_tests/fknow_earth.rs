@@ -297,6 +297,34 @@ pub(super) async fn exercise_tree(
         true,
     )
     .await?;
+    // A second phial is on the portal tile when the carried phial is used.
+    quest_world_callbacks::input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: EARTH_TREE_PORTAL,
+            item: PHIAL.into(),
+            count: 1,
+        },
+        951,
+        false,
+    )
+    .await?;
+    let ground = || async {
+        sqlx::query_as::<_, (Vec<u8>, Vec<u8>)>(
+            "SELECT uuid_send(i.item_instance_id), g.spatial_position
+             FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id)
+             WHERE i.definition_production_key=$1",
+        )
+        .bind(PHIAL)
+        .fetch_one(&harness.pool)
+        .await
+    };
+    let spatial = |p: Position| {
+        crate::durability::map_item_mint_audit::map_item_spatial_position(p.x, p.y, p.floor)
+    };
+    let (dropped, former_cell) = ground().await?;
+    assert_eq!(former_cell, spatial(EARTH_TREE_PORTAL));
     let reference = owner
         .active_generation
         .and_then(|active| active.native_gameplay())
@@ -350,6 +378,13 @@ pub(super) async fn exercise_tree(
     .await?;
     *admitted = next;
     assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(
+        ground().await?,
+        (
+            dropped,
+            spatial(oteryn_gameplay_quests::quest::world_callbacks::EARTH_TREE_RETURN)
+        ),
+    );
     let active: bool = sqlx::query_scalar(
         "SELECT expires_at > statement_timestamp()
          FROM game_forgotten_knowledge_tree_windows WHERE world_id=encode($1,'hex')::uuid",
