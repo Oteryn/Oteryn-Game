@@ -332,18 +332,25 @@ pub(super) async fn exercise(
     assert_eq!(carried(h, 23986).await?, 0);
     step(owner, a, StepDirection::North).await?;
     passage(owner, a, callback(&rows, "energy-entry")?).await?;
-    for (i, (name, phase, next)) in [
-        ("lloyd", 2, 3),
-        ("lady_tenebris", 3, 4),
-        ("the_enraged_thorn_knight", 5, 6),
-        ("soul_of_dragonking_zyrtarch", 7, 8),
-        ("the_time_guardian", 8, 9),
-        ("the_last_lore_keeper", 9, 10),
+    for (i, (name, shrine, phase, next)) in [
+        ("lloyd", "lloyd", 2, 3),
+        ("lady_tenebris", "lady_tenebris", 3, 4),
+        ("the_enraged_thorn_knight", "thorn_knight", 5, 6),
+        ("soul_of_dragonking_zyrtarch", "dragonking", 7, 8),
+        ("the_time_guardian", "time_guardian", 8, 9),
+        ("the_last_lore_keeper", "last_lore", 9, 10),
     ]
     .into_iter()
     .enumerate()
     {
         assert_eq!(value(owner, a, TRACK).await?, phase);
+        let credit =
+            format!("oteryn:quest-progress/quest/u11_02/forgotten_knowledge/{shrine}_killed");
+        assert_eq!(
+            value(owner, a, &credit).await?,
+            -1,
+            "room entry grants no shrine credit"
+        );
         owner.refresh_quest_session(a.game_session_id, false).await;
         let objective = oteryn_gameplay_quests::quest::death_objectives::load()
             .map_err(debug)?
@@ -372,6 +379,11 @@ pub(super) async fn exercise(
             )
             .await?,
             1
+        );
+        assert_eq!(
+            value(owner, a, &credit).await?,
+            1,
+            "native boss death earns shrine credit"
         );
         passage(owner, a, callback(&rows, &format!("passage-{i}"))?).await?;
         assert_eq!(value(owner, a, TRACK).await?, next);
