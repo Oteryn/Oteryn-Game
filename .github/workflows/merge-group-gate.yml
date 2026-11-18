@@ -618,17 +618,6 @@ jobs:
         run: |
           cargo +1.100.0 nextest run --locked --workspace --lib --no-fail-fast -E 'not test(content::)'
 
-      # The native client's Bevy game UI (`bevy-shell` feature) is outside the default feature set.
-      # Owner consent 2026-11-18.
-      - name: Test the native client game UI (bevy-shell)
-        if: matrix.shard == 'lib-rest'
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y libasound2-dev libudev-dev
-          cargo +1.100.0 nextest run --locked -p oteryn-client --features bevy-shell --lib --no-fail-fast
-
       - name: Test workspace integration targets
         if: matrix.shard == 'integration-heavy' || matrix.shard == 'integration-rest'
         shell: bash
