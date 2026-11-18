@@ -672,12 +672,12 @@ fn scenario_with_voice(
         let final_state = decay.last().copied().unwrap_or(after);
         restarted.refresh_terrain_tools().await;
         assert_eq!(
-            sqlx::query_scalar::<_, i64>(
-                "SELECT object_revision FROM game_terrain_tool_transforms"
+            sqlx::query_as::<_, (i64, bool)>(
+                "SELECT object_revision, decay_at_unix_ms IS NULL FROM game_terrain_tool_transforms",
             )
             .fetch_one(&harness.pool)
             .await?,
-            final_revision
+            (final_revision, true)
         );
         // A stale map revision cannot start another transform or create another receipt.
         next.continuity.next_command_id = 2;
