@@ -133,6 +133,19 @@ fn worldchg_deepling_ramp_use_advances_stage_on_save() -> TestResult {
     })
 }
 
+#[test]
+fn worldchg_deepling_boss_chest_consumes_only_the_eligible_players_flag() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::super::kill_reward_e2e::scenario_thread::run("deepling-boss-chest", || {
+        let mut chest = callback("deeplings-chest-9302")?;
+        chest.selector.position = Some(position((33579, 31297, -11)));
+        exercise(chest, 2472, 1, Some(1))
+    })
+}
+
 fn position((x, y, floor): (u16, u16, i8)) -> Position {
     Position { x, y, floor }
 }
@@ -140,7 +153,8 @@ fn position((x, y, floor): (u16, u16, i8)) -> Position {
 fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>) -> TestResult {
     let coral = callback.key == "oteryn:quest-callback/deeplings-coral-crate";
     let ramp = callback.key == "oteryn:quest-callback/deeplings-ramp-1106";
-    let writes_progress = coral || ramp;
+    let chest = callback.key == "oteryn:quest-callback/deeplings-chest-9302";
+    let writes_progress = coral || ramp || chest;
     let started = std::time::Instant::now();
     let trigger = callback.selector.position.ok_or("position")?;
     let world = world_ordinal(&callback, trigger, appearance, ordinal)?;
@@ -185,7 +199,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             1,
             1,
             "runtime-scope-assignment:1",
-            2,
+            if chest { 4 } else { 2 },
             pin,
         )
         .map_err(debug)?;
@@ -354,6 +368,22 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             drop(slot);
             owner.quest_catalogue = Some(catalogue);
         }
+        let mut peer = if chest {
+            let (_, peer) = super::super::grizzly_boss::vacancy::second_player(&owner, &deps, &h, origin).await?;
+            let peer_fence = peer.item_fence.ok_or("second player's item fence")?;
+            h.root.initialize_admission_equipment(
+                &authority, &h.node, &peer_fence,
+                generation.identity().server_artifact_digest(), fresh.operation(),
+            ).await.map_err(debug)?;
+            h.root.grant_starter_items(
+                &authority, &h.node, &peer_fence,
+                &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+                &template,
+            ).await.map_err(debug)?;
+            Some(peer)
+        } else {
+            None
+        };
         let key = oteryn_world_bundle::bundle::placement_key(
             trigger.floor,
             trigger.x,
@@ -386,6 +416,16 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             .storage
             .first()
             .is_none_or(|storage| stage.is_some_and(|stage| stage >= storage.minimum));
+        if let Some(peer) = &mut peer {
+            let refused = wire(
+                &owner, peer, 1, 2,
+                oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
+            ).await?;
+            assert_eq!(
+                oteryn_protocol_oteryn::world_object::decode_use_result(&refused).map_err(debug)?,
+                UseDisposition::Rejected
+            );
+        }
         let reply = wire(
             &owner,
             &mut admitted,
@@ -446,13 +486,29 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             .bind(&callback.storage[0].track)
             .fetch_one(&h.pool)
             .await?;
-            assert_eq!(progress, if ramp { 13 } else { 12 });
+            assert_eq!(progress, if chest { 0 } else if ramp { 13 } else { 12 });
             let crates: i64 = sqlx::query_scalar(
                 "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i14165' AND lifecycle=1",
             )
             .fetch_one(&h.pool)
             .await?;
-            assert_eq!(crates, if ramp { 0 } else { 1 });
+            assert_eq!(crates, i64::from(coral));
+            if chest {
+                let platinum: i64 = sqlx::query_scalar(
+                    "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1",
+                )
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(platinum, 50);
+                let second_claim = wire(
+                    &owner, &mut admitted, 2, 2,
+                    oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
+                ).await?;
+                assert_eq!(
+                    oteryn_protocol_oteryn::world_object::decode_use_result(&second_claim).map_err(debug)?,
+                    UseDisposition::Rejected
+                );
+            }
             if ramp {
                 use oteryn_gameplay_world_change::counter::{CounterKind, CounterState};
                 let state: serde_json::Value = sqlx::query_scalar(

@@ -219,7 +219,7 @@ async fn teleport(
     Ok(())
 }
 
-pub(super) async fn second_player(
+pub(crate) async fn second_player(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     deps: &Dependencies,
     h: &Harness,
