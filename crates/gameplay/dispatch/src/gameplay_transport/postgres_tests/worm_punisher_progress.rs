@@ -373,15 +373,34 @@ pub(super) async fn exercise(
     h: &Harness,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
-    let fixture = json!({"schema":1,"callbacks":rows()}).to_string();
+    let [last, drilling] = rows();
+    let mut early = last.clone();
+    early["key"] = json!("oteryn:quest-callback/fixture-worm-punisher-early-carrion");
+    // Crystal actions_heated_worm_punisher.lua:31-46 counts each of the first five hits.
+    early["storage"] = json!([
+        {"track":format!("{}mission04", isle_of_evil::PREFIX),"minimum":2,"maximum":2,"set":2,"preserve":true},
+        {"track":COUNTER,"minimum":0,"maximum":4,"set":1,"increment":true},
+        {"track":DEBT,"minimum":0,"maximum":0,"set":0,"preserve":true}
+    ]);
+    early["effects"] = json!({"source_magic":32,
+        "player_speech":"You've got gim! That will tech the beast a lesson!"});
+    let mut debt = last.clone();
+    debt["key"] = json!("oteryn:quest-callback/fixture-worm-punisher-unpaid");
+    // Crystal actions_heated_worm_punisher.lua:25-29 gives advice without a hit or credit.
+    debt["storage"] = json!([
+        {"track":format!("{}mission04", isle_of_evil::PREFIX),"minimum":2,"maximum":2,"set":2,"preserve":true},
+        {"track":DEBT,"minimum":1,"maximum":1,"set":1,"preserve":true}
+    ]);
+    debt["effects"] = json!({"player_speech":"You should go talk to Scutty before continuing."});
+    let fixture = json!({"schema":1,"callbacks":[early,last,drilling,debt]}).to_string();
     owner.quest_catalogue = Some(std::sync::Arc::new(
         world_callbacks::with_fixture_callbacks(base.clone(), &fixture)?,
     ));
     let mission = format!("{}mission04", isle_of_evil::PREFIX);
-    let historical = |debt| {
+    let historical = |counter, debt| {
         [
             (mission.clone(), 2),
-            (COUNTER.into(), 5),
+            (COUNTER.into(), counter),
             (DEBT.into(), debt),
         ]
     };
@@ -389,7 +408,7 @@ pub(super) async fn exercise(
         h,
         owner,
         admitted,
-        &historical(0),
+        &historical(5, 0),
         121,
     )
     .await?;
@@ -416,28 +435,35 @@ pub(super) async fn exercise(
     );
     assert_eq!(super::m39_bone_journey::stage(h, DEBT).await?, Some(1));
     assert_eq!(super::m39_bone_journey::stage(h, COUNTER).await?, Some(0));
-    super::qengine_outfit_stories::seed_quest_prerequisites(
-        h,
-        owner,
-        admitted,
-        &historical(1),
-        122,
-    )
-    .await?;
-    assert_ne!(
+    owner.states.chat.admit(admitted.game_session_id, "Fixture Hero", owner.owner_now());
+    assert_eq!(
         strike(owner, admitted, CARRION, 9197).await?,
         UseDisposition::Committed
     );
+    assert!(owner.states.chat.drain(admitted.game_session_id).iter().any(|line| matches!(
+        line,
+        oteryn_protocol_oteryn::chat::ChatLine::Local { mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::MonsterSay, text, .. }
+            if text == "You should go talk to Scutty before continuing."
+    )));
     assert_eq!(super::m39_bone_journey::stage(h, &mission).await?, Some(2));
+    assert_eq!(super::m39_bone_journey::stage(h, COUNTER).await?, Some(0));
 
     super::qengine_outfit_stories::seed_quest_prerequisites(
         h,
         owner,
         admitted,
-        &historical(0),
+        &historical(0, 0),
         123,
     )
     .await?;
+    for count in 1..=5 {
+        assert_eq!(
+            strike(owner, admitted, CARRION, 9197).await?,
+            UseDisposition::Committed
+        );
+        assert_eq!(super::m39_bone_journey::stage(h, COUNTER).await?, Some(count));
+        assert_eq!(super::m39_bone_journey::stage(h, &mission).await?, Some(2));
+    }
     assert_eq!(
         strike(owner, admitted, CARRION, 9197).await?,
         UseDisposition::Committed

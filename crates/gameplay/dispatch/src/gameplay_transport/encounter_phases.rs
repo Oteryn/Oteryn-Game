@@ -7,6 +7,7 @@ use oteryn_gameplay_encounters::bosses::boreth::native_death::{
     BorethCarrierExt, BorethDeathLedger,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
+use oteryn_gameplay_quests::quest::world_callbacks::death_cleanup::{self, DeathCleanup};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
@@ -27,10 +28,28 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
-    boreth: Mutex<BorethDeathLedger>,
+    add_cleanup: Mutex<BorethDeathLedger>,
+    #[cfg(test)]
+    fixture_death_cleanups: std::sync::OnceLock<Vec<DeathCleanup>>,
 }
 
 impl Registry {
+    fn death_cleanups(&self) -> &[DeathCleanup] {
+        #[cfg(test)]
+        if let Some(fixture) = self.fixture_death_cleanups.get() {
+            return fixture;
+        }
+        death_cleanup::load().unwrap_or_default()
+    }
+
+    #[cfg(test)]
+    pub(super) fn bind_fixture_death_cleanups(&self, text: &str) -> Result<(), String> {
+        let rows = death_cleanup::fixture(text)?;
+        self.fixture_death_cleanups
+            .set(rows)
+            .map_err(|_| "death cleanup fixture already bound".into())
+    }
+
     pub(super) fn blocks_channel_switch(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -91,15 +110,23 @@ impl Registry {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
     ) {
-        // Crystal 201189f8 data-global/scripts/quests/blood_brothers_quest/boreth_death.lua:3-20.
-        // Reuse the sealed physical cleanup before any reward/principal selection.
-        if runtime
-            .borrow_combat_death()
-            .creature_target_identity(actor)
-            .is_ok_and(|key| key == b"oteryn:creature.boreth")
-            && let Ok(mut ledger) = self.boreth.lock()
+        let cleanups = self.death_cleanups();
+        if !cleanups.is_empty()
+            && let Ok(key) = runtime
+                .borrow_combat_death()
+                .creature_target_identity(actor)
+            && let Ok(index) = cleanups.binary_search_by(|row| row.boss.as_bytes().cmp(key))
+            && let Some(binding) = cleanups.get(index)
+            && let Ok(mut ledger) = self.add_cleanup.lock()
         {
-            let _ = runtime.commit_boreth_death(&mut ledger, actor);
+            let _ = runtime.commit_encounter_add_cleanup(
+                &mut ledger,
+                actor,
+                &binding.boss,
+                &binding.add,
+                binding.minimum,
+                binding.maximum,
+            );
         }
         let Ok(mut active) = self.active.lock() else {
             return;

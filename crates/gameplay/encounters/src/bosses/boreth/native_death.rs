@@ -1,14 +1,43 @@
 use oteryn_gameplay_entities::carrier::Slot;
 use oteryn_gameplay_entities::*;
+use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
 pub trait BorethCarrierExt {
-    #[allow(clippy::too_many_arguments)]
     fn commit_boreth_death(
         &mut self,
         ledger: &mut BorethDeathLedger,
         boreth: ExactActorRef,
+    ) -> Result<BorethDeathResult, CarrierError> {
+        // Crystal 201189f8 data-global/scripts/quests/blood_brothers_quest/boreth_death.lua:3-20.
+        self.commit_encounter_add_cleanup(
+            ledger,
+            boreth,
+            "oteryn:creature.boreth",
+            "oteryn:creature.plaguethrower",
+            Position {
+                x: 32936,
+                y: 31474,
+                floor: -1,
+            },
+            Position {
+                x: 32944,
+                y: 31482,
+                floor: -1,
+            },
+        )
+    }
+
+    fn commit_encounter_add_cleanup(
+        &mut self,
+        ledger: &mut BorethDeathLedger,
+        actor: ExactActorRef,
+        boss: &str,
+        add: &str,
+        minimum: Position,
+        maximum: Position,
     ) -> Result<BorethDeathResult, CarrierError>;
 }
-// Append beside native physical runtime_actor_carrier owner. No generic interpreter.
+
 #[derive(Debug, Default)]
 pub struct BorethDeathLedger {
     entries: Vec<CreatureDeathOccurrenceKey>,
@@ -19,18 +48,21 @@ pub struct BorethDeathResult {
     pub removed: Vec<ExactActorRef>,
 }
 impl BorethCarrierExt for ChannelRuntimeV1 {
-    /// Pinned Crystal 00ce02a5 BorethDeath: remove all exact Plaguethrower monsters in
-    /// x32936..32944,y31474..31482,floor1; no caller role/name/position or reward authority.
-    fn commit_boreth_death(
+    /// Retire matching live adds after an exact death projected by the combat owner.
+    fn commit_encounter_add_cleanup(
         &mut self,
         ledger: &mut BorethDeathLedger,
-        boreth: ExactActorRef,
+        actor: ExactActorRef,
+        boss: &str,
+        add: &str,
+        minimum: Position,
+        maximum: Position,
     ) -> Result<BorethDeathResult, CarrierError> {
         let owner = self.borrow_combat_death();
-        if owner.creature_target_identity(boreth)? != b"oteryn:creature.boreth" {
+        if owner.creature_target_identity(actor)? != boss.as_bytes() {
             return Err(CarrierError::NotCreature);
         }
-        let (death, _) = owner.projected_death(boreth)?;
+        let (death, _) = owner.projected_death(actor)?;
         ledger
             .entries
             .retain(|key| self.encounter_death_is_current(*key));
@@ -54,11 +86,11 @@ impl BorethCarrierExt for ChannelRuntimeV1 {
                 ..
             } = slot
                 && *health > 0
-                && target_identity.as_ref() == b"oteryn:creature.plaguethrower"
+                && target_identity.as_ref() == add.as_bytes()
                 && p.context == context
-                && p.position.floor == 1
-                && (32936..=32944).contains(&p.position.x)
-                && (31474..=31482).contains(&p.position.y)
+                && p.position.floor == -i16::from(minimum.floor)
+                && (i32::from(minimum.x)..=i32::from(maximum.x)).contains(&p.position.x)
+                && (i32::from(minimum.y)..=i32::from(maximum.y)).contains(&p.position.y)
             {
                 removed.push(ExactActorRef(ActorRef::from_scoped_owner_parts(
                     self.binding().runtime_scope(),

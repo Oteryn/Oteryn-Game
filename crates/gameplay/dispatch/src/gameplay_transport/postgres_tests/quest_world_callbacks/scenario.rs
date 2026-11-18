@@ -34,7 +34,7 @@ fn scenario_case(
     let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
     let armenius_roll = name.starts_with(super::super::armenius_dialogue_roll::NAME);
     let arthei_tear = name == super::super::arthei_ghost_tear::NAME;
-    let boreth_cleanup = name == super::super::boreth_death_cleanup::NAME;
+    let boreth_cleanup = matches!(name, super::super::boreth_death_cleanup::NAME | super::super::boreth_death_cleanup::UNBOUND);
     let castle_rite = name == super::super::castle_crystal_rite::NAME;
     let lersatio_mirrors = name == super::super::lersatio_mirrors::NAME;
     let marziel_blood = name.starts_with(super::super::marziel_blood_step::NAME);
@@ -3372,7 +3372,12 @@ fn scenario_case(
                 &mut owner, &mut admitted, &h, &authority, name.ends_with("-female"),
             )).await?;
         } else if boreth_cleanup {
-            Box::pin(super::super::boreth_death_cleanup::exercise(&owner, &admitted)).await?;
+            Box::pin(super::super::boreth_death_cleanup::exercise(
+                &owner,
+                &admitted,
+                name == super::super::boreth_death_cleanup::NAME,
+            ))
+            .await?;
         } else if skull_custody {
             Box::pin(super::super::quest_skull_custody::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if source_tile_magic {
