@@ -390,3 +390,66 @@ pub(super) async fn exercise_tree(
     );
     Ok(())
 }
+
+/// Use the existing canonical phial definition and exact Crystal item binding in the test activation.
+pub(super) fn tree_generation(
+    world: crate::foundation::WorldId,
+) -> TestResult<super::quest_catalogue_chests::CatalogueActivation> {
+    use sha2::Digest;
+    let project = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let load = |path: &str| -> TestResult<serde_json::Value> {
+        Ok(serde_json::from_slice(&std::fs::read(project.join(path))?)?)
+    };
+    let definitions = load("content/items/definitions/items-12500-12999.json")?;
+    let definition = definitions["records"]
+        .as_array()
+        .ok_or("item definitions")?
+        .iter()
+        .map(|row| &row["definition"])
+        .find(|row| row["identity"]["key"] == PHIAL)
+        .ok_or("canonical phial")?;
+    let bindings = load("imports/crystalserver/bindings/items.json")?;
+    let binding = bindings["bindings"]
+        .as_array()
+        .ok_or("item bindings")?
+        .iter()
+        .find(|row| row["target"]["key"] == PHIAL)
+        .ok_or("phial source binding")?;
+    let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+    let pin = input.item_profiles.as_mut().ok_or("native item profiles")?;
+    let mut document: serde_json::Value = serde_json::from_slice(&pin.bytes)?;
+    let records = document["records"].as_array_mut().ok_or("item profiles")?;
+    // The profile schema uses the same nonblocking flask attributes for carried quest tools.
+    let attributes = records
+        .iter()
+        .find(|row| row["production_definition"]["production_key"] == "oteryn:item.tibia.i7253")
+        .ok_or("carried flask attributes")?["attributes"]
+        .clone();
+    let index = records.partition_point(|row| {
+        row["production_binding"]["external_id"]
+            .as_str()
+            .and_then(|id| id.parse::<u32>().ok())
+            .is_some_and(|id| id < 23810)
+    });
+    records.insert(index, serde_json::json!({
+        "admission": {
+            "legal_destinations": ["CharacterInventory", "Ground"],
+            "materializable": definition["materializable"],
+            "stack_class": definition["stack_class"]
+        },
+        "attributes": attributes,
+        "authoring": {
+            "item": {"family": "Item", "key": "candidate:item/23810", "revision": "spell-p2-r21"},
+            "taxonomy": {"primary": "Quest Items"}
+        },
+        "production_binding": binding,
+        "production_binding_qualification": null,
+        "production_definition": {"family": "Item", "production_key": PHIAL, "revision_ref": definition["identity"]["revision"]},
+        "semantics": definition["semantics"]
+    }));
+    pin.bytes = serde_json::to_vec(&document)?;
+    pin.sha256 = format!("{:x}", sha2::Sha256::digest(&pin.bytes));
+    crate::content::native_gameplay::test_support::try_activate_input(world, &input)
+        .map_err(debug)
+        .map_err(Into::into)
+}

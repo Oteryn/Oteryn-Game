@@ -1038,11 +1038,14 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
-        let (controller, activated) =
+        let (controller, activated) = if earth_tree {
+            super::super::fknow_earth::tree_generation(deps.admitted.world_id)?
+        } else {
             super::super::death_ml_loss_composed::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
-            )?;
+            )?
+        };
         let generation = controller.active().ok_or("generation")?;
         let world = if m03_use {
             super::super::qengine_m03_use::world(
