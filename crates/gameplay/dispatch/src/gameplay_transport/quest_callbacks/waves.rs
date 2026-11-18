@@ -258,16 +258,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             queue.push_back(credit);
         }
-        match result {
-            Ok(
-                QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_),
-            ) => {
-                self.schedule_quest_refresh(session);
-            }
-            Err(error) => super::super::operator_event(&format!(
+        if matches!(
+            result,
+            Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_))
+        ) {
+            self.schedule_quest_refresh(session);
+        } else if let Err(error) = result {
+            super::super::operator_event(&format!(
                 "quest_wave_credit_deferred={retry} reason={error}"
-            )),
-            Ok(_) => return,
+            ));
         }
     }
 
