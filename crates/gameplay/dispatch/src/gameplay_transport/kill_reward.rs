@@ -1966,6 +1966,12 @@ pub fn record_creature_kill(
             runtime,
             target,
             observed_at.map_or(now_ms.saturating_mul(1_000), |time| time.get()),
+            creature.as_ref().is_ok_and(|key| {
+                !sink
+                    .rewards
+                    .row(key)
+                    .is_ok_and(|row| row.corpse_item.is_some())
+            }),
         );
         states.owner_wake.notify_one();
     }

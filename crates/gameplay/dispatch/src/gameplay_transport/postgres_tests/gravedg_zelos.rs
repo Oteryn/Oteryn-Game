@@ -683,8 +683,13 @@ pub(super) fn lever_world(
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
         |key| {
-            (key == "oteryn:item.tibia.i31160").then(|| crate::map::facts::ItemDefinition {
-                reference: std::num::NonZeroU32::new(31160).expect("nonzero fixture reference"),
+            let appearance = match key {
+                "oteryn:item.tibia.i31160" => 31160,
+                "oteryn:item.tibia.i31203" => 31203,
+                _ => return None,
+            };
+            Some(crate::map::facts::ItemDefinition {
+                reference: std::num::NonZeroU32::new(appearance)?,
                 solid: Some(false),
                 blocks_projectile: false,
                 pickupable: false,

@@ -516,33 +516,42 @@ async fn use_count_remains(
 ) -> TestResult {
     use crate::gameplay_transport::connection::UseCommand;
     use crate::gameplay_transport::item_view::ItemKey;
+    use crate::map::view::{EntrySource, MapFacts};
     use oteryn_protocol_oteryn::item_view::ItemHandle;
     use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
     use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
     const DARK: &str = "oteryn:creature.dark_knight";
     let player = admitted.runtime_actor.ok_or("admitted player")?;
-    let dark = {
+    let (dark, dark_position) = {
         let runtime = owner.runtime.lock().await;
-        runtime
+        let dark = runtime
             .current_live_creature_census()
             .map_err(debug)?
             .into_iter()
             .find(|&actor| runtime.matches_live_creature_identity(actor, DARK.as_bytes()))
-            .ok_or("Dark Knight")?
+            .ok_or("Dark Knight")?;
+        (dark, runtime.read_actor_position(dark).map_err(debug)?.position())
     };
     super::engenc2_cults::kill(owner, admitted, dark, DARK, 110).await?;
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         crate::gameplay_transport::kill_reward::DrainOutcome::Drained
     );
-    let (intent, source) = {
+    let map = owner.bundle_map().ok_or("admitted map")?;
+    let tile = crate::map::overlay::TilePos {
+        x: u16::try_from(dark_position.x)?,
+        y: u16::try_from(dark_position.y)?,
+        floor: -i8::try_from(dark_position.floor)?,
+    };
+    let remains = map.facts.movement_items(tile).into_iter().find_map(|entry| {
+        match entry.source {
+            EntrySource::Added(id) if entry.facts.appearance_id == 31203 => Some(id.get()),
+            _ => None,
+        }
+    }).ok_or("Dark Knight remains on its death tile")?;
+    let intent = {
         let mut runtime = owner.runtime.lock().await;
-        let source = ItemKey::Entity(dark.corpse_identity());
-        let corpse = runtime
-            .bound_corpse(dark.corpse_identity())
-            .ok_or("bound Dark Knight remains")?;
-        let map = owner.bundle_map().ok_or("admitted map")?;
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let before = runtime.read_actor_position(player).map_err(debug)?;
         let proof = crate::map::floor::prepare_quest_encounter_admission(
@@ -551,7 +560,7 @@ async fn use_count_remains(
             player,
             admitted.game_session_id,
             before,
-            corpse.position,
+            dark_position,
             false,
             &closed,
             false,
@@ -564,7 +573,7 @@ async fn use_count_remains(
             .iter()
             .find(|entry| entry.actor == boss)
             .ok_or("visible Count")?;
-        let intent = UseIntent {
+        UseIntent {
             target: UseTarget::Item(ItemHandle::new(1).ok_or("remains handle")?),
             use_with: Some(EntityRef {
                 identity: boss.placement_identity(),
@@ -572,8 +581,7 @@ async fn use_count_remains(
             }),
             use_with_map_item: None,
             use_with_position: None,
-        };
-        (intent, source)
+        }
     };
     for (member, expected, id) in [
         (partner, UseDisposition::RequirementNotMet, 111),
@@ -589,21 +597,14 @@ async fn use_count_remains(
                 member.runtime_actor.ok_or("actor")?,
                 command,
                 &intent,
-                source,
+                ItemKey::MapAdded(remains),
             )
             .await
             .map_err(|()| "native remains use")?
             .ok_or("selected remains use")?;
         assert_eq!(outcome.disposition, expected);
     }
-    assert!(
-        owner
-            .runtime
-            .lock()
-            .await
-            .bound_corpse(dark.corpse_identity())
-            .is_none()
-    );
+    assert!(map.facts.movement_item(remains).is_none());
     assert!(
         hit_by_amount(owner, admitted, boss, COUNT, 113, 1)
             .await

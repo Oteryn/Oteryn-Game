@@ -4,7 +4,9 @@ use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
     MovementPositionSnapshot,
 };
-use oteryn_gameplay_encounters::bosses::phase_controller::count_vlarkorth::CountVlarkorthEncounter;
+use oteryn_gameplay_encounters::bosses::phase_controller::count_vlarkorth::{
+    CountVlarkorthEncounter, DarkRemains,
+};
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_encounters::bosses::phase_controller::duke_krule::DukeKruleEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::lord_azaram::LordAzaramEncounter;
@@ -177,7 +179,10 @@ impl Fight {
     ) -> Result<(), CarrierError> {
         match self {
             Self::Cults(_) => Err(CarrierError::PlanConflict),
-            Self::CountVlarkorth(fight) => fight.retire(runtime),
+            Self::CountVlarkorth(fight) => {
+                fight.clear_room_remains(|remains| remove_count_room_remains(cells, remains));
+                fight.retire(runtime)
+            }
             Self::DukeKrule(fight) => fight.retire(runtime),
             Self::EarlOsam(fight) => fight.retire(runtime),
             Self::LordAzaram(fight) => {
@@ -453,12 +458,26 @@ impl Registry {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
         now: u64,
+        needs_room_remains: bool,
     ) {
         let Ok(mut active) = self.active.lock() else {
             return;
         };
-        for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
+        for phase in active.iter_mut() {
             if phase.fight.timeout_participants(now).is_some() {
+                continue;
+            }
+            if needs_room_remains && let Fight::CountVlarkorth(count) = &mut phase.fight {
+                count.project_room_remains(runtime, actor, now, |at, appearance| {
+                    encounter_map(&phase.cells)?.create_movement_item_id(
+                        remains_tile(at)?,
+                        appearance,
+                        0,
+                        || true,
+                    )
+                });
+            }
+            if !phase.fight.contains(actor) {
                 continue;
             }
             let Ok(is_new_death) = phase.fight.projected_death(runtime, actor, &phase.cells) else {
@@ -825,6 +844,17 @@ fn remove_remains(
         .is_some_and(|(map, tile)| map.remove_movement_item(tile, key, 31160))
 }
 
+fn remove_count_room_remains(
+    cells: &crate::content::NativeEntryMovementCells,
+    remains: DarkRemains,
+) -> bool {
+    encounter_map(cells)
+        .zip(remains_tile(remains.position))
+        .is_some_and(|(map, tile)| {
+            map.remove_movement_item(tile, remains.placement, remains.appearance)
+        })
+}
+
 fn placement(
     cells: &crate::content::NativeEntryMovementCells,
     runtime: &ChannelRuntimeV1,
@@ -925,6 +955,9 @@ fn tick_phase_kind(
                     || fight.retire(runtime, cells).is_err();
             }
             if let Fight::CountVlarkorth(count) = fight {
+                if !count.shield_active(now) {
+                    count.clear_room_remains(|remains| remove_count_room_remains(cells, remains));
+                }
                 if let Err(error) = count.advance(
                     runtime,
                     now,
@@ -1219,6 +1252,26 @@ fn push_osam_adjacent(
     }
 }
 
+fn count_remains_kind(
+    appearance: u16,
+) -> Option<(&'static str, [oteryn_gameplay_spell::spell::Vocation; 2])> {
+    use oteryn_gameplay_spell::spell::Vocation as V;
+    match appearance {
+        31203 => Some(("oteryn:creature.dark_knight", [V::Knight, V::EliteKnight])),
+        31204 => Some((
+            "oteryn:creature.dark_paladin",
+            [V::Paladin, V::RoyalPaladin],
+        )),
+        31205 => Some(("oteryn:creature.dark_druid", [V::Druid, V::ElderDruid])),
+        31206 => Some((
+            "oteryn:creature.dark_sorcerer",
+            [V::Sorcerer, V::MasterSorcerer],
+        )),
+        50311 => Some(("oteryn:creature.dark_merudri", [V::Monk, V::ExaltedMonk])),
+        _ => None,
+    }
+}
+
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn dispatch_count_remains(
         &self,
@@ -1232,10 +1285,17 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         };
         use crate::durability::consume_transform::{ConsumeTransformRequest, GroundActionContext};
         use crate::foundation::{CommandId, CommandRef};
-        use oteryn_gameplay_spell::spell::Vocation as V;
         use oteryn_protocol_oteryn::world_object::{UseDisposition, encode_item_use_intent};
 
-        let (ItemKey::Entity(identity), Some(wanted)) = (source, intent.use_with) else {
+        let Some(wanted) = intent.use_with else {
+            return Ok(None);
+        };
+        if let ItemKey::MapAdded(placement) = source {
+            return self
+                .use_count_room_remains(actor, command, wanted, placement)
+                .await;
+        }
+        let ItemKey::Entity(identity) = source else {
             return Ok(None);
         };
         let Some(permit) = self.spell_lane_permit().await else {
@@ -1246,23 +1306,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(corpse) = runtime.bound_corpse(identity) else {
             return Ok(None);
         };
-        let (dark, matching_vocation) = match corpse.item.production_key.as_str() {
-            "oteryn:item.tibia.i31203" => {
-                ("oteryn:creature.dark_knight", [V::Knight, V::EliteKnight])
-            }
-            "oteryn:item.tibia.i31204" => (
-                "oteryn:creature.dark_paladin",
-                [V::Paladin, V::RoyalPaladin],
-            ),
-            "oteryn:item.tibia.i31205" => ("oteryn:creature.dark_druid", [V::Druid, V::ElderDruid]),
-            "oteryn:item.tibia.i31206" => (
-                "oteryn:creature.dark_sorcerer",
-                [V::Sorcerer, V::MasterSorcerer],
-            ),
-            "oteryn:item.tibia.i50311" => {
-                ("oteryn:creature.dark_merudri", [V::Monk, V::ExaltedMonk])
-            }
-            _ => return Ok(None),
+        let Some((dark, matching_vocation)) = corpse
+            .item
+            .production_key
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse().ok())
+            .and_then(count_remains_kind)
+        else {
+            return Ok(None);
         };
         let outcome = |disposition| {
             Ok(Some(UseOutcome {
@@ -1381,6 +1432,92 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 .map_err(|_| ())?;
         }
         outcome(receipt.disposition)
+    }
+
+    async fn use_count_room_remains(
+        &self,
+        actor: ExactActorRef,
+        command: super::connection::UseCommand,
+        wanted: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+        placement: u64,
+    ) -> Result<Option<super::connection::UseOutcome>, ()> {
+        use super::connection::UseOutcome;
+        use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return Err(());
+        };
+        let mut runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let mut active = states.encounter_phases.active.lock().map_err(|_| ())?;
+        let Some((fight, cells, remains)) = active.iter_mut().find_map(|phase| {
+            let Fight::CountVlarkorth(fight) = &mut phase.fight else {
+                return None;
+            };
+            let remains = fight.room_remains(placement)?;
+            Some((fight, &phase.cells, remains))
+        }) else {
+            return Ok(None);
+        };
+        let outcome = |disposition| {
+            Ok(Some(UseOutcome {
+                disposition,
+                ..UseOutcome::rejected()
+            }))
+        };
+        let Some((dark, matching_vocation)) = count_remains_kind(remains.appearance) else {
+            return Err(());
+        };
+        let session = command.game_session_id;
+        let Some(state) = states.get(&runtime, actor, session) else {
+            return outcome(UseDisposition::Rejected);
+        };
+        if states.is_dead(actor)
+            || !matching_vocation.contains(&state.character_facts().vocation)
+            || !states.spell_idle(&runtime, actor, session)
+            || !self.states.player_trades.physical(session, None)
+        {
+            return outcome(UseDisposition::RequirementNotMet);
+        }
+        let visible = runtime.visible_entities();
+        let Some(target) = visible.creatures.iter().find(|entry| {
+            entry.actor.placement_identity() == wanted.identity
+                && entry.generation == wanted.generation
+        }) else {
+            return outcome(UseDisposition::NoTarget);
+        };
+        let target = target.actor;
+        let now = self.owner_now().get();
+        if !fight.accepts_remains(&runtime, target, remains.actor.corpse_identity(), dark, now) {
+            return outcome(UseDisposition::NotPossible);
+        }
+        let from = runtime
+            .read_actor_position(actor)
+            .map_err(|_| ())?
+            .position();
+        let target_at = runtime
+            .read_actor_position(target)
+            .map_err(|_| ())?
+            .position();
+        let reaches = |at: MovementLocalPosition| {
+            oteryn_gameplay_items::reach::within_reach(
+                (from.x, from.y, i32::from(from.floor)),
+                (at.x, at.y, i32::from(at.floor)),
+            )
+        };
+        if !reaches(remains.position) || !reaches(target_at) {
+            return outcome(UseDisposition::TooFar);
+        }
+        let map = encounter_map(cells).ok_or(())?;
+        let tile = remains_tile(remains.position).ok_or(())?;
+        if !map.consume_movement_item(tile, placement, remains.appearance, || {
+            fight.consume_remains(&mut runtime).is_ok()
+        }) {
+            return outcome(UseDisposition::StaleState);
+        }
+        fight.forget_room_remains(placement);
+        states.owner_wake.notify_one();
+        outcome(UseDisposition::Committed)
     }
 
     /// Crystal 201189f grave_danger_king_zelos.lua:309–374.

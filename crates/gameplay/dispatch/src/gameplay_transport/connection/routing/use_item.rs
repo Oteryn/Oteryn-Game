@@ -177,7 +177,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     if let Ok(intent) = &decoded
         && intent.use_with.is_some()
         && let UseTarget::Item(handle) = intent.target
-        && let Some(source @ ItemKey::Entity(_)) =
+        && let Some(source @ (ItemKey::Entity(_) | ItemKey::MapAdded(_))) =
             item_view.as_ref().and_then(|view| view.resolve(handle))
         && let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),

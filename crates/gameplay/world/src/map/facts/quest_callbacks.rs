@@ -1198,6 +1198,16 @@ impl BundleFacts {
     /// The physical owner supplies this exact volatile occurrence, position and
     /// appearance; base/DUR-03/world-change identities cannot be removed here.
     pub fn remove_movement_item(&self, pos: TilePos, key: u64, appearance: u16) -> bool {
+        self.consume_movement_item(pos, key, appearance, || true)
+    }
+
+    pub fn consume_movement_item(
+        &self,
+        pos: TilePos,
+        key: u64,
+        appearance: u16,
+        consume: impl FnOnce() -> bool,
+    ) -> bool {
         if key >> 62 != 2 {
             return false;
         }
@@ -1223,6 +1233,9 @@ impl BundleFacts {
         let Some(entries) = states.movement_items.get_mut(&pos) else {
             return false;
         };
+        if !consume() {
+            return false;
+        }
         entries.remove(index);
         if entries.is_empty() {
             states.movement_items.remove(&pos);

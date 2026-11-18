@@ -13,6 +13,14 @@ const ROLES: [Role; 1] = [Role {
 const LIMIT_US: u64 = 20 * 60 * 1_000_000;
 const SHIELD_US: u64 = 120 * 1_000_000;
 
+#[derive(Debug, Clone, Copy)]
+pub struct DarkRemains {
+    pub actor: ExactActorRef,
+    pub appearance: u16,
+    pub position: MovementLocalPosition,
+    pub placement: u64,
+}
+
 #[derive(Debug)]
 pub struct CountVlarkorthEncounter {
     owner: NativePhaseOwner,
@@ -25,6 +33,7 @@ pub struct CountVlarkorthEncounter {
     heal_at: Option<u64>,
     expires: u64,
     darks: Vec<(ExactActorRef, &'static str)>,
+    room_remains: Vec<DarkRemains>,
     minions: Vec<ExactActorRef>,
 }
 
@@ -65,6 +74,7 @@ impl CountVlarkorthEncounter {
             heal_at: None,
             expires: now.saturating_add(LIMIT_US),
             darks: Vec::new(),
+            room_remains: Vec::new(),
             minions: minions.to_vec(),
         })
     }
@@ -133,6 +143,68 @@ impl CountVlarkorthEncounter {
                     && actor.corpse_identity() == corpse
                     && !runtime.contains_live_creature(actor)
             })
+    }
+
+    /// Crystal grave_danger_count_vlarkorth.lua:15–16 and :137–156.
+    /// Keep an exact room occurrence when the corpse Item cannot enter durable custody.
+    pub fn project_room_remains(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        now: u64,
+        project: impl FnOnce(MovementLocalPosition, u16) -> Option<u64>,
+    ) {
+        let Some(&(_, dark)) = self.darks.iter().find(|&&(exact, _)| exact == actor) else {
+            return;
+        };
+        if self.room_remains.len() >= 5
+            || self
+                .room_remains
+                .iter()
+                .any(|remains| remains.actor == actor)
+            || !self.accepts_remains(runtime, self.count, actor.corpse_identity(), dark, now)
+        {
+            return;
+        }
+        let appearance = match dark {
+            "oteryn:creature.dark_druid" => 31205,
+            "oteryn:creature.dark_knight" => 31203,
+            "oteryn:creature.dark_merudri" => 50311,
+            "oteryn:creature.dark_paladin" => 31204,
+            "oteryn:creature.dark_sorcerer" => 31206,
+            _ => return,
+        };
+        let Ok((_, position)) = runtime.borrow_combat_death().projected_death(actor) else {
+            return;
+        };
+        if let Some(placement) = project(position, appearance) {
+            self.room_remains.push(DarkRemains {
+                actor,
+                appearance,
+                position,
+                placement,
+            });
+        }
+    }
+
+    pub fn room_remains(&self, placement: u64) -> Option<DarkRemains> {
+        self.room_remains
+            .iter()
+            .copied()
+            .find(|remains| remains.placement == placement)
+    }
+
+    pub fn forget_room_remains(&mut self, placement: u64) {
+        self.room_remains
+            .retain(|remains| remains.placement != placement);
+    }
+
+    pub fn clear_room_remains(&mut self, mut remove: impl FnMut(DarkRemains) -> bool) {
+        self.room_remains.retain(|&remains| !remove(remains));
+    }
+
+    pub fn shield_active(&self, now: u64) -> bool {
+        self.shield_remaining > 0 && self.drop_at.is_some_and(|due| now < due)
     }
 
     pub fn consume_remains(&mut self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
