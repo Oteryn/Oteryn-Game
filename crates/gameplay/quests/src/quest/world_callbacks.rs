@@ -770,6 +770,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         super::rotten_blood::altar_callback(),
         super::schrodinger_island::callback(),
     ];
+    native_callbacks.extend(super::elemental_spheres::machine_callbacks()?);
     native_callbacks.extend(super::elvenbane::callbacks());
     native_callbacks.extend(super::last_creep_native::callbacks()?);
     native_callbacks.extend(super::fire_feathered_native::callbacks());
@@ -856,6 +857,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
                 !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
+                    && !super::elemental_spheres::machine_phases_are_disjoint(peer, callback)
                     && !(selector_gates::disjoint(peer, callback)
                         && selector_partitions::disjoint(peer, callback))
             })

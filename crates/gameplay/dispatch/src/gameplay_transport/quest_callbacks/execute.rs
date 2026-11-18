@@ -332,6 +332,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Occupied;
             }
         }
+        let sphere_machine =
+            oteryn_gameplay_quests::quest::elemental_spheres::machine_use(&callback.key);
         let mut restored_trees = Vec::new();
         let mut passages = Vec::new();
         let mut replacements = Vec::new();
@@ -358,6 +360,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Occupied;
             }
             let Some(t) = map.overlay.base().tile(p.x, p.y, p.floor) else {
+                if sphere_machine.is_some() {
+                    continue;
+                }
                 return UseDisposition::Rejected;
             };
             let candidates = t
@@ -371,7 +376,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let k = placement_key(p, ordinal)?;
                     let f = map.facts.base_entry(p, ordinal, *id)?;
                     ((f.appearance_id == passage.appearance
-                        || passage.replacement == Some(f.appearance_id)
+                        || (sphere_machine.is_none()
+                            && passage.replacement == Some(f.appearance_id))
                         || passage.create_on_close == Some(f.appearance_id))
                         && !map.facts.house_tile(p)
                         && (!passage.if_present || !map.facts.base_hidden(k)))
@@ -491,6 +497,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         let mut destination = callback.teleport;
+        if sphere_machine.is_some_and(|rule| rule.entering) {
+            let vocation = states
+                .get(runtime, actor, session)
+                .map(|state| state.character_facts().vocation);
+            use crate::spell::Vocation;
+            let vocation = match vocation {
+                Some(Vocation::Druid | Vocation::ElderDruid) => "druid",
+                Some(Vocation::Knight | Vocation::EliteKnight) => "knight",
+                Some(Vocation::Paladin | Vocation::RoyalPaladin) => "paladin",
+                Some(Vocation::Sorcerer | Vocation::MasterSorcerer) => "sorcerer",
+                _ => {
+                    self.states
+                        .chat
+                        .push_quest_feedback(session, "Sorry, not possible.");
+                    return UseDisposition::NotPossible;
+                }
+            };
+            destination =
+                oteryn_gameplay_quests::quest::elemental_spheres::sphere_destination(vocation);
+        }
         if let Some(remote) = &callback.remote_teleport {
             let p = tile(remote.position);
             let Some(base) = map.overlay.base().tile(p.x, p.y, p.floor) else {
@@ -1604,6 +1630,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
+        }
+        if sphere_machine.is_some_and(|rule| rule.entering)
+            && let Some(destination) = destination
+        {
+            for _ in 0..2 {
+                map.facts.emit_movement_effect(tile(destination), 11);
+            }
         }
         if let Some(effect) = callback.effects.teleport_effect
             && let Some(destination) = callback.teleport

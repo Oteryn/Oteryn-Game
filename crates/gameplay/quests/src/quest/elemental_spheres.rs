@@ -1,9 +1,135 @@
 //! Source-bound item arrivals at the Elemental Spheres Overlord altars.
 
-use super::world_callbacks::Position;
+use super::world_callbacks::{Callback, Position};
 use std::collections::BTreeSet;
 
 pub const QUEST: &str = "oteryn:quest.elemental_spheres_quest";
+
+/// Crystal 201189f8, actions_machine1.lua:9-37. The counter is personal;
+/// both machine halves are shared map objects.
+pub const MACHINE_GEMS: &str = "oteryn:quest-progress/elemental_spheres/machine_gem_count";
+
+#[derive(Clone, Copy)]
+pub struct MachineUse {
+    pub key: &'static str,
+    pub position: Position,
+    pub appearance: u16,
+    pub paired_appearance: u16,
+    pub entering: bool,
+}
+
+const LEFT: Position = Position {
+    x: 33268,
+    y: 31830,
+    floor: -10,
+};
+const RIGHT: Position = Position { x: 33269, ..LEFT };
+
+const USES: [MachineUse; 6] = [
+    MachineUse {
+        key: "oteryn:quest-callback/elemental-spheres/left-close",
+        position: LEFT,
+        appearance: 846,
+        paired_appearance: 847,
+        entering: false,
+    },
+    MachineUse {
+        key: "oteryn:quest-callback/elemental-spheres/left-enter",
+        position: LEFT,
+        appearance: 842,
+        paired_appearance: 843,
+        entering: true,
+    },
+    MachineUse {
+        key: "oteryn:quest-callback/elemental-spheres/left-open",
+        position: LEFT,
+        appearance: 842,
+        paired_appearance: 843,
+        entering: false,
+    },
+    MachineUse {
+        key: "oteryn:quest-callback/elemental-spheres/right-close",
+        position: RIGHT,
+        appearance: 847,
+        paired_appearance: 846,
+        entering: false,
+    },
+    MachineUse {
+        key: "oteryn:quest-callback/elemental-spheres/right-enter",
+        position: RIGHT,
+        appearance: 843,
+        paired_appearance: 842,
+        entering: true,
+    },
+    MachineUse {
+        key: "oteryn:quest-callback/elemental-spheres/right-open",
+        position: RIGHT,
+        appearance: 843,
+        paired_appearance: 842,
+        entering: false,
+    },
+];
+
+pub fn machine_use(key: &str) -> Option<MachineUse> {
+    USES.iter().find(|rule| rule.key == key).copied()
+}
+
+pub(super) fn machine_phases_are_disjoint(left: &Callback, right: &Callback) -> bool {
+    machine_use(&left.key)
+        .zip(machine_use(&right.key))
+        .is_some_and(|(left, right)| {
+            left.position == right.position
+                && left.appearance == right.appearance
+                && left.entering != right.entering
+        })
+}
+
+pub fn sphere_destination(base_vocation: &str) -> Option<Position> {
+    let (x, y) = match base_vocation {
+        "druid" => (33331, 32076),
+        "knight" => (33087, 32096),
+        "paladin" => (33265, 32202),
+        "sorcerer" => (33183, 32197),
+        _ => return None,
+    };
+    Some(Position { x, y, floor: -13 })
+}
+
+pub(super) fn machine_callbacks() -> Result<Vec<Callback>, String> {
+    USES.into_iter().map(|rule| {
+        let opening = rule.appearance < 846;
+        let replacement = |appearance| if opening { appearance + 4 } else { appearance - 4 };
+        let paired_position = if rule.position == LEFT { RIGHT } else { LEFT };
+        let storage = match (opening, rule.entering) {
+            (_, true) => serde_json::json!([{
+                "track": MACHINE_GEMS, "minimum": 20, "maximum": i64::MAX,
+                "set": 0, "add": -20
+            }]),
+            (true, false) => serde_json::json!([{
+                "track": MACHINE_GEMS, "minimum": -1, "maximum": 19,
+                "set": 0, "preserve": true
+            }]),
+            (false, false) => serde_json::json!([]),
+        };
+        serde_json::from_value(serde_json::json!({
+            "key": rule.key,
+            "quest": QUEST,
+            "trigger": "use",
+            "selector": {"position": rule.position, "appearance": rule.appearance},
+            "reversible": false,
+            "passages": [{
+                "position": paired_position, "appearance": rule.paired_appearance,
+                "if_present": true, "replacement": replacement(rule.paired_appearance),
+                "replacement_passable": true
+            }],
+            "effects": {"transform": replacement(rule.appearance)},
+            "storage": storage,
+            "offerings": [],
+            "return_on_failure": false,
+            "sources": ["crystalserver:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:9-37"]
+        })).map_err(|error| error.to_string())
+    }).collect()
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct SummonRule {

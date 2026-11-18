@@ -250,6 +250,23 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    if let Some(rule) = oteryn_gameplay_quests::quest::elemental_spheres::machine_use(&callback.key)
+    {
+        return tile(rule.position) == pos
+            && map
+                .overlay
+                .base()
+                .tile(pos.x, pos.y, pos.floor)
+                .and_then(|tile| {
+                    tile.ids()
+                        .iter()
+                        .zip(tile.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .nth(usize::from(ordinal))
+                        .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
+                })
+                .is_some_and(|facts| facts.appearance_id == rule.appearance);
+    }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
     let source_ordinal = match callback.key.as_str() {
@@ -994,6 +1011,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        if selected.len() > 1
+            && selected.iter().all(|callback| {
+                oteryn_gameplay_quests::quest::elemental_spheres::machine_use(&callback.key)
+                    .is_some()
+            })
+        {
+            self.refresh_quest_session(command.game_session_id, true)
+                .await;
+        }
         let source_trial = selected
             .iter()
             .any(|c| c.effects.target_transform.is_some());
