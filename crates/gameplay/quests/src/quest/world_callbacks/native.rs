@@ -160,8 +160,7 @@ impl Callback {
                     None
                 }
             }
-            Some(NativeRule::IceSealPaint { .. }) => None,
-            Some(NativeRule::ShadowsFolio) => shadows_folio::Outcome::committed(changes)?.message(),
+            Some(NativeRule::IceSealPaint { .. } | NativeRule::ShadowsFolio) => None,
             Some(NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy) => None,
             Some(NativeRule::LionTrial { .. }) | None => self.success_message.as_deref(),
         }

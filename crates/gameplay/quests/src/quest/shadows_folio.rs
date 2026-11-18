@@ -89,14 +89,6 @@ impl Outcome {
             _ => None,
         }
     }
-
-    pub fn message(self) -> Option<&'static str> {
-        match self {
-            Self::Success => Some("You learned something about the ritual."),
-            Self::Relocation => None,
-            _ => Some("You got a headache from all this reading."),
-        }
-    }
 }
 
 pub fn eligible(mission: i64, streak: i64, headache: i64, now: i64) -> bool {
@@ -136,6 +128,12 @@ mod tests {
         assert_eq!(Outcome::from_dice(20, 11), Outcome::EnragedBookworm);
         assert_eq!(Outcome::from_dice(20, 21), Outcome::Headache);
         assert_eq!(Outcome::from_dice(21, 1), Outcome::Success);
+        let mut counts = [0; 6];
+        for roll in 0..10_000 {
+            let outcome = Outcome::from_dice(roll / 100 + 1, roll % 100 + 1);
+            counts[usize::from(outcome as u8) - 1] += 1;
+        }
+        assert_eq!(counts, [100, 1520, 95, 95, 190, 8000]);
         assert_eq!(apply(1, 7, 100, 100, Some(1)), Ok([1, 0, 100, 1]));
         assert_eq!(apply(1, 7, 100, 100, Some(3)), Ok([1, 0, 160, 3]));
         assert_eq!(apply(1, 7, 100, 100, Some(6)), Ok([1, 8, 100, 6]));
