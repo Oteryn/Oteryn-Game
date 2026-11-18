@@ -12,6 +12,7 @@ individual process peak. Concurrent processes also contribute to cgroup usage.
 | Dispatch lib test, dependencies rebuilt | 2 | 16,437,864 | 1067.773 | rustc SIGKILL before link |
 | Dispatch lib test, fresh resubmission on the same source | 2 | 16,590,240 | 1428.314 | rustc SIGKILL before link |
 | Dispatch lib test, dependencies cached | 1 | 16,559,372 | 392.963 | rustc SIGKILL before link |
+| Dispatch lib test, 32 codegen units, dependencies cached | 1 | 16,551,756 | 622.273 | rustc SIGKILL before link |
 | Dispatch lib test, incremental off | 2 | 16,581,872 | 306.471 | rustc SIGKILL before link |
 | Dispatch lib test, debug = 0 | 2 | 16,567,508 | 398.737 | rustc SIGKILL before link |
 | Dispatch lib test, jemalloc preload | 2 | 16,529,876 | 711.561 | rustc SIGKILL before link |
@@ -104,7 +105,10 @@ The package override compiled with `-C codegen-units=32`, keeping line
 tables and incremental compilation. The sampled rustc high-water mark
 was 15,097,208 KiB before the LLVM coordinator appeared, within 4,688 KiB
 of the default two-job build at that point. The nearly identical
-pre-codegen footprint narrows the potential gain to the LLVM phase.
+pre-codegen footprint narrowed the potential gain to the LLVM phase.
+The trial reached 16,551,756 KiB, added one cgroup OOM kill, and exited
+before linking. This package-scoped profile change did not produce a
+test binary.
 
 ## Hosted build scope
 
