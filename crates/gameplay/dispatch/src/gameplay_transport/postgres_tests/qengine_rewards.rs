@@ -1108,8 +1108,8 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-questpc4-spirit" {
         return Box::pin(super::l6_spirit::exercise(owner, admitted, h, authority)).await;
     }
-    if name == super::frontier_tree_bait::NAME {
-        return Box::pin(super::frontier_tree_bait::exercise(owner, admitted, h)).await;
+    if matches!(name, super::frontier_tree_bait::NAME | super::frontier_tree_bait::SQUIRRELS | super::frontier_tree_bait::WOLVES) {
+        return Box::pin(super::frontier_tree_bait::exercise(owner, admitted, h, name)).await;
     }
     if name == super::secret_service_dock_fire::NAME {
         return Box::pin(super::secret_service_dock_fire::exercise(owner, admitted, h)).await;

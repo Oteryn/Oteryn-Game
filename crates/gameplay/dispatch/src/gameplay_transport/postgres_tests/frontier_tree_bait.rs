@@ -14,6 +14,8 @@ use serde_json::json;
 use std::sync::Arc;
 
 pub(super) const NAME: &str = "qengine-rewards-frontier-tree-bait";
+pub(super) const SQUIRRELS: &str = "qengine-rewards-frontier-tree-squirrels";
+pub(super) const WOLVES: &str = "qengine-rewards-frontier-tree-wolves";
 const AT: Position = Position {
     x: 33294,
     y: 31677,
@@ -33,11 +35,32 @@ fn bait_use_spawns_a_thief_and_the_same_creature_returns_bait_on_death() -> Test
     super::qengine_rewards::scenario(NAME)
 }
 
+#[test]
+fn marked_trees_spawn_their_full_group_without_consuming_bait() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::qengine_rewards::scenario(SQUIRRELS)?;
+    super::qengine_rewards::scenario(WOLVES)
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    scenario: &str,
 ) -> TestResult {
+    let (groups, count) = match scenario {
+        SQUIRRELS => (json!([{"creature":"oteryn:creature.enraged_squirrel","count":3}]), 3),
+        WOLVES => (json!([
+            {"creature":"oteryn:creature.wolf","count":5},
+            {"creature":"oteryn:creature.war_wolf","count":1}
+        ]), 6),
+        NAME => (json!([{"creature":THIEF,"count":1}]), 1),
+        _ => return Err("unknown tree scenario".into()),
+    };
+    let stolen = scenario == NAME;
     let mut callback = super::authored_world_rewards::placeholder(AT)?;
     callback.key = "oteryn:quest-callback/tree-bait-fixture/mark".into();
     callback.requires_world_admission = true;
@@ -45,10 +68,11 @@ pub(super) async fn exercise(
     callback.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_beaver.lua:12-44".into()];
     let mut callback = serde_json::to_value(callback)?;
     callback["item_on_target"] = json!({
-        "item":BAIT,"count":1,"selected_instance":true,
+        "item":BAIT,"count":1,"selected_instance":true,"reusable":!stolen,
         "replacement":null,"target_replacement":null
     });
-    callback["effects"] = json!({"spawn_creatures":[{"creature":THIEF,"count":1}]});
+    callback["effects"] =
+        json!({"spawn_creatures":groups,"magic":{"position":AT,"effect":11}});
     let document = json!({"schema":1,"quests":[{"quest":QUEST,
         "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
         "sources":["synthetic target-item spawn engine fixture"],
@@ -90,7 +114,32 @@ pub(super) async fn exercise(
         super::secret_service_dock_fire::use_selected_tool(owner, admitted, AT, BAIT).await?,
         UseDisposition::Committed
     );
-    assert_eq!(super::qengine_voucher_stories::quantity(h, 9843).await?, 0);
+    assert_eq!(
+        super::qengine_voucher_stories::quantity(h, 9843).await?,
+        i64::from(!stolen)
+    );
+    let target = crate::map::overlay::TilePos { x: AT.x, y: AT.y, floor: AT.floor };
+    assert_eq!(
+        owner.bundle_map().ok_or("map")?.facts.movement_effects_since(0)
+            .iter().filter(|(_, position, effect)| *position == target && *effect == 11)
+            .count(),
+        count
+    );
+    if !stolen {
+        assert_eq!(
+            owner.runtime.lock().await.current_live_creature_census().map_err(debug)?.len(),
+            count
+        );
+        assert_ne!(
+            super::secret_service_dock_fire::use_selected_tool(owner, admitted, AT, BAIT).await?,
+            UseDisposition::Committed
+        );
+        assert_eq!(
+            owner.runtime.lock().await.current_live_creature_census().map_err(debug)?.len(),
+            count
+        );
+        return Ok(());
+    }
     let thief = {
         let runtime = owner.runtime.lock().await;
         let actors = runtime.current_live_creature_census().map_err(debug)?;
@@ -215,7 +264,7 @@ pub(super) fn fixture_generation(
             records.push(record);
             Ok(())
         };
-    if scenario == NAME {
+    if matches!(scenario, NAME | SQUIRRELS | WOLVES) {
         // Crystal data/items/items.xml:475-479, 2925-2928, 26267-26270.
         add_profile(276, 111, 0, Some(15))?;
         add_profile(836, 841, 10, None)?;

@@ -1655,8 +1655,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         if let Some(magic) = &callback.effects.magic {
-            map.facts
-                .emit_movement_effect(tile(magic.position), magic.effect);
+            // Crystal 201189f8 action_beaver.lua:15-18,23-29,33-34 emits the
+            // configured effect at the selected tree once for each creature.
+            let occurrences = callback
+                .effects
+                .spawn_creatures
+                .iter()
+                .map(|spawn| usize::from(spawn.count))
+                .sum::<usize>()
+                .max(1);
+            for _ in 0..occurrences {
+                map.facts
+                    .emit_movement_effect(tile(magic.position), magic.effect);
+            }
         }
         if let Some(effect) = callback.effects.teleport_effect
             && let Some(destination) = callback.teleport

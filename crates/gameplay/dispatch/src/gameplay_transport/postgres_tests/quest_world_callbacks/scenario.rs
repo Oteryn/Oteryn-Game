@@ -559,6 +559,8 @@ fn scenario_case(
         || matches!(
             name,
             super::super::frontier_tree_bait::NAME
+                | super::super::frontier_tree_bait::SQUIRRELS
+                | super::super::frontier_tree_bait::WOLVES
                 | "qengine-rewards-authored-world-rewards"
                 | "qengine-rewards-authored-world-rewards-full"
                 | super::super::secret_service_dock_fire::NAME
@@ -1023,7 +1025,7 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
-        let (controller, activated) = if matches!(name, super::super::frontier_tree_bait::NAME | super::super::secret_service_avin_ambush::NAME) {
+        let (controller, activated) = if matches!(name, super::super::frontier_tree_bait::NAME | super::super::frontier_tree_bait::SQUIRRELS | super::super::frontier_tree_bait::WOLVES | super::super::secret_service_avin_ambush::NAME) {
             super::super::frontier_tree_bait::fixture_generation(deps.admitted.world_id, name)?
         } else {
             super::super::death_ml_loss_composed::production_generation_with_pin(deps.admitted.world_id, "content-1")?
