@@ -175,11 +175,19 @@ impl EarlOsamEncounter {
                         relocate(runtime, self.earl, self.centre)?;
                     }
                     let snapshot = runtime.companion_snapshot(self.earl)?;
-                    let mut normal = snapshot.state.clone();
-                    normal.creation_speed_delta = self.normal_speed_delta;
-                    runtime.compare_companion_state(&snapshot, normal)?;
-                    gates::unprotect(runtime, self.earl)?;
-                    Ok(snapshot.health)
+                    // Both source forms share the same visible outfit and maximum health.
+                    let mut channeling = snapshot.state.clone();
+                    channeling.creation_speed_delta = -channeling.policy.base_speed;
+                    runtime.compare_companion_state(&snapshot, channeling)?;
+                    gates::protect(runtime, &[self.earl])?;
+                    let health = runtime.companion_policy(SPHERE)?.maximum_health;
+                    let spawns = sphere_positions(self.centre).map(|at| (SPHERE, health, at));
+                    if spawns.iter().any(|&(_, _, at)| {
+                        !place(runtime, at) || !runtime.native_summon_cell_free(at)
+                    }) {
+                        return Err(CarrierError::PlanConflict);
+                    }
+                    runtime.commit_quest_creature_spawn(&spawns)
                 })();
                 match result {
                     Ok(spheres) => self.spheres = spheres,
@@ -214,10 +222,11 @@ impl EarlOsamEncounter {
                 let before = runtime.encounter_parts().0.clone();
                 let result = (|| {
                     let snapshot = runtime.companion_snapshot(self.earl)?;
-                    let next = runtime.prepare_creature_profile_transformation(&snapshot, EARL)?;
-                    let normal = runtime.commit_creature_profile_transformation(next)?;
+                    let mut normal = snapshot.state.clone();
+                    normal.creation_speed_delta = self.normal_speed_delta;
+                    runtime.compare_companion_state(&snapshot, normal)?;
                     gates::unprotect(runtime, self.earl)?;
-                    Ok(normal.health)
+                    Ok(snapshot.health)
                 })();
                 match result {
                     Ok(health) => Stage::Combat {
