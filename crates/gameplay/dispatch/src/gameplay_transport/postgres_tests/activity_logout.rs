@@ -50,7 +50,7 @@ fn scenario() -> TestResult {
 }
 
 async fn case(h: &Harness) -> TestResult {
-    let entered = super::activity_runtime::enter_fixture(h).await?;
+    let entered = super::activity_runtime_fixtures::enter_fixture(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root

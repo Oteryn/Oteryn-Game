@@ -1,5 +1,5 @@
 //! A locked reward refusal may only speak in the conversation that requested it.
-use super::classic_quests::{install, talk};
+use super::classic_quests_fixtures::{install, talk};
 use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{MovementLocalPosition, WorldId};
@@ -18,7 +18,7 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
     };
     assert!(!admin.is_empty());
     let started = Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "qd_failure_reply", true, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -27,7 +27,7 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             WorldId::decode(&id(42)).map_err(debug)?,
             "content-1",
         )?;

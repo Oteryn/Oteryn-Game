@@ -27,7 +27,7 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 let second=MovementLocalPosition{x:33303,y:32071,floor:7};
                 let world=cake_bundle(native,deps.admitted.world_id,deps.admitted.channel_id,start,&[(first,12085),(second,12086)])?;
                 let cells=world.movement_cells(pin.qualified_room().movement_cells()).map_err(debug)?;
-                let room=super::rust_lottery::bundle_action_room(pin.qualified_room(),&world,deps.admitted.world_id,&cells)?;
+                let room=super::rust_lottery_fixtures::bundle_action_room(pin.qualified_room(),&world,deps.admitted.world_id,&cells)?;
                 let content_pin=ChannelContentPin::from_activation(deps.admitted.world_id,pin.activation_sequence(),pin.identity().server_artifact_digest(),pin.identity().client_artifact_digest(),room.frame_binding().digest(),room.map_revision_digest(),(start.x,start.y,start.floor));
                 let mut runtime=ChannelRuntimeV1::from_committed_assignment(deps.admitted.world_id,deps.admitted.channel_id,crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,1,1,1,"runtime-scope-assignment:1",2,content_pin).map_err(debug)?;
                 let reserved=runtime.reserve_fresh_session(deps.admitted.game_session_id).map_err(debug)?;

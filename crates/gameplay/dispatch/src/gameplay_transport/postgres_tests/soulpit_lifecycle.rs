@@ -24,7 +24,7 @@ fn soulpit_entry_requires_atomic_shared_handoff_postgres() -> TestResult {
         eprintln!("SOULPIT_LIFECYCLE POSTGRES_CASE_NOT_RUN: no configured PostgreSQL route");
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("soulpit-provenance", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("soulpit-provenance", scenario)
 }
 
 fn scenario() -> TestResult {
@@ -97,7 +97,7 @@ fn scenario() -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice())
             .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-        super::item_look::seed_main_backpack(&h, &[(&core, 2), (purple_core, 2)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[(&core, 2), (purple_core, 2)]).await?;
         let purple_before: serde_json::Value = sqlx::query_scalar(
             "SELECT jsonb_build_object('item',to_jsonb(i),'custody',to_jsonb(e)) \
              FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) \

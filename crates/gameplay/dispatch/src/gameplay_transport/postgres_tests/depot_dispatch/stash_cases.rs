@@ -336,7 +336,7 @@ pub(super) async fn exercise(
     let mut input = u32::try_from(frame.len())?.to_be_bytes().to_vec();
     input.extend(frame);
     let (_, output) =
-        super::super::weather_wire::fixture_access::serve_input(owner, old, &input).await?;
+        super::super::weather_wire_fixtures::fixture_access::serve_input(owner, old, &input).await?;
     let mut at = output.as_slice();
     let mut refused = 0;
     while !at.is_empty() {

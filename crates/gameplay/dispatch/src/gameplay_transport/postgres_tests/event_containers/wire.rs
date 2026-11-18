@@ -22,7 +22,7 @@ pub(super) async fn exchange_nested(
     let exercise = async {
         let mut container = None;
         loop {
-            let raw = super::super::item_look::read_frame(&mut client).await?;
+            let raw = super::super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = protocol::decode_wire_envelope(&raw).map_err(debug)?;
             if envelope.message_type() == protocol::MessageType::SnapshotChunk {
                 for domain in protocol::decode_snapshot_chunk(envelope.payload())
@@ -66,7 +66,7 @@ pub(super) async fn exchange_nested(
         let mut opened = false;
         let mut source = None;
         while !opened || source.is_none() {
-            let raw = super::super::item_look::read_frame(&mut client).await?;
+            let raw = super::super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = protocol::decode_wire_envelope(&raw).map_err(debug)?;
             if envelope.message_type() == protocol::MessageType::CommandResult {
                 let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
@@ -109,7 +109,7 @@ pub(super) async fn exchange_nested(
         .await?;
         client.shutdown().await?;
         loop {
-            let raw = super::super::item_look::read_frame(&mut client).await?;
+            let raw = super::super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = protocol::decode_wire_envelope(&raw).map_err(debug)?;
             if envelope.message_type() == protocol::MessageType::CommandResult {
                 let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
@@ -133,7 +133,7 @@ pub(super) async fn exchange_nested(
     let mut exercise = std::pin::pin!(exercise);
     let mut end = None;
     let mut result = None;
-    let mut maintenance = std::pin::pin!(super::super::item_craft::maintain_ready(owner));
+    let mut maintenance = std::pin::pin!(super::super::item_craft_fixtures::maintain_ready(owner));
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         std::future::poll_fn(|context| {

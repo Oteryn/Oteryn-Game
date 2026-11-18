@@ -1,5 +1,5 @@
 use super::super::fixture::{Harness, debug, id, run};
-use super::super::{Dependencies, item_look, prepare_current_session};
+use super::super::{Dependencies, item_look_fixtures as item_look, prepare_current_session};
 use super::{BAG, COIN, Case, TestResult, wire};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -19,7 +19,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, pin) =
-            super::super::death_ml_loss_composed::production_generation_with_pin(
+            super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

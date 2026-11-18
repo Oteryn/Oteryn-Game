@@ -2,17 +2,18 @@
 //! Rotten Blood's independently sourced XP/Quest progression with admitted
 //! physical bodies and private loot. Captured-death consumer calls only replay those native writes;
 //! real NPC mutations, cleanse fences and immutable reconciliation remain covered.
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use super::rotten_blood_progression_fixtures::{current, place_npc, talk};
+
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::content::channel_content_pin::ChannelContentPin;
-use crate::durability::character_progression::{
-    CharacterProgressionError, CurrentCharacterGameplayFence,
-};
+use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::quest_state::rotten_blood::RottenBloodOutcome;
 use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, TakeOutcome};
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
 use oteryn_gameplay_quests::quest::rotten_blood::{
     ACCESS_TRACK, CLEANSE_COOLDOWN_SECONDS, CleanseMode, RottenBloodBoss, RottenBloodRefusal,
     RottenBloodState,
@@ -24,7 +25,7 @@ fn rotten_blood_postgres_native_chain_final_reward_replay_and_cleanse() -> TestR
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("rotten-blood-progression", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("rotten-blood-progression", scenario)
 }
 
 fn scenario() -> TestResult {
@@ -38,7 +39,7 @@ fn qengine_l13_decaying_defender_parent_and_accessories() -> TestResult {
     }
     let started = std::time::Instant::now();
     let result =
-        super::kill_reward_e2e::scenario_thread::run("qengine-l13-decaying_defender", || {
+        super::kill_reward_e2e_fixtures::scenario_thread::run("qengine-l13-decaying_defender", || {
             scenario_with_outfit(true)
         });
     eprintln!(
@@ -74,7 +75,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
         );
         let (controller, pin) = if qualify_outfit {
             // Appearance selection must use the Character's actual content revision.
-            super::death_ml_loss_composed::production_generation_with_source(
+            super::death_ml_loss_composed_fixtures::production_generation_with_source(
                 world,
                 "content-1",
                 source,
@@ -92,7 +93,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             .into_iter()
             .find(|callback| callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE)
             .ok_or("Rotten sacrifice source callback")?;
-        let bundle = super::quest_world_callbacks::world(
+        let bundle = super::quest_world_callbacks_fixtures::world(
             &callback,
             oteryn_gameplay_quests::quest::world_callbacks::Position {
                 x: 3,
@@ -165,7 +166,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                 .map_err(debug)?;
         }
         let premium = if qualify_outfit {
-            Some(super::qengine_endgame_stories::current_premium(&h).await?)
+            Some(super::qengine_endgame_stories_fixtures::current_premium(&h).await?)
         } else {
             None
         };
@@ -324,7 +325,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
         assert_eq!(addons, 0);
         if qualify_outfit {
             admitted.runtime_actor = Some(deps.actor);
-            super::qengine_endgame_stories::accessories(
+            super::qengine_endgame_stories_fixtures::accessories(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -624,17 +625,6 @@ async fn failed_final(
     Ok(())
 }
 
-async fn current(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    session: crate::foundation::GameSessionId,
-) -> TestResult<CurrentCharacterGameplayFence> {
-    owner
-        .current_quest_fence(session)
-        .await
-        .map_err(|_| "current Quest fence unavailable")?
-        .ok_or_else(|| "current Quest fence missing".into())
-}
-
 async fn read(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -666,7 +656,7 @@ async fn kill_key(
     creature_key: &str,
     command_id: u64,
 ) -> TestResult {
-    use super::soul_war::{CapturedEndgameDeath, settle_captured_endgame_death};
+    use super::soul_war_fixtures::{CapturedEndgameDeath, settle_captured_endgame_death};
     use crate::content::ProjectV2AuthoringProfileData;
 
     let primal = creature_key == "oteryn:creature.the_primal_menace";
@@ -1037,64 +1027,6 @@ async fn drain(
     Err("native boss kill remained unsettled".into())
 }
 
-pub(super) async fn place_npc(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    actor: crate::foundation::ExactActorRef,
-    session: crate::foundation::GameSessionId,
-    key: &str,
-) -> TestResult<oteryn_protocol_oteryn::world_spatial_entities::EntityRef> {
-    use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
-    let catalogue = crate::content::NpcDataCatalogue::load(
-        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
-        std::ffi::OsStr::new("world"),
-        crate::content::npc_catalogue_preproduction_limits(),
-    )
-    .map_err(debug)?;
-    let model = catalogue.service_model_for_project().map_err(debug)?;
-    owner.states.chat.install_npc_talk(std::sync::Arc::new(
-        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model(&model),
-    ));
-    owner
-        .states
-        .chat
-        .admit(session, "Rotten Blood Hero", owner.owner_now());
-    owner.states.chat.set_npc_service(session);
-    let mut runtime = owner.runtime.lock().await;
-    let spot = runtime
-        .read_actor_position(actor)
-        .map_err(|error| format!("Rotten NPC {key} actor position: {error:?}"))?
-        .position();
-    runtime
-        .place_npcs(
-            &NpcPlacementTable {
-                npcs: vec![NpcPlacements {
-                    key: key.into(),
-                    placements: vec![NpcPlacement {
-                        floor: -i8::try_from(spot.floor)?,
-                        x: u16::try_from(spot.x + 1)?,
-                        y: u16::try_from(spot.y)?,
-                        direction: MovementFacing::South,
-                    }],
-                }],
-            },
-            |_| true,
-            true,
-        )
-        .map_err(|error| {
-            format!("Rotten NPC {key} placement beside carrier position {spot:?}: {error:?}")
-        })?;
-    let placed = runtime
-        .visible_entities()
-        .npcs
-        .first()
-        .copied()
-        .ok_or("Bloodshade placement")?;
-    Ok(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
-        identity: placed.actor.placement_identity(),
-        generation: placed.generation,
-    })
-}
-
 fn advance_npc_turn(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
     // Separate source dialogue turns by the existing NPC ingress window.
     // The production limiter and database cleanse clock remain unchanged.
@@ -1104,42 +1036,5 @@ fn advance_npc_turn(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResul
             oteryn_gameplay_npc::npc_command::RATE_WINDOW_MICROS,
         ))
         .ok_or("Rotten NPC rate-window clock")?;
-    Ok(())
-}
-
-pub(super) async fn talk(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    actor: crate::foundation::ExactActorRef,
-    session: crate::foundation::GameSessionId,
-    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
-    number: u64,
-    text: &str,
-) -> TestResult {
-    use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
-    use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
-    let fence = current(owner, session).await?;
-    let result = owner
-        .npc_talk(
-            actor,
-            UseCommand {
-                game_session_id: session,
-                command_id: number,
-                item_fence: Some(fence.item_fence()),
-            },
-            NpcTalkIntent {
-                npc_actor: npc,
-                text: text.into(),
-            },
-        )
-        .await;
-    assert!(
-        !result.unknown,
-        "command {number}, NPC {npc:?}, text {text:?}: NPC outcome must be retained"
-    );
-    assert_eq!(
-        result.disposition,
-        NpcIntentDisposition::Ok,
-        "command {number}, NPC {npc:?}, text {text:?}"
-    );
     Ok(())
 }

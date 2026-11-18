@@ -33,7 +33,7 @@ fn s17_viewer_map_uses_casters_committed_map_without_changing_actor() -> TestRes
                         .map_err(debug)?;
                     let world = door_world()?;
                     let (controller, activated) =
-                        super::death_ml_loss_composed::production_generation_with_pin(
+                        super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                             world_id,
                             "content-1",
                         )?;

@@ -1,5 +1,5 @@
 //! PREY-DIFF: the real auto-attack/kill/corpse owner supplies measured loot to history.
-use super::prey_difficulty::{HistoryCounters, assert_history, selected_at};
+use super::prey_difficulty_fixtures::{HistoryCounters, assert_history, selected_at};
 use super::*;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
@@ -46,7 +46,7 @@ fn scenario() -> TestResult {
         let h =
             Harness::create_with_admission_seed(admin, "prey_committed_loot", false, false).await?;
         prepare_current_session(&h).await?;
-        super::daily_reward::epoch(&h, 1).await?;
+        super::daily_reward_fixtures::epoch(&h, 1).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -56,7 +56,7 @@ fn scenario() -> TestResult {
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         // The existing source-world fixture binds native build training to the
         // Character root's content revision; the real vocation writer checks it.
-        let (generation, pin) = super::death_ml_loss_composed::production_generation_with_source(
+        let (generation, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_source(
             world,
             "content-1",
             Some(include_bytes!(
@@ -468,7 +468,7 @@ fn scenario() -> TestResult {
         if acquisition_free_rerolls != 0 {
             seed_cancellation_coins(&h, native).await?;
         }
-        super::daily_reward::epoch(&h, 2).await?;
+        super::daily_reward_fixtures::epoch(&h, 2).await?;
         let cancel_id = admitted.continuity.next_command_id;
         let cancel = wire::Request::ListReroll { slot: 1 };
         let ended = send(&owner, &mut admitted, &cancel).await?;
@@ -517,7 +517,7 @@ async fn send(
 ) -> TestResult<wire::Reply> {
     let bytes = wire::encode_request(request).map_err(debug)?;
     let id = admitted.continuity.next_command_id;
-    let values = super::prey::exchange(owner, admitted, &[(id, &bytes)]).await?;
+    let values = super::prey_fixtures::exchange(owner, admitted, &[(id, &bytes)]).await?;
     assert_eq!(values[0].0, CommandStatus::Accepted);
     let reply = wire::decode_reply(&values[0].1).map_err(debug)?;
     assert_eq!(reply.status, 0);

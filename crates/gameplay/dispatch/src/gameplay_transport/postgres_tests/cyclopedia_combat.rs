@@ -28,7 +28,7 @@ fn p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences() -> Test
 }
 
 fn scenario() -> TestResult {
-    use super::cyclopedia::support::exchange;
+    use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "p12c_combat", true, false).await?;
@@ -41,7 +41,7 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::equipment_mods::activate(deps.admitted.world_id)?;
+        let (controller, pin) = super::equipment_mods_fixtures::activate(deps.admitted.world_id)?;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native gameplay")?;
         deps.room = pin.qualified_room().clone();

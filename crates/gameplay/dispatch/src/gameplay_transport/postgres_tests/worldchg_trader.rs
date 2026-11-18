@@ -1,4 +1,6 @@
 //! Real native Yasir offers through NPC talk, trade and the fenced PostgreSQL owner.
+use super::worldchg_trader_fixtures::{day};
+
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::content::native_gameplay::test_support::activated_with_loot_tables;
@@ -26,30 +28,9 @@ fn worldchg_trader_postgres_yasir_current_day_ship_and_receipt_gate() -> TestRes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("worldchg-trader", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("worldchg-trader", scenario)
 }
-pub(super) async fn day(h: &Harness, world: crate::foundation::WorldId, epoch: u64) -> TestResult {
-    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01') ON CONFLICT DO NOTHING")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind([7u8;32].as_slice()).execute(&h.pool).await?;
-    sqlx::query("INSERT INTO game_world_reset_active(world_id,reset_epoch) VALUES(encode($1,'hex')::uuid,$2::text::numeric) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=excluded.reset_epoch")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&h.pool).await?;
-    // Isolate the daily callback from unrelated live phase controllers. Legacy immutable
-    // daily decisions have world_counters=false; all actual selection draws stay unchanged.
-    let mut expected = changes::roll(world, epoch, 0)?;
-    expected.world_counters = false;
-    sqlx::query("INSERT INTO game_world_change_days(world_id,reset_epoch,decision) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3) ON CONFLICT DO NOTHING")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(serde_json::to_value(expected)?).execute(&h.pool).await?;
-    let loaded = h
-        .root
-        .world_changes(world, epoch)
-        .await?
-        .ok_or("daily snapshot")?;
-    assert_eq!(
-        (loaded.reset_epoch, loaded.oriental_trader),
-        (epoch, expected.oriental_trader)
-    );
-    Ok(())
-}
+
 async fn footprint(h: &Harness) -> TestResult<(i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_npc_trades),(SELECT count(*) FROM game_npc_trade_lines),(SELECT count(*) FROM game_item_audit_outbox)").fetch_one(&h.pool).await?)
 }
@@ -253,7 +234,7 @@ fn scenario() -> TestResult {
             };
             (lookup(YASIR).ok_or("Yasir")?, lookup(SAM).ok_or("Sam")?)
         };
-        super::item_look::seed_main_backpack(&h, &[(LEATHER, 3), (SWORD, 1)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[(LEATHER, 3), (SWORD, 1)]).await?;
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)

@@ -199,7 +199,7 @@ fn scenario(final_recipe: bool) -> TestResult {
                 ("oteryn:item.tibia.i21504", 1),
             ]
         };
-        super::item_look::seed_main_backpack(&harness, &entries).await?;
+        super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
         let intent = UseIntent {
             target: UseTarget::Item(
                 std::num::NonZeroU64::new(if final_recipe { 2 } else { 3 }).ok_or("source")?,

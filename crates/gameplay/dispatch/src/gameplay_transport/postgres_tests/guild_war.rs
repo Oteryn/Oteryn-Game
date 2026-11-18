@@ -61,7 +61,7 @@ async fn command(
     intent: GuildWarIntent,
 ) -> TestResult<GuildWarResult> {
     let command_id = session.continuity.next_command_id;
-    let (status, bytes) = super::guild_wire::exchange(
+    let (status, bytes) = super::guild_wire_fixtures::exchange(
         owner,
         session,
         command_id,
@@ -183,7 +183,7 @@ fn scenario(warring_killer: bool) -> TestResult {
             SelectedCapabilities::select(owner.offered_capabilities(), &[])
                 .ok_or("empty selection")?;
         let denied_id = leader.continuity.next_command_id;
-        let (status, _) = super::guild_wire::exchange(
+        let (status, _) = super::guild_wire_fixtures::exchange(
             &owner,
             &mut leader,
             denied_id,
@@ -229,7 +229,7 @@ fn scenario(warring_killer: bool) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(duration, 7 * 86_400_000);
-        let (status, bytes) = super::guild_wire::exchange(
+        let (status, bytes) = super::guild_wire_fixtures::exchange(
             &owner,
             &mut opponent,
             accepted_id,

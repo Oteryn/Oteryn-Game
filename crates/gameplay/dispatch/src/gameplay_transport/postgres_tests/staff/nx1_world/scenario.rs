@@ -16,13 +16,13 @@ pub(super) fn run() -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, pin) =
-            super::super::super::death_ml_loss_composed::production_generation_with_pin(
+            super::super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
         let active = controller.active().ok_or("generation")?;
         deps.room = pin.qualified_room().clone();
-        let (bytes, pins) = super::super::super::creature_push::bundle(None)?;
+        let (bytes, pins) = super::super::super::creature_push_fixtures::bundle(None)?;
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let world = boot(
             &bytes,
