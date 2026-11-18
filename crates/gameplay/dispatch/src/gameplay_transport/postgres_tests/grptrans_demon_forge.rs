@@ -31,8 +31,12 @@ fn grptrans_demon_forge_step_accepts_any_exact_throne_postgres() -> TestResult {
                 ("oteryn:quest-progress/storage/41026", 1, 10),
             ] {
                 let h = Harness::create_with_admission_seed(
-                    admin.clone(), "grptrans_forge", false, false,
-                ).await?;
+                    admin.clone(),
+                    "grptrans_forge",
+                    false,
+                    false,
+                )
+                .await?;
                 let result = exercise(&h, throne, wrong_value, accepted_value).await;
                 h.cleanup().await?;
                 result?;
@@ -176,7 +180,11 @@ async fn exercise(
         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
-    for (throne, expected) in [(None, START), (Some(wrong_value), START), (Some(accepted_value), FORGE)] {
+    for (throne, expected) in [
+        (None, START),
+        (Some(wrong_value), START),
+        (Some(accepted_value), FORGE),
+    ] {
         if let Some(value) = throne {
             let mut tx = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
