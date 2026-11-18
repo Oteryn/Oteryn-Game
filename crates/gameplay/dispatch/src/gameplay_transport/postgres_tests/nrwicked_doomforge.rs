@@ -549,9 +549,13 @@ async fn two_player_exit(
         DrainOutcome::Drained
     );
     for lease in [first_lease, second_lease] {
+        let character = oteryn_gameplay_domain::domain::CharacterId::from_bytes(
+            *lease.character_id().as_bytes(),
+        )
+        .map_err(debug)?;
         let rows = owner
             .root
-            .read_character_quest_state(owner.character, lease.character_id())
+            .read_character_quest_state(owner.character, character)
             .await
             .map_err(debug)?;
         let track = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked";
