@@ -14,6 +14,9 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
 
+const FACELESS_BOSS: &str = "oteryn:creature.faceless_bane";
+const FACELESS_COUNT: &str = "oteryn:quest-progress/dcourts2/faceless/defeated";
+const FACELESS_GATE: &str = "oteryn:quest-progress/dcourts2/faceless/haunted-house";
 const SCAR_BOSS: &str = "oteryn:creature.alptramun";
 const SCAR_COUNT: &str = "oteryn:quest-progress/dcourts2/dream-scar/count";
 const SCAR_GATE: &str = "oteryn:quest-progress/dcourts2/dream-scar/entry";
@@ -163,6 +166,8 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                 encounter.monsters.clear();
             }
             if faceless {
+                callback.key = "oteryn:quest-callback/dcourts2/faceless".into();
+                callback.quest = "oteryn:quest.the_dream_courts_quest".into();
                 callback.reversible = false;
                 let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
                 encounter.phase = Some(
@@ -170,7 +175,7 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                 );
                 encounter.minimum_level = 250;
                 encounter.monsters.truncate(1);
-                encounter.monsters[0].creature = "oteryn:creature.faceless_bane".into();
+                encounter.monsters[0].creature = FACELESS_BOSS.into();
             }
             let trigger = Position {
                 x: 100,
@@ -298,8 +303,8 @@ fn run_encounter(case: EncounterCase) -> TestResult {
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
-            owner.quest_catalogue = Some(Arc::new(if dream_scar {
-                dream_scar_catalogue(&callback)?
+            owner.quest_catalogue = Some(Arc::new(if dream_scar || faceless {
+                dream_courts_catalogue(&callback, faceless)?
             } else {
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?
@@ -594,7 +599,23 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                 return h.cleanup().await;
             }
             if faceless {
-                faceless_steps(&mut owner, &admitted).await?;
+                let boss = faceless_steps(&mut owner, &admitted).await?;
+                kill(&owner, &admitted, boss, FACELESS_BOSS, 100).await?;
+                assert_eq!(
+                    owner.drain_kill_rewards(admitted.game_session_id).await,
+                    crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+                );
+                let stage: i64 = sqlx::query_scalar(
+                    "SELECT value FROM game_character_quest_tracks WHERE track_key=$1 LIMIT 1",
+                )
+                .bind(FACELESS_GATE)
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(stage, 5);
+                eprintln!(
+                    "POSTGRES_CASE_COMPLETED dcourts2_faceless_steps_open_boss_damage_gate_postgres duration={:?}",
+                    began.elapsed(),
+                );
                 drop(owner);
                 drop(authority);
                 drop(seal);
@@ -882,8 +903,9 @@ async fn admit_dream_scar_peer(
     Ok((actor, session))
 }
 
-fn dream_scar_catalogue(
+fn dream_courts_catalogue(
     callback: &Callback,
+    faceless: bool,
 ) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
     use oteryn_gameplay_quests::quest::{
         QuestStateCatalogue,
@@ -891,6 +913,33 @@ fn dream_scar_catalogue(
     };
     use sha2::Digest;
     let hash = sha2::Sha256::digest(serde_json::to_vec(callback)?);
+    let (creature, count, gate, gate_value, minimum, maximum) = if faceless {
+        (FACELESS_BOSS, FACELESS_COUNT, FACELESS_GATE, 4, 0, 1)
+    } else {
+        (SCAR_BOSS, SCAR_COUNT, SCAR_GATE, 1, -1, 6)
+    };
+    let mut tracks = vec![
+        Track {
+            key: count.into(),
+            initial: minimum,
+            minimum,
+            maximum,
+        },
+        Track {
+            key: gate.into(),
+            initial: gate_value,
+            minimum: 0,
+            maximum: if faceless { 5 } else { 1 },
+        },
+    ];
+    if !faceless {
+        tracks.push(Track {
+            key: SCAR_TIMER.into(),
+            initial: 0,
+            minimum: 0,
+            maximum: i64::MAX,
+        });
+    }
     let bindings = Bindings {
         schema: 1,
         quests: vec![BoundQuest {
@@ -898,26 +947,7 @@ fn dream_scar_catalogue(
             recipe_sha256: hash.iter().map(|byte| format!("{byte:02x}")).collect(),
             occurrence: None,
             admission: None,
-            tracks: vec![
-                Track {
-                    key: SCAR_COUNT.into(),
-                    initial: -1,
-                    minimum: -1,
-                    maximum: 6,
-                },
-                Track {
-                    key: SCAR_GATE.into(),
-                    initial: 1,
-                    minimum: 0,
-                    maximum: 1,
-                },
-                Track {
-                    key: SCAR_TIMER.into(),
-                    initial: 0,
-                    minimum: 0,
-                    maximum: i64::MAX,
-                },
-            ],
+            tracks,
             stages: vec![
                 Stage {
                     key: "lever".into(),
@@ -927,22 +957,25 @@ fn dream_scar_catalogue(
                     },
                 },
                 Stage {
-                    key: "alptramun".into(),
+                    key: "defeat".into(),
                     completes: false,
                     trigger: Trigger::Kill {
                         counter: Box::new(KillCounter {
-                            key: "oteryn:quest-transition/native-kills/dcourts2-alptramun".into(),
-                            creature: SCAR_BOSS.into(),
-                            track: SCAR_COUNT.into(),
-                            gate: SCAR_GATE.into(),
-                            gate_value: 1,
-                            minimum: -1,
-                            maximum: 6,
-                            advance_gate_to: None,
+                            key: format!(
+                                "oteryn:quest-transition/native-kills/dcourts2-{}",
+                                if faceless { "faceless" } else { "alptramun" }
+                            ),
+                            creature: creature.into(),
+                            track: count.into(),
+                            gate: gate.into(),
+                            gate_value,
+                            minimum,
+                            maximum,
+                            advance_gate_to: faceless.then_some(5),
                             death_area: None,
                             world_change: None,
                             encounter_source: Some(callback.key.clone()),
-                            cooldown_track: Some(SCAR_TIMER.into()),
+                            cooldown_track: (!faceless).then_some(SCAR_TIMER.into()),
                         }),
                     },
                 },
@@ -956,7 +989,7 @@ fn dream_scar_catalogue(
 async fn faceless_steps(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &crate::gameplay_transport::connection::AdmittedSession,
-) -> TestResult {
+) -> TestResult<ExactActorRef> {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
     let player = admitted.runtime_actor.ok_or("player")?;
     let session = admitted.game_session_id;
@@ -1001,7 +1034,7 @@ async fn faceless_steps(
     let mut runtime = owner.runtime.lock().await;
     faceless_hit(&mut runtime, boss, player, session, 22, 1).map_err(debug)?;
     assert_eq!(runtime.live_creature_health(boss), Some(max - 1));
-    Ok(())
+    Ok(boss)
 }
 
 fn faceless_hit(
