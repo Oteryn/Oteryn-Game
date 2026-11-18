@@ -6,8 +6,10 @@ structural direction. Two scratch executables cover the complete
 4,339-name baseline at a measured per-process peak of about 14.52 GiB.
 
 The requested base, `2c1e9158c30b411de28ec064bc7198ea4f87dd44`, is an ancestor
-of the fetched `origin/main` at `f64e785ee1e3c81361bbe4b958e5b2ee8ba13c2a`.
-The base and the resubmitted branch have identical build inputs.
+of the fetched `origin/main` at `fe9a5a18a58abfb779b0196579acb1b3c83a0c7f`.
+The base is the merge base of the resubmitted branch and fetched main.
+The resubmitted head, `5faf34c3327c3cf2b641ceac5a2c12d0ca295ffa`, differs
+from the pinned base only in this report.
 Rust 1.100.0, 16 GiB cgroup, no swap. Linux `wait4` supplied peak RSS and
 wall time because `/usr/bin/time` was unavailable. RSS records the largest
 individual process peak. Concurrent processes also contribute to cgroup usage.
@@ -184,8 +186,10 @@ The PR PostgreSQL archive selects the dispatch, game-server and durability
 library targets through `tools/ci/select_postgres_packages.py`. On the
 pinned base, that job installs mold and enables 8 GiB of swap. The unit
 shards enable 16 GiB of swap and set `CARGO_BUILD_JOBS=1`. The PR #3287
-commit message describes serializing the PR PostgreSQL archive, but the
-pinned `pr-postgres-harness.yml` lacks that setting. The one-job dispatch
+commit message describes serializing the PR PostgreSQL archive. Its actual
+workflow delta sets one job in the PR unit shard and Merge Queue lib
+archive. The PR lib archive command on the pinned base still uses the
+default Cargo job count. The one-job dispatch
 measurement still reaches the local memory limit before linking. Serial
 Cargo scheduling limits overlapping dependency builds while one large
 dispatch compiler process can still exhaust the available RAM.
@@ -225,10 +229,11 @@ it through Cargo metadata.
 
 The proposed patch selects the target after it exists and updates the
 merge-authority workflow pin and command assertion. It passes
-`git apply --check` against the pinned build tree. The revised YAML
-parses and all five modified run steps pass `bash -n`. The corresponding
-command assertions in protected repository validators require approved
-updates. The duration keys also need the new binary ID to retain
+`git apply --check` against the pinned build tree. The workflow pins below represent the proposed blobs. The protected-base
+audit rejects a candidate that modifies the audit itself and checks the
+other workflow blobs against its own pins. This patch therefore requires
+an owner-authorized audit rotation. The corresponding command assertions
+in protected repository validators also need approved updates. The duration keys also need the new binary ID to retain
 existing scheduling estimates. The branch contains the investigation
 and proposed workflow diff.
 
@@ -284,7 +289,8 @@ and proposed workflow diff.
 --- a/.github/workflows/merge-authority-audit.yml
 +++ b/.github/workflows/merge-authority-audit.yml
 @@ -29,5 +29,5 @@
-       EXPECTED_MERGE_GROUP_GATE_BLOB: "67e38c236b1964e03f47f5180540168e39456c71"
+-      EXPECTED_MERGE_GROUP_GATE_BLOB: "67e38c236b1964e03f47f5180540168e39456c71"
++      EXPECTED_MERGE_GROUP_GATE_BLOB: "2edad494f694cdbe9a230c9d9b70a3c447ab0099"
        EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
 -      EXPECTED_MERGE_GATE_BLOB: "0f72c838a4a374f2b18da314c0b72ac74038a0f0"
 +      EXPECTED_MERGE_GATE_BLOB: "15e5f7d4c48775da0ccedb63737409c083788e12"
