@@ -37,6 +37,13 @@ enum Case {
     Ordered,
 }
 
+const CRYSTAL_RESET: &str = "oteryn:quest-transition/native-kills/qcredit-fixture-crystals-reset";
+const CRYSTAL_TRACKS: [&str; 3] = [
+    "oteryn:quest-progress/qcredit-fixture/crystals/one",
+    "oteryn:quest-progress/qcredit-fixture/crystals/two",
+    "oteryn:quest-progress/qcredit-fixture/crystals/all",
+];
+
 #[test]
 fn all_direct_damagers_get_one_credit_without_party_membership() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -201,7 +208,8 @@ fn window_callback(at: MovementLocalPosition, case: Case) -> TestResult<Callback
         callback["effects"]["death_window"]["creatures"] = json!([RAT]);
         callback["effects"]["death_window"]["delayed_reset"] = json!({
             "delay_ms":120_000,"from":14961,"to":14955,
-            "positions":[{"x":x+4,"y":y,"floor":floor},{"x":x+5,"y":y,"floor":floor}]
+            "positions":[{"x":x+4,"y":y,"floor":floor},{"x":x+5,"y":y,"floor":floor}],
+            "character_reset":{"transition":CRYSTAL_RESET,"tracks":CRYSTAL_TRACKS}
         });
     }
     Ok(serde_json::from_value(callback)?)
@@ -284,7 +292,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
-    let definition = json!({"schema":1, "quests":[{
+    let mut definition = json!({"schema":1, "quests":[{
         "quest":QUEST,
         "recipe_sha256": fixture_digest,
         "sources":[source],
@@ -295,6 +303,16 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         ],
         "stages":stages
     }]});
+    if case.has_reset() {
+        let tracks = definition["quests"][0]["tracks"]
+            .as_array_mut()
+            .ok_or("crystal fixture tracks")?;
+        tracks.extend(CRYSTAL_TRACKS.into_iter().map(|track| {
+            json!({
+                "key":track,"initial":1,"minimum":0,"maximum":1
+            })
+        }));
+    }
     let base = QuestStateCatalogue::empty("content-1").ok_or("fixture content revision")?;
     Ok(Bindings::parse(&serde_json::to_vec(&definition)?)?.attach(&base)?)
 }
@@ -674,23 +692,44 @@ async fn exercise_window(
                     .remove_terminal_session(players[1].session, players[1].actor)
                     .map_err(debug)?;
             }
-            for (clock, expected) in [
-                (319_999, 14961),
-                (
-                    320_000,
-                    if case == Case::WindowResetDeparted {
-                        14961
-                    } else {
-                        14955
-                    },
-                ),
-            ] {
-                set_clock(clock);
+        }
+        for clock in [319_999, 320_000, 320_000] {
+            let reset = clock == 320_000 && case == Case::WindowReset;
+            set_clock(clock);
+            {
+                let runtime = owner.runtime.lock().await;
                 owner.drain_quest_death_map_resets(&runtime);
-                for crystal in crystals {
-                    assert_eq!(portal_appearance(owner, crystal)?, expected);
+            }
+            owner.drain_quest_death_character_resets().await;
+            for crystal in crystals {
+                assert_eq!(
+                    portal_appearance(owner, crystal)?,
+                    if reset { 14955 } else { 14961 }
+                );
+            }
+            for (character, expected) in [(60, 1), (61, i64::from(!reset))] {
+                for track in CRYSTAL_TRACKS {
+                    let value: i64 = sqlx::query_scalar(
+                        "SELECT coalesce((SELECT value FROM game_character_quest_tracks
+                         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2), 1)",
+                    )
+                    .bind(id(character).as_slice())
+                    .bind(track)
+                    .fetch_one(pool)
+                    .await?;
+                    assert_eq!(
+                        value, expected,
+                        "personal reset for {character}, track {track}"
+                    );
                 }
             }
+            let receipts: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+            )
+            .bind(CRYSTAL_RESET)
+            .fetch_one(pool)
+            .await?;
+            assert_eq!(receipts, i64::from(reset));
         }
     }
     Ok(())
