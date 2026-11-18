@@ -99,7 +99,9 @@ pub(super) fn capture(
         }
     }
     if let Some(rule) = oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature) {
-        let Ok(census) = runtime.positioned_actor_census() else {
+        // Crystal resolves damage-map entries to present players, including actors
+        // that stay in the world during reconnect grace.
+        let Ok(census) = runtime.positioned_melee_census() else {
             return;
         };
         // Eligibility is physical damage plus the bound lease, never a quest-cache read.
