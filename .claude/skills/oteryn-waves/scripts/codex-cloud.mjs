@@ -11,9 +11,19 @@ import crypto from 'node:crypto';
 const CONFIG_ID = process.env.OTERYN_CODEX_ENV_CONFIG_ID ?? '';
 if (!CONFIG_ID) { process.stderr.write('ERROR: set OTERYN_CODEX_ENV_CONFIG_ID (see oteryn-waves references/delegation.md).\n'); process.exit(1); }
 const RPC_URL = 'https://codex-cloud-backend.chatgpt.com/grpc';
-const args = process.argv.slice(2);
-const command = args.shift();
-const opt = name => { const n=args.indexOf(name); return n<0?undefined:args[n+1]; };
+const argv = process.argv.slice(2);
+const command = argv.shift();
+// Parse in order: every --flag takes the next argument as its value, so a flag
+// value can never be mistaken for a flag, and a flag without a value is an error.
+const flags = new Map(), args = [];
+for (let i=0;i<argv.length;i++) {
+  const a=argv[i];
+  if(!a.startsWith('--')) { args.push(a); continue; }
+  const v=argv[i+1];
+  if(v===undefined || v==='' || v.startsWith('--')) { process.stderr.write(`ERROR: ${a} needs a value.\n`); process.exit(1); }
+  flags.set(a,v); i++;
+}
+const opt = name => flags.get(name);
 const authPath=path.join(process.env.CODEX_HOME || path.join(os.homedir(),'.codex'),'auth.json');
 const stateDir=path.join(process.env.CODEX_HOME || path.join(os.homedir(),'.codex'),'oteryn-modern-tasks');
 let auth;
@@ -56,7 +66,7 @@ try {
     print({name:c.name,environmentConfigId:c.id,status:c.status,versionId:c.version_id,latestReadyVersionId:c.latest_ready_version_id,route:'modern',legacyFallback:false});
   } else if(command==='submit') {
     const promptFile=opt('--prompt-file');
-    if(!promptFile) throw Error('Usage: node oteryn-cloud.mjs submit --prompt-file task.txt [--title title] [--branch ref]');
+    if(!promptFile) throw Error('Usage: node codex-cloud.mjs submit --prompt-file task.txt [--title title] [--branch ref] [--model m] [--effort e]');
     const prompt=fs.readFileSync(promptFile,'utf8').trim();
     if(!prompt) throw Error('Prompt file is empty.');
     const config=await checkedConfig();
@@ -74,6 +84,7 @@ try {
       sandbox:'SANDBOX_MODE_WORKSPACE_WRITE',
       runtimeWorkspaceRoots:{values:['/workspace']},
       threadSource:'oteryn-modern-adapter',
+      model:opt('--model')??process.env.OTERYN_CODEX_MODEL??'gpt-6.2-sol',
       deferredEnvironment:true
     });
     const threadId=started.thread?.id;
@@ -87,6 +98,7 @@ try {
       threadId,clientUserMessageId:state.clientUserMessageId,
       sandboxPolicy:{workspaceWrite:{writableRoots:{values:['/workspace']},networkAccess:true}},
       input:{values:[{text:{text:prompt}}]},
+      model:opt('--model')??process.env.OTERYN_CODEX_MODEL??'gpt-6.2-sol',effort:opt('--effort')??process.env.OTERYN_CODEX_EFFORT??'medium',
       deferredEnvironment:true
     });
     state.admitted=true;
@@ -112,6 +124,7 @@ try {
       threadId,clientUserMessageId:crypto.randomUUID(),
       sandboxPolicy:{workspaceWrite:{writableRoots:{values:['/workspace']},networkAccess:true}},
       input:{values:[{text:{text:prompt}}]},
+      model:opt('--model')??process.env.OTERYN_CODEX_MODEL??'gpt-6.2-sol',effort:opt('--effort')??process.env.OTERYN_CODEX_EFFORT??'medium',
       deferredEnvironment:true
     });
     print({threadId,admitted:true,admissionOutcome:result.admissionOutcome});
@@ -132,7 +145,7 @@ try {
     const result=await rpc('ThreadService','ListThreads',{limit:30,sortKey:'THREAD_SORT_KEY_CREATED_AT',sortDirection:'SORT_DIRECTION_DESC'});
     print({threads:(result.data?.values??[]).filter(t=>t.environments?.values?.some(e=>e.environmentConfigId===CONFIG_ID)).map(t=>({id:t.id,name:t.name,status:t.status,createdAt:t.createdAt,environments:t.environments})),nextCursor:result.nextCursor});
   } else {
-    throw Error('Usage: node oteryn-cloud.mjs check | submit --prompt-file task.txt [--title title] [--branch ref] | status THREAD_ID | poll THREAD_ID | send THREAD_ID --prompt-file followup.txt | list');
+    throw Error('Usage: node codex-cloud.mjs check | submit --prompt-file task.txt [--title title] [--branch ref] [--model m] [--effort e] | status THREAD_ID | poll THREAD_ID | send THREAD_ID --prompt-file followup.txt [--model m] [--effort e] | list');
   }
 } catch(error) {
   process.stderr.write(`ERROR: ${error.message}\n`);
