@@ -1,6 +1,5 @@
 //! The Character fixture supplies placed actors to the production NPC dispatcher.
 use super::{ORDER, PART, draw_program, fixture};
-use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, GameSessionId,
     MovementFacing, NodeId, NpcPlacement, NpcPlacementTable, NpcPlacements,
@@ -12,6 +11,7 @@ use oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::{
 use oteryn_gameplay_dispatch::gameplay_transport::{ComposedFreshAdmission, FreshEvidenceSource};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::{collections::BTreeSet, sync::Arc};
 use tokio::sync::Mutex;
 
