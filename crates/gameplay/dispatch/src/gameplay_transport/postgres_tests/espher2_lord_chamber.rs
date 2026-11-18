@@ -281,6 +281,9 @@ fn chamber(case: ChamberCase) -> TestResult {
                     .await
                     .map_err(|()| "peer fence")?
                     .ok_or("peer fence")?;
+                for member in [session, peer] {
+                    owner.states.chat.admit(member, "Chamber witness", owner.owner_now());
+                }
                 for (actor, session, fence, station, command_id) in [
                     (
                         peer_actor,
@@ -347,6 +350,7 @@ fn chamber(case: ChamberCase) -> TestResult {
                         station.lever
                     );
                 }
+                assert_chamber_warning(&owner, [session, peer], "10 minutes");
                 assert!(
                     owner
                         .states
@@ -386,6 +390,7 @@ fn chamber(case: ChamberCase) -> TestResult {
                     std::sync::atomic::Ordering::Relaxed,
                 );
                 owner.drain_quest_encounter_deadlines().await;
+                assert_chamber_warning(&owner, [session, peer], "5 minutes");
                 assert!(
                     owner
                         .states
@@ -449,6 +454,19 @@ fn chamber(case: ChamberCase) -> TestResult {
             Ok(())
         })
     })
+}
+
+fn assert_chamber_warning(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    participants: [crate::foundation::GameSessionId; 2],
+    remaining: &str,
+) {
+    for session in participants {
+        assert!(owner.states.chat.drain(session).into_iter().any(|line| {
+            matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. }
+                if text == format!("You have {remaining} from now on until you get teleported out."))
+        }), "participant should receive the {remaining} chamber warning");
+    }
 }
 
 pub(super) async fn record_item_content(

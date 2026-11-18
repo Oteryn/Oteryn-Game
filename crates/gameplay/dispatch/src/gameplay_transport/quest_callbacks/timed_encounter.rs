@@ -203,6 +203,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 memo.reset_at = reset_at;
                 memo.warn_at = Some(now + (reset_at - now) / 2);
                 memo.participants = participants;
+                for &(_, participant) in &memo.participants {
+                    self.states.chat.push_quest_feedback(
+                        participant,
+                        "You have 10 minutes from now on until you get teleported out.",
+                    );
+                }
                 states.owner_wake.notify_one();
             }
             return UseDisposition::Committed;
