@@ -34,12 +34,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // or introduce collision without an owning collision catalogue.
             if map.facts.house_tile(pos)
                 || facts.pickupable
-                || !crate::map::floor::is_ladder_appearance(facts.appearance_id)
+                || (presence.lifetime_ms.is_none()
+                    && !crate::map::floor::is_ladder_appearance(facts.appearance_id))
+                || (presence.lifetime_ms.is_some()
+                    && (facts.blocks_projectile || facts.terrain_kind.is_some()))
                 || map.overlay.base().tile(pos.x, pos.y, pos.floor).is_none()
             {
                 return Err(UseDisposition::Rejected);
             }
+            let expires = presence
+                .lifetime_ms
+                .map(|lifetime| {
+                    if !map.facts.quest_callback_presence_available(pos) {
+                        return Err(UseDisposition::Occupied);
+                    }
+                    self.owner_now()
+                        .get()
+                        .checked_add(u64::from(lifetime) * 1_000)
+                        .ok_or(UseDisposition::Exhausted)
+                })
+                .transpose()?;
             return Ok(Some(QuestCallbackProjection::ItemPresence {
+                expires,
                 position: pos,
                 entry: facts,
             }));

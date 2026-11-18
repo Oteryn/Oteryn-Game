@@ -273,6 +273,10 @@ pub struct PortalPair {
 pub struct ItemPresence {
     pub position: Position,
     pub appearance: u16,
+    /// The visible object reserves its tile until the Channel scheduler retires it.
+    /// Crystal 201189f8, data-global/scripts/quests/others/actions_fire_bug.lua:144-155.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lifetime_ms: Option<u32>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -729,6 +733,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || effects.portals.is_some()
             || effects.item_cycle.is_some()
             || effects.encounter.is_some()
+            || presence.lifetime_ms.is_some_and(|lifetime| {
+                !(1..=3_600_000).contains(&lifetime)
+                    || callback.trigger != Trigger::Use
+                    || callback.actor_kind != ActorKind::Player
+                    || callback.selector.position != Some(presence.position)
+                    || !callback.requires_world_admission
+                    || !callback.has_personal_state()
+                    || callback.item_on_target.is_none()
+                    || callback.lever.is_some()
+                    || callback.reversible
+                    || effects.reset_after_ms.is_some()
+            })
     }) {
         return false;
     }

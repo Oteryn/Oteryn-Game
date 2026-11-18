@@ -2003,6 +2003,7 @@ mod tests {
         callback.teleport = None;
         callback.effects.transform = Some(430);
         callback.effects.item_presence = Some(ItemPresence {
+            lifetime_ms: None,
             position: Position {
                 x: 32478,
                 y: 31904,

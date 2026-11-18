@@ -559,6 +559,7 @@ fn scenario_case(
             name,
             "qengine-rewards-authored-world-rewards"
                 | "qengine-rewards-authored-world-rewards-full"
+                | super::super::secret_service_dock_fire::NAME
                 | "qengine-rewards-authored-native-admission"
         )
     {

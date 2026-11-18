@@ -205,6 +205,7 @@ pub(super) async fn exercise(
         if !(name.ends_with("missing") && n == 7) {
             let projection = (r.charged == "oteryn:item.tibia.i2126").then_some(
                 crate::map::facts::QuestCallbackProjection::ItemPresence {
+                    expires: None,
                     position: pos,
                     entry: after,
                 },

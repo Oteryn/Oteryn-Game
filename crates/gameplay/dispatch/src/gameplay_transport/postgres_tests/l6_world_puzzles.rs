@@ -47,6 +47,7 @@ pub(super) fn presence_fixture(mut callback: Callback, trigger: Position) -> Cal
     callback.effects.transform = Some(430);
     callback.effects.item_presence = Some(
         oteryn_gameplay_quests::quest::world_callbacks::ItemPresence {
+            lifetime_ms: None,
             position: Position {
                 x: trigger.x - 1,
                 ..trigger

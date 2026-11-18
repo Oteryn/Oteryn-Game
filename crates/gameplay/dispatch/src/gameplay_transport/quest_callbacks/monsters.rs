@@ -81,6 +81,7 @@ pub(in crate::gameplay_transport) fn settle_monster_puzzles(
                     continue;
                 }
                 Some(QuestCallbackProjection::ItemPresence {
+                    expires: None,
                     position: pos,
                     entry,
                 })

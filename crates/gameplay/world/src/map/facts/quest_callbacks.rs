@@ -115,6 +115,7 @@ pub enum QuestCallbackProjection {
     ItemPresence {
         position: TilePos,
         entry: EntryFacts,
+        expires: Option<u64>,
     },
     Scene {
         mutations: Vec<QuestSceneMutation>,
@@ -160,7 +161,7 @@ pub(super) struct CallbackStates {
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
-    presences: BTreeMap<u64, (TilePos, EntryId)>,
+    presences: BTreeMap<u64, (TilePos, EntryId, Option<u64>)>,
     naginata_picks: Vec<NaginataPick>,
 }
 
@@ -197,6 +198,17 @@ impl CallbackStates {
             }
             false
         });
+    }
+
+    fn remove_presence(&mut self, owner: u64) {
+        if let Some((position, id, _)) = self.presences.remove(&owner)
+            && let Some(entries) = self.movement_items.get_mut(&position)
+        {
+            entries.retain(|entry| entry.source != view::EntrySource::Added(id));
+            if entries.is_empty() {
+                self.movement_items.remove(&position);
+            }
+        }
     }
 
     fn readset_matches(&self, entries: impl IntoIterator<Item = (u64, u64)>) -> bool {
@@ -415,23 +427,20 @@ impl CallbackStates {
             QuestCallbackProjection::ItemPresence {
                 position,
                 entry: facts,
+                expires,
             } => {
-                if let Some((pos, id)) = self.presences.get(&owner).copied() {
-                    if pos != *position {
+                if let Some((pos, _, active_until)) = self.presences.get(&owner).copied() {
+                    if pos != *position || active_until.is_some() || expires.is_some() {
                         return false;
                     }
                     if !close {
                         return true;
                     }
-                    if let Some(entries) = self.movement_items.get_mut(&pos) {
-                        entries.retain(|entry| entry.source != view::EntrySource::Added(id));
-                        if entries.is_empty() {
-                            self.movement_items.remove(&pos);
-                        }
-                    }
-                    self.presences.remove(&owner);
+                    self.remove_presence(owner);
                 } else if !close {
-                    if facts.pickupable || self.presences.values().any(|(pos, _)| pos == position) {
+                    if facts.pickupable
+                        || self.presences.values().any(|(pos, _, _)| pos == position)
+                    {
                         return false;
                     }
                     let Some(sequence) = self.movement_sequence.checked_add(1) else {
@@ -448,7 +457,7 @@ impl CallbackStates {
                             source: view::EntrySource::Added(entry),
                             facts: *facts,
                         });
-                    self.presences.insert(owner, (*position, entry));
+                    self.presences.insert(owner, (*position, entry, *expires));
                 }
             }
             QuestCallbackProjection::Scene {
@@ -516,7 +525,7 @@ impl CallbackStates {
         self.solid_items.retain(|p| !cleared(p));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
-        self.presences.retain(|_, (p, _)| !cleared(p));
+        self.presences.retain(|_, (p, _, _)| !cleared(p));
     }
 
     pub(super) fn has_capacity(&self, additional: usize) -> bool {
@@ -573,7 +582,7 @@ impl BundleFacts {
         let (&owner, _) = states
             .presences
             .iter()
-            .find(|(_, (pos, id))| *pos == position && *id == entry)?;
+            .find(|(_, (pos, id, _))| *pos == position && *id == entry)?;
         let revision = states.changed.get(&owner).map_or(0, |(rev, _)| *rev);
         states
             .readset_matches([(owner, revision)])
@@ -836,6 +845,14 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(
+                states
+                    .presences
+                    .iter()
+                    .filter_map(|(owner, (_, _, expires))| {
+                        (!states.key_reserved(*owner)).then_some(*expires).flatten()
+                    }),
+            )
             .min()
     }
 
@@ -855,6 +872,21 @@ impl BundleFacts {
             .collect();
         for owner in expired {
             states.remove_portals(owner);
+            changed += 1;
+        }
+        let expired: Vec<_> = states
+            .presences
+            .iter()
+            .filter(|(owner, (_, _, expires))| {
+                !states.key_reserved(**owner) && expires.is_some_and(|due| due <= now)
+            })
+            .map(|(owner, _)| *owner)
+            .collect();
+        for owner in expired {
+            states.remove_presence(owner);
+            if let Some((revision, _)) = states.changed.get_mut(&owner) {
+                *revision = revision.saturating_add(1);
+            }
             changed += 1;
         }
         let due: Vec<_> = states
@@ -892,6 +924,16 @@ impl BundleFacts {
         }
         changed
     }
+    pub fn quest_callback_presence_available(&self, position: TilePos) -> bool {
+        self.callbacks.lock().is_ok_and(|states| {
+            !states.position_reserved(position)
+                && states
+                    .presences
+                    .values()
+                    .all(|(pos, _, _)| *pos != position)
+        })
+    }
+
     /// A movement callback may use a served Item even if the bundle never places that state.
     /// Unlike lever callbacks, house furniture movement is explicitly allowed by the source.
     pub fn movement_item_facts(&self, appearance: u16) -> Option<EntryFacts> {
