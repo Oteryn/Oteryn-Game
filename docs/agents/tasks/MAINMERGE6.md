@@ -30,3 +30,18 @@ merge commit.
   test-target check timed out. The resubmission ran Git checks and preflight.
 
 [Original run and remote push evidence](https://github.com/Oteryn/Oteryn-Game/issues/3302#issuecomment-6986037387)
+
+## Reproduce the Git verification
+
+Run `sh docs/agents/tasks/mainmerge6-verify.sh` from the repository root. It
+fetches main and the six PR branches, checks each live head for #3303, and
+prints the remote head, ref and conflict-free merge tree for each branch.
+Check the PRs on GitHub for their CI and merge gate status.
+
+Run `game-mainmerge6r4-1812` repeated these checks against main at
+`45135fdeecf2f448d0c300505d041c7397bf7731`. All six remote heads matched the
+table above, and each merge-tree check passed. GitHub reported all six PRs
+as having no merge conflicts and a blocked merge state. This resubmission
+delivered the verifier on the standalone branch.
+
+[Resubmission monitoring and push evidence](https://github.com/Oteryn/Oteryn-Game/issues/3302#issuecomment-6987431532)
