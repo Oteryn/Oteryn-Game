@@ -342,7 +342,7 @@ impl NpcTalkBook {
         let journal_npcs = world_change_journals::npc_keys(source).unwrap_or_default();
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::quest_shops::book_digest(
                         &crate::content::npc_catalogue::grizzly_shop::book_digest(
@@ -565,6 +565,22 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if reference.key == "oteryn:npc.sinatuki" {
+                // Sinatuki uses Crystal's default focus messages and authored Chuqua reply.
+                let Some(dialogue) = &npc.bank_dialogue else {
+                    continue;
+                };
+                (
+                    "Greetings, |PLAYERNAME|.".into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    dialogue
+                        .keywords
+                        .iter()
+                        .filter(|keyword| literal_keyword(keyword))
+                        .cloned()
+                        .collect(),
+                )
             } else if reference.key == "oteryn:npc.uzgod" {
                 // Source Obsidian Knife transcript; the confirmed item exchange is native.
                 (
@@ -757,7 +773,10 @@ impl NpcTalkBook {
                         || reward_callback_npc(&reference.key)
                         || matches!(
                             reference.key.as_str(),
-                            "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod"
+                            "oteryn:npc.al_dee"
+                                | "oteryn:npc.seymour"
+                                | "oteryn:npc.sinatuki"
+                                | "oteryn:npc.uzgod"
                         )
                         || quest_merchant::contains(&reference.key)
                         || native_npcs.contains(&reference.key.as_str())
