@@ -1626,6 +1626,23 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     let source_digest = sha256(bytes);
     let appearances = if is_v3 {
         let compiled = super::native_spell_appearances::compile(sections[6], source_digest)?;
+        for id in compiled.item_costume_ids() {
+            let external = id.to_string();
+            let key = format!("oteryn:item.tibia.i{id}");
+            if items.as_ref().is_none_or(|items| {
+                !items.records.iter().any(|record| {
+                    record.production_binding.external_id == external
+                        && record.production_definition.production_key == key
+                        && record.admission.materializable
+                        && record
+                            .admission
+                            .legal_destinations
+                            .contains(&NativeItemDestination::CharacterInventory)
+                })
+            }) {
+                return Err(invalid("native gameplay item costume source binding"));
+            }
+        }
         for (creature, look_type) in compiled.creature_links() {
             if !creatures
                 .records

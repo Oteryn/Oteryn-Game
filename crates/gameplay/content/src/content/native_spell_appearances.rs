@@ -177,6 +177,9 @@ impl CompiledSpellAppearances {
     pub fn item_costume(&self, item_id: u32) -> Option<&ItemCostumeBinding> {
         self.item_costumes.get(&item_id)
     }
+    pub(super) fn item_costume_ids(&self) -> impl Iterator<Item = u32> + '_ {
+        self.item_costumes.keys().copied()
+    }
     pub fn creature_links(&self) -> impl Iterator<Item = (&ProjectV2DefinitionRef, u32)> {
         self.records
             .iter()

@@ -3,11 +3,62 @@ use super::*;
 // Crystal 201189f8 actions_dwarf_disguise_kit.lua:1-13.
 const BRIDGE_ROBBERY_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_dwarf_disguise_kit.lua:1-13";
 
-fn disguise_input() -> TestResult<crate::content::native_gameplay::NativeGameplayInput> {
+fn repin_fixture(pin: &mut crate::content::native_gameplay::PinnedGameplayBytes, bytes: Vec<u8>) {
     use sha2::{Digest, Sha256};
+    pin.sha256 = Sha256::digest(&bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    pin.bytes = bytes;
+}
+
+fn qualify_disguise_kit(
+    profiles: &mut crate::content::native_gameplay::PinnedGameplayBytes,
+) -> TestResult {
+    use serde_json::{Value, json};
+    const KEY: &str = "oteryn:item.tibia.i7865";
+    let mut document: Value = serde_json::from_slice(&profiles.bytes)?;
+    let rows = document["records"].as_array_mut().ok_or("native item rows")?;
+    if rows.iter().any(|row| row["production_definition"]["production_key"] == KEY) {
+        return Ok(());
+    }
+    let canonical: Value = serde_json::from_slice(include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/items/definitions/items-31500-31999.json",
+    )))?;
+    let definition = canonical["records"]
+        .as_array()
+        .and_then(|rows| rows.iter().map(|row| &row["definition"])
+            .find(|item| item["identity"]["key"] == KEY))
+        .ok_or("canonical disguise kit")?;
+    let crystal: Value = serde_json::from_slice(include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../imports/crystalserver/bindings/items.json",
+    )))?;
+    let binding = crystal["bindings"]
+        .as_array()
+        .and_then(|rows| rows.iter().find(|row| row["external_id"] == "7865"))
+        .ok_or("Crystal disguise kit identity")?;
+    rows.push(json!({
+        "authoring":{"item":definition["identity"]},
+        "semantics":definition["semantics"],
+        "attributes":{},
+        "admission":{"materializable":definition["materializable"],
+            "stack_class":definition["stack_class"],
+            "legal_destinations":["CharacterInventory","Ground"]},
+        "production_definition":{"family":"Item","production_key":KEY,"revision_ref":"definition-r1"},
+        "production_binding":binding,
+        "production_binding_qualification":null
+    }));
+    repin_fixture(profiles, serde_json::to_vec(&document)?);
+    Ok(())
+}
+
+fn disguise_input() -> TestResult<crate::content::native_gameplay::NativeGameplayInput> {
     let mut input = super::super::death_ml_loss_composed::production_input_with_source(
         "content-1", None,
     )?;
+    qualify_disguise_kit(input.item_profiles.as_mut().ok_or("native item profiles")?)?;
     let appearances = input.spell_appearances.as_mut().ok_or("native spell appearances")?;
     let mut packet: serde_json::Value = serde_json::from_slice(&appearances.bytes)?;
     packet["item_costumes"] = serde_json::json!([{
@@ -17,8 +68,7 @@ fn disguise_input() -> TestResult<crate::content::native_gameplay::NativeGamepla
         "duration_ms":300000,
         "source":BRIDGE_ROBBERY_SOURCE
     }]);
-    appearances.bytes = serde_json::to_vec(&packet)?;
-    appearances.sha256 = format!("{:x}", Sha256::digest(&appearances.bytes));
+    repin_fixture(appearances, serde_json::to_vec(&packet)?);
     Ok(input)
 }
 

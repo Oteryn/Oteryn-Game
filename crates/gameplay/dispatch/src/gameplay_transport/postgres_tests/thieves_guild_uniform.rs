@@ -2,13 +2,17 @@
 use super::fixture::{Harness, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
-use oteryn_gameplay_quests::quest::{QuestStateCatalogue, npc_rules::NpcRuleCatalog};
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
+    npc_rules::NpcRuleCatalog,
+};
 
 pub(super) const NAME: &str = "thieves-guild-uniform";
 const NPC: &str = "oteryn:npc.chantalle";
 const QUEST: &str = "oteryn:quest.the_thieves_guild_quest";
 const MISSION: &str = "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06";
 const RANK: &str = "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank";
+const PROMOTE: &str = "oteryn:quest-callback/fixture/chantalle-postman-promotion";
 const HAT: &str = "oteryn:item.tibia.i3576";
 const KEY: &str = "oteryn:item.tibia.i7934";
 const SOURCE: &str =
@@ -50,11 +54,22 @@ pub(super) async fn exercise(
         vec![oteryn_gameplay_quests::quest::QuestTrack {
             key: RANK.into(),
             quest: postman.into(),
-            initial: 5,
+            initial: 4,
             min: -1,
             max: 5,
         }],
-        vec![],
+        vec![QuestTransition {
+            key: PROMOTE.into(),
+            quest: postman.into(),
+            effects: vec![QuestEffect {
+                track: RANK.into(),
+                from: QuestComparison::Eq(4),
+                effect: QuestEffectKind::Set(5),
+            }],
+            completes: false,
+            experience: None,
+            world_change: None,
+        }],
     )
     .map_err(super::fixture::debug)?;
     let program = json!({
@@ -111,13 +126,38 @@ pub(super) async fn exercise(
     tx.commit().await?;
 
     let reply = super::classic_quests::talk(owner, admitted, npc, 6402, "key").await?;
+    assert!(!reply.iter().any(|line| line == REPLY));
+    assert_eq!(key_count(h).await?, 0);
+    super::qengine_outfit_stories::commit_fixture(owner, admitted, PROMOTE, 6403).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    set_sex(h, character, 1).await?;
+    let reply = super::classic_quests::talk(owner, admitted, npc, 6404, "key").await?;
+    assert!(!reply.iter().any(|line| line == REPLY));
+    assert_eq!(key_count(h).await?, 0);
+    set_sex(h, character, 2).await?;
+
+    let reply = super::classic_quests::talk(owner, admitted, npc, 6405, "key").await?;
     assert!(reply.iter().any(|line| line == REPLY));
     assert_eq!(key_count(h).await?, 1);
     let stage: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
         .bind(character.as_slice()).bind(MISSION).fetch_one(&h.pool).await?;
     assert_eq!(stage, 2);
-    super::classic_quests::talk(owner, admitted, npc, 6403, "key").await?;
+    super::classic_quests::talk(owner, admitted, npc, 6406, "key").await?;
     assert_eq!(key_count(h).await?, 1);
+    Ok(())
+}
+
+async fn set_sex(h: &Harness, character: [u8; 16], sex: i16) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_character_roots SET sex=$2 WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character.as_slice())
+        .bind(sex)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
     Ok(())
 }
 

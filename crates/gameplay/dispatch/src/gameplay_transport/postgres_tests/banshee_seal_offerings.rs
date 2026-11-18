@@ -22,7 +22,11 @@ const ALTAR: Position = Position {
     y: 31892,
     floor: -14,
 };
-const LANDING: Position = Position {
+const PLAGUE_LANDING: Position = Position {
+    y: ENTRY.y - 6,
+    ..ENTRY
+};
+const SACRIFICE_LANDING: Position = Position {
     x: 32261,
     y: 31849,
     floor: -15,
@@ -30,7 +34,15 @@ const LANDING: Position = Position {
 const PLAGUE_TRACK: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/second_seal";
 const SACRIFICE_TRACK: &str =
     "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fourth_seal";
+const SACRIFICE_DOOR: &str =
+    "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fourth_seal_door";
 const BLOOD: u8 = 5;
+const BLOOD_CUES: [Position; 4] = [
+    Position { x: 32242, ..ENTRY },
+    ENTRY,
+    Position { x: 32242, y: 31893, ..ENTRY },
+    Position { y: 31893, ..ENTRY },
+];
 
 #[test]
 fn plague_entrance_consumes_neither_pearl_until_both_are_present() -> TestResult {
@@ -80,18 +92,30 @@ fn document(name: &str) -> serde_json::Value {
         json!([])
     };
     let effects = if plague {
-        json!({})
+        json!({"teleport_effect":11})
     } else {
         json!({
-            "fluid_offering":{"position":ALTAR,"subtype":BLOOD,"placement_cues":[{"position":ALTAR,"effect":1}]}
+            "fluid_offering":{"position":ALTAR,"subtype":BLOOD,
+                "placement_cues":BLOOD_CUES.map(|position| json!({"position":position,"effect":1}))},
+            "magic":{"position":ALTAR,"effect":14},
+            "teleport_effect":14
         })
     };
+    let mut storage = vec![json!({"track":track,"minimum":-1,"maximum":0,"set":1,"preserve":plague})];
+    let mut sources = vec![source];
+    if !plague {
+        storage.push(json!({"track":SACRIFICE_DOOR,"minimum":-1,"maximum":1,"set":1}));
+        sources.extend([
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-4-fourth_seal_sacrifice.lua:3-15",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_queen_of_the_banshees.lua:97-105",
+        ]);
+    }
     json!({"schema":1,"callbacks":[{
         "key":format!("oteryn:quest-callback/{name}"),"quest":QUEST,
         "trigger":"step_in","selector":{"position":ENTRY,"appearance":100},
-        "reversible":false,"passages":[],"teleport":LANDING,"requires_world_admission":true,
-        "storage":[{"track":track,"minimum":-1,"maximum":0,"set":1,"preserve":plague}],
-        "offerings":offerings,"effects":effects,"return_on_failure":true,"sources":[source]
+        "reversible":false,"passages":[],"teleport":if plague { PLAGUE_LANDING } else { SACRIFICE_LANDING },
+        "requires_world_admission":true,"storage":storage,
+        "offerings":offerings,"effects":effects,"return_on_failure":true,"sources":sources
     }]})
 }
 
@@ -179,9 +203,9 @@ pub(super) async fn exercise(
             count("SELECT count(*) FROM game_item_fluid_splashes WHERE fluid_subtype=3").await?,
             1
         );
-        assert_eq!(cue_count(owner)?, 0);
+        assert!(blood_cues(owner)?.is_empty());
         pour(owner, admitted, h, BLOOD, 302).await?;
-        assert_eq!(cue_count(owner)?, 1);
+        assert_eq!(blood_cues(owner)?, BLOOD_CUES);
     }
     owner.clock_origin = owner
         .clock_origin
@@ -196,7 +220,7 @@ pub(super) async fn exercise(
             .read_actor_position(actor)
             .map_err(debug)?
             .position(),
-        local(LANDING)
+        local(callback.teleport.ok_or("seal landing")?)
     );
     if name == PLAGUE {
         assert_eq!(
@@ -218,13 +242,13 @@ pub(super) async fn exercise(
         );
         assert_eq!(
             count("SELECT count(*) FROM game_character_quest_tracks WHERE value=1").await?,
-            1
+            2
         );
     }
     Ok(())
 }
 
-fn cue_count(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<usize> {
+fn blood_cues(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<Vec<Position>> {
     Ok(owner
         .bundle_map()
         .ok_or("map")?
@@ -232,7 +256,8 @@ fn cue_count(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<usize> {
         .movement_effects_since(0)
         .iter()
         .filter(|(_, _, effect)| *effect == 1)
-        .count())
+        .map(|(_, tile, _)| Position { x: tile.x, y: tile.y, floor: tile.floor })
+        .collect())
 }
 
 async fn pour(
