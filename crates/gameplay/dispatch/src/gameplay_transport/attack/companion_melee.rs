@@ -31,14 +31,11 @@ impl ChannelAttackStates {
         {
             return;
         }
-        let Ok(census) = runtime.positioned_actor_census() else {
+        let Ok(companions) = runtime.live_player_owned_companions() else {
             return;
         };
         let root = GameplayDecisionRoot::from_bytes(native.source_digest());
-        for (companion, _, session) in census {
-            if session.is_some() {
-                continue;
-            }
+        for companion in companions {
             let Ok(source) = runtime.companion_snapshot(companion) else {
                 continue;
             };
@@ -52,7 +49,10 @@ impl ChannelAttackStates {
             let Some(target) = entry.state.target() else {
                 continue;
             };
-            if states.is_dead(master.actor)
+            if !runtime
+                .player_control_facts(master.actor, master.session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+                || states.is_dead(master.actor)
                 || states.has_pending_spell_commit(master.actor, master.session)
                 || runtime.assert_actor_spell_unreserved(master.actor).is_err()
                 || runtime
@@ -85,6 +85,7 @@ impl ChannelAttackStates {
             if !facts.present_and_visible
                 || !facts.attackable_kind
                 || !facts.alive
+                || !facts.same_floor
                 || facts.attacker_in_protection_zone
                 || facts.target_in_protection_zone
                 || facts.attacker_reentry_protected
@@ -108,6 +109,16 @@ impl ChannelAttackStates {
             let Ok(lease) = runtime.bound_attacker_lease(master.actor, master.session) else {
                 continue;
             };
+            if self
+                .companion_melee_due
+                .iter()
+                .filter(|(actor, _, _)| *actor == companion)
+                .map(|(_, _, due)| *due)
+                .min()
+                .is_some_and(|due| due > now.get())
+            {
+                continue;
+            }
             let Some(melees) =
                 super::super::monster_ai_cycle::qualified_owned_melee(runtime, native, companion)
             else {
@@ -201,9 +212,7 @@ impl ChannelAttackStates {
                 .filter(|damage| *damage > 0) else {
                     continue;
                 };
-                let mut stream = b"companion-melee:".to_vec();
-                stream.extend_from_slice(&companion.actor_local_generation().to_be_bytes());
-                stream.extend_from_slice(&ordinal.to_be_bytes());
+                let stream = [b"companion-melee:".as_slice(), &ordinal.to_be_bytes()].concat();
                 let Ok(hit) = runtime.commit_source_damage_at_us(
                     target,
                     companion,

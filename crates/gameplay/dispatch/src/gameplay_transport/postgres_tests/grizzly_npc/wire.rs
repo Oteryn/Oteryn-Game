@@ -23,12 +23,31 @@ pub(super) fn world_at(
     world: crate::foundation::WorldId,
     placement: Option<&NpcPlacement>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    fixture_world(world, placement, false)
+}
+
+pub(super) fn world_for_companion_melee(
+    world: crate::foundation::WorldId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    fixture_world(world, None, true)
+}
+
+fn fixture_world(
+    world: crate::foundation::WorldId,
+    placement: Option<&NpcPlacement>,
+    west_tile: bool,
+) -> TestResult<crate::map::boot::BundleWorld> {
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut bundle = oteryn_world_bundle::bundle::read(&bytes)?;
     bundle.manifest.palette.truncate(1);
     bundle.manifest.palette[0].key = "oteryn:item.tibia.i100".into();
     for sector in &mut bundle.sectors {
         sector.tiles.retain(|tile| tile.x <= 3);
+        if west_tile && let Some(tile) = sector.tiles.first() {
+            let mut west = tile.clone();
+            west.x = 0;
+            sector.tiles.insert(0, west);
+        }
         for tile in &mut sector.tiles {
             tile.items.retain(|item| item.palette == 0);
         }

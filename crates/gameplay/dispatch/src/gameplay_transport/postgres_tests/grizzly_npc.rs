@@ -69,12 +69,21 @@ fn grizzly_npc_wire_trophy_hunter_backpack_request_refused() -> TestResult {
 }
 
 #[test]
-fn grizzly_companion_melee_kill_credits_master() -> TestResult {
+fn grizzly_summon_melee_kill_credits_master() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     assert!(!admin.is_empty(), "PostgreSQL admin URL is empty");
     super::kill_reward_e2e::scenario_thread::run("grizzly-companion-credit", || scenario(8))
+}
+
+#[test]
+fn grizzly_familiar_melee_kill_credits_master() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty(), "PostgreSQL admin URL is empty");
+    super::kill_reward_e2e::scenario_thread::run("grizzly-familiar-credit", || scenario(9))
 }
 
 #[test]
@@ -176,6 +185,8 @@ fn scenario(case: u8) -> TestResult {
         } else {
             if let Some(ref placement) = production {
                 wire::world_at(world, Some(placement))?
+            } else if matches!(case, 8 | 9) {
+                wire::world_for_companion_melee(world)?
             } else {
                 wire::world(world)?
             }
@@ -246,9 +257,9 @@ fn scenario(case: u8) -> TestResult {
             channel_pin,
             crate::content::qualify_native_entry_room(world).map_err(debug)?,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
-            if matches!(case, 5 | 8) { 5 } else { 2 },
+            if matches!(case, 5 | 8 | 9) { 5 } else { 2 },
         )?;
-        if case == 8 {
+        if matches!(case, 8 | 9) {
             deps.combat_room = Some(
                 pin.qualified_room()
                     .bundle_view(
@@ -518,7 +529,7 @@ fn scenario(case: u8) -> TestResult {
                 value(&owner, &authority, quest::KILL_COUNTER_BASE + 1).await?,
                 0
             );
-        } else if case == 8 {
+        } else if matches!(case, 8 | 9) {
             wire::talk(
                 &mut owner,
                 &mut admitted,
@@ -526,7 +537,12 @@ fn scenario(case: u8) -> TestResult {
                 &[(3, "hi"), (4, "crocodiles"), (5, "yes")],
             )
             .await?;
-            companion_melee_credit(&owner, &admitted, &authority).await?;
+            let companion = if case == 8 {
+                "oteryn:creature.rat"
+            } else {
+                "oteryn:creature.druid_familiar"
+            };
+            companion_melee_credit(&owner, &admitted, &authority, companion).await?;
         } else if case == 7 {
             seed(
                 &h,
@@ -593,6 +609,7 @@ async fn companion_melee_credit(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     authority: &ReconciledCharacterAuthority<'_, '_>,
+    companion: &str,
 ) -> TestResult {
     use crate::foundation::MovementLocalPosition;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -619,7 +636,7 @@ async fn companion_melee_credit(
             .create_companion(
                 actor,
                 session,
-                "oteryn:creature.rat",
+                companion,
                 MovementLocalPosition {
                     x: position.x - 1,
                     ..position
@@ -630,10 +647,11 @@ async fn companion_melee_credit(
             )
             .map_err(debug)?;
         let key = "oteryn:creature.crocodile";
+        let health = runtime.companion_policy(key).map_err(debug)?.maximum_health;
         let target = runtime
             .admit_encounter_actor(
                 key,
-                1,
+                health,
                 MovementLocalPosition {
                     x: position.x - 2,
                     ..position
@@ -642,6 +660,9 @@ async fn companion_melee_credit(
             .map_err(debug)?;
         runtime
             .install_creature_policy(target, key)
+            .map_err(debug)?;
+        runtime
+            .commit_monster_lab_damage(target, b"uncredited-setup-wound", health - 1)
             .map_err(debug)?;
         let generation = runtime
             .visible_entities()
@@ -680,6 +701,15 @@ async fn companion_melee_credit(
     assert_eq!(
         value(owner, authority, quest::KILL_COUNTER_BASE + 1).await?,
         1
+    );
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .source_player_damage_shares(target)
+            .map_err(debug)?
+            .is_empty()
     );
     Ok(())
 }

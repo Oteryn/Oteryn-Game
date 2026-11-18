@@ -1068,6 +1068,38 @@ impl ChannelRuntimeV1 {
             position_revision: position.revision,
         })
     }
+    /// Exact live physical sources for the player-owned melee pass.
+    pub fn live_player_owned_companions(&self) -> Result<Vec<ExactActorRef>, CarrierError> {
+        self.owner_fence()?;
+        let mut actors = Vec::new();
+        for &slot in &self.carrier.occupied {
+            let index =
+                usize::try_from(slot).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+            let Some(Slot::CreatureOccupied {
+                generation,
+                companion: Some(companion),
+                health,
+                ..
+            }) = self.carrier.slots.get(index)
+            else {
+                continue;
+            };
+            if *health > 0 && companion.master.is_some() {
+                let local = slot
+                    .checked_add(1)
+                    .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+                actors.push(ExactActorRef(ActorRef::from_scoped_owner_parts(
+                    self.binding.runtime_scope,
+                    self.binding.scope_generation,
+                    ActorLocalId(local),
+                    ActorLocalGeneration(*generation),
+                )));
+            }
+        }
+        actors.sort_by_key(|actor| actor.actor_local_id());
+        Ok(actors)
+    }
+
     pub fn owned_companions(
         &self,
         owner: ExactActorRef,
