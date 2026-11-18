@@ -308,6 +308,10 @@ QUALIFIED.update({
         'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
     'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.shovel':
         'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+})
+
+
+QUALIFIED.update({
     'oteryn:reward-claim.kv.bloodkiss_flower':
         'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
     'oteryn:reward-claim.kv.dark_essence':
@@ -348,6 +352,10 @@ QUALIFIED.update({
         'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
     'oteryn:reward-claim.quest.u8_1.secret_service.suspicious_documents':
         'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+})
+
+
+QUALIFIED.update({
     "oteryn:reward-claim.kv.steelhelmet2":
         "quest_catalogue_chests_qchk3_steel_helmet_use_replay_and_refusal",
     "oteryn:reward-claim.kv.steelhelmet3":
@@ -388,6 +396,10 @@ QUALIFIED.update({
         "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
     "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_stuffed":
         "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+})
+
+
+QUALIFIED.update({
     claim: test
     for test, claims in (
         ("quest_catalogue_chests_qchk5_newhaven_legion_helmet_use_replay_and_refusal", (
@@ -422,6 +434,10 @@ QUALIFIED.update({
         )),
     )
     for claim in claims
+})
+
+
+QUALIFIED.update({
     "oteryn:reward-claim.kv.bananafree":
         "quest_catalogue_chests_qchk6_studded_shield_use_replay_and_refusal",
     "oteryn:reward-claim.kv.bananapremium":
@@ -463,6 +479,7 @@ QUALIFIED.update({
 })
 
 
+QUALIFIED.update({
     "oteryn:reward-claim.kv.powerring1": "quest_catalogue_chests_qchk7_power_ring_use_replay_and_refusal",
     "oteryn:reward-claim.kv.rookgaard05_brown_mushrooms": "quest_catalogue_chests_qchk7_unlinked_use_replay_and_refusal",
     "oteryn:reward-claim.kv.scalearmor": "quest_catalogue_chests_qchk7_scale_armor_use_replay_and_refusal",
@@ -476,6 +493,7 @@ QUALIFIED.update({
     "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.magical_watch": "quest_catalogue_chests_qchk7_what_a_foolish_use_replay_and_refusal",
 })
 
+QUALIFIED.update({
     "oteryn:reward-claim.kv.sixrubies": "quest_catalogue_chests_qchk8_six_rubies_use_replay_and_refusal",
     "oteryn:reward-claim.kv.spikesword": "quest_catalogue_chests_qchk8_spike_sword_use_replay_and_refusal",
     "oteryn:reward-claim.kv.stealhring2": "quest_catalogue_chests_qchk8_stealth_ring_use_replay_and_refusal",
@@ -488,6 +506,7 @@ QUALIFIED.update({
 })
 
 
+QUALIFIED.update({
     "oteryn:reward-claim.kv.honeyflower":
         "quest_catalogue_chests_qchk9_studded_legs_quest_use_replay_and_refusal",
     "oteryn:reward-claim.kv.weddingring2":
