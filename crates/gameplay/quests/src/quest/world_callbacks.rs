@@ -72,6 +72,7 @@ pub mod phase;
 mod questpc7_compat;
 #[cfg(test)]
 mod scripted_teleport_tests;
+mod secret_library;
 #[cfg(test)]
 mod selected_tool_tests;
 #[cfg(test)]
@@ -83,9 +84,9 @@ mod treasure_source;
 mod treasure_source_tests;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
-    EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
-    MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion,
-    RewardDoor, TargetTransform,
+    EncounterPlayer, EncounterRoomTimeout, EncounterTiming, Facing, ItemCycle,
+    ItemDisguiseRequirement, ItemPresence, MagicEffect, MountReward, PartyStation, PartyTransfer,
+    Portal, PortalPair, QuestCompletion, RewardDoor, TargetTransform,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
@@ -668,6 +669,9 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(
+        &serde_json::json!({"schema":1,"callbacks":[secret_library::scorpion()?]}).to_string(),
+    )?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
     ))?);

@@ -125,16 +125,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
-        let Ok(census) = runtime.positioned_melee_census() else {
+        let Ok(mut census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
-        let in_room = |at: MovementLocalPosition| {
-            at.floor == -i16::from(encounter.room_min.floor)
-                && (i32::from(encounter.room_min.x)..=i32::from(encounter.room_max.x))
-                    .contains(&at.x)
-                && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y))
-                    .contains(&at.y)
-        };
+        let in_room = |at| super::timed_encounter::in_room(encounter, at);
+        let mut timeout = None;
+        if let Some(rule) = encounter.room_timeout {
+            let Ok(mut timers) = self.states.quest_callbacks.timed.lock() else {
+                return UseDisposition::Rejected;
+            };
+            // Crystal clears a prior scorpion when nobody is left in the room.
+            // Retire only actors owned by the previous admission.
+            if !census
+                .iter()
+                .any(|(_, at, s)| s.is_some() && in_room(at.position()))
+                && let Some(index) = timers.iter().position(|memo| memo.source_key() == key)
+            {
+                timers.swap_remove(index).retire(runtime);
+                let Ok(current) = runtime.positioned_melee_census() else {
+                    return UseDisposition::Rejected;
+                };
+                census = current;
+            }
+            let (Some(due), Some(revision)) = (
+                self.owner_now()
+                    .get()
+                    .checked_add(u64::from(rule.after_ms) * 1000),
+                expected_revision.checked_add(1),
+            ) else {
+                return UseDisposition::Exhausted;
+            };
+            if timers.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                || timers.iter().any(|memo| memo.source_key() == key)
+                || timers.try_reserve(1).is_err()
+            {
+                return UseDisposition::Occupied;
+            }
+            timeout = Some((timers, due, revision));
+        }
         let personal_entry = callback.personal_room_entry().map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
@@ -353,6 +381,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             phases.push(phase);
         }
         drop(phases);
+        if let Some((mut timers, due, revision)) = timeout {
+            timers.push(super::timed_encounter::TimedEncounter::solo(
+                runtime,
+                callback.clone(),
+                map,
+                key,
+                revision,
+                due,
+                (actor, session),
+                actors.clone(),
+            ));
+            states.owner_wake.notify_one();
+        }
         if let Some(reservation) = reservation
             && let Err(disposition) = reservation.publish(runtime, actors)
         {

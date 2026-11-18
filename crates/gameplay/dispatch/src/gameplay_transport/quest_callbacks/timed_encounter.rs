@@ -17,9 +17,45 @@ pub(super) struct TimedEncounter {
     spawn_at: u64,
     reset_at: u64,
     attempted_spawn: bool,
+    entrant: Option<(ExactActorRef, GameSessionId)>,
     spawned: Vec<ExactActorRef>,
 }
 impl TimedEncounter {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds one admitted room and its owner fences"
+    )]
+    pub(super) fn solo(
+        runtime: &ChannelRuntimeV1,
+        callback: Callback,
+        map: &BundleMap,
+        key: u64,
+        revision: u64,
+        reset_at: u64,
+        entrant: (ExactActorRef, GameSessionId),
+        spawned: Vec<ExactActorRef>,
+    ) -> Self {
+        Self {
+            callback,
+            key,
+            revision,
+            content: runtime.content_pin().server_artifact_digest(),
+            map: map.overlay.base().digest(),
+            scope: runtime.encounter_owner_scope(),
+            spawn_at: reset_at,
+            reset_at,
+            attempted_spawn: true,
+            entrant: Some(entrant),
+            spawned,
+        }
+    }
+
+    pub(super) fn retire(mut self, runtime: &mut ChannelRuntimeV1) {
+        if self.entrant.is_some() && self.scope == runtime.encounter_owner_scope() {
+            super::personal_trial::cleanup(runtime, &mut self.spawned);
+        }
+    }
+
     pub(super) fn source_key(&self) -> u64 {
         self.key
     }
@@ -121,6 +157,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             spawn_at,
             reset_at,
             attempted_spawn: false,
+            entrant: None,
             spawned: Vec::new(),
         });
         states.owner_wake.notify_one();
@@ -132,6 +169,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         let mut runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let Some(map) = self.bundle_map() else { return };
         if runtime.owner_fence().is_err()
             || self
@@ -166,6 +204,54 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
+            if let Some(((actor, session), timeout)) = memo.entrant.zip(encounter.room_timeout) {
+                let at = runtime.read_actor_position(actor).ok().filter(|snapshot| {
+                    runtime.player_control_facts(actor, session).is_ok()
+                        && in_room(encounter, snapshot.position())
+                });
+                if let Some(at) = at {
+                    let closed = crate::map::floor::BundleDoors(&map.facts);
+                    let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+                        &runtime,
+                        &self.movement_cells,
+                        actor,
+                        session,
+                        at,
+                        local(timeout.exit),
+                        false,
+                        &closed,
+                    ) else {
+                        index += 1;
+                        continue;
+                    };
+                    let Ok(moved) = runtime.commit_source_step(proof) else {
+                        index += 1;
+                        continue;
+                    };
+                    states.stage_special_movement_step(
+                        &runtime,
+                        map,
+                        actor,
+                        session,
+                        now,
+                        Some(at.position()),
+                        moved.position(),
+                        None,
+                    );
+                    states.stage_underwater_step(
+                        &runtime,
+                        actor,
+                        session,
+                        now,
+                        underwater(map, at.position()),
+                        underwater(map, moved.position()),
+                    );
+                    map.facts.emit_movement_effect(tile(timeout.exit), 11);
+                }
+                super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
+                pending.remove(index);
+                continue;
+            }
             let Ok(census) = runtime.current_live_creature_census() else {
                 index += 1;
                 continue;
@@ -261,4 +347,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Death/despawn and source cleanup release only their source-owned ladder.
         super::monsters::settle_authored_monster_puzzles(&runtime, map);
     }
+}
+
+pub(super) fn in_room(
+    encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    at: MovementLocalPosition,
+) -> bool {
+    native(at).is_some_and(|position| {
+        position.floor == encounter.room_min.floor
+            && (encounter.room_min.x..=encounter.room_max.x).contains(&position.x)
+            && (encounter.room_min.y..=encounter.room_max.y).contains(&position.y)
+    })
 }
