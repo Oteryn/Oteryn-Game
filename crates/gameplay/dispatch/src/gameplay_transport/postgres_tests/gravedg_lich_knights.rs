@@ -93,6 +93,18 @@ pub(super) async fn exercise(
     admitted: &AdmittedSession,
     partner: &AdmittedSession,
 ) -> TestResult {
+    let cooldown_keys: Vec<String> = sqlx::query_scalar(
+        "SELECT boss_key FROM game_character_boss_cooldowns WHERE boss_key IN ($1, $2)",
+    )
+    .bind(NICTROS)
+    .bind(BAELOC)
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        cooldown_keys,
+        [NICTROS, NICTROS],
+        "the shared room has Nictros's lever cooldown and Baeloc's death credit"
+    );
     let player = admitted.runtime_actor.ok_or("admitted player")?;
     let partner_actor = partner.runtime_actor.ok_or("admitted partner")?;
     let (nictros, baeloc) = {
