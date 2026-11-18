@@ -82,12 +82,12 @@ fn cwarlock_stack_solo_exit_occupied_landing_postgres() -> TestResult {
 
 fn scenario(_admin: String, mode: u8) -> TestResult {
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("cwarlock", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cwarlock", move || {
         run(async |admin| {
             reset();
             let h = Harness::create_with_admission_seed(admin, "cwarlock", false, false).await?;
             // Keep the independent native source registered for genuine peer bootstrap.
-            let _source = super::house_transfer::RecoverySource::start(&h).await?;
+            let _source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
             let fresh = prepare_current_session(&h).await?;
             let callback = oteryn_gameplay_quests::quest::world_callbacks::load()?
                 .into_iter()
@@ -98,10 +98,10 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                 .flat_map(|x| (32133..=32150).map(move |y| Position { x, y, floor: -2 }))
                 .chain([source::EXIT])
                 .collect();
-            let world = super::quest_world_callbacks::world_with_cells(&callback, trigger, &arena)?;
+            let world = super::quest_world_callbacks_fixtures::world_with_cells(&callback, trigger, &arena)?;
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
-                super::death_ml_loss_composed::production_generation_with_pin(
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                     deps.admitted.world_id,
                     "content-1",
                 )?;
@@ -260,7 +260,7 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                     .fetch_one(&h.pool)
                     .await?;
             assert_eq!(spent, 0);
-            super::qengine_outfit_stories::seed_quest_prerequisites(
+            super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
                 &h,
                 &owner,
                 &admitted,
@@ -748,7 +748,7 @@ async fn prepare_peer(
     .await?;
     assert!(owner.progression_binding(peer.game_session_id).is_some());
     owner.admit_quest_session(&peer).await;
-    super::qengine_outfit_stories::seed_quest_prerequisites(
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
         h,
         owner,
         &peer,

@@ -29,7 +29,7 @@ fn overlordcr_all_four_overlords_credit_two_damagers_exclude_observer_and_replay
         assert_eq!(rule.effects[0].set, Some(1));
         assert!(rule.room.is_none());
         assert!(!rule.top_damage_only);
-        super::srvenc_source_deaths::scenario("overlordcr", creature)?;
+        super::srvenc_source_deaths_fixtures::scenario("overlordcr", creature)?;
     }
     assert!(started.elapsed().as_secs_f64() > 0.01);
     Ok(())
@@ -42,7 +42,7 @@ fn overlordcr_non_overlord_does_not_set_flag_postgres() -> TestResult {
     };
     drop(admin);
     let started = std::time::Instant::now();
-    super::srvenc_source_deaths::scenario("overlordcr_non_overlord", "goblin_leader")?;
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_non_overlord", "goblin_leader")?;
     assert!(started.elapsed().as_secs_f64() > 0.01);
     Ok(())
 }
@@ -53,7 +53,7 @@ fn overlordcr_non_overlord_retains_anti_leech_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::boss_rewards::run_case(super::boss_rewards::Case::NonOverlordHealing)
+    super::boss_rewards_fixtures::run_case(super::boss_rewards_fixtures::Case::NonOverlordHealing)
 }
 
 #[test]
@@ -62,7 +62,7 @@ fn overlordcr_atomic_all_recipients_and_death_rollback_postgres() -> TestResult 
         return Ok(());
     };
     drop(admin);
-    super::srvenc_source_deaths::scenario("overlordcr_atomic", "earth_overlord")
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_atomic", "earth_overlord")
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn overlordcr_seventeenth_distinct_damager_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::srvenc_source_deaths::scenario("overlordcr_seventeen", "earth_overlord")
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_seventeen", "earth_overlord")
 }
 
 #[test]
@@ -80,7 +80,7 @@ fn overlordcr_missing_quest_copy_retains_damager_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::srvenc_source_deaths::scenario("overlordcr_missing_cache", "earth_overlord")
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_missing_cache", "earth_overlord")
 }
 
 #[test]
@@ -89,7 +89,7 @@ fn overlordcr_without_reward_row_credits_damage_participants_postgres() -> TestR
         return Ok(());
     };
     drop(admin);
-    super::srvenc_source_deaths::scenario("overlordcr_rowless", "earth_overlord")
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_rowless", "earth_overlord")
 }
 
 #[test]
@@ -98,7 +98,7 @@ fn overlordcr_atomic_chests_before_xp_fault_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::boss_rewards::run_case(super::boss_rewards::Case::AtomicDeathFault)
+    super::boss_rewards_fixtures::run_case(super::boss_rewards_fixtures::Case::AtomicDeathFault)
 }
 
 #[test]
@@ -107,7 +107,7 @@ fn overlordcr_crash_after_commit_replay_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::srvenc_source_deaths::scenario("overlordcr_crash_replay", "earth_overlord")
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_crash_replay", "earth_overlord")
 }
 
 #[test]
@@ -116,7 +116,7 @@ fn overlordcr_compatible_existing_pin_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::srvenc_source_deaths::scenario("overlordcr_old_pin", "earth_overlord")
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_old_pin", "earth_overlord")
 }
 
 #[test]
@@ -125,7 +125,7 @@ fn overlordcr_proficiency_fallback_storage_without_xp_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::srvenc_source_deaths::scenario("overlordcr_fallback", "earth_overlord")
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_fallback", "earth_overlord")
 }
 
 #[test]
@@ -134,17 +134,17 @@ fn overlordcr_ordinary_boss_damager_chest_excludes_healer_postgres() -> TestResu
         return Ok(());
     };
     drop(admin);
-    super::boss_rewards::run_case(super::boss_rewards::Case::OrdinaryDamagerAndHealer)
+    super::boss_rewards_fixtures::run_case(super::boss_rewards_fixtures::Case::OrdinaryDamagerAndHealer)
 }
 
 #[test]
 fn overlordcr_ended_secondary_keeps_principal_xp_chest_and_storage_postgres() -> TestResult {
-    super::srvenc_source_deaths::scenario("overlordcr_ended_secondary_xp", "earth_overlord")
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_ended_secondary_xp", "earth_overlord")
 }
 
 #[test]
 fn overlordcr_ended_secondary_no_xp_completes_without_requeue_postgres() -> TestResult {
-    super::srvenc_source_deaths::scenario("overlordcr_ended_secondary_no_xp", "earth_overlord")
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_ended_secondary_no_xp", "earth_overlord")
 }
 
 #[test]
@@ -152,5 +152,5 @@ fn overlordcr_live_secondary_conflicting_receipt_rolls_back_death_postgres() -> 
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::srvenc_source_deaths::scenario("overlordcr_live_conflict", "earth_overlord")
+    super::srvenc_source_deaths_fixtures::scenario("overlordcr_live_conflict", "earth_overlord")
 }

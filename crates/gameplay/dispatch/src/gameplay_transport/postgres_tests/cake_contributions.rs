@@ -74,7 +74,7 @@ fn scenario(equipped: bool, tiny: bool) -> TestResult {
             .execute(&h.pool)
             .await?;
         sqlx::query("INSERT INTO game_world_event_epochs(world_id,reset_epoch,active,announcement,seasonal_calendar_revision,seasonal_event_keys) VALUES(encode($1,'hex')::uuid,1,true,'A Piece of Cake is active.',1,ARRAY['piece_of_cake'])").bind(id(42).as_slice()).execute(&h.pool).await?;
-        super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i12143", 100)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i12143", 100)]).await?;
         let source = if tiny {
             uuid(200)
         } else if equipped {

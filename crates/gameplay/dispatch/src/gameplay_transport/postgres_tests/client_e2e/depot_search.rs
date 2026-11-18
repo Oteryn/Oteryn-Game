@@ -15,7 +15,7 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
 ) -> TestResult {
     // Put three native slivers in depot custody; retrieval must use the real item loop.
-    super::super::item_forge::support::seed_items(h, &[(90, "oteryn:item.tibia.i37109", 3, 0)])
+    super::super::item_forge_fixtures::support::seed_items(h, &[(90, "oteryn:item.tibia.i37109", 3, 0)])
         .await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")

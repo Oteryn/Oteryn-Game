@@ -87,8 +87,8 @@ pub(super) async fn prepare(h: &Harness) -> TestResult<CurrentCharacterItemFence
         )
         .await
         .map_err(debug)?;
-    super::super::super::guild_bank::bank_seed::balance(h, account(), buyer(), 1000, 180).await?;
-    super::super::super::guild_bank::bank_seed::balance(h, id(40), id(41), 100, 160).await?;
+    super::super::super::guild_bank_fixtures::bank_seed::balance(h, account(), buyer(), 1000, 180).await?;
+    super::super::super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), 100, 160).await?;
     Ok(fence)
 }
 pub(super) async fn balance(h: &Harness, a: [u8; 16]) -> TestResult<i64> {

@@ -18,7 +18,7 @@ fn newhaven_corruptor_all_five_vocations_kill_loot_take_equip() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("newhaven-corruptor", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-corruptor", || {
         for vocation in ["knight", "paladin", "sorcerer", "druid", "monk"] {
             let started = Instant::now();
             scenario(vocation, false, false, vocation == "knight", false)?;
@@ -36,7 +36,7 @@ fn newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary() -> TestR
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("newhaven-corruptor-stamina", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-corruptor-stamina", || {
         let started = Instant::now();
         scenario("knight", false, false, true, false)?;
         println!(
@@ -52,7 +52,7 @@ fn newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set() -> T
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("newhaven-corruptor-modifiers", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-corruptor-modifiers", || {
         let started = Instant::now();
         scenario("monk", true, false, false, false)?;
         scenario("paladin", false, true, false, false)?;
@@ -69,7 +69,7 @@ fn newhaven_corruptor_lifecycle_recovers_original_corpse_and_child_custody() -> 
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("newhaven-corruptor-lifecycle", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-corruptor-lifecycle", || {
         let started = Instant::now();
         scenario("knight", false, false, false, true)?;
         println!(
@@ -104,7 +104,7 @@ fn scenario(
             .await
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_source(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_source(
             world,
             "content-1",
             Some(include_bytes!(
@@ -825,7 +825,7 @@ fn newhaven_corruptor_lifecycle_process_restart() -> TestResult {
     };
     let parent = std::env::var("NEWHAVEN_RESTART_PARENT")?;
     let mode = std::env::var("NEWHAVEN_RESTART_MODE")?;
-    super::kill_reward_e2e::scenario_thread::run("newhaven-corpse-restart", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("newhaven-corpse-restart", move || {
         run(async |admin| {
             let prefix = admin
                 .strip_suffix("/postgres")

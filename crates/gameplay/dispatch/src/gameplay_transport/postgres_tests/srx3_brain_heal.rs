@@ -13,7 +13,7 @@ fn srx3_cerebellum_native_callback_heals_brain_head_postgres() -> TestResult {
     std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
         run(async |admin| {
             let mut deps = Dependencies::new()?;
-            let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(deps.admitted.world_id, "content-1")?;
+            let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(deps.admitted.world_id, "content-1")?;
             let active = controller.active().ok_or("native activation")?;
             let native = active.native_gameplay().ok_or("native gameplay")?;
             let kind = crate::content::bosses::activity_template::PinnedActivitySourceRoom::BrainHead;

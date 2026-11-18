@@ -106,7 +106,7 @@ fn scenario() -> TestResult {
                 generation: placed.actors[0].actor_local_generation(),
             }
         };
-        super::npc_paid_travel::talk(&owner, &deps, npc, 1, "hi").await?;
+        super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, 1, "hi").await?;
         use crate::domain::condition::{ConditionType, ConditionValues, DotElement, StatusKind};
         use oteryn_gameplay_foundation::foundation::condition::{
             ApplicationFacts, ConditionDefinition, DamageSchedule, DamageSegment,
@@ -180,7 +180,7 @@ fn scenario() -> TestResult {
             (5, 40, false, false),
         ] {
             owner.clock_origin -= std::time::Duration::from_secs(1);
-            super::npc_paid_travel::talk(&owner, &deps, npc, command, "heal").await?;
+            super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, command, "heal").await?;
             let runtime = deps.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
             let state = states.get(&runtime, deps.actor, session).ok_or("vitals")?;
@@ -212,7 +212,7 @@ fn scenario() -> TestResult {
             );
         }
         owner.clock_origin -= std::time::Duration::from_secs(1);
-        super::npc_paid_travel::talk(&owner, &deps, npc, 4, "heal").await?;
+        super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, 4, "heal").await?;
         {
             let runtime = deps.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;

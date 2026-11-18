@@ -17,12 +17,12 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("creation-vocation-entry", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("creation-vocation-entry", move || {
         tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async move {
             for vocation in ["Knight", "Paladin", "Sorcerer", "Druid", "Monk"] {
                 let h = Harness::create_newhaven(admin.clone(), "creation_entry").await?;
                 let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-                let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+                let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
                 super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
                 let active = controller.active().ok_or("active generation")?;
                 super::tutorial_vitals_fixture::native_asset_revisions(&h, active).await?;

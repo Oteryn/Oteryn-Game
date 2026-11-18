@@ -23,7 +23,7 @@ fn cloak_case(replay_after_commit: bool) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-cloak-blood", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-cloak-blood", move || {
         run(async move |admin| {
             reset();
             let scene = super::srx3_activity_source_fixture::SourceScene::new(
@@ -64,8 +64,8 @@ fn cloak_case(replay_after_commit: bool) -> TestResult {
                 (true, true, true),
                 "closed source trigger has both required role grants and no PUBLIC grant"
             );
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -79,7 +79,7 @@ fn cloak_case(replay_after_commit: bool) -> TestResult {
                 &scene,
                 crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsGreed,
             )?;
-            super::boss_activity::issue_content_and_reset(&h, pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, pin).await?;
             let mut admitted = deps.admitted;
             // The literal Cloak has defense 107 and armor 107. The previous
             // level-500 unarmed setup completed sixteen swings with zero HP

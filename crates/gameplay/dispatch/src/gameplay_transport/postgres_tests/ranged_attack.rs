@@ -19,19 +19,19 @@ const OPEN_RAT: MovementLocalPosition = MovementLocalPosition {
 const PASS: Duration = Duration::from_secs(3);
 #[test]
 fn ranged_attack_postgres_bow_kills_at_four_consumes_and_reloads() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-bow", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-bow", || {
         scenario(3350, 4, true, 100, false, false)
     })
 }
 #[test]
 fn ranged_attack_postgres_wand_pays_mana_and_deals_death() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-wand", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-wand", || {
         scenario(25760, 3, false, 100, false, false)
     })
 }
 #[test]
 fn ranged_attack_postgres_out_of_range_no_ammunition_and_no_mana_are_free() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-gates", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-gates", || {
         scenario(3350, 7, true, 100, false, false)?;
         scenario(3350, 4, false, 100, false, false)?;
         scenario(25760, 3, false, 0, false, false)
@@ -39,43 +39,43 @@ fn ranged_attack_postgres_out_of_range_no_ammunition_and_no_mana_are_free() -> T
 }
 #[test]
 fn ranged_attack_postgres_throwing_breaks_in_the_hand_by_source_chance() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-throwing", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-throwing", || {
         scenario(3287, 3, false, 100, false, false)
     })
 }
 #[test]
 fn ranged_attack_postgres_projectile_wall_refuses_without_cost() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-wall", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-wall", || {
         scenario(3350, 6, true, 100, true, false)
     })
 }
 #[test]
 fn ranged_attack_postgres_reconcile_spends_once_without_late_damage_or_training() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-reconcile", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-reconcile", || {
         scenario(3350, 4, true, 100, false, true)
     })
 }
 #[test]
 fn quick_loot_quiver_extra_postgres_selects_compatible_and_consumes_exact_stack() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("quick-quiver-extra", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-quiver-extra", || {
         scenario_with_quiver(3350, 4, true, 100, false, false, Some(10))
     })
 }
 #[test]
 fn quick_loot_quiver_shield_postgres_selects_compatible_and_consumes_exact_stack() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("quick-quiver-shield", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-quiver-shield", || {
         scenario_with_quiver(3350, 4, true, 100, false, false, Some(6))
     })
 }
 #[test]
 fn quick_loot_quiver_empty_postgres_refuses_without_cost() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("quick-quiver-empty", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-quiver-empty", || {
         scenario_with_quiver(3350, 4, false, 100, false, false, Some(10))
     })
 }
 #[test]
 fn quick_loot_quiver_replay_postgres_does_not_spend_twice() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("quick-quiver-replay", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-quiver-replay", || {
         scenario_with_quiver(3350, 4, true, 100, false, true, Some(10))
     })
 }
@@ -469,7 +469,7 @@ fn scenario_with_quiver(
             let mut input = u32::try_from(frame.len())?.to_be_bytes().to_vec();
             input.extend(frame);
             let (end, output) =
-                super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
+                super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &input).await?;
             let mut cursor = output.as_slice();
             let mut accepted = false;
             while !cursor.is_empty() {

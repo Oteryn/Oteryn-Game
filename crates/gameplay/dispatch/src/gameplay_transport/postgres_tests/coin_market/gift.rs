@@ -8,7 +8,7 @@ async fn call(
     let id = session.continuity.next_command_id;
     let bytes = gift::encode(&r).map_err(debug)?;
     let (status, result) =
-        super::super::cyclopedia::support::exchange(owner, session, id, gift::COMMAND, &bytes)
+        super::super::cyclopedia_fixtures::support::exchange(owner, session, id, gift::COMMAND, &bytes)
             .await?;
     assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
     Ok(serde_json::from_str(

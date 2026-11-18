@@ -9,7 +9,7 @@ fn reaudit_starting_progression_first_entry_postgres() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("starting-progression", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("starting-progression", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "starting_progression", false, false)
@@ -24,7 +24,7 @@ fn reaudit_starting_progression_first_entry_postgres() -> TestResult {
             let world =
                 crate::foundation::WorldId::decode(&super::fixture::id(42)).map_err(debug)?;
             let (controller, pin) =
-                super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
             super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
             let room = pin.qualified_room().clone();
             let start = room.entry_start();
@@ -82,7 +82,7 @@ fn reaudit_starting_progression_vocations_and_departure_postgres() -> TestResult
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("starting-vocations", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("starting-vocations", || {
         run(async |admin| {
             use super::fixture::{fence, id};
             use crate::durability::character_build::{
@@ -93,7 +93,7 @@ fn reaudit_starting_progression_vocations_and_departure_postgres() -> TestResult
             use oteryn_gameplay_items::starter_grant::starting_loadout;
             use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
             let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-            let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+            let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 world_id,
                 "content-1",
             )?;
@@ -154,7 +154,7 @@ fn reaudit_starting_progression_vocations_and_departure_postgres() -> TestResult
                     .await
                     .map_err(debug)?;
                 let wrong = if unique == 22001 { 22002 } else { 22001 };
-                let world = super::quest_callbacks::source_world_choices(
+                let world = super::quest_callbacks_fixtures::source_world_choices(
                     (32054, 31883, -6),
                     &[(32054, unique), (32052, wrong), (32074, 0)],
                     100,
