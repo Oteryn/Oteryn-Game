@@ -286,7 +286,12 @@ fn evaluate_source(
         sex: facts.appearance.1,
         outfits: facts.appearance.0,
     };
-    if hot_cuisine_m42::owns(request) {
+    if request.npc == oteryn_gameplay_quests::quest::npc_rules::sandomo::NPC {
+        let session = request.command.game_session_id();
+        let session_hex = session.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+        let occurrence = format!("{session_hex}/{}", request.command.command_id().get());
+        source.plan_sandomo(&input, &occurrence)
+    } else if hot_cuisine_m42::owns(request) {
         hot_cuisine_m42::plan(source, &input)
     } else if inventory.is_some() && marlin_trophy::owns(request) {
         source.plan_marlin_items(&input)
@@ -576,7 +581,7 @@ impl DurabilityRoot {
                     .bind(id).fetch_one(&mut **tx).await?;
                 if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
             }
-            let item_action = father_items || marlin_items || ((cooking_items || generic_items) && items::changes_items(&plan));
+            let item_action = father_items || marlin_items || ((cooking_items || generic_items || request.npc == oteryn_gameplay_quests::quest::npc_rules::sandomo::NPC) && items::changes_items(&plan));
             let quest=&plan.quest;
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
             let stored_state=sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE").bind(id).bind(quest).fetch_optional(&mut **tx).await?;
@@ -610,7 +615,7 @@ impl DurabilityRoot {
                 }
                 let applied = if marlin_items {
                     marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
-                } else if cooking_items || generic_items {
+                } else if cooking_items || generic_items || request.npc == oteryn_gameplay_quests::quest::npc_rules::sandomo::NPC {
                     items::apply(&mut tx, fence, &request, &plan, *content, &node, permit).await?
                 } else {
                     fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await?

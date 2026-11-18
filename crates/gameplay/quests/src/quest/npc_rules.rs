@@ -19,6 +19,7 @@ mod questpc2_gerimor_source;
 mod questpc2_gnomus_source;
 mod questpc2_henricus_source;
 mod questpc2_oldrak_source;
+pub mod sandomo;
 pub mod teleport;
 mod validate;
 
@@ -574,6 +575,7 @@ impl NpcRuleCatalog {
                         .into_iter()
                         .filter(|program| super::in_runtime_scope(&program.document.quest)),
                 );
+                catalogue.programs.push(sandomo::program()?);
                 validate::catalogue(&catalogue)?;
                 Ok(catalogue)
             })
@@ -745,6 +747,7 @@ fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
                 program.document.program_key.as_deref(),
             ),
             ("oteryn:quest.elemental_spheres_quest", None)
+                | (sandomo::QUEST, Some("oteryn:quest-npc-program.sandomo"))
                 | (
                     "oteryn:quest.outfit_and_addon_quests",
                     Some("oteryn:quest-npc-program.citizen-source-sagas")

@@ -8,6 +8,7 @@ pub use registry::{CounterRef, active_for, counter_for, tracks_creature_for};
 
 mod fugue;
 mod phase_settlements;
+mod roshamuul;
 
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
 
@@ -41,6 +42,8 @@ impl Counter {
     pub fn gate_value(&self) -> i64 {
         if self.transition == "oteryn:quest-transition/native-kills/first-dragon-selected" {
             2
+        } else if self.gate == roshamuul::GATE {
+            0
         } else {
             1
         }
@@ -89,6 +92,11 @@ impl Counter {
                 effect: QuestEffectKind::Add(1),
             },
         ];
+        if self.gate == roshamuul::GATE {
+            // This donor counter is always open. Keep the admission default
+            // immutable so one settlement cannot invalidate another queued kill.
+            effects.remove(0);
+        }
         if let Some(track) = self.completion_track() {
             effects.push(QuestEffect {
                 track: track.into(),
@@ -195,12 +203,15 @@ pub const COUNTERS: &[Counter] = &[
 pub fn counter(transition: &str) -> Option<&'static Counter> {
     counters()
         .chain(phase_settlements::COUNTERS)
+        .chain(roshamuul::COUNTERS)
         .find(|counter| counter.transition == transition)
 }
 
 #[must_use]
 pub fn tracks_creature(creature: &str) -> bool {
-    counters().any(|counter| counter.creature == creature)
+    counters()
+        .chain(roshamuul::COUNTERS)
+        .any(|counter| counter.creature == creature)
 }
 
 #[must_use]
@@ -252,6 +263,7 @@ pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Coun
         .iter()
         .chain(fugue::COUNTERS)
         .chain(phase_settlements::COUNTERS)
+        .chain(roshamuul::COUNTERS)
         .chain(qworld::counters()?)
         .chain(super::world_change_journals::counters()?))
 }
@@ -290,6 +302,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     }
     let mut tracks: Vec<_> = tracks.into_values().collect();
     qworld::extend_tracks(&mut tracks)?;
+    roshamuul::extend_tracks(&mut tracks);
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for counter in registered_counters()? {
         let exact = counter.transition();
