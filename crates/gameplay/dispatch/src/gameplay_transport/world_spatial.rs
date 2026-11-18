@@ -955,6 +955,113 @@ mod tests {
         channel
     }
 
+    #[test]
+    fn qualification_world_spatial_frames_roundtrip() -> Result<(), WorldSpatialError> {
+        use crate::gameplay_transport::capabilities::{
+            BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+        };
+        use oteryn_protocol_oteryn::{
+            actor_motion::ActorMotion, inventory_capacity::InventoryCapacity,
+        };
+
+        let offered = crate::gameplay_transport::appearance_change::offer::offered(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            true,
+        );
+        let negotiation = SelectedCapabilities::select(
+            &offered,
+            oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
+        )
+        .expect("bundle negotiation");
+        let selected = negotiation.as_slice();
+        let fields = EntityFields::selected(selected);
+        assert!(
+            fields.actor_motion
+                && fields.party_icons
+                && fields.inventory_capacity
+                && fields.guild_emblems
+        );
+        for floor in [7, -7] {
+            let mut channel = channel([]);
+            let player = &mut channel.entities[0];
+            player.position.floor = floor;
+            player.display_name = Some(EntityDisplayName::new("Qualification One")?);
+            let mut view = SessionVisibility::with_objects(fields.item_handles)
+                .lit(fields.light)
+                .with_motion(fields.actor_motion);
+            let snapshot = view.snapshot(&channel, &mut no_handles)?;
+            let (kind, bytes) = encode_visibility_snapshot_lit(selected, &snapshot, view.lights())?;
+            assert_eq!(
+                decode_world_spatial_snapshot_view(selected, kind, &bytes)?,
+                WorldSpatialSnapshotView::Entities(snapshot)
+            );
+            channel.entities[0].motion = Some(ActorMotion {
+                translation_revision: 1,
+                step_duration_ms: 200,
+                prewalk_ms: [200; 8],
+                ..ActorMotion::default()
+            });
+            let VisibilityUpdate::Delta(delta) = view.refresh(&channel, &mut no_handles)? else {
+                panic!("motion change should update the actor");
+            };
+            let (kind, bytes) = encode_visibility_delta_lit(selected, &delta, view.lights())?;
+            assert_eq!(
+                decode_world_spatial_delta_view(selected, kind, &bytes)?,
+                WorldSpatialDeltaView::Entities(delta)
+            );
+            let legacy = &[CAPABILITY_WORLD_SPATIAL_ENTITIES];
+            let mut legacy_view = SessionVisibility::default();
+            let snapshot = legacy_view.snapshot(&channel, &mut no_handles)?;
+            let (kind, bytes) =
+                encode_visibility_snapshot_lit(legacy, &snapshot, legacy_view.lights())?;
+            let WorldSpatialSnapshotView::Entities(decoded) =
+                decode_world_spatial_snapshot_view(legacy, kind, &bytes)?
+            else {
+                panic!("expected legacy entity snapshot");
+            };
+            assert_eq!(decoded.entities[0].motion, None);
+            channel.entities[0].motion = None;
+            assert_eq!(
+                legacy_view.refresh(&channel, &mut no_handles)?,
+                VisibilityUpdate::Unchanged
+            );
+            let (generation, position) = view.published().expect("published header");
+            for sidecar in [
+                DeltaSidecar::PartyIcons(Vec::new()),
+                DeltaSidecar::InventoryCapacity(InventoryCapacity {
+                    capacity: 60_000,
+                    free: 58_750,
+                }),
+                DeltaSidecar::GuildEmblems(Vec::new()),
+            ] {
+                let bytes =
+                    encode_world_spatial_entities_sidecar_delta(generation, position, &sidecar)?;
+                let (header, _, decoded) =
+                    decode_world_spatial_entities_delta_with_sidecar(&bytes, fields)?;
+                assert_eq!(decoded, Some(sidecar.clone()));
+                assert_eq!(header.actor_position, position);
+                assert_eq!(
+                    decode_world_spatial_delta_view(
+                        legacy,
+                        DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                        &bytes
+                    ),
+                    Err(WorldSpatialError::Malformed)
+                );
+                assert_eq!(
+                    decode_world_spatial_delta_view(
+                        selected,
+                        DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                        &bytes
+                    ),
+                    Ok(WorldSpatialDeltaView::Entities(header)),
+                    "{sidecar:?}"
+                );
+            }
+        }
+        Ok(())
+    }
+
     fn update_ids(update: &VisibilityUpdate) -> Vec<[u8; ENTITY_IDENTITY_BYTES]> {
         match update {
             VisibilityUpdate::Delta(delta) => identities(&delta.update),

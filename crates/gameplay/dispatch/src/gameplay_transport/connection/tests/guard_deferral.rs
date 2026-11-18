@@ -33,6 +33,10 @@ impl FreshAdmissionAuthority for GuardAuthority {
         Some(at(0))
     }
 
+    async fn house_scope_ack(&self, _: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        Ok(Some((1, vec![1])))
+    }
+
     async fn house_transfer_input(&self, _: AdmittedSession) -> Result<(), DurabilityError> {
         if self.activity { Ok(()) } else { self.guard() }
     }
@@ -51,7 +55,11 @@ impl FreshAdmissionAuthority for GuardAuthority {
     }
 }
 
-fn guard_case(failure: fn() -> DurabilityError, transient: bool) -> Result<(), Box<dyn Error>> {
+fn guard_case(
+    failure: fn() -> DurabilityError,
+    transient: bool,
+    house: bool,
+) -> Result<(), Box<dyn Error>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -68,8 +76,30 @@ fn guard_case(failure: fn() -> DurabilityError, transient: bool) -> Result<(), B
                     };
                     let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
                     let refused = command(1, 1, step, StepDirection::East);
-                    let (end, frames) = drive_admitted(
+                    let mut admitted = positioned()?;
+                    if house {
+                        use crate::foundation::{
+                            ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+                        };
+                        admitted.item_fence = Some(CurrentCharacterItemFence {
+                            character_id: crate::domain::CharacterId::from_bytes(CHARACTER)
+                                .map_err(|error| format!("{error:?}"))?,
+                            game_session_id: admitted.game_session_id,
+                            connection_generation: ConnectionGeneration::new(1)
+                                .map_err(|error| format!("{error:?}"))?,
+                            character_lease_generation: 1,
+                            runtime_scope: RuntimeScopeRefV1::instance(
+                                admitted.world_id,
+                                uuid_v7(0x66),
+                            )
+                            .map_err(|error| format!("{error:?}"))?,
+                            scope_ownership_generation: ScopeOwnershipGeneration::new(1)
+                                .map_err(|error| format!("{error:?}"))?,
+                        });
+                    }
+                    let (end, frames) = drive_session(
                         &authority,
+                        admitted,
                         &[
                             refused.clone(),
                             refused,
@@ -98,7 +128,11 @@ fn guard_case(failure: fn() -> DurabilityError, transient: bool) -> Result<(), B
                             "busy guard must keep the command stream open"
                         );
                         assert_eq!(results[0].status, CommandStatus::Rejected);
-                        assert!(results[0].payload.is_empty());
+                        assert_eq!(
+                            results[0].payload,
+                            &[0x08, 0x03],
+                            "STEP refusal receipt in House={house}"
+                        );
                         assert_eq!(results[1].status, CommandStatus::DuplicateReplay);
                         assert_eq!(results[1].payload, results[0].payload);
                         assert_eq!(results[2].status, CommandStatus::Accepted);
@@ -122,16 +156,22 @@ fn guard_case(failure: fn() -> DurabilityError, transient: bool) -> Result<(), B
 
 #[test]
 fn house_transfer_guard_deadline_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>> {
-    guard_case(|| DurabilityError::RootPassDeadlineExceeded, true)
+    guard_case(|| DurabilityError::RootPassDeadlineExceeded, true, false)
 }
 
 #[test]
 fn house_transfer_guard_unavailable_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>>
 {
-    guard_case(|| DurabilityError::RootUnavailable, true)
+    guard_case(|| DurabilityError::RootUnavailable, true, false)
 }
 
 #[test]
 fn house_transfer_guard_fence_mismatch_disconnects() -> Result<(), Box<dyn Error>> {
-    guard_case(|| DurabilityError::Unavailable, false)
+    guard_case(|| DurabilityError::Unavailable, false, false)
+}
+
+#[test]
+fn house_scope_step_guard_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>> {
+    guard_case(|| DurabilityError::RootPassDeadlineExceeded, true, true)?;
+    guard_case(|| DurabilityError::RootUnavailable, true, true)
 }

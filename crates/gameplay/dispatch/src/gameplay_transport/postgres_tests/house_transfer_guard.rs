@@ -153,10 +153,10 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                         client.write_all(&first).await?;
                     }
                     let refusal = result(&mut client).await?;
-                    assert_eq!(refusal, (CommandStatus::Rejected, Vec::new()));
+                    assert_eq!(refusal, (CommandStatus::Rejected, vec![0x08, 0x03]));
                     assert_eq!(
                         result(&mut client).await?,
-                        (CommandStatus::DuplicateReplay, Vec::new())
+                        (CommandStatus::DuplicateReplay, refusal.1)
                     );
                     assert_eq!(probe.steps.get(), 0);
                     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
