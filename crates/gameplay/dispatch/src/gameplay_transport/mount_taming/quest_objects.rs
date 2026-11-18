@@ -1,9 +1,13 @@
 //! Closed carried-tool callbacks routed through the existing World receipt owner.
-use oteryn_gameplay_quests::quest::{targuna_ram, world_callbacks::Callback};
+use oteryn_gameplay_quests::quest::{
+    targuna_ram,
+    world_callbacks::{Callback, earth_tree_scene},
+};
 
 pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.item_on_target.is_some()
-        && (callback.key == targuna_ram::KEY
+        && (earth_tree_scene(callback)
+            || callback.key == targuna_ram::KEY
             || matches!(
                 callback.native_rule,
                 Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
