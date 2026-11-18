@@ -84,6 +84,15 @@ fn overlordcr_missing_quest_copy_retains_damager_postgres() -> TestResult {
 }
 
 #[test]
+fn overlordcr_without_reward_row_credits_damage_participants_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_rowless", "earth_overlord")
+}
+
+#[test]
 fn overlordcr_atomic_chests_before_xp_fault_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());

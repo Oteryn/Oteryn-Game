@@ -78,6 +78,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     )?;
     let generation = controller.active().ok_or("generation")?;
     let native = generation.native_gameplay().ok_or("native policies")?;
+    let without_rewards = crate::content::creature_reward::CreatureRewardTable::default();
+    let rewards = if mode == "overlordcr_rowless" {
+        &without_rewards
+    } else {
+        native.reward_table()
+    };
     let position = rule
         .room
         .map_or([100, 100, -7], |[x, y, _, _, z]| [x, y, z]);
@@ -655,7 +661,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                         prey: None,
                         activity: &[],
                         queue: &queue,
-                        rewards: native.reward_table(),
+                        rewards,
                         charms: None,
                     },
                     target,
@@ -669,7 +675,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     Some(observed),
                 );
             }
-            if mode == "overlordcr_crash_replay" {
+            if matches!(mode, "overlordcr_crash_replay" | "overlordcr_rowless") {
                 crash_replay = Some((target, now, observed));
             }
             if let Some((other_actor, other_session, other_character, other_lease)) =
@@ -794,17 +800,21 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     .await?;
             assert_eq!(canonical, 1, "the canonical death committed once");
             let before: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
-            let private_admitted = native.reward_table().row(&rule.creature).is_ok();
+            let private_admitted = rewards.row(&rule.creature).is_ok();
             assert_eq!(before.0, i64::from(private_admitted));
             assert_eq!(
                 before.1,
                 if private_admitted { 2 } else { 0 },
                 "retained private-loot refusal never invents a chest"
             );
-            assert!(
-                before.2 > 0 && before.3 >= 2,
-                "XP and both storage credits committed before recovery"
-            );
+            if mode == "overlordcr_rowless" {
+                assert_eq!(before, (0, 0, 0, 2), "only the two quest credits commit");
+            } else {
+                assert!(
+                    before.2 > 0 && before.3 >= 2,
+                    "XP and both storage credits committed before recovery"
+                );
+            }
             {
                 let mut runtime = owner.runtime.lock().await;
                 let lease = runtime
@@ -816,7 +826,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                         prey: None,
                         activity: &[],
                         queue: &queue,
-                        rewards: native.reward_table(),
+                        rewards,
                         charms: None,
                     },
                     target,
@@ -949,6 +959,14 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             xp, 0,
             "the existing top-damager departure XP refusal is preserved"
         );
+    }
+    if mode == "overlordcr_rowless" {
+        let counts: (i64, i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_boss_death_settlements), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_boss_reward_chests)",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(counts, (1, 0, 0), "the death settles quest credit alone");
     }
     Ok(())
 }
