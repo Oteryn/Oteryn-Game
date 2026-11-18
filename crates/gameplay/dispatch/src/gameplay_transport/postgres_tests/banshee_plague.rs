@@ -58,7 +58,7 @@ fn bindings() -> TestResult<Bindings> {
     let callback = serde_json::json!({
         "key":"oteryn:quest-callback/banshee/plague-entrance",
         "quest":QUEST, "trigger":"step_in",
-        "selector":{"position":position(TRIGGER),"appearance":1949},
+        "selector":{"action":35002,"appearance":1949},
         "requires_world_admission":true, "reversible":false, "passages":[],
         "return_on_failure":true, "teleport":position(DESTINATION),
         "storage":[{"track":SECOND,"minimum":-1,"maximum":0,"set":0,"preserve":true}],
@@ -106,6 +106,7 @@ fn scenario() -> TestResult {
                 (PEARL_POSITIONS[0], None),
                 (PEARL_POSITIONS[1], None),
             ],
+            Some((TRIGGER, DESTINATION, 35002)),
         )?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
@@ -219,17 +220,30 @@ fn scenario() -> TestResult {
                 let mut runtime = owner.runtime.lock().await;
                 let origin = runtime.read_actor_position(actor).map_err(debug)?;
                 let closed = crate::map::floor::BundleDoors(&map.facts);
-                let proof = crate::map::floor::prepare_quest_callback_teleport(
+                let raw_portal = crate::map::floor::prepare_bundle_step(
                     &runtime,
                     owner.movement_cells(),
                     actor,
                     session,
                     origin,
-                    local(TRIGGER),
+                    crate::movement::CardinalStep::North,
                     false,
                     &closed,
                 )
                 .map_err(debug)?;
+                assert_eq!(raw_portal.destination(), local(DESTINATION));
+                let proof = crate::map::floor::prepare_bundle_step(
+                    &runtime,
+                    owner.movement_cells(),
+                    actor,
+                    session,
+                    origin,
+                    crate::movement::CardinalStep::North,
+                    false,
+                    &portals,
+                )
+                .map_err(debug)?;
+                assert_eq!(proof.destination(), local(TRIGGER));
                 let entered = runtime.commit_source_step(proof).map_err(debug)?;
                 (origin, entered)
             };

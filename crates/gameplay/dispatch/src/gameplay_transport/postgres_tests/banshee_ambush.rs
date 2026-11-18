@@ -134,6 +134,7 @@ fn scenario() -> TestResult {
                 (SKELETON, None),
                 (WITNESS, None),
             ],
+            None,
         )?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =

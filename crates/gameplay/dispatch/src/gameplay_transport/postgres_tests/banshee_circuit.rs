@@ -341,6 +341,7 @@ fn world(circuit: Circuit) -> TestResult<boot::BundleWorld> {
             (27260, true),
         ],
         &records,
+        None,
     )
 }
 
@@ -350,6 +351,7 @@ pub(super) fn scene_world(
     start: TilePos,
     appearances: &[(u16, bool)],
     records: &[SceneTile],
+    portal: Option<(TilePos, TilePos, u16)>,
 ) -> TestResult<boot::BundleWorld> {
     let (bytes, mut pins) = boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -374,10 +376,19 @@ pub(super) fn scene_world(
             attrs: Default::default(),
         }];
         if let Some((palette, unique)) = extra {
+            let portal = portal.filter(|(source, _, _)| *source == at);
             items.push(sector::Item {
                 palette,
                 depth: 0,
                 attrs: sector::Attrs {
+                    action: portal.map(|(_, _, action)| action),
+                    teleport: portal.map(|(_, destination, _)| {
+                        (
+                            destination.x,
+                            destination.y,
+                            destination.floor.to_ne_bytes()[0],
+                        )
+                    }),
                     unique,
                     ..Default::default()
                 },
