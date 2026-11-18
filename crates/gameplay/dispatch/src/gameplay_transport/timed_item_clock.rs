@@ -46,6 +46,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
 
     pub(super) async fn tick_timed_items(&self) {
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
+        self.tick_timed_items_at(now).await;
+    }
+
+    pub(super) async fn tick_timed_items_at(&self, now: u64) {
         use std::sync::atomic::Ordering;
         let next = &self.states.timed_items.next_tick_ms;
         if now < next.load(Ordering::Relaxed) {
@@ -53,14 +57,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         }
         next.store(now.saturating_add(1_000), Ordering::Relaxed);
 
-        let putrefactory_period = now / (1_000
-            * oteryn_gameplay_quests::quest::rotten_blood::putrefactory::PASSIVE_PERIOD_SECONDS);
-        let putrefactory_due = self
-            .states
-            .timed_items
-            .putrefactory_period
-            .fetch_max(putrefactory_period, Ordering::Relaxed)
-            < putrefactory_period;
         let mut sessions = {
             let runtime = self.runtime.lock().await;
             let Ok(census) = runtime.positioned_melee_census() else {
@@ -71,6 +67,20 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 .filter_map(|(actor, _, session)| session.map(|session| (actor, session)))
                 .collect::<Vec<_>>()
         };
+        let period_ms = 1_000
+            * oteryn_gameplay_quests::quest::rotten_blood::putrefactory::PASSIVE_PERIOD_SECONDS;
+        let next_putrefactory = &self.states.timed_items.next_putrefactory_tick_ms;
+        let expected = next_putrefactory.load(Ordering::Relaxed);
+        // Crystal re-arms after each pulse, including delayed pulses.
+        let putrefactory_due = now >= expected.max(period_ms)
+            && next_putrefactory
+                .compare_exchange(
+                    expected,
+                    now.saturating_add(period_ms),
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                )
+                .is_ok();
         let present: HashSet<GameSessionId> =
             sessions.iter().map(|(_, session)| *session).collect();
         self.states
@@ -116,7 +126,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             self.checkpoint_timed_equipment(actor, session, false).await;
                         } else {
                             if putrefactory_due {
-                                self.apply_putrefactory_tick(actor, session, putrefactory_period)
+                                self.apply_putrefactory_tick(actor, session, now / period_ms)
                                     .await;
                             }
                             self.drain_quest_timers(actor, session).await;

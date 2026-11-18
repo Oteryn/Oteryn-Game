@@ -16,7 +16,6 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use serde_json::json;
 use std::sync::Arc;
-use std::time::Duration;
 
 pub(super) const LEGACY: &str = "putrefactory-reservoir-legacy";
 pub(super) const CAP: &str = "putrefactory-reservoir-cap";
@@ -166,13 +165,11 @@ pub(super) async fn exercise(
     }));
 
     if name == PASSIVE {
-        owner.clock_origin = std::time::Instant::now() - Duration::from_secs(19);
         h.root.advance_test_quest_clock(19).map_err(debug)?;
-        owner.tick_timed_items().await;
+        owner.tick_timed_items_at(19_000).await;
         assert_eq!(tracks().await?, values);
-        owner.clock_origin -= Duration::from_millis(1_100);
         h.root.advance_test_quest_clock(1).map_err(debug)?;
-        owner.tick_timed_items().await;
+        owner.tick_timed_items_at(20_100).await;
         let charged = tracks().await?;
         assert_eq!(
             charged,
@@ -182,17 +179,20 @@ pub(super) async fn exercise(
                 (CLOCK.to_owned(), STARTED_AT),
             ]
         );
-        // Another clock pass in the same period keeps the current value.
-        owner.clock_origin -= Duration::from_millis(1_100);
-        owner.tick_timed_items().await;
+        // A delayed pulse re-arms from 20.1 seconds, not the start of its bucket.
+        h.root.advance_test_quest_clock(20).map_err(debug)?;
+        owner.tick_timed_items_at(40_000).await;
         assert_eq!(tracks().await?, charged);
+        // The containing item clock checks once per second.
+        owner.tick_timed_items_at(41_000).await;
+        assert_eq!(tracks().await?[0], (CHARGE.to_owned(), 22));
         let receipts: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1 AND cause_kind='source_think'",
         )
         .bind(PASSIVE_TICK)
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!(receipts, 1);
+        assert_eq!(receipts, 2);
         return Ok(());
     }
 
