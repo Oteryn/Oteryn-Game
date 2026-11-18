@@ -87,8 +87,8 @@ pub use effects::{
     BossCooldownGate, CallbackEffectSet, CallbackEffects, Encounter, EncounterCooldown,
     EncounterMonster, EncounterPhase, EncounterPlayer, EncounterTiming, Facing, FluidRelocation,
     ItemCycle, ItemDisguiseRequirement, ItemPresence, MagicEffect, MountReward, PartyStation,
-    PartyTransfer, Portal, PortalPair, QuestCompletion, RewardDoor, StepDamage, StepDamageKind,
-    StepDamageVocation, SummonAltarBranch, TargetTransform, UseChance, UseSummon,
+    PartyTransfer, Portal, PortalPair, QuestCompletion, RelativeCue, RewardDoor, StepDamage,
+    StepDamageKind, StepDamageVocation, SummonAltarBranch, TargetTransform, UseChance, UseSummon,
     VocationStepDamage,
 };
 pub use ground_stack::{
@@ -1088,7 +1088,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback
                 .passages
                 .iter()
-                .any(|p| p.if_present && callback.effects.passages_reset_after_ms.is_none())
+                .any(|p| p.if_present
+                    && callback.effects.passages_reset_after_ms.is_none()
+                    && callback.effects.use_chance.is_none())
             || unique_storage.len() != callback.storage.len()
             || callback.storage.iter().filter(|s| s.add.is_some()).count() > 1
             || callback.storage.iter().any(|s| {

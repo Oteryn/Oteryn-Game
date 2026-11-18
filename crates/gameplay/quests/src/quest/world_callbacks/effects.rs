@@ -18,6 +18,16 @@ pub struct UseChance {
     pub winning_faces: u16,
     pub failure_hit: StepDamage,
     pub failure_message: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub success_cue: Option<RelativeCue>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RelativeCue {
+    pub dx: i8,
+    pub dy: i8,
+    pub effect: u8,
 }
 
 /// A once-only earned mount through the existing account appearance owner.
@@ -653,6 +663,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !(1..chance.faces).contains(&chance.winning_faces)
             || chance.failure_hit.amount == 0
             || chance.failure_hit.effect == 0
+            || chance.success_cue.is_some_and(|cue| {
+                cue.effect == 0 || cue.dx.unsigned_abs().max(cue.dy.unsigned_abs()) > 1
+            })
             || chance.failure_message.is_empty()
             || chance.failure_message.len() > 256
             || chance.failure_message.chars().any(char::is_control)
@@ -936,7 +949,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()
                 || effects.encounter.is_some()
-                || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
+                || (!callback.passages.is_empty()
+                    && effects.passages_reset_after_ms.is_none()
+                    && (effects.use_chance.is_none()
+                        || callback
+                            .passages
+                            .iter()
+                            .any(|passage| passage.replacement.is_none())))
         })
         || effects.passages_reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)

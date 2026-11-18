@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 pub(super) const NAME: &str = "qengine-rewards-rahemos-hat";
 const TARGET: Position = Position { x: 101, y: 100, floor: -7 };
+pub(super) const DOOR: Position = Position { x: 103, ..TARGET };
 
 #[test]
 fn rahemos_lever_roll_leaves_hat_closed_on_damage_and_opens_on_success() -> TestResult {
@@ -24,10 +25,10 @@ pub(super) fn callback(at: Position) -> TestResult<Callback> {
         "key":"oteryn:quest-callback/rahemos-hat-fixture",
         "quest":"oteryn:quest.the_ancient_tombs_quest","trigger":"use",
         "selector":{"position":at,"ordinal":1,"appearance":2772},
-        "lever":[2772,2773],"reversible":false,"passages":[],"storage":[],"offerings":[],
+        "lever":[2772,2773],"reversible":false,"passages":[{"position":DOOR,"appearance":1662,"replacement":1663,"if_present":true}],"storage":[],"offerings":[],
         "return_on_failure":false,
-        "effects":{"reset_after_ms":4000,"use_chance":{
-            "faces":3,"winning_faces":1,
+        "effects":{"reset_after_ms":4000,"magic":{"position":DOOR,"effect":15},"use_chance":{
+            "faces":3,"winning_faces":1,"success_cue":{"dx":-1,"dy":0,"effect":15},
             "failure_hit":{"kind":"physical","amount":200,"effect":3},
             "failure_message":"You guessed wrong! Take this! Carrot changed now the Hat!"
         }},
@@ -69,15 +70,15 @@ pub(super) async fn exercise(
         }
         (loss.ok_or("losing occurrence")?, win.ok_or("winning occurrence")?)
     };
-    let appearance = |owner: &ComposedFreshAdmission<'_, '_, '_>| -> TestResult<u16> {
+    let appearance = |owner: &ComposedFreshAdmission<'_, '_, '_>, at: Position| -> TestResult<u16> {
         let map = owner.bundle_map().ok_or("map")?;
-        let tile = crate::map::overlay::TilePos { x: TARGET.x, y: TARGET.y, floor: TARGET.floor };
+        let tile = crate::map::overlay::TilePos { x: at.x, y: at.y, floor: at.floor };
         let id = *map.overlay.base().tile(tile.x,tile.y,tile.floor).ok_or("tile")?
             .ids().get(1).ok_or("lever")?;
         Ok(map.facts.base_entry(tile,1,id).ok_or("entry")?.appearance_id)
     };
     let before = super::underwater_drowning::health(owner, actor, session).await?;
-    for (command_id, expected) in [(loss,2772),(win,2773)] {
+    for (command_id, expected, door) in [(loss,2772,1662),(win,2773,1663)] {
         owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(2))
             .ok_or("clock")?;
         let map = owner.bundle_map().ok_or("map")?;
@@ -89,12 +90,14 @@ pub(super) async fn exercise(
             placement, expected_revision:map.facts.object_revision(key),
         }).await;
         assert_eq!(result.disposition, UseDisposition::Committed);
-        assert_eq!(appearance(owner)?, expected);
+        assert_eq!(appearance(owner, TARGET)?, expected);
+        assert_eq!(appearance(owner, DOOR)?, door);
         let remaining = super::underwater_drowning::health(owner, actor, session).await?;
         assert!((1..=10).contains(&before.saturating_sub(remaining)));
     }
     owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(5)).ok_or("clock")?;
     owner.tick_timed_items().await;
-    assert_eq!(appearance(owner)?,2772);
+    assert_eq!(appearance(owner, TARGET)?,2772);
+    assert_eq!(appearance(owner, DOOR)?,1663);
     Ok(())
 }

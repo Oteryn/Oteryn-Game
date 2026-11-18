@@ -422,6 +422,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Occupied;
             }
             let Some(t) = map.overlay.base().tile(p.x, p.y, p.floor) else {
+                if passage.if_present {
+                    continue;
+                }
                 return UseDisposition::Rejected;
             };
             let candidates = t
@@ -1729,6 +1732,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // it cannot turn a committed movement into a failed command.
             map.facts
                 .emit_movement_effect(tile(effect.position), effect.effect);
+        }
+        if fresh_effects
+            && !close
+            && let Some(cue) = callback
+                .effects
+                .use_chance
+                .as_ref()
+                .and_then(|chance| chance.success_cue)
+            && let (Some(x), Some(y)) = (
+                pos.x.checked_add_signed(i16::from(cue.dx)),
+                pos.y.checked_add_signed(i16::from(cue.dy)),
+            )
+        {
+            map.facts.emit_movement_effect(
+                TilePos {
+                    x,
+                    y,
+                    floor: pos.floor,
+                },
+                u16::from(cue.effect),
+            );
         }
         if let Some(message) = success_preface {
             self.states.chat.push_quest_feedback(session, message);
