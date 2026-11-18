@@ -32,7 +32,10 @@ where
     pending(stream, authority, session)
         .await?
         .map(Some)
-        .ok_or_else(|| ServeEnd::disconnected("activity_refresh_missing_barrier"))
+        .ok_or_else(|| {
+            session.staff_disconnect_source = Some("activity_refresh_missing_barrier");
+            ServeEnd::Disconnected
+        })
 }
 
 pub(super) async fn pending<S, A>(
