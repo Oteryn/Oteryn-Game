@@ -16,13 +16,32 @@ pub(super) struct EncounterVisit {
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     creatures: Vec<ExactActorRef>,
+    expires: Option<VisitExpiry>,
+}
+
+struct VisitExpiry {
+    due: u64,
+    exit: world_callbacks::Position,
+    scope: (
+        crate::foundation::RuntimeScopeRefV1,
+        crate::foundation::ScopeOwnershipGeneration,
+    ),
+    bundle_digest: [u8; 32],
 }
 
 impl EncounterVisit {
+    pub(super) fn next_due_us(&self) -> Option<u64> {
+        self.expires.as_ref().map(|expiry| expiry.due)
+    }
+
     fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
-        self.creatures
-            .iter()
-            .any(|actor| runtime.contains_live_creature(*actor))
+        self.expires
+            .as_ref()
+            .is_some_and(|expiry| expiry.scope == runtime.encounter_owner_scope())
+            || self
+                .creatures
+                .iter()
+                .any(|actor| runtime.contains_live_creature(*actor))
     }
 }
 
@@ -55,6 +74,89 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
         })
+    }
+
+    pub(super) fn expire_quest_encounter_visits(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+    ) {
+        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+            return;
+        };
+        let now = self.owner_now().get();
+        let scope = runtime.encounter_owner_scope();
+        let digest = map.overlay.base().digest();
+        visits.retain_mut(|visit| {
+            let Some(expiry) = &visit.expires else {
+                return visit.active(runtime);
+            };
+            if expiry.scope != scope || expiry.bundle_digest != digest {
+                return false;
+            }
+            if expiry.due > now {
+                let occupied = visit.participants.iter().any(|&(actor, session)| {
+                    runtime.player_control_facts(actor, session).is_ok()
+                        && runtime
+                            .read_actor_position(actor)
+                            .is_ok_and(|snapshot| room_contains(&visit.room, snapshot.position()))
+                });
+                if !occupied {
+                    super::personal_trial::cleanup(runtime, &mut visit.creatures);
+                }
+                return occupied;
+            }
+            // Crystal movement_kroazur_room.lua:67-72. Eject the admitted
+            // player only while their exact incarnation remains in this visit.
+            for &(actor, session) in &visit.participants {
+                let Ok(expected) = runtime.read_actor_position(actor) else {
+                    continue;
+                };
+                if runtime.player_control_facts(actor, session).is_err()
+                    || !room_contains(&visit.room, expected.position())
+                {
+                    continue;
+                }
+                let closed = crate::map::floor::BundleDoors(&map.facts);
+                let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+                    runtime,
+                    self.movement_cells(),
+                    actor,
+                    session,
+                    expected,
+                    local(expiry.exit),
+                    false,
+                    &closed,
+                ) else {
+                    return true;
+                };
+                let Ok(landed) = runtime.commit_source_step(proof) else {
+                    return true;
+                };
+                states.stage_special_movement_step(
+                    runtime,
+                    map,
+                    actor,
+                    session,
+                    now,
+                    Some(expected.position()),
+                    landed.position(),
+                    None,
+                );
+                states.stage_underwater_step(
+                    runtime,
+                    actor,
+                    session,
+                    now,
+                    underwater(map, expected.position()),
+                    underwater(map, landed.position()),
+                );
+                map.facts.emit_movement_effect(tile(expiry.exit), 11);
+            }
+            super::personal_trial::cleanup(runtime, &mut visit.creatures);
+            false
+        });
     }
 
     #[allow(
@@ -295,6 +397,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
+        let expiration = if let Some(expiry) = encounter.solo_expiry {
+            let Some(due) = self
+                .owner_now()
+                .get()
+                .checked_add(u64::from(expiry.time_limit_ms) * 1_000)
+            else {
+                return UseDisposition::Exhausted;
+            };
+            let Some(base) =
+                map.overlay
+                    .base()
+                    .tile(expiry.exit.x, expiry.exit.y, expiry.exit.floor)
+            else {
+                return UseDisposition::Rejected;
+            };
+            if !base.walkable() {
+                return UseDisposition::Rejected;
+            }
+            Some(VisitExpiry {
+                due,
+                exit: expiry.exit,
+                scope: runtime.encounter_owner_scope(),
+                bundle_digest: map.overlay.base().digest(),
+            })
+        } else {
+            None
+        };
         if preflight {
             return if runtime
                 .preflight_quest_encounter_entry(proofs, &monsters)
@@ -418,7 +547,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 room: encounter.clone(),
                 participants: party,
                 creatures: actors.clone(),
+                expires: expiration,
             });
+        }
+        if encounter.solo_expiry.is_some() {
+            states.owner_wake.notify_one();
         }
         drop(visits);
         if let Some(reservation) = reservation

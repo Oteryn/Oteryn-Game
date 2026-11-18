@@ -148,12 +148,21 @@ impl PendingCallbacks {
 
 impl PendingCallbacks {
     pub(super) fn next_encounter_due_us(&self) -> Option<u64> {
-        self.timed
+        let timed = self
+            .timed
             .lock()
             .ok()?
             .iter()
             .map(|pending| pending.next_due_us())
-            .min()
+            .min();
+        let visits = self
+            .encounters
+            .lock()
+            .ok()?
+            .iter()
+            .filter_map(encounter::EncounterVisit::next_due_us)
+            .min();
+        timed.into_iter().chain(visits).min()
     }
 }
 

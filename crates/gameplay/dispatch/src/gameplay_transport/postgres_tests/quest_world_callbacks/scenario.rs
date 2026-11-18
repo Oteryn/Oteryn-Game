@@ -356,7 +356,11 @@ fn scenario_case(
     let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR);
     use super::super::lucifuga_bait_spawn;
     let lucifuga = name == lucifuga_bait_spawn::NAME;
-    let mut callback = if lucifuga {
+    use super::super::kroazur_solo_room;
+    let kroazur = name == kroazur_solo_room::NAME;
+    let mut callback = if kroazur {
+        kroazur_solo_room::binding()?
+    } else if lucifuga {
         lucifuga_bait_spawn::binding()?
     } else if dreamers_wall {
         dreamers_wall_portal::binding()?
@@ -656,7 +660,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if dreamers_wall {
+    let world = if kroazur {
+        super::world_with_cells(&callback, trigger, &[kroazur_solo_room::EXIT])?
+    } else if dreamers_wall {
         dreamers_wall_portal::world(&callback, name == dreamers_wall_portal::BLOCKED)?
     } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
@@ -1701,6 +1707,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if kroazur {
+            owner.quest_catalogue = Some(kroazur_solo_room::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
+            )?);
+        }
         if lucifuga {
             owner.quest_catalogue = Some(lucifuga_bait_spawn::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
@@ -2893,6 +2904,8 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if kroazur {
+            Box::pin(kroazur_solo_room::exercise(&mut owner, &mut admitted, &h, fence)).await?;
         } else if lucifuga {
             Box::pin(lucifuga_bait_spawn::exercise(&owner, &mut admitted, fence)).await?;
         } else if outfit_world

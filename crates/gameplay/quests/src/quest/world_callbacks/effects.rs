@@ -378,6 +378,17 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub solo_expiry: Option<SoloEncounterExpiry>,
+}
+
+/// A solo STEP room keeps its own visit deadline and uses the existing boss cooldown ledger.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SoloEncounterExpiry {
+    pub exit: Position,
+    pub time_limit_ms: u32,
+    pub cooldown_seconds: u64,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -922,7 +933,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        if encounter.solo_expiry.is_some_and(|expiry| {
+            callback.personal_room_entry().is_none()
+                || encounter.phase.is_some()
+                || encounter.monsters.len() != 1
+                || !pos(expiry.exit)
+                || in_room(expiry.exit)
+                || !(1..=3_600_000).contains(&expiry.time_limit_ms)
+                || !(1..=30 * 24 * 60 * 60).contains(&expiry.cooldown_seconds)
+                || !callback.effects.carried_inputs.is_empty()
+                || !callback.offerings.is_empty()
+                || callback.item_on_target.is_some()
+        }) || (encounter.minimum_level == 0 && !source_party && encounter.solo_expiry.is_none())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()

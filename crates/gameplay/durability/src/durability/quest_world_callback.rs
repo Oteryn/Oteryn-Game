@@ -605,6 +605,21 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    if let Some(encounter) = &callback.effects.encounter
+        && let Some(expiry) = encounter.solo_expiry
+    {
+        let [monster] = encounter.monsters.as_slice() else {
+            return Ok(false);
+        };
+        return super::boss_encounter::cooldown_storage::admit_solo_quest_room(
+            tx,
+            fence.character_id,
+            &monster.creature,
+            context.reset_epoch,
+            expiry.cooldown_seconds,
+        )
+        .await;
+    }
     if callback.offerings.is_empty()
         && callback.item_on_target.is_none()
         && callback.effects.carried_inputs.is_empty()

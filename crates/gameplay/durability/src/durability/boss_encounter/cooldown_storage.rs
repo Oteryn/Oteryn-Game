@@ -214,3 +214,39 @@ pub(crate) async fn set_boss_cooldowns_data(
     }
     Ok(BossCooldownChange::Applied)
 }
+
+/// Called only after the Quest writer admits the current native STEP and its
+/// locked progress. The enclosing reservation/receipt handles physical replay.
+pub(crate) async fn admit_solo_quest_room(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    creature: &str,
+    epoch: u64,
+    cooldown_seconds: u64,
+) -> Result<bool, DurabilityError> {
+    let (admission, now): (Vec<u8>, i64) = sqlx::query_as(
+        "SELECT uuid_send(game_character_uuid_v7()), floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint",
+    ).fetch_one(&mut **tx).await?;
+    let key =
+        BossRewardKey::new(character, creature).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let admission = admission
+        .try_into()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let outcome = set_boss_cooldowns_data(
+        tx,
+        &[key],
+        &BossCooldownAdmissionData {
+            admission,
+            now,
+            reset_epoch: epoch,
+            cooldown_s: cooldown_seconds,
+            boosted: false,
+        },
+    )
+    .await
+    .map_err(|error| match error {
+        BossRewardStateError::Unavailable(error) => error,
+        _ => DurabilityError::InvalidStoredState,
+    })?;
+    Ok(outcome == BossCooldownChange::Applied)
+}
