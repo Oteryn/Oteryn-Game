@@ -193,23 +193,34 @@ impl ZelosEncounter {
             if self.phase.progress.dead() & (1 << FIRST_SHARD) != 0 {
                 return Ok(false);
             }
-            let mut bursts = Vec::with_capacity(MASS - FIRST_SHARD);
-            for role in FIRST_SHARD..MASS {
-                let shard = self.phase.actors[role].ok_or(CarrierError::PlanConflict)?;
-                let position = if shard == actor {
-                    runtime.borrow_combat_death().projected_death(shard)?.1
-                } else {
-                    runtime.read_actor_position(shard)?.position()
-                };
-                bursts.push(MagnorBurst { shard, position });
-            }
-            for &MagnorBurst { shard, .. } in &bursts {
-                if shard != actor {
-                    project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), shard)?;
+            let before = runtime.encounter_parts().0.clone();
+            let mut phase = self.phase.clone();
+            let result = (|| {
+                let mut bursts = Vec::with_capacity(MASS - FIRST_SHARD);
+                for role in FIRST_SHARD..MASS {
+                    let shard = phase.actors[role].ok_or(CarrierError::PlanConflict)?;
+                    if shard != actor {
+                        project_fixed_one_creature_death(
+                            &mut runtime.borrow_combat_death(),
+                            shard,
+                        )?;
+                    }
+                    let (_, position) = runtime.borrow_combat_death().projected_death(shard)?;
+                    phase.projected_death(runtime, shard)?;
+                    bursts.push(MagnorBurst { shard, position });
                 }
-                self.phase.projected_death(runtime, shard)?;
+                Ok::<_, CarrierError>(bursts)
+            })();
+            match result {
+                Ok(bursts) => {
+                    self.phase = phase;
+                    self.magnor_bursts.extend(bursts);
+                }
+                Err(error) => {
+                    *runtime.encounter_parts_mut().0 = before;
+                    return Err(error);
+                }
             }
-            self.magnor_bursts.extend(bursts);
             return Ok(true);
         }
         self.phase.projected_death(runtime, actor)
