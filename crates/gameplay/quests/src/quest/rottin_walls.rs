@@ -4,6 +4,11 @@ use super::world_callbacks::{Callback, ItemOnTarget, NativeSelector, Position, S
 pub const PREFIX: &str = "oteryn:quest-callback/rottin-repair-";
 pub const QUEST: &str = "oteryn:quest.rottin_wood_and_the_married_men_quest";
 
+/// Admit only the published hammer bindings to the carried-tool route.
+pub fn accepts(callback: &Callback) -> bool {
+    callback.key.starts_with(PREFIX) && callbacks().contains(callback)
+}
+
 pub(crate) fn callbacks() -> [Callback; 6] {
     [
         (42501, 32647, 32216, -7, 2, 12183, 6474),
