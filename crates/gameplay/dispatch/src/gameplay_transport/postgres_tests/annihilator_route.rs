@@ -29,6 +29,8 @@ enum Route {
     Complete,
     ObjectiveAtomicity,
     ObjectiveAtomicityStale,
+    ObjectivePredecessor,
+    ObjectivePredecessorReplay,
     ElvenbaneExploration,
     ElvenbaneCombat,
     ElvenbaneDefenders,
@@ -41,6 +43,14 @@ pub(super) fn native_objective_atomicity() -> TestResult {
 
 pub(super) fn native_objective_stale_capture() -> TestResult {
     run(Route::ObjectiveAtomicityStale)
+}
+
+pub(super) fn native_objective_predecessor(replay: bool) -> TestResult {
+    run(if replay {
+        Route::ObjectivePredecessorReplay
+    } else {
+        Route::ObjectivePredecessor
+    })
 }
 
 pub(super) fn elvenbane_source_combat() -> TestResult {
@@ -63,7 +73,10 @@ fn run(route: Route) -> TestResult {
     let combat = route != Route::Entry;
     let start = if matches!(
         route,
-        Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
+        Route::ObjectiveAtomicity
+            | Route::ObjectiveAtomicityStale
+            | Route::ObjectivePredecessor
+            | Route::ObjectivePredecessorReplay
     ) {
         Position {
             x: 32591,
@@ -386,7 +399,10 @@ fn run(route: Route) -> TestResult {
                     index == 0
                         && !matches!(
                             route,
-                            Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
+                            Route::ObjectiveAtomicity
+                                | Route::ObjectiveAtomicityStale
+                                | Route::ObjectivePredecessor
+                                | Route::ObjectivePredecessorReplay
                         ),
                 )
                 .await?;
@@ -451,7 +467,10 @@ fn run(route: Route) -> TestResult {
         let map = index.map();
         if matches!(
             route,
-            Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
+            Route::ObjectiveAtomicity
+                | Route::ObjectiveAtomicityStale
+                | Route::ObjectivePredecessor
+                | Route::ObjectivePredecessorReplay
         ) {
             let result = super::native_objective_atomic::scenario(
                 &mut owner,
@@ -459,6 +478,11 @@ fn run(route: Route) -> TestResult {
                 map,
                 &h.pool,
                 route == Route::ObjectiveAtomicityStale,
+                matches!(
+                    route,
+                    Route::ObjectivePredecessor | Route::ObjectivePredecessorReplay
+                ),
+                route != Route::ObjectivePredecessor,
             )
             .await;
             drop(owner);

@@ -24,6 +24,8 @@ pub(super) async fn scenario(
     map: &crate::map::boot::BundleMap,
     pool: &sqlx::PgPool,
     stale_capture: bool,
+    predecessor: bool,
+    replay: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let version: i32 = sqlx::query_scalar("SELECT current_setting('server_version_num')::int")
@@ -107,10 +109,36 @@ pub(super) async fn scenario(
         completes: false,
         experience: None,
     });
-    owner.quest_catalogue = Some(std::sync::Arc::new(
-        QuestStateCatalogue::new(catalogue.content_revision(), tracks, transitions)
-            .map_err(debug)?,
-    ));
+    let (predecessor_catalogue, successor) = if predecessor {
+        let old = QuestStateCatalogue::new(
+            catalogue.content_revision(),
+            tracks.clone(),
+            transitions.clone(),
+        )
+        .map_err(debug)?;
+        // The source counter has no stored row before the first kill. Its old
+        // absent value must still win over the changed active default.
+        tracks
+            .iter_mut()
+            .find(|track| track.key == native_goal.counter)
+            .ok_or("fixture counter")?
+            .initial = 1;
+        let mut successor =
+            QuestStateCatalogue::new(catalogue.content_revision(), tracks, transitions)
+                .map_err(debug)?;
+        let hash = successor
+            .retain_fixture_predecessor(rules::QUEST, &old)
+            .ok_or("registered old definition")?;
+        assert_ne!(successor.definition_hash(rules::QUEST), Some(hash));
+        (old, Some((successor, hash)))
+    } else {
+        (
+            QuestStateCatalogue::new(catalogue.content_revision(), tracks, transitions)
+                .map_err(debug)?,
+            None,
+        )
+    };
+    owner.quest_catalogue = Some(std::sync::Arc::new(predecessor_catalogue));
     let fence = owner
         .current_quest_fence(member.game_session_id)
         .await
@@ -136,6 +164,15 @@ pub(super) async fn scenario(
         .map_err(debug)?;
     assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
     drop(slot);
+    if let Some((successor, predecessor_hash)) = successor {
+        let (hash, incomplete): (Vec<u8>, bool) = sqlx::query_as(
+            "SELECT definition_hash, completed_character_revision IS NULL FROM game_character_quest_states WHERE quest_key=$1",
+        ).bind(rules::QUEST).fetch_one(pool).await?;
+        assert_eq!(hash, predecessor_hash);
+        assert!(incomplete);
+        owner.quest_catalogue = Some(std::sync::Arc::new(successor));
+    }
+
     owner
         .refresh_quest_session(member.game_session_id, true)
         .await;
@@ -290,7 +327,7 @@ pub(super) async fn scenario(
     let lane =
         crate::durability::spell_owner_commit::SpellLane::new(member.world_id, member.channel_id);
     let permit = lane.acquire().await.map_err(|_| "spell lane")?;
-    for _ in 0..2 {
+    for _ in 0..if replay { 2 } else { 1 } {
         let settled = owner
             .settle_party_experience(&permit, &entry)
             .await
@@ -331,6 +368,18 @@ pub(super) async fn scenario(
             native_same_transaction,
             Some(true),
             "exact-origin counter1 must commit with XP before any deferred queue drain"
+        );
+    }
+    if predecessor {
+        let receipts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+        )
+        .bind(rules::OBJECTIVES[0].transition)
+        .fetch_one(pool)
+        .await?;
+        assert_eq!(
+            receipts, 1,
+            "the original death owns exactly one quest receipt"
         );
     }
     eprintln!(

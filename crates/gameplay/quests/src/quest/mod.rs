@@ -656,6 +656,23 @@ impl QuestStateCatalogue {
         Ok(extended)
     }
 
+    /// Retain a checked fixture definition and its absent-track values for save-upgrade tests.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn retain_fixture_predecessor(&mut self, quest: &str, previous: &Self) -> Option<[u8; 32]> {
+        let hash = previous.definition_hash(quest)?;
+        let defaults = previous
+            .tracks
+            .values()
+            .filter(|track| track.quest == quest)
+            .map(|track| (track.key.clone(), track.initial))
+            .collect();
+        self.predecessors
+            .entry(quest.into())
+            .or_default()
+            .push(NpcDefinitionPredecessor { hash, defaults });
+        Some(hash)
+    }
+
     /// Test-support fixtures may author an extra transition through the same full
     /// catalogue validation and definition hashing as production content. As with
     /// entities/test-support, this adds no production mutation or fence bypass.
