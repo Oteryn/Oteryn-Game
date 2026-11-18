@@ -11,7 +11,7 @@ use serde_json::json;
 use std::{num::NonZeroU64, sync::Arc};
 
 pub(super) const NAME: &str = "qespike-ashes";
-const QUEST: &str = "oteryn:quest.elemental_spheres";
+const QUEST: &str = "oteryn:quest.elemental_spheres_quest";
 const TRACK: &str = "oteryn:quest-progress/elemental_spheres/ashes-sampling";
 const KEY: &str = "oteryn:quest-reward/qespike/ashes-sample";
 const TOOL: &str = "oteryn:item.tibia.i5908";

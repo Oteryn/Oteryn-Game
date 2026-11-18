@@ -52,6 +52,7 @@ fn scenario_case(
     let qm48 = name == "qm48/mammoth";
     let m03_use = name == super::super::qengine_m03_use::NAME;
     let qd_world = name.starts_with(super::super::qd_world::PREFIX);
+    let mound = name == super::super::qespike_mound::NAME;
     let sphere_machine = name == super::super::qespike_sphere_machine::NAME;
     let elemental_pin = name.starts_with("qn1-elemental-");
     let qm50 = name == "goblin-merchant-elevator-upper";
@@ -88,6 +89,7 @@ fn scenario_case(
         || m44
         || m07_too_hot
         || last_creep
+        || mound
         || sphere_machine
         || elemental_pin
         || m07_machinery
@@ -1040,6 +1042,8 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("machine native policies")?,
             )?
+        } else if mound {
+            super::super::qespike_mound::world()?
         } else if sphere_machine {
             super::super::qespike_sphere_machine::world()?
         } else if qd_world {
@@ -2475,6 +2479,8 @@ fn scenario_case(
             .await?;
         } else if name == super::super::qespike_ashes::NAME {
             Box::pin(super::super::qespike_ashes::exercise(&mut owner, &admitted, &h)).await?;
+        } else if mound {
+            Box::pin(super::super::qespike_mound::exercise(&mut owner, &admitted, &h)).await?;
         } else if name == super::super::qespike_tracker::NAME {
             Box::pin(super::super::qespike_tracker::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qespike_hotspot::NAME {
