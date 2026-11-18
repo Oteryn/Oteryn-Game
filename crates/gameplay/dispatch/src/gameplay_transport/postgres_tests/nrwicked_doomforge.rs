@@ -106,10 +106,11 @@ fn scenario(admin: String, fixture_name: &'static str, destination: TilePos, har
                 map.map_revision_digest(),
                 (i32::from(START.x), i32::from(START.y), 14),
             );
-            let deps = Dependencies::with_content(
+            let deps = Dependencies::with_content_and_capacity(
                 pin,
                 room,
                 crate::spell::SpellBook::new(vec![]).map_err(debug)?,
+                if hard_win { 16 } else { 2 },
             )?;
             let mut owner = deps.owner(&h, &authority);
             owner.movement_cells = (&cells).into();
@@ -290,7 +291,7 @@ async fn two_player_exit(
         let original = runtime.read_actor_position(actor).map_err(debug)?;
         prepare_quest_encounter_member(&runtime, cells, actor, session, original, start, false, &doors, true).map_err(debug)
     }).collect::<Result<Vec<_>, _>>()?;
-    let (_, (mut encounter, boss)) = runtime.commit_quest_encounter_with_phase(
+    let (entered, (mut encounter, boss)) = runtime.commit_quest_encounter_with_phase(
         proofs,
         &[
             (BOSS, 100, MovementLocalPosition { x: start.x - 2, ..start }),
@@ -299,6 +300,8 @@ async fn two_player_exit(
         |runtime, actors| Ok((ArbazilothEncounter::bind(runtime, &players, actors[0], actors[1])?, actors[0])),
         || true,
     ).map_err(debug)?;
+    assert_eq!(entered.len(), 2);
+    assert!(entered.iter().all(|snapshot| snapshot.position() == start));
     for (phase, health) in [100, 80, 60, 40].into_iter().enumerate() {
         let occurrence = format!("nrwicked-party-{phase}");
         let binding = format!("{occurrence}\0damage");
