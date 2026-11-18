@@ -119,6 +119,7 @@ pub(super) fn catalogue(repeat: bool) -> TestResult<QuestStateCatalogue> {
                             "from": cooldown,
                             "effect": {"kind": "set_now"}
                         }],
+                        "inventory": [{"item": CHARM, "minimum": 7, "maximum": u32::MAX}],
                         "take": [{"item": CHARM, "count": 7}],
                         "give": {"item": PLATINUM, "count": 5},
                         "weighted_rewards": [{"chance": 9, "reward": {
