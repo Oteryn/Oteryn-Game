@@ -256,7 +256,7 @@ async fn exercise(admin: String, capacity: Option<u8>) -> TestResult {
                 .checked_sub(std::time::Duration::from_secs(if solo { 601 } else { 301 }))
                 .ok_or("owner clock")?;
             owner.drain_quest_encounter_deadlines().await;
-            let runtime = deps.runtime.lock().await;
+            let mut runtime = deps.runtime.lock().await;
             assert!(
                 runtime
                     .current_live_creature_census()
@@ -274,6 +274,10 @@ async fn exercise(admin: String, capacity: Option<u8>) -> TestResult {
                 );
             }
             if solo {
+                // Leave the return tile free so this attempt proves the cooldown guard.
+                runtime
+                    .remove_terminal_session(observer_session, observer)
+                    .map_err(debug)?;
                 let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
                 drop(runtime);
                 let (step, _) = owner
