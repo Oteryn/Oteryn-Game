@@ -680,5 +680,5 @@ fn oak_decision(
         .finalize();
     let occurrence = DecisionOccurrenceId::from_bytes(occurrence[..16].try_into()?);
     let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
-    deterministic_decision_u64(&root, occurrence, domain, slot).map_err(debug)
+    deterministic_decision_u64(&root, occurrence, domain, slot).map_err(|error| debug(error).into())
 }
