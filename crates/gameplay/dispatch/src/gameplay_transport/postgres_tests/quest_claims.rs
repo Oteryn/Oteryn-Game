@@ -59,6 +59,16 @@ const ANNUAL_REFUSAL: &str = "The chest is empty.";
 const ANNUAL_INELIGIBLE: &str = "You are not eligible to claim these rewards yet.";
 const FEATHERS: &str = "oteryn:quest-progress/qonce-dispatch/feathers";
 const HOARD_REFUSAL: &str = "You try to pick a treasure, but you hear further dragons approaching. You should kill some more before picking out something.";
+const HOARD_MESSAGE: &str = "It is impossible to take along all of the treasures here. But you pick out ";
+// Crystal actions_treasure.lua:1-14 orders the six draws and defines each bundle.
+const HOARD_REWARDS: [(&str, &[(u16, u16)]); 6] = [
+    ("a platinum coins", &[(3035, 5)]),
+    ("some gems", &[(3029, 1), (3032, 1), (3030, 1)]),
+    ("a life ring", &[(3089, 1)]),
+    ("a red gem", &[(3039, 1)]),
+    ("a mana potion", &[(237, 10)]),
+    ("a health potion", &[(236, 8)]),
+];
 const AT: Position = Position { x: 33294, y: 31677, floor: -15 };
 // A compact test room uses the donor's actual sockets, gems, fields and centre art.
 const SOCKETS: [(Position, u16, u16, u16); 4] = [
@@ -218,6 +228,46 @@ async fn achievements(h: &Harness, key: &str) -> TestResult<i64> {
 async fn receipts(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1")
         .bind(CLAIM).fetch_one(&h.pool).await?)
+}
+
+fn hoard_reward(description: &str, items: &[(u16, u16)]) -> Value {
+    let amount = |&(item, count): &(u16, u16)| json!({"item":format!("oteryn:item.tibia.i{item}"),"count":count});
+    let mut give = amount(&items[0]);
+    give["additional"] = json!(items[1..].iter().map(amount).collect::<Vec<_>>());
+    json!({"give":give,"message":format!("{HOARD_MESSAGE}{description}")})
+}
+
+async fn hoard_inventory(h: &Harness) -> TestResult<Vec<(u16, i64)>> {
+    let mut inventory = Vec::new();
+    for (_, items) in HOARD_REWARDS {
+        for &(item, _) in items {
+            inventory.push((item, super::qengine_voucher_stories::quantity(h, item).await?));
+        }
+    }
+    Ok(inventory)
+}
+
+async fn assert_hoard_delivery(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    before: &[(u16, i64)],
+    choices: &[(&str, &[(u16, u16)])],
+) -> TestResult {
+    let draw = usize::try_from(track_value(h, CHOICE).await?)?;
+    let index = draw.checked_sub(1).ok_or("one-based hoard draw")?;
+    let (description, bundle) = choices.get(index).ok_or("valid hoard draw")?;
+    for (item, previous) in before {
+        let expected = bundle.iter().find(|(id, _)| id == item).map_or(0, |(_, count)| i64::from(*count));
+        assert_eq!(super::qengine_voucher_stories::quantity(h, *item).await? - *previous, expected,
+            "draw {draw} must deliver the recorded bundle for item {item}");
+    }
+    let message = format!("{HOARD_MESSAGE}{description}");
+    let feedback = owner.states.chat.drain(admitted.game_session_id).into_iter().filter(|line| matches!(
+        line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == &message
+    )).count();
+    assert_eq!(feedback, 1);
+    Ok(())
 }
 
 async fn roll_back_well_grant(
@@ -1019,22 +1069,20 @@ pub(super) async fn exercise(
             effects["eligibility"] = json!({"track":FEATHERS,"message":ANNUAL_INELIGIBLE});
         }
     } else if name == HOARD {
+        let choices = i64::try_from(HOARD_REWARDS.len())?;
         tracks.extend([
             track(LEDGER, HOARD_GOAL - 1, 0, HOARD_GOAL), track(COUNT, 9, 0, i64::MAX),
-            track(CHOICE, 0, 0, 2), track(HUNT_GATE, 0, 0, 0),
+            track(CHOICE, 0, 0, choices), track(HUNT_GATE, 0, 0, 0),
         ]);
         // Crystal actions_treasure.lua:29-37 keeps counting after the tenth claim.
         let mut count = storage(COUNT, 0, i64::MAX - 1, 1);
         count["increment"] = json!(true);
-        callback["storage"] = json!([storage(LEDGER, HOARD_GOAL, HOARD_GOAL, 0), count, storage(CHOICE, 0, 2, 0)]);
+        callback["storage"] = json!([storage(LEDGER, HOARD_GOAL, HOARD_GOAL, 0), count, storage(CHOICE, 0, choices, 0)]);
         callback["failure_message"] = json!(HOARD_REFUSAL);
         effects = json!({"reset":{"kind":"progress","track":LEDGER,"minimum":HOARD_GOAL},
             "selection_track":CHOICE,
             "milestone":{"track":COUNT,"count":10,"achievement":HOARD_ACHIEVEMENT},
-            "rewards":[
-                {"give":{"item":"oteryn:item.tibia.i3031","count":2,"additional":[{"item":"oteryn:item.tibia.i3039","count":1}]}},
-                {"give":{"item":"oteryn:item.tibia.i3031","count":2,"additional":[{"item":"oteryn:item.tibia.i3039","count":2}]}}
-            ]});
+            "rewards":HOARD_REWARDS.iter().map(|&(description, items)| hoard_reward(description, items)).collect::<Vec<_>>()});
     } else {
         assert!(well || name == STEP);
         tracks.push(track(LEDGER, 0, 0, 1));
@@ -1214,9 +1262,13 @@ pub(super) async fn exercise(
         owner.active_generation.and_then(|generation| generation.native_gameplay())
             .ok_or("native creature policies")?
             .install_companion_policies(&mut *owner.runtime.lock().await).map_err(debug)?;
+        assert_eq!(use_claim(owner, *admitted, 20).await?, UseDisposition::Rejected);
+        assert_eq!(receipts(h).await?, 0);
+        advance_interaction(owner)?;
         super::qengine_kill_stories::death(owner, admitted, DRAGON, 88_001).await?;
         assert_eq!(track_value(h, LEDGER).await?, HOARD_GOAL, "the death opens the hoard");
     }
+    let hoard_before = if name == HOARD { hoard_inventory(h).await? } else { Vec::new() };
     let before = super::qengine_voucher_stories::quantity(h, 3031).await?;
     if name == ANNUAL {
         assert_eq!(use_claim(owner, *admitted, 20).await?, UseDisposition::Rejected);
@@ -1234,7 +1286,6 @@ pub(super) async fn exercise(
         advance_interaction(owner)?;
     }
     let before_hearts = super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?;
-    let before_red_gems = super::qengine_voucher_stories::quantity(h, 3039).await?;
     let outcomes = if name == DAILY {
         Box::pin(contend_for_daily_claim(owner, *admitted, h)).await?
     } else {
@@ -1244,7 +1295,11 @@ pub(super) async fn exercise(
     let committed = outcomes.into_iter().filter(|outcome| *outcome == UseDisposition::Committed).count();
     assert_eq!(committed, 1);
     assert_eq!(receipts(h).await?, 1);
-    assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, before + 2);
+    if name == HOARD {
+        assert_hoard_delivery(owner, admitted, h, &hoard_before, &HOARD_REWARDS).await?;
+    } else {
+        assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, before + 2);
+    }
     advance_interaction(owner)?;
     assert_eq!(use_claim(owner, *admitted, 23).await?, UseDisposition::Rejected);
     let refusal = period.map_or(HOARD_REFUSAL, |(_, refusal)| refusal);
@@ -1271,10 +1326,6 @@ pub(super) async fn exercise(
                     (SELECT value FROM game_character_quest_tracks WHERE track_key=$2)",
         ).bind(LEDGER).bind(COUNT).fetch_one(&h.pool).await?;
         assert_eq!((ledger, count), (0, 10));
-        let first_gems = super::qengine_voucher_stories::quantity(h, 3039).await?;
-        let first_draw = track_value(h, CHOICE).await?;
-        assert!((1..=2).contains(&first_draw));
-        assert_eq!(first_gems - before_red_gems, first_draw);
         // Crystal actions_treasure.lua:20,27,29-37 opens the next hunt at zero
         // and permits subsequent bundles without re-awarding the achievement.
         for expected in 1..=HOARD_GOAL {
@@ -1286,18 +1337,14 @@ pub(super) async fn exercise(
             "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
         ).bind(HUNT_KILL).fetch_one(&h.pool).await?;
         assert_eq!(deaths, HOARD_GOAL + 1, "duplicate death delivery earns one credit per death");
-        let next_gold = super::qengine_voucher_stories::quantity(h, 3031).await?;
-        let next_gems = super::qengine_voucher_stories::quantity(h, 3039).await?;
+        let next_inventory = hoard_inventory(h).await?;
         advance_interaction(owner)?;
         assert_eq!(use_claim(owner, *admitted, 24).await?, UseDisposition::Committed);
         assert_eq!(track_value(h, LEDGER).await?, 0);
         assert_eq!(track_value(h, COUNT).await?, 11);
         assert_eq!(achievements(h, HOARD_ACHIEVEMENT).await?, 1);
         assert_eq!(receipts(h).await?, 2);
-        assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, next_gold + 2);
-        let second_draw = track_value(h, CHOICE).await?;
-        assert!((1..=2).contains(&second_draw));
-        assert_eq!(super::qengine_voucher_stories::quantity(h, 3039).await? - next_gems, second_draw);
+        assert_hoard_delivery(owner, admitted, h, &next_inventory, &HOARD_REWARDS).await?;
     }
     if name == DAILY {
         assert_eq!(track_value(h, CHOICE).await?, 2);
