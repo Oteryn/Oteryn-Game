@@ -47,3 +47,11 @@ With two Cargo jobs, rustc peaked at 11,635,704 KiB (11.10 GiB) and the build
 took 573.102 s. The resulting binary listed 2,102 tests (2,104 output lines)
 and measured 1,132,276,288 bytes. LLD received 241 rlibs (1,487,365,036
 bytes) and 263 objects (1,200,533,024 bytes). These are control counts.
+
+The first half-mount run selected 367 of 735 module roots, including the
+helper dependencies found by a source scan. Those roots contain 1,126
+`#[test]` functions in 548 root and nested files. The last sampled rustc
+high-water mark was 13,002,912 KiB at two Cargo jobs. At 535.421 s the
+cgroup recorded two OOM kills and Cargo exited by SIGKILL. The process peak
+is a lower bound because Cargo and rustc both died. No linker ran and no
+test list was produced. A one-job run measures the same mount set.
