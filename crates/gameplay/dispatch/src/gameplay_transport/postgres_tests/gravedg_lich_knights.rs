@@ -327,7 +327,8 @@ pub(super) async fn exercise_duke(
     admitted: &AdmittedSession,
     partner: ExactActorRef,
 ) -> TestResult {
-    use crate::foundation::{ConditionValues, ConflictKey};
+    use crate::domain::condition::ConflictKey;
+    use crate::foundation::ConditionValues;
     let player = admitted.runtime_actor.ok_or("admitted player")?;
     let duke = {
         let runtime = owner.runtime.lock().await;

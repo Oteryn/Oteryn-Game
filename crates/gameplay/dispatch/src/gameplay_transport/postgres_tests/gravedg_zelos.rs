@@ -84,9 +84,21 @@ pub(super) async fn admit_partner(
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
             .await?;
-    let current =
-        crate::world_party_runtime_postgres_cases::committed_fresh_player(h, 61, 63, 71, now)
-            .await?;
+    use crate::world_party_runtime_postgres_cases::{
+        FreshPlayerOwners, committed_fresh_player_owned,
+    };
+    let current = committed_fresh_player_owned(
+        &FreshPlayerOwners {
+            root: h.root.clone(),
+            node: h.node.clone(),
+            recovery: &h.recovery,
+        },
+        61,
+        63,
+        71,
+        now,
+    )
+    .await?;
     let session = current.current_game_session_id();
     let actor = {
         let mut runtime = owner.runtime.lock().await;
