@@ -7,7 +7,9 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         return super::super::lions_rock::callbacks().get(usize::from(trial)) == Some(callback);
     }
     let (trigger, position, action, ranges, source): (_, _, _, &[(i64, i64)], _) = match rule {
-        NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy => return false,
+        NativeRule::NightmareIntruders | NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy => {
+            return false;
+        }
         NativeRule::IceSealPaint { seal } => {
             return crate::quest::ice_islands_seals::callbacks::admitted(callback, seal);
         }
@@ -157,7 +159,11 @@ impl Callback {
                 }
             }
             Some(NativeRule::IceSealPaint { .. }) => None,
-            Some(NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy) => None,
+            Some(
+                NativeRule::NightmareIntruders
+                | NativeRule::SoulWarRemorse
+                | NativeRule::SoulWarEnergy,
+            ) => None,
             Some(NativeRule::LionTrial { .. }) | None => self.success_message.as_deref(),
         }
     }
