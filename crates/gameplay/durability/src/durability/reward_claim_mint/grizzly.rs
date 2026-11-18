@@ -1,4 +1,4 @@
-//! The Grizzly holy-icon entitlement needs no separately committed MINT reservation.
+//! Grizzly reward entitlements need no separately committed MINT reservation.
 //! Reservation, existing owner application and entitlement acknowledgement share one
 //! type-2 transaction, so cancellation/restart never strands a session-bound attempt.
 use super::*;
@@ -94,8 +94,9 @@ impl DurabilityRoot {
             if load_reservation(&mut tx, request.command).await?.is_some() {
                 return Ok(Err(RewardClaimMintError::ConflictingCause));
             }
-            let entitlement = sqlx::query("SELECT item_source_id,claim_key,transition_key FROM game_character_grizzly_reward_entitlements WHERE character_id=encode($1,'hex')::uuid AND state='PENDING' FOR UPDATE")
+            let entitlement = sqlx::query("SELECT item_source_id,transition_key FROM game_character_grizzly_reward_entitlements WHERE character_id=encode($1,'hex')::uuid AND claim_key=$2 AND state='PENDING' FOR UPDATE")
                 .bind(fence.character_id.as_bytes().as_slice())
+                .bind(&request.claim.production_key)
                 .fetch_optional(&mut **tx).await?;
             let Some(entitlement) = entitlement else {
                 return Ok(Err(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)));
@@ -103,7 +104,6 @@ impl DurabilityRoot {
             let source: i32 = entitlement.try_get("item_source_id")?;
             let transition: String = entitlement.try_get("transition_key")?;
             if request.claim.family != "RewardClaim"
-                || request.claim.production_key != entitlement.try_get::<String,_>("claim_key")?
                 || request.source_placement != transition
                 || request.item.definition.family != "Item"
                 || request.item.definition.production_key != format!("oteryn:item.tibia.i{source}") {
@@ -145,8 +145,8 @@ impl DurabilityRoot {
                 Ok(envelope) => envelope, Err(error) => return Ok(Err(error.into())),
             };
             let committed = apply_claim(&mut tx, &frozen, &reservation, destination, &envelope, tuple).await?;
-            let updated = sqlx::query("UPDATE game_character_grizzly_reward_entitlements SET state='DELIVERED' WHERE character_id=encode($1,'hex')::uuid AND transition_key=$2 AND state='PENDING'")
-                .bind(fence.character_id.as_bytes().as_slice()).bind(transition).execute(&mut **tx).await?;
+            let updated = sqlx::query("UPDATE game_character_grizzly_reward_entitlements SET state='DELIVERED' WHERE character_id=encode($1,'hex')::uuid AND claim_key=$2 AND state='PENDING'")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(&frozen.request.claim.production_key).execute(&mut **tx).await?;
             if updated.rows_affected()!=1 { return Err(DurabilityError::InvalidStoredState) }
             tx.commit(deadline).await?;
             Ok(Ok(RewardClaimMintOutcome::Committed(committed)))

@@ -100,3 +100,50 @@ $arm$||anchor;
 END $migration$;
 REVOKE ALL ON FUNCTION game_quest_reusable_tool_complete(game_quest_reward_sources) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_quest_reusable_tool_complete(game_quest_reward_sources) TO oteryn_game_runtime;
+
+-- Crystal 201189f8 data-global/npc/grizzly_adams.lua:91,760-765. The
+-- promotion and Demon task own independent claims for the same character.
+ALTER TABLE game_character_grizzly_reward_entitlements
+ DROP CONSTRAINT game_character_grizzly_reward_entitlements_pkey,
+ DROP CONSTRAINT game_character_grizzly_reward_entitlements_item_source_id_check,
+ DROP CONSTRAINT game_character_grizzly_reward_entitlements_claim_key_check,
+ ADD PRIMARY KEY (character_id,claim_key),
+ ADD CONSTRAINT game_grizzly_reward_claim_item CHECK (
+   (claim_key='oteryn:reward-claim.grizzly-holy-icon' AND item_source_id=9388)
+   OR (claim_key='oteryn:reward-claim.grizzly-demon-backpack' AND item_source_id=9601)
+ );
+
+CREATE OR REPLACE FUNCTION game_grizzly_reward_entitlement_guard() RETURNS trigger
+LANGUAGE plpgsql SET search_path=pg_catalog,public,pg_temp AS $$
+BEGIN
+    IF TG_OP = 'INSERT' AND NEW.state = 'PENDING' AND EXISTS (
+        SELECT 1 FROM game_character_quest_receipts r
+        WHERE (r.character_id,r.cause_id,r.cause_ordinal,r.transition_key)
+            = (NEW.character_id,NEW.cause_id,NEW.cause_ordinal,NEW.transition_key)
+          AND r.quest_key = 'oteryn:quest.killing_in_the_name_of_quest'
+          AND r.cause_kind = 'command' AND r.created_xact_id = pg_current_xact_id()
+          AND (
+              (NEW.item_source_id=9388
+               AND r.values_after[array_position(r.track_keys,'oteryn:quest-progress/storage/1542')]=2
+               AND r.values_after[array_position(r.track_keys,'oteryn:quest-progress/storage/41300')]=1)
+              OR
+              (NEW.item_source_id=9601 AND r.transition_key='oteryn:quest-transition/grizzly/promote'
+               AND r.level_before>=80
+               AND r.values_before[array_position(r.track_keys,'oteryn:quest-progress/storage/42171')]=4
+               AND r.values_after[array_position(r.track_keys,'oteryn:quest-progress/storage/42171')]=6)
+          )
+    ) THEN
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' AND OLD.state = 'PENDING' AND NEW.state = 'DELIVERED'
+        AND (to_jsonb(NEW) - 'state') = (to_jsonb(OLD) - 'state') AND EXISTS (
+        SELECT 1 FROM game_reward_claim_mint_receipts r
+        WHERE r.character_id = NEW.character_id
+          AND r.claim_family = 'RewardClaim' AND r.claim_production_key = NEW.claim_key
+          AND r.created_xact_id = pg_current_xact_id()
+    ) THEN
+        RETURN NEW;
+    END IF;
+    RAISE EXCEPTION 'Grizzly entitlement requires its quest or MINT owner receipt'
+        USING ERRCODE = '23514';
+END;
+$$;

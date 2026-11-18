@@ -45,6 +45,15 @@ fn grizzly_npc_wire_rank_gate_and_pending_holy_icon_retry_once() -> TestResult {
 }
 
 #[test]
+fn trophy_hunter_promotion_earns_one_demon_backpack_after_inventory_retry() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run("grizzly-trophy-hunter", || scenario(7))
+}
+
+#[test]
 fn grizzly_npc_wire_rank_shop_native_gate_and_purchase_replay_once() -> TestResult {
     postgres_case(2)
 }
@@ -175,6 +184,8 @@ fn scenario(case: u8) -> TestResult {
             crate::gameplay_transport::SessionProgressionBinding::from_content(policy);
         let level = if reward {
             130
+        } else if case == 7 {
+            80
         } else if case == 4 {
             49
         } else {
@@ -493,6 +504,8 @@ fn scenario(case: u8) -> TestResult {
                 .await?;
         } else if case == 2 {
             rank_shop(&mut owner, &mut admitted, npc, &h).await?;
+        } else if case == 7 {
+            trophy_hunter_backpack(&mut owner, &mut admitted, npc, &h, &authority).await?;
         } else if reward {
             holy_icon(&mut owner, &mut admitted, npc, &h, &authority).await?;
             boss_dialogue::exercise(&mut owner, &mut admitted, npc, &h, &authority).await?;
@@ -700,6 +713,46 @@ async fn ordinary_tasks(
         value(owner, authority, quest::REPEAT_STORAGE_BASE + 1).await?,
         1
     );
+    Ok(())
+}
+
+async fn trophy_hunter_backpack(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    // Crystal 201189f8 data-global/npc/grizzly_adams.lua:91,760-765.
+    seed(h, &[(quest::POINTS_STORAGE, 69), (quest::PROMOTION_STORAGE, 4)]).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    wire::talk(owner, admitted, npc, &[(3, "hi"), (4, "promotion")]).await?;
+    assert_eq!(value(owner, authority, quest::PROMOTION_STORAGE).await?, 4);
+
+    seed(h, &[(quest::POINTS_STORAGE, 70)]).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    wire::talk(owner, admitted, npc, &[(5, "promotion"), (5, "promotion")]).await?;
+    assert_eq!(value(owner, authority, quest::PROMOTION_STORAGE).await?, 6);
+    let earned: (i64, bool) = sqlx::query_as(
+        "SELECT count(*),coalesce(bool_and(e.state='PENDING' AND e.item_source_id=9601
+            AND e.xmin=r.xmin AND r.values_before[array_position(r.track_keys,'oteryn:quest-progress/storage/42171')]=4
+            AND r.values_after[array_position(r.track_keys,'oteryn:quest-progress/storage/42171')]=6),false)
+         FROM game_character_grizzly_reward_entitlements e JOIN game_character_quest_receipts r
+         USING (character_id,cause_id,cause_ordinal,transition_key)
+         WHERE e.claim_key='oteryn:reward-claim.grizzly-demon-backpack'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(earned, (1, true));
+
+    super::item_look::seed_main_backpack(h, &[]).await?;
+    wire::talk(owner, admitted, npc, &[(6, "status"), (6, "status"), (7, "promotion")]).await?;
+    let delivered: (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_character_grizzly_reward_entitlements
+                  WHERE claim_key='oteryn:reward-claim.grizzly-demon-backpack' AND state='DELIVERED'),
+                (SELECT count(*) FROM game_item_instances i JOIN game_item_container_entries e
+                  USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i9601'
+                  AND i.lifecycle=1 AND e.character_id=encode($1,'hex')::uuid)",
+    ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(delivered, (1, 1));
     Ok(())
 }
 

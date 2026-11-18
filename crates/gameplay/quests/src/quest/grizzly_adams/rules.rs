@@ -162,6 +162,12 @@ pub fn plan_action(
         GrizzlyAction::Promote => {
             let next = promotion_due(state, actor.level).ok_or(GrizzlyRefusal::NoPromotion)?;
             plan.set(PROMOTION_STORAGE, next)?;
+            if next == 6 {
+                plan.transition.item = Some(GrizzlyItemReward {
+                    source_id: TROPHY_HUNTER_BACKPACK_SOURCE_ID,
+                    count: 1,
+                });
+            }
         }
         GrizzlyAction::SelectBoss(id) => select_boss(&mut plan, actor, *id)?,
         GrizzlyAction::ReportBoss(id) => {

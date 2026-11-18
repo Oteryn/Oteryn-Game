@@ -31,6 +31,8 @@ pub const JOIN_STORAGE: u32 = 100157;
 pub const BOSS_POINTS_STORAGE: u32 = 42169;
 pub const QUEST_LOG_STORAGE: u32 = 42170;
 pub const PROMOTION_STORAGE: u32 = 42171;
+// Crystal 201189f8 data-global/npc/grizzly_adams.lua:91,760-765.
+pub const TROPHY_HUNTER_BACKPACK_SOURCE_ID: u32 = 9601;
 /// killing_in_the_name_of.lua:904 and movements_boss.lua:416.
 pub const ACTIVE_TASK_LIMIT: usize = 3;
 pub const BOSS_ROOM_SECONDS: u64 = 600;

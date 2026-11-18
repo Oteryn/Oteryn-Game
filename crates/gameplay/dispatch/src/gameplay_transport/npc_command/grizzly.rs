@@ -232,13 +232,18 @@ fn dialogue(state: &GrizzlyState, actor: GrizzlyActor, topic: &mut Topic, text: 
     }
     if matches!(text.as_str(), "promotion" | "promotions") {
         *topic = Topic::None;
-        return if quest::promotion_due(state, actor.level).is_some() {
-            Reply::action(
+        return match quest::promotion_due(state, actor.level) {
+            Some(6) => Reply::action(
+                GrizzlyAction::Promote,
+                "Congratulations! You are now a Trophy Hunter and have earned a Demon Backpack.",
+            ),
+            Some(_) => Reply::action(
                 GrizzlyAction::Promote,
                 "Congratulations! You have advanced to the next Paw and Fur rank.",
-            )
-        } else {
-            Reply::text("You do not have the points and level required for another promotion.")
+            ),
+            None => {
+                Reply::text("You do not have the points and level required for another promotion.")
+            }
         };
     }
     if matches!(text.as_str(), "special" | "special task" | "special tasks") {

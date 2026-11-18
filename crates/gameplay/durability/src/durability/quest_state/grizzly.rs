@@ -8,6 +8,7 @@ use oteryn_gameplay_quests::quest::grizzly_adams::{
 };
 
 pub const HOLY_ICON_CLAIM: &str = "oteryn:reward-claim.grizzly-holy-icon";
+const TROPHY_HUNTER_BACKPACK_CLAIM: &str = "oteryn:reward-claim.grizzly-demon-backpack";
 
 /// Native Premium authority joined to this quest transaction. Grizzly's accepted
 /// catalogue requirements require Current, including before Premium activation.
@@ -47,7 +48,7 @@ impl GrizzlyPremiumGate for NoGrizzlyPremium {
     }
 }
 
-/// The one donor item reward, earned with the Demon task's quest receipt. A full
+/// A donor item reward earned with the quest receipt. A full
 /// backpack leaves it pending; the next NPC interaction retries delivery, including
 /// after a new admission has restored the Character's quest state.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -211,11 +212,12 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    // The primary key is Character: the Demon task can earn this only once.
+                    // Deliver at most one item per NPC command, in stable claim order.
                     let row = sqlx::query(
                         "SELECT transition_key,item_source_id,claim_key,content_revision \
                          FROM game_character_grizzly_reward_entitlements \
-                         WHERE character_id=encode($1,'hex')::uuid AND state='PENDING'",
+                         WHERE character_id=encode($1,'hex')::uuid AND state='PENDING' \
+                         ORDER BY claim_key LIMIT 1",
                     )
                     .bind(character.as_bytes().as_slice())
                     .fetch_optional(&mut *tx)
@@ -664,9 +666,14 @@ pub(super) async fn earn(
     content_revision: &str,
 ) -> StoredResult<()> {
     if let Some(item) = &plan.item {
-        if item.source_id != 9388 || item.count != 1 {
+        if item.count != 1 {
             return Err(DurabilityError::InvalidStoredState);
         }
+        let claim = match item.source_id {
+            9388 => HOLY_ICON_CLAIM,
+            rules::TROPHY_HUNTER_BACKPACK_SOURCE_ID => TROPHY_HUNTER_BACKPACK_CLAIM,
+            _ => return Err(DurabilityError::InvalidStoredState),
+        };
         let (cause, ordinal) = request.cause.key();
         sqlx::query(
             "INSERT INTO game_character_grizzly_reward_entitlements(character_id,transition_key, \
@@ -678,7 +685,7 @@ pub(super) async fn earn(
         .bind(cause.as_slice())
         .bind(ordinal.to_string())
         .bind(i32::try_from(item.source_id).map_err(|_| DurabilityError::InvalidStoredState)?)
-        .bind(HOLY_ICON_CLAIM)
+        .bind(claim)
         .bind(content_revision)
         .execute(&mut **tx)
         .await?;

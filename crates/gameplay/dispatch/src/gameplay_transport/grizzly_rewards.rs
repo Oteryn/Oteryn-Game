@@ -1,4 +1,4 @@
-//! Delivery of Grizzly's earned holy icon uses the existing item MINT owner.
+//! Delivery of Grizzly's earned items uses the existing item MINT owner.
 //! An actual NPC CommandRef supplies the cause; relog never invents a client command.
 
 use super::ComposedFreshAdmission;
