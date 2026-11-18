@@ -293,6 +293,22 @@ async fn full_backpack_retry(
     assert_eq!(super::qengine_voucher_stories::quantity(h, 2854).await?, before + 1);
     assert_eq!(super::qengine_voucher_stories::quantity(h, 3039).await?, before_red + 1);
     assert_eq!(super::qengine_voucher_stories::quantity(h, 3037).await?, before_yellow + 1);
+    let children: Vec<(String, i64, bool)> = sqlx::query_as(
+        "SELECT child.definition_production_key, child.quantity,
+                 claim.created_xact_id=quest.created_xact_id
+                 AND child.xmin::text=claim.xmin::text AND nested.xmin::text=claim.xmin::text
+         FROM game_reward_claim_mint_receipts claim
+         JOIN game_character_quest_receipts quest ON quest.character_id=claim.character_id
+           AND quest.cause_id=claim.game_session_id AND quest.cause_ordinal=claim.command_id
+         JOIN game_item_nested_entries nested ON nested.parent_item_instance_id=claim.item_instance_id
+         JOIN game_item_instances child ON child.item_instance_id=nested.item_instance_id
+         WHERE quest.transition_key=$1 AND claim.command_id=2
+         ORDER BY nested.placement_ordinal",
+    ).bind(CLAIM).fetch_all(&h.pool).await?;
+    assert_eq!(children, [
+        ("oteryn:item.tibia.i3039".into(), 1, true),
+        ("oteryn:item.tibia.i3037".into(), 1, true),
+    ], "the retry places both children in the claimed backpack in the claim transaction");
     Ok(())
 }
 
