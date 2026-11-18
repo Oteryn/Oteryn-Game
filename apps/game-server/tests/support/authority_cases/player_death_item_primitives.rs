@@ -3410,7 +3410,7 @@ async fn read_carried_test_inventory(
     })
 }
 
-async fn enter_carried_test_house(
+pub(super) async fn enter_carried_test_house(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     f: &crate::durability::item_transfer::CurrentCharacterItemFence,

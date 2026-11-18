@@ -1009,9 +1009,10 @@ impl DurabilityRoot {
                     };
                     // Direct slots and the carried tree are independent limits.
                     // All planned burns are direct leaves; only whole burns free an entry.
-                    let added: i64 = plan.lines.iter().map(|line| {
+                    let direct_delta: i64 = plan.lines.iter().map(|line| {
                         i64::from(line.quantity_before == 0) - i64::from(line.quantity_after == 0)
                     }).sum();
+                    let added = direct_delta + hireling.as_ref().map_or(0, hireling::Extra::nested_outputs);
                     if added > 0 {
                         let carried: i64 = sqlx::query_scalar(
                             "SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)",
