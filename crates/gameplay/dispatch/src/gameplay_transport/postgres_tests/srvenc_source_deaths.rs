@@ -816,6 +816,18 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 sqlx::query(statement).execute(&h.pool).await?;
             }
         }
+        if already_flagged {
+            let premature: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(&rule.effects[0].track)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                premature, 0,
+                "lethal capture alone does not write BossStorage"
+            );
+        }
         let drained = owner.drain_kill_rewards(drain_session).await;
         if drained != DrainOutcome::Drained {
             let roots: Vec<(String, String)> = sqlx::query_as(
@@ -1028,6 +1040,22 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(skipped, 2, "the later death records one no-op per damager");
+        let initial_grants: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_quest_tracks t
+             JOIN game_character_quest_receipts r
+               ON r.character_id=t.character_id
+               AND r.committed_character_revision=t.committed_character_revision
+             WHERE t.track_key=$1 AND t.value=1 AND r.transition_key=$2
+               AND r.values_before=ARRAY[-1]::bigint[] AND r.values_after=ARRAY[1]::bigint[]",
+        )
+        .bind(&rule.effects[0].track)
+        .bind(&rule.transition)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            initial_grants, 2,
+            "each flag retains the revision of its first grant"
+        );
     }
     Ok(())
 }
