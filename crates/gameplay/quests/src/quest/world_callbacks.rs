@@ -485,7 +485,7 @@ pub struct Callback {
     /// Evaluated with SET_NOW against the fenced writer transaction clock.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_ops: Vec<super::reward_callbacks::StateOperation>,
-    /// Transaction-clock operations use the same bounded evaluator as NPC rewards.
+    /// Bounded operations evaluated by the fenced Quest writer.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_operations: Vec<super::reward_callbacks::StateOperation>,
     /// Opening predicates for value-free map puzzles, evaluated under the Channel turn.

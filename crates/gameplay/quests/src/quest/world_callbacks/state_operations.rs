@@ -12,7 +12,14 @@ pub(super) fn refreshes_clock(callback: &Callback) -> bool {
     })
 }
 pub(super) fn valid(callback: &Callback) -> bool {
+    let draws = callback
+        .operations()
+        .filter(|op| matches!(op.effect, StateMutation::SetRandom { .. }))
+        .count();
     callback.operations().all(StateOperation::valid)
+        && (draws == 0 || (draws == 1 && callback.trigger == super::Trigger::StepIn
+            && callback.requires_world_admission))
+        && callback.state_ops.iter().all(|op| !matches!(op.effect, StateMutation::SetRandom { .. }))
         // The main spelling keeps its original Add/SetNow binding vocabulary.
         // QMECH's floor operation remains admitted through state_ops.
         && callback.state_operations.iter().all(|operation| {
@@ -54,6 +61,11 @@ pub(super) fn append_effects(
         {
             effect.effect = match operation.effect {
                 StateMutation::SetNow => QuestEffectKind::SetNowWithBinding { binding: value },
+                StateMutation::SetRandom { minimum, maximum } => QuestEffectKind::SetRandom {
+                    minimum,
+                    maximum,
+                    binding: Some(value),
+                },
                 StateMutation::Add { value: delta } => QuestEffectKind::AddWithBinding {
                     delta,
                     binding: value,

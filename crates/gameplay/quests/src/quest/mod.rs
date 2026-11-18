@@ -258,6 +258,12 @@ pub enum QuestEffectKind {
     SetNowWithBinding {
         binding: [u8; 32],
     },
+    /// An inclusive draw supplied by the locked database transaction.
+    SetRandom {
+        minimum: u8,
+        maximum: u8,
+        binding: Option<[u8; 32]>,
+    },
     /// A source `computed: expression` effect with no closed kind yet: its transition is
     /// `NOT_SUPPORTED` until an amendment adds one (§4).
     Computed,
@@ -318,6 +324,16 @@ impl QuestEffectKind {
                 // Tag 11 already belongs to SetWhenAtLeast on this published base.
                 out.push(12);
                 out.extend_from_slice(&binding);
+            }
+            Self::SetRandom {
+                minimum,
+                maximum,
+                binding,
+            } => {
+                out.extend_from_slice(&[14, minimum, maximum, u8::from(binding.is_some())]);
+                if let Some(binding) = binding {
+                    out.extend_from_slice(&binding);
+                }
             }
             Self::Computed => out.push(4),
             Self::Native(rule) => {
@@ -544,6 +560,13 @@ impl QuestStateCatalogue {
                         usize::from(other_effect) < transition.effects.len()
                             && usize::from(other_effect) != index
                             && (track.min..=track.max).contains(&value)
+                    }
+                    QuestEffectKind::SetRandom {
+                        minimum, maximum, ..
+                    } => {
+                        minimum <= maximum
+                            && (track.min..=track.max).contains(&i64::from(minimum))
+                            && (track.min..=track.max).contains(&i64::from(maximum))
                     }
                     QuestEffectKind::AddAtLeast { minimum, .. } => {
                         (track.min..=track.max).contains(&minimum)
@@ -821,6 +844,11 @@ impl QuestStateCatalogue {
                     QuestEffectKind::SetIf { equals, value } => {
                         Some(if before == equals { value } else { before })
                     }
+                    QuestEffectKind::SetRandom {
+                        minimum, maximum, ..
+                    } => roll
+                        .filter(|value| (minimum..=maximum).contains(value))
+                        .map(i64::from),
                     QuestEffectKind::Computed => None,
                     QuestEffectKind::SetWhenAtLeast {
                         other_effect,

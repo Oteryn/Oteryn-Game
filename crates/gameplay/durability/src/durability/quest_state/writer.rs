@@ -1788,7 +1788,7 @@ impl DurabilityRoot {
                     // M47: historical receipts returned above. Draw only in this fenced
                     // transaction; the resulting complete snapshot is persisted in its
                     // existing Quest receipt, atomically with all four source tracks.
-                    let roll = if transition.effects.iter().any(|effect| matches!(
+                    let mead_roll = if transition.effects.iter().any(|effect| matches!(
                         effect.effect,
                         oteryn_gameplay_quests::quest::QuestEffectKind::Native(
                             oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead
@@ -1801,6 +1801,23 @@ impl DurabilityRoot {
                             .fetch_one(&mut *tx).await?;
                         Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
                     } else { None };
+                    // A completed receipt is replayed before any draw. The locked
+                    // track predicate and its new value share the same commit.
+                    let draw = transition.effects.iter().find_map(|effect| {
+                        match effect.effect {
+                            oteryn_gameplay_quests::quest::QuestEffectKind::SetRandom {
+                                minimum, maximum, ..
+                            } => Some((minimum, maximum)),
+                            _ => None,
+                        }
+                    });
+                    let roll = if let Some((minimum, maximum)) = draw {
+                        let value: i16 = sqlx::query_scalar("SELECT random($1::integer, $2::integer)::smallint")
+                            .bind(i32::from(minimum))
+                            .bind(i32::from(maximum))
+                            .fetch_one(&mut *tx).await?;
+                        Some(u8::try_from(value).map_err(|_| DurabilityError::InvalidStoredState)?)
+                    } else { mead_roll };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || counter_reset_plan.as_ref().map_or_else(

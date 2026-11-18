@@ -17,6 +17,7 @@ pub enum StateMutation {
     Add { value: i64 },
     AddAtLeast { value: i64, minimum: i64 },
     SetNow,
+    SetRandom { minimum: u8, maximum: u8 },
 }
 
 // Serde's internally tagged unit variants discard remaining fields even with
@@ -49,11 +50,13 @@ impl<'de> Deserialize<'de> for StateMutation {
             Add { value: i64 },
             AddAtLeast { value: i64, minimum: i64 },
             SetNow {},
+            SetRandom { minimum: u8, maximum: u8 },
         }
         Ok(match Wire::deserialize(deserializer)? {
             Wire::Add { value } => Self::Add { value },
             Wire::AddAtLeast { value, minimum } => Self::AddAtLeast { value, minimum },
             Wire::SetNow {} => Self::SetNow,
+            Wire::SetRandom { minimum, maximum } => Self::SetRandom { minimum, maximum },
         })
     }
 }
@@ -76,7 +79,12 @@ impl StateOperation {
                 (1..=366 * 24 * 60 * 60).contains(&seconds)
             }
         };
+        let effect = match self.effect {
+            StateMutation::SetRandom { minimum, maximum } => minimum <= maximum,
+            _ => true,
+        };
         condition
+            && effect
             && self.track.len() <= 128
             && self.track.strip_prefix("oteryn:").is_some_and(|tail| {
                 !tail.is_empty()
@@ -124,6 +132,11 @@ impl StateOperation {
                     minimum,
                 },
                 StateMutation::SetNow => QuestEffectKind::SetNow,
+                StateMutation::SetRandom { minimum, maximum } => QuestEffectKind::SetRandom {
+                    minimum,
+                    maximum,
+                    binding: None,
+                },
             },
         }
     }
