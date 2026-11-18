@@ -48,7 +48,7 @@ fn spike_detector_resamples_after_gnomilly_records_a_new_daily_cooldown() -> Tes
 }
 
 #[test]
-fn spike_detector_final_floor_advances_progress_and_consumes_the_detector() -> TestResult {
+fn spike_detector_final_floor_hotkey_advances_progress_and_consumes_the_detector() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -245,7 +245,7 @@ pub(super) async fn exercise(
         *admitted,
         admitted.continuity.next_command_id,
         &payload,
-        Some(tool),
+        (name != FINAL_NAME).then_some(tool),
     )
     .await?;
     *admitted = next;

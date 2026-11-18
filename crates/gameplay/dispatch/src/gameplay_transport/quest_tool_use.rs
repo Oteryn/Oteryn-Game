@@ -6,7 +6,7 @@ use super::{
     item_view::ItemKey,
 };
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef};
-use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 // A possibly committed capture cannot leave the target available to another
@@ -75,8 +75,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Rejected
             })));
         }
-        let Some(ItemKey::Instance(source)) = source else {
-            return Ok(None);
+        let selected = match (&intent.target, source) {
+            (UseTarget::Item(_), Some(ItemKey::Instance(item))) => Some(item),
+            (UseTarget::ItemByDefinition(_), None)
+                if intent.use_with.is_none()
+                    && intent.use_with_map_item.is_none()
+                    && intent.use_with_position.is_none() =>
+            {
+                None
+            }
+            _ => return Ok(None),
+        };
+        let hotkey_index = if selected.is_none() {
+            let Some(index) = self
+                .active_generation
+                .and_then(|generation| generation.native_gameplay())
+                .and_then(|native| native.item_index())
+            else {
+                return Ok(None);
+            };
+            Some(index)
+        } else {
+            None
         };
         let Ok(inventory) = self
             .root
@@ -90,7 +110,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
             .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
-            .find(|item| item.item_instance_id == source)
+            .find(|item| {
+                let definition = &item.definition;
+                super::mount_taming::quest_objects::matches_source(
+                    &intent.target,
+                    selected,
+                    item.item_instance_id,
+                    hotkey_index.and_then(|index| {
+                        index.definition_ref(
+                            &definition.family,
+                            &definition.production_key,
+                            &definition.revision_ref,
+                        )
+                    }),
+                )
+            })
         else {
             return Ok(None);
         };
@@ -98,9 +132,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let callbacks = reward_callbacks::load_for(catalogue).map_err(|_| ())?;
+        let source = item.item_instance_id;
         let mut bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
+            // Crystal actions_ghost_detector.lua:67 and actions_thermometer.lua:18
+            // handle hotkeys and inventory clicks with the same carried tool.
+            .filter(|c| {
+                selected.is_some()
+                    || c.carried_tracker.is_some()
+                    || c.server_save_hotspot.is_some()
+            })
             // Selected two-input recipes retain their own M20 admission owner.
             .filter(|c| c.carried_target.is_none() && !c.fresh_corpse)
             .filter(|c| c.corpse_target.is_some() == corpse.is_some())

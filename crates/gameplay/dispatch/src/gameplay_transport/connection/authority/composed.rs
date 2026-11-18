@@ -1191,8 +1191,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             && intent.use_with_map_item.is_none()
             && intent.use_with_position.is_none()
         {
-            return self
+            if let Some(outcome) = self
                 .use_carried_item_disguise(actor, command, &intent, source)
+                .await?
+            {
+                return Ok(Some(outcome));
+            }
+            return self
+                .use_carried_quest_item(actor, command, &intent, source, None)
                 .await;
         }
         let corpse = match target {

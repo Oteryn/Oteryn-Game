@@ -33,7 +33,7 @@ const POOLS: [([i32; 3], [i32; 3]); 9] = [
 ];
 
 #[test]
-fn spike_thermometer_only_consumes_at_the_shared_server_save_hotspot() -> TestResult {
+fn spike_thermometer_hotkey_only_consumes_at_the_shared_server_save_hotspot() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -171,7 +171,7 @@ pub(super) async fn exercise(
         *admitted,
         admitted.continuity.next_command_id,
         &payload,
-        Some(tool),
+        None,
     )
     .await?;
     *admitted = next;
