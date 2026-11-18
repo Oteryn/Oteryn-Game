@@ -36,6 +36,12 @@ const WALKWAY: TilePos = TilePos {
     y: 32770,
     floor: -6,
 };
+// Crystal Global OTBM: the ramp's lower landing, one tile south of its north-facing ascent.
+const RAMP_FOOT: TilePos = TilePos {
+    x: 32694,
+    y: 32773,
+    floor: -7,
+};
 
 const NPC: &str = "oteryn:npc.grizzly_adams";
 const REFUSALS: [&str; 2] = [
@@ -141,12 +147,12 @@ fn to_walkway(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> 
     route(world, from, |at| at == WALKWAY)
 }
 
-fn from_walkway(
+fn from_ramp(
     world: &BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<Vec<StepDirection>> {
-    route(world, WALKWAY, |at| near(at, npc))
-        .ok_or_else(|| "step=reach observed=no-walk-route-from-walkway-to-grizzly-adams".into())
+    route(world, RAMP_FOOT, |at| near(at, npc))
+        .ok_or_else(|| "step=reach observed=no-walk-route-from-ramp-to-grizzly-adams".into())
 }
 
 fn near(at: TilePos, npc: &oteryn_world_bundle::npc::Npc) -> bool {
@@ -348,27 +354,24 @@ async fn sail(
 async fn reach(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    bytes: &[u8],
+    npcs: &oteryn_world_bundle::npc::Table,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<EntityRef> {
-    let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
-    let npc = placement(&metadata.npcs, NPC)?;
     let from = tile(client.world_spatial().actor_position)?;
-    let approach = from_walkway(world, npc)?;
+    let ramp = route(world, WALKWAY, |at| at == RAMP_FOOT)
+        .ok_or("step=reach observed=no-walk-route-from-walkway-to-ramp")?;
+    let approach = from_ramp(world, npc)?;
     let path = if let Some(path) = to_walkway(world, from) {
         path
     } else {
         let harbor = to_walkway(world, PORT_HOPE)
             .ok_or("step=reach observed=no-walk-route-from-port-hope-to-walkway")?;
-        sail(
-            client,
-            world,
-            placement(&metadata.npcs, CAPTAIN)?,
-            &metadata.spawns,
-        )
-        .await?;
+        sail(client, world, placement(npcs, CAPTAIN)?, spawns).await?;
         harbor
     };
     walk_leg(client, world, "port-hope-walkway", &path).await?;
+    walk_leg(client, world, "grizzly-ramp-foot", &ramp).await?;
     approach_grizzly(client, world, npc, "grizzly-adams", &approach).await
 }
 
@@ -380,7 +383,7 @@ async fn approach_grizzly(
     path: &[StepDirection],
 ) -> TestResult<EntityRef> {
     let from = tile(client.world_spatial().actor_position)?;
-    if from != WALKWAY || path.is_empty() {
+    if from != RAMP_FOOT || path.is_empty() {
         return Err(format!("step={leg} observed=invalid-approach-start:{from:?}").into());
     }
     walk_leg(client, world, leg, path).await?;
@@ -447,16 +450,18 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let npc = placement(&metadata.npcs, NPC)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
-        bytes.clone(),
+        bytes,
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
     let task = first_task()?;
     let mut client = connect_world(clients, 0xe5).await?;
-    let actor = reach(&mut client, world, &bytes).await?;
+    let actor = reach(&mut client, world, &metadata.npcs, &metadata.spawns, npc).await?;
     expect(&say(&mut client, actor, "hi").await?, "join", "hi")?;
     expect(&say(&mut client, actor, "join").await?, "Welcome", "join")?;
     expect(
@@ -482,19 +487,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         }
     };
     let from = tile(client.world_spatial().actor_position)?;
-    let path =
-        to_walkway(world, from).ok_or("step=replay observed=no-walk-route-back-to-walkway")?;
-    walk_leg(&mut client, world, "return-to-walkway", &path).await?;
+    let path = route(world, from, |at| at == RAMP_FOOT)
+        .ok_or("step=replay observed=no-walk-route-back-to-ramp-foot")?;
+    walk_leg(&mut client, world, "return-to-ramp-foot", &path).await?;
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xe5).await?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let npc = placement(&metadata.npcs, NPC)?;
     let actor = approach_grizzly(
         &mut client,
         world,
         npc,
         "fresh-admission-grizzly-adams",
-        &from_walkway(world, npc)?,
+        &from_ramp(world, npc)?,
     )
     .await?;
     expect(
@@ -540,6 +543,20 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         },
         &registry,
     )?;
+    assert!(
+        project.families.routes.iter().any(|route| {
+            route.service == "oteryn:service.travel.captain_bluebear"
+                && route.route == "port_hope"
+                && route.destination == (PORT_HOPE.x, PORT_HOPE.y, PORT_HOPE.floor.unsigned_abs())
+        }),
+        "the compiled regions must include the authored Port Hope passage"
+    );
+    assert!(
+        !compiled.npcs.routes_held.iter().any(|route| {
+            route.service == "oteryn:service.travel.captain_bluebear" && route.route == "port_hope"
+        }),
+        "the compiler must admit the Port Hope arrival"
+    );
     let metadata = oteryn_world_bundle::bundle::visit(&compiled.bytes, |_, _| Ok(()))?;
     let mut pin: serde_json::Value =
         serde_json::from_slice(&std::fs::read(root.join("content/world/pins/oteryn.json"))?)?;
@@ -579,11 +596,16 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
     )?;
     assert_eq!(walkway, WALKWAY);
     assert!(route(&world, PORT_HOPE, |at| near(at, grizzly)).is_none());
-    let captain = placement(&metadata.npcs, CAPTAIN).inspect_err(|error| eprintln!("{error}"));
-    let approach = from_walkway(&world, grizzly)?;
-    let reached = check_leg(
-        "Walkway to Grizzly Adams, including replay",
+    let ramp = check_leg(
+        "Raised walkway to Grizzly's ramp",
         walkway,
+        route(&world, walkway, |at| at == RAMP_FOOT).ok_or("ramp foot unreachable")?,
+    )?;
+    assert_eq!(ramp, RAMP_FOOT);
+    let approach = from_ramp(&world, grizzly)?;
+    let reached = check_leg(
+        "Ramp foot to Grizzly Adams, including replay",
+        ramp,
         approach,
     )?;
     assert!(near(reached, grizzly));
@@ -591,9 +613,9 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         check_leg(
             "Grizzly Adams to replay logout tile",
             reached,
-            to_walkway(&world, reached).ok_or("logout walkway unreachable")?
+            route(&world, reached, |at| at == RAMP_FOOT).ok_or("logout ramp foot unreachable")?
         )?,
-        WALKWAY
+        RAMP_FOOT
     );
     boarding_ladder_target(&world)?;
     check_leg(
@@ -601,7 +623,7 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         TOWN,
         route(&world, TOWN, near_boarding_ladder).ok_or("boarding ladder unreachable")?,
     )?;
-    let captain = captain?;
+    let captain = placement(&metadata.npcs, CAPTAIN)?;
     let deck = TilePos {
         y: BOARDING_LADDER.y + 1,
         floor: BOARDING_LADDER.floor + 1,
