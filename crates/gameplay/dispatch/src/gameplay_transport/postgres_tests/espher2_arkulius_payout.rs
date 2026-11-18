@@ -25,8 +25,13 @@ fn espher2_arkulius_consumes_neutral_matter_and_pays_each_vocation_postgres() ->
                 (Paladin, 8025),
                 (Knight, 8055),
             ] {
-                let h = Harness::create_with_admission_seed(admin, "espher2_arkulius", true, false)
-                    .await?;
+                let h = Harness::create_with_admission_seed(
+                    admin.clone(),
+                    "espher2_arkulius",
+                    true,
+                    false,
+                )
+                .await?;
                 let result = exercise(&h, vocation, reward).await;
                 h.cleanup().await?;
                 result?;
