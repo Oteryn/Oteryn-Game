@@ -287,11 +287,12 @@ async fn exercise_logic(
         .collect::<Vec<_>>();
     const SEAL: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal";
     const DOOR: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal_door";
+    const FLAME: &str = "oteryn:quest-callback/banshees-logic-flame";
     const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-6-sixth_seal_flame.lua:3";
     let storage = [SEAL, DOOR]
         .map(|track| serde_json::json!({ "track": track, "minimum": -1, "maximum": 0, "set": 1 }));
     let flame = serde_json::json!({
-        "key": "oteryn:quest-callback/banshees-logic-flame",
+        "key": FLAME,
         "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
         "trigger": "step_in",
         "selector": { "position": { "x": 32311, "y": 31978, "floor": -13 }, "unique": 35018 },
@@ -308,7 +309,7 @@ async fn exercise_logic(
     let catalogue = seal_bindings(flame, "logic-flame", [SEAL, DOOR], SOURCE)?;
     let flame = catalogue
         .authored_world_callbacks()
-        .and_then(|callbacks| callbacks.first())
+        .and_then(|callbacks| callbacks.iter().find(|callback| callback.key == FLAME))
         .ok_or("authored Logic callback")?
         .clone();
     owner.quest_catalogue = Some(std::sync::Arc::new(catalogue));
