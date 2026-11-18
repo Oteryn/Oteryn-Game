@@ -88,15 +88,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 MindAction::Potion,
             )
         };
-        let result = match consume().await {
-            Ok(result) => result,
+        let (result, reconciling) = match consume().await {
+            Ok(result) => (result, false),
             // Retry while holding the same actor lane and exact landing proof.
             // An acknowledged receipt can settle an uncertain first commit.
-            Err(_) => consume().await.map_err(|_| UseDisposition::Rejected)?,
-        }
-        .ok_or(refused)?;
+            Err(_) => (consume().await.map_err(|_| UseDisposition::Rejected)?, true),
+        };
+        let result = result.ok_or(refused)?;
         if result.disposition != UseDisposition::Committed {
             return Err(result.disposition);
+        }
+        if !result.fresh && !reconciling {
+            return Ok(UseDisposition::Committed);
         }
         let mut runtime = self.runtime.lock().await;
         runtime
