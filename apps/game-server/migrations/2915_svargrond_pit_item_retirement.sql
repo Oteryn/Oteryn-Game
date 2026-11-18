@@ -1,6 +1,50 @@
 -- Crystal 201189f8 data-global/lib/quests/svargrond_arena.lua:207-246.
 -- Arena retirement uses the ordinary Item retirement and audit ledgers, with
 -- the exact live pit lease and original per-cell Ground observation.
+CREATE TABLE game_svargrond_pit_reset_receipts (
+    world_id UUID NOT NULL,
+    channel_id UUID NOT NULL,
+    character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+    game_session_id UUID NOT NULL,
+    run_id UUID NOT NULL,
+    pit SMALLINT NOT NULL CHECK (pit BETWEEN 1 AND 10),
+    scope_generation NUMERIC(20,0) NOT NULL CHECK (scope_generation > 0),
+    expires_at_ms BIGINT NOT NULL CHECK (expires_at_ms > 0),
+    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
+    PRIMARY KEY (world_id, channel_id, run_id, pit)
+);
+
+CREATE FUNCTION game_svargrond_pit_reset_receipt_current() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    IF NEW.created_xact_id <> pg_current_xact_id()
+       OR NOT EXISTS (SELECT 1 FROM game_svargrond_pit_leases l
+          JOIN game_character_arena_matches a USING (character_id)
+          WHERE (l.world_id,l.channel_id,l.character_id,l.game_session_id,l.run_id,l.pit,
+                 l.scope_generation,l.expires_at_ms) =
+                (NEW.world_id,NEW.channel_id,NEW.character_id,NEW.game_session_id,NEW.run_id,
+                 NEW.pit,NEW.scope_generation,NEW.expires_at_ms)
+            AND l.expires_at_ms > floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint
+            AND (a.body->>'phase')::int=1 AND (a.body->>'pit')::int=NEW.pit
+            AND NOT EXISTS (SELECT 1 FROM game_character_death_receipts d
+                WHERE d.character_id=NEW.character_id
+                  AND d.committed_character_revision>(a.body->>'entry_revision')::numeric)
+       ) THEN
+        RAISE EXCEPTION 'Arena reset receipt requires current pit custody' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END $$;
+
+CREATE TRIGGER game_svargrond_pit_reset_receipt_current
+    BEFORE INSERT ON game_svargrond_pit_reset_receipts
+    FOR EACH ROW EXECUTE FUNCTION game_svargrond_pit_reset_receipt_current();
+CREATE TRIGGER game_svargrond_pit_reset_receipt_immutable
+    BEFORE UPDATE OR DELETE ON game_svargrond_pit_reset_receipts
+    FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_svargrond_pit_reset_receipt_no_truncate
+    BEFORE TRUNCATE ON game_svargrond_pit_reset_receipts
+    FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
+
 CREATE TABLE game_svargrond_ground_retirements (
     item_instance_id UUID PRIMARY KEY REFERENCES game_item_instances(item_instance_id),
     world_id UUID NOT NULL,
@@ -14,7 +58,9 @@ CREATE TABLE game_svargrond_ground_retirements (
     expires_at_ms BIGINT NOT NULL CHECK (expires_at_ms > 0),
     spatial_position BYTEA NOT NULL CHECK (octet_length(spatial_position) = 10),
     source_stack_ordinal BIGINT NOT NULL CHECK (source_stack_ordinal > 0),
-    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id()
+    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
+    FOREIGN KEY (world_id, channel_id, run_id, pit)
+        REFERENCES game_svargrond_pit_reset_receipts (world_id, channel_id, run_id, pit)
 );
 
 -- Both durable coordinate forms for the same pit floor share one observation.
@@ -42,11 +88,14 @@ BEGIN
            JOIN game_character_arena_matches a USING (character_id)
            JOIN game_item_ground_locations g ON g.item_instance_id = NEW.item_instance_id
            JOIN game_item_instances i USING (item_instance_id)
+           JOIN game_svargrond_pit_reset_receipts c ON
+                (c.world_id,c.channel_id,c.run_id,c.pit)=(l.world_id,l.channel_id,l.run_id,l.pit)
            WHERE (l.world_id,l.channel_id,l.character_id,l.game_session_id,l.run_id,l.pit,
                   l.scope_generation,l.expires_at_ms) =
                  (NEW.world_id,NEW.channel_id,NEW.character_id,NEW.game_session_id,NEW.run_id,
                   NEW.pit,NEW.scope_generation,NEW.expires_at_ms)
              AND l.expires_at_ms > floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint
+             AND c.created_xact_id=pg_current_xact_id()
              AND (a.body->>'phase')::int = 1 AND (a.body->>'pit')::int = NEW.pit
              AND (a.body->>'rank')::int = NEW.rank
              AND (g.world_id,g.channel_id,g.scope_kind,g.runtime_scope_ownership_generation,
@@ -190,10 +239,14 @@ BEGIN
     EXECUTE format('ALTER FUNCTION game_svargrond_ground_retirement_before() SET search_path=%I,pg_temp',current_schema());
     EXECUTE format('ALTER FUNCTION game_svargrond_ground_retirement_proven(uuid) SET search_path=%I,pg_temp',current_schema());
     EXECUTE format('ALTER FUNCTION game_svargrond_ground_retirement_consumed() SET search_path=%I,pg_temp',current_schema());
+    EXECUTE format('ALTER FUNCTION game_svargrond_pit_reset_receipt_current() SET search_path=%I,pg_temp',current_schema());
 END $migration$;
 
 REVOKE ALL ON FUNCTION game_svargrond_ground_retirement_before() FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_svargrond_ground_retirement_proven(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_svargrond_ground_retirement_consumed() FROM PUBLIC;
+REVOKE ALL ON FUNCTION game_svargrond_pit_reset_receipt_current() FROM PUBLIC;
 REVOKE ALL ON game_svargrond_ground_retirements FROM PUBLIC, oteryn_game_control;
+REVOKE ALL ON game_svargrond_pit_reset_receipts FROM PUBLIC, oteryn_game_control;
 GRANT SELECT, INSERT ON game_svargrond_ground_retirements TO oteryn_game_runtime;
+GRANT SELECT, INSERT ON game_svargrond_pit_reset_receipts TO oteryn_game_runtime;

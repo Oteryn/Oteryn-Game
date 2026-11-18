@@ -53,9 +53,6 @@ impl DurabilityRoot {
                 return Err(DecayRetireError::InvalidInput);
             }
         }
-        if observations.is_empty() {
-            return Ok(Vec::new());
-        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| DecayRetireError::AuthorityRejected)?;
@@ -80,6 +77,27 @@ impl DurabilityRoot {
                     || !lock_reset_custody(&mut tx, fence, &state).await?
                 {
                     return Ok(Err(DecayRetireError::AuthorityRejected));
+                }
+                let started = sqlx::query(
+                    "INSERT INTO game_svargrond_pit_reset_receipts
+                       (world_id,channel_id,character_id,game_session_id,run_id,
+                        pit,scope_generation,expires_at_ms) VALUES
+                       (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,
+                        encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7::text::numeric,$8)
+                     ON CONFLICT (world_id,channel_id,run_id,pit) DO NOTHING",
+                )
+                .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                .bind(channel.as_bytes().as_slice())
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(fence.game_session_id.as_bytes().as_slice())
+                .bind(state.run.as_slice())
+                .bind(i16::from(state.pit))
+                .bind(state.scope_generation.to_string())
+                .bind(state.deadline_ms)
+                .execute(&mut **tx).await?.rows_affected() == 1;
+                if !started {
+                    tx.commit(deadline).await?;
+                    return Ok(Ok(Vec::new()));
                 }
                 let mut retired = Vec::with_capacity(observations.len());
                 for observation in observations {
