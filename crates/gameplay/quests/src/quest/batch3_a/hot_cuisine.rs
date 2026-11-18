@@ -405,6 +405,7 @@ fn native_rule(recipe: &Recipe, guards: Vec<NpcRuleGuard>) -> NpcRule {
         exclude_keywords: ["cook", "recipe", "menu", "apprentice"]
             .map(String::from)
             .to_vec(),
+        exclude_exact_messages: Vec::new(),
         keyword_mode: NpcKeywordMode::MsgContains,
         any_message: false,
         topics: Some(vec![recipe.topic]),

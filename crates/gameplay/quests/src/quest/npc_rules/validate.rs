@@ -265,6 +265,16 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             for word in &rule.exclude_keywords {
                 keyword::validate(word, super::NpcKeywordMode::MsgContains)?;
             }
+            if rule.exclude_exact_messages.len() > 32
+                || rule.exclude_exact_messages.iter().any(|message| {
+                    message.is_empty() || message.len() > 256 || message.contains('\0')
+                })
+            {
+                return Err(invalid(format!(
+                    "invalid exact message exclusions: {}",
+                    rule.key
+                )));
+            }
             for guard in &rule.guards {
                 let valid = match guard {
                     NpcRuleGuard::Roll { sides, value } => {

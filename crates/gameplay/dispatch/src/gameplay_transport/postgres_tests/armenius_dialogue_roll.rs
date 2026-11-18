@@ -45,6 +45,25 @@ const REPLIES: [&str; 3] = [
     "You know what, I changed my mind, BRING IT!",
     "Oh, the nerve. Sod off.",
 ];
+const TOPICS: [(i32, i32, &[&str]); 4] = [
+    (0, 2, &["Stop mumbling and don't bug me."]),
+    (
+        2,
+        3,
+        &[
+            "There's something about these words which makes me feel awkward. Or maybe it's you who causes that feeling. You better get lost.",
+        ],
+    ),
+    (3, 4, &["Whatever that's supposed to mean."]),
+    (
+        4,
+        5,
+        &[
+            "...... ...... ...",
+            "HAHAHAHAHA! What the... HAHAHAHA! Come on, say it again, just because it's so funny - and then I'll get rid of you, little mouse!",
+        ],
+    ),
+];
 
 #[test]
 fn armenius_dialogue_roll_persists_each_route_and_earns_the_basement_achievement() -> TestResult {
@@ -64,30 +83,34 @@ fn armenius_dialogue_roll_persists_each_route_and_earns_the_basement_achievement
     })
 }
 
+#[test]
+fn armenius_stage_two_accepts_nonliteral_messages_and_respects_earlier_exact_branches() -> TestResult
+{
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run("armenius-stage-two", || {
+        super::quest_world_callbacks::scenario("armenius-dialogue-roll-repeat-2", TRIGGER, false)
+    })
+}
+
 pub(super) fn world(row: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
     super::quest_world_callbacks::world_with_cells(row, TRIGGER, &[SEWER, BASEMENT, MONSTER])
 }
 
 fn rules() -> Vec<Value> {
+    [1, 2].into_iter().flat_map(rules_for_stage).collect()
+}
+
+fn rules_for_stage(mission: i64) -> Vec<Value> {
     let mut result = Vec::new();
-    for (before, after, line) in [
-        (0, 2, "Stop mumbling and don't bug me."),
-        (
-            2,
-            3,
-            "There's something about these words which makes me feel awkward. Or maybe it's you who causes that feeling. You better get lost.",
-        ),
-        (3, 4, "Whatever that's supposed to mean."),
-        (
-            4,
-            5,
-            "HAHAHAHAHA! What the... HAHAHAHA! Come on, say it again, just because it's so funny - and then I'll get rid of you, little mouse!",
-        ),
-    ] {
+    for (before, after, lines) in TOPICS {
         result.push(rule(
             format!("topic-{before}"),
+            mission,
             before,
-            vec![line],
+            lines.to_vec(),
             vec![],
             vec![json!({"kind":"set_topic","value":after})],
         ));
@@ -109,6 +132,7 @@ fn rules() -> Vec<Value> {
         }
         result.push(rule(
             format!("roll-{value}"),
+            mission,
             5,
             vec![line],
             vec![json!({"kind":"roll","sides":3,"value":value})],
@@ -120,6 +144,7 @@ fn rules() -> Vec<Value> {
 
 fn rule(
     key: String,
+    mission: i64,
     topic: i32,
     reply: Vec<&str>,
     mut guards: Vec<Value>,
@@ -127,13 +152,22 @@ fn rule(
 ) -> Value {
     guards.insert(
         0,
-        json!({"kind":"storage","track":MISSION,"op":"eq","value":1}),
+        json!({"kind":"storage","track":MISSION,"op":"eq","value":mission}),
     );
-    json!({
-        "key":format!("oteryn:quest-npc/fixture-armenius/{key}"),"quest":QUEST,"npc":NPC,"trigger":"say",
-        "keywords":["alori mort"],"keyword_mode":"exact","topics":[topic],"guards":guards,
+    let mut rule = json!({
+        "key":format!("oteryn:quest-npc/fixture-armenius/{mission}/{key}"),"quest":QUEST,"npc":NPC,"trigger":"say",
+        "topics":[topic],"guards":guards,
         "reply":reply,"effects":effects,"sources":[SOURCE]
-    })
+    });
+    if mission == 2 {
+        // Crystal armenius.lua:58-71 checks the literal cookie/yes branches first.
+        rule["any_message"] = json!(true);
+        rule["exclude_exact_messages"] = json!(["cookie", "yes"]);
+    } else {
+        rule["keywords"] = json!(["alori mort"]);
+        rule["keyword_mode"] = json!("exact");
+    }
+    rule
 }
 
 pub(super) async fn exercise(
@@ -143,6 +177,7 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let result: usize = name.rsplit_once('-').ok_or("roll case")?.1.parse()?;
+    let repeat = name.contains("-repeat-");
     let base = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
     let track = base.track(MISSION).ok_or("Armenius mission track")?;
     let document = json!({"schema":1,"quest":QUEST,
@@ -157,18 +192,34 @@ pub(super) async fn exercise(
         h,
         owner,
         admitted,
-        &[(MISSION.into(), 1)],
+        &[(MISSION.into(), if repeat { 2 } else { 1 })],
         125,
     )
     .await?;
     let [npc] =
         super::classic_quests::install_positions(owner, admitted, [NPC], [NPC_SPAWN]).await?;
-    super::classic_quests::talk(owner, admitted, npc, 8190, "hi").await?;
-    for command in 8191..8195 {
-        assert!(
-            !super::classic_quests::talk(owner, admitted, npc, command, "alori mort")
-                .await?
-                .is_empty()
+    super::classic_quests::talk(owner, admitted, npc, 8187, "hi").await?;
+    if repeat {
+        for (command, text) in [(8188, "cookie"), (8189, "yes")] {
+            let lines = super::classic_quests::talk(owner, admitted, npc, command, text).await?;
+            assert!(
+                !lines
+                    .iter()
+                    .any(|line| TOPICS[0].2.contains(&line.as_str()))
+            );
+        }
+    }
+    let messages = if repeat {
+        ["cookie please", "yes of course", "Cookie", "Yes"]
+    } else {
+        ["alori mort"; 4]
+    };
+    for ((command, text), (_, _, expected)) in (8191..8195).zip(messages).zip(TOPICS) {
+        let lines = super::classic_quests::talk(owner, admitted, npc, command, text).await?;
+        assert_eq!(
+            lines.iter().map(String::as_str).collect::<Vec<_>>(),
+            expected,
+            "{text}"
         );
     }
     let actor = admitted.runtime_actor.ok_or("player")?;
@@ -193,7 +244,14 @@ pub(super) async fn exercise(
             draw < u64::MAX - u64::MAX % 3 && draw % 3 + 1 == result as u64
         })
         .ok_or("command for the requested roll")?;
-    super::classic_quests::talk(owner, admitted, npc, command, "alori mort").await?;
+    super::classic_quests::talk(
+        owner,
+        admitted,
+        npc,
+        command,
+        if repeat { "What now?" } else { "alori mort" },
+    )
+    .await?;
     assert_eq!(super::m39_bone_journey::stage(h, MISSION).await?, Some(2));
     let grant: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/his_true_face'")
         .fetch_one(&h.pool).await?;

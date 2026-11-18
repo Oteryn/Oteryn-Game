@@ -290,6 +290,9 @@ pub struct NpcRule {
     pub match_player_name: bool,
     #[serde(default)]
     pub exclude_keywords: Vec<String>,
+    /// Literal, case-sensitive donor branch exclusions.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub exclude_exact_messages: Vec<String>,
     #[serde(default)]
     pub keyword_mode: NpcKeywordMode,
     #[serde(default)]

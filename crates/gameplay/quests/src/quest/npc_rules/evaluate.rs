@@ -300,6 +300,13 @@ fn money_available(
 }
 
 fn words_match(rule: &NpcRule, input: &NpcRuleInput<'_>) -> Result<bool, NpcRuleError> {
+    if rule
+        .exclude_exact_messages
+        .iter()
+        .any(|message| message == input.message)
+    {
+        return Ok(false);
+    }
     for word in &rule.exclude_keywords {
         if keyword::matches(input.message, word, NpcKeywordMode::MsgContains)? {
             return Ok(false);
