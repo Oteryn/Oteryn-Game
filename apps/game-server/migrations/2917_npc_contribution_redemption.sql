@@ -81,3 +81,43 @@ BEGIN
         RAISE EXCEPTION 'Scarab corpse stages differ from the source';
     END IF;
 END $scarab_corpse_chain$;
+
+-- The final minute also applies when a mature shell has left native Ground
+-- custody. Keep the original Ground corpse owner responsible for its loot tree.
+DO $scarab_carried_deadline$
+DECLARE
+    body TEXT;
+    target_name TEXT;
+    needle CONSTANT TEXT := 'array_length(chain,1)-1';
+    stage_max CONSTANT TEXT := 'array_length(chain,1)-CASE WHEN chain[1]=6024 THEN 0 ELSE 1 END';
+    last_ground_transform CONSTANT TEXT := 'final.source_ordinal=0)';
+    scheduled_target CONSTANT TEXT := $target$'Item','oteryn:item.tibia.i'||chain[stage+1]::text,'definition-r1',sha256$target$;
+    qualified_target CONSTANT TEXT := $target$NEW.target_family IS DISTINCT FROM 'Item' OR NEW.target_revision IS DISTINCT FROM 'definition-r1'$target$;
+BEGIN
+    body := pg_get_functiondef('game_summer_corpse_schedule()'::regprocedure);
+    IF (length(body)-length(replace(body,needle,'')))/length(needle) <> 1
+       OR (length(body)-length(replace(body,scheduled_target,'')))/length(scheduled_target) <> 1 THEN
+        RAISE EXCEPTION 'Scarab deadline scheduler predecessor changed';
+    END IF;
+    EXECUTE replace(replace(body,needle,stage_max),scheduled_target,$target$
+        CASE WHEN chain[stage+1] IS NOT NULL THEN 'Item' END,
+        'oteryn:item.tibia.i'||chain[stage+1]::text,
+        CASE WHEN chain[stage+1] IS NOT NULL THEN 'definition-r1' END,sha256$target$);
+
+    body := pg_get_functiondef('game_spell_field_temporal_schedule_proven()'::regprocedure);
+    IF (length(body)-length(replace(body,needle,'')))/length(needle) <> 1
+       OR (length(body)-length(replace(body,qualified_target,'')))/length(qualified_target) <> 1 THEN
+        RAISE EXCEPTION 'Scarab deadline provenance predecessor changed';
+    END IF;
+    EXECUTE replace(replace(body,needle,stage_max),qualified_target,$target$
+        NEW.target_family IS DISTINCT FROM CASE WHEN chain[NEW.source_stage+1] IS NOT NULL THEN 'Item' END
+        OR NEW.target_revision IS DISTINCT FROM CASE WHEN chain[NEW.source_stage+1] IS NOT NULL THEN 'definition-r1' END$target$);
+
+    FOREACH target_name IN ARRAY ARRAY['game_corpse_terminal_stage_ready(uuid)','game_item_decay_retire_consistency_guard()'] LOOP
+        body := pg_get_functiondef(target_name::regprocedure);
+        IF (length(body)-length(replace(body,last_ground_transform,'')))/length(last_ground_transform) <> 1 THEN
+            RAISE EXCEPTION 'Scarab Ground retirement predecessor changed: %', target_name;
+        END IF;
+        EXECUTE replace(body,last_ground_transform,'final.source_ordinal=0 AND final.target_family IS NOT NULL)');
+    END LOOP;
+END $scarab_carried_deadline$;

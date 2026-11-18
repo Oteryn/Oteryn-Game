@@ -71,14 +71,15 @@ async fn exercise(h: &Harness) -> TestResult {
         ).bind(CORPSE).fetch_one(&h.pool).await?;
         assert_eq!(retire_at - materialized, 670_000);
 
-        let stages: Vec<(i32, i64, i64, String, String)> = sqlx::query_as(
+        let stages: Vec<(i32, i64, i64, String, Option<String>)> = sqlx::query_as(
             "SELECT source_stage,duration_millis,expires_at_unix_ms-$2,definition_production_key,target_production_key \
              FROM game_spell_field_temporal_schedules WHERE item_instance_id=$1::uuid ORDER BY source_stage",
         ).bind(&corpse).bind(materialized).fetch_all(&h.pool).await?;
         assert_eq!(stages, [
-            (1, 10_000, 10_000, CORPSE.into(), "oteryn:item.tibia.i4194".into()),
-            (2, 300_000, 310_000, "oteryn:item.tibia.i4194".into(), "oteryn:item.tibia.i4195".into()),
-            (3, 300_000, 610_000, "oteryn:item.tibia.i4195".into(), "oteryn:item.tibia.i4196".into()),
+            (1, 10_000, 10_000, CORPSE.into(), Some("oteryn:item.tibia.i4194".into())),
+            (2, 300_000, 310_000, "oteryn:item.tibia.i4194".into(), Some("oteryn:item.tibia.i4195".into())),
+            (3, 300_000, 610_000, "oteryn:item.tibia.i4195".into(), Some("oteryn:item.tibia.i4196".into())),
+            (4, 60_000, 670_000, "oteryn:item.tibia.i4196".into(), None),
         ]);
         let read = || async {
             sqlx::query_as::<_, (String, i16, i64)>(
