@@ -115,8 +115,7 @@ fn apply_fire(
         },
     )?;
     let now = admission.owner_now().get();
-    let mut occurrence = [0; 16];
-    occurrence[..8].copy_from_slice(&actor.placement_identity().to_be_bytes());
+    let mut occurrence = actor.placement_identity();
     occurrence[8..].copy_from_slice(&command.command_id.to_be_bytes());
     let decision_root =
         GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());

@@ -1,0 +1,311 @@
+//! Native NPC_TALK receipts with real displayed looks, inventory and creature state.
+use super::quest_world_callbacks::{self, tool_fixture};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
+use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use oteryn_gameplay_quests::quest::{
+    authored_bindings::{Bindings, BoundQuest, Stage, Track, Trigger},
+    reward_callbacks::RewardCallback,
+    world_callbacks::{Callback, Offering, Position},
+};
+use oteryn_protocol_oteryn::{
+    npc_service::{NpcIntentDisposition, NpcTalkIntent},
+    world_spatial_entities::EntityRef,
+};
+
+const QUEST: &str = "oteryn:quest.what_a_foolish_quest";
+const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline";
+const SCARED: &str = "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/scared_kazzan";
+const WYDA: &str = "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/cookie_delivery/wyda";
+const ORC_GREET: &str = "oteryn:quest-progress/storage/30006";
+const KAZZAN_NPC: &str = "oteryn:npc.kazzan";
+const WYDA_NPC: &str = "oteryn:npc.wyda";
+const ORC_NPC: &str = "oteryn:npc.the_orc_king";
+const COOKIE: &str = "oteryn:item.tibia.i130";
+const SCREAM: &str = "WAAAAAHHH!!!";
+
+#[test]
+fn kazzan_greeting_requires_the_current_mummy_look() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("kazzan-mummy", move || {
+        scenario(admin, KAZZAN_NPC)
+    })
+}
+
+#[test]
+fn wyda_cookie_hand_in_consumes_cookie_and_applies_delayed_soulfire() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("wyda-soulfire", move || scenario(admin, WYDA_NPC))
+}
+
+#[test]
+fn the_orc_king_first_greeting_spawns_public_guards_once() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("orc-king-guards", move || {
+        scenario(admin, ORC_NPC)
+    })
+}
+
+fn scenario(admin: String, npc: &'static str) -> TestResult {
+    let at = Position {
+        x: 32588,
+        y: 31644,
+        floor: -3,
+    };
+    let npc_at = Position { x: at.x + 1, ..at };
+    let geometry: Callback = serde_json::from_value(serde_json::json!({
+        "key": "oteryn:quest-callback/fixture/npc-map",
+        "quest": QUEST, "trigger": "use",
+        "selector": { "position": at, "appearance": 100 },
+        "reversible": false, "passages": [], "storage": [],
+        "offerings": [], "return_on_failure": false, "sources": ["fixture map"]
+    }))?;
+    let world = quest_world_callbacks::world(&geometry, at)?;
+    let (case, keyword, stage, track, reply, source, look, take, effects) = match npc {
+        KAZZAN_NPC => (
+            "kazzan_mummy",
+            "hi",
+            35,
+            SCARED,
+            SCREAM,
+            "data-global/npc/kazzan.lua:53-67",
+            Some(65),
+            serde_json::json!([]),
+            serde_json::json!({ "end_conversation_delay_ms": 1000 }),
+        ),
+        WYDA_NPC => (
+            "wyda_soulfire",
+            "yes",
+            31,
+            WYDA,
+            "FEEL MY WRATH!",
+            "data-global/npc/wyda.lua:52-54,87-103",
+            None,
+            serde_json::json!([{ "item": COOKIE, "count": 1 }]),
+            serde_json::json!({
+                "fire_damage": {"ticks": 60, "interval_ms": 2000, "amount": 10},
+                "end_conversation_delay_ms": 0
+            }),
+        ),
+        ORC_NPC => (
+            "orc_king_guards",
+            "hi",
+            0,
+            ORC_GREET,
+            "Kill them my guards!",
+            "data-global/npc/the_orc_king.lua:48-59,118-124",
+            None,
+            serde_json::json!([]),
+            serde_json::json!({
+                "nearby_creatures": [
+                    "oteryn:creature.slime", "oteryn:creature.slime", "oteryn:creature.slime",
+                    "oteryn:creature.orc_warlord", "oteryn:creature.orc_warlord",
+                    "oteryn:creature.orc_leader", "oteryn:creature.orc_leader", "oteryn:creature.orc_leader"
+                ],
+                "end_conversation_delay_ms": 0
+            }),
+        ),
+        _ => return Err("unexpected reaction fixture".into()),
+    };
+    let callback: RewardCallback = serde_json::from_value(serde_json::json!({
+        "key": format!("oteryn:quest-reward/fixture/{case}"),
+        "quest": QUEST, "npc": npc, "keywords": [keyword], "topic": 0, "next_topic": 0,
+        "storage": [
+            {"track": QUESTLINE, "minimum": stage, "maximum": stage, "set": stage, "preserve": true},
+            {"track": track, "minimum": 0, "maximum": 0, "set": 1}
+        ],
+        "requires_temporary_look": look, "take": take, "npc_after_commit": effects,
+        "reply": [reply], "sources": [format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:{source}")]
+    }))?;
+    let bindings = Bindings {
+        schema: 1,
+        quests: vec![BoundQuest {
+            quest: QUEST.into(),
+            recipe_sha256: "1".repeat(64),
+            occurrence: None,
+            admission: None,
+            tracks: vec![
+                Track {
+                    key: QUESTLINE.into(),
+                    initial: stage,
+                    minimum: 0,
+                    maximum: 40,
+                },
+                Track {
+                    key: track.into(),
+                    initial: 0,
+                    minimum: 0,
+                    maximum: 1,
+                },
+            ],
+            stages: vec![Stage {
+                key: case.into(),
+                completes: false,
+                trigger: Trigger::NpcDialogue {
+                    callback: Box::new(callback),
+                    alternatives: Vec::new(),
+                },
+            }],
+            sources: vec![source.into()],
+        }],
+    };
+    tool_fixture::run_bound_world(
+        admin,
+        case,
+        world,
+        at,
+        bindings,
+        async |owner, admitted, h, fence| {
+            let [entity] =
+                super::classic_quests::install_positions(owner, &admitted, [npc], [npc_at]).await?;
+            let _clock = owner.freeze_owner_clock_for_test();
+            if npc == WYDA_NPC {
+                quest_world_callbacks::input_item(
+                    owner,
+                    fence.item_fence(),
+                    &Offering {
+                        position: at,
+                        item: COOKIE.into(),
+                        count: 1,
+                    },
+                    81,
+                    true,
+                )
+                .await?;
+            }
+            let ordinary = talk(owner, admitted, fence, entity, 1, "hi").await?;
+            assert!(ordinary.lines.iter().all(|line| line != SCREAM));
+            if npc == KAZZAN_NPC {
+                talk(owner, admitted, fence, entity, 2, "bye").await?;
+                let member = owner
+                    .active_generation
+                    .and_then(|g| g.native_gameplay())
+                    .and_then(|native| native.spell_appearances())
+                    .and_then(|book| book.for_look_type(65))
+                    .ok_or("mummy appearance")?;
+                {
+                    let runtime = owner.runtime.lock().await;
+                    let mut states = owner.states.spell_states.lock().await;
+                    let state = states
+                        .get_mut(
+                            &runtime,
+                            admitted.runtime_actor.ok_or("actor")?,
+                            admitted.game_session_id,
+                        )
+                        .ok_or("player state")?;
+                    crate::spell::actor_conditions::apply_appearance(
+                        state,
+                        member.selection(),
+                        member.look_type(),
+                        10_000,
+                        owner.owner_now().get() / 1000,
+                    )
+                    .map_err(debug)?;
+                    state.advance_batch_revision().map_err(debug)?;
+                }
+                let scared = talk(owner, admitted, fence, entity, 3, "hi").await?;
+                assert_eq!(scared.lines, [SCREAM]);
+            } else if npc == WYDA_NPC {
+                let delivered = talk(owner, admitted, fence, entity, 3, "yes").await?;
+                assert_eq!(delivered.lines, [reply]);
+                assert!(delivered.inventory_changed);
+                {
+                    let runtime = owner.runtime.lock().await;
+                    let states = owner.states.spell_states.lock().await;
+                    let state = states
+                        .get(
+                            &runtime,
+                            admitted.runtime_actor.ok_or("actor")?,
+                            admitted.game_session_id,
+                        )
+                        .ok_or("player state")?;
+                    let now = owner.owner_now().get();
+                    let fire = state
+                        .owned_conditions()
+                        .active_at(
+                            crate::domain::condition::ConflictKey::Element(
+                                crate::domain::condition::DotElement::Fire,
+                            ),
+                            now,
+                        )
+                        .ok_or("active Soulfire")?;
+                    assert_eq!(fire.remaining_duration_ms(now), Some(120_000));
+                }
+                let cookies: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1",
+            ).bind(COOKIE).fetch_one(&h.pool).await?;
+                assert_eq!(cookies, 0);
+            } else {
+                assert_eq!(ordinary.lines, [reply]);
+                let _ = talk(owner, admitted, fence, entity, 3, "hi").await?;
+                let runtime = owner.runtime.lock().await;
+                let actors = runtime.current_live_creature_census().map_err(debug)?;
+                for (key, count) in [("slime", 3), ("orc_warlord", 2), ("orc_leader", 3)] {
+                    let key = format!("oteryn:creature.{key}");
+                    assert_eq!(
+                        actors
+                            .iter()
+                            .filter(|actor| runtime
+                                .matches_live_creature_identity(**actor, key.as_bytes()))
+                            .count(),
+                        count
+                    );
+                }
+            }
+            let copy = owner
+                .root
+                .read_character_quest_state(owner.character, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(copy.tracks().get(track), Some(&1));
+            Ok(())
+        },
+    )
+}
+
+struct TalkResult {
+    lines: Vec<String>,
+    inventory_changed: bool,
+}
+
+async fn talk(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    fence: CurrentCharacterGameplayFence,
+    npc: EntityRef,
+    command_id: u64,
+    text: &str,
+) -> TestResult<TalkResult> {
+    owner
+        .states
+        .test_owner_time
+        .store(command_id * 2_000_000, std::sync::atomic::Ordering::Relaxed);
+    let outcome = owner
+        .npc_talk(
+            admitted.runtime_actor.ok_or("actor")?,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor: npc,
+                text: text.into(),
+            },
+        )
+        .await;
+    assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{text}");
+    assert!(!outcome.unknown, "{text}");
+    Ok(TalkResult {
+        lines: outcome
+            .conversation
+            .map_or_else(Vec::new, |conversation| conversation.lines),
+        inventory_changed: outcome.inventory_changed,
+    })
+}

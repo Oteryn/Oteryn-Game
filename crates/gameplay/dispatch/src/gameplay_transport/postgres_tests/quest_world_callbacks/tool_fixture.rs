@@ -39,6 +39,57 @@ pub(in super::super) fn run_world(
         .as_ref()
         .ok_or("fixture native selector")?
         .position;
+    let quest = callback.quest.clone();
+    let completes = callback.completes;
+    let trigger = match callback.trigger {
+        world_callbacks::Trigger::Use => Trigger::MapUse {
+            callback: Box::new(callback),
+        },
+        world_callbacks::Trigger::StepIn => Trigger::StepIn {
+            callback: Box::new(callback),
+        },
+        _ => return Err("unsupported fixture trigger".into()),
+    };
+    let bindings = Bindings {
+        schema: 1,
+        quests: vec![BoundQuest {
+            quest,
+            recipe_sha256: "1".repeat(64),
+            occurrence: None,
+            admission: None,
+            tracks: tracks
+                .into_iter()
+                .map(|track| Track {
+                    key: track.key,
+                    initial: track.initial,
+                    minimum: track.min,
+                    maximum: track.max,
+                })
+                .collect(),
+            stages: vec![Stage {
+                key: "source".into(),
+                completes,
+                trigger,
+            }],
+            sources: vec!["PostgreSQL dispatch fixture".into()],
+        }],
+    };
+    run_bound_world(admin, name, world, trigger, bindings, exercise)
+}
+
+pub(in super::super) fn run_bound_world(
+    admin: String,
+    name: &'static str,
+    world: BundleWorld,
+    trigger: Position,
+    bindings: Bindings,
+    exercise: impl for<'o, 'a, 'f, 's> AsyncFnOnce(
+        &'o ComposedFreshAdmission<'a, 'f, 's>,
+        AdmittedSession,
+        &'o Harness,
+        CurrentCharacterGameplayFence,
+    ) -> TestResult,
+) -> TestResult {
     run(async move |_| {
         let h = Harness::create_with_admission_seed(admin, name, false, false).await?;
         prepare_current_session(&h).await?;
@@ -92,7 +143,7 @@ pub(in super::super) fn run_world(
             1,
             1,
             "runtime-scope-assignment:1",
-            8,
+            24,
             pin,
         )
         .map_err(debug)?;
@@ -112,42 +163,7 @@ pub(in super::super) fn run_world(
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
-        let quest = callback.quest.clone();
-        let completes = callback.completes;
-        let trigger = match callback.trigger {
-            world_callbacks::Trigger::Use => Trigger::MapUse {
-                callback: Box::new(callback),
-            },
-            world_callbacks::Trigger::StepIn => Trigger::StepIn {
-                callback: Box::new(callback),
-            },
-            _ => return Err("unsupported fixture trigger".into()),
-        };
         let base = QuestStateCatalogue::empty("content-1").ok_or("fixture base catalogue")?;
-        let bindings = Bindings {
-            schema: 1,
-            quests: vec![BoundQuest {
-                quest,
-                recipe_sha256: "1".repeat(64),
-                occurrence: None,
-                admission: None,
-                tracks: tracks
-                    .into_iter()
-                    .map(|track| Track {
-                        key: track.key,
-                        initial: track.initial,
-                        minimum: track.min,
-                        maximum: track.max,
-                    })
-                    .collect(),
-                stages: vec![Stage {
-                    key: "source".into(),
-                    completes,
-                    trigger,
-                }],
-                sources: vec!["PostgreSQL dispatch fixture".into()],
-            }],
-        };
         owner.quest_catalogue = Some(std::sync::Arc::new(bindings.attach(&base)?));
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;

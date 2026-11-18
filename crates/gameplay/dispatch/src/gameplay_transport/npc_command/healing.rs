@@ -44,7 +44,7 @@ pub(super) fn apply(
         HealingProfile::Full => text.eq_ignore_ascii_case("healing"),
         HealingProfile::QuestEmergency => oteryn_gameplay_npc::greeting::words(text)
             .iter()
-            .any(|word| word == "heal"),
+            .any(|word| word.starts_with("heal")),
         _ => text.eq_ignore_ascii_case("heal") || text.eq_ignore_ascii_case("healing"),
     };
     if !greeting && !healing {
