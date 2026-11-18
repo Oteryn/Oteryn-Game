@@ -259,6 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?;
         #[cfg(test)]
         native_owner_turn(room, "profile_checkout", "acquired");
+        let mut continue_batch = false;
         let (next_due, proposals, native_actors, ran_profile) = {
             let mut context = (
                 self,
@@ -273,10 +274,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 primal_pending.as_ref(),
                 native_pending.as_ref(),
                 native_health_names,
+                &mut continue_batch,
             );
             pass.run_with_context(&mut context, move |holder, deadline, context| {
             Box::pin(async move {
-                let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
+                let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names, continue_batch) =
                     context;
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await.inspect_err(|_| {
                     #[cfg(test)]
@@ -684,7 +686,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         drop(reader);
                         tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                        states.owner_wake.notify_one();
+                        **continue_batch = true;
                         return Ok((Some(now), Vec::new(), Vec::new(), false));
                     }
                 }
@@ -739,7 +741,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if range.end < actors.len() {
                         drop(map);
                         tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                        states.owner_wake.notify_one();
+                        **continue_batch = true;
                         return Ok((Some(now), Vec::new(), Vec::new(), false));
                     }
                 }
@@ -788,7 +790,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 drop(map);
                 if !pending.items_ready() {
                     tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                    states.owner_wake.notify_one();
+                    **continue_batch = true;
                     return Ok((Some(now), Vec::new(), Vec::new(), false));
                 }
                 let next_due = next_due.into_iter()
@@ -814,6 +816,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .map_err(|_| ())?
         };
+        if continue_batch {
+            states.owner_wake.notify_one();
+        }
         // A due-only turn can finish while an older cancelled pass already owns
         // its Item suffix. Do not acknowledge that suffix with empty results.
         if !ran_profile {
