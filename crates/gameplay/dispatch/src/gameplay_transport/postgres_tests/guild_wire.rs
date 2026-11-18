@@ -592,9 +592,14 @@ pub(super) async fn capture_activity_return(
         let ((), barrier) = tokio::try_join!(acting, reading)?;
         Ok(barrier)
     };
+    // Match the listener's independent connection owner and the Node's background
+    // cadence. Sharing the fixture task's holder identity can starve the return.
     let (ended, result): (_, TestResult<_>) = tokio::time::timeout(
         std::time::Duration::from_secs(30),
-        fixture::join_two(serving, driving),
+        fixture::join_two(
+            crate::durability::DurabilityRoot::with_holder_owner(serving),
+            crate::durability::DurabilityRoot::with_background_holder(driving),
+        ),
     )
     .await?;
     match ended {
