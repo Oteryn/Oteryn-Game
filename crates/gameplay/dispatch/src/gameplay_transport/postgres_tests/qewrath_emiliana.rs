@@ -12,8 +12,8 @@ const NPC: &str = "oteryn:npc.emiliana";
 const MISSION: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/mission";
 const ADVANCE: &str = "oteryn:quest-reward/targuna/emiliana/crimson-court-briefing";
-const BRIEFING: &str = "Find and defeat the Herald.";
-const SURFACE: &str = "Speak with me here before entering Crimson Court.";
+const BRIEFING: &str = "Your task is to do exactly that, find out where the Herald resides and defeat him to end his reign of terror once and for all.";
+const SURFACE: &str = "Go upstairs, open the door and walk through the portal. I'll be waiting for you on the other side.";
 
 #[test]
 fn emiliana_briefs_in_crimson_court_only_from_the_designated_player_area() -> TestResult {

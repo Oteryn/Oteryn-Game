@@ -44,7 +44,7 @@ fn fixture() -> TestResult<QuestStateCatalogue> {
     let callback = json!({
         "key":"oteryn:quest-reward/wrath/banish-presence","quest":QUEST,"npc":"oteryn:npc.zalamon",
         "keywords":["sceptre"],"topic":0,"next_topic":0,"take":[],"give":null,"outfit":null,"achievement":null,
-        "reply":["The sceptre banishes the presence."],"sources":[SOURCE], "carried_item":SCEPTRE,"creature_target":"oteryn:creature.fury_of_the_emperor",
+        "reply":["The sceptre is almost torn from your hand as you banish the presence of the emperor."],"sources":[SOURCE], "carried_item":SCEPTRE,"creature_target":"oteryn:creature.fury_of_the_emperor",
         "present":[{"item":SCEPTRE,"count":1}],
         "corpse_target":{"appearance":11361,"maximum_age_ms":60000,"retain_tool":true,
             "additional_creatures":[CREATURE,"oteryn:creature.scorn_of_the_emperor","oteryn:creature.spite_of_the_emperor"]},

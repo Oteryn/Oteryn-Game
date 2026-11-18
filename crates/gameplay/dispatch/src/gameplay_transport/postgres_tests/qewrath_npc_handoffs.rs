@@ -81,6 +81,35 @@ pub(super) async fn exercise(
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:143-149,337-345",
         )
     };
+    let (offer, reply) = if give.is_some() {
+        (
+            vec![
+                "Aaaah... free at last. Hmmm. ...",
+                "I assume you need to get through the gate to reach the evildoer. I can help you if you trust me, wayfarer. I will share a part of my mind with you which should enable you to step through the gate. ...",
+                "This procedure may be exhausting. Are you prepared to receive my key?",
+            ],
+            vec![
+                "SAETHELON TORILUN GARNUM. ...",
+                "SLEEP. ...",
+                "GAIN. ...",
+                "RISE. ...",
+                "The transfer was successful. ...",
+                "You are now prepared to enter the realm of the evildoer. I am grateful for your help, wayfarer. Should you seek my council, use this charm I cede to you. For my spirit will guide you wherever you are. May you enjoy a sheltered future, you shall prevail.",
+            ],
+        )
+    } else {
+        (
+            vec![
+                "If I'm correct, zze portal in zze chamber beyond zze mechanizzm will lead you to zze great gate. It izz perfectly pozzible, however, zzat you will not be tranzzported directly into zze area. ...",
+                "You will razzer be brought to a plazze clozze by your goal. Where exzzactly, I cannot zzay. ...",
+                "Take all your courage and walk zze pazz zzrough zze portal. At leazzt TRY it - after all, I didn't make you my pupil for nozzing, Kohei. Are you prepared?",
+            ],
+            vec![
+                "You did well on your quezzt zzo far. I hope you will reach zze great gate in time. If we are lucky, it will zztill be open. ...",
+                "If not, it will already be overrun by enemy zzoldierzz. Direct confrontation will be inevitable in zzat cazze, palezzkin. Now clear your mind and approach zze portal.",
+            ],
+        )
+    };
     let track = |name: &str| format!("oteryn:quest-progress/{prefix}/{name}");
     let definitions = tracks
         .iter()
@@ -122,7 +151,7 @@ pub(super) async fn exercise(
                 "track": track(key), "minimum": before, "maximum": before, "set": after,
             })).collect::<Vec<_>>(),
             "take": [], "give": give.map(|item| json!({"item":item,"count":1,"contents":[]})),
-            "outfit": null, "achievement": null, "reply": ["You can continue your mission."],
+            "outfit": null, "achievement": null, "reply": reply,
             "sources": [source],
         }}
     });
@@ -154,7 +183,7 @@ pub(super) async fn exercise(
         "schema": 1, "offers": [{
             "npc": npc, "keywords": ["mission"], "topic": 0, "next_topic": topic,
             "storage": [{"track":track("questline"),"minimum":start,"maximum":start,"set":start,"preserve":true}],
-            "reply": ["Are you ready to continue?"],
+            "reply": offer,
         }]
     }).to_string())?;
     let [npc] = super::classic_quests::install(owner, admitted, [npc]).await?;
