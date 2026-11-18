@@ -469,13 +469,26 @@ pub(super) async fn consume(
     if !context_is_current(tx, permit, fence, context).await? {
         return Ok(false);
     }
-    if let Some(encounter) = &callback.effects.encounter
-        && let Some(seconds) = encounter.personal_cooldown_seconds
+    // Crystal 201189f8, dangerous_depth/movements_boss_entrance.lua:36-47.
+    // Warzone visitors use the already-open room; Descendant portals own their spawn.
+    let cooldown = callback
+        .effects
+        .boss_admission_cooldown
+        .as_ref()
+        .map(|cooldown| (cooldown.creature.as_str(), cooldown.seconds))
+        .or_else(|| {
+            let encounter = callback.effects.encounter.as_ref()?;
+            let [boss] = encounter.monsters.as_slice() else {
+                return None;
+            };
+            Some((boss.creature.as_str(), encounter.personal_cooldown_seconds?))
+        });
+    if let Some((creature, seconds)) = cooldown
         && !super::boss_encounter::cooldown_storage::admit_personal_step(
             tx,
             fence.character_id,
             request.cause,
-            encounter,
+            creature,
             context.reset_epoch,
             seconds,
         )

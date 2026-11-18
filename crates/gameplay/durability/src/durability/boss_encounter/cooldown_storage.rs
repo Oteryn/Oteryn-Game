@@ -222,7 +222,7 @@ pub(in crate::durability) async fn admit_personal_step(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
     cause: super::super::quest_state::QuestCause,
-    encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    creature: &str,
     reset_epoch: u64,
     seconds: u32,
 ) -> Result<bool, DurabilityError> {
@@ -230,17 +230,14 @@ pub(in crate::durability) async fn admit_personal_step(
     let super::super::quest_state::QuestCause::Step(command) = cause else {
         return Ok(false);
     };
-    let [boss] = encounter.monsters.as_slice() else {
-        return Ok(false);
-    };
-    let key = BossRewardKey::new(character, &boss.creature)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let key =
+        BossRewardKey::new(character, creature).map_err(|_| DurabilityError::InvalidStoredState)?;
     let digest = Sha256::new()
         .chain_update(b"quest-boss-step-admission")
         .chain_update(character.as_bytes())
         .chain_update(command.game_session_id().as_bytes())
         .chain_update(command.command_id().get().to_be_bytes())
-        .chain_update(boss.creature.as_bytes())
+        .chain_update(creature.as_bytes())
         .finalize();
     let mut admission = [0; 16];
     admission.copy_from_slice(&digest[..16]);

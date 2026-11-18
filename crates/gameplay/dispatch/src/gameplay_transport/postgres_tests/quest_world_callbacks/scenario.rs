@@ -352,7 +352,9 @@ fn scenario_case(
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
     let death_replacement = matches!(name, super::super::encounter_death_replacements::EARTH | super::super::encounter_death_replacements::ESSENCE);
-    let mut callback = if death_replacement {
+    let mut callback = if name == super::super::warzone_portal_cooldown::CASE {
+        super::super::warzone_portal_cooldown::callback()?
+    } else if death_replacement {
         super::super::encounter_death_replacements::callback(name, trigger)?
     } else if name == super::super::ferumbras_crystal_reset::CASE {
         super::super::ferumbras_crystal_reset::callback()?
@@ -1710,6 +1712,9 @@ fn scenario_case(
                 super::super::engenc_asura_dispatch::catalogue(name)?,
             ));
         }
+        if name == super::super::warzone_portal_cooldown::CASE {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::warzone_portal_cooldown::catalogue(&callback)?));
+        }
         if name == super::super::first_dragon_descendant::CASE {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::first_dragon_descendant::catalogue(&callback)?,
@@ -1883,7 +1888,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if death_replacement {
+        if name == super::super::warzone_portal_cooldown::CASE {
+            Box::pin(super::super::warzone_portal_cooldown::exercise(&owner, &mut admitted, &h)).await?;
+        } else if death_replacement {
             Box::pin(super::super::encounter_death_replacements::exercise(&mut owner, &mut admitted, callback.clone(), trigger, name)).await?;
         } else if name == super::super::ferumbras_crystal_reset::CASE {
             Box::pin(super::super::ferumbras_crystal_reset::exercise(&mut owner, &mut admitted, &h, callback.clone())).await?;

@@ -45,6 +45,9 @@ pub struct ItemDisguiseRequirement {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Individual admission to an encounter already opened by its source owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boss_admission_cooldown: Option<BossAdmissionCooldown>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -299,6 +302,13 @@ pub struct EncounterMonster {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct BossAdmissionCooldown {
+    pub creature: String,
+    pub seconds: u32,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Encounter {
     pub minimum_level: u32,
     pub players: Vec<EncounterPlayer>,
@@ -476,6 +486,24 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .boss_admission_cooldown
+        .as_ref()
+        .is_some_and(|cooldown| {
+            callback.trigger != Trigger::StepIn
+                || callback.actor_kind != ActorKind::Player
+                || !callback.requires_world_admission
+                || !callback.has_state_writes()
+                || !callback.return_on_failure
+                || callback.teleport.is_none()
+                || effects.encounter.is_some()
+                || !cooldown.creature.starts_with("oteryn:creature.")
+                || !super::super::valid_quest_key(&cooldown.creature)
+                || !(1..=30 * 24 * 60 * 60).contains(&cooldown.seconds)
+        })
+    {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8
