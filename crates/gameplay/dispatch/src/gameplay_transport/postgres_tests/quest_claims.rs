@@ -22,6 +22,7 @@ use std::sync::Arc;
 pub(super) const PREFIX: &str = "qengine-rewards-qonce-";
 const WELL: &str = "qengine-rewards-qonce-well";
 const WELL_LOST_ACK: &str = "qengine-rewards-qonce-well-lost-ack";
+const WELL_ROLLBACK: &str = "qengine-rewards-qonce-well-rollback";
 const DAILY: &str = "qengine-rewards-qonce-daily";
 const FOUNTAIN_TRANSFORM: &str = "qengine-rewards-qonce-fountain-transform";
 const ANNUAL: &str = "qengine-rewards-qonce-annual";
@@ -77,6 +78,13 @@ fn once_only_well_restores_saved_and_live_vitals_and_grants_achievement_postgres
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::qengine_rewards::scenario(WELL)
+}
+
+#[test]
+fn well_achievement_write_failure_rolls_back_the_heal_and_claim_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(WELL_ROLLBACK)
 }
 
 #[test]
@@ -201,6 +209,72 @@ async fn achievements(h: &Harness, key: &str) -> TestResult<i64> {
 async fn receipts(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1")
         .bind(CLAIM).fetch_one(&h.pool).await?)
+}
+
+async fn roll_back_well_grant(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    payload: &[u8],
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::decode_use_result;
+
+    let saved_sql = "SELECT to_jsonb(p) FROM game_character_last_positions p";
+    let before: Option<Value> = sqlx::query_scalar(saved_sql).fetch_optional(&h.pool).await?;
+    sqlx::raw_sql(r#"
+        CREATE SEQUENCE fixture_well_heal_staged;
+        GRANT USAGE, SELECT ON SEQUENCE fixture_well_heal_staged TO oteryn_game_runtime;
+        CREATE FUNCTION fixture_fail_well_achievement() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+            IF NEW.achievement_key = 'oteryn:achievement/fountain_of_life' AND EXISTS (
+                SELECT 1 FROM game_character_last_positions
+                WHERE character_id = NEW.character_id AND health > 1 AND mana > 0
+                    AND xmin = pg_current_xact_id()::xid
+            ) THEN
+                PERFORM nextval('public.fixture_well_heal_staged');
+                RAISE EXCEPTION 'fixture rejects the achievement after staging the healed vitals';
+            END IF;
+            RETURN NEW;
+        END $$;
+        CREATE TRIGGER fixture_fail_well_achievement
+        BEFORE INSERT ON game_account_achievement_grant_requests
+        FOR EACH ROW EXECUTE FUNCTION fixture_fail_well_achievement();
+    "#).execute(&h.pool).await?;
+
+    let session = admitted.game_session_id;
+    match super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.to_vec()).await {
+        Ok(reply) => assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Rejected),
+        Err(error) => assert!(owner.has_pending_quest_callback(session), "unexpected wire error: {error}"),
+    }
+    let staged: bool = sqlx::query_scalar("SELECT is_called FROM fixture_well_heal_staged")
+        .fetch_one(&h.pool).await?;
+    assert!(staged, "the failure must follow the saved heal in its transaction");
+    let saved: Option<Value> = sqlx::query_scalar(saved_sql).fetch_optional(&h.pool).await?;
+    assert_eq!(saved, before);
+    assert_eq!(receipts(h).await?, 0);
+    assert_eq!(achievements(h, WELL_ACHIEVEMENT).await?, 0);
+    let claims: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key=$1")
+        .bind(LEDGER).fetch_one(&h.pool).await?;
+    assert_eq!(claims, 0);
+    {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let actor = admitted.runtime_actor.ok_or("well actor")?;
+        let vitals = states.get(&runtime, actor, session).ok_or("well vitals")?.vitals();
+        assert_eq!((vitals.health, vitals.mana), (1, 0));
+    }
+
+    sqlx::query("DROP TRIGGER fixture_fail_well_achievement ON game_account_achievement_grant_requests")
+        .execute(&h.pool).await?;
+    if owner.has_pending_quest_callback(session) {
+        assert!(owner.reconcile_quest_callbacks(session).await);
+        assert!(!owner.has_pending_quest_callback(session));
+    } else {
+        advance_interaction(owner)?;
+        let reply = super::quest_world_callbacks::wire(owner, admitted, 2, 2, payload.to_vec()).await?;
+        assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+    }
+    Ok(())
 }
 
 fn advance_interaction(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
@@ -849,7 +923,7 @@ pub(super) async fn exercise(
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_great_dragon_hunt_quest/actions_treasure.lua:19-40"
         ]
     });
-    let well = matches!(name, WELL | WELL_LOST_ACK);
+    let well = matches!(name, WELL | WELL_LOST_ACK | WELL_ROLLBACK);
     let mut tracks = vec![];
     let mut effects;
     let period = match name {
@@ -1017,7 +1091,10 @@ pub(super) async fn exercise(
             state.restore_saved_vitals(1, 0);
             (full.health, full.mana)
         };
-        if name == WELL_LOST_ACK {
+        if name == WELL_ROLLBACK {
+            // Crystal actions_fountain.lua:7-10 keeps the restored pools and the one-time award together.
+            roll_back_well_grant(owner, admitted, h, &payload).await?;
+        } else if name == WELL_LOST_ACK {
             owner.states.quest_callbacks.interrupt_after_commit
                 .store(true, std::sync::atomic::Ordering::Release);
             assert!(super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.clone()).await.is_err());
@@ -1057,7 +1134,8 @@ pub(super) async fn exercise(
             assert_eq!((vitals.health, vitals.mana), (1, full.1));
         }
         advance_interaction(owner)?;
-        assert_eq!(use_claim(owner, *admitted, 2).await?, UseDisposition::Rejected);
+        let next = if name == WELL_ROLLBACK { 3 } else { 2 };
+        assert_eq!(use_claim(owner, *admitted, next).await?, UseDisposition::Rejected);
         {
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
