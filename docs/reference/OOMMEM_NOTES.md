@@ -55,3 +55,11 @@ high-water mark was 13,002,912 KiB at two Cargo jobs. At 535.421 s the
 cgroup recorded two OOM kills and Cargo exited by SIGKILL. The process peak
 is a lower bound because Cargo and rustc both died. No linker ran and no
 test list was produced. A one-job run measures the same mount set.
+
+The one-job retry was also OOM-killed before link at 12,996,504 KiB
+after 313.443 s. Both early half-mount measurements were confounded by
+3.38 GiB of retained evidence in RAM-backed `/tmp`, charged to the same
+16 GiB cgroup. The compiler RSS values remain observations, but the
+failures are not representative of a runner with disk-backed scratch.
+The saved objects and binary were moved off tmpfs and the two-job
+measurement was restarted.
