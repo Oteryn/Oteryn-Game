@@ -353,7 +353,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if name == super::super::rookie_guard_fortress_room::NAME {
+    let mut callback = if name == super::super::rookie_guard_distraction::NAME {
+        super::super::rookie_guard_distraction::callback()?
+    } else if name == super::super::rookie_guard_fortress_room::NAME {
         super::super::rookie_guard_fortress_room::callback()?
     } else if name == super::super::rookie_guard_web_grease::NAME {
         super::super::rookie_guard_web_grease::callback()?
@@ -659,7 +661,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == super::super::rookie_guard_fortress_room::NAME {
+    let world = if name == super::super::rookie_guard_distraction::NAME {
+        super::super::rookie_guard_distraction::world(&callback)?
+    } else if name == super::super::rookie_guard_fortress_room::NAME {
         super::super::rookie_guard_fortress_room::world(&callback)?
     } else if name == super::super::rookie_guard_web_grease::NAME {
         world_with_objects(&callback, trigger, &[(super::super::rookie_guard_web_grease::WEB, 100)], &[])?
@@ -3133,6 +3137,8 @@ fn scenario_case(
         } else if name == "questpc2-oldrak-npc" {
             super::super::questpc2_oldrak::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if name == super::super::rookie_guard_distraction::NAME {
+            Box::pin(super::super::rookie_guard_distraction::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::rookie_guard_fortress_room::NAME {
             Box::pin(super::super::rookie_guard_fortress_room::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::rookie_guard_web_grease::NAME {
