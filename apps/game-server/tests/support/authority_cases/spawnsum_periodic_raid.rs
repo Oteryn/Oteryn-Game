@@ -99,6 +99,12 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         tick(due, firing_id, definition.clone()).await?.firings,
         [(firing_id, key.clone())]
     );
+    assert!(
+        tick(due, firing_id, definition.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
     let wave = h
         .root
         .advance_raid_run(

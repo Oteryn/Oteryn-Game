@@ -81,7 +81,7 @@ fn source_order(raid: &CatalogueRaid) -> (u8, u16) {
     match raid.schedule {
         CatalogueSchedule::LegacyXml { source_order, .. } => (0, source_order),
         CatalogueSchedule::Lua { .. } => (1, 0),
-        CatalogueSchedule::Calendar { .. } => (2, 0),
+        CatalogueSchedule::Calendar { .. } | CatalogueSchedule::Periodic { .. } => (2, 0),
         CatalogueSchedule::Unknown => (3, 0),
     }
 }
@@ -161,6 +161,7 @@ fn candidates(
                         repeat: *repeat,
                     });
                 }
+                CatalogueSchedule::Periodic { .. } => {}
                 CatalogueSchedule::Unknown => return Err(RaidError::InvalidDefinition),
             }
             Ok(candidate)
