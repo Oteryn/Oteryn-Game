@@ -531,8 +531,11 @@ pub(super) async fn exercise(
     }
 
     if well {
+        use oteryn_protocol_oteryn::world_object::{decode_use_result, encode_use_intent};
+
         let actor = admitted.runtime_actor.ok_or("well actor")?;
         let session = admitted.game_session_id;
+        let payload = encode_use_intent(&claim_target(owner)?).map_err(debug)?;
         let full = {
             let runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
@@ -543,12 +546,9 @@ pub(super) async fn exercise(
             (full.health, full.mana)
         };
         if name == WELL_LOST_ACK {
-            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(
-                &claim_target(owner)?,
-            ).map_err(debug)?;
             owner.states.quest_callbacks.interrupt_after_commit
                 .store(true, std::sync::atomic::Ordering::Release);
-            assert!(super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await.is_err());
+            assert!(super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.clone()).await.is_err());
             assert!(owner.states.quest_callbacks.has_pending_claim_vitals(session));
             assert_eq!(receipts(h).await?, 1);
             assert_eq!(achievements(h, WELL_ACHIEVEMENT).await?, 1);
@@ -564,7 +564,8 @@ pub(super) async fn exercise(
             assert!(owner.reconcile_quest_callbacks(session).await);
             assert!(!owner.states.quest_callbacks.has_pending_claim_vitals(session));
         } else {
-            assert_eq!(use_claim(owner, *admitted, 1).await?, UseDisposition::Committed);
+            let reply = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.clone()).await?;
+            assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
         }
         {
             let runtime = owner.runtime.lock().await;
@@ -572,7 +573,16 @@ pub(super) async fn exercise(
             let state = states.get_mut(&runtime, actor, session).ok_or("healed actor")?;
             let vitals = state.vitals();
             assert_eq!((vitals.health, vitals.mana), full);
-            state.restore_saved_vitals(1, 0);
+            let (damaged, _) = state.after_creature_damage(full.0 - 1).ok_or("well damage")?;
+            *state = damaged;
+        }
+        if name == WELL {
+            let reply = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?;
+            assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let vitals = states.get(&runtime, actor, session).ok_or("replayed actor")?.vitals();
+            assert_eq!((vitals.health, vitals.mana), (1, full.1));
         }
         advance_interaction(owner)?;
         assert_eq!(use_claim(owner, *admitted, 2).await?, UseDisposition::Rejected);
@@ -580,7 +590,7 @@ pub(super) async fn exercise(
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
             let vitals = states.get(&runtime, actor, session).ok_or("refused actor")?.vitals();
-            assert_eq!((vitals.health, vitals.mana), (1, 0));
+            assert_eq!((vitals.health, vitals.mana), (1, full.1));
         }
         let saved: (i32, i32) = sqlx::query_as("SELECT health,mana FROM game_character_last_positions")
             .fetch_one(&h.pool).await?;
