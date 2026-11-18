@@ -416,7 +416,8 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 PhaseScenario::FivePlayerCredit { azaram } => {
                     let mut party = vec![admitted, second.ok_or("second admitted player")?];
                     party.extend(additional);
-                    super::gravedg_lich_knights::exercise_five(&h, &owner, &party, azaram).await?;
+                    super::gravedg_lich_knights::exercise_five(&h, &mut owner, &party, azaram)
+                        .await?;
                     false
                 }
                 PhaseScenario::LordAzaram => {
@@ -492,6 +493,10 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                         .facts
                         .object_revision(key);
                     assert!(after_timeout > 1, "timeout reset the lever");
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_secs(1))
+                        .ok_or("Zelos lever retry clock")?;
                     let retry = owner
                         .use_object(
                             deps.actor,

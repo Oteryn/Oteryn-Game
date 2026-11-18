@@ -1024,7 +1024,7 @@ pub(super) fn five_credit_catalogue(
 
 pub(super) async fn exercise_five(
     h: &Harness,
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     party: &[AdmittedSession],
     azaram: bool,
 ) -> TestResult {
@@ -1084,7 +1084,7 @@ pub(super) async fn exercise_five(
 
 async fn repeat_after_cooldown(
     h: &Harness,
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     party: &[AdmittedSession],
     boss: &str,
 ) -> TestResult {
@@ -1131,13 +1131,17 @@ async fn repeat_after_cooldown(
         owner.admit_quest_session(member).await;
     }
     let leader = party.first().ok_or("party leader")?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(1))
+        .ok_or("lever retry clock")?;
     let map = owner.bundle_map().ok_or("encounter map")?;
     let key = oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
     let expected_revision = map.facts.object_revision(key);
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let leader_actor = leader.runtime_actor.ok_or("leader actor")?;
-    let use_lever = async |command_id| {
+    let use_lever = async |owner: &ComposedFreshAdmission<'_, '_, '_>, command_id| {
         owner
             .use_object(
                 leader_actor,
@@ -1154,7 +1158,7 @@ async fn repeat_after_cooldown(
             .await
     };
     assert_eq!(
-        use_lever(111).await.disposition,
+        use_lever(owner, 111).await.disposition,
         UseDisposition::RequirementNotMet,
         "one staged player on cooldown blocks the entire party"
     );
@@ -1180,7 +1184,11 @@ async fn repeat_after_cooldown(
         1,
         "refusal does not renew any cooldown"
     );
-    let retry = use_lever(112).await;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(1))
+        .ok_or("lever admission clock")?;
+    let retry = use_lever(owner, 112).await;
     assert_eq!(
         retry.disposition,
         UseDisposition::Committed,
