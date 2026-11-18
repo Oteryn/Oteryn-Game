@@ -1,9 +1,7 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult};
-use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{
-    ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, CommandId, CommandRef,
-    MovementLocalPosition, NodeId,
+    ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, MovementLocalPosition, NodeId,
 };
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::map::{
@@ -11,9 +9,6 @@ use crate::map::{
     view::{EntrySource, MapFacts, compose_tile, placement_key},
 };
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
-};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
@@ -98,10 +93,16 @@ impl Scene {
         }
     }
 
-    fn stage(self) -> Option<i64> {
+    fn predecessor(self) -> Option<(i64, &'static str)> {
         match self {
-            Self::HauntedRuin => Some(12),
-            Self::VampireHunt => Some(8),
+            Self::HauntedRuin => Some((
+                12,
+                "oteryn:quest-transition/quest/u8_2/the_inquisition_quest/questline/npc_3",
+            )),
+            Self::VampireHunt => Some((
+                8,
+                "oteryn:quest-transition/quest/u8_2/the_inquisition_quest/questline/npc_18",
+            )),
             Self::ShadowNexus => None,
         }
     }
@@ -165,6 +166,18 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
     .bind(id(41).as_slice())
     .execute(&h.pool)
     .await?;
+    let catalogue = std::sync::Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?
+            .catalogue()
+            .clone(),
+    );
+    if let Some((stage, transition)) = scene.predecessor() {
+        let hash = catalogue
+            .definition_hash(QUEST)
+            .ok_or("Inquisition definition hash")?;
+        import_predecessor(h, stage, transition, hash).await?;
+    }
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -238,65 +251,9 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
     deps.runtime = tokio::sync::Mutex::new(runtime);
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(active);
-    owner.quest_catalogue = Some(std::sync::Arc::new(
-        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-            .map_err(debug)?
-            .catalogue()
-            .clone(),
-    ));
+    owner.quest_catalogue = Some(catalogue);
     owner.movement_cells = (&cells).into();
     deps.initialize(&owner).await;
-
-    if let Some(stage) = scene.stage() {
-        const SETUP: &str = "oteryn:quest-transition/spawnsum-inquisition-fixture-predecessor";
-        let catalogue = std::sync::Arc::new(
-            owner
-                .quest_catalogue
-                .as_ref()
-                .ok_or("quest catalogue")?
-                .with_fixture_transition(QuestTransition {
-                    world_change: None,
-                    key: SETUP.into(),
-                    quest: QUEST.into(),
-                    effects: vec![QuestEffect {
-                        track: TRACK.into(),
-                        from: QuestComparison::Any,
-                        effect: QuestEffectKind::Set(stage),
-                    }],
-                    completes: false,
-                    experience: None,
-                })
-                .map_err(debug)?,
-        );
-        let fence = owner
-            .current_quest_fence(session)
-            .await
-            .map_err(debug)?
-            .ok_or("predecessor fence")?;
-        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        let result = slot
-            .commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                QuestTransitionRequest {
-                    transition_key: SETUP.into(),
-                    cause: QuestCause::Command(CommandRef::new(
-                        session,
-                        CommandId::new(9000).map_err(debug)?,
-                    )),
-                },
-                catalogue.clone(),
-            )
-            .await
-            .map_err(debug)?;
-        assert!(
-            matches!(result, QuestTransitionOutcome::Committed(_)),
-            "{result:?}"
-        );
-        owner.quest_catalogue = Some(catalogue);
-    }
 
     let map = owner.bundle_map().ok_or("bundle")?;
     let key = placement_key(target, ordinal).ok_or("source placement")?;
@@ -360,7 +317,7 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
         );
         Ok::<_, Box<dyn std::error::Error>>(())
     };
-    if let Some(stage) = scene.stage() {
+    if let Some((stage, _)) = scene.predecessor() {
         owner.states.test_owner_time.store(101, Ordering::Relaxed);
         let (disposition, creature) = match scene {
             Scene::HauntedRuin => (
@@ -525,5 +482,50 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
     assert_water_consumed().await?;
     assert_eq!(map.facts.expire_movement_items(110_000_102), 1);
     assert_eq!(appearance(), Some(7925));
+    Ok(())
+}
+
+/// Import the source NPC predecessor as a complete historical revision. The
+/// actual USE below still advances the Character through the production writer.
+async fn import_predecessor(
+    h: &Harness,
+    stage: i64,
+    transition: &str,
+    hash: [u8; 32],
+) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for advance in [
+        "UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
+        "UPDATE game_character_progression_state SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
+    ] {
+        let applied = sqlx::query(advance)
+            .bind(id(41).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        assert_eq!(applied.rows_affected(), 1);
+    }
+    sqlx::query(
+        "INSERT INTO game_character_quest_receipts(character_id,cause_kind,cause_id,cause_ordinal,transition_key,quest_key,request_binding,pinned_content_revision,definition_hash,completes,track_keys,values_before,values_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at)
+         SELECT character_id,'command',encode($2,'hex')::uuid,9000,$3,$4,sha256(convert_to($3,'UTF8')),'content-1',$5,false,ARRAY[$6::text],ARRAY[0]::bigint[],ARRAY[$7::bigint],1,2,level,level,total_experience,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,0
+           FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice()).bind(id(50).as_slice()).bind(transition)
+    .bind(QUEST).bind(hash.as_slice()).bind(TRACK).bind(stage)
+    .execute(&mut *tx).await?;
+    sqlx::query(
+        "INSERT INTO game_character_quest_tracks VALUES (encode($1,'hex')::uuid,$2,$3,$4,2)",
+    )
+    .bind(id(41).as_slice())
+    .bind(TRACK)
+    .bind(QUEST)
+    .bind(stage)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query("INSERT INTO game_character_quest_states VALUES (encode($1,'hex')::uuid,$2,'content-1',$3,2,NULL,2)")
+        .bind(id(41).as_slice()).bind(QUEST).bind(hash.as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
     Ok(())
 }
