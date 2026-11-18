@@ -19,6 +19,9 @@ pub(super) async fn settle(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     entry: &PendingKillSettlement,
 ) -> bool {
+    if !owner.settle_lore_keeper_death(entry).await {
+        return false;
+    }
     // Encounter-only counters are absent from ordinary creature discovery.
     // Their admitted phase owner already froze exact recipients on this death;
     // the durable writer still revalidates each counter and its full source fence.

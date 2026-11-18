@@ -450,16 +450,30 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     assignment.ownership_generation,
                     assignment.source_revision,
                     &assignment.decision_identity,
-                    capacity::for_template(template)?,
+                    capacity::for_template(template)?.max(
+                        if template.creature_key() == super::lore_keeper::LORE_KEEPER {
+                            template.maximum_players() + 8
+                        } else {
+                            0
+                        },
+                    ),
                     pin,
                 )
                 .map_err(|_| ActivityRefusal::ContentUnavailable)?;
                 runtime
                     .install_companion_policies(native.policies().clone())
                     .map_err(|_| ActivityRefusal::ContentUnavailable)?;
-                runtime
-                    .realize_activity_boss(template, active)
-                    .map_err(|_| ActivityRefusal::ContentUnavailable)?;
+                let astral = if template.creature_key() == super::lore_keeper::LORE_KEEPER {
+                    Some(super::lore_keeper::AstralEncounter::prepare(
+                        &mut runtime,
+                        template,
+                    )?)
+                } else {
+                    runtime
+                        .realize_activity_boss(template, active)
+                        .map_err(|_| ActivityRefusal::ContentUnavailable)?;
+                    None
+                };
                 let RuntimeScopeRefV1::Instance { instance_id, .. } = allocation.scope else {
                     continue;
                 };
@@ -501,6 +515,18 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 )
                 .await
                 .map_err(|_| ActivityRefusal::ContentUnavailable)?;
+                if let Some(astral) = astral {
+                    let registered = self
+                        .activity_runtimes
+                        .get(allocation.scope, allocation.generation.get())
+                        .ok_or(ActivityRefusal::ContentUnavailable)?;
+                    *registered
+                        .states
+                        .quest_callbacks
+                        .lore_keeper
+                        .lock()
+                        .map_err(|_| ActivityRefusal::AuthorityRejected)? = Some(astral);
+                }
                 return Ok(());
             }
             if candidates.len() < 15 {

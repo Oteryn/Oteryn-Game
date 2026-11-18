@@ -2,7 +2,7 @@
 use crate::durability::activity_handoff::boss_room::BossRoomDefinition;
 use oteryn_gameplay_encounters::bosses::endgame_entry::{Encounter, source_entry_policy};
 
-const LORE_KEEPER: &str = "oteryn:creature.the_last_lore_keeper";
+use super::lore_keeper::LORE_KEEPER;
 const LORE_KEEPER_COOLDOWN_MS: u64 = 14 * 24 * 60 * 60 * 1000;
 const LORE_KEEPER_LIMIT_MS: u64 = 30 * 60 * 1000;
 

@@ -120,6 +120,7 @@ mod logout;
 mod logout_tests;
 mod loop_move;
 mod loop_training;
+mod lore_keeper;
 pub mod mail;
 mod map_door;
 mod map_ladder;

@@ -402,6 +402,34 @@ impl ChannelRuntimeV1 {
         result
     }
 
+    /// Replace exact live encounter actors and publish the new native profiles as one owner turn.
+    pub fn replace_quest_creature_set(
+        &mut self,
+        removed: &[ExactActorRef],
+        replacements: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        self.owner_fence()?;
+        if removed.is_empty()
+            || removed.len() > 8
+            || removed
+                .iter()
+                .any(|actor| self.live_creature_health(*actor).is_none())
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let before = self.carrier.clone();
+        let result = (|| {
+            for actor in removed {
+                self.remove_encounter_actor(*actor)?;
+            }
+            self.commit_quest_creature_spawn(replacements)
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
     pub fn encounter_owner_scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
         (
             self.binding.runtime_scope,

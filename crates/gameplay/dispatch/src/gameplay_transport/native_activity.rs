@@ -1263,6 +1263,9 @@ pub(super) fn boss_room_native_ready(
     if census.iter().any(|(_, _, session)| session.is_some()) {
         return false;
     }
+    if definition.boss_creature_key == super::lore_keeper::LORE_KEEPER {
+        return super::lore_keeper::AstralEncounter::native_ready(runtime);
+    }
     census.iter().any(|(actor, position, session)| {
         let cell = position.position();
         session.is_none()

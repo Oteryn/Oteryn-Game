@@ -99,6 +99,7 @@ struct ObservedWorldCallback {
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
+    pub(super) lore_keeper: std::sync::Mutex<Option<super::lore_keeper::AstralEncounter>>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     replica_deadlines: std::sync::Mutex<[Option<u64>; 2]>,
