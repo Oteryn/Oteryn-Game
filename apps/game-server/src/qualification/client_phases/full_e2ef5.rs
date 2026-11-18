@@ -1122,7 +1122,7 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
                             wait_character_released(clients, SUPPORT_CHARACTER),
                             wait_character_released(clients, 1),
                         );
-                        caster.and(target)
+                        rune_release_result(caster, target)
                     } else {
                         wait_character_released(clients, SUPPORT_CHARACTER).await
                     }
@@ -1132,6 +1132,26 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         .await;
         row.finish(result);
     }
+}
+
+fn rune_release_result(caster: TestResult, target: TestResult) -> TestResult {
+    match (caster, target) {
+        (Ok(()), Ok(())) => Ok(()),
+        (Err(error), Ok(())) => Err(format!("C16b caster release: {error}").into()),
+        (Ok(()), Err(error)) => Err(format!("C16b target release: {error}").into()),
+        (Err(caster), Err(target)) => {
+            Err(format!("C16b caster release: {caster}; target release: {target}").into())
+        }
+    }
+}
+
+#[test]
+fn rune_release_reports_both_failed_admissions() {
+    let result = rune_release_result(Err("caster wait expired".into()), Err("target database refused".into()));
+    assert!(result.is_err_and(|error| {
+        let message = error.to_string();
+        message.contains("caster wait expired") && message.contains("target database refused")
+    }));
 }
 
 async fn finish_rune_admissions<T>(

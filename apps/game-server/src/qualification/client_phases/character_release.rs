@@ -3,11 +3,27 @@
 // control-loss detection and grace; qualification never edits session state.
 // The first timeout per fixture is the root; later waits on it fail at once.
 async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
-    let harness = verdict::Harness::global();
+    wait_reported_release(
+        verdict::Harness::global(), index, clients.uses_core_release_gate, wait_fixture_released(clients, index),
+    ).await
+}
+
+async fn wait_reported_release(
+    harness: &verdict::Harness,
+    index: usize,
+    uses_core_release_gate: bool,
+    release: impl std::future::Future<Output = TestResult>,
+) -> TestResult {
+    if !uses_core_release_gate {
+        return release.await.map_err(|error| {
+            verdict::HarnessError::boxed(
+                verdict::Cause::Precondition { name: format!("arena-fixture{index}-released") },
+                error.to_string(),
+            )
+        });
+    }
     harness.fixture_gate(index)?;
-    wait_fixture_released(clients, index)
-        .await
-        .map_err(|error| harness.fixture_failed(index, error.as_ref()))
+    release.await.map_err(|error| harness.fixture_failed(index, error.as_ref()))
 }
 
 async fn wait_fixture_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
@@ -108,6 +124,26 @@ async fn wait_release(
 #[cfg(test)]
 mod character_release_tests {
     use super::*;
+
+    #[test]
+    fn arena_release_failure_keeps_core_fixture_available() -> TestResult {
+        tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+            for index in [0, 1] {
+                let harness = verdict::Harness::new(true, None);
+                let arena = wait_reported_release(&harness, index, false, async {
+                    Err("arena release expired".into())
+                }).await;
+                assert!(arena.is_err_and(|error| error.to_string().contains("arena release expired")));
+                wait_reported_release(&harness, index, true, async { Ok(()) }).await?;
+                assert!(wait_reported_release(&harness, index, true, async {
+                    Err("core release expired".into())
+                }).await.is_err());
+                assert!(harness.fixture_gate(index).is_err());
+                wait_reported_release(&harness, index, false, async { Ok(()) }).await?;
+            }
+            Ok(())
+        })
+    }
 
     #[test]
     fn character_release_waits_through_active_loss_and_grace() -> TestResult {

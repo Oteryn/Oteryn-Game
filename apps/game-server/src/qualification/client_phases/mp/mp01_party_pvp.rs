@@ -550,6 +550,7 @@ impl PvpWorld {
             channel: self.channel,
             scope_generation: self.scope_generation,
             url: &self.url,
+            uses_core_release_gate: false,
             ..*core
         }
     }
