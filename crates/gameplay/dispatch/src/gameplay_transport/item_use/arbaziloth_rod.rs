@@ -1,5 +1,6 @@
 //! Crystal 201189f8 fishing.lua routes the owned fishing rod into Arbaziloth's shield.
 use super::*;
+use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use oteryn_protocol_oteryn::world_object::{UseIntent, UseTarget, encode_item_use_intent};
 
 const ROD: &str = "oteryn:item.tibia.i3483";
@@ -112,7 +113,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let own = runtime.read_actor_position(actor).ok()?.position();
         let target = runtime.read_actor_position(boss).ok()?.position();
-        if own.floor != target.floor || own.x.abs_diff(target.x).max(own.y.abs_diff(target.y)) > 1 {
+        // Crystal fishing.lua enables far use; Actions::canUseFar checks <7, 5>,
+        // same floor and sight.
+        let cells = self.movement_cells();
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return outcome(UseDisposition::NotPossible);
+        };
+        let doors = crate::map::floor::BundleDoors(&index.map().facts);
+        if own.floor != target.floor
+            || own.x.abs_diff(target.x) > 7
+            || own.y.abs_diff(target.y) > 5
+            || !crate::movement::relocate::creature_sight_clear(cells, &doors, own, target)
+        {
             return outcome(UseDisposition::NotPossible);
         }
         let now_ms = self.owner_ms();
