@@ -48,7 +48,7 @@ async fn scenario(admin: &str) -> TestResult {
         .await
         .map_err(|()| "Vestibule gameplay fence unavailable")?
         .ok_or("Vestibule gameplay fence")?;
-    let access = |fence| async {
+    let access = async |fence| {
         h.root
             .read_rotten_blood_state(&authority, &h.node, fence)
             .await
