@@ -40,65 +40,85 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let initiator = members
             .iter()
             .position(|member| *member == (actor, entered, session))?;
-        let mut players = [None; 4];
-        let mut leases = Vec::with_capacity(4);
-        for (index, &(_, _, member)) in members.iter().enumerate() {
+        let mut fences = Vec::with_capacity(4);
+        for &(occupant, snapshot, member) in &members {
             let fence = self.current_quest_fence(member).await.ok()??;
-            let state = self
-                .root
-                .read_character_quest_state(self.character, fence.character_id)
-                .await
-                .ok()?;
-            players[index] = Some(rite::Participant {
-                mission: state
-                    .tracks()
-                    .get(rite::MISSION)
-                    .copied()
-                    .unwrap_or_default(),
-                entrance: state
-                    .tracks()
-                    .get(rite::ENTRANCE)
-                    .copied()
-                    .unwrap_or_default(),
-                has_charged_crystal: false,
-            });
-            leases.push((fence.character_id, fence.character_lease_generation));
+            let command = step_command(occupant, member, snapshot.revision(), self.reset_epoch)?;
+            fences.push((fence, command));
         }
-        let admissions = rite::plan(trigger, players)?;
+        let fences: [(CurrentCharacterGameplayFence, CommandRef); 4] = fences.try_into().ok()?;
+        let mut order = [0, 1, 2, 3];
+        order.sort_by_key(|&index| fences[index].0.character_id);
+        if order
+            .windows(2)
+            .any(|p| fences[p[0]].0.character_id == fences[p[1]].0.character_id)
+        {
+            return None;
+        }
+        let mut slots = Vec::with_capacity(4);
+        for index in order {
+            slots.push(
+                self.revision_sequencer
+                    .acquire(fences[index].0.character_id)
+                    .await,
+            );
+        }
         let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let proofs = {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.try_lock().ok()?;
+            let mut proofs = Vec::with_capacity(4);
+            for ((&(occupant, snapshot, member), destination), (fence, _)) in
+                members.iter().zip(rite::DESTINATIONS).zip(fences)
+            {
+                if states.is_dead(occupant)
+                    || !states.spell_idle(&runtime, occupant, member)
+                    || !self.states.player_trades.physical(member, None)
+                    || self.party_member_has_foreign_pending(member, session)
+                    || !runtime
+                        .bound_attacker_lease(occupant, member)
+                        .is_ok_and(|lease| {
+                            lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                                && lease.generation() == fence.character_lease_generation
+                        })
+                {
+                    return None;
+                }
+                let proof = crate::map::floor::prepare_quest_callback_teleport(
+                    &runtime,
+                    &self.movement_cells,
+                    occupant,
+                    member,
+                    snapshot,
+                    local(destination),
+                    super::super::pvp_live::pz_blocked(&states, occupant, member, self.owner_now()),
+                    &closed,
+                )
+                .ok()?;
+                proofs.push(proof);
+            }
+            proofs
+        };
+        let durable = self
+            .root
+            .commit_blood_brothers_castle(
+                self.character,
+                self.holder,
+                permit,
+                trigger,
+                fences,
+                std::sync::Arc::clone(self.quest_catalogue.as_ref()?),
+            )
+            .await;
+        for slot in &mut slots {
+            slot.observe_endgame_progression();
+        }
+        if !durable.ok()? {
+            return None;
+        }
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.try_lock().ok()?;
-        let closed = crate::map::floor::BundleDoors(&map.facts);
-        let mut proofs = Vec::with_capacity(4);
-        for ((&(occupant, snapshot, member), admission), (character, generation)) in
-            members.iter().zip(admissions).zip(leases)
-        {
-            if states.is_dead(occupant)
-                || !states.spell_idle(&runtime, occupant, member)
-                || !self.states.player_trades.physical(member, None)
-                || self.party_member_has_foreign_pending(member, session)
-                || !runtime
-                    .bound_attacker_lease(occupant, member)
-                    .is_ok_and(|lease| {
-                        lease.character_id().as_bytes() == character.as_bytes()
-                            && lease.generation() == generation
-                    })
-            {
-                return None;
-            }
-            let proof = crate::map::floor::prepare_quest_callback_teleport(
-                &runtime,
-                &self.movement_cells,
-                occupant,
-                member,
-                snapshot,
-                local(admission.destination),
-                super::super::pvp_live::pz_blocked(&states, occupant, member, self.owner_now()),
-                &closed,
-            )
-            .ok()?;
-            proofs.push(proof);
-        }
         let arrived = runtime
             .commit_source_steps_and_project(proofs, || true)
             .ok()?;
