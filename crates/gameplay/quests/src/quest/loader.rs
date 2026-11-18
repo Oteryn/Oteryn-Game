@@ -672,6 +672,7 @@ mod tests {
             include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
             include_str!("../../../../../content/quests/world-callbacks/feaster-phase-routes.json"),
             include_str!("../../../../../content/quests/questl2-djinn-world.json"),
+            include_str!("../../../../../content/quests/world-callbacks/spirithunters.json"),
         ];
         let mut expected = std::collections::BTreeSet::new();
         for text in registries {
