@@ -591,16 +591,8 @@ pub(super) async fn prepare_in_transaction<
         else {
             return Ok(Err(ActivityRefusal::AuthorityRejected));
         };
-        // Unlike reusable party rooms, the source has one solo room per
-        // Channel. Serialize selection even when two Instances are ready.
-        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
-            .bind(format!(
-                "{KROAZUR_BOSS}:{:02x?}:{:02x?}",
-                world_id.as_bytes(),
-                channel_id.as_bytes()
-            ))
-            .execute(&mut **tx)
-            .await?;
+        // Shared activity admission holds the exclusive admission relation
+        // fence, including across other ready Instances in this Channel.
         let occupied: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM game_boss_room_activities
               WHERE world_id=encode($1,'hex')::uuid AND origin_channel_id=encode($2,'hex')::uuid

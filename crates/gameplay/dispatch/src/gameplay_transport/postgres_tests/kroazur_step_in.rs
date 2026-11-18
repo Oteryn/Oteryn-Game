@@ -22,9 +22,7 @@ use crate::gameplay_transport::{SeamRooms, item_fence_of};
 use crate::map::boot::{BootPins, boot};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-use oteryn_gameplay_quests::quest::threatened_dreams::{
-    ACCESS, KROAZUR_BOSS, KROAZUR_CREATURE, QUEST,
-};
+use oteryn_gameplay_quests::quest::threatened_dreams::{ACCESS, KROAZUR_BOSS, KROAZUR_CREATURE};
 use oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1;
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use oteryn_world_bundle::writer::*;
@@ -319,25 +317,27 @@ async fn exercise(h: &Harness) -> TestResult {
     );
     assert_eq!(rooms(h).await?, 0);
 
-    // Seed the already-completed prerequisite as imported persisted state.
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
     for player in players {
-        let fence = player.item_fence.ok_or("player fence")?;
-        sqlx::query(
-            "INSERT INTO game_character_quest_tracks
-             (character_id,track_key,quest_key,value,committed_character_revision)
-             VALUES (encode($1,'hex')::uuid,$2,$3,1,1)",
+        let [npc] = super::classic_quests::install_positions(
+            &owner,
+            &player,
+            ["oteryn:npc.maelyrra"],
+            [oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: 33619,
+                y: 32308,
+                floor: -9,
+            }],
         )
-        .bind(fence.character_id.as_bytes().as_slice())
-        .bind(ACCESS)
-        .bind(QUEST)
-        .execute(&mut *tx)
         .await?;
+        let talk = super::classic_quests::talk;
+        talk(&mut owner, &player, npc, 1, "hi").await?;
+        talk(&mut owner, &player, npc, 2, "mission").await?;
+        talk(&mut owner, &player, npc, 3, "yes").await?;
+        assert_eq!(
+            super::classic_quests::progress(&owner, &player, &authority, ACCESS).await?,
+            1
+        );
     }
-    tx.commit().await?;
 
     let [first, second] = players;
     let _ = step(&mut owner, first, StepDirection::East).await?;
@@ -523,6 +523,7 @@ fn source_tiles() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
                     tile(33618, 32307, None),
                     tile(33619, 32307, Some(25029)),
                     tile(33620, 32307, None),
+                    tile(33619, 32308, None),
                 ],
             },
         ],
