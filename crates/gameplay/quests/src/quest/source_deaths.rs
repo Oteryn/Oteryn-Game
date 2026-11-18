@@ -4,6 +4,8 @@
 //! MagmaBubbleDeath: creaturescripts_magma_bubble_death.lua:12-23 (damage map);
 //! GoblinLeaderDeath: creaturescripts_goblin_leader_kill.lua:3-8 (damaging players).
 //! Herald: Crystal 9f5a72c creaturescripts_herald_of_fire.lua:43-45, local top-damage recipient.
+mod falcon;
+
 use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
@@ -57,6 +59,8 @@ pub struct Rule {
     /// A qualified local source rule may require the present most-damage player.
     #[serde(default)]
     pub top_damage_only: bool,
+    #[serde(default)]
+    pub wild_only: bool,
     define_transition: bool,
     /// Only mission-start guards are revision predecessors for cumulative counters.
     /// Counter increments from earlier queued deaths must not invalidate later ones.
@@ -146,7 +150,7 @@ const DOCUMENTS: &[&[u8]] = &[
     ),
 ];
 fn documents() -> Result<Vec<Document>, String> {
-    DOCUMENTS
+    let mut documents: Vec<_> = DOCUMENTS
         .iter()
         .map(|bytes| {
             let doc: Document = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
@@ -155,7 +159,9 @@ fn documents() -> Result<Vec<Document>, String> {
             }
             Ok(doc)
         })
-        .collect()
+        .collect::<Result<_, String>>()?;
+    documents.push(falcon::document());
+    Ok(documents)
 }
 pub fn rules() -> Result<&'static [Rule], &'static str> {
     static RULES: OnceLock<Result<Vec<Rule>, String>> = OnceLock::new();
@@ -170,7 +176,10 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
                     }
                     rule.quest.clone_from(&doc.quest);
                     if rule.epoch_tracks.as_ref().is_some_and(|guards| {
-                        guards.is_empty()
+                        (guards.is_empty()
+                            && !rule.effects.iter().all(|effect| {
+                                effect.from.kind == "lt" && effect.set == Some(effect.from.value)
+                            }))
                             || guards
                                 .iter()
                                 .any(|key| !rule.effects.iter().any(|e| &e.track == key))

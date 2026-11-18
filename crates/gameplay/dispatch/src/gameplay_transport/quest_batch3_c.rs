@@ -71,6 +71,10 @@ pub(super) fn capture(
             };
             if rule.creature != entry.creature
                 || !rule.recipient(position, damaged)
+                || (rule.wild_only
+                    && !runtime
+                        .companion_snapshot_including_dead(entry.target)
+                        .is_ok_and(|creature| creature.state.master.is_none()))
                 || (rule.top_damage_only
                     && (!principal_present
                         || principal.actor != snapshot.actor
