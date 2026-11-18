@@ -311,6 +311,24 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub switches: Option<EncounterSwitches>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterSwitches {
+    pub stations: [EncounterSwitch; 4],
+    pub exit: Position,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterSwitch {
+    pub lever: Position,
+    pub stand: Position,
+    pub walls: [Position; 5],
+    pub appearance: u16,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -881,7 +899,33 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        if let Some(switches) = &encounter.switches {
+            let levers: BTreeSet<_> = switches.stations.iter().map(|s| s.lever).collect();
+            let stands: BTreeSet<_> = switches.stations.iter().map(|s| s.stand).collect();
+            let walls: BTreeSet<_> = switches.stations.iter().flat_map(|s| s.walls).collect();
+            if encounter.timing.is_none()
+                || callback.trigger != Trigger::Use
+                || !callback.opening_only
+                || !callback.passages.is_empty()
+                || !pos(switches.exit)
+                || in_room(switches.exit)
+                || levers.len() != 4
+                || stands.len() != 4
+                || walls.len() != 20
+                || !walls.is_disjoint(&levers)
+                || !walls.is_disjoint(&stands)
+                || !walls.is_disjoint(&unique_monsters)
+                || switches.stations.iter().any(|s| {
+                    !in_room(s.lever)
+                        || !in_room(s.stand)
+                        || s.appearance == 0
+                        || s.walls.iter().any(|p| !in_room(*p))
+                })
+            {
+                return false;
+            }
+        }
+        if (encounter.minimum_level == 0 && !source_party && encounter.switches.is_none())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()

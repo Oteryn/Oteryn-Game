@@ -120,6 +120,10 @@ pub enum QuestCallbackProjection {
         mutations: Vec<QuestSceneMutation>,
         remove_self: bool,
     },
+    EncounterWalls {
+        walls: Vec<(TilePos, EntryFacts)>,
+        clear: Vec<u64>,
+    },
     ItemCycle {
         position: TilePos,
         remove: Option<u64>,
@@ -159,6 +163,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    encounter_walls: BTreeMap<TilePos, (u64, EntryId)>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
     naginata_picks: Vec<NaginataPick>,
@@ -459,6 +464,43 @@ impl CallbackStates {
                     return false;
                 }
             }
+            QuestCallbackProjection::EncounterWalls { walls, clear } => {
+                if walls.len() > 5 || clear.len() > 4 {
+                    return false;
+                }
+                for (pos, facts) in walls {
+                    if facts.pickupable || self.phase_has_dynamic_blocker(*pos) {
+                        return false;
+                    }
+                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
+                        return false;
+                    };
+                    let Some(entry) = EntryId::callback(sequence) else {
+                        return false;
+                    };
+                    self.movement_sequence = sequence;
+                    self.movement_items
+                        .entry(*pos)
+                        .or_default()
+                        .push(view::ComposedEntry {
+                            source: view::EntrySource::Added(entry),
+                            facts: *facts,
+                        });
+                    self.encounter_walls.insert(*pos, (owner, entry));
+                }
+                self.encounter_walls.retain(|pos, (source, entry)| {
+                    if !clear.contains(source) {
+                        return true;
+                    }
+                    if let Some(items) = self.movement_items.get_mut(pos) {
+                        items.retain(|item| item.source != view::EntrySource::Added(*entry));
+                        if items.is_empty() {
+                            self.movement_items.remove(pos);
+                        }
+                    }
+                    false
+                });
+            }
             QuestCallbackProjection::ItemCycle {
                 position,
                 remove,
@@ -500,7 +542,9 @@ impl CallbackStates {
         })
     }
     pub(super) fn phase_has_dynamic_blocker(&self, pos: TilePos) -> bool {
-        self.solid_items.contains(&pos) || self.batch_blockers.contains(&pos)
+        self.solid_items.contains(&pos)
+            || self.batch_blockers.contains(&pos)
+            || self.encounter_walls.contains_key(&pos)
     }
 
     pub(super) fn clear_feroxa_scenery(&mut self, inside: impl Fn(TilePos) -> bool) {
@@ -514,6 +558,7 @@ impl CallbackStates {
         };
         self.movement_items.retain(|p, _| !cleared(p));
         self.solid_items.retain(|p| !cleared(p));
+        self.encounter_walls.retain(|p, _| !cleared(p));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
         self.presences.retain(|_, (p, _)| !cleared(p));
@@ -535,6 +580,7 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
+            + self.encounter_walls.len()
             + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
@@ -1674,6 +1720,12 @@ impl BundleFacts {
                         }
                     })
                 }
+                QuestCallbackProjection::EncounterWalls { walls, clear } => {
+                    walls.iter().any(|(p, _)| states.position_reserved(*p))
+                        || states.encounter_walls.iter().any(|(pos, (owner, _))| {
+                            clear.contains(owner) && states.position_reserved(*pos)
+                        })
+                }
                 QuestCallbackProjection::TimedTransform { .. } => false,
             })
             || expected == u64::MAX
@@ -1892,10 +1944,7 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos)
-            || states.batch_blockers.contains(&pos)
-            || states.arena_pillar_closed_at(pos)
-        {
+        if states.phase_has_dynamic_blocker(pos) || states.arena_pillar_closed_at(pos) {
             return true;
         }
         if states.phase_entry(pos, 0).is_some() {
