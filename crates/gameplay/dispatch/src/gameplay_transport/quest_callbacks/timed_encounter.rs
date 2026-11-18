@@ -2,7 +2,10 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
-use crate::map::view::EntryFacts;
+use crate::map::{
+    facts::QuestCallbackProjection,
+    view::{EntryFacts, EntrySource, MapFacts},
+};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(super) const MAX_TIMED_ENCOUNTERS: usize = 64;
@@ -18,14 +21,40 @@ pub(super) struct TimedEncounter {
     reset_at: u64,
     attempted_spawn: bool,
     spawned: Vec<ExactActorRef>,
+    merchant_loot: Option<(u64, Vec<(TilePos, u64)>)>,
 }
 impl TimedEncounter {
     pub(super) fn source_key(&self) -> u64 {
         self.key
     }
 
+    pub(super) fn overlaps_merchant_wave(&self, callback: &Callback) -> bool {
+        if !self.callback.starts_merchant_wave()
+            || !callback.starts_merchant_wave()
+            || self.merchant_loot.is_some()
+        {
+            return false;
+        }
+        let Some((active, requested)) = self
+            .callback
+            .effects
+            .encounter
+            .as_ref()
+            .zip(callback.effects.encounter.as_ref())
+        else {
+            return false;
+        };
+        active.room_min.floor == requested.room_min.floor
+            && active.room_min.x <= requested.room_max.x
+            && requested.room_min.x <= active.room_max.x
+            && active.room_min.y <= requested.room_max.y
+            && requested.room_min.y <= active.room_max.y
+    }
+
     pub(super) fn next_due_us(&self) -> u64 {
-        if self.attempted_spawn {
+        if let Some((deadline, _)) = &self.merchant_loot {
+            *deadline
+        } else if self.attempted_spawn {
             self.reset_at
         } else {
             self.spawn_at
@@ -49,6 +78,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         key: u64,
         revision: u64,
         after: EntryFacts,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -58,7 +88,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let personal =
             oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(callback);
-        if callback.lever.is_none() && !personal {
+        let merchant = callback.starts_merchant_wave()
+            && matches!(
+                projection,
+                Some(QuestCallbackProjection::ItemPresence { .. })
+            );
+        if callback.lever.is_none() && !personal && !merchant {
             return UseDisposition::Rejected;
         }
         let Some(native) = self
@@ -100,15 +135,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         if pending.len() >= MAX_TIMED_ENCOUNTERS
-            || pending.iter().any(|pending| pending.key == key)
+            || pending
+                .iter()
+                .any(|pending| pending.key == key || pending.overlaps_merchant_wave(callback))
             || pending.try_reserve(1).is_err()
         {
             return UseDisposition::Exhausted;
         }
-        if !map
-            .facts
-            .apply_quest_callback(key, revision, after, &[], &[], false, None)
-        {
+        if !map.facts.apply_quest_callback(
+            key,
+            revision,
+            after,
+            &[],
+            &[],
+            false,
+            if merchant { projection } else { None },
+        ) {
             return UseDisposition::Rejected;
         }
         pending.push(TimedEncounter {
@@ -122,6 +164,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             reset_at,
             attempted_spawn: false,
             spawned: Vec::new(),
+            merchant_loot: None,
         });
         states.owner_wake.notify_one();
         UseDisposition::Committed
@@ -166,6 +209,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
+            if let Some((_, loot)) = memo.merchant_loot.take() {
+                for (pos, key) in loot {
+                    map.facts.remove_movement_item(pos, key, 12189);
+                }
+                pending.remove(index);
+                continue;
+            }
+            if memo.callback.starts_merchant_wave() && now >= memo.reset_at {
+                super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
+                let mut loot = Vec::new();
+                for x in encounter.room_min.x..=encounter.room_max.x {
+                    for y in encounter.room_min.y..=encounter.room_max.y {
+                        let pos = TilePos {
+                            x,
+                            y,
+                            floor: encounter.room_min.floor,
+                        };
+                        for entry in map.facts.movement_items(pos) {
+                            let EntrySource::Added(id) = entry.source else {
+                                continue;
+                            };
+                            let key = id.get();
+                            if entry.facts.appearance_id == 12189
+                                || (entry.facts.appearance_id == 12187
+                                    && map.facts.compare_transform_movement_item(
+                                        key,
+                                        map.facts.object_revision(key),
+                                        12189,
+                                    ))
+                            {
+                                loot.push((pos, key));
+                            }
+                        }
+                    }
+                }
+                memo.merchant_loot = Some((now.saturating_add(300_000_000), loot));
+                index += 1;
+                continue;
+            }
             let Ok(census) = runtime.current_live_creature_census() else {
                 index += 1;
                 continue;

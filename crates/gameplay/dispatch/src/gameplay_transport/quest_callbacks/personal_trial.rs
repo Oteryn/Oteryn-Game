@@ -23,7 +23,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         if pending.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
-            || pending.iter().any(|p| p.source_key() == key)
+            || pending
+                .iter()
+                .any(|p| p.source_key() == key || p.overlaps_merchant_wave(callback))
         {
             return false;
         }

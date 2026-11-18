@@ -394,6 +394,24 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
         })
 }
 
+impl Callback {
+    /// The final net USE starts the timed merchant wave on the shared encounter owner.
+    pub fn starts_merchant_wave(&self) -> bool {
+        self.effects.place_item == Some(12187)
+            && self.trigger == Trigger::Use
+            && self.effects.encounter.as_ref().is_some_and(|encounter| {
+                encounter.monsters.len() == 7
+                    && encounter
+                        .timing
+                        .is_some_and(|timing| timing.reset_after_ms == 300_000)
+                    && encounter
+                        .monsters
+                        .iter()
+                        .all(|monster| monster.creature == "oteryn:creature.travelling_merchant")
+            })
+    }
+}
+
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
     let inputs = &effects.carried_inputs;
@@ -754,7 +772,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.lever.is_some()
             || callback.teleport.is_some()
             || !callback.passages.is_empty()
-            || effects.encounter.is_some()
+            || (effects.encounter.is_some() && !callback.starts_merchant_wave())
             || effects.item_cycle.is_some()
             || effects.item_presence.is_some()
             || effects.portals.is_some()
@@ -813,6 +831,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && !callback.starts_merchant_wave()
                 && (!lever
                     || (effects.scene.is_none()
                         && effects.party_transfer.is_none()
@@ -873,11 +892,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        if (encounter.minimum_level == 0 && !source_party && !callback.starts_merchant_wave())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
-                    || callback.item_on_target.is_some()
+                    || (callback.item_on_target.is_some() && !callback.starts_merchant_wave())
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
