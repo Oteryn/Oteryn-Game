@@ -1677,7 +1677,7 @@ async fn scenario(
                 assert_eq!(effect.started_at() % 1_000, 0);
                 assert_eq!(
                     (health_interval_ms, mana_interval_ms),
-                    if index == 0 { (8_000, 4_000) } else { (6_000, 6_000) }
+                    if index == 0 { (7_000, 4_000) } else { (6_000, 6_000) }
                 );
                 let interval = health_interval_ms.min(mana_interval_ms);
                 let due = effect.started_at() + u64::from(interval) * 1_000;
