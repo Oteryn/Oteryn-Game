@@ -606,6 +606,14 @@ fn scenario_case(
             .ok_or("item")?
             .target_replacement = Some(7777);
     }
+    if name.starts_with("qengine-rewards-rahemos-oasis-") {
+        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
+        callback.selector.position = Some(trigger);
+        callback.selector.unique = None;
+        callback.selector.action = Some(12107);
+        callback.selector.appearance = Some(2772);
+        callback.lever = Some([2772, 2773]);
+    }
     if lever_fixture {
         callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
         callback.selector.unique = Some(25012);
@@ -646,7 +654,14 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if name.starts_with("qengine-rewards-rahemos-oasis-") {
+        world_with_objects(
+            &callback,
+            trigger,
+            &[(Position { x: 33122, y: 32765, floor: -14 }, 1662)],
+            &[1663, 3595],
+        )?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
