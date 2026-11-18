@@ -43,6 +43,7 @@ const LIONS_FOUNTAIN: u16 = 6389;
 const LIONS_SANCTUARY_ROCK: u16 = 1852;
 const DAILY_PERIOD: i64 = 86_401;
 const COUNT: &str = "oteryn:quest-progress/qonce-dispatch/count";
+const HOARD_GOAL: i64 = 50;
 const WELL_ACHIEVEMENT: &str = "oteryn:achievement/fountain_of_life";
 const HOARD_ACHIEVEMENT: &str = "oteryn:achievement/hoard_of_the_dragon";
 const DAILY_REFUSAL: &str = "At the moment there is neither a treasure nor anything else in the fountain. Perhaps you might return later.";
@@ -513,15 +514,15 @@ pub(super) async fn exercise(
         }
     } else if name == HOARD {
         tracks.extend([
-            track(LEDGER, 49, 0, 50), track(COUNT, 9, 0, i64::MAX),
+            track(LEDGER, HOARD_GOAL - 1, 0, HOARD_GOAL), track(COUNT, 9, 0, i64::MAX),
             track(CHOICE, 0, 0, 2), track(HUNT_GATE, 0, 0, 0),
         ]);
         // Crystal actions_treasure.lua:29-37 keeps counting after the tenth claim.
         let mut count = storage(COUNT, 0, i64::MAX - 1, 1);
         count["increment"] = json!(true);
-        callback["storage"] = json!([storage(LEDGER, 50, 50, 0), count, storage(CHOICE, 0, 2, 0)]);
+        callback["storage"] = json!([storage(LEDGER, HOARD_GOAL, HOARD_GOAL, 0), count, storage(CHOICE, 0, 2, 0)]);
         callback["failure_message"] = json!(HOARD_REFUSAL);
-        effects = json!({"reset":{"kind":"progress","track":LEDGER,"minimum":50},
+        effects = json!({"reset":{"kind":"progress","track":LEDGER,"minimum":HOARD_GOAL},
             "selection_track":CHOICE,
             "milestone":{"track":COUNT,"count":10,"achievement":HOARD_ACHIEVEMENT},
             "rewards":[
@@ -560,7 +561,7 @@ pub(super) async fn exercise(
         stages.push(json!({
             "key":"kill-dragon","completes":false,"trigger":{"kind":"kill","counter":{
                 "key":HUNT_KILL,"creature":DRAGON,"track":LEDGER,
-                "gate":HUNT_GATE,"gate_value":0,"maximum":50,
+                "gate":HUNT_GATE,"gate_value":0,"maximum":HOARD_GOAL,
                 "death_area":{"minimum":[AT.x-2, AT.y-2, -AT.floor],
                               "maximum":[AT.x+2, AT.y+2, -AT.floor]}
             }}
@@ -699,7 +700,7 @@ pub(super) async fn exercise(
             .ok_or("native creature policies")?
             .install_companion_policies(&mut *owner.runtime.lock().await).map_err(debug)?;
         super::qengine_kill_stories::death(owner, admitted, DRAGON, 88_001).await?;
-        assert_eq!(track_value(h, LEDGER).await?, 50, "the death opens the hoard");
+        assert_eq!(track_value(h, LEDGER).await?, HOARD_GOAL, "the death opens the hoard");
     }
     let before = super::qengine_voucher_stories::quantity(h, 3031).await?;
     if name == ANNUAL {
@@ -755,13 +756,33 @@ pub(super) async fn exercise(
                     (SELECT value FROM game_character_quest_tracks WHERE track_key=$2)",
         ).bind(LEDGER).bind(COUNT).fetch_one(&h.pool).await?;
         assert_eq!((ledger, count), (0, 10));
-        assert!((1..=2).contains(&(super::qengine_voucher_stories::quantity(h, 3039).await? - before_red_gems)));
-        super::qengine_kill_stories::death(owner, admitted, DRAGON, 88_002).await?;
-        assert_eq!(track_value(h, LEDGER).await?, 1, "the next hunt can earn credit again");
+        let first_gems = super::qengine_voucher_stories::quantity(h, 3039).await?;
+        let first_draw = track_value(h, CHOICE).await?;
+        assert!((1..=2).contains(&first_draw));
+        assert_eq!(first_gems - before_red_gems, first_draw);
+        // Crystal actions_treasure.lua:20,27,29-37 opens the next hunt at zero
+        // and permits subsequent bundles without re-awarding the achievement.
+        for expected in 1..=HOARD_GOAL {
+            let command = 88_001 + u64::try_from(expected)?;
+            super::qengine_kill_stories::death(owner, admitted, DRAGON, command).await?;
+            assert_eq!(track_value(h, LEDGER).await?, expected);
+        }
         let deaths: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
         ).bind(HUNT_KILL).fetch_one(&h.pool).await?;
-        assert_eq!(deaths, 2, "duplicate death delivery earns one credit per death");
+        assert_eq!(deaths, HOARD_GOAL + 1, "duplicate death delivery earns one credit per death");
+        let next_gold = super::qengine_voucher_stories::quantity(h, 3031).await?;
+        let next_gems = super::qengine_voucher_stories::quantity(h, 3039).await?;
+        advance_interaction(owner)?;
+        assert_eq!(use_claim(owner, *admitted, 24).await?, UseDisposition::Committed);
+        assert_eq!(track_value(h, LEDGER).await?, 0);
+        assert_eq!(track_value(h, COUNT).await?, 11);
+        assert_eq!(achievements(h, HOARD_ACHIEVEMENT).await?, 1);
+        assert_eq!(receipts(h).await?, 2);
+        assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, next_gold + 2);
+        let second_draw = track_value(h, CHOICE).await?;
+        assert!((1..=2).contains(&second_draw));
+        assert_eq!(super::qengine_voucher_stories::quantity(h, 3039).await? - next_gems, second_draw);
     }
     if name == DAILY {
         assert_eq!(track_value(h, CHOICE).await?, 2);
