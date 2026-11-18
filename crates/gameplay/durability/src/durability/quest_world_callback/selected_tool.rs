@@ -9,6 +9,9 @@ pub struct QuestWorldToolContext {
     world: QuestWorldContext,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) selected_tool: Option<SelectedQuestTool>,
+    // The retained request already binds the exact callback, actor and map.
+    #[serde(skip)]
+    pub(super) floor_reward: Option<super::floor_reward::FloorReward>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -24,6 +27,7 @@ impl From<QuestWorldContext> for QuestWorldToolContext {
         Self {
             world,
             selected_tool: None,
+            floor_reward: None,
         }
     }
 }
@@ -88,6 +92,7 @@ impl QuestWorldContext {
                 intent,
                 direct,
             }),
+            floor_reward: None,
         })
     }
 }

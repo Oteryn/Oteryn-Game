@@ -45,15 +45,28 @@ pub async fn initialize_in_transaction(
     node: &NodeIncarnationProof,
     proof: &(impl NativeMapInitializationProof + ?Sized),
 ) -> Result<Vec<MaterializedNativeMapItem>> {
+    let record = recovery
+        .record_for(root)
+        .map_err(|_| SpellItemError::Rejected("map recovery authority"))?;
+    let items = initialize_with_recovery(tx, permit, root, &record, node, proof).await?;
+    sqlx::query("SET CONSTRAINTS ALL IMMEDIATE").execute(&mut **tx).await?;
+    Ok(items)
+}
+
+pub(crate) async fn initialize_with_recovery(
+    tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
+    root: &DurabilityRoot,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    proof: &(impl NativeMapInitializationProof + ?Sized),
+) -> Result<Vec<MaterializedNativeMapItem>> {
     let binding = proof.current_binding().map_err(SpellItemError::Rejected)?;
     if binding.scope_generation == 0 || proof.placements().len() > 128 {
         return Err(SpellItemError::Rejected("map initialization budget/scope"));
     }
     permit.check_channel(binding.world, binding.channel)?;
-    let record = recovery
-        .record_for(root)
-        .map_err(|_| SpellItemError::Rejected("map recovery authority"))?;
-    assert_recovery_fence(tx, &record).await?;
+    assert_recovery_fence(tx, recovery).await?;
     super::db::lock_admission_relations(tx).await?;
     let epoch: String = sqlx::query_scalar("SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text")
         .bind(binding.world.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
@@ -204,9 +217,6 @@ pub async fn initialize_in_transaction(
     if proof.current_binding().map_err(SpellItemError::Rejected)? != binding {
         return Err(SpellItemError::Rejected("map owner changed before commit"));
     }
-    sqlx::query("SET CONSTRAINTS ALL IMMEDIATE")
-        .execute(&mut **tx)
-        .await?;
     Ok(out)
 }
 

@@ -109,9 +109,14 @@ fn scenario(admin: String) -> TestResult {
                 );
                 *kitty
             };
-            let (quantity, at, pickup_qualified): (i64, Vec<u8>, bool) = sqlx::query_as(
-            "SELECT i.quantity,g.spatial_position,game_item_loop_map_mint_source(i.item_instance_id) \
+            let (quantity, at, pickup_qualified, same_transaction): (i64, Vec<u8>, bool, bool) = sqlx::query_as(
+            "SELECT i.quantity,g.spatial_position,game_item_loop_map_mint_source(i.item_instance_id), \
+             q.xmin::text::numeric=mod(r.created_xact_id::text::numeric,4294967296) \
              FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) \
+             JOIN game_native_map_item_receipts r USING(item_instance_id) \
+             JOIN game_character_quest_receipts q ON q.cause_id=(r.source_attributes->>'session')::uuid \
+             AND q.cause_kind='use' AND q.cause_ordinal=(r.source_attributes->>'command')::numeric \
+             AND q.transition_key=r.source_attributes->>'transition' \
              WHERE i.definition_production_key=$1 AND i.lifecycle=1",
         ).bind(TOY).fetch_one(&h.pool).await?;
             assert_eq!(quantity, 1);
@@ -126,6 +131,10 @@ fn scenario(admin: String) -> TestResult {
             assert!(
                 pickup_qualified,
                 "toy uses ordinary Ground pickup authority"
+            );
+            assert!(
+                same_transaction,
+                "the Quest and floor item share one commit"
             );
             owner
                 .states

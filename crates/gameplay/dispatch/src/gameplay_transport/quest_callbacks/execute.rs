@@ -1082,6 +1082,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 context.into()
             };
+            let context = if let Some(reward) = &callback.effects.floor_reward {
+                let QuestCause::Use(command) = cause else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(proof) = self.prepare_quest_floor_reward(
+                    runtime, actor, map, callback, pos, command, fence, reward,
+                ) else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(context) = context.with_floor_reward(&proof) else {
+                    return UseDisposition::Rejected;
+                };
+                context
+            } else {
+                context
+            };
             let reward_weights = self
                 .active_generation
                 .and_then(|g| g.native_gameplay())
@@ -1253,16 +1269,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
                         && let QuestCause::Use(command) = cause {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
-                    }
-                    if let Some(reward) = &callback.effects.floor_reward {
-                        let QuestCause::Use(command) = cause else {
-                            return UseDisposition::Rejected;
-                        };
-                        // Retry the same map materialization if quest or Ground acknowledgement
-                        // was lost. Keep the original callback revision until both are known.
-                        if !self.create_quest_floor_reward(permit, runtime, actor, map, callback, pos, command, fence, reward).await {
-                            return UseDisposition::Rejected;
-                        }
                     }
                     self.apply_committed_quest_copy(session, fresh, committed);
                     if callback.effects.encounter.is_some()

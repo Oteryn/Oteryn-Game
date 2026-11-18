@@ -26,6 +26,7 @@ BEGIN
                THEN (NEW.source_attributes->>'command')::numeric END
              AND q.cause_kind = 'use'
              AND q.transition_key = NEW.source_attributes->>'transition'
+             AND q.xmin::text::numeric = mod(pg_current_xact_id()::text::numeric, 4294967296)
        ) THEN
         RAISE EXCEPTION 'quest floor reward requires its exact committed USE' USING ERRCODE='23514';
     END IF;

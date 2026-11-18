@@ -4,6 +4,7 @@ pub(super) mod carrot;
 pub(crate) mod character_requirements;
 mod completed_quests;
 pub(super) mod completion;
+pub(super) mod floor_reward;
 mod ground_read;
 pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]

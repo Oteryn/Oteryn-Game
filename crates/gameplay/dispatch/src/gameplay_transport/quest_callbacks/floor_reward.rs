@@ -1,4 +1,4 @@
-//! Move a source callback's minted item into the existing durable Ground owner.
+//! Qualify a Quest floor reward from the current native map turn.
 use super::*;
 use crate::content::{ReferenceItemField, native_gameplay::NativeGameplayState};
 use crate::durability::{
@@ -10,7 +10,7 @@ use crate::durability::{
 };
 use oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount;
 
-struct CurrentQuestFloorReward<'a> {
+pub(super) struct CurrentQuestFloorReward<'a> {
     runtime: &'a ChannelRuntimeV1,
     map: &'a BundleMap,
     content: &'a NativeGameplayState,
@@ -55,43 +55,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         clippy::too_many_arguments,
         reason = "bound Ground source and retained quest occurrence"
     )]
-    pub(super) async fn create_quest_floor_reward(
-        &self,
-        permit: &SpellLanePermit,
-        runtime: &ChannelRuntimeV1,
+    pub(super) fn prepare_quest_floor_reward<'a>(
+        &'a self,
+        runtime: &'a ChannelRuntimeV1,
         actor: ExactActorRef,
-        map: &BundleMap,
+        map: &'a BundleMap,
         callback: &Callback,
         position: TilePos,
         command: CommandRef,
         fence: CurrentCharacterGameplayFence,
         reward: &ItemAmount,
-    ) -> bool {
-        let Some(content) = self
+    ) -> Option<CurrentQuestFloorReward<'a>> {
+        let content = self
             .active_generation
-            .and_then(|generation| generation.native_gameplay())
-        else {
-            return false;
-        };
-        let Some(revision) = content
-            .item_index()
-            .and_then(|items| items.revision(&reward.item))
-        else {
-            return false;
-        };
-        let Some(policy) = content.item_policy(&reward.item, revision) else {
-            return false;
-        };
-        let record = policy.record();
+            .and_then(|generation| generation.native_gameplay())?;
+        let revision = content.item_index()?.revision(&reward.item)?;
+        let record = content.item_policy(&reward.item, revision)?.record();
         let ReferenceItemField::Known(physical) = &record.semantics.physical else {
-            return false;
+            return None;
         };
+        use crate::content::native_gameplay::NativeItemDestination;
         if !runtime
             .bound_attacker_lease(actor, command.game_session_id())
             .is_ok_and(|lease| {
                 lease.character_id().as_bytes() == fence.character_id.as_bytes()
                     && lease.generation() == fence.character_lease_generation
             })
+            || !record.admission.materializable
+            || !record
+                .admission
+                .legal_destinations
+                .contains(&NativeItemDestination::Ground)
+            || record.attributes.blocks_movement != Some(false)
+            || record.attributes.blocks_projectile != Some(false)
             || physical.movable != ReferenceItemField::Known(true)
             || physical.pickupable != ReferenceItemField::Known(true)
             || map.facts.house_tile(position)
@@ -101,7 +97,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .tile(position.x, position.y, position.floor)
                 .is_none()
         {
-            return false;
+            return None;
         }
         let source = format!(
             "quest-floor-v1/{}/{}",
@@ -109,7 +105,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.command_id().get()
         );
         let pin = runtime.content_pin();
-        let proof = CurrentQuestFloorReward {
+        Some(CurrentQuestFloorReward {
             runtime,
             map,
             content,
@@ -146,15 +142,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 immovable_block_solid: false,
                 owner_kind: None,
             },
-        };
-        let complete = self
-            .root
-            .initialize_native_map_current_owner(permit, self.character, self.holder, &proof)
-            .await
-            .is_ok_and(|items| items.len() == 1);
-        if complete {
-            self.states.loop_ground.invalidate();
-        }
-        complete
+        })
     }
 }
