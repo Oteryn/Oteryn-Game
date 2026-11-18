@@ -2728,11 +2728,9 @@ impl ChannelSpellStates {
                     element,
                     refused: false,
                 } => {
-                    // PAR-M10: environment drown has no source actor; it is dealt like a
-                    // creature hit.
-                    if !tick.provenance.is_unattributed() && !crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
-                        &tick.provenance,
-                    ) && (tick.provenance.source_kind != ConditionSourceKind::Creature
+                    if !tick.provenance.is_unattributed()
+                        && !super::spell_periodic::is_environment_damage(&tick.provenance)
+                        && (tick.provenance.source_kind != ConditionSourceKind::Creature
                         || !tick
                             .provenance
                             .source

@@ -3,10 +3,23 @@ use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::*;
 use crate::durability::reward_claim_mint::QuestActorConditionProof;
 use oteryn_gameplay_foundation::foundation::condition::{
-    ApplicationFacts, ConditionDefinition, ConditionSourceKind, DamageSchedule, DamageSegment,
+    ApplicationFacts, ConditionDefinition, ConditionProvenance, ConditionSourceKind, DamageSchedule,
+    DamageSegment,
 };
 use oteryn_gameplay_quests::quest::reward_callbacks::{NpcAfterCommit, NpcFireDamage};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+const NPC_FIRE: &str = "npc.dialogue.fire";
+
+pub(in crate::gameplay_transport) fn is_npc_fire_damage(
+    provenance: &ConditionProvenance<String>,
+) -> bool {
+    provenance.source_kind == ConditionSourceKind::SelfUse
+        && provenance.definition_key == NPC_FIRE
+        && provenance.source.is_none()
+        && provenance.historical_source.is_none()
+        && provenance.lineage.is_none()
+}
 
 pub(super) fn temporary_look(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
@@ -102,7 +115,7 @@ fn apply_fire(
     let before = state.owned_conditions();
     let mut after = before.clone();
     let condition = ConditionDefinition::new_damage_schedule(
-        "npc.dialogue.fire",
+        NPC_FIRE,
         1,
         DotElement::Fire,
         DamageSchedule::Fixed {

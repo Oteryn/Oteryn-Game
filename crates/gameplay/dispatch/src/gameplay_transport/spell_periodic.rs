@@ -107,6 +107,15 @@ fn combine_elements(
         (None, None) => Some(None),
     }
 }
+/// Scripted damage with no attacker or PvP authority uses the same vitals
+/// owner as creature damage.
+pub(super) fn is_environment_damage(
+    provenance: &oteryn_gameplay_foundation::foundation::condition::ConditionProvenance<String>,
+) -> bool {
+    super::paced_movement::underwater_drown::is_environment_drown(provenance)
+        || super::npc_command::is_npc_fire_damage(provenance)
+}
+
 impl ChannelSpellStates {
     /// A preview is read-only. Canonical Creature-origin damage is consumed by
     /// the existing HP/conditions/death owner, including after its creator dies.
@@ -132,15 +141,11 @@ impl ChannelSpellStates {
         // CONDITIONS-0 §3.5: an agony hit the cycle could not deal (lethal) is a creature hit
         // for this death-capable owner as well.
         let hit = |kind: TickKind| matches!(kind, TickKind::Damage { .. } | TickKind::Agony { .. });
-        // PAR-M10: environment drown damage has no source actor and no PvP legality; this
-        // death-capable owner deals it like Creature-origin damage.
         let environment = |t: &oteryn_gameplay_foundation::foundation::condition::ConditionTick<
             String,
         >| {
-            t.provenance.is_unattributed() || (matches!(t.kind, TickKind::Damage { .. })
-                && crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
-                    &t.provenance,
-                ))
+            t.provenance.is_unattributed()
+                || (matches!(t.kind, TickKind::Damage { .. }) && is_environment_damage(&t.provenance))
         };
         if !preview.combat_ticks.iter().any(|t| {
             hit(t.kind)

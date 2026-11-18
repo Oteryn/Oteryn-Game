@@ -215,12 +215,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 _ => crate::player_lethal::PlayerHitKind::Mitigated,
             };
-            // PAR-M10: environment drown has no source actor; it is dealt like a creature hit.
-            if !agony
-                && crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
-                    &tick.provenance,
-                )
-            {
+            if !agony && super::spell_periodic::is_environment_damage(&tick.provenance) {
                 next = crate::spell::actor_conditions::stage_typed_hit_in_world(
                     runtime, actor, &next, amount, hit_kind, now_us,
                 )

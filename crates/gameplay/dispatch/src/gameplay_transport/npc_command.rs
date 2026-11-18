@@ -59,6 +59,7 @@ mod magic_effects;
 mod marriage;
 mod monk;
 mod npc_after_commit;
+pub(super) use npc_after_commit::is_npc_fire_damage;
 mod npc_item_exchanges;
 mod planegazer_finale;
 mod premium_purchase;
