@@ -3,6 +3,7 @@ use super::*;
 use crate::durability::item_decay_retire::CorpseDecayFence;
 use crate::durability::terrain_tool::{TerrainMutation, TerrainScope};
 use crate::map::view::MapFacts;
+use oteryn_gameplay_quests::quest::stag_cathedral;
 use oteryn_gameplay_world::terrain_tools;
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {
@@ -153,6 +154,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
+        let cathedral_ground = if definition.production_key == stag_cathedral::PICK
+            && cathedral_target(intent, target)
+        {
+            let map = self.bundle_map().ok_or(())?;
+            let Some(ground) =
+                super::super::loop_move::loop_ground(self, map.overlay.base(), Some(index)).await
+            else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            Some(ground)
+        } else {
+            None
+        };
         let mutation = {
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
@@ -221,6 +235,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || before.sub_type != 0
             {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
+            }
+            if let Some(ground) = cathedral_ground {
+                return Ok(Some(outcome(self.open_cathedral_hole(
+                    &runtime,
+                    &states,
+                    command.game_session_id,
+                    at.map,
+                    ground.as_ref(),
+                    key,
+                    facts.object_revision(key),
+                    before,
+                ))));
             }
             let MapDefinition::Item(reference) = before.definition else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
@@ -682,4 +708,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
     }
+}
+
+// Route only the exact ground root through the Cathedral tool action.
+fn cathedral_target(intent: &UseIntent, target: Option<ItemKey>) -> bool {
+    let key = match &intent.use_with_map_item {
+        Some(MapUseTarget::Object(object)) => object
+            .placement
+            .get(32..40)
+            .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok())
+            .map(u64::from_be_bytes),
+        Some(MapUseTarget::Item(_)) => match target {
+            Some(ItemKey::MapBase { placement_key, .. }) => Some(placement_key),
+            _ => None,
+        },
+        None => None,
+    };
+    key.and_then(view::placement_of)
+        .is_some_and(|(pos, ordinal)| {
+            let source = stag_cathedral::SOURCE;
+            ordinal == 0 && (pos.x, pos.y, pos.floor) == (source.x, source.y, source.floor)
+        })
 }

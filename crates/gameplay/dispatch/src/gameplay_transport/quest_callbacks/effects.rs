@@ -141,10 +141,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         entered: MovementPositionSnapshot,
     ) -> MovementPositionSnapshot {
-        let Some(map) = self.bundle_map() else {
+        let Some(pos) = native(entered.position()) else {
             return entered;
         };
-        let Some(pos) = native(entered.position()) else {
+        self.traverse_dynamic_quest_portal(permit, actor, session, entered, pos)
+            .await
+    }
+
+    pub(super) async fn traverse_dynamic_quest_portal(
+        &self,
+        permit: &SpellLanePermit,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        entered: MovementPositionSnapshot,
+        pos: TilePos,
+    ) -> MovementPositionSnapshot {
+        let Some(map) = self.bundle_map() else {
             return entered;
         };
         let Some(to) = map
@@ -171,6 +183,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return entered;
         };
         if runtime.read_actor_position(actor) != Ok(entered)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
             || states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, session)
             || !self.states.player_trades.physical(session, None)
@@ -204,8 +219,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return entered;
         };
-        let Ok(snapshot) = runtime.commit_source_step(proof) else {
-            return entered;
+        use oteryn_gameplay_quests::quest::stag_cathedral;
+        let cathedral =
+            pos == tile(stag_cathedral::SOURCE) && to == tile(stag_cathedral::DESTINATION);
+        let snapshot = if cathedral {
+            let Some(snapshot) = self.descend_cathedral(&mut runtime, proof) else {
+                return entered;
+            };
+            if let Some(origin) = native(entered.position()) {
+                map.facts.emit_movement_effect(origin, 3);
+            }
+            map.facts.emit_movement_effect(to, 42);
+            snapshot
+        } else {
+            let Ok(snapshot) = runtime.commit_source_step(proof) else {
+                return entered;
+            };
+            snapshot
         };
         if pos == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE)
             && to == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION)

@@ -254,12 +254,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return UseDisposition::Rejected;
             };
-            projection = Some(crate::map::facts::QuestCallbackProjection::TimedEntrance {
+            projection = Some(timed_entrance(
                 due,
                 restore,
-                position: tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE),
-                destination: tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION),
-            });
+                oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE,
+                oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION,
+            ));
         }
         projection = match super::conditional_cells::prepare(map, callback, projection) {
             Ok(projection) => projection,
@@ -1643,5 +1643,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.states.chat.push_quest_feedback(session, &message);
         }
         UseDisposition::Committed
+    }
+}
+
+pub(super) fn timed_entrance(
+    due: u64,
+    restore: crate::map::view::EntryFacts,
+    position: Position,
+    destination: Position,
+) -> crate::map::facts::QuestCallbackProjection {
+    crate::map::facts::QuestCallbackProjection::TimedEntrance {
+        due,
+        restore,
+        position: tile(position),
+        destination: tile(destination),
     }
 }

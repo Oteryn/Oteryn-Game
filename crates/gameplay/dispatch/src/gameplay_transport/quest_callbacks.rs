@@ -33,6 +33,7 @@ mod scene_items;
 mod shared_gate;
 mod soul_war_reward;
 mod source_transforms;
+mod stag_cathedral;
 mod timed_encounter;
 mod timed_passages;
 
@@ -964,6 +965,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
+        if stag_cathedral::source(map, resolved.placement_key) {
+            return Some(self.use_cathedral_hole(actor, command, resolved.pos).await);
+        }
         let mut selected = self
             .callback_content()
             .iter()

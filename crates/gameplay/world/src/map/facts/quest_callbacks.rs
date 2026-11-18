@@ -240,6 +240,7 @@ impl CallbackStates {
                     return false;
                 };
                 self.remove_portals(owner);
+                self.movement_decays.retain(|(_, key), _| *key != owner);
                 self.movement_decays.insert(
                     (*due, owner),
                     MovementDecay {
