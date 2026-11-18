@@ -204,21 +204,27 @@ pub(super) fn scenario_with_moon_dates(
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
         let world_id = admitted.world_id;
-        for (epoch, day) in [(0_i64, inactive_day), (1, active_day), (2, active_day)] {
-            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,make_timestamptz(2031,6,$4,12,0,0,'UTC'),'2031-06')")
-                .bind(world_id.as_bytes().as_slice()).bind(epoch).bind([1_u8;32].as_slice()).bind(day).execute(&h.pool).await?;
+        // A prior month's closing save keeps both two-date fixtures chronological.
+        let inactive_month = if inactive_day > active_day { 5_i32 } else { 6_i32 };
+        for (epoch, month, day) in [
+            (1_i64, inactive_month, inactive_day),
+            (2, 6, active_day),
+            (3, 6, active_day),
+        ] {
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,make_timestamptz(2031,$4,$5,6,0,0,'Europe/Berlin'),$6)")
+                .bind(world_id.as_bytes().as_slice()).bind(epoch).bind([1_u8;32].as_slice()).bind(month).bind(day).bind(format!("2031-{month:02}")).execute(&h.pool).await?;
         }
-        sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
+        sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
             .bind(world_id.as_bytes().as_slice())
             .execute(&h.pool)
             .await?;
         let inactive = h
             .root
-            .world_changes(world_id, 0)
+            .world_changes(world_id, 1)
             .await?
             .ok_or("inactive day")?;
         assert!(!inactive.grimvale_full_moon);
-        owner.reset_epoch = 0;
+        owner.reset_epoch = 1;
         let source_key = crate::map::view::placement_key(
             crate::map::overlay::TilePos {
                 x: TRIGGER.x,
@@ -272,18 +278,17 @@ pub(super) fn scenario_with_moon_dates(
             "refused entry cannot mutate its native map object"
         );
 
-        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=1 WHERE world_id=encode($1,'hex')::uuid")
+        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=2 WHERE world_id=encode($1,'hex')::uuid")
             .bind(world_id.as_bytes().as_slice()).execute(&h.pool).await?;
         let active = h
             .root
-            .world_changes(world_id, 1)
+            .world_changes(world_id, 2)
             .await?
             .ok_or("active day")?;
-        assert!(active.grimvale_full_moon);
         if prove_bindings {
-            super::engworldchg::assert_binding_lifecycle(&h, world_id, 1).await?;
+            super::engworldchg::assert_binding_lifecycle(&h, world_id, 2).await?;
         }
-        owner.reset_epoch = 1;
+        owner.reset_epoch = 2;
         super::quest_world_callbacks::wire(
             &owner,
             &mut admitted,
@@ -307,6 +312,7 @@ pub(super) fn scenario_with_moon_dates(
             0,
             "stateless world observation is not personal quest progress"
         );
+        assert!(active.grimvale_full_moon);
         let after = h
             .root
             .read_character_quest_state(&authority, fence.character_id)
@@ -356,7 +362,7 @@ pub(super) fn scenario_with_moon_dates(
                         .collect::<String>()
                 ),
                 placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
-                reset_epoch: 1,
+                reset_epoch: 2,
                 actor_placement: deps.actor.placement_identity(),
                 movement_revision: snapshot.revision(),
             }
@@ -376,9 +382,9 @@ pub(super) fn scenario_with_moon_dates(
                     .await?
             );
         }
-        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=2 WHERE world_id=encode($1,'hex')::uuid")
+        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=3 WHERE world_id=encode($1,'hex')::uuid")
             .bind(world_id.as_bytes().as_slice()).execute(&h.pool).await?;
-        h.root.world_changes(world_id, 2).await?.ok_or("next day")?;
+        h.root.world_changes(world_id, 3).await?.ok_or("next day")?;
         assert!(
             !h.root
                 .observe_world_callback_gate(

@@ -155,6 +155,13 @@ impl DurabilityRoot {
                 if (legacy && legacy_running)
                     || (!legacy && !candidate.eligible)
                 { continue; }
+                // TibiaWiki Grimvale Quest/Spoiler (oldid 1103828) places the
+                // raid on the 13th, within the three-day full moon.
+                if candidate.key.as_str() == super::FEROXA_KEY
+                    && calendar::clock(&mut tx, request.world, request.now_ms).await?.epoch_month_day != 13
+                {
+                    continue;
+                }
                 super::lock(&mut tx, &recovery, request.world, &candidate.key).await
                     .map_err(|_| DurabilityError::Unavailable)?;
                 let mut before = match storage::load(&mut tx, request.world, &candidate.key).await

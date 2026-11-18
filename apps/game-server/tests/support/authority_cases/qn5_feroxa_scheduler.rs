@@ -42,7 +42,9 @@ async fn exercise(h: &fixture::Harness, day: i32, expire_offline: bool) -> fixtu
         .execute(&h.pool)
         .await?;
     let changes = h.root.world_changes(world, 1).await?.ok_or("World day")?;
-    assert_eq!(changes.grimvale_full_moon, day == 13);
+    // TibiaWiki Grimvale Quest/Spoiler (curid 75274, oldid 1103828):
+    // the moon is active on the 12th even though the raid cannot fire that day.
+    assert_eq!(changes.grimvale_full_moon, (12..15).contains(&day));
     sqlx::query("INSERT INTO game_world_raid_scheduler_clocks(world_id,reset_epoch,last_end_at_ms) VALUES(encode($1,'hex')::uuid,1,0)")
         .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
     let key = ProductionKey::new("raid:edron.feroxa").map_err(fixture::debug)?;
