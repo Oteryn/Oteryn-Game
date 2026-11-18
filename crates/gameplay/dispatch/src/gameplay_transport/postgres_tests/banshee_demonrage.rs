@@ -237,7 +237,10 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let catalogue =
             bindings()?.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?;
+        let approach = |at: TilePos| TilePos { x: at.x - 1, ..at };
         let mut tiles = vec![
+            (approach(FLAME), None),
+            (approach(PLATE), None),
             (FLAME, Some((4, Some(35015)))),
             (DESTINATION, None),
             (PLATE, None),
@@ -381,6 +384,26 @@ fn scenario() -> TestResult {
             let entered = runtime.commit_source_step(proof).map_err(debug)?;
             Ok((origin, entered))
         };
+        let step_onto = async |at| -> TestResult<_> {
+            move_actor(approach(at)).await?;
+            let mut runtime = owner.runtime.lock().await;
+            let origin = runtime.read_actor_position(actor).map_err(debug)?;
+            let closed = crate::map::floor::BundleDoors(&map.facts);
+            let proof = crate::map::floor::prepare_bundle_step(
+                &runtime,
+                owner.movement_cells(),
+                actor,
+                session,
+                origin,
+                crate::movement::CardinalStep::East,
+                false,
+                &closed,
+            )
+            .map_err(debug)?;
+            assert_eq!(proof.destination(), local(at));
+            let entered = runtime.commit_source_step(proof).map_err(debug)?;
+            Ok((origin, entered))
+        };
         for attempt in 0..=6 {
             let index = match attempt {
                 0 => 0,
@@ -390,7 +413,11 @@ fn scenario() -> TestResult {
             let at = SWITCHES[index];
             move_actor(TilePos { x: START.x, ..at }).await?;
             let (key, _) = item(at)?;
-            let effect_cursor = map.facts.movement_effects_since(0).last().map_or(0, |cue| cue.0);
+            let effect_cursor = map
+                .facts
+                .movement_effects_since(0)
+                .last()
+                .map_or(0, |cue| cue.0);
             let mut placement = map.overlay.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
             {
@@ -420,12 +447,20 @@ fn scenario() -> TestResult {
                 .ok_or("switch callback")?;
             assert_eq!(outcome.disposition, UseDisposition::Committed);
             assert_eq!(item(at)?.1, if attempt < 2 { 2773 } else { 2772 });
-            let cues: Vec<_> = map.facts.movement_effects_since(effect_cursor)
-                .into_iter().map(|(_, at, effect)| (at, effect)).collect();
+            let cues: Vec<_> = map
+                .facts
+                .movement_effects_since(effect_cursor)
+                .into_iter()
+                .map(|(_, at, effect)| (at, effect))
+                .collect();
             let (x, y) = SWITCH_CUES[index];
             match attempt {
                 0 => assert!(cues.is_empty(), "priming emits no effect"),
-                1 => assert_eq!(cues, [(at, 12)], "out-of-order press emits only the refusal"),
+                1 => assert_eq!(
+                    cues,
+                    [(at, 12)],
+                    "out-of-order press emits only the refusal"
+                ),
                 _ => assert_eq!(cues, [(at, 13), (TilePos { x, y, floor: -14 }, 12)]),
             }
         }
@@ -440,7 +475,7 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(before, 0, "shared switches only read personal eligibility");
         let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
-        let (origin, entered) = move_actor(FLAME).await?;
+        let (origin, entered) = step_onto(FLAME).await?;
         assert_eq!(
             owner
                 .step_quest_callback(&permit, actor, session, origin, entered)
@@ -456,8 +491,7 @@ fn scenario() -> TestResult {
         }
 
         for _ in 0..2 {
-            move_actor(START).await?;
-            let (origin, entered) = move_actor(PLATE).await?;
+            let (origin, entered) = step_onto(PLATE).await?;
             assert_eq!(
                 owner
                     .step_quest_callback(&permit, actor, session, origin, entered)
