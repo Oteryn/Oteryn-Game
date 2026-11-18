@@ -197,10 +197,31 @@ impl ChannelRuntimeV1 {
             },
             _ => return Err(CarrierError::NotCreature),
         };
-        let after = before.saturating_add(effective_draw).min(maximum);
-        let Slot::CreatureOccupied { health, .. } = &mut self.carrier.slots[index] else {
+        // Crystal 201189f8, src/game/game.cpp:7826-7845 invokes health-change
+        // before a positive combat heal, including the prism's defense spell.
+        let recovery = effective_draw > 0
+            && before < maximum
+            && matches!(
+                &self.carrier.slots[index],
+                Slot::CreatureOccupied { spell_combat, position: Some(position), .. }
+                    if spell_combat.quest_damage_recovery.is_some_and(|rule| rule.observe(&self.carrier, *position))
+            );
+        let Slot::CreatureOccupied {
+            health,
+            spell_combat,
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
             return Err(CarrierError::NotCreature);
         };
+        let healed_before = if recovery && let Some(rule) = &mut spell_combat.quest_damage_recovery
+        {
+            rule.pending_cues = rule.pending_cues.saturating_add(1);
+            rule.heal(before, maximum)
+        } else {
+            before
+        };
+        let after = healed_before.saturating_add(effective_draw).min(maximum);
         *health = after;
         let result = OwnerDamageResult {
             applied: true,

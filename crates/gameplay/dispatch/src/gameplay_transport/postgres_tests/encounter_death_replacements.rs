@@ -836,6 +836,39 @@ async fn prism_recovery(
     relocate_lloyd(&mut runtime, LLOYD_REBIRTH)?;
     let guarded = hit(&mut runtime, 112)?;
     assert_eq!((guarded.health_before, guarded.health_after), (900, 800));
+    // Crystal 201189f8, cosmic_energy_prism_a.lua:68-73 draws a 1,000 HP defense heal.
+    let defense = runtime
+        .bind_creature_self_heal(
+            PRISM_A,
+            "oteryn:ability.creature.cosmic_energy_prism_a.defense-1",
+            1000,
+            1000,
+            1000,
+        )
+        .map_err(debug)?;
+    let mut defense_ledger = crate::foundation::CreatureSelfHealLedger::default();
+    let occupied_heal = runtime
+        .commit_creature_self_heal(&mut defense_ledger, &defense, prism, 1, 1000)
+        .map_err(debug)?;
+    assert_eq!(
+        (occupied_heal.health_before, occupied_heal.health_after),
+        (800, 1000)
+    );
+    assert_eq!(hit(&mut runtime, 113)?.health_after, 900);
+    relocate_lloyd(&mut runtime, LLOYD_SPAWN)?;
+    let vacant_heal = runtime
+        .commit_creature_self_heal(&mut defense_ledger, &defense, prism, 2, 1000)
+        .map_err(debug)?;
+    assert_eq!(
+        (vacant_heal.health_before, vacant_heal.health_after),
+        (900, 1000)
+    );
+    assert!(
+        !runtime
+            .commit_creature_self_heal(&mut defense_ledger, &defense, prism, 2, 1000)
+            .map_err(debug)?
+            .applied
+    );
     let mut states = owner.states.spell_states.lock().await;
     for _ in 0..2 {
         crate::gameplay_transport::encounter_phases::tick(
@@ -852,7 +885,7 @@ async fn prism_recovery(
             .iter()
             .filter(|(_, speech)| speech.speaker == prism && speech.text == "*zap!*")
             .count(),
-        2
+        3
     );
     assert_eq!(
         map.facts
@@ -863,7 +896,7 @@ async fn prism_recovery(
                     && *effect == PRISM_RECOVERY_EFFECT
             )
             .count(),
-        2
+        3
     );
     Ok(())
 }
