@@ -353,6 +353,7 @@ impl CarriedToolWindow {
     fn valid(self, callback: &Callback) -> bool {
         callback.trigger == Trigger::Use
             && callback.requires_world_admission
+            && callback.selector.native.is_some()
             && !callback.storage.is_empty()
             && callback.offerings.is_empty()
             && callback.effects.carried_inputs.is_empty()

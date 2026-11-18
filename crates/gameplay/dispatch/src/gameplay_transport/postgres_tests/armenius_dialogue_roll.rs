@@ -16,8 +16,14 @@ const ARMENIUS: &str = "oteryn:creature.armenius";
 const SOURCE: &str =
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/armenius.lua:71-105";
 const TRIGGER: Position = Position {
-    x: 32856,
+    x: 32860,
     y: 31324,
+    floor: -7,
+};
+// Crystal data-global/world/world-npc.xml:1315-1317.
+const NPC_SPAWN: Position = Position {
+    x: 32859,
+    y: 31325,
     floor: -7,
 };
 const SEWER: Position = Position {
@@ -26,6 +32,7 @@ const SEWER: Position = Position {
     floor: -9,
 };
 const BASEMENT: Position = Position {
+    x: 32856,
     floor: -8,
     ..TRIGGER
 };
@@ -154,7 +161,8 @@ pub(super) async fn exercise(
         125,
     )
     .await?;
-    let [npc] = super::classic_quests::install(owner, admitted, [NPC]).await?;
+    let [npc] =
+        super::classic_quests::install_positions(owner, admitted, [NPC], [NPC_SPAWN]).await?;
     super::classic_quests::talk(owner, admitted, npc, 8190, "hi").await?;
     for command in 8191..8195 {
         assert!(

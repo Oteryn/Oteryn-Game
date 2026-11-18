@@ -1005,7 +1005,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .any(|r| r.ground.is_some()))
                 && ((!callback.has_state_writes()
                     && !effects::has_encounter_custody_effect(callback)
-                    && !matches!(callback.effects.carried_tool_window, Some(CarriedToolWindow::Start { .. })))
+                    && callback.effects.carried_tool_window.is_none())
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use

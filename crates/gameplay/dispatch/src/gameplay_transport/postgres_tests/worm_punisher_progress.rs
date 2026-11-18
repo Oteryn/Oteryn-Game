@@ -130,6 +130,12 @@ pub(super) async fn exercise_heating(
         {"track":DEBT,"minimum":0,"maximum":0,"set":0,"preserve":true}]);
     hit["effects"] = json!({"carried_tool_window":{"kind":"require"},"source_magic":32,
         "player_speech":"You've got gim! That will tech the beast a lesson!"});
+    let mut debt = hit.clone();
+    debt["key"] = json!("oteryn:quest-callback/fixture-worm-punisher-debt");
+    debt["storage"] = json!([source_gate.clone(),
+        {"track":DEBT,"minimum":1,"maximum":1,"set":1,"preserve":true}]);
+    debt["effects"] = json!({"carried_tool_window":{"kind":"require"},
+        "player_speech":"You should go talk to Scutty before continuing."});
     // Crystal 201189f8 actions_heat_worm_punisher.lua:3-22 and items.xml:24803-24809,25010-25019.
     let heat = json!({
         "key":"oteryn:quest-callback/fixture-worm-punisher-heat",
@@ -147,7 +153,7 @@ pub(super) async fn exercise_heating(
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_isle_of_evil_quest/actions_heat_worm_punisher.lua:3-22"]
     });
     let base = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
-    let fixture = json!({"schema":1,"callbacks":[heat,hit]}).to_string();
+    let fixture = json!({"schema":1,"callbacks":[debt,heat,hit]}).to_string();
     owner.quest_catalogue = Some(std::sync::Arc::new(
         world_callbacks::with_fixture_callbacks(base.clone(), &fixture)?,
     ));
@@ -217,6 +223,27 @@ pub(super) async fn exercise_heating(
         UseDisposition::Committed
     );
     assert_eq!(super::m39_bone_journey::stage(h, COUNTER).await?, Some(1));
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(DEBT.into(), 1)],
+        123,
+    )
+    .await?;
+    assert_eq!(
+        strike(owner, admitted, CARRION, 9197).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(super::m39_bone_journey::stage(h, COUNTER).await?, Some(1));
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(DEBT.into(), 0)],
+        124,
+    )
+    .await?;
 
     tokio::time::sleep(Duration::from_secs(10)).await;
     assert_ne!(
