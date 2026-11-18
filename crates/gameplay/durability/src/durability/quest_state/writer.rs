@@ -2052,7 +2052,7 @@ impl DurabilityRoot {
                             .is_some_and(|counter| counter.pale_worm_reward)
                     {
                         let (cause, ordinal) = request.cause.key();
-                        let event = serde_json::to_vec(&(cause, ordinal, &request.transition_key))
+                        let event = serde_json::to_vec(&(cause, ordinal, &request.transition_key, fence.character_id.as_bytes()))
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
                         let occurrence = sha2::Sha256::digest(event);
                         use super::super::character_appearance::{QuestOutfitGrant, grant_quest_outfit};

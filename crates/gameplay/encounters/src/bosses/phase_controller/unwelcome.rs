@@ -100,15 +100,21 @@ impl UnwelcomeEncounter {
             return Ok(None);
         }
         let snapshot = runtime.companion_snapshot(boss)?;
-        let identity = actor.placement_identity();
+        let occurrence: String = actor
+            .placement_identity()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        let mut binding = occurrence.as_bytes().to_vec();
+        binding.extend_from_slice(b"\0oteryn:unwelcome-linked-death");
         runtime
             .borrow_exact_actor_commit_at(now_ms)
             .commit_raw_creature_damage_batch(
                 &[boss],
                 OwnerDamageCommand {
                     target: UNWELCOME.as_bytes(),
-                    occurrence: &identity,
-                    binding: b"oteryn:unwelcome-linked-death",
+                    occurrence: occurrence.as_bytes(),
+                    binding: &binding,
                     damage: snapshot.health,
                 },
                 |results| {
