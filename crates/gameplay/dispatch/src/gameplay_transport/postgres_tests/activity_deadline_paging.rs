@@ -102,6 +102,10 @@ async fn window_case(h: &Harness) -> TestResult {
         crate::foundation::ScopeOwnershipGeneration::new(assignment.ownership_generation).map_err(debug)?;
     competing.destination_assignment_source_revision = assignment.source_revision;
 
+    let clock: i64 = sqlx::query_scalar(
+        "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
+    ).fetch_one(&h.pool).await?;
+    h.root.set_test_quest_clock(clock)?;
     let window = std::num::NonZeroU32::new(8_000).ok_or("nonzero enrollment window")?;
     for request in [&first, &second] {
         let account: String = sqlx::query_scalar(
@@ -131,7 +135,7 @@ async fn window_case(h: &Harness) -> TestResult {
     ).bind(first.handoff_id.as_slice()).fetch_one(&h.pool).await?;
     assert_eq!((members, cooldowns), (2, 2));
 
-    tokio::time::sleep(std::time::Duration::from_millis(first.time_limit_ms)).await;
+    h.root.advance_test_quest_clock(9)?;
     for (tag, request) in [(240, &first), (241, &second)] {
         let member = &request.participants[0];
         let source = item_fence_of(store.current_session_at(member.destination_game_session_id).await?.0)
@@ -150,7 +154,7 @@ async fn window_case(h: &Harness) -> TestResult {
                 current_vitals: member.source_position.vitals,
                 current_rest: member.source_position.rest,
             },
-        ).await?;
+        ).await.map_err(|error| format!("returning window entrant {tag}: {error:?}"))?;
         assert!(matches!(outcome, ActivityReturnOutcome::Returned(_)), "{outcome:?}");
         let returned = item_fence_of(store.current_session_at(destination).await?.0)
             .ok_or("returned Channel fence")?;
