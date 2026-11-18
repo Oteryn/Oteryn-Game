@@ -10,7 +10,7 @@ fn five_ways_step_in_uses_base_vocation_and_final_field_element_protection() -> 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     std::thread::Builder::new()
-        .stack_size(256 << 20)
+        .stack_size(64 << 20)
         .spawn(|| quest_step_scenario(QuestStepCase::FiveWays).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Five Ways PostgreSQL fixture panicked")?

@@ -349,7 +349,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
+        let party: Vec<_> = players
+            .iter()
+            .map(|(actor, session, _)| (*actor, *session))
+            .collect();
         if preflight {
+            if callback.effects.encounter_cooldown.is_some()
+                && (super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
+                    .is_err()
+                    || states.encounter_phases.reserve(runtime, key).is_err()
+                    || !map.facts.quest_callback_capacity(key, expected_revision, 0))
+            {
+                return UseDisposition::Rejected;
+            }
             return if runtime
                 .preflight_quest_encounter_entry(proofs, &monsters)
                 .is_ok()
@@ -359,10 +371,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Occupied
             };
         }
-        let party: Vec<_> = players
-            .iter()
-            .map(|(actor, session, _)| (*actor, *session))
-            .collect();
         let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
             let bindings = catalogue.authored_bindings()?;
             bindings.quests.iter().find(|quest| quest.stages.iter().any(|stage|

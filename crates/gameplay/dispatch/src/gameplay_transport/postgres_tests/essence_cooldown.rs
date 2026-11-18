@@ -12,7 +12,7 @@ fn essence_staging_portal_returns_character_until_boss_cooldown_expires() -> Tes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     std::thread::Builder::new()
-        .stack_size(256 << 20)
+        .stack_size(64 << 20)
         .spawn(|| quest_step_scenario(QuestStepCase::BossCooldown).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Essence cooldown PostgreSQL fixture panicked")?

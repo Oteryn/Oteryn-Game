@@ -68,15 +68,24 @@ fn callback() -> TestResult<Callback> {
 
 #[test]
 fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult {
-    cults_scenario(false)
+    cults_scenario(false, false)
 }
 
 #[test]
 fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
-    cults_scenario(true)
+    cults_scenario(true, false)
 }
 
-fn cults_scenario(reenter: bool) -> TestResult {
+#[test]
+fn essence_native_lever_sets_twenty_hour_cooldown_for_both_admitted_characters() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    cults_scenario(false, true)
+}
+
+const ESSENCE: &str = "oteryn:boss.essence_of_malice";
+
+fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -87,7 +96,16 @@ fn cults_scenario(reenter: bool) -> TestResult {
             let h =
                 Harness::create_with_admission_seed(admin, "engenc2_cults", true, false).await?;
             prepare_current_session(&h).await?;
-            let callback = callback()?;
+            let mut callback = callback()?;
+            if cooldown {
+                // Crystal actions_bosses_levers.lua:245-282 and config.lua.dist:658.
+                callback.effects.encounter_cooldown = Some(
+                    oteryn_gameplay_quests::quest::world_callbacks::EncounterCooldown {
+                        boss: ESSENCE.into(),
+                        seconds: 72_000,
+                    },
+                );
+            }
             let trigger = Position {
                 x: 100,
                 y: 100,
@@ -272,6 +290,11 @@ fn cults_scenario(reenter: bool) -> TestResult {
                     })?;
                 }
             }
+            let peer = if cooldown {
+                Some(install_cooldown_peer(&owner, &h, &authority, admitted).await?)
+            } else {
+                None
+            };
             assert!(
                 owner
                     .states
@@ -288,12 +311,40 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
+            if let Some((peer, session)) = peer {
+                let rejected = owner.use_object(
+                    deps.actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 11,
+                        item_fence: admitted.item_fence,
+                    },
+                    WorldObjectTarget { placement: placement.clone(), expected_revision: 0 },
+                ).await;
+                assert_eq!(rejected.disposition, UseDisposition::Occupied);
+                assert_eq!(sqlx::query_scalar::<_, i64>(
+                    "SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key=$1"
+                ).bind(ESSENCE).fetch_one(&h.pool).await?, 0);
+                let mut runtime = owner.runtime.lock().await;
+                let expected = runtime.read_actor_position(peer).map_err(debug)?;
+                let proof = crate::map::floor::prepare_quest_callback_teleport(
+                    &runtime, &cells, peer, session, expected,
+                    MovementLocalPosition { x: 100, y: 101, floor: 7 },
+                    false, &crate::map::floor::BundleDoors(world.facts()),
+                ).map_err(debug)?;
+                runtime.commit_source_steps_and_project(vec![proof], || true).map_err(debug)?;
+                drop(runtime);
+                owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(1)).ok_or("retry clock")?;
+            }
+            let before: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint"
+            ).fetch_one(&h.pool).await?;
             let outcome = owner
                 .use_object(
                     deps.actor,
                     UseCommand {
                         game_session_id: admitted.game_session_id,
-                        command_id: 1,
+                        command_id: if cooldown { 12 } else { 1 },
                         item_fence: admitted.item_fence,
                     },
                     WorldObjectTarget {
@@ -307,6 +358,23 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 UseDisposition::Committed,
                 "phase admission"
             );
+            if let Some((peer, _)) = peer {
+                let deadlines: Vec<(i64, String)> = sqlx::query_as(
+                    "SELECT available_at,admission::text FROM game_character_boss_cooldowns
+                     WHERE boss_key=$1 ORDER BY character_id",
+                ).bind(ESSENCE).fetch_all(&h.pool).await?;
+                let after: i64 = sqlx::query_scalar(
+                    "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint"
+                ).fetch_one(&h.pool).await?;
+                assert_eq!(deadlines.len(), 2);
+                assert_eq!(deadlines[0], deadlines[1]);
+                assert!((before + 72_000_000..=after + 72_000_000).contains(&deadlines[0].0));
+                let runtime = owner.runtime.lock().await;
+                let landing = MovementLocalPosition { x:116, y:117, floor:7 };
+                assert_eq!(runtime.read_actor_position(deps.actor).map_err(debug)?.position(), landing);
+                assert_eq!(runtime.read_actor_position(peer).map_err(debug)?.position(), landing);
+            }
+
             assert_eq!(
                 owner
                     .states
@@ -600,4 +668,49 @@ async fn kill(
         );
     }
     Ok(())
+}
+
+
+async fn install_cooldown_peer(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    primary: super::AdmittedSession,
+) -> TestResult<(ExactActorRef, crate::foundation::GameSessionId)> {
+    let source = super::house_transfer::RecoverySource::start(h).await?;
+    super::maintain_ready(&h.root).await?;
+    let character = super::desert_party_rite::create_peer(h, authority, &source.evidence, 0).await?;
+    let session =
+        super::activity_deadline_paging::admit_created_member(h, &source.evidence, 0, character).await?;
+    let fence = owner.current_quest_fence(session).await.map_err(|()| "peer fence")?
+        .ok_or("peer fence")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
+        runtime.initialize_pinned_test_position(
+            actor,
+            MovementLocalPosition { x: 107, y: 108, floor: 7 },
+        ).map_err(debug)?;
+        let lease = crate::foundation::CharacterLease::new(
+            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+            fence.character_lease_generation,
+        ).map_err(debug)?;
+        runtime.bind_attacker_lease(actor, session, lease).map_err(debug)?;
+        let mut states = owner.states.spell_states.lock().await;
+        assert!(states.initialize(
+            &runtime, actor, session,
+            crate::gameplay_transport::actor_spell::tests::FACTS,
+            (3, 7_000_000), owner.owner_now(),
+        ).is_some());
+        actor
+    };
+    let mut admitted = primary;
+    admitted.game_session_id = session;
+    admitted.runtime_actor = Some(actor);
+    admitted.item_fence = Some(fence.item_fence());
+    owner.admit_progression_session(&mut admitted).await;
+    owner.admit_quest_session(&admitted).await;
+    assert!(owner.refresh_source_party_presence(actor, session).await);
+    Ok((actor, session))
 }
