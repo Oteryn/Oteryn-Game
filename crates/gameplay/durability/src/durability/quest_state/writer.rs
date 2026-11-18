@@ -1274,7 +1274,7 @@ impl DurabilityRoot {
                         && let QuestCause::Command(command) | QuestCause::Use(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
-                    if callback.as_ref().is_some_and(|c|c.item_reward().is_some())
+                    if callback.as_ref().is_some_and(|c|c.needs_item_reward_admission())
                         && let QuestCause::Use(command) | QuestCause::Step(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }

@@ -116,8 +116,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
 }
 
 impl Callback {
-    /// Presentation follows a newly committed receipt. Replayed receipts do not
-    /// repeat success text; the dispatch owner supplies that distinction.
+    /// Resolve success text from the receipt when dispatch owes its presentation.
     pub fn committed_message<'a>(&'a self, changes: &[QuestTrackChange]) -> Option<&'a str> {
         if let Some(claim) = &self.effects.claim
             && let Some(track) = &claim.selection_track

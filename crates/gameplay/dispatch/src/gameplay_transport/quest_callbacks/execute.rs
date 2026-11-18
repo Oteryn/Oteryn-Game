@@ -947,6 +947,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !callback.is_read_only()
             && !(close && callback.opening_only);
         let mut fresh_effects = !durable;
+        let mut claim_presentation = false;
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
@@ -1037,7 +1038,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 movement_revision: expected.revision(),
                 party: party_context,
             };
-            let context = if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+            let (context, selected_tool, retained_claim) = if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                 let record = pending.entry(session).or_insert(Pending {
                     actor,
                     session,
@@ -1062,14 +1063,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if record.context.is_none() {
                     record.selected_tool = selected_tool.cloned();
                 }
+                let retained_claim = callback.effects.claim.is_some()
+                    && record.context.is_some()
+                    && record.cause == cause
+                    && record.callback == callback.key
+                    && record.key == key
+                    && record.revision == expected_revision;
                 (
                     record.context.get_or_insert(context).clone(),
                     record.selected_tool.clone(),
+                    retained_claim,
                 )
             } else {
                 return UseDisposition::Rejected;
             };
-            let (context, selected_tool) = context;
             let context = if let Some((source, intent)) = selected_tool {
                 let Some(context) = context.with_selected_tool(source, intent) else {
                     return UseDisposition::Rejected;
@@ -1272,8 +1279,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
-                    if fresh {
+                    // An interrupted original USE may still owe the presentation
+                    // selected by its receipt. A later duplicate has no pending projection.
+                    claim_presentation = callback.effects.claim.is_some() && (fresh || retained_claim);
+                    if fresh || claim_presentation {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
+                    }
+                    if fresh {
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.
                         if callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
                             && committed.changes.iter().any(|change|
@@ -1670,7 +1682,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         // Crystal actions_lions_rock.lua:130 emits HOLYAREA at the claimant.
-        if fresh_effects
+        if claim_presentation
             && let Some(effect) = callback
                 .effects
                 .claim
@@ -1714,7 +1726,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(message) = success_preface {
             self.states.chat.push_quest_feedback(session, message);
         }
-        if fresh_effects && let Some(speech) = &callback.effects.player_speech {
+        if (fresh_effects || claim_presentation) && let Some(speech) = &callback.effects.player_speech {
             self.states
                 .chat
                 .publish_quest_speech(runtime, actor, session, speech);
