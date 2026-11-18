@@ -666,6 +666,15 @@ fn world_cells(
                 ..Default::default()
             },
         });
+    if callback.key == super::putrefactory_reservoir::CALLBACK_KEY {
+        let second = super::putrefactory_reservoir::SECOND;
+        cells.entry((second.floor, second.x - 1, second.y)).or_default();
+        cells.entry((second.floor, second.x, second.y)).or_default().push(sector::Item {
+            palette: 1,
+            depth: 0,
+            attrs: sector::Attrs { action: callback.selector.action, ..Default::default() },
+        });
+    }
     if callback.key == oteryn_gameplay_quests::quest::dreamer_death_ring::RESET {
         // Synthetic literal UID2244; no production-map position correspondence is claimed.
         cells

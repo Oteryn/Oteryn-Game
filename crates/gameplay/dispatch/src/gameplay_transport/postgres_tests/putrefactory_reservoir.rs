@@ -1,6 +1,6 @@
 //! Crystal 201189f8, rotten_blood_quest/creaturescripts_putrefactory-x.lua:155-224.
 use super::fixture::{Harness, debug};
-use super::quest_world_callbacks::{scenario, wire};
+use super::quest_world_callbacks::{local, scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ExactActorRef;
 use crate::map::view::MapFacts;
@@ -23,7 +23,9 @@ pub(super) const LEGACY: &str = "putrefactory-reservoir-legacy";
 pub(super) const CAP: &str = "putrefactory-reservoir-cap";
 pub(super) const PASSIVE: &str = "putrefactory-passive-charge";
 const QUEST: &str = "oteryn:quest/rotten-blood";
+pub(super) const CALLBACK_KEY: &str = "oteryn:quest-callback/fixture/putrefactory-reservoir-1";
 const CLOCK: &str = "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-1-used-at";
+const SECOND_CLOCK: &str = "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-2-used-at";
 const STARTED_AT: i64 = 1_800_000_000;
 const SAVED_CHARGE: i64 = 12;
 // Crystal creaturescripts_putrefactory-x.lua:195-199.
@@ -31,6 +33,11 @@ const EXHAUSTED: &str = "You already exhausted this reservoir.";
 const AT: Position = Position {
     x: 34081,
     y: 31704,
+    floor: -14,
+};
+pub(super) const SECOND: Position = Position {
+    x: 34013,
+    y: 31744,
     floor: -14,
 };
 
@@ -69,7 +76,7 @@ fn putrefactory_passive_charge_ticks_from_the_channel_clock() -> TestResult {
 
 pub(super) fn callback() -> TestResult<Callback> {
     Ok(serde_json::from_value(json!({
-        "key":"oteryn:quest-callback/fixture/putrefactory-reservoir-1",
+        "key":CALLBACK_KEY,
         "quest":QUEST,
         "trigger":"use",
         "actor_kind":"player",
@@ -101,7 +108,7 @@ pub(super) async fn exercise(
         {"track":CHARGE,"from":{"kind":"between","minimum":-1,"maximum":99},
             "effect":{"kind":"recharge","amount":20,"empty":0,"capacity":100}}
     ]);
-    let document = json!({
+    let mut document = json!({
         "schema":1,
         "quests":[{
             "quest":QUEST,
@@ -115,24 +122,30 @@ pub(super) async fn exercise(
                 "trigger":{"kind":"map_use","callback":reservoir}}]
         }]
     });
-    let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
-    bindings.verify_embedded_recipe_evidence()?;
     if name == LEGACY {
-        let mut other = document;
-        let second_position = json!({"x": 34013, "y": 31744, "floor": -14});
-        let callback = &mut other["quests"][0]["stages"][0]["trigger"]["callback"];
-        callback["selector"]["position"] = second_position.clone();
-        callback["effects"]["magic"]["position"] = second_position;
+        let mut other = document.clone();
+        let stage = &mut other["quests"][0]["stages"][0];
+        stage["key"] = json!("reservoir-2");
+        let callback = &mut stage["trigger"]["callback"];
+        callback["key"] = json!("oteryn:quest-callback/fixture/putrefactory-reservoir-2");
+        callback["selector"]["position"] = json!(SECOND);
+        callback["effects"]["magic"]["position"] = json!(SECOND);
         assert!(
             Bindings::parse(&serde_json::to_vec(&other)?).is_err(),
             "the second reservoir cannot keep the first reservoir's clock",
         );
-        let second_clock = "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-2-used-at";
-        other["quests"][0]["tracks"][1]["key"] = json!(second_clock);
+        other["quests"][0]["tracks"][1]["key"] = json!(SECOND_CLOCK);
         other["quests"][0]["stages"][0]["trigger"]["callback"]["state_operations"][0]["track"] =
-            json!(second_clock);
-        Bindings::parse(&serde_json::to_vec(&other)?)?.verify_embedded_recipe_evidence()?;
+            json!(SECOND_CLOCK);
+        for (field, index) in [("tracks", 1), ("stages", 0)] {
+            document["quests"][0][field]
+                .as_array_mut()
+                .ok_or("reservoir fixture binding")?
+                .push(other["quests"][0][field][index].take());
+        }
     }
+    let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
+    bindings.verify_embedded_recipe_evidence()?;
     let base = if name == PASSIVE {
         let active = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
         QuestStateCatalogue::new(
@@ -157,15 +170,7 @@ pub(super) async fn exercise(
     let session = admitted.game_session_id;
     owner.refresh_quest_session(session, true).await;
     owner.states.chat.admit(session, "Reservoir fixture", owner.owner_now());
-    let key = oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1)
-        .ok_or("reservoir placement")?;
-    let mut placement = owner.bundle_map().ok_or("map")?.overlay.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    let payload = encode_use_intent(&WorldObjectTarget {
-        placement,
-        expected_revision: 0,
-    })
-    .map_err(debug)?;
+    let (key, payload) = use_intent(owner, AT)?;
     let tracks = || async {
         sqlx::query_as::<_, (String, i64)>(
             "SELECT track_key,value FROM game_character_quest_tracks WHERE quest_key=$1 ORDER BY track_key",
@@ -245,8 +250,21 @@ pub(super) async fn exercise(
             text: EXHAUSTED.into(),
         }]
     );
+    let next_command = if name == LEGACY {
+        position_at_reservoir(owner, admitted, actor, SECOND).await?;
+        let (_, second_payload) = use_intent(owner, SECOND)?;
+        let second_reply = wire(owner, admitted, 3, 2, second_payload).await?;
+        assert_eq!(decode_use_result(&second_reply).map_err(debug)?, UseDisposition::Committed);
+        assert_eq!(tracks().await?, vec![
+            (CHARGE.to_owned(), 40), (CLOCK.to_owned(), STARTED_AT), (SECOND_CLOCK.to_owned(), STARTED_AT + 19),
+        ]);
+        position_at_reservoir(owner, admitted, actor, AT).await?;
+        4
+    } else {
+        3
+    };
     h.root.advance_test_quest_clock(1).map_err(debug)?;
-    let reply = wire(owner, admitted, 3, 2, payload).await?;
+    let reply = wire(owner, admitted, next_command, 2, payload).await?;
     let disposition = decode_use_result(&reply).map_err(debug)?;
     assert!(owner.states.chat.drain(session).is_empty());
     if cap {
@@ -256,9 +274,35 @@ pub(super) async fn exercise(
         assert_eq!(disposition, UseDisposition::Committed);
         assert_eq!(
             tracks().await?,
-            vec![(CHARGE.to_owned(), 40), (CLOCK.to_owned(), STARTED_AT + 20)]
+            vec![(CHARGE.to_owned(), 60), (CLOCK.to_owned(), STARTED_AT + 20), (SECOND_CLOCK.to_owned(), STARTED_AT + 19)]
         );
     }
+    Ok(())
+}
+
+fn use_intent(owner: &ComposedFreshAdmission<'_, '_, '_>, at: Position) -> TestResult<(u64, Vec<u8>)> {
+    let key = oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, 1)
+        .ok_or("reservoir placement")?;
+    let mut placement = owner.bundle_map().ok_or("map")?.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = encode_use_intent(&WorldObjectTarget { placement, expected_revision: 0 }).map_err(debug)?;
+    Ok((key, payload))
+}
+
+async fn position_at_reservoir(
+    owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession,
+    actor: ExactActorRef, at: Position,
+) -> TestResult {
+    // The test positions the actor one tile away. Both reservoir interactions
+    // still enter through the native world-object USE dispatcher.
+    let mut runtime = owner.runtime.lock().await;
+    let expected = runtime.read_actor_position(actor).map_err(debug)?;
+    let closed = crate::map::floor::BundleDoors(&owner.bundle_map().ok_or("map")?.facts);
+    let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
+        &runtime, owner.movement_cells(), actor, admitted.game_session_id, expected,
+        local(Position { x: at.x - 1, ..at }), false, &closed, None,
+    ).map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
     Ok(())
 }
 
