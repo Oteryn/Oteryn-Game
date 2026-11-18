@@ -174,7 +174,7 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
         owner.quest_catalogue = Some(Arc::new(
             loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
