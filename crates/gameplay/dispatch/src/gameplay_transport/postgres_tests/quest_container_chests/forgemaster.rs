@@ -133,7 +133,7 @@ pub(super) fn catalogue(
 pub(super) async fn allow_access(harness: &Harness, character: &[u8; 16]) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
-         SELECT character_id,$2,$3,1,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+         SELECT character_id,$2,$3,1,GREATEST(character_revision, 2) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
     )
     .bind(character.as_slice())
     .bind(ACCESS)
