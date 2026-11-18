@@ -506,22 +506,27 @@ fn arbaziloth_replacement_retries_refused_placement() {
     assert!(runtime.arbaziloth_shields(forgemaster).is_none());
     for (phase, health) in [100, 80, 60, 40].into_iter().enumerate() {
         let occurrence = format!("arbaziloth-phase-{phase}");
+        let binding = format!("{occurrence}\0shield-test");
+        let command = oteryn_gameplay_entities::OwnerDamageCommand {
+            target: boss_key.as_bytes(),
+            occurrence: occurrence.as_bytes(),
+            binding: binding.as_bytes(),
+            damage: health,
+        };
         let result = runtime
             .borrow_exact_actor_commit()
-            .commit_damage(
-                boss,
-                oteryn_gameplay_entities::OwnerDamageCommand {
-                    target: boss_key.as_bytes(),
-                    occurrence: occurrence.as_bytes(),
-                    binding: occurrence.as_bytes(),
-                    damage: health,
-                },
-            )
+            .commit_damage(boss, command)
             .unwrap();
         assert_eq!(result.health_after, health - 20);
         let shields = runtime.arbaziloth_shields_mut(boss).unwrap();
         assert!(shields.step_on_fire());
         assert!(shields.use_rod(100, 100));
+        let replay = runtime
+            .borrow_exact_actor_commit()
+            .commit_damage(boss, command)
+            .unwrap();
+        assert!(!replay.applied);
+        assert!(!runtime.arbaziloth_shields(boss).unwrap().needs_fire());
     }
     assert_eq!(
         encounter.advance(&mut runtime, 3099, |_, _| true).unwrap(),
