@@ -57,6 +57,9 @@ pub struct ItemDisguiseRequirement {
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creature_spawn: Option<CreatureSpawn>,
+    /// Mint a portable item at the source tile using the retained quest USE receipt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub floor_reward: Option<super::super::reward_callbacks::ItemAmount>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -744,6 +747,25 @@ pub(super) fn valid(callback: &Callback) -> bool {
             .is_some_and(|m| !pos(m.position) || m.effect == 0)
         || (callback.trigger == Trigger::StepOut && callback.return_on_failure)
     {
+        return false;
+    }
+    if effects.floor_reward.as_ref().is_some_and(|reward| {
+        callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || callback.selector.native.is_none()
+            || !callback.has_state_writes()
+            || callback.lever.is_some()
+            || callback.reversible
+            || callback.item_reward().is_some()
+            || effects.encounter.is_some()
+            || effects.party_transfer.is_some()
+            || effects.reward_door.is_some()
+            || !(1..=100).contains(&reward.count)
+            || reward.fluid_subtype.is_some()
+            || !reward.item.starts_with("oteryn:item.")
+            || !super::super::valid_quest_key(&reward.item)
+    }) {
         return false;
     }
     if effects.creature_spawn.as_ref().is_some_and(|spawn| {

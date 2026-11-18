@@ -17,6 +17,7 @@ mod effects;
 mod encounter;
 pub(super) use encounter::room_contains;
 mod execute;
+mod floor_reward;
 mod goblin_elevator;
 mod ground_stack;
 mod mead;

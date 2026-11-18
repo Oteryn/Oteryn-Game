@@ -1250,6 +1250,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && let QuestCause::Use(command) = cause {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
                     }
+                    if let Some(reward) = &callback.effects.floor_reward {
+                        let QuestCause::Use(command) = cause else {
+                            return UseDisposition::Rejected;
+                        };
+                        // Retry the same map materialization if quest or Ground acknowledgement
+                        // was lost. Keep the original callback revision until both are known.
+                        if !self.create_quest_floor_reward(permit, runtime, actor, map, callback, pos, command, fence, reward).await {
+                            return UseDisposition::Rejected;
+                        }
+                    }
                     self.apply_committed_quest_copy(session, fresh, committed);
                     if callback.effects.encounter.is_some()
                         && !self.refresh_grizzly_kill_snapshot_in_turn(runtime, session)
