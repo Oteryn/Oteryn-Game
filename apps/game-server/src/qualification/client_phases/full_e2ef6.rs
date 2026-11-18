@@ -239,49 +239,62 @@ fn daily_save_needed(wall: oteryn_protocol_oteryn::daily_reward::DailyRewardWall
     wall.claimed && !wall.claim_enabled
 }
 
-// Node boot owns this disposable World. Publish only the next daily reset
-// window; all character claims and reward delivery still run through the player.
-// Resting qualification consumes published World windows. The history ledger
-// is a projection of native reset epochs and cannot be used as a fixture clock.
-async fn next_daily_save(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
-    use sqlx::Connection as _;
-    let mut connection = tokio::time::timeout(
-        Duration::from_secs(5),
-        sqlx::PgConnection::connect(clients.url),
-    )
-    .await??;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    let mut observations = None;
-    while tokio::time::Instant::now() < deadline {
-        let epochs: (Option<String>, Option<String>) = tokio::time::timeout_at(
-            deadline,
-            sqlx::query_as(
-                "SELECT
-                   (SELECT max(h.reset_epoch)::text
-                    FROM game_world_reset_history h
-                    JOIN game_world_reset_active a
-                      ON a.world_id=h.world_id AND h.reset_epoch=a.reset_epoch+1
-                    WHERE h.world_id=encode($1,'hex')::uuid),
-                   (SELECT last_claim_epoch::text FROM game_character_daily_rewards
-                    WHERE character_id=encode($2,'hex')::uuid
-                      AND world_id=encode($1,'hex')::uuid)",
-            )
-            .bind(clients.world.as_slice())
-            .bind(clients.characters[1].as_slice())
-            .fetch_one(&mut connection),
-        )
-        .await??;
-        let current = epochs.0.as_deref().map(str::parse::<u64>).transpose()?;
-        let last = epochs.1.as_deref().map(str::parse::<u64>).transpose()?;
-        if consecutive_published_save(current, last) {
-            return Ok(());
+// Only the disposable node-boot database uses this in-place calendar advance.
+// Keep native epoch, event binding, active pointer, and trigger-derived daily
+// history in sync. Physical resets remain the responsibility of the reset owner.
+async fn next_daily_save(_client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    use sqlx::{Connection as _, PgConnection};
+    required("NODE_BOOT_CONTROL_SOCKET")?;
+    tokio::time::timeout(Duration::from_secs(10), async {
+        let mut connection = PgConnection::connect(clients.url).await?;
+        let mut tx = connection.begin().await?;
+        // Take the same job-table lock that fences physical reset publication.
+        sqlx::query("LOCK TABLE game_world_reset_jobs IN SHARE ROW EXCLUSIVE MODE")
+            .execute(&mut *tx).await?;
+        let world = clients.world.as_slice();
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:world-reset:' || (encode($1,'hex')::uuid)::text,0))")
+            .bind(world).execute(&mut *tx).await?;
+        let next: Option<String> = sqlx::query_scalar(QUALIFICATION_DAILY_EPOCH)
+            .bind(world).bind(clients.characters[1].as_slice())
+            .fetch_optional(&mut *tx).await?;
+        let next = next.ok_or("P10 cannot advance an unclaimed or non-fixture World epoch")?;
+        let advanced = sqlx::query(
+            "UPDATE game_world_reset_active SET reset_epoch=$2::text::numeric
+             WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric-1",
+        ).bind(world).bind(&next).execute(&mut *tx).await?;
+        let (published, last): (String, String) = sqlx::query_as(
+            "SELECT h.reset_epoch::text, d.last_claim_epoch::text
+             FROM game_world_reset_active a
+             JOIN game_world_reset_history h ON h.world_id=a.world_id AND h.reset_epoch=a.reset_epoch+1
+             JOIN game_character_daily_rewards d ON d.world_id=a.world_id
+             WHERE a.world_id=encode($1,'hex')::uuid AND d.character_id=encode($2,'hex')::uuid",
+        ).bind(world).bind(clients.characters[1].as_slice()).fetch_one(&mut *tx).await?;
+        if advanced.rows_affected()!=1 || !consecutive_published_save(Some(published.parse()?), Some(last.parse()?)) {
+            return Err("P10 fixture did not publish exactly the next owner-backed window".into());
         }
-        observations = Some(epochs);
-        client.service_liveness(Duration::from_millis(250)).await?;
-        client.take_events();
-    }
-    Err(format!("P10 requires the next committed World reset before another real daily claim: {observations:?}").into())
+        tx.commit().await?;
+        Ok(())
+    }).await?
 }
+
+const QUALIFICATION_DAILY_EPOCH: &str =
+    "WITH next AS (
+         INSERT INTO game_world_reset_epochs
+         SELECT e.world_id,e.reset_epoch+1,e.target_digest,e.map_revision,e.server_digest,
+                e.client_digest,e.frame_digest,e.calendar,e.calendar_revision,clock_timestamp(),e.reset_month
+         FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch)
+         JOIN game_character_daily_rewards d ON d.world_id=a.world_id
+         WHERE a.world_id=encode($1,'hex')::uuid AND d.character_id=encode($2,'hex')::uuid
+           AND d.last_claim_epoch=a.reset_epoch+1
+           AND EXISTS (SELECT 1 FROM game_spell_field_world_policies p
+                       WHERE p.world_id=a.world_id AND p.decision_identity='node-boot-qualification')
+           AND NOT EXISTS (SELECT 1 FROM game_world_reset_jobs j
+                           WHERE j.world_id=a.world_id AND j.reset_epoch=a.reset_epoch)
+         RETURNING world_id,reset_epoch
+     )
+     INSERT INTO game_world_event_epochs(world_id,reset_epoch,active,announcement)
+     SELECT world_id,reset_epoch,false,'' FROM next
+     RETURNING reset_epoch::text";
 
 fn consecutive_published_save(current: Option<u64>, last: Option<u64>) -> bool {
     last.and_then(|last| last.checked_add(1))

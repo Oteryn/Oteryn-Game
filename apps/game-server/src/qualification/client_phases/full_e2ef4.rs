@@ -1210,6 +1210,17 @@ async fn provision_converters(
     let defs = provisioning::item_index()?;
     let temporary = provisioning::item_reference(&defs, 25719)?;
     let magic = provisioning::item_reference(&defs, 28525)?;
+    let active = provisioning::item_reference(&defs, 28526)?;
+    if let Some(tool) = carried_coin(client, active, |_| true) {
+        let reply = client.use_item(tool.handle).await?;
+        if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+            return Err(format!("E03 active converter could not be deactivated: {reply:?}").into());
+        }
+        settle(client, "converter-fixture-normalize", |now| {
+            now.get(&magic.get()) == Some(&1) && !now.contains_key(&active.get())
+        })
+        .await?;
+    }
     if carried_coin(client, temporary, |_| true).is_some()
         && carried_coin(client, magic, |_| true).is_some()
     {
@@ -1710,7 +1721,20 @@ async fn depot_page(
             &payload,
         )
         .await?;
-    depot::decode_depot_reply(&reply.payload).map_err(|e| format!("depot reply: {e:?}").into())
+    let depot_reply =
+        depot::decode_depot_reply(&reply.payload).map_err(|e| format!("depot reply: {e:?}"))?;
+    let success = matches!(
+        depot_reply.outcome,
+        depot::DepotOutcome::Opened | depot::DepotOutcome::Moved
+    );
+    if success && !full_e2ef4_f4e07::successful_storage_reply(reply.status, success) {
+        return Err(format!(
+            "depot success payload on {:?}: {depot_reply:?}",
+            reply.status
+        )
+        .into());
+    }
+    Ok(depot_reply)
 }
 
 async fn storage(

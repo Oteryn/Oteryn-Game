@@ -32,9 +32,9 @@ readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
 # The second, Open PvP (world_type=2) World of the World pass: its own Accounts, intents and node.
 readonly PVP_WORLD_ID=01934f10-7c02-7002-805b-3b1122334402
 readonly PVP_CHANNEL_ID=01934f10-7c03-7002-805b-3b1122334402
-readonly PVP_ACCOUNT_IDS=(01934f10-7c00-7000-8000-000000000005 01934f10-7c00-7000-8000-000000000006)
-readonly PVP_INTENT_OPERATIONS=(01934f10-7c04-7005-805b-3b1122334405 01934f10-7c04-7006-805b-3b1122334406)
-readonly PVP_INTENT_NAMES=("Arena One" "Arena Two")
+readonly PVP_ACCOUNT_IDS=(01934f10-7c00-7000-8000-000000000005 01934f10-7c00-7000-8000-000000000006 01934f10-7c00-7000-8000-000000000007 01934f10-7c00-7000-8000-000000000008)
+readonly PVP_INTENT_OPERATIONS=(01934f10-7c04-7005-805b-3b1122334405 01934f10-7c04-7006-805b-3b1122334406 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408)
+readonly PVP_INTENT_NAMES=("Arena One" "Arena Two" "Arena Caster" "Arena Target")
 readonly PVP_DATABASE=oteryn_node_boot_pvp
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
@@ -1174,7 +1174,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_env+=("NODE_BOOT_PVP_ADDRESS=127.0.0.1:$PVP_GAME_PORT" "NODE_BOOT_PVP_CONTROL_SOCKET=$PVP_BASE/run/control.sock"
       "NODE_BOOT_PVP_DATABASE_URL=${ADMIN_URL%/*}/$PVP_DATABASE" "NODE_BOOT_PVP_WORLD_ID=$PVP_WORLD_ID"
       "NODE_BOOT_PVP_CHANNEL_ID=$PVP_CHANNEL_ID" "NODE_BOOT_PVP_ACCOUNT_ID=${PVP_ACCOUNT_IDS[0]}"
-      "NODE_BOOT_PVP_SECOND_ACCOUNT_ID=${PVP_ACCOUNT_IDS[1]}")
+      "NODE_BOOT_PVP_SECOND_ACCOUNT_ID=${PVP_ACCOUNT_IDS[1]}"
+      "NODE_BOOT_PVP_RUNE_CASTER_ACCOUNT_ID=${PVP_ACCOUNT_IDS[2]}"
+      "NODE_BOOT_PVP_RUNE_TARGET_ACCOUNT_ID=${PVP_ACCOUNT_IDS[3]}")
   fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
   local knob
@@ -1350,8 +1352,8 @@ SQL
 
 pvp_character_bootstrap() { # two level-qualifiable Characters from real Platform intents
   local index account operation name failed=0
-  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"${PVP_ACCOUNT_IDS[0]}"'","nb-five@example.invalid"],["'"${PVP_ACCOUNT_IDS[1]}"'","nb-six@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
-  for index in 0 1; do
+  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"${PVP_ACCOUNT_IDS[0]}"'","nb-five@example.invalid"],["'"${PVP_ACCOUNT_IDS[1]}"'","nb-six@example.invalid"],["'"${PVP_ACCOUNT_IDS[2]}"'","nb-rune-caster@example.invalid"],["'"${PVP_ACCOUNT_IDS[3]}"'","nb-rune-target@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
+  for index in "${!PVP_ACCOUNT_IDS[@]}"; do
     account="${PVP_ACCOUNT_IDS[$index]}"; operation="${PVP_INTENT_OPERATIONS[$index]}"; name="${PVP_INTENT_NAMES[$index]}"
     if ! php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$account"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$operation"'","--target-world-id"=>"'"$PVP_WORLD_ID"'","--requested-name"=>"'"$name"'","--requested-sex"=>"Female","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); fwrite(STDERR, Illuminate\Support\Facades\Artisan::output()); exit($code);'; then
       echo "platform intent issue failed for PvP operation $operation"
@@ -1362,8 +1364,8 @@ pvp_character_bootstrap() { # two level-qualifiable Characters from real Platfor
     pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "$operation" || failed=1
   done
   [[ $failed == 0 ]] || pvp_fail "PvP Character bootstrap"
-  [[ "$(echo "SELECT count(*) FROM game_character_roots WHERE world_id='$PVP_WORLD_ID'" | psql_admin "$PVP_DATABASE")" == 2 ]] || fail "PvP World Characters"
-  evidence "pvp_characters=2 world=$PVP_WORLD_ID source=platform_intents path=pvp_control_socket retry=idempotent"
+  [[ "$(echo "SELECT count(*) FROM game_character_roots WHERE world_id='$PVP_WORLD_ID'" | psql_admin "$PVP_DATABASE")" == "${#PVP_ACCOUNT_IDS[@]}" ]] || fail "PvP World Characters"
+  evidence "pvp_characters=${#PVP_ACCOUNT_IDS[@]} world=$PVP_WORLD_ID source=platform_intents path=pvp_control_socket retry=idempotent"
 }
 
 pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifecycle probes

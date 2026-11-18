@@ -298,6 +298,71 @@ pub(super) async fn prepare_spell_progression(
     spell_ready(client, spell).await
 }
 
+async fn observed_magic_level(client: &mut DevClientSession) -> TestResult<u16> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    let stats = client.session_mut().gated_command(
+        wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+        &[wire::CharacterTab::GeneralStats as u8, 0, 0, 1],
+    ).await?;
+    if stats.status != CommandStatus::Accepted {
+        return Err(format!("rune magic-level query refused: {stats:?}").into());
+    }
+    level_from_stats(&stats.payload, general_stats::selected(client))?;
+    Ok(u16::from_le_bytes(stats.payload[13..15].try_into()?))
+}
+
+async fn prepare_rune_progression(
+    client: &mut DevClientSession, clients: &SeamClients<'_>, world: &BundleWorld,
+    spell: &crate::spell::SpellDefinition,
+) -> TestResult {
+    let crate::spell::Carrier::Rune { magic_level, .. } = spell.carrier else {
+        return Err("rune preparation requires an authored rune".into());
+    };
+    prepare_spell_progression(client, world, spell).await?;
+    if u32::from(observed_magic_level(client).await?) < magic_level {
+        let arena_world = std::env::var("NODE_BOOT_PVP_WORLD_ID").ok()
+            .and_then(|world| crate::node::uuid_bytes(&world));
+        let socket = required(if arena_world == Some(clients.world) {
+            "NODE_BOOT_PVP_CONTROL_SOCKET"
+        } else {
+            "NODE_BOOT_CONTROL_SOCKET"
+        })?;
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tools/qualification/node_boot/provision.py");
+        let task = tokio::task::spawn_blocking(move || {
+            std::process::Command::new("sudo").args(["-n", "python3"]).arg(script)
+                .args(["--socket", &socket, "--session", &session, "--profile", "rune-training"])
+                .status().map_err(|error| error.to_string())
+        });
+        if !wait_fixture_command(task, async || {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+            Ok(())
+        }).await?.success() {
+            return Err("fenced rune training fixture refused".into());
+        }
+        player_logout(client).await?;
+        *client = connect_character(clients, 0xba, SUPPORT_CHARACTER).await?;
+    }
+    rune_magic_eligible(observed_magic_level(client).await?, magic_level)?;
+    Ok(())
+}
+
+fn rune_magic_eligible(observed: u16, required: u32) -> TestResult {
+    if u32::from(observed) < required {
+        return Err(format!("rune magic level {observed} is below authored minimum {required}").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn rune_preparation_requires_published_magic_level() {
+    assert!(rune_magic_eligible(8, 9).is_err());
+    assert!(rune_magic_eligible(17, 18).is_err());
+    assert!(rune_magic_eligible(18, 18).is_ok());
+}
+
 async fn illusion(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -1005,6 +1070,15 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
+            let arena = if id == "C16b" {
+                Some(tokio::time::timeout(Duration::from_secs(15),
+                    super::mp::mp01_party_pvp::pvp_world_for([
+                        "NODE_BOOT_PVP_RUNE_CASTER_ACCOUNT_ID", "NODE_BOOT_PVP_RUNE_TARGET_ACCOUNT_ID",
+                    ])
+                ).await??)
+            } else { None };
+            let arena_clients = arena.as_ref().map(|arena| arena.pair(clients));
+            let clients = arena_clients.as_ref().unwrap_or(clients);
             let mut client = connect_character(clients, tag, SUPPORT_CHARACTER).await?;
             let mut peer_cancelled = false;
             let mut completed = false;
@@ -1515,7 +1589,7 @@ async fn paralyze(
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
-    prepare_spell_progression(client, world, spell).await?;
+    prepare_rune_progression(client, clients, world, spell).await?;
     let (reference, sequence) = acquire_rune(client, world, 3165).await?;
     row.pass("acquire-paralyze", sequence);
     row.pass(
@@ -1523,6 +1597,11 @@ async fn paralyze(
         illegal_floor(client, reference).await?,
     );
     let mut peer = with_observer_liveness(client, connect_character(clients, 0xb1, 1)).await?;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    with_observer_liveness(client, super::full_e2ef6::earn_death_prerequisites(
+        &mut peer, world, &metadata.spawns, 8, 0,
+    )).await?;
     let result: TestResult = tokio::time::timeout(Duration::from_secs(140), async {
         let path = route(world, tile(peer.world_spatial().actor_position)?, |at| rune_corridor(world, at).is_some())
             .ok_or("C16b no reachable non-PZ equal-ground target corridor")?;
@@ -1690,7 +1769,7 @@ async fn barriers(
         let spell = book
             .rune(id)
             .ok_or_else(|| format!("C16a rune {id} absent from pinned book"))?;
-        prepare_spell_progression(client, world, spell).await?;
+        prepare_rune_progression(client, clients, world, spell).await?;
         let (minimum, maximum, ids) = barrier_parameters(spell)?;
         let references = [
             provisioning::item_reference(&index, ids[0])?,

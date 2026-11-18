@@ -12,7 +12,14 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "coin-converters"
+        "explorer"
+            | "knight"
+            | "paladin"
+            | "sorcerer"
+            | "druid"
+            | "monk"
+            | "coin-converters"
+            | "rune-training"
     )
     .then_some((session, profile))
 }
@@ -350,6 +357,18 @@ async fn prepare_build(
     .map_err(|error| format!("qualification interpretation: {error:?}"))?
     .ok_or("qualification interpretation unavailable")?;
     let [profile_revision, ruleset_revision, content_revision, _] = interpretation.revisions();
+    if profile == "rune-training" {
+        return qualification_build::prepare_rune_magic(
+            root,
+            authority,
+            proof,
+            &current,
+            content_revision,
+            uuid_v7()?,
+            deadline,
+        )
+        .await;
+    }
     let progression = native
         .progression()
         .ok_or("qualification progression unavailable")?;
@@ -389,6 +408,14 @@ async fn prepare_build(
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
 // inserts. They are setup evidence only, not proof of player chest interaction.
+fn fixture_item_claim_key(id: u32, session: &[u8; 16]) -> String {
+    if id == 25719 {
+        format!("oteryn:qualification.item.i{id}.{}", uuid_text(session))
+    } else {
+        format!("oteryn:qualification.item.i{id}")
+    }
+}
+
 async fn prepare_items(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -470,7 +497,10 @@ async fn prepare_items(
             ),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
-                production_key: format!("oteryn:qualification.item.i{id}"),
+                production_key: fixture_item_claim_key(
+                    id,
+                    current.current_game_session_id().as_bytes(),
+                ),
                 revision_ref: "qualification-v1".into(),
             },
             source_placement: "oteryn:qualification.node-boot".into(),
@@ -780,4 +810,21 @@ mod tests {
             assert!(request(text.as_bytes()).is_none());
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn temporary_converter_occurrences_are_replayable_and_replenishable() {
+    assert_eq!(
+        fixture_item_claim_key(25719, &[1; 16]),
+        fixture_item_claim_key(25719, &[1; 16])
+    );
+    assert_ne!(
+        fixture_item_claim_key(25719, &[1; 16]),
+        fixture_item_claim_key(25719, &[2; 16])
+    );
+    assert_eq!(
+        fixture_item_claim_key(28525, &[1; 16]),
+        fixture_item_claim_key(28525, &[2; 16])
+    );
 }

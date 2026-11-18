@@ -320,6 +320,7 @@ fn deposited_ordinal(previous: &BTreeSet<u64>, ordinals: impl Iterator<Item = u6
     new.next().is_none().then_some(ordinal)
 }
 
+#[cfg(test)]
 fn stash_units(rows: &[oteryn_protocol_oteryn::stash::StashRow], key: &str, revision: &str) -> u64 {
     rows.iter()
         .filter(|row| row.definition_key == key && row.definition_revision == revision)
@@ -363,6 +364,51 @@ async fn depot_entries(
     Err("depot pages ended before the declared total".into())
 }
 
+pub(super) fn successful_storage_reply(status: CommandStatus, payload_success: bool) -> bool {
+    status == CommandStatus::Accepted && payload_success
+}
+
+fn depot_probe_definition(definitions: &[u32]) -> Option<u32> {
+    let mut counts = BTreeMap::new();
+    for &definition in definitions {
+        *counts.entry(definition).or_insert(0) += 1;
+    }
+    definitions
+        .iter()
+        .copied()
+        .find(|definition| counts[definition] == 1)
+}
+
+fn depot_custody_matches(
+    before: &[oteryn_protocol_oteryn::depot::DepotEntry],
+    after: &[oteryn_protocol_oteryn::depot::DepotEntry],
+) -> bool {
+    let ordered = |entries: &[oteryn_protocol_oteryn::depot::DepotEntry]| {
+        entries
+            .iter()
+            .map(|entry| (entry.ordinal, (entry.definition, entry.count)))
+            .collect::<BTreeMap<_, _>>()
+    };
+    before.len() == after.len() && ordered(before) == ordered(after)
+}
+
+type StashCustody = BTreeMap<(String, String), u32>;
+
+fn stash_custody_matches(expected: &StashCustody, observed: &StashCustody) -> bool {
+    expected == observed
+}
+
+fn stash_custody(rows: &[oteryn_protocol_oteryn::stash::StashRow]) -> StashCustody {
+    rows.iter()
+        .map(|row| {
+            (
+                (row.definition_key.clone(), row.definition_revision.clone()),
+                row.quantity,
+            )
+        })
+        .collect()
+}
+
 async fn stash_page(
     client: &mut DevClientSession,
     panel: &mut oteryn_dev_client::client_ui::stash::StashPanel,
@@ -373,7 +419,11 @@ async fn stash_page(
     let command = ui::request(panel, ui::Intent::Refresh).ok_or("stash browse input")?;
     let reply = runtime::send(client.session_mut(), &command).await?;
     ui::apply_result(panel, &reply);
-    if reply.reply.outcome != ui::stash::StashOutcome::Opened || panel.page != page {
+    if !successful_storage_reply(
+        reply.status,
+        reply.reply.outcome == ui::stash::StashOutcome::Opened,
+    ) || panel.page != page
+    {
         return Err(format!("stash page {page} refused or mismatched: {:?}", reply.reply).into());
     }
     Ok(())
@@ -443,11 +493,22 @@ async fn storage_journey(
     // Depot custody round trip: deposit a whole carried stack, prove the locker holds exactly it,
     // then withdraw that locker entry by ordinal and prove the backpack is whole again.
     {
-        let leaf = client
+        let entries = &client
             .inventory()
-            .and_then(|i| i.entries.first())
+            .ok_or("depot input inventory absent")?
+            .entries;
+        let definitions: Vec<_> = entries
+            .iter()
+            .map(|entry| entry.item_definition_ref.get())
+            .collect();
+        let selected = depot_probe_definition(&definitions).ok_or(
+            "no unambiguous direct-backpack lot for an identity-preserving depot withdrawal",
+        )?;
+        let leaf = entries
+            .iter()
+            .find(|entry| entry.item_definition_ref.get() == selected)
             .copied()
-            .ok_or("no direct-backpack leaf to deposit into the depot")?;
+            .ok_or("selected depot lot absent")?;
         let whole = inventory_units(client)?;
         let originals = backpack_instances(clients, 1, client).await?;
         let original = offered_instance(client, &originals, leaf)?;
@@ -457,11 +518,6 @@ async fn storage_journey(
         };
         let initial = depot_entries(client, town).await?;
         let previous: BTreeSet<_> = initial.iter().map(|entry| entry.ordinal).collect();
-        let held_before = initial
-            .iter()
-            .filter(|e| e.definition == leaf.item_definition_ref.get())
-            .map(|e| u64::from(e.count))
-            .sum::<u64>();
         let moved =
             depot_call(client, Some(town), depot::DepotAction::Deposit(leaf.handle)).await?;
         if moved.outcome != depot::DepotOutcome::Moved {
@@ -477,18 +533,6 @@ async fn storage_journey(
         }
         wait_inventory(client, &expected).await?;
         let listing = depot_entries(client, town).await?;
-        let held_after = listing
-            .iter()
-            .filter(|e| e.definition == leaf.item_definition_ref.get())
-            .map(|e| u64::from(e.count))
-            .sum::<u64>();
-        if held_after != held_before + u64::from(leaf.count.get()) {
-            return Err(format!(
-                "depot holds {held_after} after depositing {} on top of {held_before}",
-                leaf.count.get()
-            )
-            .into());
-        }
         let ordinal = deposited_ordinal(
             &previous,
             listing
@@ -500,6 +544,13 @@ async fn storage_journey(
                 .map(|entry| entry.ordinal),
         )
         .ok_or("unique deposited entry absent from the depot listing")?;
+        let other_entries: Vec<_> = listing
+            .into_iter()
+            .filter(|entry| entry.ordinal != ordinal)
+            .collect();
+        if !depot_custody_matches(&initial, &other_entries) {
+            return Err("depot deposit changed unrelated locker custody".into());
+        }
         use sqlx::Connection as _;
         let deposited: Option<Vec<u8>> = tokio::time::timeout(Duration::from_secs(5), async {
             let mut connection = sqlx::PgConnection::connect(clients.url).await?;
@@ -529,22 +580,8 @@ async fn storage_journey(
             return Err("depot withdrawal returned a different backpack instance set".into());
         }
         let after = depot_entries(client, town).await?;
-        let held_end = after
-            .iter()
-            .filter(|e| e.definition == leaf.item_definition_ref.get())
-            .map(|e| u64::from(e.count))
-            .sum::<u64>();
-        if held_end != held_before
-            || after
-                .iter()
-                .map(|entry| entry.ordinal)
-                .collect::<BTreeSet<_>>()
-                != previous
-        {
-            return Err(format!(
-                "depot still holds {held_end} after the withdraw; started with {held_before}"
-            )
-            .into());
+        if !depot_custody_matches(&initial, &after) {
+            return Err("depot withdrawal changed unrelated locker custody".into());
         }
         row.pass("depot", "deposit-exact-stack-then-withdraw-by-ordinal");
     }
@@ -574,22 +611,20 @@ async fn storage_journey(
         .ok_or("stash input inventory absent")?
         .entries
         .clone();
-    let before: u64 = original_rows.iter().map(|r| u64::from(r.quantity)).sum();
+
     let command =
         ui::request(&mut panel, ui::Intent::Stow(item.handle)).ok_or("stash stow input")?;
     let reply = runtime::send(client.session_mut(), &command).await?;
     ui::apply_result(&mut panel, &reply);
-    if reply.reply.outcome != ui::stash::StashOutcome::Committed
-        || reply.reply.stowed_quantity != item.count.get()
+    if !successful_storage_reply(
+        reply.status,
+        reply.reply.outcome == ui::stash::StashOutcome::Committed,
+    ) || reply.reply.stowed_quantity != item.count.get()
     {
         return Err(format!("stash stow: {:?}", reply.reply).into());
     }
     let pages_after = stash_entries(client, &mut panel).await?;
     let rows_after: Vec<_> = pages_after.iter().map(|(_, row)| row.clone()).collect();
-    let after: u64 = rows_after.iter().map(|r| u64::from(r.quantity)).sum();
-    if after != before + u64::from(item.count.get()) {
-        return Err("stash count delta differs from stowed quantity".into());
-    }
     let definitions = provisioning::item_index()?;
     let (page, selected_row) = pages_after
         .iter()
@@ -606,10 +641,14 @@ async fn storage_journey(
         .iter()
         .position(|row| row == selected_row)
         .ok_or("stowed definition changed before withdrawal")?;
-    let selected_before = stash_units(&original_rows, &key, &revision);
-    let selected_after = stash_units(&rows_after, &key, &revision);
-    if selected_after != selected_before + u64::from(item.count.get()) {
-        return Err("selected stash definition did not gain the stowed stack".into());
+    let mut expected_stash = stash_custody(&original_rows);
+    let selected_key = (key, revision);
+    let count = expected_stash.entry(selected_key.clone()).or_default();
+    *count = count
+        .checked_add(item.count.get())
+        .ok_or("stash quantity overflow")?;
+    if !stash_custody_matches(&expected_stash, &stash_custody(&rows_after)) {
+        return Err("stash stow changed unrelated custody or credited the wrong quantity".into());
     }
     row.pass("stow", "stash-definition-increased-by-exact-stack");
     let command = ui::request(
@@ -622,7 +661,10 @@ async fn storage_journey(
     .ok_or("chosen-count withdrawal input")?;
     let reply = runtime::send(client.session_mut(), &command).await?;
     ui::apply_result(&mut panel, &reply);
-    if reply.reply.outcome != ui::stash::StashOutcome::Committed {
+    if !successful_storage_reply(
+        reply.status,
+        reply.reply.outcome == ui::stash::StashOutcome::Committed,
+    ) {
         return Err(format!("withdraw refused: {:?}", reply.reply.outcome).into());
     }
     let withdrawn_rows: Vec<_> = stash_entries(client, &mut panel)
@@ -630,14 +672,15 @@ async fn storage_journey(
         .into_iter()
         .map(|(_, row)| row)
         .collect();
-    if withdrawn_rows
-        .iter()
-        .map(|r| u64::from(r.quantity))
-        .sum::<u64>()
-        != after - 1
-        || stash_units(&withdrawn_rows, &key, &revision) != selected_after - 1
-    {
-        return Err("chosen one-unit withdrawal changed the wrong stash quantity".into());
+    let count = expected_stash
+        .get_mut(&selected_key)
+        .ok_or("stowed stash row absent")?;
+    *count = count.checked_sub(1).ok_or("stash withdrawal underflow")?;
+    if !stash_custody_matches(&expected_stash, &stash_custody(&withdrawn_rows)) {
+        return Err(
+            "chosen one-unit withdrawal changed unrelated custody or debited the wrong quantity"
+                .into(),
+        );
     }
     let mut expected = carried;
     let units = expected
@@ -651,15 +694,6 @@ async fn storage_journey(
         "chosen-withdraw",
         "one-unit-inventory-increase-and-one-unit-stash-decrease",
     );
-    let stash_before: BTreeMap<_, _> = withdrawn_rows
-        .iter()
-        .map(|r| {
-            (
-                (r.definition_key.clone(), r.definition_revision.clone()),
-                r.quantity,
-            )
-        })
-        .collect();
     relog(client, clients).await?;
     if inventory_units(client)? != expected {
         return Err("stash relog inventory changed".into());
@@ -675,7 +709,7 @@ async fn storage_journey(
             )
         })
         .collect();
-    if stash_after != stash_before {
+    if stash_after != expected_stash {
         return Err("fresh-session stash differs from committed withdrawal".into());
     }
     for id in [3504, 3507, 3447] {
@@ -733,5 +767,46 @@ mod stash_tests {
         ];
         assert_eq!(stash_units(&before, "arrow", "r1"), 4);
         assert_eq!(stash_units(&wrong_stow, "arrow", "r1"), 4);
+    }
+}
+
+#[cfg(test)]
+mod storage_review_tests {
+    use super::*;
+    use oteryn_protocol_oteryn::depot::DepotEntry;
+
+    #[test]
+    fn storage_rejects_success_payload_on_rejected_command() {
+        assert!(!successful_storage_reply(CommandStatus::Rejected, true));
+        assert!(successful_storage_reply(CommandStatus::Accepted, true));
+    }
+
+    #[test]
+    fn depot_probe_selects_a_lot_that_cannot_merge_with_a_spare() {
+        assert_eq!(depot_probe_definition(&[10, 20, 10]), Some(20));
+        assert_eq!(depot_probe_definition(&[10, 10]), None);
+    }
+
+    #[test]
+    fn depot_rejects_changed_payload_on_existing_ordinal() {
+        let expected = DepotEntry {
+            ordinal: 7,
+            definition: 10,
+            count: 4,
+        };
+        let changed = DepotEntry {
+            count: 3,
+            ..expected.clone()
+        };
+        assert!(!depot_custody_matches(&[expected], &[changed]));
+    }
+
+    #[test]
+    fn stash_rejects_compensating_changes_to_unrelated_definitions() {
+        let key = |name: &str| (name.to_owned(), "first".to_owned());
+        let selected = key("arrow");
+        let expected = BTreeMap::from([(selected.clone(), 4), (key("b"), 3), (key("c"), 2)]);
+        let observed = BTreeMap::from([(selected.clone(), 4), (key("b"), 2), (key("c"), 3)]);
+        assert!(!stash_custody_matches(&expected, &observed));
     }
 }

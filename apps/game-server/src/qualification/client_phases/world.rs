@@ -5,6 +5,9 @@ use crate::map::overlay::TilePos;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::Path;
 
+#[path = "mp/mount.rs"]
+mod mp;
+
 #[path = "general_stats.rs"]
 mod general_stats;
 
@@ -4768,8 +4771,6 @@ pub(super) async fn journeys(
         creature_sweep::run(clients, world, &metadata.spawns).await?;
     }
     if groups.runs("mp") {
-        #[path = "mp/mount.rs"]
-        mod mp;
         mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
     }
     // The core/profile pair has not inherited packet movement, loot or death.

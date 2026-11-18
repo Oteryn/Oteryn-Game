@@ -251,19 +251,30 @@ async fn recover_guild_runs(
 ) -> TestResult {
     use sqlx::Connection as _;
     required("NODE_BOOT_CONTROL_SOCKET")?;
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let mut connection = tokio::time::timeout(
+        Duration::from_secs(5),
+        sqlx::PgConnection::connect(clients.url),
+    )
+    .await??;
     let world_id = clients.world.as_slice();
     let guilds: Vec<Vec<u8>> = tokio::time::timeout(Duration::from_secs(5), sqlx::query_scalar(
         "SELECT DISTINCT uuid_send(g.guild_id)
          FROM game_guilds g JOIN game_durability_reconnect_sessions s ON s.world_id=g.world_id
-         WHERE g.world_id=encode($1,'hex')::uuid AND (
+         WHERE g.world_id=encode($1,'hex')::uuid
+           AND (EXISTS (SELECT 1 FROM game_guild_members m WHERE m.guild_id=g.guild_id)
+             OR EXISTS (SELECT 1 FROM game_guild_disband_claims c WHERE c.guild_id=g.guild_id AND c.amount>0)
+             OR EXISTS (SELECT 1 FROM game_guild_wars w WHERE w.state=2 AND g.guild_id IN (w.declaring_guild,w.opposing_guild)))
+           AND (
             (s.character_id=encode($2,'hex')::uuid AND g.name='Sage ' ||
                 translate(substr(encode(uuid_send(s.game_session_id),'hex'),17),'0123456789abcdef','abcdefghijklmnop'))
             OR (s.character_id=encode($3,'hex')::uuid AND g.name='Rival ' ||
                 translate(substr(encode(uuid_send(s.game_session_id),'hex'),17),'0123456789abcdef','abcdefghijklmnop'))
-         )",
+         ) ORDER BY 1 LIMIT 101",
     ).bind(world_id).bind(clients.characters[1].as_slice()).bind(clients.characters[0].as_slice())
     .fetch_all(&mut connection)).await??;
+    if guilds.len() > 100 {
+        return Err("S03 guild discovery exceeded its fixture bound".into());
+    }
     // Shorten only the disposable scenario wars. The real World worker still
     // owns terminalization and its reason.
     let wars: Vec<Vec<u8>> = tokio::time::timeout(Duration::from_secs(5), sqlx::query_scalar(
@@ -321,6 +332,33 @@ async fn recover_guild_runs(
         .filter(|own| own.own_rank == 1 && guilds.iter().any(|id| id == own.guild.as_slice()))
     {
         cleanup_guild(leader, rival, Some(&own.name)).await?;
+    }
+    for account in [1, 0] {
+        let pending = tokio::time::timeout(
+            Duration::from_secs(5),
+            sqlx::query_scalar::<_, Vec<u8>>(
+                "SELECT uuid_send(guild_id) FROM game_guild_disband_claims
+             WHERE world_id=encode($1,'hex')::uuid AND account_id=$2::text::uuid AND amount>0
+               AND guild_id IN (SELECT encode(x,'hex')::uuid FROM unnest($3::bytea[]) x)
+             ORDER BY guild_id LIMIT 101",
+            )
+            .bind(world_id)
+            .bind(&clients.accounts[account])
+            .bind(&guilds)
+            .fetch_all(&mut connection),
+        )
+        .await??;
+        if pending.len() > 100 {
+            return Err("S03 pending payout discovery exceeded its fixture bound".into());
+        }
+        let (founder, peer) = if account == 1 {
+            (&mut *leader, &mut *rival)
+        } else {
+            (&mut *rival, &mut *leader)
+        };
+        for id in pending {
+            settle_disband_payout(founder, peer, id.as_slice().try_into()?).await?;
+        }
     }
     Ok(())
 }
@@ -387,6 +425,14 @@ async fn cleanup_guild(
         founder.take_events();
         peer.take_events();
     }
+    settle_disband_payout(founder, peer, id).await
+}
+
+async fn settle_disband_payout(
+    founder: &mut DevClientSession,
+    peer: &mut DevClientSession,
+    id: [u8; 16],
+) -> TestResult {
     let payout = bank_request(founder, peer, id, None).await?;
     if payout.claim != 0 {
         bank_request(founder, peer, id, Some(bank::GuildBankAction::Claim)).await?;
