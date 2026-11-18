@@ -178,12 +178,20 @@ impl FloorTable {
         pos: TilePos,
         current: impl FnOnce(u8) -> Option<u16>,
     ) -> Option<TilePos> {
-        if let Some(&(ordinal, appearance)) = self.teleport_sources.get(&pos)
-            && current(ordinal) != Some(appearance)
-        {
-            return None;
+        let destination = self.teleport(pos)?;
+        if let Some(&(ordinal, appearance)) = self.teleport_sources.get(&pos) {
+            if current(ordinal) != Some(appearance) {
+                return None;
+            }
+            // The retained Doomforge map portal has no action ID. Its base
+            // destination cannot grant travel independently of encounter state.
+            if (pos.x, pos.y, pos.floor, appearance) == (34041, 32330, -14, 37000)
+                && (destination.x, destination.y, destination.floor) == (34062, 32334, -14)
+            {
+                return None;
+            }
         }
-        self.teleport(pos)
+        Some(destination)
     }
 
     /// How many tiles teleport.
@@ -930,6 +938,35 @@ mod tests {
         };
         table.add_teleport(unbound, to);
         assert_eq!(table.teleport_for_source(unbound, |_| None), Some(to));
+    }
+
+    #[test]
+    fn doomforge_requires_an_encounter_portal_instead_of_raw_map_travel() {
+        let entrance = TilePos {
+            x: 34041,
+            y: 32330,
+            floor: -14,
+        };
+        let forge = TilePos {
+            x: 34062,
+            y: 32334,
+            floor: -14,
+        };
+        let mut table = FloorTable::default();
+        table.add_teleport(entrance, forge);
+        table.bind_teleport_source(entrance, 1, 37000);
+        assert_eq!(table.teleport_for_source(entrance, |_| Some(37000)), None);
+
+        let other = TilePos {
+            x: 34040,
+            ..entrance
+        };
+        table.add_teleport(other, forge);
+        table.bind_teleport_source(other, 1, 37000);
+        assert_eq!(
+            table.teleport_for_source(other, |_| Some(37000)),
+            Some(forge)
+        );
     }
 
     /// A flat world of walkable cells `0..=9` square on `z` in `zs`, minus `blocked`.
