@@ -82,6 +82,17 @@ pub(crate) fn uneasy_crystal() -> Callback {
 
 /// Source readiness is re-proven by the Channel owner immediately before projection.
 pub fn source_is_ready(callback: &Callback, appearance: u16) -> bool {
+    // Crystal actions_paint.lua:11 checks the live seal even for the retained tool contract.
+    if matches!(
+        callback.native_rule,
+        Some(super::native_rules::NativeRule::IceSealPaint { .. })
+    ) {
+        return callback
+            .selector
+            .native
+            .as_ref()
+            .is_some_and(|binding| binding.appearance == appearance);
+    }
     if callback.has_fenced_regrowth_reward() {
         return appearance == 21388;
     }
