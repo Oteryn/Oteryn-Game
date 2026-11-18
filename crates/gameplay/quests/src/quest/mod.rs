@@ -701,7 +701,10 @@ impl QuestStateCatalogue {
     ) -> Result<Self, String> {
         world_callbacks::validate_callbacks(&callbacks)?;
         let mut catalogue = self.clone();
-        for callback in &callbacks {
+        for callback in callbacks
+            .iter()
+            .filter(|callback| callback.requires_durable_commit())
+        {
             catalogue = catalogue
                 .with_fixture_transition(world_callbacks::primary_transition(callback)?)
                 .map_err(|error| format!("{error:?}"))?;

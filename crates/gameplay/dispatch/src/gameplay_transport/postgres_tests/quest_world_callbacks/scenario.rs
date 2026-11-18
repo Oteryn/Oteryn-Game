@@ -410,6 +410,8 @@ fn scenario_case(
         super::super::haunted_ruin::callback(trigger)?
     } else if name == super::super::rahemos_chance::NAME {
         super::super::rahemos_chance::callback(trigger)?
+    } else if name == super::super::shadow_nexus::NAME {
+        super::super::shadow_nexus::callback(false)?
     } else if name.starts_with(super::super::vampire_hunt::PREFIX) {
         super::super::vampire_hunt::callback(false)?
     } else if classic_npc {
@@ -658,6 +660,8 @@ fn scenario_case(
     }
     let world = if name == super::super::haunted_ruin::NAME {
         world_with_objects(&callback, trigger, &[(super::super::haunted_ruin::DOOR, 7869)], &[7868])?
+    } else if name == super::super::shadow_nexus::NAME {
+        world_with_objects(&callback, trigger, &[], &[7926, 7927, 7928, 7929, 7930, 7931])?
     } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {

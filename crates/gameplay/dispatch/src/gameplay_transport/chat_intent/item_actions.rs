@@ -286,9 +286,11 @@ impl ChatRuntime {
                 && position.x.abs_diff(at.x) <= u32::from(radius)
                 && position.y.abs_diff(at.y) <= u32::from(radius)
             {
-                state
-                    .egress
-                    .push(local_line(speaker, &name, SpeechMode::Yell, &text, at, at));
+                let mut line = local_line(speaker, &name, SpeechMode::Say, &text, at, Heard::Text);
+                if let ChatLine::Local { mode, .. } = &mut line {
+                    *mode = ChatSpeechMode::Yell;
+                }
+                state.egress.push(line);
             }
         }
     }
