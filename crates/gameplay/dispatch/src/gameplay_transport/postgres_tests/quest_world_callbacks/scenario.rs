@@ -343,6 +343,7 @@ fn scenario_case(
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
+                | super::super::rookie_guard_bank_bonus::NAME
                 | super::super::rookie_guard_level::NAME
                 | super::super::thieves_guild_uniform::NAME
                 | "threatened-dreams-npc"
@@ -1566,7 +1567,10 @@ fn scenario_case(
                 5
             } else if monk {
                 4
-            } else if callback.effects.encounter.is_some() {
+            } else if callback.effects.encounter.is_some()
+                || callback.effects.distraction.is_some()
+                || !callback.effects.ambush.is_empty()
+            {
                 16
             } else {
                 2
@@ -2550,6 +2554,8 @@ fn scenario_case(
             .await?;
         } else if name == super::super::banshee_queen_kiss::NAME {
             Box::pin(super::super::banshee_queen_kiss::exercise(&mut owner, &admitted, &h)).await?;
+        } else if name == super::super::rookie_guard_bank_bonus::NAME {
+            Box::pin(super::super::rookie_guard_bank_bonus::exercise(&mut owner, &admitted, &h)).await?;
         } else if name == super::super::rookie_guard_level::NAME {
             Box::pin(super::super::rookie_guard_level::exercise(&mut owner, &admitted, &h)).await?;
         } else if name == super::super::thieves_guild_uniform::NAME {
