@@ -155,6 +155,11 @@ pub(super) async fn exercise(
         if name == SATCHEL {
             return exercise_satchel(owner, admitted, h, actor, start, expected, target, key).await;
         }
+        let effect_before = map
+            .facts
+            .movement_effects_since(0)
+            .last()
+            .map_or(0, |row| row.0);
         let outcomes =
             super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(1, &target)])
                 .await?;
@@ -166,6 +171,15 @@ pub(super) async fn exercise(
                 UseDisposition::Committed
             })
         );
+        if refused {
+            assert!(
+                map.facts
+                    .movement_effects_since(effect_before)
+                    .iter()
+                    .any(|(_, at, effect)| *effect == 11
+                        && (at.x, at.y, at.floor) == (start.x, start.y, start.floor))
+            );
+        }
     }
     assert_eq!(
         owner
