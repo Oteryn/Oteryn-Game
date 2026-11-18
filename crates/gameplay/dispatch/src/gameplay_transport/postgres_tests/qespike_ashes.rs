@@ -12,7 +12,7 @@ use std::{num::NonZeroU64, sync::Arc};
 
 pub(super) const NAME: &str = "qespike-ashes";
 const QUEST: &str = "oteryn:quest.elemental_spheres";
-const TRACK: &str = "oteryn:quest-progress/elemental_spheres/ashes-sample-count";
+const TRACK: &str = "oteryn:quest-progress/elemental_spheres/ashes-sampling";
 const KEY: &str = "oteryn:quest-reward/qespike/ashes-sample";
 const TOOL: &str = "oteryn:item.tibia.i5908";
 const CREATURE: &str = "oteryn:creature.minotaur";
@@ -43,9 +43,9 @@ fn catalogue(revision: &str, minimum_age_ms: u32) -> TestResult<Arc<QuestStateCa
         "key":KEY,"quest":QUEST,"npc":"oteryn:npc.arkulius","keywords":["mission"],
         "topic":0,"next_topic":0,"carried_item":TOOL,"creature_target":CREATURE,
         "corpse_target":{"appearance":5969,"minimum_age_ms":minimum_age_ms,
-            "maximum_age_ms":60000,"reusable_tool":true},
+            "maximum_age_ms":60000,"reusable_tool":true,"speech":"You got Neutral matter."},
         "take":[],"per_occurrence_mint":true,
-        "storage":[{"track":TRACK,"minimum":0,"maximum":2,"set":1,"increment":true}],
+        "storage":[{"track":TRACK,"minimum":-1,"maximum":1,"set":1}],
         "give":{"item":"oteryn:item.tibia.i5878","count":1},
         "reply":["You got Neutral matter."],
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:259-268"]
@@ -56,9 +56,9 @@ fn catalogue(revision: &str, minimum_age_ms: u32) -> TestResult<Arc<QuestStateCa
             vec![QuestTrack {
                 key: TRACK.into(),
                 quest: QUEST.into(),
-                initial: 0,
-                min: 0,
-                max: 3,
+                initial: -1,
+                min: -1,
+                max: 2,
             }],
             Vec::new(),
         )
@@ -147,6 +147,6 @@ pub(super) async fn exercise(
          (SELECT state_revision::bigint FROM game_item_instances WHERE item_instance_id=encode($2,'hex')::uuid),
          (SELECT value FROM game_character_quest_tracks WHERE track_key=$3)",
     ).bind(KEY).bind(corpse.as_slice()).bind(TRACK).fetch_one(&harness.pool).await?;
-    assert_eq!(snapshot, (2, 0, 1, 2));
+    assert_eq!(snapshot, (2, 0, 1, 1));
     Ok(())
 }

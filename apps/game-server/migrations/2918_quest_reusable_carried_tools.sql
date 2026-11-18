@@ -57,6 +57,17 @@ BEGIN
 $arm$||anchor;
  EXECUTE replace(body,anchor,replacement);
 
+ -- Crystal skinning.lua:259-263 permits a new use on fresh ashes after the
+ -- sampling storage has reached 1. The per-command mint and corpse/tool
+ -- proof still require their own same-transaction receipts.
+ body:=pg_get_functiondef('game_quest_reward_occurrence_effects_valid(jsonb,text[],bigint[],bigint[])'::regprocedure);
+ anchor:='AND v_before IS DISTINCT FROM v_after';
+ IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+  RAISE EXCEPTION 'unexpected reward occurrence changed-state guard';
+ END IF;
+ EXECUTE replace(body,anchor,$arm$AND (v_before IS DISTINCT FROM v_after OR
+  v_plan #>> '{corpse_target,reusable_tool}'='true')$arm$);
+
  body:=pg_get_functiondef('game_quest_corpse_sample_complete()'::regprocedure);
  anchor:='-r.occurred_at BETWEEN 0 AND sample_row.maximum_age_ms-1';
  IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN

@@ -394,6 +394,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
             if matches!(result, QuestTransitionOutcome::Committed(_))
+                && let Some(speech) = callback
+                    .corpse_target
+                    .as_ref()
+                    .and_then(|target| target.speech.clone())
+                && let Some(map) = self.bundle_map()
+                && let Ok(actor_position) = turn.runtime.read_actor_position(actor)
+            {
+                let p = actor_position.position();
+                if let (Ok(x), Ok(y), Ok(floor)) = (
+                    u16::try_from(p.x),
+                    u16::try_from(p.y),
+                    i8::try_from(-p.floor),
+                ) {
+                    let _ = map
+                        .facts
+                        .emit_movement_speech(crate::map::facts::MovementSpeech {
+                            speaker: actor,
+                            position: crate::map::overlay::TilePos { x, y, floor },
+                            talk_type: 36,
+                            text: speech,
+                            captured_name: None,
+                        });
+                }
+            }
+            if matches!(result, QuestTransitionOutcome::Committed(_))
                 && let Some(target) = capture_target
             {
                 turn.runtime

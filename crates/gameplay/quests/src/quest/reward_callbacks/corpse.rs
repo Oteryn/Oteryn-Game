@@ -10,6 +10,8 @@ pub struct CorpseTarget {
     pub maximum_age_ms: u32,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub reusable_tool: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub speech: Option<String>,
 }
 
 fn is_zero(value: &u32) -> bool {
@@ -25,6 +27,11 @@ impl CorpseTarget {
             && callback.carried_item.is_some()
             && !callback.capture_creature
             && !callback.fresh_corpse
+            && self.speech.as_ref().is_none_or(|speech| {
+                !speech.trim().is_empty()
+                    && speech.chars().count() <= 255
+                    && !speech.chars().any(char::is_control)
+            })
             && (!self.reusable_tool
                 || (callback.take.is_empty()
                     && callback.give.is_some()
