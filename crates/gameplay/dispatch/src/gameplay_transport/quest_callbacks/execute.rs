@@ -87,7 +87,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if callback.effects.party_transfer.is_some()
+        if (callback.effects.party_transfer.is_some()
+            || callback.effects.transform_requires_current)
             && self
                 .states
                 .quest_callbacks
@@ -95,7 +96,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .lock()
                 .map_or(true, |records| {
                     records.iter().any(|(owner, pending)| {
-                        *owner != session && pending.key == key && !pending.participants.is_empty()
+                        *owner != session
+                            && pending.key == key
+                            && (callback.effects.transform_requires_current
+                                || !pending.participants.is_empty())
                     })
                 })
         {
@@ -1692,6 +1696,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map.facts
                 .emit_movement_effect(native(expected.position()).unwrap_or(pos), effect);
         }
+        if let Some(draw) = &callback.effects.tool_use_draw {
+            // Crystal actions_spirit_shovel.lua:24-39 ignores a blocked
+            // createMonster result and still keeps the roll, cue and decay.
+            let at = local(Position {
+                x: pos.x,
+                y: pos.y,
+                floor: pos.floor,
+            });
+            if let Some(creature) = draw.spawn.as_deref()
+                && let Ok(policy) = runtime.companion_policy(creature)
+                && self.movement_cells.index().lookup(
+                    self.movement_cells.scope(),
+                    crate::content::LogicalCell {
+                        x: at.x,
+                        y: at.y,
+                        z: i32::from(at.floor),
+                    },
+                ) == Ok(crate::content::CollisionClass::Walkable)
+                && !map
+                    .facts
+                    .quest_callback_blocked(map.overlay.base(), pos, false)
+                && runtime.positioned_melee_census().is_ok_and(|census| {
+                    census
+                        .iter()
+                        .all(|(_, snapshot, _)| snapshot.position() != at)
+                })
+                && runtime
+                    .commit_quest_creature_spawn(&[(creature, policy.maximum_health, at)])
+                    .is_ok()
+            {
+                states.owner_wake.notify_one();
+            }
+            map.facts.emit_movement_effect(pos, draw.effect);
+        }
         if let Some(effect) = callback.effects.teleport_effect
             && let Some(destination) = destination
         {
@@ -1728,6 +1766,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(message) = success_message {
             self.states.chat.push_quest_feedback(session, &message);
+        }
+        if fresh_effects
+            && let Some(message) = callback
+                .effects
+                .tool_use_draw
+                .as_ref()
+                .and_then(|draw| draw.follow_up.as_deref())
+        {
+            self.states.chat.push_quest_feedback(session, message);
         }
         UseDisposition::Committed
     }

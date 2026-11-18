@@ -255,9 +255,10 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     if callback.effects.transform_requires_current {
         let selector = &callback.selector;
         return !map.facts.base_hidden(key)
-            && selector
-                .position
-                .is_some_and(|position| tile(position) == pos)
+            && selector.position.map_or_else(
+                || callback.effects.tool_use_draw.is_some(),
+                |position| tile(position) == pos,
+            )
             && selector
                 .ordinal
                 .is_none_or(|expected| expected == u16::from(ordinal))
@@ -492,6 +493,28 @@ pub(super) fn step_command(
     CommandId::new(u64::from_be_bytes(id).max(1))
         .ok()
         .map(|id| CommandRef::new(session, id))
+}
+
+pub(super) fn tool_use_roll(seed: [u8; 32], session: GameSessionId, command: u64, key: u64) -> u8 {
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+    };
+    use sha2::{Digest, Sha256};
+    let root = GameplayDecisionRoot::from_bytes(
+        Sha256::new()
+            .chain_update(seed)
+            .chain_update(key.to_be_bytes())
+            .finalize()
+            .into(),
+    );
+    let draw = deterministic_decision_u64(
+        &root,
+        DecisionOccurrenceId::from_bytes(*session.as_bytes()),
+        "quest selected tool use",
+        command,
+    )
+    .expect("fixed decision purpose is valid");
+    1 + ((u128::from(draw) * 100) >> 64) as u8
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -1026,6 +1049,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        if selected
+            .iter()
+            .any(|callback| callback.effects.tool_use_draw.is_some())
+        {
+            if selected_tool.is_none()
+                || selected
+                    .iter()
+                    .any(|callback| callback.effects.tool_use_draw.is_none())
+            {
+                return Some(UseOutcome::rejected());
+            }
+            // Crystal 201189f actions_spirit_shovel.lua:19-39. Replaying the
+            // same placed source and USE occurrence keeps its original interval.
+            let roll = tool_use_roll(
+                self.active_generation?.identity().server_artifact_digest(),
+                command.game_session_id,
+                command.command_id,
+                resolved.placement_key,
+            );
+            selected.retain(|callback| {
+                callback
+                    .effects
+                    .tool_use_draw
+                    .as_ref()
+                    .is_some_and(|draw| (draw.minimum..=draw.maximum).contains(&roll))
+            });
+            if selected.len() != 1 {
+                return Some(UseOutcome::rejected());
+            }
+        }
         let source_trial = selected
             .iter()
             .any(|c| c.effects.target_transform.is_some());

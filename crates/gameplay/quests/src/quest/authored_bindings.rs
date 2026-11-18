@@ -341,7 +341,15 @@ impl Bindings {
                                 .is_none_or(|t| {
                                     s.minimum < t.minimum
                                         || s.maximum > t.maximum
-                                        || !(t.minimum..=t.maximum).contains(&s.set)
+                                        || if s.increment {
+                                            [s.minimum, s.maximum].into_iter().any(|value| {
+                                                value.checked_add(s.set).is_none_or(|next| {
+                                                    !(t.minimum..=t.maximum).contains(&next)
+                                                })
+                                            })
+                                        } else {
+                                            !(t.minimum..=t.maximum).contains(&s.set)
+                                        }
                                 })
                     })
                 {
@@ -452,6 +460,7 @@ impl Bindings {
         }
         let mut world = super::world_callbacks::load()?;
         world.extend(self.world_callbacks().cloned());
+        super::world_callbacks::phase::validate_draw_groups(&world)?;
         if world.len() > MAX_BOUND_STAGES
             || world.iter().map(|c| &c.key).collect::<BTreeSet<_>>().len() != world.len()
         {

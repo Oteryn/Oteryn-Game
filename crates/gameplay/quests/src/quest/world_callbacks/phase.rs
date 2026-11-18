@@ -5,6 +5,46 @@ use super::{ActorKind, Callback, Trigger};
 use crate::quest::QuestStateCatalogue;
 use std::collections::BTreeMap;
 
+pub fn draw_peers(a: &Callback, b: &Callback) -> bool {
+    let (Some(left), Some(right)) = (&a.effects.tool_use_draw, &b.effects.tool_use_draw) else {
+        return false;
+    };
+    a.quest == b.quest
+        && a.selector == b.selector
+        && a.trigger == b.trigger
+        && a.effects.transform == b.effects.transform
+        && a.effects.reset_after_ms == b.effects.reset_after_ms
+        && left.effect == right.effect
+        && a.item_on_target.as_ref().map(|tool| &tool.item)
+            == b.item_on_target.as_ref().map(|tool| &tool.item)
+        && (left.maximum < right.minimum || right.maximum < left.minimum)
+}
+
+pub(in crate::quest) fn validate_draw_groups(callbacks: &[Callback]) -> Result<(), String> {
+    for callback in callbacks
+        .iter()
+        .filter(|c| c.effects.tool_use_draw.is_some())
+    {
+        let peers = callbacks
+            .iter()
+            .filter(|peer| peer.trigger == callback.trigger && peer.selector == callback.selector);
+        let mut covered = 0_u32;
+        for peer in peers {
+            if peer.key != callback.key && !draw_peers(callback, peer) {
+                return Err("overlapping carried tool draw or unrelated callback selector".into());
+            }
+            let Some(draw) = &peer.effects.tool_use_draw else {
+                return Err("missing carried tool draw interval".into());
+            };
+            covered += u32::from(draw.maximum) - u32::from(draw.minimum) + 1;
+        }
+        if covered != 100 {
+            return Err("incomplete carried tool draw intervals".into());
+        }
+    }
+    Ok(())
+}
+
 pub(super) fn disjoint(a: &Callback, b: &Callback) -> bool {
     let conditional_step = a.trigger == Trigger::StepIn
         && a.return_on_failure

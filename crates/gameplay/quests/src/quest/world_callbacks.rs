@@ -85,7 +85,7 @@ pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
     MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion,
-    RewardDoor, StationProgress, TargetTransform, TimedOutfit,
+    RewardDoor, StationProgress, TargetTransform, TimedOutfit, ToolUseDraw,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
@@ -863,7 +863,8 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         let peers = selectors.entry(selector).or_default();
         if peers.len() >= MAX_EFFECTS
             || peers.iter().any(|peer| {
-                !phase::exclusive(peer, callback)
+                !phase::draw_peers(peer, callback)
+                    && !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
                     && !(selector_gates::disjoint(peer, callback)
@@ -874,7 +875,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         }
         peers.push(callback);
     }
-    Ok(())
+    phase::validate_draw_groups(callbacks)
 }
 
 pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
@@ -947,7 +948,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none()
-                && selector.native.is_none())
+                && selector.native.is_none()
+                && callback.effects.tool_use_draw.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || selector
                 .native
@@ -1008,7 +1010,10 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
-                && (!callback.has_state_writes()
+                && ((!callback.has_state_writes()
+                    && !(callback.has_state()
+                        && (callback.effects.timed_outfit.is_some()
+                            || callback.effects.transform_requires_current)))
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use

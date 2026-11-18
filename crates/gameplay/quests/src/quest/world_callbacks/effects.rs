@@ -51,6 +51,57 @@ pub struct TimedOutfit {
     pub effect: Option<u16>,
 }
 
+/// One interval of a tool's source-authored 1..=100 draw.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ToolUseDraw {
+    pub minimum: u8,
+    pub maximum: u8,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spawn: Option<String>,
+    pub effect: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub follow_up: Option<String>,
+}
+
+impl ToolUseDraw {
+    fn valid(&self, callback: &Callback) -> bool {
+        let effects = &callback.effects;
+        (1..=100).contains(&self.minimum)
+            && (self.minimum..=100).contains(&self.maximum)
+            && self.effect != 0
+            && self.follow_up.as_ref().is_none_or(|text| {
+                !text.trim().is_empty()
+                    && text.chars().count() <= 255
+                    && !text.chars().any(char::is_control)
+            })
+            && self.spawn.as_ref().is_none_or(|creature| {
+                super::super::valid_quest_key(creature) && creature.starts_with("oteryn:creature.")
+            })
+            && callback.actor_kind == ActorKind::Player
+            && callback.trigger == Trigger::Use
+            && callback.requires_world_admission
+            && callback.has_state()
+            && !callback.is_read_only()
+            && callback.selector.position_aliases.is_empty()
+            && callback.item_on_target.as_ref().is_some_and(|tool| {
+                tool.selected_instance
+                    && tool.count == 1
+                    && tool.alternatives.is_empty()
+                    && tool.ingredients.is_empty()
+                    && tool.replacement.is_none()
+                    && tool.target_replacement.is_none()
+                    && !tool.target_remove
+            })
+            && effects.transform_requires_current
+            && effects.reset_after_ms.is_some()
+            && effects.encounter.is_none()
+            && effects.party_transfer.is_none()
+            && callback.teleport.is_none()
+            && callback.remote_teleport.is_none()
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
@@ -71,6 +122,9 @@ pub struct CallbackEffects {
     /// A temporary outfit awarded on a fenced step when no outfit is active.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timed_outfit: Option<TimedOutfit>,
+    /// Selected once by the ordinary carried tool on a live map object.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_use_draw: Option<ToolUseDraw>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub restore_disguise: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -534,10 +588,17 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     if effects.transform_requires_current
         && (callback.trigger != Trigger::Use
-            || callback.selector.position.is_none()
+            || (callback.selector.position.is_none() && effects.tool_use_draw.is_none())
             || callback.selector.appearance.is_none()
             || callback.selector.native.is_some()
             || effects.transform.is_none())
+    {
+        return false;
+    }
+    if effects
+        .tool_use_draw
+        .as_ref()
+        .is_some_and(|draw| !draw.valid(callback))
     {
         return false;
     }
