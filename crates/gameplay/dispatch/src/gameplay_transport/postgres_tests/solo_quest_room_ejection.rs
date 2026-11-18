@@ -53,7 +53,7 @@ fn solo_quest_room_ejects_the_admitted_player_after_the_last_monster_dies() -> T
                     false,
                 )
                 .await?;
-                let result = Box::pin(exercise(&h)).await;
+                let result = Box::pin(exercise(&h, None)).await;
                 let cleanup = h.cleanup().await;
                 result?;
                 cleanup
@@ -65,9 +65,21 @@ fn solo_quest_room_ejects_the_admitted_player_after_the_last_monster_dies() -> T
     Ok(())
 }
 
-async fn exercise(h: &Harness) -> TestResult {
-    let source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua:31-58";
-    let callback_json = serde_json::json!({
+#[derive(Clone, Copy)]
+pub(super) struct BossRoom {
+    pub minimum_level: u32,
+    pub already_fought: bool,
+    pub allowed: bool,
+    pub source: &'static str,
+}
+
+pub(super) async fn exercise(h: &Harness, boss: Option<BossRoom>) -> TestResult {
+    let source = boss.map_or(
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua:31-58",
+        |room| room.source
+    );
+    let after_ms = if boss.is_some() { 600_000 } else { AFTER_MS };
+    let mut callback_json = serde_json::json!({
         "key":"oteryn:quest-callback/fixture/solo-room", "quest":QUEST, "trigger":"step_in",
         "selector":{"position":ENTRY,"appearance":100,"native":{"position":ENTRY,"appearance":100,"ordinal":1}},
         "requires_world_admission":true, "reversible":false, "passages":[], "offerings":[],
@@ -77,10 +89,18 @@ async fn exercise(h: &Harness) -> TestResult {
             "monsters":[{"creature":"oteryn:creature.rat","position":{"x":33034,"y":32107,"floor":-12}}],
             "room_min":{"x":33011,"y":32097,"floor":-12},
             "room_max":{"x":33051,"y":32117,"floor":-12},
-            "ejection":{"after_ms":AFTER_MS,"destination":EXIT}
+            "ejection":{"after_ms":after_ms,"destination":EXIT}
         }},
         "return_on_failure":true, "failure_teleport":EXIT, "sources":[source]
     });
+    if let Some(room) = boss {
+        callback_json["storage"] = serde_json::json!([]);
+        callback_json["requires_world_admission"] = serde_json::json!(false);
+        callback_json["effects"]["encounter"]["minimum_level"] =
+            serde_json::json!(room.minimum_level);
+        callback_json["effects"]["encounter"]["boss_cooldown_seconds"] = serde_json::json!(36_000);
+        callback_json["failure_teleport"] = serde_json::Value::Null;
+    }
     let callback: Callback = serde_json::from_value(callback_json.clone())?;
     let bindings: Bindings = serde_json::from_value(serde_json::json!({
         "schema":1,"quests":[{
@@ -231,6 +251,21 @@ async fn exercise(h: &Harness) -> TestResult {
     deps.initialize(&owner).await;
     owner.admit_quest_session(&admitted).await;
 
+    let cooldown = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT available_at FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid AND boss_key='oteryn:creature.rat'",
+        ).bind(id(41).as_slice()).fetch_optional(&h.pool).await
+    };
+    let time_before: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    if boss.is_some_and(|room| room.already_fought) {
+        sqlx::query("INSERT INTO game_character_boss_cooldowns(character_id,boss_key,available_at,admission,reset_epoch)
+            VALUES(encode($1,'hex')::uuid,'oteryn:creature.rat',$2,encode($3,'hex')::uuid,0)")
+            .bind(id(41).as_slice()).bind(time_before+33_000_000).bind(id(82).as_slice()).execute(&h.pool).await?;
+    }
+    let previous_cooldown = cooldown().await?;
     let enter_at = 1_000_000;
     owner
         .states
@@ -248,12 +283,42 @@ async fn exercise(h: &Harness) -> TestResult {
         oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
         StepDisposition::Moved
     );
+    if boss.is_some_and(|room| !room.allowed) {
+        let runtime = deps.runtime.lock().await;
+        assert_eq!(
+            runtime
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position(),
+            start
+        );
+        assert!(
+            runtime
+                .current_live_creature_census()
+                .map_err(debug)?
+                .is_empty()
+        );
+        drop(runtime);
+        assert_eq!(cooldown().await?, previous_cooldown);
+        return Ok(());
+    }
+    if boss.is_some() {
+        let expiry = cooldown().await?.ok_or("recorded boss cooldown")?;
+        let time_after: i64 = sqlx::query_scalar(
+            "SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert!((time_before + 36_000_000..=time_after + 36_000_000).contains(&expiry));
+    }
     let read_progress = || async {
         sqlx::query_scalar::<_, i64>(
             "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
         ).bind(id(41).as_slice()).bind(TRACK).fetch_one(&h.pool).await
     };
-    assert_eq!(read_progress().await?, 10);
+    if boss.is_none() {
+        assert_eq!(read_progress().await?, 10);
+    }
     {
         let mut runtime = deps.runtime.lock().await;
         assert_eq!(
@@ -269,7 +334,7 @@ async fn exercise(h: &Harness) -> TestResult {
             runtime.remove_encounter_actor(creature).map_err(debug)?;
         }
     }
-    let due = enter_at + u64::from(AFTER_MS) * 1_000;
+    let due = enter_at + u64::from(after_ms) * 1_000;
     assert_eq!(
         owner.states.quest_callbacks.next_encounter_due_us(),
         Some(due)
@@ -300,6 +365,8 @@ async fn exercise(h: &Harness) -> TestResult {
         local(EXIT)
     );
     assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
-    assert_eq!(read_progress().await?, 10);
+    if boss.is_none() {
+        assert_eq!(read_progress().await?, 10);
+    }
     Ok(())
 }

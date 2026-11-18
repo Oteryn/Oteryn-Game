@@ -942,7 +942,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        if durable && callback.effects.encounter.is_some() {
+        let solo_boss = callback
+            .effects
+            .encounter
+            .as_ref()
+            .is_some_and(|room| room.boss_cooldown_seconds.is_some());
+        if (durable || solo_boss) && callback.effects.encounter.is_some() {
             let preflight = self.execute_quest_encounter(
                 runtime,
                 states,
@@ -959,6 +964,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
             if preflight != UseDisposition::Committed {
                 return preflight;
+            }
+        }
+        if solo_boss {
+            let (Some(fence), Some(catalogue), QuestCause::Step(command)) =
+                (fence, self.quest_catalogue.as_ref(), cause)
+            else {
+                return UseDisposition::Rejected;
+            };
+            if !map.facts.quest_callback_capacity(key, expected_revision, 0) {
+                return UseDisposition::Exhausted;
+            }
+            let context = QuestWorldContext {
+                map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                content_revision: format!(
+                    "sha256:{}",
+                    hex(&runtime.content_pin().server_artifact_digest())
+                ),
+                placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+                reset_epoch: self.reset_epoch,
+                actor_placement: actor.placement_identity(),
+                movement_revision: expected.revision(),
+                party: Vec::new(),
+            };
+            let context = if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
+                let record = records.entry(session).or_insert(Pending {
+                    actor,
+                    session,
+                    expected,
+                    callback: callback.key.clone(),
+                    key,
+                    revision: expected_revision,
+                    cause,
+                    origin: None,
+                    context: None,
+                    flame: None,
+                    ingress_settled: false,
+                    participants: Vec::new(),
+                    projection_target: None,
+                    flame_effect_sent: false,
+                    selected_tool: None,
+                });
+                record.context.get_or_insert(context).clone()
+            } else {
+                return UseDisposition::Rejected;
+            };
+            match self.root.commit_solo_boss_step(
+                self.character, self.holder, fence, command, &callback.key,
+                std::sync::Arc::clone(catalogue), permit, context,
+            ).await {
+                Ok(true) => {}
+                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
+                    // The original STEP is retained for exact cooldown receipt replay.
+                    return UseDisposition::Rejected;
+                }
+                Ok(false) | Err(_) => {
+                    if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
+                        records.remove(&session);
+                    }
+                    return UseDisposition::Rejected;
+                }
             }
         }
         let mut success_preface = None;

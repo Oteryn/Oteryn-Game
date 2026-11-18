@@ -314,6 +314,10 @@ pub struct Encounter {
     /// Crystal hidden_threats/movement-cave_spider_room.lua:54-58.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ejection: Option<EncounterEjection>,
+    /// Crystal grimvale/actions_portal_minis_grimvale.lua:112-126 and
+    /// actions_portal_minis_ancient_feud.lua:105-118 use the spawned boss's cooldown.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boss_cooldown_seconds: Option<u32>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -787,9 +791,41 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
+    let solo_boss = effects.encounter.as_ref().is_some_and(|encounter| {
+        encounter.boss_cooldown_seconds.is_some()
+            && callback.trigger == Trigger::StepIn
+            && callback.actor_kind == ActorKind::Player
+            && !callback.has_state()
+            && !callback.requires_world_admission
+            && callback.return_on_failure
+            && callback.selector.native.is_some()
+            && callback.selector.position_aliases.is_empty()
+            && callback.lever.is_none()
+            && !callback.opening_only
+            && !callback.reversible
+            && callback.offerings.is_empty()
+            && callback.item_on_target.is_none()
+            && callback.experience.is_none()
+            && callback.native_rule.is_none()
+            && callback.monk_reward.is_none()
+            && !callback.completes
+            && callback.world_requirements.is_empty()
+            && callback.world_change.is_none()
+            && encounter.players.len() == 1
+            && encounter.monsters.len() == 1
+            && encounter.timing.is_none()
+            && encounter.phase.is_none()
+            && encounter.ejection.is_some()
+            && !effects.completes_quest
+            && effects.quest_completion.is_none()
+            && callback.item_reward().is_none()
+            && effects.outfit_reward.is_none()
+            && effects.mount_reward.is_none()
+    });
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
+                && !solo_boss
                 && !super::personal_trial::admitted(callback)
                 && (!lever
                     || (effects.scene.is_none()
@@ -851,15 +887,19 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if encounter.ejection.is_some_and(|ejection| {
-            !personal_encounter
-                || callback.trigger != Trigger::StepIn
-                || encounter.phase.is_some()
-                || callback.personal_room_entry().is_none()
-                || !(1..=3_600_000).contains(&ejection.after_ms)
-                || !pos(ejection.destination)
-                || in_room(ejection.destination)
-        }) || (encounter.minimum_level == 0 && !source_party)
+        if encounter
+            .boss_cooldown_seconds
+            .is_some_and(|seconds| !solo_boss || !(1..=2_592_000).contains(&seconds))
+            || encounter.ejection.is_some_and(|ejection| {
+                !(personal_encounter || solo_boss)
+                    || callback.trigger != Trigger::StepIn
+                    || encounter.phase.is_some()
+                    || callback.personal_room_entry().is_none()
+                    || !(1..=3_600_000).contains(&ejection.after_ms)
+                    || !pos(ejection.destination)
+                    || in_room(ejection.destination)
+            })
+            || (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()

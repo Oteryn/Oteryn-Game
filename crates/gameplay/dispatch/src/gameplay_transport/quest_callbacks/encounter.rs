@@ -373,6 +373,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        // The source solo rooms clear live monsters before spawning their new
+        // cohort. Stage the exact removals with the native teleport and spawn.
+        let previous: Vec<_> = if encounter.ejection.is_some() {
+            census
+                .iter()
+                .filter_map(|(actor, position, session)| {
+                    (session.is_none()
+                        && room_contains(encounter, position.position())
+                        && runtime.contains_live_creature(*actor))
+                    .then_some(*actor)
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
         let mut monsters = Vec::new();
         for monster in &encounter.monsters {
             let at = local(monster.position);
@@ -389,7 +404,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tile(monster.position),
                     false,
                 )
-                || census.iter().any(|(_, pos, _)| pos.position() == at)
+                || census
+                    .iter()
+                    .any(|(actor, pos, _)| pos.position() == at && !previous.contains(actor))
             {
                 return UseDisposition::Occupied;
             }
@@ -399,8 +416,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
         if preflight {
+            if let Some(ejection) = encounter.ejection
+                && (!self
+                    .states
+                    .quest_callbacks
+                    .encounters
+                    .lock()
+                    .is_ok_and(|visits| {
+                        visits
+                            .iter()
+                            .filter(|visit| visit.active(runtime) || visit.ejection.is_some())
+                            .count()
+                            < super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                    })
+                    || players.iter().any(|(who, member_session, expected)| {
+                        crate::map::floor::prepare_quest_encounter_ejection(
+                            runtime,
+                            self.movement_cells(),
+                            *who,
+                            *member_session,
+                            *expected,
+                            local(ejection.destination),
+                            &closed,
+                        )
+                        .is_err()
+                    }))
+            {
+                return UseDisposition::NotPossible;
+            }
             return if runtime
-                .preflight_quest_encounter_entry(proofs, &monsters)
+                .preflight_quest_encounter_replacing(proofs, &monsters, &previous)
                 .is_ok()
             {
                 UseDisposition::Committed
@@ -481,6 +526,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
+            &previous,
             |runtime, actors| {
                 let roster = if prepared.is_some() {
                     Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(

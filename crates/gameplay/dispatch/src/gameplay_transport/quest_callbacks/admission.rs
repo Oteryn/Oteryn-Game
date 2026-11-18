@@ -10,6 +10,11 @@ pub(super) fn stateless_observation_required(callback: &Callback) -> bool {
 
 pub(super) fn character_fence_required(callback: &Callback) -> bool {
     callback.requires_durable_commit()
+        || callback
+            .effects
+            .encounter
+            .as_ref()
+            .is_some_and(|room| room.boss_cooldown_seconds.is_some())
         || callback.effects.reward_door.is_some()
         || carried_step::recipe(&callback.key).is_some()
         || shared_switches::recipe(&callback.key).is_some()

@@ -190,6 +190,16 @@ impl ChannelRuntimeV1 {
             .map(|_| ())
     }
 
+    pub fn preflight_quest_encounter_replacing<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        remove: &[ExactActorRef],
+    ) -> Result<(), CarrierError> {
+        self.quest_encounter_with_phase(players, monsters, remove, |_, _, _| Ok(()), || true, false)
+            .map(|_| ())
+    }
+
     pub fn commit_quest_encounter_entry_with_roster<P: SourceStepCommitProof>(
         &mut self,
         players: Vec<P>,
@@ -199,6 +209,7 @@ impl ChannelRuntimeV1 {
         self.quest_encounter_with_phase(
             players,
             monsters,
+            &[],
             |_, actors, _| Ok(actors.to_vec()),
             project,
             true,
@@ -208,12 +219,14 @@ impl ChannelRuntimeV1 {
         &mut self,
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
+        remove: &[ExactActorRef],
         bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
         project: impl FnOnce() -> bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
         self.quest_encounter_with_phase(
             players,
             monsters,
+            remove,
             |runtime, actors, _| bind(runtime, actors),
             project,
             true,
@@ -260,6 +273,7 @@ impl ChannelRuntimeV1 {
         self.quest_encounter_with_phase(
             players,
             monsters,
+            &[],
             |_, actors, positions| prepare(positions.to_vec(), actors.to_vec()),
             project,
             true,
@@ -273,13 +287,14 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
         publish: bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
-        self.quest_encounter_with_phase(players, monsters, |_, _, _| Ok(()), project, publish)
+        self.quest_encounter_with_phase(players, monsters, &[], |_, _, _| Ok(()), project, publish)
             .map(|(positions, ())| positions)
     }
     fn quest_encounter_with_phase<P: SourceStepCommitProof, T>(
         &mut self,
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
+        remove: &[ExactActorRef],
         bind: impl FnOnce(
             &mut Self,
             &[ExactActorRef],
@@ -288,7 +303,15 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
         publish: bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
-        if players.is_empty() || players.len() > 16 || monsters.is_empty() || monsters.len() > 16 {
+        if players.is_empty()
+            || players.len() > 16
+            || monsters.is_empty()
+            || monsters.len() > 16
+            || remove.len() > 64
+            || remove
+                .iter()
+                .any(|actor| !self.contains_live_creature(*actor))
+        {
             return Err(CarrierError::PlanConflict);
         }
         for proof in &players {
@@ -302,6 +325,9 @@ impl ChannelRuntimeV1 {
         // The exclusive runtime owner prevents an observer from seeing these staged slots.
         let before = self.carrier.clone();
         let result = (|| {
+            for actor in remove {
+                self.remove_encounter_actor(*actor)?;
+            }
             let mut actors = Vec::new();
             actors
                 .try_reserve(monsters.len())

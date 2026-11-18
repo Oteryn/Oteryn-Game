@@ -636,8 +636,8 @@ impl Callback {
         let [member] = encounter.players.as_slice() else {
             return None;
         };
-        (self.requires_world_admission
-            && self.has_personal_state()
+        ((self.requires_world_admission && self.has_personal_state()
+            || encounter.boss_cooldown_seconds.is_some())
             && self.actor_kind == ActorKind::Player
             && self.trigger == Trigger::StepIn
             && encounter.timing.is_none()

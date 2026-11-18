@@ -502,6 +502,9 @@ impl Stage {
         matches!(&self.trigger, Trigger::MapUse { callback }
             if !self.completes && callback.storage.is_empty() && callback.operation_count() == 0
                 && callback.effects.encounter.as_ref().is_some_and(|encounter| encounter.timing.is_none()))
+            || matches!(&self.trigger, Trigger::StepIn { callback }
+                if !self.completes && callback.effects.encounter.as_ref().is_some_and(|encounter|
+                    encounter.boss_cooldown_seconds.is_some()))
     }
     /// All exact operations registered for this stage share one ownership boundary.
     pub(in crate::quest) fn transitions(
