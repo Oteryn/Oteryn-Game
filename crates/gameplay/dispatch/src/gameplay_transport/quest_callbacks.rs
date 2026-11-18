@@ -261,6 +261,28 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     if source_ordinal.is_some_and(|source| source != ordinal) {
         return false;
     }
+    if super::kill_reward::is_forge_exit(&callback.key) {
+        return callback.selector.native.as_ref().is_some_and(|source| {
+            tile(source.position) == pos
+                && source.ordinal == ordinal
+                && !map.facts.base_hidden(key)
+                && map
+                    .overlay
+                    .base()
+                    .tile(pos.x, pos.y, pos.floor)
+                    .and_then(|base| {
+                        base.ids()
+                            .iter()
+                            .zip(base.depths())
+                            .filter(|(_, depth)| **depth == 0)
+                            .nth(usize::from(ordinal))
+                            .and_then(|(id, _)| {
+                                map.facts.quest_callback_base_appearance(pos, ordinal, *id)
+                            })
+                    })
+                    == Some(source.appearance)
+        });
+    }
     if let Some(binding) = &callback.selector.native {
         let matched = tile(binding.position) == pos
             && ordinal == binding.ordinal
@@ -322,28 +344,6 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         })
     {
         return true;
-    }
-    if super::kill_reward::is_forge_exit(&callback.key) {
-        return callback.selector.native.as_ref().is_some_and(|source| {
-            tile(source.position) == pos
-                && source.ordinal == ordinal
-                && !map.facts.base_hidden(key)
-                && map
-                    .overlay
-                    .base()
-                    .tile(pos.x, pos.y, pos.floor)
-                    .and_then(|base| {
-                        base.ids()
-                            .iter()
-                            .zip(base.depths())
-                            .filter(|(_, depth)| **depth == 0)
-                            .nth(usize::from(ordinal))
-                            .and_then(|(id, _)| {
-                                map.facts.quest_callback_base_appearance(pos, ordinal, *id)
-                            })
-                    })
-                    == Some(source.appearance)
-        });
     }
     if let Some(binding) =
         oteryn_gameplay_quests::quest::carried_step::native_binding(&callback.key)
