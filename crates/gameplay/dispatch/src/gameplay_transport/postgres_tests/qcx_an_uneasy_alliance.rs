@@ -2,11 +2,12 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
-use crate::foundation::{CommandId, CommandRef};
+use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
+use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition, loader,
 };
@@ -15,6 +16,38 @@ use std::sync::Arc;
 const FRONTIER: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06";
 const ALLIANCE: &str = "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline";
 const DOOR: &str = "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door";
+
+fn curos_position() -> TestResult<Position> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let index: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/world/npc-placements/index.json"),
+    )?)?;
+    let mut positions = Vec::new();
+    for shard in index["shards"].as_array().ok_or("NPC placement shards")? {
+        let path = shard.as_str().ok_or("NPC placement shard path")?;
+        let document: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join(path))?)?;
+        for record in document["records"]
+            .as_array()
+            .ok_or("NPC placement records")?
+        {
+            let placement = &record["declaration"];
+            if placement["npc"] == "oteryn:npc.curos" {
+                let cell = &placement["cell"];
+                assert_eq!(
+                    cell,
+                    &serde_json::json!({"x": 33174, "y": 31394, "floor": 7})
+                );
+                positions.push(Position {
+                    x: 33174,
+                    y: 31394,
+                    floor: -7,
+                });
+            }
+        }
+    }
+    assert_eq!(positions.len(), 1, "exact Curos placement");
+    Ok(positions[0])
+}
 
 #[test]
 fn curos_dispatch_checks_entry_and_advances_each_mission() -> TestResult {
@@ -52,17 +85,30 @@ fn scenario() -> TestResult {
             let loaded = loader::load_embedded_quest_state("content-1").map_err(debug)?;
             let canonical = loaded.catalogue();
             owner.quest_catalogue = Some(Arc::new(canonical.clone()));
+            let at = curos_position()?;
             owner
                 .runtime
                 .lock()
                 .await
-                .initialize_first_entry_position(deps.actor)
+                .initialize_pinned_test_position(
+                    deps.actor,
+                    MovementLocalPosition {
+                        x: i32::from(at.x),
+                        y: i32::from(at.y) + 1,
+                        floor: -i16::from(at.floor),
+                    },
+                )
                 .map_err(debug)?;
             let mut admitted = deps.admitted;
             admitted.first_entry = FirstEntryOutcome::Positioned;
             owner.admit_quest_session(&admitted).await;
-            let [curos] =
-                super::classic_quests::install(&owner, &admitted, ["oteryn:npc.curos"]).await?;
+            let [curos] = super::classic_quests::install_positions(
+                &owner,
+                &admitted,
+                ["oteryn:npc.curos"],
+                [at],
+            )
+            .await?;
             let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
             h.root
                 .latch_premium_activation(
