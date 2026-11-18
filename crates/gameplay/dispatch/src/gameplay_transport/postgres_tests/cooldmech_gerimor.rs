@@ -105,6 +105,7 @@ pub(super) async fn exercise(
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     let boxes = super::qengine_voucher_stories::quantity(harness, 26186).await?;
+    let crowns = super::qengine_voucher_stories::quantity(harness, 50313).await?;
     talk(owner, admitted, gerimor, 8, "mission").await?;
     talk(owner, admitted, gerimor, 9, "yes").await?;
     owner
@@ -125,12 +126,20 @@ pub(super) async fn exercise(
         super::qengine_voucher_stories::quantity(harness, 26186).await?,
         boxes + 1
     );
+    assert_eq!(
+        super::qengine_voucher_stories::quantity(harness, 50313).await?,
+        crowns + 1
+    );
     talk(owner, admitted, gerimor, 10, "mission").await?;
     talk(owner, admitted, gerimor, 11, "yes").await?;
     assert_eq!(experience(harness).await?, initial + 75_000);
     assert_eq!(
         super::qengine_voucher_stories::quantity(harness, 26186).await?,
         boxes + 1
+    );
+    assert_eq!(
+        super::qengine_voucher_stories::quantity(harness, 50313).await?,
+        crowns + 1
     );
     Ok(())
 }

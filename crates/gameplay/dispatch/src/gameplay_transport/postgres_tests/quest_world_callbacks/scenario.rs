@@ -1391,6 +1391,7 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
+            super::super::cooldmech_gerimor::NAME => Some(8),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
