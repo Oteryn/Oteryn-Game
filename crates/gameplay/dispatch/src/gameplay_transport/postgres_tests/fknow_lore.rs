@@ -431,17 +431,26 @@ async fn exercise_astral_victory(
         let mut runtime = owner.runtime.lock().await;
         let expected = runtime.read_actor_position(actor).map_err(debug)?;
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
-        let proof = crate::map::floor::prepare_quest_callback_teleport(
-            &runtime,
-            &owner.movement_cells,
-            actor,
-            session,
-            expected,
-            at,
-            false,
-            &closed,
-        )
-        .map_err(debug)?;
+        let proof = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+            .into_iter()
+            .find_map(|(dx, dy)| {
+                crate::map::floor::prepare_quest_callback_teleport(
+                    &runtime,
+                    &owner.movement_cells,
+                    actor,
+                    session,
+                    expected,
+                    MovementLocalPosition {
+                        x: at.x + dx,
+                        y: at.y + dy,
+                        ..at
+                    },
+                    false,
+                    &closed,
+                )
+                .ok()
+            })
+            .ok_or("walkable tile next to Astral power")?;
         runtime.commit_source_step(proof).map_err(debug)?;
     }
     kill(power, 200).await?;
