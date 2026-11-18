@@ -709,6 +709,7 @@ pub(super) async fn apply(
     {
         return rejected();
     }
+    let spawn_wake = spawn.as_ref().map(|_| Arc::clone(&states.owner_wake));
     drop(states);
     // The Channel turn retains the placement and slot preflight through the
     // bounded write, as for native target-use callbacks.
@@ -824,17 +825,19 @@ pub(super) async fn apply(
                 .map(|(pending, _)| pending.creatures.as_slice()),
         )
         .await;
-    if let (Some(runtime), Some((_, prepared)), Ok(commit)) =
-        (&mut spawn_turn, spawn_plan, &outcome)
+    if let (Some(runtime), Some((_, prepared)), Some(wake), Ok(commit)) =
+        (&mut spawn_turn, spawn_plan, spawn_wake, &outcome)
         && matches!(
             commit.transition,
             QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
         )
-        && !publish_spawn(admission, runtime, request.command, |runtime| {
-            prepared.publish(runtime)
-        })
     {
-        return unknown();
+        if !publish_spawn(admission, runtime, request.command, |runtime| {
+            prepared.publish(runtime)
+        }) {
+            return unknown();
+        }
+        wake.notify_one();
     }
     drop(spawn_turn);
     drop(slot);
@@ -1021,6 +1024,7 @@ pub(in crate::gameplay_transport) async fn resume(
         {
             Ok(Some(commit)) => {
                 if let Some(spawn) = spawn {
+                    let wake = Arc::clone(&admission.states.spell_states.lock().await.owner_wake);
                     let mut runtime = admission.runtime.lock().await;
                     let recovered =
                         publish_spawn(admission, &mut runtime, request.command, |runtime| {
@@ -1044,6 +1048,7 @@ pub(in crate::gameplay_transport) async fn resume(
                             ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
                         });
                     }
+                    wake.notify_one();
                 }
                 let engaged = !teleport
                     || admission.states.chat.engaged(command.game_session_id)

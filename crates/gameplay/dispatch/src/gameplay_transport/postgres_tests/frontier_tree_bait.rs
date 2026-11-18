@@ -114,6 +114,42 @@ pub(super) async fn exercise(
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(marked, 1);
+    // A fresh command with another flask must still respect the durable mark.
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    super::quest_world_callbacks::input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: AT,
+            item: BAIT.into(),
+            count: 1,
+        },
+        4621,
+        true,
+    )
+    .await?;
+    let bait_before = super::qengine_voucher_stories::quantity(h, 9843).await?;
+    assert_ne!(
+        super::secret_service_dock_fire::use_selected_tool(owner, admitted, AT, BAIT).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(
+        super::qengine_voucher_stories::quantity(h, 9843).await?,
+        bait_before
+    );
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .current_live_creature_census()
+            .map_err(debug)?
+            .is_empty()
+    );
     Ok(())
 }
 
