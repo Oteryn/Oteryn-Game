@@ -233,6 +233,15 @@ pub(super) async fn exercise_cathedral(
         fence.item_fence(),
         &stand(cathedral::STARLIGHT),
         61,
+        true,
+    )
+    .await?;
+    assert_eq!(use_pick(owner, admitted).await?, UseDisposition::Rejected);
+    input_item(
+        owner,
+        fence.item_fence(),
+        &stand(cathedral::STARLIGHT),
+        62,
         false,
     )
     .await?;
@@ -308,7 +317,10 @@ pub(super) async fn exercise_cathedral(
         let runtime = owner.runtime.lock().await;
         for player in [actor, resident] {
             assert_eq!(
-                runtime.read_actor_position(player).map_err(debug)?.position(),
+                runtime
+                    .read_actor_position(player)
+                    .map_err(debug)?
+                    .position(),
                 arrival
             );
         }
@@ -338,9 +350,24 @@ pub(super) async fn exercise_cathedral(
             .appearance_id,
         cathedral::CLOSED
     );
-    let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
-        .bind(cathedral::STARLIGHT).fetch_one(&h.pool).await?;
-    assert_eq!(quantity, 1);
+    let quantities: Vec<(i64, bool)> = sqlx::query_as(
+        "SELECT i.quantity, coalesce(g.spatial_position=$2,false) AS on_stand
+         FROM game_item_instances i
+         LEFT JOIN game_item_ground_locations g USING (item_instance_id)
+         WHERE i.definition_production_key=$1 AND i.lifecycle=1
+         ORDER BY on_stand",
+    )
+    .bind(cathedral::STARLIGHT)
+    .bind(
+        crate::durability::map_item_mint_audit::map_item_spatial_position(
+            cathedral::STAND.x,
+            cathedral::STAND.y,
+            cathedral::STAND.floor,
+        ),
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(quantities, vec![(1, false), (1, true)]);
     Ok(())
 }
 
@@ -389,6 +416,13 @@ pub(super) async fn exercise_court(
     };
     let first_character = *fence.character_id.as_bytes();
     let second_character = *second_lease.character_id().as_bytes();
+    seed(first_character, 10).await?;
+    seed(second_character, 11).await?;
+    super::maintain_ready(&h.root).await?;
+    assert_eq!(
+        use_fixed(owner, admitted, court::LEVER, 1).await?,
+        UseDisposition::Rejected
+    );
     seed(first_character, 11).await?;
     seed(second_character, 10).await?;
     super::maintain_ready(&h.root).await?;
