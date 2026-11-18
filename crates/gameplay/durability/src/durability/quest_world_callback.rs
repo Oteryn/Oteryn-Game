@@ -181,6 +181,14 @@ fn read_only_pin_allows(
     catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     quest: &str,
 ) -> Result<bool, DurabilityError> {
+    // The fully loaded definition at main 4740f9a8. Qpkgw5 adds Zalamon
+    // transitions while keeping the Phantom Army access track and its predicate.
+    // This predecessor grants passage reads independently of quest write compatibility.
+    const CHILDREN_MAIN_ERA_HASH: [u8; 32] = [
+        0xe9, 0x1b, 0x65, 0xcb, 0x6e, 0x0a, 0x69, 0xe9, 0xb4, 0x47, 0x3b, 0xb8, 0x3d, 0xb9, 0x70,
+        0xa1, 0x15, 0xbd, 0x63, 0x1a, 0xcb, 0xfa, 0xe3, 0x4b, 0x7a, 0x7e, 0x5f, 0x8d, 0x74, 0x0e,
+        0x52, 0xc2,
+    ];
     let current_hash = catalogue
         .definition_hash(quest)
         .ok_or(DurabilityError::InvalidStoredState)?;
@@ -188,7 +196,9 @@ fn read_only_pin_allows(
     // predecessors qualify alongside the active definition and completed saves.
     Ok(stored.definition_hash == current_hash
         || stored.completed
-        || legacy_defaults(catalogue, quest, &stored.definition_hash).is_some())
+        || legacy_defaults(catalogue, quest, &stored.definition_hash).is_some()
+        || (quest == "oteryn:quest.children_of_the_revolution_quest"
+            && stored.definition_hash == CHILDREN_MAIN_ERA_HASH))
 }
 
 struct Input {

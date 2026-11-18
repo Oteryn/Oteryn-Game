@@ -322,9 +322,15 @@ pub(in super::super) fn exercise(
                             .ok_or("fixture transition")?
                             .clone(),
                     )
-                    .map_err(debug)?
-                    .with_fixture_predecessor(main, &callback.quest)
                     .map_err(debug)?;
+                let active = if callback.quest == "oteryn:quest.children_of_the_revolution_quest" {
+                    // The shared read-only owner recognizes the actual deployed pin.
+                    active
+                } else {
+                    active
+                        .with_fixture_predecessor(main, &callback.quest)
+                        .map_err(debug)?
+                };
                 assert_ne!(active.definition_hash(&callback.quest), Some(hash));
                 // Restore the historical pin in both members of the seeded save.
                 let mut save = h.pool.begin().await?;
