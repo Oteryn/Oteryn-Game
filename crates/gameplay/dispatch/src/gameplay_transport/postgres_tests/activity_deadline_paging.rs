@@ -80,6 +80,8 @@ async fn window_case(h: &Harness) -> TestResult {
     install_pager_room(h, &first, 2, 36_000, 9).await?;
     let owner = ActivityHandoffOwner::new(h.root.clone());
     let store = FreshAdmissionStore::from_root(h.root.clone());
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
     let second_session = admit_member(h, &evidence.evidence, 1).await?;
     let mut second = first.clone();
     let member = &mut second.participants[0];
@@ -100,8 +102,6 @@ async fn window_case(h: &Harness) -> TestResult {
         crate::foundation::ScopeOwnershipGeneration::new(assignment.ownership_generation).map_err(debug)?;
     competing.destination_assignment_source_revision = assignment.source_revision;
 
-    let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
     let window = std::num::NonZeroU32::new(8_000).ok_or("nonzero enrollment window")?;
     for request in [&first, &second] {
         let account: String = sqlx::query_scalar(
@@ -116,7 +116,7 @@ async fn window_case(h: &Harness) -> TestResult {
         }
         let outcome = owner.enter_boss_admission_window(
             &authority, &h.node, request.clone(), window,
-        ).await?;
+        ).await.map_err(|error| format!("window entrant {}: {error:?}", request.initiating_character_id))?;
         let ActivityEnterOutcome::Entered(receipt) = outcome else {
             return Err(format!("window admission refused: {outcome:?}").into());
         };
