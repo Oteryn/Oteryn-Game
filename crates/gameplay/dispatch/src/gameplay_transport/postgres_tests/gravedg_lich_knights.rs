@@ -511,6 +511,12 @@ pub(super) fn configure_azaram(callback: &mut Callback) -> TestResult {
         splinters: [at(115, 113), at(121, 113), at(115, 121), at(121, 121)],
     });
     encounter.monsters[0].creature = LORD.into();
+    encounter.monsters.push(
+        oteryn_gameplay_quests::quest::world_callbacks::EncounterMonster {
+            creature: "oteryn:creature.condensed_sins".into(),
+            position: at(117, 117),
+        },
+    );
     Ok(())
 }
 
@@ -532,6 +538,7 @@ pub(super) async fn exercise_azaram(
             .find(|&actor| runtime.matches_live_creature_identity(actor, LORD.as_bytes()))
             .ok_or("admitted Lord Azaram")?
     };
+    exercise_condensed_sins(owner, admitted).await?;
     hit(owner, admitted, boss, LORD, 101).await?;
     let now = owner.owner_now().get();
     let saved = owner
@@ -657,6 +664,146 @@ pub(super) async fn exercise_azaram(
     tick_at(owner, now + 20 * 60 * 1_000_000).await;
     for actor in [player, peer] {
         assert_position(owner, actor, 103, 100).await?;
+    }
+    Ok(())
+}
+
+async fn exercise_condensed_sins(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::actor_spell_commit::{
+        commit_owner_batch, stage_player_batch_with_magnitude,
+    };
+    use crate::spell::combat_batch::{
+        LiveActorBinding, OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect,
+    };
+    use crate::spell::magnitude_owner::{
+        MagnitudeOwnedAttributes, MagnitudeOwnerBinding, MagnitudePolicy, PreparedMagnitudeOwner,
+    };
+    use crate::spell::native_combat::{CombatPlan, Element, MagnitudePlan, NativeCombatPlan};
+
+    const SINS: &str = "oteryn:creature.condensed_sins";
+    let actor = admitted.runtime_actor.ok_or("admitted player")?;
+    let session = admitted.game_session_id;
+    let mut runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let lease = runtime
+        .bound_attacker_lease(actor, session)
+        .map_err(debug)?;
+    let sins = runtime
+        .current_live_creature_census()
+        .map_err(debug)?
+        .into_iter()
+        .find(|&target| runtime.matches_live_creature_identity(target, SINS.as_bytes()))
+        .ok_or("admitted Condensed Sins")?;
+    for (element, command, expected_reflection) in
+        [(Element::Fire, 97, 0), (Element::Death, 98, 20)]
+    {
+        let state = states
+            .get(&runtime, actor, session)
+            .ok_or("admitted spell state")?;
+        let previous = state.vitals().health;
+        let now = owner.owner_now().get() / 1000;
+        let attrs = MagnitudeOwnedAttributes {
+            policy: MagnitudePolicy::BaselineTest,
+            item_augments: vec![],
+            owner_revisions: Some((1, 1, None)),
+            binding: MagnitudeOwnerBinding {
+                actor,
+                session,
+                character: lease.character_id(),
+                lease_generation: lease.generation(),
+                player_revision: state.revision(),
+                content_digest: runtime.content_pin().server_artifact_digest(),
+            },
+            base_critical_chance_permyriad: Some(0),
+            base_critical_extra_permyriad: Some(0),
+            equipment_critical_chance_permyriad: Some(0),
+            equipment_critical_extra_permyriad: Some(0),
+            fatal_chance_permyriad: None,
+            armor_penetration_permyriad: None,
+            elemental_pierce_permyriad: None,
+            wheel_effects: None,
+            wheel_flat_damage: None,
+            wheel_flat_healing: None,
+            source_damage_multiplier_percent: None,
+            source_healing_multiplier_percent: None,
+            healing_dealt_percent: None,
+            monster_armor_disabled: None,
+            inactive_extra_stages: None,
+        };
+        let plan = NativeCombatPlan::Combat(CombatPlan {
+            element,
+            area: None,
+            hits: vec![MagnitudePlan {
+                target: 1,
+                magnitude: 20,
+                bonus_percent: 0,
+                side_percent: None,
+                delay_ms: 0,
+            }],
+            cooldown_ms: None,
+            shared_cooldown: None,
+            reduce_all_spell_cooldowns_ms: 0,
+            block_armor: false,
+            use_weapon_charges: false,
+            weapon_missile: false,
+            dispel_paralysis_targets: vec![],
+            resolve_critical_and_fatal_once: false,
+        });
+        let bindings = [LiveActorBinding {
+            source_id: 1,
+            actor: sins,
+            target_atom: SINS.into(),
+        }];
+        let magnitude = PreparedMagnitudeOwner::qualify(
+            &runtime,
+            state,
+            actor,
+            session,
+            Some(&attrs),
+            &plan,
+            &bindings,
+            &[],
+            now,
+        )
+        .map_err(debug)?;
+        let batch = OwnerCombatBatch {
+            caster: actor,
+            attacker: lease.character_id(),
+            command: CommandRef::new(session, CommandId::new(command).map_err(debug)?),
+            current_lease_generation: lease.generation(),
+            occurrence: format!("gravedg:condensed-sins:{command}").into(),
+            binding: b"gravedg-condensed-sins".to_vec(),
+            anchor: None,
+            now_us: None,
+            now_ms: now,
+            effects: vec![OwnerCombatEffect {
+                target: sins,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::Damage {
+                    target_atom: SINS.into(),
+                    magnitude: 20,
+                },
+            }],
+            deferred: None,
+        };
+        let staged = runtime.stage_spell_batch(&batch).map_err(debug)?;
+        let preflight =
+            stage_player_batch_with_magnitude(&runtime, &states, &batch, None, Some(&magnitude))
+                .map_err(debug)?;
+        assert!(
+            commit_owner_batch(&mut runtime, &mut states, staged, Some(preflight))
+                .map_err(debug)?
+                .applied
+        );
+        let current = states
+            .get(&runtime, actor, session)
+            .ok_or("admitted spell state")?
+            .vitals()
+            .health;
+        assert_eq!(previous - current, expected_reflection);
     }
     Ok(())
 }
