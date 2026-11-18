@@ -69,7 +69,10 @@ pub(super) async fn exercise(
         schema: 1,
         quests: vec![BoundQuest {
             quest: isle_of_evil::QUEST.into(),
-            recipe_sha256: format!("{:x}", Sha256::digest(serde_json::to_vec(&callback)?)),
+            recipe_sha256: Sha256::digest(serde_json::to_vec(&callback)?)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect(),
             occurrence: None,
             admission: None,
             tracks: [(mission.as_str(), 5), (DEBT, 1), (WORMS, 5)]
