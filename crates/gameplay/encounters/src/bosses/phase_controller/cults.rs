@@ -158,7 +158,7 @@ impl CultsEncounter {
                         runtime,
                         role,
                         self.guardians_at[i],
-                        Some(self.stops[i]),
+                        &[self.stops[i]],
                         Some(("oteryn:creature.destroyed_pillar", self.pillars_at[i])),
                         &map_admits,
                     )?;
@@ -171,7 +171,7 @@ impl CultsEncounter {
                         runtime,
                         role,
                         self.essence_at,
-                        None,
+                        &[],
                         None,
                         &map_admits,
                     )?;
