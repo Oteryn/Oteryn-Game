@@ -284,6 +284,13 @@ different amounts of work, so their elapsed times are unsuitable for
 estimating a compile speedup. The pinned base did not link, so its
 4,339 entries came from the compiler's MIR registry.
 
+The current resubmission sampled the one-job dispatch rustc before and
+during LLVM. It mounted 735 generated PG roots and used 48 direct rlibs
+totalling 1,163,839,310 bytes, matching the previous one-job build. The
+last sample before the LLVM coordinator reached 14,633,728 KiB. With one
+observed optimization worker at a time, rustc reached 16,267,684 KiB
+during codegen without a cgroup OOM kill through that sample.
+
 The complete executable ran the exact
 `boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger`
 case against PostgreSQL 18.6. It emitted the state-and-replay completion
@@ -372,6 +379,9 @@ binary with one Cargo job. Applying the same job limit to both PostgreSQL
 archive steps and the two Merge Queue workspace lib shards gives a
 planning peak of 15.58 GiB for dispatch rustc. The PR unit shards already
 set one Cargo job. The hosted aggregate and wall time need validation.
+A workspace-wide Cargo `build.jobs = 1` would also change scheduling for
+unrelated developer builds and CI steps. The proposed step-level setting
+limits that scheduling change to jobs that compile the dispatch lib test.
 
 The exact diff below preserves the existing test commands and timeout
 values. It applies to the pinned base and parses as YAML. Changing the
