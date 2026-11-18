@@ -268,11 +268,14 @@ pub(super) async fn cathedral(
         "effects": {"timed_display": {"position": WALL, "appearance": 7872, "after_ms": 300_000}},
         "sources": [SOURCE],
     });
-    let recipe = Sha256::digest(serde_json::to_vec(&callback)?);
+    let recipe: String = Sha256::digest(serde_json::to_vec(&callback)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
         "schema": 1,
         "quests": [{
-            "quest": QUEST, "recipe_sha256": format!("{recipe:x}"), "sources": [SOURCE],
+            "quest": QUEST, "recipe_sha256": recipe, "sources": [SOURCE],
             "tracks": [{"key": MISSION, "initial": 0, "minimum": 0, "maximum": 3}],
             "stages": [{"key": "post-note", "completes": false,
                         "trigger": {"kind": "map_use", "callback": callback}}],
@@ -304,6 +307,8 @@ pub(super) async fn cathedral(
     let fence = owner.current_quest_fence(member.game_session_id).await
         .map_err(|_| "Cathedral item fence")?.ok_or("Cathedral session")?;
     input_item(owner, fence.item_fence(), &Offering { position: CATHEDRAL_START, item: INPUT.into(), count: 1 }, 952, true).await?;
+    member.item_fence = Some(owner.current_quest_fence(member.game_session_id).await
+        .map_err(|_| "Cathedral carried item fence")?.ok_or("Cathedral session")?.item_fence());
     let item = owner.active_generation.and_then(|g| g.native_gameplay()).and_then(|n| n.item_index())
         .and_then(|i| i.definition_ref("Item", INPUT, "definition-r1")).ok_or("selected note reference")?;
     let wall = TilePos { x: WALL.x, y: WALL.y, floor: WALL.floor };
