@@ -25,7 +25,9 @@ pub(super) fn capture_on_key(
     mut automatic: Local<super::screenshots::AutomaticState>,
     captures: Query<&super::screenshots::Capture>,
     clock: Res<Time<Real>>,
+    mut writes: NonSendMut<super::screenshots::Writes>,
 ) {
+    writes.poll(&mut owner);
     super::screenshots::observe(
         &mut commands,
         &mut owner,
@@ -33,6 +35,7 @@ pub(super) fn capture_on_key(
         &mut automatic,
         &captures,
         &clock,
+        &writes,
     );
     if !keys.just_pressed(KeyCode::F12) {
         return;
@@ -288,6 +291,7 @@ mod screenshot_tests {
             .init_resource::<ButtonInput<KeyCode>>()
             .init_resource::<Time<Real>>()
             .init_resource::<super::super::game_ui::viewport::WorldViewport>()
+            .init_non_send::<super::super::screenshots::Writes>()
             .add_systems(Update, capture_on_key);
         app.world_mut()
             .resource_mut::<ButtonInput<KeyCode>>()

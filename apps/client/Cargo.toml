@@ -25,10 +25,12 @@ path = "src/bin/oteryn-client-bevy.rs"
 required-features = ["bevy-shell"]
 
 [features]
-bevy-shell = ["dep:bevy", "dep:oteryn-client-ui-bevy", "dep:rodio", "oteryn-input-platform/native-winit"]
+bevy-shell = ["dep:bevy", "dep:bevy_tasks", "dep:oteryn-client-ui-bevy", "dep:rodio", "oteryn-input-platform/native-winit"]
 
 [dependencies]
 bevy = { version = "=0.20.1", optional = true, default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11", "system_clipboard", "bevy_log", "default_font"] }
+# Enable worker threads for Bevy's I/O pool without changing ECS scheduling.
+bevy_tasks = { version = "=0.20.1", optional = true, default-features = false, features = ["multi_threaded"] }
 oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets" }
 oteryn-client-domain = { version = "=0.1.0", path = "../../crates/client-domain" }
 oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
@@ -53,6 +55,7 @@ sha2.workspace = true
 semver = "=1.0.28"
 tokio = { workspace = true, features = ["macros"] }
 fs2 = "=0.4.3"
+tempfile = "=3.27.0"
 url = "=2.5.8"
 zip = { version = "=9.5.1", default-features = false, features = ["deflate"] }
 
@@ -62,6 +65,7 @@ rustix.workspace = true
 [target.'cfg(windows)'.dependencies]
 # The Windows client is the Bevy host: the same pins as the optional `bevy-shell` set above.
 bevy = { version = "=0.20.1", default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11", "system_clipboard", "bevy_log", "default_font"] }
+bevy_tasks = { version = "=0.20.1", default-features = false, features = ["multi_threaded"] }
 oteryn-client-ui-bevy = { version = "=0.1.0", path = "../../crates/client-ui-bevy" }
 oteryn-input-platform = { version = "=0.1.0", path = "../../crates/input-platform", features = ["native-winit"] }
 rodio = { version = "=0.21.1", default-features = false, features = ["playback", "vorbis", "wav"] }
@@ -73,7 +77,6 @@ oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets"
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
 oteryn-session = { version = "=0.1.0", path = "../../crates/session", features = ["test-support"] }
 rcgen.workspace = true
-tempfile = "=3.27.0"
 tokio-rustls.workspace = true
 winit = { workspace = true, features = ["x11"] }
 

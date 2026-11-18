@@ -218,6 +218,7 @@ impl HostOwner {
         drop(self.play.take());
         self.change_scope(Some(character));
         view.use_shared_frontend();
+        view.enable_background_minimap_save();
         link.use_shared_frontend();
         self.play = Some(ActivePlay { view, link });
         self.phase = Phase::Playing;
@@ -412,6 +413,7 @@ impl HostOwner {
                 self.settings.feedback = error.to_string();
             }
             self.settings.sync_local_preferences(&play.link);
+            play.view.poll_background_minimap_save();
             end = play.view.tick(&play.link).err();
         }
         if let Some(end) = end {

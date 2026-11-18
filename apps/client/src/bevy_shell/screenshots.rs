@@ -5,26 +5,95 @@ use bevy::{
     prelude::*,
     render::view::screenshot::{Screenshot, ScreenshotCaptured},
 };
-use std::{io, path::PathBuf};
+use bevy_tasks::{IoTaskPool, Task, futures::check_ready};
+use std::{collections::VecDeque, io, path::PathBuf};
 mod automatic;
 pub(super) use automatic::{Capture, State as AutomaticState, observe};
+
+type Job = Box<dyn FnOnce() -> Completion + Send>;
+const MAX_QUEUED_CAPTURES: usize = 4;
+
+#[derive(Default)]
+pub(super) struct Writes {
+    queued: VecDeque<Job>,
+    active: Option<Task<Completion>>,
+    automatic: bool,
+}
+
+enum Completion {
+    Manual(io::Result<PathBuf>),
+    Audit(io::Result<()>),
+    Automatic(automatic::Completed),
+}
+
+impl Writes {
+    fn is_full(&self) -> bool {
+        self.queued.len() >= MAX_QUEUED_CAPTURES
+    }
+
+    // Serialize completed readbacks so a later audit PNG cannot be overwritten by an earlier one.
+    fn push(&mut self, job: Job) -> bool {
+        if self.is_full() {
+            return false;
+        }
+        self.queued.push_back(job);
+        true
+    }
+
+    pub(super) fn poll(&mut self, owner: &mut HostOwner) {
+        if let Some(task) = &mut self.active {
+            let Some(result) = check_ready(task) else {
+                return;
+            };
+            self.active = None;
+            match result {
+                Completion::Manual(result) => {
+                    owner.status = match result {
+                        Ok(path) => format!("Screenshot saved: {}", path.display()),
+                        Err(error) => format!("Screenshot failed: {error}"),
+                    }
+                }
+                Completion::Audit(Err(error)) => {
+                    bevy::log::error!("Could not save audit screenshot: {error}")
+                }
+                Completion::Audit(Ok(())) => {}
+                Completion::Automatic(result) => {
+                    self.automatic = false;
+                    result.apply(owner);
+                }
+            }
+        }
+        if let Some(job) = self.queued.pop_front() {
+            self.active = Some(IoTaskPool::get().spawn(async move { job() }));
+        }
+    }
+}
 
 pub(super) fn request(commands: &mut Commands, owner: &mut HostOwner, viewport: WorldViewport) {
     let preferences = owner.settings.preferences.screenshots.effective();
     let crop = preferences.game_only.then_some(viewport);
     owner.status = "Capturing screenshot…".into();
     commands.spawn(Screenshot::primary_window()).observe(
-        move |event: On<ScreenshotCaptured>, mut owner: NonSendMut<HostOwner>| {
-            let result = save(&event.image, &preferences.directory, crop);
-            owner.status = match result {
-                Ok(path) => format!("Screenshot saved: {}", path.display()),
-                Err(error) => format!("Screenshot failed: {error}"),
-            };
+        move |event: On<ScreenshotCaptured>,
+              mut owner: NonSendMut<HostOwner>,
+              mut writes: NonSendMut<Writes>| {
+            let image = event.image.clone();
+            let directory = preferences.directory.clone();
+            if !writes.push(Box::new(move || {
+                Completion::Manual(save(image, &directory, crop))
+            })) {
+                owner.status = "Screenshot failed: write queue is full".into();
+            }
         },
     );
 }
-fn save(image: &Image, folder: &str, crop: Option<WorldViewport>) -> io::Result<PathBuf> {
-    let mut image = image.clone().try_into_dynamic().map_err(io::Error::other)?;
+
+fn save(image: Image, directory: &str, crop: Option<WorldViewport>) -> io::Result<PathBuf> {
+    pixels(image, crop)?.save(directory)
+}
+
+fn pixels(image: Image, crop: Option<WorldViewport>) -> io::Result<Pixels> {
+    let mut image = image.try_into_dynamic().map_err(io::Error::other)?;
     if let Some(crop) = crop {
         let end = crop
             .origin
@@ -36,30 +105,38 @@ fn save(image: &Image, folder: &str, crop: Option<WorldViewport>) -> io::Result<
         image = image.crop_imm(crop.origin.x, crop.origin.y, crop.size.x, crop.size.y);
     }
     let rgba = image.to_rgba8();
-    Pixels::new(rgba.width(), rgba.height(), rgba.into_raw())?.save(folder)
+    Pixels::new(rgba.width(), rgba.height(), rgba.into_raw())
 }
 
 /// Audit mode keeps its fixed PNG name, replacing it only after encoding completes.
 pub(super) fn request_audit(commands: &mut Commands, path: PathBuf) {
-    commands
-        .spawn(Screenshot::primary_window())
-        .observe(move |event: On<ScreenshotCaptured>| {
-            if let Err(error) = save_audit(&event.image, &path) {
-                bevy::log::error!("Could not save audit screenshot: {error}");
+    commands.spawn(Screenshot::primary_window()).observe(
+        move |event: On<ScreenshotCaptured>, mut writes: NonSendMut<Writes>| {
+            let image = event.image.clone();
+            let path = path.clone();
+            #[cfg(test)]
+            let mut open = tests::audit_open();
+            #[cfg(not(test))]
+            let mut open = crate::play::screenshot::create_capture_file;
+            if !writes.push(Box::new(move || {
+                Completion::Audit(save_audit(image, &path, &mut open))
+            })) {
+                bevy::log::error!("Could not save audit screenshot: write queue is full");
             }
-        });
+        },
+    );
 }
 
-fn save_audit(image: &Image, path: &std::path::Path) -> io::Result<()> {
-    #[cfg(not(test))]
-    use crate::play::screenshot::create_capture_file as open_audit_capture;
+fn save_audit(
+    image: Image,
+    path: &std::path::Path,
+    open: &mut impl FnMut(&std::path::Path) -> io::Result<std::fs::File>,
+) -> io::Result<()> {
     use crate::play::screenshot::retry_capture_name;
     use std::sync::atomic::{AtomicU64, Ordering};
-    #[cfg(test)]
-    use tests::open_audit_capture;
 
     static NEXT: AtomicU64 = AtomicU64::new(0);
-    let image = image.clone().try_into_dynamic().map_err(io::Error::other)?;
+    let image = image.try_into_dynamic().map_err(io::Error::other)?;
     let format = bevy::image::ImageFormat::Png
         .as_image_crate_format()
         .ok_or_else(|| io::Error::other("PNG support is unavailable"))?;
@@ -69,7 +146,7 @@ fn save_audit(image: &Image, path: &std::path::Path) -> io::Result<()> {
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed),
         ));
-        let file = open_audit_capture(&candidate)?;
+        let file = open(&candidate)?;
         Ok((candidate, file))
     })?;
     let result = image

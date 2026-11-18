@@ -35,9 +35,9 @@ window, graphics or audio behavior.
 
 Supply both roots explicitly:
 
-- `--ui-assets`: the private UI-art root containing the required skin images and
-  `fonts/verdanab.ttf`. Startup checks this input; original assets are not included
-  in the repository.
+- `--ui-assets`: the private UI-art root containing the required skin images and an optional
+  `fonts/verdanab.ttf`. The installer supplies a bundled Oteryn theme with
+  Bevy's built-in font.
 - `OTERYN_ASSET_DIR`: the matching pinned Oteryn world-asset root. Before starting
   sign-in, the client validates the pinned manifest, catalog and appearance
   metadata. Sprite sheets retain the existing lazy verification.
@@ -375,7 +375,7 @@ keeps background work running. Failed operations can be retried and leave the ac
 release unchanged. **Close client and maintain** hands off to the installed launcher;
 on Windows it waits for client shutdown, then offers update, verification and repair.
 A missing build-pinned signing root refuses updates; use a trusted installer build.
-External UI skins still require `--ui-assets`; this window does not bootstrap them.
+The maintenance window uses the supplied external font when present and Bevy's built-in font otherwise.
 
 Preview reference: Global manual `docs/reference/tibia-manual/controls.md:20-21`
 (Movement and rotation arrows). OTClient reference only:

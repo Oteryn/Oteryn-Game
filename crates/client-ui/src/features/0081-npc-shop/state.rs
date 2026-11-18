@@ -9,6 +9,7 @@ use oteryn_client_runtime::npc_shop::{CharacterInventory, container_tree, resour
 pub struct Quote {
     pub npc: EntityRef,
     pub revision: u64,
+    pub offer_index: usize,
     pub item: u32,
     pub side: NpcTradeSide,
     pub count: u32,
@@ -39,9 +40,11 @@ impl LiveShop {
         self.window
             .offers
             .iter()
-            .map(|offer| Quote {
+            .enumerate()
+            .map(|(offer_index, offer)| Quote {
                 npc,
                 revision,
+                offer_index,
                 item: offer.item_definition_ref,
                 side: offer.side,
                 count: offer.count,
@@ -77,12 +80,12 @@ impl LiveShop {
         if self.window.open != Some((quote.npc, quote.revision)) {
             return None;
         }
-        self.window.offers.iter().position(|offer| {
-            offer.item_definition_ref == quote.item
-                && offer.side == quote.side
-                && offer.count == quote.count
-                && offer.unit_price == quote.price
-        })
+        let offer = self.window.offers.get(quote.offer_index)?;
+        (offer.item_definition_ref == quote.item
+            && offer.side == quote.side
+            && offer.count == quote.count
+            && offer.unit_price == quote.price)
+            .then_some(quote.offer_index)
     }
     pub fn maximum_amount(&self, quote: Quote) -> u32 {
         let Some(index) = self.quote_index(quote) else {

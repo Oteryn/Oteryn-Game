@@ -31,7 +31,9 @@ pub(super) fn app(
     owner.settings.preferences.screenshots.directory = folder.to_string_lossy().into_owned();
     owner.settings.preferences.screenshots.game_only = game_only;
     let mut app = App::new();
-    app.insert_non_send(owner)
+    app.add_plugins(bevy::app::TaskPoolPlugin::default())
+        .init_non_send::<Writes>()
+        .insert_non_send(owner)
         .insert_resource(super::super::audit::AuditOutput::new(None))
         .init_resource::<ButtonInput<KeyCode>>()
         .init_resource::<Time<Real>>()
@@ -63,8 +65,24 @@ pub(super) fn capture_frame(app: &mut App, image: Image) -> TestResult {
     app.world_mut()
         .resource_mut::<ButtonInput<KeyCode>>()
         .reset_all();
+    wait_for_writes(app)?;
     Ok(())
 }
+fn wait_for_writes(app: &mut App) -> TestResult {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        app.update();
+        let writes = app.world().non_send::<Writes>();
+        if writes.active.is_none() && writes.queued.is_empty() {
+            return Ok(());
+        }
+        if std::time::Instant::now() >= deadline {
+            return Err("screenshot worker did not finish".into());
+        }
+        std::thread::yield_now();
+    }
+}
+
 #[test]
 fn f12_completion_saves_distinct_bmps_in_configured_destination() -> TestResult {
     let fixture = TestDir::new()?;
@@ -117,7 +135,7 @@ fn game_only_crops_rendered_pixels_and_write_errors_reach_player() -> TestResult
     assert_eq!(std::fs::read(blocked)?, b"occupied");
     assert!(
         save(
-            &frame(),
+            frame(),
             root.to_str().ok_or("capture directory")?,
             Some(WorldViewport::default())
         )
@@ -177,6 +195,7 @@ fn capture_death(destination: &std::path::Path, backlog: bool) -> TestResult {
             image: frame(),
         });
         app.world_mut().despawn(entity);
+        wait_for_writes(&mut app)?;
     }
     outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
         oteryn_session::AppliedDelta {
@@ -200,7 +219,11 @@ fn capture_death(destination: &std::path::Path, backlog: bool) -> TestResult {
         image: frame(),
     });
     app.world_mut().despawn(entity);
-    app.update();
+    assert_ne!(
+        app.world().non_send::<HostOwner>().status,
+        format!("Saved {} screenshot(s)", 1 + usize::from(backlog))
+    );
+    wait_for_writes(&mut app)?;
     assert_eq!(
         app.world().non_send::<HostOwner>().status,
         format!("Saved {} screenshot(s)", 1 + usize::from(backlog))
@@ -226,6 +249,8 @@ fn capture_death(destination: &std::path::Path, backlog: bool) -> TestResult {
             entity,
             image: frame(),
         });
+        app.world_mut().despawn(entity);
+        wait_for_writes(&mut app)?;
         assert_eq!(
             app.world().non_send::<HostOwner>().status,
             "Saved 2 screenshot(s)"
@@ -769,31 +794,32 @@ fn f12_and_death_do_not_open_capture_directory_for_scanning() -> TestResult {
     Ok(())
 }
 
-type AuditOpen = Box<dyn FnMut(&std::path::Path) -> io::Result<std::fs::File>>;
+type AuditOpen = Box<dyn FnMut(&std::path::Path) -> io::Result<std::fs::File> + Send>;
 
 thread_local! {
     static AUDIT_OPEN: std::cell::RefCell<Option<AuditOpen>> = const { std::cell::RefCell::new(None) };
 }
 
-pub(super) fn open_audit_capture(path: &std::path::Path) -> io::Result<std::fs::File> {
-    AUDIT_OPEN.with_borrow_mut(|open| match open {
-        Some(open) => open(path),
-        None => crate::play::screenshot::create_capture_file(path),
-    })
+pub(super) fn audit_open() -> AuditOpen {
+    AUDIT_OPEN
+        .take()
+        .unwrap_or_else(|| Box::new(crate::play::screenshot::create_capture_file))
 }
 
 fn audit_f12_retries_staging_collision(vanishing: bool) -> TestResult {
     use crate::play::screenshot::create_capture_file;
-    use std::{cell::RefCell, rc::Rc};
+    use std::sync::{Arc, Mutex};
 
     let fixture = TestDir::new()?;
     let output = fixture.join("new-audit.json");
     let mut app = app(fixture.path(), false)?;
     app.insert_resource(super::super::audit::AuditOutput::new(Some(output.clone())));
-    let attempted = Rc::new(RefCell::new(Vec::new()));
-    let recorded = Rc::clone(&attempted);
+    let attempted = Arc::new(Mutex::new(Vec::new()));
+    let recorded = Arc::clone(&attempted);
     AUDIT_OPEN.set(Some(Box::new(move |candidate| {
-        let mut recorded = recorded.borrow_mut();
+        let mut recorded = recorded
+            .lock()
+            .map_err(|_| io::Error::other("audit capture recorder poisoned"))?;
         let collide = recorded.len() < 2;
         recorded.push(candidate.to_path_buf());
         if collide {
@@ -817,7 +843,9 @@ fn audit_f12_retries_staging_collision(vanishing: bool) -> TestResult {
         &std::fs::read(output.with_extension("png"))?[..8],
         b"\x89PNG\r\n\x1a\n"
     );
-    let attempted = attempted.borrow();
+    let attempted = attempted
+        .lock()
+        .map_err(|_| "audit capture recorder poisoned")?;
     assert_eq!(attempted.len(), 3);
     for prior in &attempted[..2] {
         if vanishing {
@@ -948,5 +976,39 @@ fn crop_fixture_preserves_previous_process_directory() -> TestResult {
         std::fs::read(template)?
     );
     assert_one_test_passed(&child);
+    Ok(())
+}
+
+#[test]
+fn f12_observer_returns_before_reporting_the_write_result() -> TestResult {
+    let fixture = TestDir::new()?;
+    let mut app = app(fixture.path(), true)?;
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::F12);
+    app.update();
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<Screenshot>>()
+        .single(app.world())?;
+    app.world_mut().trigger(ScreenshotCaptured {
+        entity,
+        image: frame(),
+    });
+    assert_eq!(
+        app.world().non_send::<HostOwner>().status,
+        "Capturing screenshot…"
+    );
+    app.world_mut().despawn(entity);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    wait_for_writes(&mut app)?;
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .status
+            .starts_with("Screenshot saved:")
+    );
     Ok(())
 }

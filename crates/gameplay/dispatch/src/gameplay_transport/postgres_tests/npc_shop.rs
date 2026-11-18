@@ -197,9 +197,24 @@ fn scenario() -> TestResult {
 }
 
 pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
-    run_shop_scenario_with_bulk(wandering_rashid, false)
+    scenario_for(if wandering_rashid {
+        ShopScenario::Rashid
+    } else {
+        ShopScenario::Sell
+    })
 }
-fn run_shop_scenario_with_bulk(wandering_rashid: bool, bulk: bool) -> TestResult {
+
+enum ShopScenario {
+    Sell,
+    Rashid,
+    Bulk,
+    WeightLimit,
+}
+
+fn scenario_for(case: ShopScenario) -> TestResult {
+    let wandering_rashid = matches!(case, ShopScenario::Rashid);
+    let bulk = matches!(case, ShopScenario::Bulk);
+    let weight_limit = matches!(case, ShopScenario::WeightLimit);
     run(async move |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "npc_shop_wire", true, false).await?;
@@ -274,7 +289,13 @@ fn run_shop_scenario_with_bulk(wandering_rashid: bool, bulk: bool) -> TestResult
             sub_type: None,
             parity_pending: false,
         };
-        let offers = if bulk {
+        let offers = if weight_limit {
+            let mut buy = offer.clone();
+            buy.item.key = "oteryn:item.tibia.i3447".into();
+            buy.direction = ProjectV2ServiceOfferDirection::SellToPlayer;
+            buy.unit_price = 1;
+            vec![buy]
+        } else if bulk {
             let mut buy = offer.clone();
             buy.direction = ProjectV2ServiceOfferDirection::SellToPlayer;
             buy.unit_price = 1;
@@ -356,8 +377,33 @@ fn run_shop_scenario_with_bulk(wandering_rashid: bool, bulk: bool) -> TestResult
                 generation: placed.generation,
             }
         };
-        // Two meat stacks and a fish the trader does not buy.
-        if bulk {
+        if bulk || weight_limit {
+            // Exercise the weight boundary separately from the bulk side and quantity limits.
+            // The bulk case buys 150 meat, so give that fixture room for the full purchase.
+            let level = if bulk { 200_i64 } else { 1_i64 };
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("UPDATE game_character_progression_state SET level=$2 WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).bind(level).execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
+        if weight_limit {
+            // Level-one capacity is 580 oz. The backpack, four plate armors and
+            // one meat weigh 511 oz, leaving room for 98 arrows but not 101.
+            let plate = "oteryn:item.tibia.i3357";
+            seed_main_backpack(
+                &h,
+                &[(plate, 1), (plate, 1), (plate, 1), (plate, 1), (MEAT, 1)],
+            )
+            .await?;
+            // Bank settlement is available only in the activated type-2 audit tuple.
+            sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
+                .execute(&h.pool)
+                .await?;
+            super::guild_bank::bank_seed::balance(&h, id(40), id(41), 1000, 180).await?;
+        } else if bulk {
             seed_main_backpack(
                 &h,
                 &[
@@ -390,9 +436,64 @@ fn run_shop_scenario_with_bulk(wandering_rashid: bool, bulk: bool) -> TestResult
             ],
         )
         .ok_or("npc shop selection")?;
+        if weight_limit {
+            let before = footprint(&h).await?;
+            let inventory = carried(&h).await?;
+            let (_, inventory_delta) = bulk_exchange(
+                &owner,
+                &mut admitted,
+                npc,
+                1,
+                NpcTradeSide::Buy,
+                101,
+                NpcIntentDisposition::Rejected,
+            )
+            .await?;
+            assert!(inventory_delta.is_none());
+            assert_eq!(footprint(&h).await?, before);
+            assert_eq!(carried(&h).await?, inventory);
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT balance FROM game_account_bank_balances")
+                    .fetch_one(&h.pool)
+                    .await?,
+                1000
+            );
+            let (_, accepted) = bulk_exchange(
+                &owner,
+                &mut admitted,
+                npc,
+                4,
+                NpcTradeSide::Buy,
+                98,
+                NpcIntentDisposition::Ok,
+            )
+            .await?;
+            assert!(accepted.is_some());
+            let after = carried(&h).await?;
+            assert_eq!(after.last(), Some(&("oteryn:item.tibia.i3447".into(), 98)));
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT balance FROM game_account_bank_balances")
+                    .fetch_one(&h.pool)
+                    .await?,
+                902
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if bulk {
-            let (window, bought) =
-                bulk_exchange(&owner, &mut admitted, npc, 1, NpcTradeSide::Buy, 150).await?;
+            let (window, bought) = bulk_exchange(
+                &owner,
+                &mut admitted,
+                npc,
+                1,
+                NpcTradeSide::Buy,
+                150,
+                NpcIntentDisposition::Ok,
+            )
+            .await?;
+            let bought = bought.ok_or("buy inventory")?;
             assert!(window.details.iter().all(|detail| detail.name == "meat"));
             let mut limits: Vec<_> = window
                 .offers
@@ -415,8 +516,17 @@ fn run_shop_scenario_with_bulk(wandering_rashid: bool, bulk: bool) -> TestResult
                 .collect();
             counts.sort_unstable();
             assert_eq!(counts, vec![50, 100]);
-            let (_, sold) =
-                bulk_exchange(&owner, &mut admitted, npc, 4, NpcTradeSide::Sell, 125).await?;
+            let (_, sold) = bulk_exchange(
+                &owner,
+                &mut admitted,
+                npc,
+                4,
+                NpcTradeSide::Sell,
+                125,
+                NpcIntentDisposition::Ok,
+            )
+            .await?;
+            let sold = sold.ok_or("sale inventory")?;
             assert_eq!(
                 sold.entries
                     .iter()
@@ -652,7 +762,7 @@ fn npc_shop_postgres_authoritative_side_bounds_and_bulk_quantities() -> TestResu
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| run_shop_scenario_with_bulk(false, true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario_for(ShopScenario::Bulk).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "bulk NPC trade thread panicked")??;
     Ok(())
@@ -665,9 +775,10 @@ async fn bulk_exchange(
     first: u64,
     side: NpcTradeSide,
     quantity: u32,
+    expected: NpcIntentDisposition,
 ) -> TestResult<(
     oteryn_protocol_oteryn::npc_service::NpcTradeWindow,
-    oteryn_protocol_oteryn::item_view::CharacterInventory,
+    Option<oteryn_protocol_oteryn::item_view::CharacterInventory>,
 )> {
     use oteryn_protocol_oteryn::npc_service as wire;
     let before = *admitted;
@@ -777,7 +888,7 @@ async fn bulk_exchange(
         .await?;
         let mut result = false;
         let mut inventory = None;
-        while !result || inventory.is_none() {
+        while !result || (expected == NpcIntentDisposition::Ok && inventory.is_none()) {
             let frame = read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             if envelope.message_type() == MessageType::CommandResult {
@@ -785,7 +896,7 @@ async fn bulk_exchange(
                 assert_eq!(reply.command_id, first + 2);
                 assert_eq!(
                     wire::decode_npc_intent_result(reply.payload).map_err(debug)?,
-                    NpcIntentDisposition::Ok
+                    expected
                 );
                 result = true;
             } else if envelope.message_type() == MessageType::StateDelta {
@@ -802,7 +913,7 @@ async fn bulk_exchange(
             }
         }
         client.shutdown().await?;
-        Ok::<_, Box<dyn std::error::Error>>((window, inventory.ok_or("inventory")?))
+        Ok::<_, Box<dyn std::error::Error>>((window, inventory))
     };
     let (ended, result) = tokio::time::timeout(
         std::time::Duration::from_secs(60),
@@ -815,4 +926,14 @@ async fn bulk_exchange(
         *admitted = current;
     }
     result
+}
+
+#[test]
+fn npc_shop_postgres_buy_checks_capacity_before_debit_or_split_mints() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("npc-buy-capacity", || {
+        if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+            return Ok(());
+        }
+        scenario_for(ShopScenario::WeightLimit)
+    })
 }

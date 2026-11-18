@@ -653,6 +653,67 @@ fn plan_buy(
     .into())
 }
 
+async fn buy_weight_bounds(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    weights: &dyn super::item_transfer::ItemWeightLookup,
+) -> Result<(u64, u64)> {
+    let carried = super::item_loop_move::carried_weight(
+        tx,
+        fence.character_id,
+        *fence.runtime_scope.world_id().as_bytes(),
+        weights,
+    )
+    .await
+    .map_err(|_| NpcTradeError::CapacityExceeded)?;
+    let capacity = super::item_transfer::read_derived_transfer_capacity_centi_oz(
+        tx,
+        fence.character_id,
+        weights,
+    )
+    .await?;
+    Ok((carried, capacity))
+}
+
+fn buy_weight_fits(
+    (carried, capacity): (u64, u64),
+    required: u64,
+    plan: &Plan,
+    request: &NpcTradeRequest,
+    weights: &dyn super::item_transfer::ItemWeightLookup,
+) -> Result<()> {
+    let mut paid_weight = 0_u64;
+    let mut change_weight = 0_u64;
+    for line in &plan.lines {
+        let Some(coin) = line.coin else {
+            continue;
+        };
+        let weight = u64::from(
+            weights
+                .weight_of(request.coins.of(coin))
+                .map_err(|_| NpcTradeError::InvalidInput)?,
+        );
+        if line.kind == NpcTradeLineKind::CoinBurn {
+            paid_weight = paid_weight
+                .checked_add(weight * u64::from(line.quantity_before - line.quantity_after))
+                .ok_or(NpcTradeError::CapacityExceeded)?;
+        } else if line.kind == NpcTradeLineKind::CoinMint {
+            change_weight = change_weight
+                .checked_add(weight * u64::from(line.quantity_after))
+                .ok_or(NpcTradeError::CapacityExceeded)?;
+        }
+    }
+    if carried
+        .checked_sub(paid_weight)
+        .and_then(|weight| weight.checked_add(required))
+        .and_then(|weight| weight.checked_add(change_weight))
+        .is_none_or(|weight| weight > capacity)
+    {
+        return Err(NpcTradeError::DoesNotFit);
+    }
+    Ok(())
+}
+
 fn plan_sell(
     request: &NpcTradeRequest,
     total: u64,
@@ -772,6 +833,37 @@ impl DurabilityRoot {
             fence,
             request,
             TradeCommitOptions::default(),
+        )
+        .await
+    }
+
+    /// Commit a live shop purchase with the active content's carry-weight lookup.
+    pub async fn commit_npc_shop_buy(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: NpcTradeRequest,
+        weights: &dyn super::item_transfer::ItemWeightLookup,
+        yasir_position: Option<(u16, u16, i8)>,
+    ) -> Result<NpcTradeOutcome> {
+        if request.cause.side != NpcTradeSide::Buy
+            || yasir_position.is_some_and(|source| {
+                request.cause.npc_key != YASIR || !(0..=15).contains(&source.2)
+            })
+        {
+            return Err(NpcTradeError::InvalidInput);
+        }
+        self.commit_trade(
+            authority,
+            node,
+            fence,
+            request,
+            TradeCommitOptions {
+                weights: Some(weights),
+                yasir_position,
+                ..TradeCommitOptions::default()
+            },
         )
         .await
     }
@@ -1027,6 +1119,18 @@ impl DurabilityRoot {
                     if let Some(source) = &hireling
                         && let Err(error) = source.package_preflight(&mut tx, &fence, &request, *weights, &plan, (entries.len(), capacity)).await {
                         return Ok(Err(error));
+                    }
+                    if hireling.is_none() && request.cause.side == NpcTradeSide::Buy
+                        && let Some(weights) = *weights {
+                        let Some(unit_weight) = request.item.weight else {
+                            return Ok(Err(NpcTradeError::InvalidInput));
+                        };
+                        let required = u64::from(unit_weight) * u64::from(units);
+                        let weight_check = buy_weight_bounds(&mut tx, &fence, weights).await
+                            .and_then(|bounds| buy_weight_fits(bounds, required, &plan, &request, weights));
+                        if let Err(error) = weight_check {
+                            return Ok(Err(error));
+                        }
                     }
                     // A sell-all records and audits the units it sold as its quantity.
                     let quantity = if sell_all { units } else { request.quantity };

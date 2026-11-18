@@ -143,6 +143,11 @@ pub struct Minimap {
     cells_dirty: bool,
     load_failed: bool,
     saved_at: Instant,
+    retry_delay: Duration,
+    #[cfg(bevy_shell)]
+    background_save: bool,
+    #[cfg(bevy_shell)]
+    save_task: Option<bevy_tasks::Task<io::Result<()>>>,
 }
 impl Default for Minimap {
     fn default() -> Self {
@@ -170,6 +175,11 @@ impl Default for Minimap {
             cells_dirty: false,
             load_failed: false,
             saved_at: Instant::now(),
+            retry_delay: Duration::from_secs(5),
+            #[cfg(bevy_shell)]
+            background_save: false,
+            #[cfg(bevy_shell)]
+            save_task: None,
         }
     }
 }
@@ -286,6 +296,7 @@ impl Minimap {
             self.markers.clear();
             self.cells_dirty = false;
             self.binding = Some(binding);
+            self.retry_delay = Duration::from_secs(5);
             self.load_failed = false;
             if let Err(error) = self.load() {
                 self.load_failed = true;
@@ -317,11 +328,85 @@ impl Minimap {
                 self.cells_dirty = true;
             }
         }
-        if self.cells_dirty
-            && self.saved_at.elapsed() >= Duration::from_secs(5)
-            && let Err(error) = self.save()
-        {
-            self.feedback = lfmt!("Could not save minimap: {error}", error = error);
+        self.save_if_due();
+    }
+
+    fn save_if_due(&mut self) {
+        if !self.cells_dirty || self.saved_at.elapsed() < self.retry_delay {
+            return;
+        }
+        #[cfg(bevy_shell)]
+        if self.background_save {
+            if self.save_task.is_none() && let Err(error) = self.start_save() {
+                self.save_failed(error);
+            }
+            return;
+        }
+        if let Err(error) = self.save() {
+            self.save_failed(error);
+        }
+    }
+
+    fn save_failed(&mut self, error: io::Error) {
+        self.cells_dirty = true;
+        self.saved_at = Instant::now();
+        self.retry_delay = (self.retry_delay * 2).min(Duration::from_secs(300));
+        self.feedback = lfmt!("Could not save minimap: {error}", error = error);
+    }
+
+    #[cfg(bevy_shell)]
+    pub(in crate::play) fn enable_background_save(&mut self) {
+        self.background_save = true;
+    }
+
+    #[cfg(bevy_shell)]
+    fn start_save(&mut self) -> io::Result<()> {
+        let Some(path) = self.path() else {
+            return self.save();
+        };
+        if self.is_read_only() {
+            return self.save();
+        }
+        self.require_cache_owner(&path)?;
+        if self.load_failed {
+            return Err(io::Error::other(tr!("Invalid minimap file")));
+        }
+        let saved = self.snapshot(self.markers.clone());
+        self.save_task = Some(bevy_tasks::IoTaskPool::get().spawn(async move {
+            saved.validate()?;
+            saved.write_to(&path)
+        }));
+        self.cells_dirty = false;
+        Ok(())
+    }
+
+    #[cfg(bevy_shell)]
+    pub(in crate::play) fn poll_background_save(&mut self) {
+        if let Some(result) = self.save_task.as_mut().and_then(bevy_tasks::futures::check_ready) {
+            self.save_task = None;
+            self.finish_background_save(result);
+        }
+        if self.background_save {
+            self.save_if_due();
+        }
+    }
+
+    #[cfg(bevy_shell)]
+    fn finish_background_save(&mut self, result: io::Result<()>) {
+        match result {
+            Ok(()) => {
+                self.saved_at = Instant::now();
+                self.retry_delay = Duration::from_secs(5);
+            }
+            Err(error) => self.save_failed(error),
+        }
+    }
+
+    // Explicit saves, cache switches and shutdown serialize with the in-flight snapshot.
+    fn finish_pending_save(&mut self) {
+        #[cfg(bevy_shell)]
+        if let Some(task) = self.save_task.take() {
+            self.finish_background_save(bevy_tasks::block_on(task));
         }
     }
 
@@ -365,6 +450,7 @@ impl Minimap {
             .then_some(position)
     }
     pub fn save(&mut self) -> io::Result<()> {
+        self.finish_pending_save();
         if !self.cells_dirty {
             return Ok(());
         }
@@ -411,6 +497,7 @@ impl Minimap {
     }
 
     fn write_cache(&mut self, path: &Path, markers: Vec<Marker>) -> io::Result<()> {
+        self.finish_pending_save();
         if self.load_failed {
             return Err(io::Error::other(tr!("Invalid minimap file")));
         }
@@ -420,6 +507,7 @@ impl Minimap {
         self.markers = saved.markers;
         self.cells_dirty = false;
         self.saved_at = Instant::now();
+        self.retry_delay = Duration::from_secs(5);
         Ok(())
     }
 

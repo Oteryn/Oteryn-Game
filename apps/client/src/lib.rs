@@ -8,6 +8,7 @@ pub mod account_services;
 #[cfg(any(test, bevy_shell))]
 #[path = "features/0025-appearance/mount_binding.rs"]
 mod appearance_mount_binding;
+mod atomic_file;
 #[cfg(bevy_shell)]
 pub mod bevy_shell;
 pub mod bulletin;

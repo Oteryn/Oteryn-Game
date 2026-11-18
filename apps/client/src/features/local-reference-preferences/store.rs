@@ -28,7 +28,7 @@ impl PreferenceStore {
             return Err(io::Error::other(tr!("Settings file exceeds 1 MiB")));
         }
         let mut document: serde_json::Value =
-            serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+            serde_json::from_slice(&bytes).map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         if let Some(fields) = document.as_object_mut()
             && fields.get("hotkey_profiles").is_some_and(|value| {
                 value
@@ -43,7 +43,7 @@ impl PreferenceStore {
             })
         {
             if fields.contains_key("hotkey_contexts") {
-                return Err(io::Error::other("Conflicting hotkey context formats"));
+                return Err(io::Error::new(io::ErrorKind::InvalidData, "Conflicting hotkey context formats"));
             }
             if let Some(contexts) = fields.remove("hotkey_profiles") {
                 fields.insert("hotkey_contexts".into(), contexts);
@@ -56,14 +56,14 @@ impl PreferenceStore {
             document["custom_hotkeys"] = serde_json::json!({});
         }
         let mut preferences: ReferencePreferences =
-            serde_json::from_value(document).map_err(io::Error::other)?;
+            serde_json::from_value(document).map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         if legacy {
             for (chord, action) in super::custom_actions::default_custom_hotkeys() {
                 let _ = preferences.assign_custom_hotkey(&chord, action);
             }
         }
         preferences.upgrade_schema();
-        preferences.validate().map_err(io::Error::other)?;
+        preferences.validate().map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         preferences.reconcile_controls(None);
         Ok(preferences)
     }
@@ -101,14 +101,19 @@ impl PreferenceStore {
         preferences: ReferencePreferences,
         previous: &ReferencePreferences,
     ) -> io::Result<()> {
-        Self::serialized(&preferences)?;
-        Self::serialized(previous)?;
-        if self.path.try_exists()? {
-            Self::read_transfer(&self.path)?;
+        let bytes = Self::serialized(&preferences)?;
+        let previous = Self::serialized(previous)?;
+        let keep_backup = match Self::read_transfer(&self.path) {
+            Ok(_) => false,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => false,
+            // Explicit recovery can replace a damaged document. Retain the prior backup.
+            Err(error) if error.kind() == io::ErrorKind::InvalidData => true,
+            Err(error) => return Err(error),
+        };
+        if !keep_backup {
+            crate::atomic_file::replace(&self.backup_path(), &previous, true)?;
         }
-        let mut backup = Self::defaults(self.backup_path());
-        backup.apply(previous.clone())?;
-        self.apply(preferences)
+        self.write(preferences, &bytes)
     }
 
     pub fn defaults(path: PathBuf) -> Self {
@@ -138,20 +143,11 @@ impl PreferenceStore {
         if self.path.try_exists()? {
             Self::read_transfer(&self.path)?;
         }
-        if let Some(parent) = self.path.parent().filter(|p| !p.as_os_str().is_empty()) {
-            std::fs::create_dir_all(parent)?;
-        }
-        let temporary = self.path.with_extension("json.tmp");
-        {
-            use std::io::Write;
-            let mut file = std::fs::File::create(&temporary)?;
-            file.write_all(&bytes)?;
-            file.sync_all()?;
-        }
-        if let Err(error) = std::fs::rename(&temporary, &self.path) {
-            let _ = std::fs::remove_file(&temporary);
-            return Err(error);
-        }
+        self.write(preferences, &bytes)
+    }
+
+    fn write(&mut self, preferences: ReferencePreferences, bytes: &[u8]) -> io::Result<()> {
+        crate::atomic_file::replace(&self.path, bytes, true)?;
         self.preferences = preferences;
         Ok(())
     }

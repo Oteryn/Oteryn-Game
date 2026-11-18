@@ -1,54 +1,65 @@
-//! Deferred Bevy pixels feed the same event and bounded backlog owner as native capture.
+//! Readbacks are scoped to the current play session and share the ordered screenshot writer.
 use super::*;
-use crate::play::screenshot::CaptureSource;
+use crate::play::screenshot::{CaptureAction, ScreenshotBatch};
+use std::time::Instant;
+
 #[derive(Default)]
 pub(in crate::bevy_shell) struct State {
     generation: Option<u64>,
 }
+
 #[derive(Component)]
 pub(in crate::bevy_shell) struct Capture {
     generation: u64,
 }
-struct Deferred;
-impl CaptureSource for Deferred {
-    fn capture(&mut self, _: bool) -> io::Result<Pixels> {
-        Err(io::ErrorKind::WouldBlock.into())
-    }
+
+pub(super) struct Completed {
+    generation: u64,
+    game_only: bool,
+    at: Instant,
+    result: AutomaticResult,
 }
-struct Rendered<'a> {
-    image: &'a Image,
-    viewport: WorldViewport,
+
+enum AutomaticResult {
+    Buffered(io::Result<Pixels>),
+    Saved(io::Result<Vec<PathBuf>>, ScreenshotBatch),
 }
-impl CaptureSource for Rendered<'_> {
-    fn capture(&mut self, game_only: bool) -> io::Result<Pixels> {
-        let mut image = self
-            .image
-            .clone()
-            .try_into_dynamic()
-            .map_err(io::Error::other)?;
-        if game_only {
-            let end = self
-                .viewport
-                .origin
-                .checked_add(self.viewport.size)
-                .ok_or_else(|| io::Error::other("Invalid game viewport"))?;
-            if self.viewport.size.min_element() == 0
-                || end.x > image.width()
-                || end.y > image.height()
-            {
-                return Err(io::Error::other("Game viewport is unavailable"));
-            }
-            image = image.crop_imm(
-                self.viewport.origin.x,
-                self.viewport.origin.y,
-                self.viewport.size.x,
-                self.viewport.size.y,
-            );
+
+impl Completed {
+    pub(super) fn apply(self, owner: &mut HostOwner) {
+        if !current(owner, self.generation, self.game_only) {
+            return;
         }
-        let rgba = image.to_rgba8();
-        Pixels::new(rgba.width(), rgba.height(), rgba.into_raw())
+        match self.result {
+            AutomaticResult::Buffered(Ok(frame)) => {
+                owner.settings.buffer_screenshot(self.at, frame)
+            }
+            AutomaticResult::Saved(Ok(paths), _) => {
+                owner.status = format!("Saved {} screenshot(s)", paths.len())
+            }
+            AutomaticResult::Saved(Err(error), batch) => {
+                owner.settings.restore_screenshot_batch(batch);
+                owner.status = format!("Screenshot failed: {error}");
+            }
+            AutomaticResult::Buffered(Err(error)) => {
+                owner.status = format!("Screenshot failed: {error}");
+            }
+        }
     }
 }
+
+fn current(owner: &HostOwner, generation: u64, game_only: bool) -> bool {
+    owner.generation() == generation
+        && owner.play.is_some()
+        && owner.settings.preferences.screenshots.effective().game_only == game_only
+}
+
+fn prepare(owner: &mut HostOwner, at: Instant) -> CaptureAction {
+    owner
+        .settings
+        .prepare_screenshots(at, owner.play.as_ref().map(|play| &play.link))
+}
+
 pub(in crate::bevy_shell) fn observe(
     commands: &mut Commands,
     owner: &mut HostOwner,
@@ -56,68 +67,58 @@ pub(in crate::bevy_shell) fn observe(
     state: &mut State,
     captures: &Query<&Capture>,
     clock: &Time<Real>,
+    writes: &Writes,
 ) {
     let generation = owner.play.as_ref().map(|_| owner.generation());
     if state.generation != generation {
         owner.settings.reset_screenshot_session();
         state.generation = generation;
     }
-    let Some(generation) = generation else {
-        return;
-    };
-    // One readback at a time; a late callback cannot write into another session.
-    if captures
-        .iter()
-        .any(|capture| capture.generation == generation)
+    let Some(generation) = generation else { return };
+    let at = clock.last_update().unwrap_or(clock.startup());
+    let action = prepare(owner, at);
+    if matches!(action, CaptureAction::Idle)
+        || writes.automatic
+        || writes.is_full()
+        || captures
+            .iter()
+            .any(|capture| capture.generation == generation)
     {
         return;
     }
-    let HostOwner { settings, play, .. } = owner;
-    let result = settings.process_screenshots(
-        clock.last_update().unwrap_or(clock.startup()),
-        play.as_ref().map(|p| &p.link),
-        &mut Deferred,
-    );
-    if !result.is_err_and(|error| error.kind() == io::ErrorKind::WouldBlock) {
-        return;
-    }
-    let scope = settings.preferences.screenshots.effective().game_only;
+    let game_only = owner.settings.preferences.screenshots.effective().game_only;
     commands
         .spawn((Screenshot::primary_window(), Capture { generation }))
         .observe(
             move |event: On<ScreenshotCaptured>,
                   mut owner: NonSendMut<HostOwner>,
+                  mut writes: NonSendMut<Writes>,
                   clock: Res<Time<Real>>| {
-                if owner.generation() != generation
-                    || owner.play.is_none()
-                    || owner.settings.preferences.screenshots.effective().game_only != scope
-                {
+                if !current(&owner, generation, game_only) || writes.is_full() {
                     return;
                 }
-                let HostOwner {
-                    settings,
-                    play,
-                    status,
-                    ..
-                } = &mut *owner;
-                let mut pixels = Rendered {
-                    image: &event.image,
-                    viewport,
+                let at = clock.last_update().unwrap_or(clock.startup());
+                let batch = match prepare(&mut owner, at) {
+                    CaptureAction::Idle => return,
+                    CaptureAction::Buffer => None,
+                    CaptureAction::Save => Some(owner.settings.submit_screenshot(at)),
                 };
-                match settings.process_screenshots(
-                    clock.last_update().unwrap_or(clock.startup()),
-                    play.as_ref().map(|p| &p.link),
-                    &mut pixels,
-                ) {
-                    Ok(paths) if !paths.is_empty() => {
-                        *status = format!("Saved {} screenshot(s)", paths.len())
-                    }
-                    Err(error) => {
-                        settings.cancel_screenshot();
-                        *status = format!("Screenshot failed: {error}");
-                    }
-                    _ => {}
-                }
+                let image = event.image.clone();
+                writes.automatic = true;
+                writes.queued.push_back(Box::new(move || {
+                    let pixels = pixels(image, game_only.then_some(viewport));
+                    let result = if let Some(batch) = batch {
+                        AutomaticResult::Saved(pixels.and_then(|pixels| batch.save(&pixels)), batch)
+                    } else {
+                        AutomaticResult::Buffered(pixels)
+                    };
+                    Completion::Automatic(Completed {
+                        generation,
+                        game_only,
+                        at,
+                        result,
+                    })
+                }));
             },
         );
 }

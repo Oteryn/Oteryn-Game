@@ -80,7 +80,7 @@ impl Options {
                     .ok()
                     .and_then(|exe| exe.parent().map(|directory| directory.join("ui-assets")))
             })
-            .ok_or("Pass --ui-assets <directory>; source skins/fonts are external")?;
+            .ok_or("Pass --ui-assets <directory>; no packaged UI root was found")?;
         // A packaging smoke run starts without the external skins when none are installed.
         let ui_assets = if smoke && !ui_assets.is_dir() {
             ui_assets
@@ -118,6 +118,9 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
 }
 fn build_app(options: Options, owner: HostOwner, plugins: bevy::app::PluginGroupBuilder) -> App {
     let mut app = App::new();
+    if !options.ui_assets.join(ui::EXTERNAL_FONT).is_file() {
+        app.insert_resource(ui::BuiltInFont);
+    }
     if options.smoke {
         app.add_systems(Update, smoke_exit);
     }
@@ -191,6 +194,7 @@ fn build_app(options: Options, owner: HostOwner, plugins: bevy::app::PluginGroup
             .after(bevy::ui::UiSystems::PostLayout),
     )
     .add_systems(PostUpdate, audit::write.after(bevy::ui::UiSystems::Layout))
+    .init_non_send::<screenshots::Writes>()
     .add_systems(Update, audit::capture_on_key);
     app.init_non_send::<input::NativeInput>().add_systems(
         Update,
@@ -212,7 +216,7 @@ fn build_app(options: Options, owner: HostOwner, plugins: bevy::app::PluginGroup
     hints::install(&mut app);
     login::install(&mut app);
     text_messages::install(&mut app);
-    updater::install(&mut app);
+    updater::install(&mut app, Some(options.ui_assets.clone()));
     window_drag::install(&mut app);
     app
 }
@@ -273,3 +277,11 @@ fn apply_window(preferences: &crate::play::ReferencePreferences, window: &mut Wi
 
 #[cfg(test)]
 mod layout_tests;
+
+#[cfg(test)]
+#[test]
+fn installer_assets_pass_normal_startup_validation() -> Result<(), String> {
+    let assets = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("installer/ui-assets");
+    Options::parse([OsString::from("--ui-assets"), assets.into_os_string()])?;
+    Ok(())
+}

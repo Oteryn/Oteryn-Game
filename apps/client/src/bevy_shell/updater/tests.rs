@@ -9,7 +9,7 @@ fn app() -> Result<App, Box<dyn std::error::Error>> {
         .init_asset::<Font>()
         .insert_non_send(HostOwner::new(None)?)
         .add_systems(Startup, ui::setup);
-    install(&mut app);
+    install(&mut app, None);
     app.update();
     Ok(app)
 }
@@ -101,5 +101,54 @@ fn real_worker_failure_releases_pending_operation_for_retry() -> TestResult {
         assert!(state.report.contains("Active release unchanged"));
     }
     std::fs::remove_file(file)?;
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn maintenance_button_opens_menu_with_external_assets() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+    let mut app = app()?;
+    let fixture = crate::play::screenshot::TestDir::new()?;
+    let launcher = fixture.join("oteryn-launcher");
+    let arguments = fixture.join("arguments");
+    let assets = fixture.join("external UI");
+    std::fs::write(
+        &launcher,
+        b"#!/bin/sh\nprintf '%s\\n' \"$@\" > arguments.new\nmv arguments.new arguments\n",
+    )?;
+    std::fs::set_permissions(&launcher, std::fs::Permissions::from_mode(0o700))?;
+    app.world_mut().non_send_mut::<State>().directory = Some(fixture.path().to_path_buf());
+    app.world_mut().non_send_mut::<State>().ui_assets = Some(assets.clone());
+    click(&mut app, Action::Open)?;
+    click(&mut app, Action::Maintain)?;
+    assert_eq!(
+        app.world().non_send::<HostOwner>().phase,
+        Phase::Closed,
+        "{}",
+        report(&app)
+    );
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let output = loop {
+        match std::fs::read_to_string(&arguments) {
+            Ok(output) => break output,
+            Err(error)
+                if error.kind() == std::io::ErrorKind::NotFound
+                    && std::time::Instant::now() < deadline =>
+            {
+                std::thread::yield_now()
+            }
+            Err(error) => return Err(error.into()),
+        }
+    };
+    assert_eq!(
+        output.lines().collect::<Vec<_>>(),
+        [
+            "--after-client",
+            "--updates",
+            "--ui-assets",
+            assets.to_str().ok_or("asset path")?
+        ]
+    );
     Ok(())
 }

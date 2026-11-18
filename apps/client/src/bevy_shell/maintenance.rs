@@ -1,6 +1,7 @@
 //! Updates and repair window the launcher opens once the client handed maintenance off
 //! (`--updates`): it checks the signed stable release, then updates, verifies or repairs the
 //! installation on request. The window cannot close while an operation runs.
+use super::ui::EXTERNAL_FONT as FONT;
 use crate::updater::{Action, maintain};
 use bevy::{
     asset::AssetPlugin,
@@ -20,7 +21,6 @@ use std::{
 };
 
 type Outcome = Result<String, UpdateError>;
-const FONT: &str = "fonts/verdanab.ttf";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Stage {
@@ -51,19 +51,17 @@ struct Report;
 
 /// Opens the window over `directory` and returns the last operation's result.
 pub fn run(directory: &Path, args: &[OsString]) -> Outcome {
-    let Some(assets) = ui_assets(directory, args) else {
-        // The installation lacks its own UI files, so it is damaged: maintenance was
-        // requested, so restore it from the signed release.
-        return tokio::runtime::Runtime::new()
-            .map_err(|_| UpdateError::Unavailable)
-            .and_then(|runtime| runtime.block_on(maintain(directory, "stable", Action::Repair)));
-    };
+    let assets = ui_assets(directory, args);
     let outcome = Arc::new(Mutex::new(None));
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins
             .set(AssetPlugin {
-                file_path: assets.to_string_lossy().into_owned(),
+                file_path: assets
+                    .as_deref()
+                    .unwrap_or(directory)
+                    .to_string_lossy()
+                    .into_owned(),
                 ..default()
             })
             .set(WindowPlugin {
@@ -77,6 +75,9 @@ pub fn run(directory: &Path, args: &[OsString]) -> Outcome {
             }),
     )
     .insert_resource(ClearColor(Color::srgb(0.1, 0.1, 0.1)));
+    if assets.is_some() {
+        app.insert_resource(MaintenanceFont);
+    }
     install(
         &mut app,
         Maintenance {
@@ -140,8 +141,19 @@ fn install(app: &mut App, state: Maintenance) {
         .add_systems(Update, (poll, close_requested, project).chain());
 }
 
-fn setup(mut commands: Commands, assets: Res<AssetServer>) {
-    let font: Handle<Font> = assets.load(FONT);
+#[derive(Resource)]
+struct MaintenanceFont;
+
+fn setup(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    external_font: Option<Res<MaintenanceFont>>,
+) {
+    let font = if external_font.is_some() {
+        assets.load(FONT)
+    } else {
+        Handle::default()
+    };
     commands.spawn(Camera2d);
     let root = commands
         .spawn(Node {

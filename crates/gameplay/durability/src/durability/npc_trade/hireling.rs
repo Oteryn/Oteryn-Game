@@ -71,7 +71,11 @@ impl Extra {
                 if source.item_id == 23721 && request.cause.side == NpcTradeSide::Sell {
                     return Err(NpcTradeError::RequirementNotMet);
                 }
-                let price=match request.cause.side {NpcTradeSide::Buy=>source.buy,NpcTradeSide::Sell=>source.sell,NpcTradeSide::Exchange=>return Err(NpcTradeError::InvalidInput)};
+                let price = match request.cause.side {
+                    NpcTradeSide::Buy => source.buy,
+                    NpcTradeSide::Sell => source.sell,
+                    NpcTradeSide::Exchange => return Err(NpcTradeError::InvalidInput),
+                };
                 let wrapped = request.cause.side == NpcTradeSide::Buy
                     && crate::domain::hireling::catalogue::wrapped_buy(selection.source_row)
                         .is_some();
@@ -215,7 +219,10 @@ impl Extra {
         )
     }
 
-    #[allow(clippy::too_many_arguments, reason = "materialized package and fenced inventory capacity")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "materialized package and fenced inventory capacity"
+    )]
     pub(super) async fn package_preflight(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -241,21 +248,9 @@ impl Extra {
                 )
                 .ok_or(NpcTradeError::CapacityExceeded)?;
         }
-        let carried = super::super::item_loop_move::carried_weight(
-            tx,
-            fence.character_id,
-            *fence.runtime_scope.world_id().as_bytes(),
-            weights,
-        )
-        .await
-        .map_err(|_| NpcTradeError::CapacityExceeded)?;
-        let capacity = super::super::item_transfer::read_derived_transfer_capacity_centi_oz(
-            tx,
-            fence.character_id,
-            weights,
-        )
-        .await?;
-        package_fits(entries, (carried, capacity), required, plan, request, weights)?;
+        let bounds = buy_weight_bounds(tx, fence, weights).await?;
+        package_slots_fit(entries, plan)?;
+        buy_weight_fits(bounds, required, plan, request, weights)?;
         let ids: Vec<String> = selection
             .child_ids
             .iter()
@@ -453,14 +448,7 @@ impl DurabilityRoot {
     }
 }
 
-fn package_fits(
-    (used, entry_capacity): (usize, usize),
-    (carried, capacity): (u64, u64),
-    required: u64,
-    plan: &Plan,
-    request: &NpcTradeRequest,
-    weights: &dyn ItemWeightLookup,
-) -> Result<()> {
+fn package_slots_fit((used, entry_capacity): (usize, usize), plan: &Plan) -> Result<()> {
     let freed = plan
         .lines
         .iter()
@@ -478,36 +466,20 @@ fn package_fits(
     {
         return Err(NpcTradeError::DoesNotFit);
     }
-    let mut paid_weight = 0_u64;
-    let mut change_weight = 0_u64;
-    for line in &plan.lines {
-        let Some(coin) = line.coin else {
-            continue;
-        };
-        let weight = u64::from(
-            weights
-                .weight_of(request.coins.of(coin))
-                .map_err(|_| NpcTradeError::InvalidInput)?,
-        );
-        if line.kind == NpcTradeLineKind::CoinBurn {
-            paid_weight = paid_weight
-                .checked_add(weight * u64::from(line.quantity_before - line.quantity_after))
-                .ok_or(NpcTradeError::CapacityExceeded)?;
-        } else if line.kind == NpcTradeLineKind::CoinMint {
-            change_weight = change_weight
-                .checked_add(weight * u64::from(line.quantity_after))
-                .ok_or(NpcTradeError::CapacityExceeded)?;
-        }
-    }
-    if carried
-        .checked_sub(paid_weight)
-        .and_then(|weight| weight.checked_add(required))
-        .and_then(|weight| weight.checked_add(change_weight))
-        .is_none_or(|weight| weight > capacity)
-    {
-        return Err(NpcTradeError::DoesNotFit);
-    }
     Ok(())
+}
+
+#[cfg(test)]
+fn package_fits(
+    entries: (usize, usize),
+    weight: (u64, u64),
+    required: u64,
+    plan: &Plan,
+    request: &NpcTradeRequest,
+    weights: &dyn ItemWeightLookup,
+) -> Result<()> {
+    package_slots_fit(entries, plan)?;
+    buy_weight_fits(weight, required, plan, request, weights)
 }
 
 #[cfg(test)]

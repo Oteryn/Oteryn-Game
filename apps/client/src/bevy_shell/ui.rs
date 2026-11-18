@@ -10,14 +10,13 @@ use oteryn_client_ui_bevy as source;
 use std::path::Path;
 
 const SKIN: &str = "images/skin/classic/";
-const FILES: [&str; 7] = [
+const FILES: [&str; 6] = [
     "images/skin/classic/button-grey-up.png",
     "images/skin/classic/button-grey-down.png",
     "images/skin/classic/checkbox-checked.png",
     "images/skin/classic/checkbox-unchecked.png",
     "images/skin/classic/dialog-frame-borderimage.png",
     "images/1pixel-down-frame.png",
-    "fonts/verdanab.ttf",
 ];
 pub(super) fn validate_assets(root: &Path) -> Result<(), String> {
     for name in FILES {
@@ -194,7 +193,16 @@ pub(super) struct ScopeLabel;
 #[derive(Component)]
 pub(super) struct Indicator(Entity);
 
-pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
+#[derive(Resource)]
+pub(super) struct BuiltInFont;
+
+pub(super) const EXTERNAL_FONT: &str = "fonts/verdanab.ttf";
+
+pub(super) fn setup(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    fallback: Option<Res<BuiltInFont>>,
+) {
     commands.init_resource::<toolbar::Manager>();
     commands.spawn((
         Camera2d,
@@ -214,7 +222,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         unchecked: assets.load(format!("{SKIN}checkbox-unchecked.png")),
         frame: assets.load(format!("{SKIN}dialog-frame-borderimage.png")),
         inset: assets.load("images/1pixel-down-frame.png"),
-        font: assets.load("fonts/verdanab.ttf"),
+        font: if fallback.is_some() {
+            Handle::default()
+        } else {
+            assets.load(EXTERNAL_FONT)
+        },
     };
     let shell = commands
         .spawn((

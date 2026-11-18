@@ -429,6 +429,20 @@ pub(super) async fn trade(
                 sell_all,
             )
             .await
+    } else if request.cause.side == npc_trade::NpcTradeSide::Buy {
+        let weights = super::item_ref_admission::NativeItemWeights(native)
+            .with_wheel(admission.premium_coordinator);
+        admission
+            .root
+            .commit_npc_shop_buy(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                &weights,
+                yasir_position,
+            )
+            .await
     } else if let Some(source) = yasir_position {
         admission
             .root

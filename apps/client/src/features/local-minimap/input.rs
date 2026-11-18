@@ -49,6 +49,16 @@ impl PlayView {
 }
 
 impl PlayView {
+    #[cfg(bevy_shell)]
+    pub(crate) fn enable_background_minimap_save(&mut self) {
+        super::state::lock(&self.minimap).enable_background_save();
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn poll_background_minimap_save(&mut self) {
+        super::state::lock(&self.minimap).poll_background_save();
+    }
+
     pub fn bind_minimap_world(&mut self, world: &str) {
         super::state::lock(&self.minimap).bind_world(world);
     }

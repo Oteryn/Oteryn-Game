@@ -18,6 +18,7 @@ mod worker;
 struct State {
     open: bool,
     directory: Option<PathBuf>,
+    ui_assets: Option<PathBuf>,
     pending: Option<Receiver<worker::Event>>,
     report: String,
 }
@@ -34,9 +35,10 @@ struct Dialog;
 #[derive(Component)]
 struct Status;
 
-pub(super) fn install(app: &mut App) {
+pub(super) fn install(app: &mut App, ui_assets: Option<PathBuf>) {
     app.add_message::<AppExit>().insert_non_send(State {
         directory: std::env::current_exe().ok().and_then(|path| worker::installation(&path)),
+        ui_assets,
         report: "Stable release updates use the build-pinned signing root.\nCheck / Retry checks metadata; Download verifies a package without activating it.\nClose client and maintain opens the launcher for update, verification or repair.".into(),
         ..Default::default()
     }).add_systems(Startup, widgets::setup.after(super::ui::setup))
@@ -76,7 +78,7 @@ fn activate(
         return;
     };
     if *action == Action::Maintain {
-        match handoff(&directory) {
+        match handoff(&directory, state.ui_assets.as_deref()) {
             Ok(()) => {
                 owner.close();
                 exit.write(AppExit::Success);
@@ -96,21 +98,23 @@ fn activate(
         }
     }
 }
-fn handoff(directory: &std::path::Path) -> std::io::Result<()> {
+fn handoff(
+    directory: &std::path::Path,
+    ui_assets: Option<&std::path::Path>,
+) -> std::io::Result<()> {
     let launcher = if cfg!(windows) {
         "oteryn-launcher.exe"
     } else {
         "oteryn-launcher"
     };
-    let action = if cfg!(windows) {
-        "--updates"
-    } else {
-        "--repair"
-    };
-    std::process::Command::new(directory.join(launcher))
+    let mut command = std::process::Command::new(directory.join(launcher));
+    command
         .current_dir(directory)
-        .args(["--after-client", action])
-        .spawn()?;
+        .args(["--after-client", "--updates"]);
+    if let Some(ui_assets) = ui_assets {
+        command.arg("--ui-assets").arg(ui_assets);
+    }
+    command.spawn()?;
     Ok(())
 }
 fn project(

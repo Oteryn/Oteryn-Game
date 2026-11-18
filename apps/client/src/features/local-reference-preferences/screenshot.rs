@@ -3,6 +3,8 @@ use super::{PreferenceStore, SettingsState};
 #[path = "screenshot_backlog.rs"]
 mod backlog;
 pub(super) use backlog::ScreenshotRuntime;
+#[cfg(bevy_shell)]
+pub(crate) use backlog::{CaptureAction, ScreenshotBatch};
 use std::{
     fs::{DirBuilder, File},
     io::{self, BufWriter, Write},

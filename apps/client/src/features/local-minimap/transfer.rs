@@ -138,12 +138,14 @@ impl Minimap {
             )));
         }
         portable.saved.validate()?;
+        self.finish_pending_save();
         portable.saved.write_to(&active)?;
         self.cells = saved_cells(portable.saved.cells);
         self.markers = portable.saved.markers;
         self.load_failed = false;
         self.cells_dirty = false;
         self.saved_at = Instant::now();
+        self.retry_delay = Duration::from_secs(5);
         Ok(())
     }
 }

@@ -75,6 +75,8 @@ const INVENTORY: &[Entry] = &[
                 "gameplay_transport/rotten_blood_callbacks/advanced/footprints.rs",
                 1,
             ),
+            // Source rune targets keep wire coordinates; other Bundles keep legacy receipt binding.
+            ("gameplay_transport/rune_use_bridge.rs", 1),
         ],
     },
     Entry {

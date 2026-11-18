@@ -42,7 +42,7 @@ function Write-Utf8([string] $Path, [string] $Text) {
     [IO.File]::WriteAllText($Path, $Text, [Text.UTF8Encoding]::new($false))
 }
 
-# The release payload of section 2.1: the client, the dev client.env and an empty packages.json.
+# The release payload also includes the shipped UI theme.
 function New-Payload([string] $Id, [string] $Commit) {
     $payload = Join-Path $WorkDir "payload\$Id"
     $launcherDir = Join-Path $WorkDir "launcher\$Id"
@@ -50,6 +50,7 @@ function New-Payload([string] $Id, [string] $Commit) {
     Copy-Item -LiteralPath (Join-Path $Release 'oteryn-client.exe') -Destination $payload
     Copy-Item -LiteralPath (Join-Path $Release 'oteryn-launcher.exe') -Destination $launcherDir
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot "client.env.$Channel") -Destination (Join-Path $payload 'client.env')
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ui-assets') -Destination $payload -Recurse
     $manifest = [ordered]@{
         schema   = 'oteryn.client.packages.v1'
         release  = [ordered]@{
@@ -145,9 +146,11 @@ function Assert-Active([string] $Directory) {
     Check (-not (Test-Path -LiteralPath (Join-Path $InstallDir 'current.txt.new'))) 'current.txt.new was left behind'
     $releaseDir = Join-Path $InstallDir "releases\$Directory"
     $files = @(Get-ChildItem -LiteralPath $releaseDir -Force | ForEach-Object Name | Sort-Object) -join ','
-    Check ($files -ceq 'client.env,oteryn-client.exe,packages.json') "release $Directory holds [$files]"
+    Check ($files -ceq 'client.env,oteryn-client.exe,packages.json,ui-assets') "release $Directory holds [$files]"
     $manifest = Get-Content -Raw -LiteralPath (Join-Path $releaseDir 'packages.json') | ConvertFrom-Json
     Check ($manifest.release.release_id -ceq ($Directory -replace '~\d+$', '')) "packages.json of $Directory names $($manifest.release.release_id)"
+    $assets = Join-Path $releaseDir 'ui-assets'
+    Check (Test-Path -LiteralPath $assets -PathType Container) 'installed runtime UI asset directory is missing'
     $code = Invoke-Smoke (Join-Path $releaseDir 'oteryn-client.exe')
     Check ($code -eq 0) "installed $Directory --smoke exited $code"
 }
@@ -185,7 +188,7 @@ $UserData = Join-Path $WorkDir 'install\Oteryn'
 $Logs = Join-Path $WorkDir 'logs'
 New-Item -ItemType Directory -Force -Path $Logs, $UserData | Out-Null
 # Launcher and client settings and diagnostics follow LOCALAPPDATA inherited by the child.
-$ChildEnvironment = @{ LOCALAPPDATA = (Join-Path $WorkDir 'localappdata') }
+$ChildEnvironment = @{ LOCALAPPDATA = (Join-Path $WorkDir 'localappdata'); OTERYN_UI_ASSETS = $null }
 $sentinel = Join-Path $UserData 'client.env'
 Write-Utf8 $sentinel "# per-user data that uninstall must keep`n"
 $sentinelHash = Sha256 $sentinel

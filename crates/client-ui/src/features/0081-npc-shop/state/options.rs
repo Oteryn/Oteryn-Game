@@ -32,6 +32,16 @@ impl LiveShop {
         self.valid_amount(quote, amount)
             && (quote.side != NpcTradeSide::Buy
                 || self.options.ignore_capacity
-                || self.free_slots() != Some(0))
+                || self.free_slots() != Some(0)
+                // Paying can consume an entire direct stack. Let the server plan change
+                // and check the final placement whenever the current view could allow it.
+                || (quote.price != 0
+                    && self.inventory.as_ref().is_some_and(|inventory| {
+                        inventory.entries.iter().any(|entry| {
+                            // The item view projects source appearances for the three coins.
+                            // Zero is an unknown appearance on legacy inventory views.
+                            matches!(entry.appearance_id, 0 | 3031 | 3035 | 3043)
+                        })
+                    })))
     }
 }

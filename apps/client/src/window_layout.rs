@@ -49,14 +49,29 @@ impl WindowLayout {
     }
 
     pub fn save(&self, path: &Path) -> io::Result<()> {
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        let temporary = path.with_extension("layout.tmp");
-        std::fs::write(
-            &temporary,
-            serde_json::to_vec(self).map_err(io::Error::other)?,
-        )?;
-        std::fs::rename(temporary, path)
+        let bytes = serde_json::to_vec(self).map_err(io::Error::other)?;
+        crate::atomic_file::replace(path, &bytes, false)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn layout_save_uses_its_own_staging_path() -> io::Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("window.json");
+        let in_progress = path.with_extension("layout.tmp");
+        std::fs::write(&in_progress, b"another writer")?;
+        let mut layout = WindowLayout::default();
+        layout.record("window", [0, 0, 640, 480])?;
+        layout.save(&path)?;
+        assert_eq!(std::fs::read(&in_progress)?, b"another writer");
+        assert_eq!(
+            WindowLayout::load(&path)?.bounds("window"),
+            Some([0, 0, 640, 480])
+        );
+        Ok(())
     }
 }

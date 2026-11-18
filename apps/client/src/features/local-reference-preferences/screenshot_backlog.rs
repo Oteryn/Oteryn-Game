@@ -33,6 +33,25 @@ impl Signals {
         }
     }
 }
+pub(crate) enum CaptureAction {
+    Idle,
+    Buffer,
+    Save,
+}
+
+pub(crate) struct ScreenshotBatch {
+    directory: String,
+    frames: VecDeque<(Instant, Pixels)>,
+}
+
+impl ScreenshotBatch {
+    pub(crate) fn save(&self, current: &Pixels) -> io::Result<Vec<PathBuf>> {
+        let folder = screenshot_directory(Path::new(&self.directory))?;
+        self.frames.iter().map(|(_, frame)| frame).chain([current])
+            .map(|frame| frame.save_to(&folder)).collect()
+    }
+}
+
 impl SettingsState {
     pub fn cancel_screenshot(&mut self) {
         self.screenshot_requested = false;
@@ -47,6 +66,33 @@ impl SettingsState {
         link: Option<&PlayLink>,
         source: &mut impl CaptureSource,
     ) -> io::Result<Vec<PathBuf>> {
+        let action = self.prepare_screenshots(now, link);
+        let game_only = self.preferences.screenshots.effective().game_only;
+        match action {
+            CaptureAction::Idle => Ok(Vec::new()),
+            CaptureAction::Buffer => {
+                self.buffer_screenshot(now, source.capture(game_only)?);
+                Ok(Vec::new())
+            }
+            CaptureAction::Save => {
+                let current = source.capture(game_only)?;
+                let batch = self.take_screenshot_batch();
+                match batch.save(&current) {
+                    Ok(paths) => {
+                        self.screenshot_runtime.last_frame = Some(now);
+                        self.cancel_screenshot();
+                        Ok(paths)
+                    }
+                    Err(error) => {
+                        self.restore_screenshot_batch(batch);
+                        Err(error)
+                    }
+                }
+            }
+        }
+    }
+
+    pub(crate) fn prepare_screenshots(&mut self, now: Instant, link: Option<&PlayLink>) -> CaptureAction {
         let preferences = self.preferences.screenshots.effective();
         let runtime = &mut self.screenshot_runtime;
         if link.is_none() || runtime.game_only != Some(preferences.game_only) {
@@ -94,39 +140,45 @@ impl SettingsState {
         {
             runtime.frames.pop_front();
         }
-        let mut paths = Vec::new();
         if self.screenshot_requested {
-            // An asynchronous renderer may not have supplied this frame yet. Do not save
-            // or consume retained frames until capture succeeds.
-            let current = source.capture(preferences.game_only)?;
-            let folder = screenshot_directory(Path::new(&preferences.directory))?;
-            for (_, frame) in &runtime.frames {
-                paths.push(frame.save_to(&folder)?);
-            }
-            paths.push(current.save_to(&folder)?);
-            runtime.frames.clear();
-            runtime.last_frame = Some(now);
-            self.screenshot_requested = false;
+            CaptureAction::Save
         } else if link.is_some()
             && limit > 0
-            && runtime
-                .last_frame
-                .is_none_or(|last| now.saturating_duration_since(last) >= Duration::from_secs(1))
+            && runtime.last_frame.is_none_or(|last| now.saturating_duration_since(last) >= Duration::from_secs(1))
         {
-            let pixels = source.capture(preferences.game_only)?;
-            runtime.last_frame = Some(now);
-            runtime.frames.push_back((now, pixels));
-            while runtime.frames.len() > limit
-                || runtime
-                    .frames
-                    .iter()
-                    .map(|(_, frame)| frame.rgba.len())
-                    .sum::<usize>()
-                    > 64 << 20
-            {
-                runtime.frames.pop_front();
-            }
+            CaptureAction::Buffer
+        } else {
+            CaptureAction::Idle
         }
-        Ok(paths)
+    }
+
+    pub(crate) fn take_screenshot_batch(&mut self) -> ScreenshotBatch {
+        ScreenshotBatch {
+            directory: self.preferences.screenshots.effective().directory,
+            frames: std::mem::take(&mut self.screenshot_runtime.frames),
+        }
+    }
+
+    pub(crate) fn restore_screenshot_batch(&mut self, batch: ScreenshotBatch) {
+        self.screenshot_runtime.frames = batch.frames;
+    }
+
+    pub(crate) fn buffer_screenshot(&mut self, now: Instant, pixels: Pixels) {
+        self.screenshot_runtime.last_frame = Some(now);
+        let frames = &mut self.screenshot_runtime.frames;
+        frames.push_back((now, pixels));
+        let limit = usize::from(self.preferences.screenshots.effective().backlog_frames);
+        while frames.len() > limit
+            || frames.iter().map(|(_, frame)| frame.rgba.len()).sum::<usize>() > 64 << 20
+        {
+            frames.pop_front();
+        }
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn submit_screenshot(&mut self, now: Instant) -> ScreenshotBatch {
+        self.screenshot_runtime.last_frame = Some(now);
+        self.cancel_screenshot();
+        self.take_screenshot_batch()
     }
 }

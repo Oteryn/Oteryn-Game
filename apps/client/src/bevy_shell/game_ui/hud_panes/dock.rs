@@ -116,9 +116,6 @@ impl SidebarWidgets {
     }
     /// Writes beside the target and renames, so a crash never leaves half a file.
     pub(in crate::bevy_shell) fn save(&self, path: &Path) -> io::Result<()> {
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
         let saved = Saved {
             left: self.left,
             extra: self.extra,
@@ -138,9 +135,7 @@ impl SidebarWidgets {
         };
         let bytes = serde_json::to_vec_pretty(&saved)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-        let staging = path.with_extension("json.tmp");
-        std::fs::write(&staging, bytes)?;
-        std::fs::rename(staging, path)
+        crate::atomic_file::replace(path, &bytes, false)
     }
     /// Reset window layout: the Global default dock, saved at once.
     pub(in crate::bevy_shell) fn reset(&mut self, path: Option<&Path>) -> io::Result<()> {
@@ -234,5 +229,22 @@ pub(super) fn reset(
     let path = owner.dock_layout_path();
     if let Err(error) = widgets.reset(path.as_deref()) {
         leprintln!("Could not save window layout: {error}", error = error);
+    }
+}
+
+#[cfg(test)]
+mod staging_tests {
+    use super::*;
+
+    #[test]
+    fn dock_save_uses_its_own_staging_path() -> io::Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("dock.json");
+        let in_progress = path.with_extension("json.tmp");
+        std::fs::write(&in_progress, b"another writer")?;
+        SidebarWidgets::default().save(&path)?;
+        assert_eq!(std::fs::read(&in_progress)?, b"another writer");
+        assert!(path.is_file());
+        Ok(())
     }
 }
