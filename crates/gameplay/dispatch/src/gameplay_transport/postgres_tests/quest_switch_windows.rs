@@ -308,7 +308,14 @@ pub(super) async fn lord(
                     "room_min": at(33238,31806,-12),
                     "room_max": at(33297,31865,-12)
                 },
-                "timed_group_transfer": {"after_ms": 600_000, "destination": LORD_EXIT, "switches": window}
+                "timed_group_transfer": {
+                    "after_ms": 600_000, "destination": LORD_EXIT, "switches": window,
+                    "warning": {
+                        "after_ms": 300_000, "position": at(33266,31835,-13),
+                        "room_min": at(33261,31829,-12), "room_max": at(33274,31842,-12),
+                        "text": "The chamber will close in five minutes."
+                    }
+                }
             },
             "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:63-188"],
         }))?);
@@ -393,7 +400,7 @@ pub(super) async fn lord(
         );
         assert_eq!(
             owner.states.quest_callbacks.next_encounter_due_us(),
-            (turn == 3).then_some(703_000_000)
+            (turn == 3).then_some(403_000_000)
         );
     }
     assert_eq!(
@@ -405,6 +412,33 @@ pub(super) async fn lord(
             .creatures
             .len(),
         1
+    );
+    owner
+        .states
+        .test_owner_time
+        .store(403_000_000, Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
+    assert!(map.facts.movement_speech_since(0).is_empty());
+    owner
+        .states
+        .test_owner_time
+        .store(403_000_001, Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
+    owner.drain_quest_encounter_deadlines().await;
+    let speech = map.facts.movement_speech_since(0);
+    assert_eq!(speech.len(), 1);
+    assert_eq!(
+        speech[0].1.position,
+        TilePos {
+            x: 33266,
+            y: 31835,
+            floor: -13
+        }
+    );
+    assert_eq!(speech[0].1.talk_type, 37);
+    assert_eq!(
+        owner.states.quest_callbacks.next_encounter_due_us(),
+        Some(703_000_000)
     );
     owner
         .states

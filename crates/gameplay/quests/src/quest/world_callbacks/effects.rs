@@ -350,6 +350,18 @@ pub struct TimedGroupTransfer {
     pub destination: Position,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub switches: Vec<GroupSwitch>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub warning: Option<GroupTransferWarning>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct GroupTransferWarning {
+    pub after_ms: u32,
+    pub position: Position,
+    pub room_min: Position,
+    pub room_max: Position,
+    pub text: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -979,6 +991,23 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     !valid_group_switches(callback, encounter, &transfer.switches)
                 }) || encounter.timing.is_some()
                     || encounter.phase.is_some()
+                    || transfer.warning.as_ref().is_some_and(|warning| {
+                        let (min, max) = (warning.room_min, warning.room_max);
+                        warning.after_ms == 0
+                            || warning.after_ms >= transfer.after_ms
+                            || !pos(warning.position)
+                            || warning.text.is_empty()
+                            || warning.text.len() > 256
+                            || warning.text.contains(['\n', '\r', '\0'])
+                            || min.floor != encounter.room_min.floor
+                            || max.floor != encounter.room_max.floor
+                            || !(encounter.room_min.x <= min.x
+                                && min.x <= max.x
+                                && max.x <= encounter.room_max.x)
+                            || !(encounter.room_min.y <= min.y
+                                && min.y <= max.y
+                                && max.y <= encounter.room_max.y)
+                    })
                     || (transfer.destination.floor == encounter.room_min.floor
                         && (encounter.room_min.x..=encounter.room_max.x)
                             .contains(&transfer.destination.x)

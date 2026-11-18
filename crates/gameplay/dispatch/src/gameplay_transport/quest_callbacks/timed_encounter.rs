@@ -19,6 +19,7 @@ pub(super) struct TimedEncounter {
     switches: Vec<(u64, u64, EntryFacts)>,
     spawn_at: u64,
     reset_at: u64,
+    warn_at: Option<u64>,
     attempted_spawn: bool,
     spawned: Vec<ExactActorRef>,
 }
@@ -44,6 +45,10 @@ impl TimedEncounter {
             switches: Vec::new(),
             spawn_at: now,
             reset_at: now.checked_add(u64::from(transfer.after_ms) * 1_000)?,
+            warn_at: transfer
+                .warning
+                .as_ref()
+                .and_then(|warning| now.checked_add(u64::from(warning.after_ms) * 1_000)),
             attempted_spawn: true,
             spawned: Vec::new(),
         })
@@ -89,7 +94,7 @@ impl TimedEncounter {
 
     pub(super) fn next_due_us(&self) -> u64 {
         if self.attempted_spawn {
-            self.reset_at
+            self.warn_at.unwrap_or(self.reset_at).min(self.reset_at)
         } else {
             self.spawn_at
         }
@@ -186,6 +191,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             switches: Vec::new(),
             spawn_at,
             reset_at,
+            warn_at: None,
             attempted_spawn: false,
             spawned: Vec::new(),
         });
@@ -234,6 +240,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             };
             if let Some(transfer) = &memo.callback.effects.timed_group_transfer {
+                if now < memo.reset_at {
+                    // Crystal actions_lord_of_elements_lever.lua:103-118,179.
+                    // The reminder uses one current captured participant still in the inner room.
+                    memo.warn_at = None;
+                    if let Some(warning) = &transfer.warning
+                        && let Some((actor, _)) = memo.roster.iter().find(|&&(actor, session)| {
+                            !states.is_dead(actor)
+                                && runtime.bound_attacker_lease(actor, session).is_ok()
+                                && runtime
+                                    .read_actor_position(actor)
+                                    .ok()
+                                    .and_then(|snapshot| native(snapshot.position()))
+                                    .is_some_and(|p| {
+                                        p.floor == warning.room_min.floor
+                                            && (warning.room_min.x..=warning.room_max.x)
+                                                .contains(&p.x)
+                                            && (warning.room_min.y..=warning.room_max.y)
+                                                .contains(&p.y)
+                                    })
+                        })
+                    {
+                        map.facts
+                            .emit_movement_speech(crate::map::facts::MovementSpeech {
+                                speaker: *actor,
+                                position: tile(warning.position),
+                                talk_type: 37,
+                                text: warning.text.clone(),
+                                captured_name: None,
+                            });
+                    }
+                    index += 1;
+                    continue;
+                }
                 if self.expire_group(&mut runtime, &mut states, map, memo, transfer.destination) {
                     pending.remove(index);
                 } else {
