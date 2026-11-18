@@ -24,18 +24,35 @@ fn contribution_books_reset_counts_and_two_quantity_choices_redeem_exact_gold() 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    redemption_case(admin, "contribution_redemption", 500, exercise)
+}
+
+#[test]
+fn contribution_redemption_mints_two_stacks_and_replay_does_not_charge_again() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    redemption_case(admin, "contribution_bulk_redemption", 10_103, exercise_bulk)
+}
+
+fn redemption_case(
+    admin: String,
+    database: &'static str,
+    recorded_gold: i64,
+    exercise: impl AsyncFnOnce(&Harness, i64) -> TestResult + Send + 'static,
+) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
             run(async |_| {
                 let h = Harness::create_with_admission_seed(
                     admin,
-                    "contribution_redemption",
+                    database,
                     false,
                     false,
                 )
                 .await?;
-                let result = Box::pin(exercise(&h)).await;
+                let result = Box::pin(exercise(&h, recorded_gold)).await;
                 let cleanup = h.cleanup().await;
                 result?;
                 cleanup
@@ -47,7 +64,7 @@ fn contribution_books_reset_counts_and_two_quantity_choices_redeem_exact_gold() 
     Ok(())
 }
 
-fn catalogue() -> TestResult<QuestStateCatalogue> {
+fn catalogue(recorded_gold: i64) -> TestResult<QuestStateCatalogue> {
     let terms = json!([
         {"track":MORTAR,"weight":100},
         {"track":FRAZZLEMAWS,"weight":1},
@@ -141,7 +158,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
         ),
     ];
     let tracks =
-        [(MORTAR, 3), (FRAZZLEMAWS, 2), (SILENCERS, 1), (GOLD, 500)].map(|(key, initial)| {
+        [(MORTAR, 3), (FRAZZLEMAWS, 2), (SILENCERS, 1), (GOLD, recorded_gold)].map(|(key, initial)| {
             json!({
                 "key":key,"quest":QUEST,"initial":initial,"min":-1,"max":i64::MAX,"sources":[SOURCE]
             })
@@ -151,14 +168,15 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
     Ok(NpcRuleCatalog::from_json_documents(&[&source])?.with_fixture_npc_rules(base)?)
 }
 
-async fn exercise(h: &Harness) -> TestResult {
-    let cluster = FixtureItem {
-        id: 20062,
-        name: "cluster of solace",
-        weight: 280,
-        stackable: true,
-    };
-    with_npc_items(h, Arc::new(catalogue()?), NPC, &[cluster], async |owner, admitted, npc| {
+const CLUSTER: FixtureItem = FixtureItem {
+    id: 20062,
+    name: "cluster of solace",
+    weight: 280,
+    stackable: true,
+};
+
+async fn exercise(h: &Harness, recorded_gold: i64) -> TestResult {
+    with_npc_items(h, Arc::new(catalogue(recorded_gold)?), NPC, &[CLUSTER], async |owner, admitted, npc| {
         talk(owner, admitted, npc, 1, "hi").await?;
         for (index, word) in ["gratitude", "repairs", "books", "yes", "trade"].into_iter().enumerate() {
             talk(owner, admitted, npc, u64::try_from(index)? + 2, word).await?;
@@ -184,6 +202,38 @@ async fn exercise(h: &Harness) -> TestResult {
         ): (i64, i64) = sqlx::query_as("SELECT (SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1), (SELECT count(*) FROM game_quest_npc_item_sources WHERE transition_key='oteryn:quest-npc/roshamuul_quest/sandomo/redeem')")
             .bind(ITEM).fetch_one(&h.pool).await?;
         assert_eq!((items, receipts), (3, 2));
+        Ok(())
+    }).await
+}
+
+
+async fn exercise_bulk(h: &Harness, recorded_gold: i64) -> TestResult {
+    with_npc_items(h, Arc::new(catalogue(recorded_gold)?), NPC, &[CLUSTER], async |owner, admitted, npc| {
+        let read = || async {
+            sqlx::query_as::<_, (i64, i64, i64, i64)>(
+                "SELECT
+                    COALESCE((SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),$3),
+                    (SELECT count(*) FROM game_quest_npc_item_sources WHERE transition_key='oteryn:quest-npc/roshamuul_quest/sandomo/redeem'),
+                    (SELECT count(*) FROM game_item_instances WHERE definition_production_key=$4 AND lifecycle=1),
+                    (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$4 AND lifecycle=1)"
+            ).bind(id(41).as_slice()).bind(GOLD).bind(recorded_gold).bind(ITEM).fetch_one(&h.pool).await
+        };
+        talk(owner, admitted, npc, 1, "hi").await?;
+        talk(owner, admitted, npc, 2, "trade").await?;
+        assert_eq!(talk(owner, admitted, npc, 3, "102").await?, ["Your balance cannot cover that quantity."]);
+        assert_eq!(read().await?, (10_103, 0, 0, 0));
+
+        // Crystal npc/sandomo.lua:151-165 charges for all requested clusters
+        // together. 101 crosses the current native stack size of 100.
+        let committed = talk(owner, admitted, npc, 4, "101").await?;
+        assert_eq!(committed, ["Clusters delivered."]);
+        assert_eq!(read().await?, (3, 1, 2, 101));
+        let stack_sizes: Vec<i64> = sqlx::query_scalar(
+            "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1 ORDER BY quantity"
+        ).bind(ITEM).fetch_all(&h.pool).await?;
+        assert_eq!(stack_sizes, [1, 100]);
+        assert_eq!(talk(owner, admitted, npc, 4, "101").await?, committed);
+        assert_eq!(read().await?, (3, 1, 2, 101));
         Ok(())
     }).await
 }
