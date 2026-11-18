@@ -916,6 +916,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source,
             recipe_target,
             location: None,
+            tracking_probe: None,
             intent: encoded,
         };
         let capture_target = creature.as_ref().and_then(|proof| proof.live_target());

@@ -83,6 +83,9 @@ pub struct QuestCarriedUse {
     /// Current carrier position held by dispatch through the reward transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub location: Option<(u64, [i32; 3])>,
+    /// Exact stable search draw chosen against the admitted World terrain.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tracking_probe: Option<u8>,
     pub intent: Vec<u8>,
 }
 
@@ -146,9 +149,14 @@ pub(crate) async fn apply(
         return Ok(false);
     }
     let location = admission.carried_use.and_then(|use_| use_.location);
+    let probe = admission.carried_use.and_then(|use_| use_.tracking_probe);
     if (callback.server_save_hotspot.is_some() || callback.carried_tracker.is_some())
         != location.is_some()
     {
+        return Ok(false);
+    }
+    let search = callback.carried_tracker.as_ref().and_then(|tracker| tracker.ground_search.as_ref());
+    if !search.map_or_else(|| probe.is_none(), |search| probe.is_some_and(|index| index < search.attempts)) {
         return Ok(false);
     }
     if let Some((epoch, position)) = location {
@@ -164,7 +172,7 @@ pub(crate) async fn apply(
             || callback.server_save_hotspot.as_ref().is_some_and(|hotspot|
                 !hotspot.contains(&callback.key, world.as_bytes(), epoch, position))
             || callback.carried_tracker.as_ref().is_some_and(|tracker| {
-                let target = tracker.target(&callback.key, world.as_bytes(), fence.character_id.as_bytes(), epoch);
+                let target = tracker.target_at(&callback.key, world.as_bytes(), fence.character_id.as_bytes(), epoch, probe.unwrap_or(0));
                 !tracker.reached(position, target)
             })
         {

@@ -38,7 +38,7 @@ pub use inventory::InventoryRequirement;
 mod inventory_tests;
 mod temporal_payment;
 mod tracker;
-pub use tracker::CarriedTracker;
+pub use tracker::{CarriedTracker, GroundSearch};
 #[cfg(test)]
 mod temporal_payment_tests;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};

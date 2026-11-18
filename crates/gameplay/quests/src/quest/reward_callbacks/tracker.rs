@@ -10,12 +10,44 @@ pub struct CarriedTracker {
     pub area: DeathArea,
     pub radius: u16,
     pub heading_prefix: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ground_search: Option<GroundSearch>,
+}
+
+/// First-target search uses exact admitted ground appearances. Crystal
+/// data/libs/functions/position.lua:148-161 returns the final draw as fallback.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct GroundSearch {
+    pub attempts: u8,
+    pub appearances: Vec<[u16; 2]>,
+}
+
+impl GroundSearch {
+    pub fn accepts(&self, appearance: u16) -> bool {
+        self.appearances
+            .iter()
+            .any(|[from, to]| (*from..=*to).contains(&appearance))
+    }
+
+    fn valid(&self) -> bool {
+        (2..=50).contains(&self.attempts)
+            && !self.appearances.is_empty()
+            && self.appearances.len() <= 8
+            && self
+                .appearances
+                .iter()
+                .all(|[from, to]| *from != 0 && from <= to)
+    }
 }
 
 impl CarriedTracker {
     pub(super) fn valid(&self, callback: &super::RewardCallback) -> bool {
         self.area.valid()
-            && self.area.minimum[2] == self.area.maximum[2]
+            && self.ground_search.as_ref().map_or_else(
+                || self.area.minimum[2] == self.area.maximum[2],
+                GroundSearch::valid,
+            )
             && (1..=8).contains(&self.radius)
             && !self.heading_prefix.is_empty()
             && self.heading_prefix.chars().count() <= 80
@@ -34,20 +66,34 @@ impl CarriedTracker {
         character: &[u8; 16],
         epoch: u64,
     ) -> [i32; 3] {
-        let digest = Sha256::new()
+        self.target_at(key, world, character, epoch, 0)
+    }
+
+    pub fn target_at(
+        &self,
+        key: &str,
+        world: &[u8; 16],
+        character: &[u8; 16],
+        epoch: u64,
+        probe: u8,
+    ) -> [i32; 3] {
+        let mut hash = Sha256::new()
             .chain_update(b"quest-carried-tracker-v1")
             .chain_update(world)
             .chain_update(character)
             .chain_update(epoch.to_be_bytes())
-            .chain_update(key)
-            .finalize();
+            .chain_update(key);
+        if self.ground_search.is_some() {
+            hash.update([probe]);
+        }
+        let digest = hash.finalize();
         let coordinate = |axis: usize| {
             let first = self.area.minimum[axis];
             let last = self.area.maximum[axis];
             let sample = i32::from(u16::from_be_bytes([digest[axis * 2], digest[axis * 2 + 1]]));
             first + sample % (last - first + 1)
         };
-        [coordinate(0), coordinate(1), self.area.minimum[2]]
+        std::array::from_fn(coordinate)
     }
 
     pub fn reached(&self, from: [i32; 3], target: [i32; 3]) -> bool {

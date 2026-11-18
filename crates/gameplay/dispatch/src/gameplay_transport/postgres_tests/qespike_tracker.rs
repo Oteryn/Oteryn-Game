@@ -36,18 +36,21 @@ fn callback() -> TestResult<RewardCallback> {
         "key":KEY,"quest":QUEST, "npc":"oteryn:npc.gnomilly", "keywords":["track"],
         "topic":0,"next_topic":0,"carried_item":TOOL,
         "storage":[{"track":TRACK,"minimum":0,"maximum":0,"set":1}],
-        "carried_tracker":{"area":{"minimum":[32171,32512,8],"maximum":[32352,32671,8]},
-            "radius":4,"heading_prefix":"The detector points "},
+        "carried_tracker":{"area":{"minimum":[32171,32512,8],"maximum":[32352,32671,10]},
+            "radius":4,"heading_prefix":"The detector points ",
+            "ground_search":{"attempts":50,"appearances":[[19271,19302],[19550,19557]]}},
         "take":[],
         "reply":["You found a malignant presence, the glowing detector signals another presence nearby."],
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spike_tasks/actions_ghost_detector.lua:74-103"]
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spike_tasks/actions_ghost_detector.lua:74-103",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/position.lua:148-161"]
     }))?)
 }
 
 fn discovery_edge() -> TestResult<Position> {
     let tracker = callback()?.carried_tracker.ok_or("tracker")?;
-    let [x, y, z] = tracker.target(KEY, &id(42), &id(41), 0);
-    let other = tracker.target(KEY, &id(42), &id(43), 0);
+    // The fixture terrain has no grey sand. Crystal returns the final draw.
+    let [x, y, z] = tracker.target_at(KEY, &id(42), &id(41), 0, 49);
+    let other = tracker.target_at(KEY, &id(42), &id(43), 0, 49);
     assert_ne!([x, y, z], other, "players have independent targets");
     Ok(Position {
         x: (x - 4).try_into()?,

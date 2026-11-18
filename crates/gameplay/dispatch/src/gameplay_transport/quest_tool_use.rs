@@ -291,6 +291,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         // Crystal 201189f8 spike_tasks/actions_thermometer.lua:13-31.
         // Keep the actor at the sampled location through the gated hand-in.
+        let mut tracking_probe = None;
         let location =
             if callback.server_save_hotspot.is_some() || callback.carried_tracker.is_some() {
                 let runtime = &creature_runtime.as_ref().ok_or(())?.runtime;
@@ -310,12 +311,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     (!spec.contains(&callback.key, world, self.reset_epoch, position))
                         .then(|| spec.cold_reply.clone())
                 } else if let Some(tracker) = &callback.carried_tracker {
-                    let target = tracker.target(
-                        &callback.key,
-                        world,
-                        fence.character_id.as_bytes(),
-                        self.reset_epoch,
-                    );
+                    let target_at = |probe| {
+                        tracker.target_at(
+                            &callback.key,
+                            world,
+                            fence.character_id.as_bytes(),
+                            self.reset_epoch,
+                            probe,
+                        )
+                    };
+                    let target = if let Some(search) = &tracker.ground_search {
+                        let Some(map) = self.bundle_map() else {
+                            return Ok(Some(outcome(UseDisposition::Rejected)));
+                        };
+                        let last = search.attempts - 1;
+                        // Crystal 201189f position.lua:148-161. The pinned
+                        // ground keeps a Character's chosen target stable.
+                        let probe = (0..last)
+                            .find(|probe| {
+                                let [x, y, z] = target_at(*probe);
+                                let pos = crate::map::overlay::TilePos {
+                                    x: x as u16,
+                                    y: y as u16,
+                                    floor: -(z as i8),
+                                };
+                                map.overlay
+                                    .base()
+                                    .tile(pos.x, pos.y, pos.floor)
+                                    .filter(|tile| tile.walkable())
+                                    .and_then(|tile| tile.ground())
+                                    .and_then(|(ordinal, id)| {
+                                        map.facts.quest_callback_base_appearance(pos, ordinal, id)
+                                    })
+                                    .is_some_and(|appearance| search.accepts(appearance))
+                            })
+                            .unwrap_or(last);
+                        tracking_probe = Some(probe);
+                        target_at(probe)
+                    } else {
+                        target_at(0)
+                    };
                     (!tracker.reached(position, target)).then(|| tracker.heading(position, target))
                 } else {
                     None
@@ -333,6 +368,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let use_ = QuestCarriedUse {
             recipe_target: None,
             location,
+            tracking_probe,
             source,
             intent: encoded,
         };

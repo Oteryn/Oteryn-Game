@@ -90,6 +90,7 @@ async fn exercise(h: &Harness) -> TestResult {
         source: id(90),
         recipe_target: None,
         location: None,
+        tracking_probe: None,
         intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(
                 std::num::NonZeroU32::new(1).ok_or("nonzero native item index")?,
