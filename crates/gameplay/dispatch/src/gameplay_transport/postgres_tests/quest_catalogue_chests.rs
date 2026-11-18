@@ -173,9 +173,119 @@ fn cases_including(include: impl Fn(&str) -> bool) -> TestResult<Vec<CatalogueCh
     Ok(cases)
 }
 
+const CATALOGUE_SLICE_COUNT: usize = 8;
+
+fn catalogue_slice(index: usize, cases: &[CatalogueChest]) -> std::ops::Range<usize> {
+    // cases() emits every placement for a claim consecutively.
+    let mut boundaries = vec![0];
+    boundaries.extend(
+        cases
+            .windows(2)
+            .enumerate()
+            .filter(|(_, pair)| pair[0].claim != pair[1].claim)
+            .map(|(index, _)| index + 1),
+    );
+    boundaries.push(cases.len());
+    let claims = boundaries.len() - 1;
+    boundaries[index * claims / CATALOGUE_SLICE_COUNT]
+        ..boundaries[(index + 1) * claims / CATALOGUE_SLICE_COUNT]
+}
+
+fn run_catalogue_slice(index: usize) -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    let mut cases = cases()?;
+    let range = catalogue_slice(index, &cases);
+    execute(cases.drain(range).collect())
+}
+
 #[test]
-fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal() -> TestResult {
-    execute(cases()?)?;
+fn quest_catalogue_chests_slices_cover_every_supported_source_placement() -> TestResult {
+    let cases = cases()?;
+    let falcon_claims = oteryn_gameplay_quests::quest::falcon::CHESTS.map(|chest| chest.key());
+    let expected: BTreeSet<_> = cases
+        .iter()
+        .map(|case| case.claim.as_str())
+        .chain(falcon_claims.iter().map(String::as_str))
+        .collect();
+    assert_eq!(expected.len(), 334);
+
+    let mut seen_claims = BTreeSet::new();
+    let mut seen_placements = vec![false; cases.len()];
+    for index in 0..CATALOGUE_SLICE_COUNT {
+        let range = catalogue_slice(index, &cases);
+        assert!(!range.is_empty(), "slice {index} is empty");
+        let mut slice_claims = BTreeSet::new();
+        for placement in range {
+            assert!(
+                !seen_placements[placement],
+                "placement {placement} appears twice"
+            );
+            seen_placements[placement] = true;
+            slice_claims.insert(cases[placement].claim.as_str());
+        }
+        for claim in slice_claims {
+            assert!(seen_claims.insert(claim), "claim {claim} spans slices");
+        }
+    }
+    for claim in &falcon_claims {
+        assert!(
+            seen_claims.insert(claim.as_str()),
+            "duplicate Falcon claim {claim}"
+        );
+    }
+    assert!(seen_placements.into_iter().all(|visited| visited));
+    assert_eq!(seen_claims, expected);
+    Ok(())
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_1_of_8()
+-> TestResult {
+    run_catalogue_slice(0)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_2_of_8()
+-> TestResult {
+    run_catalogue_slice(1)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_3_of_8()
+-> TestResult {
+    run_catalogue_slice(2)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_4_of_8()
+-> TestResult {
+    run_catalogue_slice(3)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_5_of_8()
+-> TestResult {
+    run_catalogue_slice(4)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_6_of_8()
+-> TestResult {
+    run_catalogue_slice(5)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_7_of_8()
+-> TestResult {
+    run_catalogue_slice(6)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_8_of_8()
+-> TestResult {
+    run_catalogue_slice(7)?;
     super::falcon_chests::falcon_chests_postgres_real_use_frozen_draw_refusal_restart_and_fences()
 }
 
