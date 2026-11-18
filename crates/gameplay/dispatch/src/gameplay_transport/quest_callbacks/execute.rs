@@ -1267,6 +1267,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
                 }
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
+                    if callback.has_exhausted_reward_exit() => {
+                    if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                        pending.remove(&session);
+                    }
+                    self.refuse_quest_step(
+                        optional_pvp, runtime, states, actor, session, map, callback, expected, expected,
+                    );
+                    return if runtime.read_actor_position(actor).is_ok_and(|current| current != expected) {
+                        UseDisposition::Committed
+                    } else {
+                        UseDisposition::Rejected
+                    };
+                }
                 Ok(_) | Err(_) => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))

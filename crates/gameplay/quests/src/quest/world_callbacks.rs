@@ -569,6 +569,17 @@ impl Callback {
     pub fn has_repeating_clock(&self) -> bool {
         state_operations::refreshes_clock(self)
     }
+
+    /// A timed pickup may send the player to its exit even while the reward is exhausted.
+    pub fn has_exhausted_reward_exit(&self) -> bool {
+        self.trigger == Trigger::Use
+            && self.return_on_failure
+            && self.failure_teleport.is_some()
+            && self.operation_count() == 1
+            && self.has_repeating_clock()
+            && self.storage.is_empty()
+            && self.item_reward().is_some()
+    }
 }
 
 fn default_use_range() -> u8 {
@@ -958,7 +969,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 && selector.ordinal.is_some_and(|ordinal| ordinal != 0))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
             || callback.failure_teleport.is_some_and(|p| {
-                !valid_pos(p) || callback.trigger != Trigger::StepIn || !callback.return_on_failure
+                !valid_pos(p)
+                    || !callback.return_on_failure
+                    || (callback.trigger != Trigger::StepIn && !callback.has_exhausted_reward_exit())
             })
             || (callback
                 .world_requirements
