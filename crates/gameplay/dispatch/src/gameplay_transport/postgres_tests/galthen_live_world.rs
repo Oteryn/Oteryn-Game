@@ -59,24 +59,54 @@ const ROUTES: [(&str, Position, Position); 7] = [
 ];
 
 #[test]
-fn galthen_live_travel_postgres() -> TestResult {
+fn galthen_forest_entry_and_shortcut_cooldown_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     drop(admin);
-    for (name, source, _) in ROUTES {
-        super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, source, false))
-            .map_err(|error| format!("{name}: {error}"))?;
-    }
     for (name, source) in [
+        (ROUTES[0].0, ROUTES[0].1),
+        (ROUTES[1].0, ROUTES[1].1),
+        (ROUTES[5].0, ROUTES[5].1),
+        (ROUTES[6].0, ROUTES[6].1),
         (COOLDOWN, ROUTES[5].1),
         ("galthen-forest-1-low-level", ROUTES[0].1),
-        ("galthen-iksupan-entrance-low-level", ROUTES[2].1),
     ] {
-        super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, source, false))
-            .map_err(|error| format!("{name}: {error}"))?;
+        travel(name, source)?;
     }
     Ok(())
+}
+
+#[test]
+fn galthen_iksupan_direct_use_level_gate_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    for (name, source) in [
+        (ROUTES[2].0, ROUTES[2].1),
+        ("galthen-iksupan-entrance-low-level", ROUTES[2].1),
+    ] {
+        travel(name, source)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn galthen_iksupan_ungated_spheres_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    for (name, source, _) in &ROUTES[3..5] {
+        travel(name, *source)?;
+    }
+    Ok(())
+}
+
+fn travel(name: &'static str, source: Position) -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, source, false))
+        .map_err(|error| format!("{name}: {error}").into())
 }
 
 #[test]
@@ -220,7 +250,7 @@ async fn exercise_satchel(
             h.root.advance_test_quest_clock(advance)?;
         }
         target.expected_revision = map.facts.object_revision(key);
-        let effect_before = map
+        let cursor = map
             .facts
             .movement_effects_since(0)
             .last()
@@ -235,12 +265,12 @@ async fn exercise_satchel(
                 UseDisposition::Committed
             )],
         );
-        assert!(
-            map.facts
-                .movement_effects_since(effect_before)
-                .iter()
-                .any(|(_, at, effect)| *effect == 53
-                    && (at.x, at.y, at.floor) == (exit.x, exit.y, exit.floor))
+        let splashes = map.facts.movement_effects_since(cursor);
+        assert_eq!(splashes.len(), 1, "one watersplash per tree USE");
+        let (_, at, effect) = splashes[0];
+        assert_eq!(
+            (at.x, at.y, at.floor, effect),
+            (exit.x, exit.y, exit.floor, 53)
         );
         {
             let mut runtime = owner.runtime.lock().await;
