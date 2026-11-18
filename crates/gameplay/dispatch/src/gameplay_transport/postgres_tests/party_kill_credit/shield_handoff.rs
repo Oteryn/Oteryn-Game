@@ -163,6 +163,10 @@ pub(super) async fn exercise(
             .bind(OUTCOME_GROUP).execute(pool).await?;
     }
     let before_ms = if cooldown_case {
+        owner.states.quest_callbacks.interrupt_after_commit.store(
+            true,
+            std::sync::atomic::Ordering::SeqCst,
+        );
         Some(database_ms(pool).await?)
     } else {
         None
@@ -173,6 +177,9 @@ pub(super) async fn exercise(
     assert_eq!(result.disposition, UseDisposition::Committed);
 
     let cooldowns = if let Some(before_ms) = before_ms {
+        assert!(!owner.states.quest_callbacks.interrupt_after_commit.load(
+            std::sync::atomic::Ordering::SeqCst,
+        ), "the first acknowledgement was interrupted");
         let after_ms = database_ms(pool).await?;
         let rows = party_cooldowns(pool).await?;
         assert_eq!(rows.len(), 2);

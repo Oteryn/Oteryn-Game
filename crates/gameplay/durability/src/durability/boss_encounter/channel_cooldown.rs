@@ -1,11 +1,9 @@
 //! Party cooldowns for a prepared Channel encounter, under its exact session fences.
 use super::cooldown_storage::{
-    BossCooldownAdmissionData, BossCooldownChange, BossRewardKey, read_boss_cooldown_data,
-    set_boss_cooldowns_data,
+    BossCooldownAdmissionData, BossCooldownChange, BossRewardKey, BossRewardStateError,
+    read_boss_cooldown_data, set_boss_cooldowns_data,
 };
-use crate::durability::character_authority::{
-    ReconciledCharacterAuthority, assert_recovery_fence,
-};
+use crate::durability::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use crate::durability::character_progression::assert_item_only_fence;
 use crate::durability::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -35,6 +33,13 @@ pub enum ChannelBossCooldownDecision {
     Rejected,
 }
 
+fn cooldown_error(error: BossRewardStateError) -> DurabilityError {
+    match error {
+        BossRewardStateError::Unavailable(error) => error,
+        _ => DurabilityError::InvalidStoredState,
+    }
+}
+
 impl DurabilityRoot {
     /// Write one deadline for every member after local preparations succeeded.
     /// The same exact command and roster can resolve a lost COMMIT response.
@@ -47,25 +52,43 @@ impl DurabilityRoot {
     ) -> Result<ChannelBossCooldownDecision, DurabilityError> {
         use ChannelBossCooldownDecision::{Admitted, OnCooldown, Rejected};
 
-        let RuntimeScopeRefV1::Channel { world_id, channel_id } = permit.runtime_scope() else {
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = permit.runtime_scope()
+        else {
             return Ok(Rejected);
         };
-        request.party.sort_unstable_by_key(|member| member.character_id);
-        if !(1..=15).contains(&request.party.len())
+        request
+            .party
+            .sort_unstable_by_key(|member| member.character_id);
+        if permit.has_unresolved()
+            || !(1..=15).contains(&request.party.len())
             || !(1..=30 * 24 * 60 * 60).contains(&request.seconds)
-            || !request.party.iter().any(|member| member.game_session_id == request.cause.game_session_id())
-            || request.party.windows(2).any(|pair| pair[0].character_id == pair[1].character_id)
+            || !request
+                .party
+                .iter()
+                .any(|member| member.game_session_id == request.cause.game_session_id())
+            || request
+                .party
+                .windows(2)
+                .any(|pair| pair[0].character_id == pair[1].character_id)
             || request.party.iter().any(|member| {
                 member.runtime_scope != permit.runtime_scope()
-                    || member.scope_ownership_generation != request.party[0].scope_ownership_generation
+                    || member.scope_ownership_generation
+                        != request.party[0].scope_ownership_generation
             })
         {
             return Ok(Rejected);
         }
-        let Ok(keys) = request.party.iter().map(|member| BossRewardKey::new(member.character_id, request.boss))
-            .collect::<Result<Vec<_>, _>>() else {
-                return Ok(Rejected);
-            };
+        let Ok(keys) = request
+            .party
+            .iter()
+            .map(|member| BossRewardKey::new(member.character_id, request.boss))
+            .collect::<Result<Vec<_>, _>>()
+        else {
+            return Ok(Rejected);
+        };
         let mut digest = Sha256::new();
         digest.update(b"oteryn:channel-boss-cooldown:v1\0");
         digest.update(world_id.as_bytes());
@@ -88,59 +111,82 @@ impl DurabilityRoot {
         admission.copy_from_slice(&digest.finalize()[..16]);
         admission[6] = admission[6] & 0x0f | 0x70;
         admission[8] = admission[8] & 0x3f | 0x80;
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::CommitRejected)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::CommitRejected)?;
         let node = node.clone();
         let mut party = request.party;
         let reset_epoch = request.reset_epoch;
         let cooldown_s = u64::from(request.seconds);
-        self.try_issue_semantic_pass()?.run_with_context(&mut party, move |holder, deadline, party| {
-            Box::pin(async move {
-                let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                assert_recovery_fence(&mut tx, &recovery).await?;
-                lock_admission_relations(&mut tx).await?;
-                for member in party {
-                    if assert_item_only_fence(&mut tx, member, &node).await?.is_err() {
-                        return Ok(Rejected);
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut party, move |holder, deadline, party| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    for member in party {
+                        if assert_item_only_fence(&mut tx, member, &node)
+                            .await?
+                            .is_err()
+                        {
+                            return Ok(Rejected);
+                        }
                     }
-                }
-                let clock: Option<(i64, String)> = sqlx::query_as(
+                    let clock: Option<(i64, String)> = sqlx::query_as(
                     "SELECT (extract(epoch FROM clock_timestamp())*1000)::bigint,reset_epoch::text \
                      FROM game_world_reset_read_locked(encode($1,'hex')::uuid)",
                 )
                 .bind(world_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-                let Some((now, epoch)) = clock else { return Ok(Rejected) };
-                if epoch.parse::<u64>().ok() != Some(reset_epoch) {
-                    return Ok(Rejected);
-                }
-                let mut replay_count = 0;
-                let mut replay_deadline = None;
-                for key in &keys {
-                    let old = read_boss_cooldown_data(&mut tx, key).await
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    if let Some(old) = old.filter(|old| old.admission == admission) {
-                        if old.reset_epoch != reset_epoch || old.available_at <= now
-                            || replay_deadline.is_some_and(|until| old.available_at != until)
-                        {
-                            return Ok(Rejected);
-                        }
-                        replay_deadline = Some(old.available_at);
-                        replay_count += 1;
+                    let Some((now, epoch)) = clock else {
+                        return Ok(Rejected);
+                    };
+                    if epoch.parse::<u64>().ok() != Some(reset_epoch) {
+                        return Ok(Rejected);
                     }
-                }
-                if replay_count != 0 {
-                    return Ok(if replay_count == keys.len() { Admitted } else { Rejected });
-                }
-                let disposition = set_boss_cooldowns_data(
-                    &mut tx,
-                    &keys,
-                    &BossCooldownAdmissionData { admission, now, reset_epoch, cooldown_s, boosted: false },
-                ).await.map_err(|_| DurabilityError::InvalidStoredState)?;
-                if disposition == BossCooldownChange::OnCooldown {
-                    return Ok(OnCooldown);
-                }
-                commit_semantic_transaction(tx, deadline).await?;
-                Ok(Admitted)
+                    let mut replay_count = 0;
+                    let mut replay_deadline = None;
+                    for key in &keys {
+                        let old = read_boss_cooldown_data(&mut tx, key)
+                            .await
+                            .map_err(cooldown_error)?;
+                        if let Some(old) = old.filter(|old| old.admission == admission) {
+                            if old.reset_epoch != reset_epoch
+                                || old.available_at <= now
+                                || replay_deadline.is_some_and(|until| old.available_at != until)
+                            {
+                                return Ok(Rejected);
+                            }
+                            replay_deadline = Some(old.available_at);
+                            replay_count += 1;
+                        }
+                    }
+                    if replay_count != 0 {
+                        return Ok(if replay_count == keys.len() {
+                            Admitted
+                        } else {
+                            Rejected
+                        });
+                    }
+                    let disposition = set_boss_cooldowns_data(
+                        &mut tx,
+                        &keys,
+                        &BossCooldownAdmissionData {
+                            admission,
+                            now,
+                            reset_epoch,
+                            cooldown_s,
+                            boosted: false,
+                        },
+                    )
+                    .await
+                    .map_err(cooldown_error)?;
+                    if disposition == BossCooldownChange::OnCooldown {
+                        return Ok(OnCooldown);
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Admitted)
+                })
             })
-        }).await
+            .await
     }
 }

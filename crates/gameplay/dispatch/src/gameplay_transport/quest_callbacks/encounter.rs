@@ -1,6 +1,7 @@
 //! Source parties are the players standing on the exact staging tiles, not a social-party id.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
+use crate::durability::DurabilityError;
 use crate::durability::boss_encounter::channel_cooldown::{
     ChannelBossCooldown, ChannelBossCooldownDecision,
 };
@@ -488,13 +489,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .root
                 .commit_channel_boss_cooldown(self.character, self.holder, permit, cooldown.clone())
                 .await;
-            let decision = if decision.is_err() {
-                // Resolve a lost COMMIT against the same command, revision and full roster.
-                self.root
-                    .commit_channel_boss_cooldown(self.character, self.holder, permit, cooldown)
-                    .await
+            #[cfg(test)]
+            let decision = if matches!(&decision, Ok(ChannelBossCooldownDecision::Admitted))
+                && self
+                    .states
+                    .quest_callbacks
+                    .interrupt_after_commit
+                    .swap(false, std::sync::atomic::Ordering::SeqCst)
+            {
+                Err(DurabilityError::CommitOutcomeUnknown)
             } else {
                 decision
+            };
+            let decision = match decision {
+                Err(
+                    DurabilityError::CommitOutcomeUnknown
+                    | DurabilityError::RootPassDeadlineExceeded,
+                ) => {
+                    // Resolve a lost COMMIT against the same command, revision and full roster.
+                    self.root
+                        .commit_channel_boss_cooldown(self.character, self.holder, permit, cooldown)
+                        .await
+                }
+                decision => decision,
             };
             match decision {
                 Ok(ChannelBossCooldownDecision::Admitted) => {}
