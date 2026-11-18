@@ -41,6 +41,8 @@ const WELL_ACHIEVEMENT: &str = "oteryn:achievement/fountain_of_life";
 const HOARD_ACHIEVEMENT: &str = "oteryn:achievement/hoard_of_the_dragon";
 const DAILY_REFUSAL: &str = "At the moment there is neither a treasure nor anything else in the fountain. Perhaps you might return later.";
 const ANNUAL_REFUSAL: &str = "The chest is empty.";
+const ANNUAL_INELIGIBLE: &str = "You are not eligible to claim these rewards yet.";
+const FEATHERS: &str = "oteryn:quest-progress/qonce-dispatch/feathers";
 const HOARD_REFUSAL: &str = "You try to pick a treasure, but you hear further dragons approaching. You should kill some more before picking out something.";
 const AT: Position = Position { x: 33294, y: 31677, floor: -15 };
 
@@ -242,6 +244,13 @@ pub(super) async fn exercise(
         }
         effects = json!({"reset":{"kind":"elapsed","track":LEDGER,"seconds":seconds},
             "selection_track":CHOICE,"rewards":rewards});
+        if name == ANNUAL {
+            tracks.push(track(FEATHERS, 1, 1, 2));
+            let mut feathers = storage(FEATHERS, 2, 2, 2);
+            feathers["preserve"] = json!(true);
+            callback["storage"] = json!([storage(CHOICE, 0, choices, 0), feathers]);
+            effects["eligibility"] = json!({"track":FEATHERS,"message":ANNUAL_INELIGIBLE});
+        }
     } else if name == HOARD {
         tracks.extend([
             track(LEDGER, 49, 0, 50), track(COUNT, 9, 0, 100),
@@ -286,6 +295,19 @@ pub(super) async fn exercise(
                 "gate":HUNT_GATE,"gate_value":0,"maximum":50,
                 "death_area":{"minimum":[AT.x-2, AT.y-2, -AT.floor],
                               "maximum":[AT.x+2, AT.y+2, -AT.floor]}
+            }}
+        }));
+    }
+    if name == ANNUAL {
+        stages.push(json!({
+            "key":"feathers","completes":false,"trigger":{"kind":"step_in","callback":{
+                "key":"oteryn:quest-callback/qonce-dispatch-feathers","quest":QUEST,
+                "trigger":"step_in","selector":{"position":AT},
+                "requires_world_admission":true,"reversible":false,"passages":[],
+                "storage":[storage(FEATHERS,1,1,2)],"offerings":[],
+                "return_on_failure":false,"sources":[
+                    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_rewards.lua:43-45"
+                ]
             }}
         }));
     }
@@ -384,15 +406,30 @@ pub(super) async fn exercise(
         assert_eq!(track_value(h, LEDGER).await?, 50, "the death opens the hoard");
     }
     let before = super::qengine_voucher_stories::quantity(h, 3031).await?;
+    if name == ANNUAL {
+        assert_eq!(use_claim(owner, *admitted, 20).await?, UseDisposition::Rejected);
+        assert_eq!(receipts(h).await?, 0);
+        assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, before);
+        let chat = owner.states.chat.drain(admitted.game_session_id);
+        assert!(chat.iter().any(|line| matches!(line,
+            oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. }
+                if text == ANNUAL_INELIGIBLE
+        )));
+        let reply = super::quest_world_callbacks::wire(owner, admitted, 1, 1,
+            oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::East)).await?;
+        assert_eq!(oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+        assert_eq!(track_value(h, FEATHERS).await?, 2);
+        advance_interaction(owner)?;
+    }
     let before_hearts = super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?;
     let before_red_gems = super::qengine_voucher_stories::quantity(h, 3039).await?;
-    let (first, second) = tokio::join!(use_claim(owner, *admitted, 1), use_claim(owner, *admitted, 2));
+    let (first, second) = tokio::join!(use_claim(owner, *admitted, 21), use_claim(owner, *admitted, 22));
     let committed = [first?, second?].into_iter().filter(|outcome| *outcome == UseDisposition::Committed).count();
     assert_eq!(committed, 1);
     assert_eq!(receipts(h).await?, 1);
     assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, before + 2);
     advance_interaction(owner)?;
-    assert_eq!(use_claim(owner, *admitted, 3).await?, UseDisposition::Rejected);
+    assert_eq!(use_claim(owner, *admitted, 23).await?, UseDisposition::Rejected);
     let refusal = period.map_or(HOARD_REFUSAL, |(_, refusal)| refusal);
     let chat = owner.states.chat.drain(admitted.game_session_id);
     assert!(chat.iter().any(|line| matches!(
@@ -402,12 +439,12 @@ pub(super) async fn exercise(
     if let Some((seconds, _)) = period {
         h.root.advance_test_quest_clock(seconds - 1).map_err(debug)?;
         advance_interaction(owner)?;
-        assert_eq!(use_claim(owner, *admitted, 4).await?, UseDisposition::Rejected);
+        assert_eq!(use_claim(owner, *admitted, 24).await?, UseDisposition::Rejected);
         h.root.advance_test_quest_clock(1).map_err(debug)?;
         advance_interaction(owner)?;
-        assert_eq!(use_claim(owner, *admitted, 5).await?, UseDisposition::Committed);
+        assert_eq!(use_claim(owner, *admitted, 25).await?, UseDisposition::Committed);
         advance_interaction(owner)?;
-        assert_eq!(use_claim(owner, *admitted, 6).await?, UseDisposition::Rejected);
+        assert_eq!(use_claim(owner, *admitted, 26).await?, UseDisposition::Rejected);
         assert_eq!(receipts(h).await?, 2);
         assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, before + 4);
     } else {
