@@ -415,11 +415,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    if let Some(plan) = entry.boss_reward_plan.get() {
-                        if !owner.root.settle_boss_death_atomic(&mut tx, owner.character, owner.holder,
-                            entry.facts.death.runtime_scope(), entry.facts.death.scope_ownership_generation(), plan.clone()).await? {
-                            return Err(DurabilityError::Unavailable);
-                        }
+                    if let Some(plan) = entry.boss_reward_plan.get()
+                        && !owner.root.settle_boss_death_atomic(&mut tx, owner.character, owner.holder,
+                            entry.facts.death.runtime_scope(), entry.facts.death.scope_ownership_generation(), plan.clone()).await?
+                    {
+                        return Err(DurabilityError::Unavailable);
                     }
                     let death = key(entry);
                     if let Some(awards) = party_kill_xp::reconcile_in_transaction(
