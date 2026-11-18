@@ -288,16 +288,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             }
         };
+        let target_id = item_id(&station.production_key);
+        let ordinary_water = oteryn_gameplay_items::fishing::is_water(&station.production_key);
+        // Crystal mechanical_fishing.lua:11-24,203-237 includes water 21312,
+        // which the ordinary rod does not recognize.
+        let mechanical_water = target_id.is_some_and(|id| {
+            oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&id)
+        });
         request.station = Some(station);
         let mut catch_roll = 1;
         let mut fishing_skill = 10;
         // Fishing is the same durable consume/mint owner as cooking, but keeps the rod and
         // consumes a worm only after the skill-scaled catch succeeds.
-        if request
-            .station
-            .as_ref()
-            .is_some_and(|s| oteryn_gameplay_items::fishing::is_water(&s.production_key))
-        {
+        if ordinary_water || mechanical_water {
             let inventory = self
                 .root
                 .read_item_use_inventory(self.character, self.holder, fence)
@@ -309,7 +312,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .flat_map(|b| &b.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry));
             let water_key = &request.station.as_ref()?.production_key;
-            let target_id = item_id(water_key)?;
+            let target_id = target_id?;
             let target_pos = map_target.3;
             let mechanical_sewer = oteryn_gameplay_items::fishing::is_yalahar_sewer_water(
                 target_id,
@@ -413,10 +416,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|b| &b.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| entry.item.item_instance_id == source);
-        let target_id = request
-            .station
-            .as_ref()
-            .and_then(|s| item_id(&s.production_key));
         if let (Some(tool), Some(target_id)) = (tool, target_id)
             && let Some(tool_id) = item_id(&tool.item.definition.production_key)
             && let Some(attempt) = oteryn_gameplay_items::event_planting::planting_attempt(

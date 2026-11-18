@@ -26,6 +26,7 @@ pub(super) enum FixtureItem {
     Pot,
     Skull,
     HeatedHammer,
+    SewerWater,
 }
 
 pub(super) fn generation_with_item(
@@ -42,30 +43,33 @@ pub(super) fn generation_with_item(
     let records = packet["records"].as_array_mut().ok_or("profile records")?;
     let (id, template, name, weight) = match item {
         // Crystal 201189f8 data/items/items.xml:22924-22930.
-        FixtureItem::ChargedCrystal => (8225, "oteryn:item.tibia.i10198", "blood crystal", 890),
+        FixtureItem::ChargedCrystal => (8225, "oteryn:item.tibia.i10198", "blood crystal", Some(890)),
         // Crystal 201189f8 data/items/items.xml:23374-23376.
-        FixtureItem::GhostTear => (8746, "oteryn:item.tibia.i10198", "ghost's tear", 1000),
+        FixtureItem::GhostTear => (8746, "oteryn:item.tibia.i10198", "ghost's tear", Some(1000)),
         // Crystal 201189f8 data/items/items.xml:26533-26536.
         FixtureItem::Skull => (
             10159,
             "oteryn:item.tibia.i10198",
             "skull of a caveman",
-            2180,
+            Some(2180),
         ),
         // Crystal 201189f8 data/items/items.xml:10874-10878.
-        FixtureItem::Pot => (3465, "oteryn:item.tibia.i2874", "pot", 5250),
+        FixtureItem::Pot => (3465, "oteryn:item.tibia.i2874", "pot", Some(5250)),
         // Crystal 201189f8 data/items/items.xml:24803-24809.
         FixtureItem::HeatedHammer => (
             9201,
             "oteryn:item.tibia.i10198",
             "heated worm punisher",
-            6450,
+            Some(6450),
         ),
+        // Crystal 201189f8 data/items/items.xml:42437-42442 has the same
+        // physical and fluid declarations as 4597 and declares no weight.
+        FixtureItem::SewerWater => (21312, "oteryn:item.tibia.i4597", "shallow water", None),
     };
     let mut definitions = vec![(id, template, name, weight)];
     if id == 9201 {
         // Crystal 201189f8 data/items/items.xml:24975-24979.
-        definitions.push((9234, template, "worm punisher", 6450));
+        definitions.push((9234, template, "worm punisher", Some(6450)));
     }
     for (id, template, name, weight) in definitions {
         let key = format!("oteryn:item.tibia.i{id}");
@@ -85,7 +89,9 @@ pub(super) fn generation_with_item(
         record["authoring"]["item"]["revision"] = json!("definition-r1");
         record["production_binding"]["external_id"] = json!(id.to_string());
         record["production_binding"]["target"]["key"] = json!(key);
-        record["semantics"]["physical"]["value"]["weight"]["value"] = json!(weight);
+        if let Some(weight) = weight {
+            record["semantics"]["physical"]["value"]["weight"]["value"] = json!(weight);
+        }
         record["semantics"]["presentation"]["value"]["name"]["value"] = json!(name);
         record["semantics"]["presentation"]["value"]["description"] = json!({"state":"UNKNOWN"});
         records.push(record);

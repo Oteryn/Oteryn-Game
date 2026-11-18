@@ -19,6 +19,18 @@ fn mechanical_fishing_miss_can_shock_and_grant_temporary_outfit_without_burning_
     })
 }
 
+#[test]
+fn mechanical_fishing_shock_reaches_sewer_water_exclusive_to_the_mechanical_rod() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    // Crystal mechanical_fishing.lua:11-24,203-237 includes 21312.
+    super::kill_reward_e2e::scenario_thread::run("mechanical-fishing-shock-exclusive-water", || {
+        super::standard_fishing::gathering_scenario(9306, 21312, Some(21312), None, false, true, true)
+    })
+}
+
 pub(super) fn is_shock_draw(digest: [u8; 32], occurrence: [u8; 16]) -> bool {
     deterministic_decision_u64(
         &GameplayDecisionRoot::from_bytes(digest),

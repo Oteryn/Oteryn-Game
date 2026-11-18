@@ -370,11 +370,17 @@ pub(super) fn gathering_scenario(
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) =
+        let (controller, pin) = if target_id == 21312 {
+            super::quest_npc_fluid_intake::generation_with_item(
+                deps.admitted.world_id,
+                super::quest_npc_fluid_intake::FixtureItem::SewerWater,
+            )?
+        } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
                 deps.admitted.world_id,
                 None,
-            );
+            )
+        };
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
