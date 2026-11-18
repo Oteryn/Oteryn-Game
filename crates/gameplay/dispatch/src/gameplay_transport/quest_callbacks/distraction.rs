@@ -181,6 +181,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .max(position.y.abs_diff(visit.source.y))
                         > u16::from(visit.radius)
                     || states.is_dead(actor)
+                    || !states.spell_idle(runtime, actor, session)
                 {
                     continue;
                 }
@@ -195,10 +196,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     false,
                     &doors,
                 ) else {
-                    return true;
+                    continue;
                 };
                 let Ok(landed) = runtime.commit_source_step(proof) else {
-                    return true;
+                    continue;
                 };
                 states.stage_special_movement_step(
                     runtime,
@@ -224,7 +225,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(position) = runtime.read_actor_position(*actor)
                         && let Some(position) = native(position.position())
                     {
-                        map.facts.emit_movement_effect(tile(position), 11);
+                        map.facts.emit_movement_effect(position, 11);
                     }
                     if runtime.remove_encounter_actor(*actor).is_err() {
                         return true;
