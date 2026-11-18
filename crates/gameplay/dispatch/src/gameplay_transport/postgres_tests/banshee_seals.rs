@@ -15,31 +15,31 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 #[test]
 fn banshee_logic_use_flips_lever_without_overwriting_a_discordant_campfire() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("banshee-logic", || {
-        run(async |admin| exercise(admin, Seal::Logic).await)
+    super::kill_reward_e2e::scenario_thread::run("banshee-logic", move || {
+        run(async |_| exercise(admin, Seal::Logic).await)
     })
 }
 
 #[test]
 fn banshee_sacrifice_step_consumes_only_blood_and_commits_both_flags() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("banshee-sacrifice", || {
-        run(async |admin| exercise(admin, Seal::Sacrifice).await)
+    super::kill_reward_e2e::scenario_thread::run("banshee-sacrifice", move || {
+        run(async |_| exercise(admin, Seal::Sacrifice).await)
     })
 }
 
 #[test]
 fn banshee_queen_dialogue_gates_the_kiss_and_commits_arrival_with_all_three_flags() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("banshee-queen", || {
-        run(async |admin| exercise(admin, Seal::Queen).await)
+    super::kill_reward_e2e::scenario_thread::run("banshee-queen", move || {
+        run(async |_| exercise(admin, Seal::Queen).await)
     })
 }
 
