@@ -1809,6 +1809,16 @@ impl DurabilityRoot {
                             .fetch_one(&mut *tx).await?;
                         Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
                     } else { None };
+                    if let Some(world) = &callback
+                        && let Some(gate) = world.effects.claim.as_ref().and_then(|claim| claim.eligibility.as_ref())
+                        && let Some(storage) = world.storage.iter().find(|storage| storage.track == gate.track)
+                    {
+                        let initial = catalogue.track(&gate.track).ok_or(DurabilityError::InvalidStoredState)?.initial;
+                        let value = stored.get(&gate.track).copied().unwrap_or(initial);
+                        if !(storage.minimum..=storage.maximum).contains(&value) {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::ClaimIneligible)));
+                        }
+                    }
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || counter_reset_plan.as_ref().map_or_else(

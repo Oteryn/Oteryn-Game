@@ -553,7 +553,8 @@ fn scenario_case(
             callback.key = "oteryn:quest-callback/l6-native-step-fixture".into();
         }
     }
-    if name.starts_with("qengine-rewards-world-clock")
+    if name.starts_with(super::super::quest_claims::PREFIX)
+        || name.starts_with("qengine-rewards-world-clock")
         || matches!(
             name,
             "qengine-rewards-authored-world-rewards"

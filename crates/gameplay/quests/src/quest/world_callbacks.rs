@@ -44,7 +44,7 @@ pub use character_requirements::CharacterRequirements;
 mod clear_area;
 pub use clear_area::ClearArea;
 mod claim;
-pub use claim::{Claim, ClaimMilestone, ClaimReward};
+pub use claim::{Claim, ClaimEligibility, ClaimMilestone, ClaimReset, ClaimReward};
 mod clock;
 mod completed_quests;
 mod counter_initials;

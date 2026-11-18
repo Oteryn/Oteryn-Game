@@ -1108,6 +1108,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-questpc4-spirit" {
         return Box::pin(super::l6_spirit::exercise(owner, admitted, h, authority)).await;
     }
+    if name.starts_with(super::quest_claims::PREFIX) {
+        return Box::pin(super::quest_claims::exercise(owner, admitted, h, name)).await;
+    }
     if name.starts_with("qengine-rewards-world-clock") {
         return Box::pin(super::world_callback_clocks::exercise(
             owner,

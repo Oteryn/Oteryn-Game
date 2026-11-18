@@ -1,7 +1,7 @@
 //! The existing Quest tracks and receipts are the durable claim ledger.
 use super::{ActorKind, Callback, Trigger};
 use crate::quest::{
-    reward_callbacks::{ItemReward, valid_item_reward},
+    reward_callbacks::{ItemReward, StateCondition, StateMutation, valid_item_reward},
     valid_quest_key,
 };
 use serde::{Deserialize, Serialize};
@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Claim {
+    pub reset: ClaimReset,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub eligibility: Option<ClaimEligibility>,
     /// Restore both live pools to their current maxima and save the same projection.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub restore_vitals: bool,
@@ -19,6 +22,52 @@ pub struct Claim {
     pub selection_track: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub milestone: Option<ClaimMilestone>,
+}
+
+/// The authored write is evaluated by the ordinary locked Quest track owner.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum ClaimReset {
+    Once { track: String },
+    Elapsed { track: String, seconds: u32 },
+    Progress { track: String, minimum: i64 },
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ClaimEligibility {
+    pub track: String,
+    pub message: String,
+}
+
+impl ClaimReset {
+    fn valid(&self, callback: &Callback) -> bool {
+        let exact_write = |track: &str, minimum, maximum, set| {
+            callback.storage.iter().any(|storage| {
+                storage.track == track
+                    && storage.minimum == minimum
+                    && maximum.is_none_or(|limit: i64| storage.maximum == limit)
+                    && storage.set == set
+                    && !storage.increment
+                    && !storage.at_least
+                    && !storage.preserve
+                    && !storage.read_only
+                    && storage.add.is_none()
+                    && storage.set_if.is_none()
+            })
+        };
+        match self {
+            Self::Once { track } => exact_write(track, 0, Some(0), 1),
+            Self::Elapsed { track, seconds } => callback.state_operations.iter().any(|operation| {
+                operation.track == *track
+                    && operation.from == (StateCondition::ElapsedAtLeast { seconds: *seconds })
+                    && operation.effect == StateMutation::SetNow
+            }),
+            Self::Progress { track, minimum } => {
+                *minimum > 0 && exact_write(track, *minimum, None, 0)
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -61,7 +110,19 @@ impl Claim {
             && !callback.opening_only
             && callback.native_rule.is_none()
             && callback.item_reward().is_none()
-            && (self.restore_vitals || self.milestone.is_some() || !self.rewards.is_empty())
+            && self.reset.valid(callback)
+            && self.eligibility.as_ref().is_none_or(|gate| {
+                !gate.message.is_empty()
+                    && gate.message.len() <= 512
+                    && callback
+                        .storage
+                        .iter()
+                        .any(|storage| storage.track == gate.track && storage.preserve)
+            })
+            && (self.restore_vitals
+                || self.milestone.is_some()
+                || !self.rewards.is_empty()
+                || !callback.achievements.is_empty())
             && self.rewards.len() <= super::MAX_EFFECTS
             && (self.rewards.is_empty() || callback.trigger == Trigger::Use)
             && (!self.restore_vitals
@@ -84,7 +145,7 @@ impl Claim {
             && self.rewards.iter().all(|reward| {
                 valid_item_reward(&reward.give)
                     && reward.exclude_owned_mount.as_ref().is_none_or(|mount| {
-                        valid_quest_key(mount) && mount.starts_with("oteryn:mount.")
+                        valid_quest_key(mount) && mount.starts_with("oteryn:content.mount.")
                     })
                     && reward
                         .message
@@ -94,7 +155,7 @@ impl Claim {
             && self.milestone.as_ref().is_none_or(|milestone| {
                 milestone.count > 0
                     && valid_quest_key(&milestone.achievement)
-                    && milestone.achievement.starts_with("oteryn:achievement.")
+                    && milestone.achievement.starts_with("oteryn:achievement/")
                     && callback.storage.iter().any(|track| {
                         track.track == milestone.track && track.increment && track.set == 1
                     })

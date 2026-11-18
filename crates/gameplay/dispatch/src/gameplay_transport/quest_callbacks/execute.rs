@@ -1299,7 +1299,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
                 }
-                Ok(_) | Err(_) => {
+                outcome => {
+                    let failure_message = if matches!(outcome, Ok(QuestTransitionOutcome::Refused(
+                        oteryn_gameplay_quests::quest::QuestRefusal::ClaimIneligible,
+                    ))) {
+                        callback.effects.claim.as_ref().and_then(|claim| claim.eligibility.as_ref())
+                            .map(|gate| gate.message.as_str())
+                    } else {
+                        callback.failure_message.as_deref()
+                    };
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))
                     {
@@ -1311,7 +1319,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // Returning STEP callbacks emit their refusal after restoring
                     // the origin in refuse_quest_step. Only one owner emits it.
                     if (callback.trigger != Trigger::StepIn || !callback.return_on_failure)
-                        && let Some(message) = &callback.failure_message
+                        && let Some(message) = failure_message
                     {
                         self.states.chat.push_quest_feedback(session, message);
                     }

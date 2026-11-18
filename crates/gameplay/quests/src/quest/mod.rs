@@ -365,6 +365,8 @@ pub struct QuestTransition {
 pub enum QuestRefusal {
     /// A `from` comparison does not hold on the locked value.
     StageMismatch,
+    /// The claim requires earlier personal progress.
+    ClaimIneligible,
     /// A source entrance proved absence of its carried offering.
     SourceOfferingMissing,
     /// A carried source offering exists, but current Premium admission denied entry.
@@ -385,6 +387,7 @@ impl QuestRefusal {
     pub const fn code(self) -> &'static str {
         match self {
             Self::StageMismatch
+            | Self::ClaimIneligible
             | Self::SourceOfferingMissing
             | Self::SourceOfferingPremiumRequired => "STAGE_MISMATCH",
             Self::RevisionMismatch => "REVISION_MISMATCH",
