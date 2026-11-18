@@ -893,6 +893,7 @@ def test_aggregate():
     fast_rust = ("RUST_POLICY", "RUST_FAST", "RUST_SUPPLY_CHAIN")
     env = dict.fromkeys(mandatory + fast_rust, "success")
     env.update(WORLD_BUNDLE="success", RUST_REQUIRED="true", WINDOWS_REQUIRED="true")
+    env.update(RUST_CLIENT_UI_REQUIRED="true", RUST_CLIENT_UI="success")
 
     def accepts(changes):
         with patch.dict(os.environ, dict(env, **changes)), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -903,6 +904,13 @@ def test_aggregate():
                 return False
 
     assert accepts({})
+    for result in ("skipped", "failure", "cancelled", ""):
+        assert not accepts({"RUST_CLIENT_UI": result})
+    for flag in ("", "maybe"):
+        assert not accepts({"RUST_CLIENT_UI_REQUIRED": flag})
+    assert accepts({"RUST_CLIENT_UI_REQUIRED": "false", "RUST_CLIENT_UI": "skipped"})
+    for result in ("failure", "cancelled", ""):
+        assert not accepts({"RUST_CLIENT_UI_REQUIRED": "false", "RUST_CLIENT_UI": result})
     # Labels cannot demand a heavyweight PR qualification anymore.
     assert "full_ci" not in gate and "full-ci" not in gate
     for name in ("codeql", "atlas_fullworld", "rust_linux", "rust_windows", "node_boot", "server_seam"):
@@ -910,6 +918,7 @@ def test_aggregate():
         assert "needs." + name + ".result" not in block, name
     assert accepts(dict.fromkeys(fast_rust, "skipped") | {
         "RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false",
+        "RUST_CLIENT_UI_REQUIRED": "", "RUST_CLIENT_UI": "skipped",
     })
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
     for flag in ("RUST_REQUIRED", "WINDOWS_REQUIRED"):
