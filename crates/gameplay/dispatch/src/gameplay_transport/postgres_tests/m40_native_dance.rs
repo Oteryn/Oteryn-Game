@@ -123,6 +123,7 @@ pub(super) async fn exercise(
     assert_eq!(stage(h, dance::DANCE_STATUS_TRACK).await?, Some(1));
     if plant_hints {
         super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, None)?;
+        super::quest_progress_magic::assert_speech(owner, admitted, None)?;
     }
     select(owner, admitted, true)?;
     // Wrong real tile entries reset the active dance instead of granting progress.
@@ -132,6 +133,8 @@ pub(super) async fn exercise(
     assert_eq!(stage(h, dance::DANCE_STATUS_TRACK).await?, Some(1));
     if plant_hints {
         super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, Some(5))?;
+        super::quest_progress_magic::assert_speech(owner, admitted,
+            Some("You did it wrong. now you have to start again."))?;
     }
     assert_eq!(
         step(owner, admitted, Dir::West).await?.0.disposition,
@@ -139,6 +142,8 @@ pub(super) async fn exercise(
     );
     if plant_hints {
         super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, Some(5))?;
+        super::quest_progress_magic::assert_speech(owner, admitted,
+            Some("You did it wrong. now you have to start again."))?;
     }
     let mut at = dance::TILES[0];
     let mut diagonals = std::collections::BTreeSet::new();
@@ -177,10 +182,17 @@ pub(super) async fn exercise(
                 &mut magic_cursor,
                 dance::SEQUENCE.get(index + 1).copied(),
             )?;
+            let speech = match index {
+                0 => Some("Dance for the mighty Krunus!"),
+                15 => Some("Krunus should be pleased."),
+                _ => None,
+            };
+            super::quest_progress_magic::assert_speech(owner, admitted, speech)?;
         }
         wire(owner, admitted, command, 1, payload).await?;
         if plant_hints {
             super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, None)?;
+            super::quest_progress_magic::assert_speech(owner, admitted, None)?;
         }
         assert_eq!(
             owner

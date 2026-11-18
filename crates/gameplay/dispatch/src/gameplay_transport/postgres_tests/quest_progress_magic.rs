@@ -1,6 +1,7 @@
 //! Crystal 201189f8 movements_mission3_dance_dance_evolution.lua:33-60.
 use super::TestResult;
 use oteryn_gameplay_quests::quest::{unnatural_selection as dance, world_callbacks::Position};
+use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
 
 pub(super) const NAME: &str = "unnatural-selection-dance-hints";
 const PLANTS: [u16; 2] = [46, 47];
@@ -65,6 +66,25 @@ pub(super) fn assert_hint(
         *cursor = effects.last().ok_or("dance hint")?.0;
     } else {
         assert!(effects.is_empty(), "{effects:?}");
+    }
+    Ok(())
+}
+
+pub(super) fn assert_speech(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &super::AdmittedSession,
+    expected: Option<&str>,
+) -> TestResult {
+    let lines = owner.states.chat.drain(admitted.game_session_id);
+    if let Some(expected) = expected {
+        let actor = admitted.runtime_actor.ok_or("dance actor")?;
+        assert!(matches!(
+            lines.as_slice(),
+            [ChatLine::Local { speaker, mode: ChatSpeechMode::MonsterSay, text, .. }]
+                if speaker.identity == actor.placement_identity() && text == expected
+        ), "{lines:?}");
+    } else {
+        assert!(lines.is_empty(), "{lines:?}");
     }
     Ok(())
 }

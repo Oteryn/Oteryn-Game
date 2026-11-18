@@ -13,6 +13,7 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::foundation::{CommandId, CommandRef, ConnectionGeneration};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, unnatural_selection as dance};
+use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use std::sync::Arc;
 
@@ -388,8 +389,10 @@ pub(super) async fn exercise(
         revision_after.parse::<u64>()?,
         revision_before.parse::<u64>()? + 1
     );
+    let dancer = admitted.runtime_actor.ok_or("dance actor")?.placement_identity();
     assert_eq!(owner.states.chat.drain(admitted.game_session_id).iter().filter(|line|
-        matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == "Krunus should be pleased.")).count(), 1);
+        matches!(line, ChatLine::Local { speaker, mode: ChatSpeechMode::MonsterSay, text, .. }
+            if speaker.identity == dancer && text == "Krunus should be pleased.")).count(), 1);
 
     let (kind, ordinal): (String, String) = sqlx::query_as(
         "SELECT cause_kind,cause_ordinal::text FROM game_character_quest_receipts \
@@ -448,8 +451,7 @@ pub(super) async fn exercise(
     let _ = wire(owner, admitted, 16, 1, payload).await?;
     assert_eq!(final_receipt(h, &callback.key).await?, original_receipt);
     assert_eq!(counts(h).await?, (16, 1, 1));
-    assert!(!owner.states.chat.drain(admitted.game_session_id).iter().any(|line|
-        matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == "Krunus should be pleased.")));
+    super::super::quest_progress_magic::assert_speech(owner, admitted, None)?;
     eprintln!(
         "UNNATURAL_DANCE POSTGRES_CASE_COMPLETED wire_steps=16 diagonal_steps=12 final16to17 achievement_atomic replay_exact stale_lease stale_connection renamed_native_generic_refused"
     );

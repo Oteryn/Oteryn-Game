@@ -1812,7 +1812,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .publish_quest_speech(runtime, actor, session, speech);
         }
         if let Some(message) = success_message {
-            self.states.chat.push_quest_feedback(session, &message);
+            // Crystal movements_mission3_dance_dance_evolution.lua:33-59 uses MONSTER_SAY.
+            if matches!(
+                callback.native_rule,
+                Some(
+                    oteryn_gameplay_quests::quest::native_rules::NativeRule::UnnaturalDance { .. }
+                )
+            ) {
+                self.states
+                    .chat
+                    .publish_quest_speech(runtime, actor, session, &message);
+            } else {
+                self.states.chat.push_quest_feedback(session, &message);
+            }
         }
         UseDisposition::Committed
     }
