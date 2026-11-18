@@ -13,14 +13,14 @@ pub(super) async fn contribute(
     command: CommandRef,
 ) -> Result<bool, DurabilityError> {
     let changed = sqlx::query(
-        "INSERT INTO game_warzone_geodes AS g (world_id,channel_id,geode_key,reset_epoch,fragments)
-         VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4::text::numeric,1)
+        "INSERT INTO game_warzone_geodes AS g (world_id,channel_id,geode_key,reset_epoch,fragments,last_session,last_command)
+         VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4::text::numeric,1,encode($5,'hex')::uuid,$6::text::numeric)
          ON CONFLICT (world_id,channel_id,geode_key) DO UPDATE SET
            reset_epoch=EXCLUDED.reset_epoch,
            fragments=CASE WHEN g.reset_epoch=EXCLUDED.reset_epoch AND g.fragments<30 THEN g.fragments+1 ELSE 1 END,
            opened_at=CASE WHEN g.reset_epoch=EXCLUDED.reset_epoch AND g.fragments=29 THEN statement_timestamp() END,
-           opening_session=CASE WHEN g.reset_epoch=EXCLUDED.reset_epoch AND g.fragments=29 THEN encode($5,'hex')::uuid END,
-           opening_command=CASE WHEN g.reset_epoch=EXCLUDED.reset_epoch AND g.fragments=29 THEN $6::text::numeric END
+           last_session=EXCLUDED.last_session, last_command=EXCLUDED.last_command,
+           contribution_xact_id=EXCLUDED.contribution_xact_id
          WHERE g.reset_epoch<EXCLUDED.reset_epoch OR (g.reset_epoch=EXCLUDED.reset_epoch AND
            (g.fragments<30 OR g.opened_at+interval '30 minutes'<=statement_timestamp()))",
     )
@@ -56,7 +56,7 @@ impl DurabilityRoot {
                          FROM game_warzone_geodes
                          WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
                            AND geode_key=$3 AND reset_epoch=$4::text::numeric
-                           AND opening_session=encode($5,'hex')::uuid AND opening_command=$6::text::numeric
+                           AND last_session=encode($5,'hex')::uuid AND last_command=$6::text::numeric
                            AND opened_at+interval '8 seconds'>statement_timestamp()",
                     )
                     .bind(world.as_bytes().as_slice())
