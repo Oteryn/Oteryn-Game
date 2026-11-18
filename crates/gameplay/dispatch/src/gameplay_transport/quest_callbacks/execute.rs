@@ -1272,12 +1272,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
-                    if let Some((after, replay_can_restore)) = restored
-                        && (fresh || replay_can_restore)
-                        && let Some(live) = states.get_mut(runtime, actor, session)
-                    {
-                        *live = after;
-                    }
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.
@@ -1292,6 +1286,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     #[cfg(test)]
                     if self.states.quest_callbacks.interrupt_after_commit.swap(false, std::sync::atomic::Ordering::AcqRel) {
                         return UseDisposition::Rejected;
+                    }
+                    if let Some((after, replay_can_restore)) = restored
+                        && (fresh || replay_can_restore)
+                        && let Some(live) = states.get_mut(runtime, actor, session)
+                    {
+                        *live = after;
                     }
                     if fresh
                         && callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)

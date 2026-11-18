@@ -14,10 +14,12 @@ use oteryn_gameplay_quests::quest::{
 };
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 pub(super) const PREFIX: &str = "qengine-rewards-qonce-";
 const WELL: &str = "qengine-rewards-qonce-well";
+const WELL_LOST_ACK: &str = "qengine-rewards-qonce-well-lost-ack";
 const DAILY: &str = "qengine-rewards-qonce-daily";
 const ANNUAL: &str = "qengine-rewards-qonce-annual";
 const HOARD: &str = "qengine-rewards-qonce-hoard";
@@ -63,6 +65,13 @@ fn hoard_bundle_resets_eligibility_and_awards_tenth_claim_achievement_postgres()
 }
 
 #[test]
+fn interrupted_well_use_recovers_committed_heal_without_second_credit_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(WELL_LOST_ACK)
+}
+
+#[test]
 fn step_claim_credits_the_same_achievement_only_once_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
@@ -94,6 +103,15 @@ fn advance_interaction(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestRe
     Ok(())
 }
 
+fn claim_target(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<WorldObjectTarget> {
+    let map = owner.bundle_map().ok_or("claim map")?;
+    let key = oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1)
+        .ok_or("claim placement")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    Ok(WorldObjectTarget { placement, expected_revision: map.facts.object_revision(key) })
+}
+
 async fn use_claim(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -101,11 +119,7 @@ async fn use_claim(
 ) -> TestResult<UseDisposition> {
     let actor = admitted.runtime_actor.ok_or("admitted actor")?;
     let map = owner.bundle_map().ok_or("claim map")?;
-    let key = oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1)
-        .ok_or("claim placement")?;
-    let mut placement = map.overlay.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    let target = WorldObjectTarget { placement, expected_revision: map.facts.object_revision(key) };
+    let target = claim_target(owner)?;
     Ok(owner.use_quest_callback(
         actor,
         UseCommand {
@@ -129,6 +143,7 @@ pub(super) async fn exercise(
     let mut callback = serde_json::to_value(super::authored_world_rewards::placeholder(AT)?)?;
     callback["key"] = json!(CLAIM);
     callback["requires_world_admission"] = json!(true);
+    let well = matches!(name, WELL | WELL_LOST_ACK);
     let mut tracks = vec![];
     let mut effects;
     let period = match name {
@@ -167,13 +182,13 @@ pub(super) async fn exercise(
                 {"give":{"item":"oteryn:item.tibia.i3031","count":2,"additional":[{"item":"oteryn:item.tibia.i3039","count":2}]}}
             ]});
     } else {
-        assert!(matches!(name, WELL | STEP));
+        assert!(well || name == STEP);
         tracks.push(track(LEDGER, 0, 0, 1));
         callback["storage"] = json!([storage(LEDGER, 0, 0, 1)]);
         callback["achievements"] = json!([WELL_ACHIEVEMENT]);
         callback["failure_message"] = json!("Sorry, not possible.");
         effects = json!({"reset":{"kind":"once","track":LEDGER}});
-        if name == WELL {
+        if well {
             effects["restore_vitals"] = json!(true);
         } else {
             callback["trigger"] = json!("step_in");
@@ -182,10 +197,11 @@ pub(super) async fn exercise(
         }
     }
     callback["effects"]["claim"] = effects;
+    let recipe_sha256 = format!("{:x}", Sha256::digest(serde_json::to_vec(&callback)?));
     let trigger = if name == STEP { "step_in" } else { "map_use" };
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({"schema":1,"quests":[{
         "quest":QUEST,
-        "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
+        "recipe_sha256":recipe_sha256,
         "sources":["synthetic dispatch tests exercising the Crystal claim shapes"],
         "tracks":tracks,
         "stages":[{"key":"claim","completes":false,"trigger":{"kind":trigger,"callback":callback}}]
@@ -206,7 +222,7 @@ pub(super) async fn exercise(
         return Ok(());
     }
 
-    if name == WELL {
+    if well {
         let actor = admitted.runtime_actor.ok_or("well actor")?;
         let session = admitted.game_session_id;
         let full = {
@@ -218,7 +234,30 @@ pub(super) async fn exercise(
             state.restore_saved_vitals(1, 0);
             (full.health, full.mana)
         };
-        assert_eq!(use_claim(owner, *admitted, 1).await?, UseDisposition::Committed);
+        if name == WELL_LOST_ACK {
+            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(
+                &claim_target(owner)?,
+            ).map_err(debug)?;
+            owner.states.quest_callbacks.interrupt_after_commit
+                .store(true, std::sync::atomic::Ordering::Release);
+            assert!(super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await.is_err());
+            assert!(owner.states.quest_callbacks.has_pending_claim_vitals(session));
+            assert_eq!(receipts(h).await?, 1);
+            assert_eq!(achievements(h, WELL_ACHIEVEMENT).await?, 1);
+            let saved: (i32, i32) = sqlx::query_as("SELECT health,mana FROM game_character_last_positions")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(saved, (i32::try_from(full.0)?, i32::try_from(full.1)?));
+            {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let vitals = states.get(&runtime, actor, session).ok_or("interrupted actor")?.vitals();
+                assert_eq!((vitals.health, vitals.mana), (1, 0));
+            }
+            assert!(owner.reconcile_quest_callbacks(session).await);
+            assert!(!owner.states.quest_callbacks.has_pending_claim_vitals(session));
+        } else {
+            assert_eq!(use_claim(owner, *admitted, 1).await?, UseDisposition::Committed);
+        }
         {
             let runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
