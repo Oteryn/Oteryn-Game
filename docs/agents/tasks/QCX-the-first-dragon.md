@@ -125,3 +125,7 @@ the knowledge track. The sapphire portal requires its own admission path.
   record (25.928 s). Both cases reached the local PostgreSQL fixture.
 - Quest authoring `--part checks` passed all 44 commands.
 - NPC placement conversion `--check` and Rust formatting passed.
+- PG via shard (pgsplit build files applied on 4ce0b5582cdb4a902779927ead162ac980af2f8a). Both dispatch cases passed. The quiz took 31.963 s and the placement took 23.605 s. The saved-state fixture includes the prior receipt required by the character revision chain.
+- The same filter without the PostgreSQL admin URL returned Ok for both cases in 0.00 s.
+- World pin check passed for one bundle. Its compiled NPC frame contains Gelidrazah's Thirst at the expected Okolnir cell.
+- Dispatch library Clippy passed with `-D warnings`.
