@@ -106,7 +106,7 @@ async fn exercise(h: &Harness) -> TestResult {
         &[8911, 8912, 14955, 14961],
     )?;
     let cells = world
-        .movement_cells(deps.room.movement_cells())
+        .movement_cells(pin.qualified_room().movement_cells())
         .map_err(debug)?;
     let start = MovementLocalPosition {
         x: 33270,

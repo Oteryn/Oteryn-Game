@@ -179,7 +179,7 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
     };
     let world = world::native_scene_with_appearances(native, vec![crop], &[], appearances)?;
     let cells = world
-        .movement_cells(deps.room.movement_cells())
+        .movement_cells(pin.qualified_room().movement_cells())
         .map_err(debug)?;
     let content_pin = ChannelContentPin::from_activation(
         deps.admitted.world_id,
