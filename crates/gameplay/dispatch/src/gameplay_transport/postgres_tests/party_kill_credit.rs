@@ -36,7 +36,12 @@ enum Case {
     Summon,
     Ordered,
     Outcome,
+    ShieldEasy,
+    ShieldHard,
 }
+
+#[path = "party_kill_credit/shield_handoff.rs"]
+mod shield_handoff;
 
 const OUTCOME_GROUP: &str = "oteryn:encounter.qcredit-mode";
 const HARD_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/hard-wins";
@@ -153,10 +158,18 @@ fn mortal_shell_crystals_stay_active_if_all_direct_damagers_depart() -> TestResu
 }
 
 impl Case {
+    fn has_outcome(self) -> bool {
+        self == Self::Outcome || self.has_shields()
+    }
+
+    fn has_shields(self) -> bool {
+        matches!(self, Self::ShieldEasy | Self::ShieldHard)
+    }
+
     fn is_window(self) -> bool {
         matches!(
             self,
-            Self::Outcome
+            Self::Outcome | Self::ShieldEasy | Self::ShieldHard
                 | Self::Window
                 | Self::WindowStateless
                 | Self::WindowVisual
@@ -318,6 +331,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             "Crystal201189f the_secret_library_quest/creaturescripts_kill.lua:10-39"
         }
         Case::Outcome => "Crystal 201189f8 arbaziloth_death.lua:18-55 and forge_teleport.lua:17-34",
+        Case::ShieldEasy | Case::ShieldHard => "Crystal 201189f8 arbaziloth_fight.lua:125-274 and arbaziloth_death.lua:18-55",
     };
     let stage = |name: &str, counter: &Value| json!({"key":name, "completes":false, "trigger":{"kind":"kill","counter":counter}});
     let mut stages = vec![stage("rat", &counter)];
@@ -327,9 +341,14 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         counter["maximum"] = json!(3);
         stages.push(stage("cave-rat", &counter));
     }
-    if case == Case::Outcome {
-        for (mode, hard) in [("easy", false), ("hard", true)] {
-            stages.push(json!({"key":mode,"completes":false,"trigger":{"kind":"map_use","callback":mode_lever(at, hard)?}}));
+    if case.has_outcome() {
+        if case.has_shields() {
+            stages.push(json!({"key":"shield-entrance","completes":false,"trigger":{"kind":"map_use","callback":shield_handoff::lever(at)?}}));
+            counter["creature"] = json!(CAVE_RAT);
+        } else {
+            for (mode, hard) in [("easy", false), ("hard", true)] {
+                stages.push(json!({"key":mode,"completes":false,"trigger":{"kind":"map_use","callback":mode_lever(at, hard)?}}));
+            }
         }
         stages.push(json!({"key":"forge-exit","completes":false,"trigger":{"kind":"step_in","callback":mode_exit(at)?}}));
         let ordinary = stages[0]["trigger"]["counter"]
@@ -374,7 +393,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             })
         }));
     }
-    if case == Case::Outcome {
+    if case.has_outcome() {
         definition["quests"][0]["tracks"]
             .as_array_mut()
             .ok_or("mode tracks")?
@@ -412,7 +431,15 @@ fn run(admin: String, case: Case) -> TestResult {
             y: start.y,
             floor: start.floor,
         };
-        let world = if case == Case::Outcome {
+        let world = if case.has_shields() {
+            let lever = shield_handoff::lever(at)?;
+            let exit = mode_exit(at)?;
+            Some(super::quest_world_callbacks::world_with_objects(
+                &lever, lever.selector.position.ok_or("shield lever")?,
+                &[(exit.selector.position.ok_or("exit")?, 37000)],
+                &[shield_handoff::FIRE],
+            )?)
+        } else if case == Case::Outcome {
             let easy = mode_lever(at, false)?;
             let hard = mode_lever(at, true)?;
             let exit = mode_exit(at)?;
@@ -548,7 +575,7 @@ fn run(admin: String, case: Case) -> TestResult {
             owner.movement_cells = cells.into();
         }
         for player in &players {
-            if case == Case::Outcome {
+            if case.has_outcome() {
                 deps.initialize_player(&owner, player.actor, player.session)
                     .await;
             }
@@ -556,7 +583,9 @@ fn run(admin: String, case: Case) -> TestResult {
         }
 
         if cells.is_some() {
-            if case == Case::Outcome {
+            if case.has_shields() {
+                shield_handoff::exercise(&owner, &players, at, &h.pool, case == Case::ShieldHard).await?;
+            } else if case == Case::Outcome {
                 exercise_outcome(&owner, &players, at, &h.pool).await?;
             } else {
                 exercise_window(&owner, &players, at, &h.pool, case).await?;
@@ -662,7 +691,7 @@ fn run(admin: String, case: Case) -> TestResult {
             | Case::WindowVisual
             | Case::WindowReset
             | Case::WindowResetDeparted
-            | Case::Outcome => {
+            | Case::Outcome | Case::ShieldEasy | Case::ShieldHard => {
                 return Err("timed exit requires bundle cells".into());
             }
         };
