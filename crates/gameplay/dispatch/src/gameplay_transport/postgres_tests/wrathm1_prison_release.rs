@@ -4,7 +4,7 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
+    QuestStateCatalogue,
     authored_bindings::{Bindings, BoundQuest, Stage, Track, Trigger as BindingTrigger},
     reward_callbacks::ItemReward,
     world_callbacks::{NativeSelector, Position, Selector, Storage, Trigger},
@@ -36,7 +36,6 @@ const CAUGHT: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/guar
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline";
 const SCRIPT: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_prison.lua:3-26";
 const CRATE: &str = "oteryn:item.tibia.i11328";
-const ARM: &str = "oteryn:quest-transition/test/wrathm1-arm-prison-release";
 
 #[test]
 fn wrathm1_prison_release_step_returns_a_crate_on_each_authorized_escape() -> TestResult {
@@ -117,6 +116,21 @@ fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
         text: None,
         additional: Vec::new(),
     });
+    // Model the release flag setup through a separately admitted fixture callback.
+    let mut arm = callback.clone();
+    arm.key = "oteryn:quest-callback/test/wrathm1-arm-prison-release".into();
+    arm.selector.native = Some(NativeSelector {
+        position: START,
+        ordinal: 0,
+        appearance: 353,
+    });
+    arm.effects = Default::default();
+    arm.teleport = None;
+    arm.storage[0].minimum = 0;
+    arm.storage[0].maximum = 0;
+    arm.storage[0].set = 1;
+    arm.storage[1].set = 1;
+    arm.storage.truncate(2);
     let bindings = Bindings {
         schema: 1,
         quests: vec![BoundQuest {
@@ -128,7 +142,7 @@ fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
             tracks: [
                 (RELEASE, 0, 0, 1),
                 (CAUGHT, -1, -1, 1),
-                (QUESTLINE, 0, 0, 34),
+                (QUESTLINE, 2, 0, 34),
             ]
             .into_iter()
             .map(|(key, initial, minimum, maximum)| Track {
@@ -138,36 +152,27 @@ fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
                 maximum,
             })
             .collect(),
-            stages: vec![Stage {
-                key: "prison-exit".into(),
-                completes: false,
-                trigger: BindingTrigger::StepIn {
-                    callback: Box::new(callback),
+            stages: vec![
+                Stage {
+                    key: "fixture-release-permission".into(),
+                    completes: false,
+                    trigger: BindingTrigger::StepIn {
+                        callback: Box::new(arm),
+                    },
                 },
-            }],
+                Stage {
+                    key: "prison-exit".into(),
+                    completes: false,
+                    trigger: BindingTrigger::StepIn {
+                        callback: Box::new(callback),
+                    },
+                },
+            ],
             sources: vec![SCRIPT.into()],
         }],
     };
     let base = QuestStateCatalogue::empty(revision).ok_or("quest catalogue")?;
-    let catalogue = bindings.attach(&base)?;
-    let transition = QuestTransition {
-        key: ARM.into(),
-        quest: QUEST.into(),
-        effects: [(RELEASE, 1), (CAUGHT, 1), (QUESTLINE, 2)]
-            .into_iter()
-            .map(|(track, value)| QuestEffect {
-                track: track.into(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(value),
-            })
-            .collect(),
-        completes: false,
-        experience: None,
-        world_change: None,
-    };
-    Ok(catalogue
-        .with_fixture_transition(transition)
-        .map_err(debug)?)
+    Ok(bindings.attach(&base)?)
 }
 
 pub(super) async fn exercise(
@@ -188,40 +193,21 @@ pub(super) async fn exercise(
             .fetch_one(&h.pool)
             .await
     };
-    for (ordinal, expected) in [0, 1, 2].into_iter().enumerate() {
-        if expected != 0 {
-            super::qengine_outfit_stories::commit_fixture(
+    for expected in [0, 1, 2] {
+        if expected > 0 {
+            super::questpc8_mystery_geometry::arrive(
                 owner,
                 admitted,
-                ARM,
-                9400 + ordinal as u64,
+                TilePos {
+                    x: SOURCE.x,
+                    y: SOURCE.y,
+                    floor: SOURCE.floor,
+                },
             )
             .await?;
+            step(owner, admitted, StepDirection::South).await?;
         }
-        super::questpc8_mystery_geometry::arrive(
-            owner,
-            admitted,
-            TilePos {
-                x: START.x,
-                y: START.y,
-                floor: START.floor,
-            },
-        )
-        .await?;
-        owner.clock_origin -= std::time::Duration::from_secs(2);
-        let command = admitted.continuity.next_command_id;
-        let reply = super::quest_world_callbacks::wire(
-            owner,
-            admitted,
-            command,
-            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-            encode_step_intent(StepDirection::North),
-        )
-        .await?;
-        assert_eq!(
-            decode_step_result(&reply).map_err(debug)?,
-            StepDisposition::Moved
-        );
+        step(owner, admitted, StepDirection::North).await?;
         let current = owner
             .runtime
             .lock()
@@ -242,5 +228,26 @@ pub(super) async fn exercise(
             assert_eq!(values, [-1, 0]);
         }
     }
+    Ok(())
+}
+
+async fn step(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    direction: StepDirection,
+) -> TestResult {
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let reply = super::quest_world_callbacks::wire(
+        owner,
+        admitted,
+        admitted.continuity.next_command_id,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(direction),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
+    );
     Ok(())
 }
