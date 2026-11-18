@@ -353,7 +353,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if name == super::super::rookie_guard_wolf_return::NAME {
+    let mut callback = if name == super::super::rookie_guard_web_grease::NAME {
+        super::super::rookie_guard_web_grease::callback()?
+    } else if name == super::super::rookie_guard_wolf_return::NAME {
         super::super::rookie_guard_wolf_return::callback()?
     } else if super::super::banshee_seal_ambushes::matches(name) {
         super::super::banshee_seal_ambushes::callback(name)?
@@ -655,7 +657,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == super::super::rookie_guard_wolf_return::NAME {
+    let world = if name == super::super::rookie_guard_web_grease::NAME {
+        world_with_objects(&callback, trigger, &[(super::super::rookie_guard_web_grease::WEB, 100)], &[])?
+    } else if name == super::super::rookie_guard_wolf_return::NAME {
         world_with_objects(&callback, trigger, &[(super::super::rookie_guard_wolf_return::EXIT, 100)], &[])?
     } else if name == super::super::banshee_queen_kiss::NAME {
         world_with_cells(&callback, trigger, &[super::super::banshee_queen_kiss::LANDING])?
@@ -3125,6 +3129,8 @@ fn scenario_case(
         } else if name == "questpc2-oldrak-npc" {
             super::super::questpc2_oldrak::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if name == super::super::rookie_guard_web_grease::NAME {
+            Box::pin(super::super::rookie_guard_web_grease::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::rookie_guard_wolf_return::NAME {
             Box::pin(super::super::rookie_guard_wolf_return::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if super::super::banshee_seal_ambushes::matches(name) {
