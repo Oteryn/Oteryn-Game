@@ -374,6 +374,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let _gate = arena_command_gate(&self.states.arena_matches.command, native_step).await?;
+        // Keep the confirmed NPC range and interaction current through the fee commit.
+        let _halvar_permit = if matches!(ingress, ArenaIngress::Halvar(_)) {
+            Some(self.spell_lane_permit().await?)
+        } else {
+            None
+        };
         let mut fence = self
             .current_quest_fence(session)
             .await
