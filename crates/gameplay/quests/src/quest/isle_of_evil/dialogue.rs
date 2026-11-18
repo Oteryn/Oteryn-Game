@@ -254,7 +254,8 @@ impl Book {
             self.say("rapanaio", 162, Some(5), None)
         } else if has("truth") && topic == 5 {
             self.say("rapanaio", 165, Some(6), None)
-        } else if has("isle of evil") && topic == 6 {
+        // TibiaWiki /Spoiler curid 36717 oldid 855959, Method.
+        } else if has("isle of evil") && (topic == 6 || (topic == 0 && questline == 0)) {
             self.say("rapanaio", 172, Some(7), None)
         } else if has("yes") && topic == 7 {
             self.say("rapanaio", 183, Some(0), Some("accept-fight"))
