@@ -418,8 +418,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .enter_warzone_portal(actor, session, snapshot, portal)
                         .await;
                     return (
-                        self.finish_warzone_portal_step(actor, session, origin, snapshot, result)
-                            .await,
+                        self.finish_warzone_portal_step(
+                            actor, session, origin, snapshot, portal, result,
+                        )
+                        .await,
                         Some(duration),
                     );
                 }

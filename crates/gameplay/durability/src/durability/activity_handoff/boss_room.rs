@@ -105,13 +105,13 @@ impl ActivityHandoffOwner {
             .await
     }
 
-    pub async fn portal_boss_on_cooldown(
+    pub async fn portal_boss_cooldown_remaining(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         source: CurrentCharacterItemFence,
         boss_key: &str,
-    ) -> Result<bool> {
+    ) -> Result<Option<u64>> {
         let recovery = authority.record_for(&self.root).map_err(|_| DurabilityError::Unavailable)?;
         let key = boss_key.to_owned();
         let node = node.clone();
@@ -123,14 +123,16 @@ impl ActivityHandoffOwner {
             assert_item_only_fence(&mut tx, &source, &node).await?
                 .map_err(|_| DurabilityError::Unavailable)?;
             let now = quest_activity_now_ms(&mut tx, &root).await?;
-            let blocked = sqlx::query_scalar(
-                "SELECT EXISTS (SELECT 1 FROM game_character_boss_cooldowns
-                 WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 AND available_at>$3)",
+            let remaining_ms: Option<i64> = sqlx::query_scalar(
+                "SELECT available_at-$3 FROM game_character_boss_cooldowns
+                 WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 AND available_at>$3",
             )
             .bind(source.character_id.as_bytes().as_slice()).bind(key).bind(now)
-            .fetch_one(&mut *tx).await?;
+            .fetch_optional(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(blocked)
+            remaining_ms
+                .map(|remaining| u64::try_from(remaining).map_err(|_| DurabilityError::InvalidStoredState))
+                .transpose()
         })).await
     }
 

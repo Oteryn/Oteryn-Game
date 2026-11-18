@@ -14,7 +14,13 @@ use std::num::NonZeroU32;
 #[derive(Clone, Copy)]
 pub(super) struct WarzonePortal {
     key: &'static str,
+    boss_name: &'static str,
     destination: LastPositionCell,
+}
+
+pub(super) enum PortalEntry {
+    Entered,
+    Cooldown(u64),
 }
 
 pub(super) fn at(
@@ -25,10 +31,25 @@ pub(super) fn at(
     if position.floor != 15 {
         return None;
     }
-    let (boss, x, y) = match (position.x, position.y) {
-        (33460, 32267) => ("oteryn:boss.the_baron_from_below", 33650, 32310),
-        (33324, 32109) => ("oteryn:boss.the_count_of_the_core", 33681, 32338),
-        (33275, 32316) => ("oteryn:boss.the_duke_of_the_depths", 33717, 32302),
+    let (boss, boss_name, x, y) = match (position.x, position.y) {
+        (33460, 32267) => (
+            "oteryn:boss.the_baron_from_below",
+            "The Baron from Below",
+            33650,
+            32310,
+        ),
+        (33324, 32109) => (
+            "oteryn:boss.the_count_of_the_core",
+            "The Count of the Core",
+            33681,
+            32338,
+        ),
+        (33275, 32316) => (
+            "oteryn:boss.the_duke_of_the_depths",
+            "The Duke of the Depths",
+            33717,
+            32302,
+        ),
         _ => return None,
     };
     let tile = TilePos {
@@ -72,6 +93,7 @@ pub(super) fn at(
         });
     is_portal.then_some(WarzonePortal {
         key: boss,
+        boss_name,
         destination: LastPositionCell { x, y, floor: 15 },
     })
 }
@@ -83,21 +105,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         origin: Option<MovementPositionSnapshot>,
         entered: MovementPositionSnapshot,
-        result: Option<Result<(), ActivityRefusal>>,
+        portal: WarzonePortal,
+        result: Option<PortalEntry>,
     ) -> StepOutcome {
-        if result == Some(Ok(())) {
+        if matches!(result, Some(PortalEntry::Entered)) {
             return StepOutcome {
                 disposition: StepDisposition::Moved,
                 moved_to: None,
             };
         }
-        let message = if result == Some(Err(ActivityRefusal::Cooldown)) {
-            "You have to wait to face this boss again!"
+        let on_cooldown = if let Some(PortalEntry::Cooldown(remaining_ms)) = result {
+            let time = cooldown_words(remaining_ms.div_ceil(1000));
+            self.states.chat.push_quest_feedback(
+                session,
+                &format!(
+                    "You have to wait {time} to face {} again!",
+                    portal.boss_name
+                ),
+            );
+            true
         } else {
-            "Sorry, not possible."
+            self.states
+                .chat
+                .push_quest_feedback(session, "Sorry, not possible.");
+            false
         };
         let mut arrived = entered;
-        self.states.chat.push_quest_feedback(session, message);
         if let (Some(origin), Some(map), Some(_permit)) =
             (origin, self.bundle_map(), self.spell_lane_permit().await)
             && let Some((mut runtime, states)) = self.lock_quest_teleport_owners().await
@@ -118,6 +151,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) && let Ok(returned) = runtime.commit_source_step(proof)
             {
                 arrived = returned;
+                if on_cooldown
+                    && let (Ok(x), Ok(y), Ok(floor)) = (
+                        u16::try_from(arrived.position().x),
+                        u16::try_from(arrived.position().y),
+                        i8::try_from(-i32::from(arrived.position().floor)),
+                    )
+                {
+                    let position = TilePos { x, y, floor };
+                    map.facts.emit_movement_effect(position, 11);
+                    map.facts.emit_movement_effect(position, 3);
+                }
             }
         }
         let runtime = self.runtime.lock().await;
@@ -133,7 +177,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         entered: MovementPositionSnapshot,
         portal: WarzonePortal,
-    ) -> Option<Result<(), ActivityRefusal>> {
+    ) -> Option<PortalEntry> {
         use super::super::native_activity::{NativeActivityOutcome, boss_room_native_ready};
         let admitted = self.activity_runtimes.connection(session)?;
         let fence = admitted.item_fence?;
@@ -157,12 +201,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let owner = ActivityHandoffOwner::new(self.root.clone());
-        if owner
-            .portal_boss_on_cooldown(self.character, self.holder, fence, portal.key)
+        if let Some(remaining_ms) = owner
+            .portal_boss_cooldown_remaining(self.character, self.holder, fence, portal.key)
             .await
             .ok()?
         {
-            return Some(Err(ActivityRefusal::Cooldown));
+            return Some(PortalEntry::Cooldown(remaining_ms));
         }
         let definition = owner
             .read_portal_boss_room(self.character, self.holder, fence, portal.key, origin_pin)
@@ -177,15 +221,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }]
             || definition.entry_positions.as_slice() != [portal.destination]
         {
-            return Some(Err(ActivityRefusal::ContentChanged));
+            return None;
         }
         let existing = owner
             .open_portal_room(self.character, self.holder, fence, portal.key)
             .await
             .ok()?;
         let joining = existing.is_some();
-        if !joining && let Err(reason) = self.ensure_activity_template_runtime(&definition).await {
-            return Some(Err(reason));
+        if !joining {
+            self.ensure_activity_template_runtime(&definition)
+                .await
+                .ok()?;
         }
         let mut after = None;
         let (handoff, allocation, destination) = loop {
@@ -231,7 +277,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 break selected;
             }
             if joining || candidates.len() < 15 {
-                return Some(Err(ActivityRefusal::NoCapacity));
+                return None;
             }
             let (_, tail) = candidates.last()?;
             let RuntimeScopeRefV1::Instance { instance_id, .. } = tail.scope else {
@@ -309,11 +355,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()?
         {
-            NativeActivityOutcome::Committed(commit) => Some(
-                self.publish_activity_commit(&commit)
-                    .map_err(|_| ActivityRefusal::AuthorityRejected),
-            ),
-            NativeActivityOutcome::Refused(reason) => Some(Err(reason)),
+            NativeActivityOutcome::Committed(commit) => {
+                self.publish_activity_commit(&commit).ok()?;
+                Some(PortalEntry::Entered)
+            }
+            NativeActivityOutcome::Refused(ActivityRefusal::Cooldown) => owner
+                .portal_boss_cooldown_remaining(self.character, self.holder, fence, portal.key)
+                .await
+                .ok()?
+                .map(PortalEntry::Cooldown),
+            NativeActivityOutcome::Refused(_) => None,
         }
     }
+}
+
+// Crystal 201189f data/libs/functions/game.lua:137–167.
+fn cooldown_words(seconds: u64) -> String {
+    [
+        (seconds / 86_400, "day"),
+        (seconds / 3600 % 24, "hour"),
+        (seconds / 60 % 60, "minute"),
+        (seconds % 60, "second"),
+    ]
+    .into_iter()
+    .filter(|(count, _)| *count > 0)
+    .map(|(count, unit)| {
+        let suffix = if count == 1 { "" } else { "s" };
+        format!("{count} {unit}{suffix}")
+    })
+    .collect::<Vec<_>>()
+    .join(", ")
 }
