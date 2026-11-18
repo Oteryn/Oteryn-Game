@@ -325,7 +325,7 @@ fn spawn_wave(
         };
         if super::room_contains(room, position)
             && !occupied.contains(&(at.x, at.y, at.floor))
-            && super::periodic_bosses::spawn_cell(owner, map, at)
+            && super::periodic_bosses::spawn_cell(owner, map, position)
             && !crate::map::floor::is_teleport(owner.movement_cells(), cell)
             && !map
                 .overlay

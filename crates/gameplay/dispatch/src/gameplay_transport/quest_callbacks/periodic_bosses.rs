@@ -160,7 +160,8 @@ fn forced_position(
             }
             Some(true)
         };
-        if from.floor == 0 || ray(from, to)? || ray(to, from)? {
+        // The extended neighborhood's only non-adjacent offsets are cardinal.
+        if from.floor == 0 || ray(from, to)? {
             return Some(true);
         }
         let from = MovementLocalPosition {
@@ -190,10 +191,9 @@ fn forced_position(
                     .ok()?;
                 let teleport = crate::map::floor::is_teleport(cells, logical_cell(at));
                 let protection_zone = tile.flags().protection_zone;
-                let position = super::native(at)?;
                 Some(SourcePlacementCell {
                     exists: true,
-                    query_add: spawn_cell(owner, map, position)
+                    query_add: spawn_cell(owner, map, at)
                         && !doors.blocks(logical_cell(at))
                         && occupancy.admits_occupants
                         && (occupancy.familiar
@@ -272,7 +272,7 @@ fn spawn_one(
         return None;
     }
     let health = runtime.companion_policy(creature).ok()?.maximum_health;
-    if !spawn_cell(owner, map, position) {
+    if !spawn_cell(owner, map, at) {
         return None;
     }
     runtime
@@ -284,12 +284,14 @@ fn spawn_one(
 pub(super) fn spawn_cell(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     map: &BundleMap,
-    position: Position,
+    at: MovementLocalPosition,
 ) -> bool {
-    let at = local(position);
+    let Some(position) = native(at) else {
+        return false;
+    };
     let cells = owner.movement_cells();
     cells.index().lookup(cells.scope(), logical_cell(at)) == Ok(CollisionClass::Walkable)
         && !map
             .facts
-            .quest_callback_blocked(map.overlay.base(), tile(position), false)
+            .quest_callback_blocked(map.overlay.base(), position, false)
 }
