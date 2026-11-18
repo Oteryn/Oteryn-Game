@@ -1853,7 +1853,8 @@ mod tests {
     }
 
     #[test]
-    fn feaster_stateless_level_gate_requires_player_step_in_and_a_return_path() -> Result<(), String> {
+    fn feaster_stateless_level_gate_requires_player_step_in_and_a_return_path() -> Result<(), String>
+    {
         let callback = serde_json::json!({
             "key": "oteryn:quest-callback/feaster-donor-entrance",
             "quest": "oteryn:quest.feaster_of_souls_quest",
@@ -1869,7 +1870,8 @@ mod tests {
             "minimum_level": 250,
             "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:17-33"]
         });
-        let packet = |callback| serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string();
+        let packet =
+            |callback| serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string();
         let parsed = parse(&packet(callback.clone()))?;
         assert!(!parsed[0].requires_durable_commit());
         for (field, value) in [
