@@ -452,23 +452,21 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
             .map_err(debug)?;
         assert_eq!(after_tick.health, initial);
         assert!(after_tick.state.conditions.instances().is_empty());
-        assert!(
-            map.facts
-                .movement_effects_since(0)
+        let shield_cue = |(_, tile, effect): &(_, crate::map::overlay::TilePos, _)| {
+            i32::from(tile.x) == after_tick.position.x
+                && i32::from(tile.y) == after_tick.position.y
+                && -i16::from(tile.floor) == after_tick.position.floor
+                && *effect == 50
+        };
+        let periodic_effects = map.facts.movement_effects_since(0);
+        assert_eq!(
+            periodic_effects
                 .iter()
-                .any(|(_, tile, effect)| {
-                    tile.x == BOSS_AT.x
-                        && tile.y == BOSS_AT.y
-                        && tile.floor == BOSS_AT.floor
-                        && *effect == 50
-                })
+                .filter(|cue| shield_cue(cue))
+                .count(),
+            1
         );
-        let after_periodic_cue = map
-            .facts
-            .movement_effects_since(0)
-            .last()
-            .ok_or("periodic cue")?
-            .0;
+        let after_periodic_cue = periodic_effects.last().ok_or("periodic cue")?.0;
         let spell = (1..=deps.spells.source_len())
             .filter_map(|index| {
                 u32::try_from(index)
@@ -519,12 +517,7 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
             map.facts
                 .movement_effects_since(after_periodic_cue)
                 .iter()
-                .filter(|(_, tile, effect)| {
-                    i32::from(tile.x) == after_tick.position.x
-                        && i32::from(tile.y) == after_tick.position.y
-                        && -i16::from(tile.floor) == after_tick.position.floor
-                        && *effect == 50
-                })
+                .filter(|cue| shield_cue(cue))
                 .count(),
             1
         );

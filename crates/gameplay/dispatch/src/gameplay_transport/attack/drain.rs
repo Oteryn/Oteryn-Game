@@ -739,17 +739,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     continue;
                 };
-                if let Some(effect) = runtime.boss_speech_shield_effect(target) {
-                    if let Some(map) = self.bundle_map()
-                        && let (Ok(x), Ok(y), Ok(floor)) = (
-                            u16::try_from(snapshot.position.x),
-                            u16::try_from(snapshot.position.y),
-                            i8::try_from(-snapshot.position.floor),
-                        )
-                    {
-                        map.facts.emit_movement_effect(
-                            crate::map::overlay::TilePos { x, y, floor },
-                            u16::from(effect),
+                if runtime.boss_speech_shield_effect(target).is_some() {
+                    if let Some(map) = self.bundle_map() {
+                        super::super::encounter_phases::bosses::publish_shield_hits(
+                            map, &runtime, target, 1,
                         );
                     }
                     continue;
