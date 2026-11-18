@@ -13,9 +13,7 @@ pub fn validate_resolved_world(
     }
     let mut authored_tracks = BTreeSet::new();
     let mut authored_callbacks = BTreeSet::new();
-    let mut callback_limit = world_callbacks::MAX_RUNTIME_CALLBACKS;
     if let Some(bindings) = &catalogue.authored_bindings {
-        callback_limit = super::super::authored_bindings::MAX_COMPOSED_WORLD_CALLBACKS;
         authored_callbacks.extend(
             bindings
                 .source
@@ -33,7 +31,12 @@ pub fn validate_resolved_world(
     }
     // The published cohorts share the boot bound; only additional resolved
     // owners consume the closed per-source admission bound.
-    if callbacks.len() > callback_limit
+    let authored_count = callbacks
+        .iter()
+        .filter(|callback| authored_callbacks.contains(&callback.key))
+        .count();
+    if authored_count > super::super::authored_bindings::MAX_BOUND_STAGES
+        || callbacks.len().saturating_sub(authored_count) > world_callbacks::MAX_RUNTIME_CALLBACKS
         || callbacks
             .iter()
             .filter(|callback| {
