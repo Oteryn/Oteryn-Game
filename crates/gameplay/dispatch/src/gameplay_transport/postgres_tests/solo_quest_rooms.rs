@@ -73,7 +73,7 @@ fn wanted_step_ejects_both_occupants_and_resets_boss_only_after_cooldown() -> Te
 }
 
 #[test]
-fn defiances_step_checks_five_tiles_and_preserves_each_challengers_deadline() -> TestResult {
+fn defiances_step_checks_reset_radius_deadlines_and_cooldown_order() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -98,7 +98,9 @@ fn catalogue(room: &Room) -> TestResult<QuestStateCatalogue> {
                 "selector": {"position": room.entry, "ordinal": 0},
                 "storage": [{"track": TRACK, "minimum": -1, "maximum": 1, "set": 1}],
                 "state_operations": if room.wanted { json!([]) } else { json!([{
-                    "track": CLOCK, "from": {"kind": "elapsed_at_least", "seconds": 72000},
+                    // Crystal writes the deadline after one second and requires
+                    // the current whole-second clock to be strictly past it.
+                    "track": CLOCK, "from": {"kind": "elapsed_at_least", "seconds": 72002},
                     "effect": {"kind": "set_now"}
                 }]) },
                 "effects": {"encounter": {
@@ -108,6 +110,7 @@ fn catalogue(room: &Room) -> TestResult<QuestStateCatalogue> {
                     "solo_timeout": {"after_ms": room.timeout_ms, "exit": room.exit,
                         "eject_room": room.wanted,
                         "reset_radius": (!room.wanted).then_some(5),
+                        "reset_before_admission": !room.wanted,
                         "boss_cooldown_seconds": room.wanted.then_some(36_000)}
                 }},
                 "reversible": false, "passages": [], "offerings": [], "return_on_failure": true,
@@ -401,12 +404,41 @@ async fn exercise(admin: String, room: Room) -> TestResult {
     } else {
         set_time(due + 10_000_000);
         owner.drain_quest_encounter_deadlines().await;
+        {
+            let runtime = owner.runtime.lock().await;
+            assert_eq!(
+                runtime.read_actor_position(peer).map_err(debug)?.position(),
+                local(room.exit)
+            );
+            assert!(runtime.contains_live_creature(current_boss));
+        }
+        // Crystal movements_teleportTo.lua:103-128 removes the surviving
+        // scorpion before an exhausted challenger is sent back outside.
+        for command in 5..=9 {
+            set_time(due + (command + 1) * 2_000_000);
+            step(&owner, &mut admitted, command, StepDirection::South).await?;
+        }
         let runtime = owner.runtime.lock().await;
+        let before_entry = Position {
+            y: room.entry.y - 1,
+            ..room.entry
+        };
         assert_eq!(
-            runtime.read_actor_position(peer).map_err(debug)?.position(),
-            local(room.exit)
+            runtime
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position(),
+            local(before_entry)
         );
-        assert!(runtime.contains_live_creature(current_boss));
+        assert!(!runtime.contains_live_creature(current_boss));
+        assert!(
+            !runtime
+                .current_live_creature_census()
+                .map_err(debug)?
+                .into_iter()
+                .any(|actor| runtime.matches_live_creature_identity(actor, room.boss.as_bytes())),
+            "reset on an exhausted STEP does not spawn the next scorpion"
+        );
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
