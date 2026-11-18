@@ -530,6 +530,7 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                         start + crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS,
                     ] {
                         let before = seen.len();
+                        let mut execution_now = now;
                         loop {
                             turns += 1;
                             assert!(turns <= 128, "profile cursor failed to drain");
@@ -543,7 +544,7 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                                     &permit,
                                     &revisions,
                                     &[],
-                                    now,
+                                    execution_now,
                                     &names,
                                 )
                                 .await
@@ -571,6 +572,7 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                                 Some(now),
                                 "unfinished work keeps its original due tick"
                             );
+                            execution_now += 1;
                         }
                         assert_eq!(
                             seen.len() - before,
