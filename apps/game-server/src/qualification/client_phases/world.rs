@@ -5138,10 +5138,16 @@ async fn travel_to_spawn(
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
 ) -> TestResult {
-    approach_spawn_target(client, world, spawns, creature)
+    approach_spawn_target(client, world, spawns, creature, SpawnRespawn::Wait)
         .await?
         .ok_or_else(|| format!("no reachable live {creature}").into())
         .map(|_| ())
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum SpawnRespawn {
+    Skip,
+    Wait,
 }
 
 async fn approach_spawn_target(
@@ -5149,6 +5155,7 @@ async fn approach_spawn_target(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
+    respawn_wait: SpawnRespawn,
 ) -> TestResult<Option<oteryn_dev_client::WorldSpatialEntity>> {
     let (name, _) = full_gold::creature_profile(creature)?;
     let authored: BTreeMap<_, _> = spawns
@@ -5187,9 +5194,11 @@ async fn approach_spawn_target(
     let mut remaining_lanes = authored;
     let mut last_respawn = None;
     let mut search = true;
+    let mut chase_steps = 0;
     let mut deadline = tokio::time::Instant::now();
     loop {
         if search {
+            chase_steps = 0;
             let from = actor_tile(client)?;
             let path = reach_route(client, world, from, |at| {
                 outside(at)
@@ -5228,7 +5237,9 @@ async fn approach_spawn_target(
                     .max();
                 deadline = tokio::time::Instant::now() + Duration::from_millis(500);
                 search = false;
-            } else if let Some(respawn) = last_respawn.take() {
+            } else if respawn_wait == SpawnRespawn::Wait
+                && let Some(respawn) = last_respawn.take()
+            {
                 remaining_lanes.clear();
                 deadline = tokio::time::Instant::now()
                     + Duration::from_millis(u64::from(respawn).max(500));
@@ -5257,31 +5268,42 @@ async fn approach_spawn_target(
                     })
             })
             .copied();
-        if let Some(target) = target {
-            let at = served_tile(target.position, basis)?;
-            if near(here, at) && outside(here) {
-                return Ok(Some(target));
-            }
-            if let Some(direction) = route(world, here, |position| {
-                outside(position) && near(position, at)
-            })
-            .and_then(|path| path.first().copied())
-            {
-                walk(client, world, &[direction]).await?;
-                continue;
-            }
+        let target = target
+            .map(|target| served_tile(target.position, basis).map(|at| (target, at)))
+            .transpose()?;
+        if let Some((target, at)) = target
+            && near(here, at)
+            && outside(here)
+        {
+            return Ok(Some(target));
         }
-        if tokio::time::Instant::now() >= deadline {
+        if chase_steps == 32 && !remaining_lanes.is_empty()
+            || tokio::time::Instant::now() >= deadline
+        {
             if !remaining_lanes.is_empty() {
                 search = true;
                 continue;
             }
-            if let Some(respawn) = last_respawn.take() {
+            if respawn_wait == SpawnRespawn::Wait
+                && let Some(respawn) = last_respawn.take()
+            {
                 deadline = tokio::time::Instant::now()
                     + Duration::from_millis(u64::from(respawn).max(500));
+                chase_steps = 0;
             } else {
                 return Ok(None);
             }
+        }
+        if chase_steps < 32
+            && let Some((_, at)) = target
+            && let Some(direction) = route(world, here, |position| {
+                outside(position) && near(position, at)
+            })
+            .and_then(|path| path.first().copied())
+        {
+            chase_steps += 1;
+            walk(client, world, &[direction]).await?;
+            continue;
         }
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();

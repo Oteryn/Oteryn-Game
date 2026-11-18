@@ -461,21 +461,8 @@ async fn prepare_build(
         )
     };
     let context = policy.context.clone();
-    let occurrence = |stage: &str| -> Result<[u8; 16], Box<dyn std::error::Error>> {
-        if !combat_progression {
-            return Ok(uuid_v7()?);
-        }
-        use sha2::{Digest, Sha256};
-        let mut hash = Sha256::new();
-        hash.update(b"node-boot-c14-progression-v1");
-        hash.update(character.as_bytes());
-        hash.update(stage.as_bytes());
-        let digest = hash.finalize();
-        let mut id: [u8; 16] = digest[..16].try_into()?;
-        id[6] = (id[6] & 0x0f) | 0x70;
-        id[8] = (id[8] & 0x3f) | 0x80;
-        Ok(id)
-    };
+    let (xp_occurrence, build_occurrence) =
+        qualification_build::fixture_occurrences(character, vocation, level, combat_progression);
     qualification_build::prepare_character_with_policy_until(
         root,
         authority,
@@ -485,8 +472,8 @@ async fn prepare_build(
             vocation,
             level,
             context,
-            xp_occurrence: occurrence("experience")?,
-            build_occurrence: occurrence("build")?,
+            xp_occurrence,
+            build_occurrence,
         },
         policy,
         combat_progression,

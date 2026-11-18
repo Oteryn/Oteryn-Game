@@ -463,7 +463,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(420);
     let progression = tokio::time::timeout_at(deadline, async {
         while previous.stats.level < unlock_level {
-            let target = approach_spawn_target(&mut client, world, &spawns, "oteryn:creature.rat")
+            let target = approach_spawn_target(&mut client, world, &spawns, "oteryn:creature.rat", SpawnRespawn::Wait)
                 .await?.ok_or("step=walk-to-weak-spawn observed=no-reachable-adjacent-rat")?;
             row.pass("walk-to-weak-spawn", format!("target={:?}", target.entity));
             kill(&mut client, target).await?;

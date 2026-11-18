@@ -78,6 +78,37 @@ pub(super) fn authority_busy(
     )
 }
 
+/// Derive receipt identities from the fixture and Character so a new control
+/// request can reconcile either write after an ambiguous reply.
+pub(super) fn fixture_occurrences(
+    character: CharacterId,
+    vocation: &str,
+    level: u32,
+    before_level_up: bool,
+) -> ([u8; 16], [u8; 16]) {
+    use sha2::{Digest, Sha256};
+    let occurrence = |stage: &str| {
+        let mut hash = Sha256::new();
+        if before_level_up {
+            // Keep prior C14 receipts resumable.
+            hash.update(b"node-boot-c14-progression-v1");
+        } else {
+            hash.update(b"node-boot-build-profile-v1");
+            hash.update(vocation.as_bytes());
+            hash.update(level.to_be_bytes());
+        }
+        hash.update(character.as_bytes());
+        hash.update(stage.as_bytes());
+        let digest = hash.finalize();
+        let mut id = [0; 16];
+        id.copy_from_slice(&digest[..16]);
+        id[6] = (id[6] & 0x0f) | 0x70;
+        id[8] = (id[8] & 0x3f) | 0x80;
+        id
+    };
+    (occurrence("experience"), occurrence("build"))
+}
+
 /// The caller must own the actual node proof and independently resolve the
 /// current admitted session. Re-admission after setup loads normal full vitals.
 /// A fresh disposable Character is required; existing builds are never reset.
@@ -263,7 +294,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     } else {
         floor
     };
-    let resumed = if before_level_up
+    let resumed = if experience.get() > 0
         && progression.as_ref().is_some_and(|state| {
             state.level == level
                 && state.total_experience == experience

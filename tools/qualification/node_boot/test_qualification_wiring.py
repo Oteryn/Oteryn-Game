@@ -40,6 +40,44 @@ class QualificationWiringTests(unittest.TestCase):
         self.assertIn("point.respawn_ms", source)
         self.assertNotIn("unreachable.insert", (PHASES / "full_gold.rs").read_text())
 
+    def test_moving_target_must_pass_lane_budget_before_each_step(self):
+        search = (PHASES / "world.rs").read_text().split("async fn approach_spawn_target", 1)[1]
+        budget = search.find("if chase_steps == 32")
+        step = search.find("walk(client, world, &[direction])")
+        self.assertGreaterEqual(budget, 0)
+        self.assertLess(budget, step)
+        self.assertIn("search=true;continue;", "".join(search[budget:step].split()))
+        self.assertIn("chase_steps+=1;", "".join(search[budget:step].split()))
+
+    def test_gold_scans_stocked_species_before_waiting_for_respawn(self):
+        earn = (PHASES / "full_gold.rs").read_text().split("async fn earn", 1)[1]
+        first_pass = earn.split("let (candidate, target)", 1)[0]
+        self.assertIn("SpawnRespawn::Skip", first_pass)
+        self.assertIn("SpawnRespawn::Wait", earn)
+
+    def test_m04_resolves_action_before_cleanup_and_checks_collision_first(self):
+        source = (PHASES / "full_e2ef1.rs").read_text()
+        m04 = source.split("async fn m04", 1)[1].split("async fn player_push", 1)[0]
+        self.assertIn('["collision", "push-player", "push-creature", "relogin"]', source)
+        self.assertIn("player.and(creature).and(left)", m04)
+        self.assertNotIn("left?;", m04)
+
+    def test_ordinary_build_profiles_use_replayable_occurrences(self):
+        control = (GAME / "node/serve/qualification_fixture.rs").read_text()
+        setup = control.split("let combat_progression", 1)[1].split("if !combat_progression", 1)[0]
+        compact = "".join(setup.split())
+        self.assertIn(
+            "let(xp_occurrence,build_occurrence)="
+            "qualification_build::fixture_occurrences(character,vocation,level,combat_progression);",
+            compact,
+        )
+        self.assertIn(
+            "QualificationBuildSpec{vocation,level,context,xp_occurrence,build_occurrence,}",
+            compact,
+        )
+        fixture = (GAME / "qualification_spell_character.rs").read_text()
+        self.assertNotIn("let resumed = if before_level_up", fixture)
+
     def test_gold_cancellation_invalidates_the_session(self):
         source = (PHASES / "full_gold.rs").read_text()
         self.assertEqual(source.count("invalidate_after_cancellation()"), 4)
@@ -53,6 +91,11 @@ class QualificationWiringTests(unittest.TestCase):
             compact.index("inventory_signature(&client)?"),
         )
         self.assertIn("action.or(self.aborted.take())", "".join(source.split()))
+        self.assertIn("Some(checks.action_failure(required,error.as_ref()))", compact)
+        self.assertIn(
+            "elseifletSome((root,cause))=action_failure{cause.suffix(&root)}",
+            compact,
+        )
 
     def test_combat_setup_reconciles_both_retained_writes(self):
         source = (GAME / "qualification_spell_character.rs").read_text()

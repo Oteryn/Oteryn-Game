@@ -407,7 +407,7 @@ pub(super) async fn earn(
         return Err(format!("{row}: no spawned creature pays coin gold at level {level}").into());
     }
     let mut deadline = setup_limit;
-    let mut selected = false;
+    let mut selected = None;
     let mut kills = 0u64;
     loop {
         let observed = coin_value(client)?;
@@ -423,10 +423,13 @@ pub(super) async fn earn(
             return Ok(observed);
         }
         let mut picked = None;
-        for candidate in &ranked {
+        // Probe all ranked species before spending hunt time waiting for a respawn.
+        let searches = ranked.iter().map(|candidate| (candidate, SpawnRespawn::Skip))
+            .chain(selected.map(|candidate| (candidate, SpawnRespawn::Wait)));
+        for (candidate, respawn_wait) in searches {
             let travel = tokio::time::timeout_at(
                 deadline,
-                approach_spawn_target(client, world, spawns, &candidate.key),
+                approach_spawn_target(client, world, spawns, &candidate.key, respawn_wait),
             )
             .await
             .map_err(|_| {
@@ -449,12 +452,11 @@ pub(super) async fn earn(
         }
         let (candidate, target) =
             picked.ok_or_else(|| format!("{row}: no reachable gold creature at level {level}"))?;
-        if !selected {
+        if selected.is_none() {
             let budget = candidate.budget(needed.saturating_sub(start_gold));
             deadline = started
                 .checked_add(budget)
                 .ok_or("gold-earning-budget overflow")?;
-            selected = true;
             evidence(&format!(
                 "{row}_GOLD target creature={} health={} expected_milli_gold_per_kill={} kill_s={} level={level} budget_s={}",
                 candidate.key,
@@ -464,6 +466,7 @@ pub(super) async fn earn(
                 budget.as_secs()
             ));
         }
+        selected = Some(candidate);
         let hunted = tokio::time::timeout_at(deadline, async {
             client_hunt::hunt_target(client, target).await?;
             loot_coins(client).await

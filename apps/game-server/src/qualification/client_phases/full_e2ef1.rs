@@ -77,7 +77,7 @@ pub(super) mod e2ef1 {
         ),
         (
             "M04",
-            &["push-player", "push-creature", "collision", "relogin"],
+            &["collision", "push-player", "push-creature", "relogin"],
         ),
         (
             "M05",
@@ -143,6 +143,22 @@ pub(super) mod e2ef1 {
                 self.row
             ));
             self.missing.insert(case, source);
+        }
+        fn action_failure(
+            &self,
+            required: &[&str],
+            error: &(dyn std::error::Error + 'static),
+        ) -> (String, verdict::Cause) {
+            let action = required
+                .iter()
+                .find(|action| **action != "relogin" && !self.passed.contains(**action))
+                .copied()
+                .unwrap_or(if self.row == "M04" {
+                    "protection-zone-return"
+                } else {
+                    "action"
+                });
+            (format!("{}/{action}", self.row), verdict::classify(error))
         }
         fn complete(&self, required: &[&str]) -> bool {
             required.iter().all(|case| self.passed.contains(case))
@@ -1253,8 +1269,7 @@ pub(super) mod e2ef1 {
         // Leave the lethal encounter for the nearest authored protection zone.
         // The row's later origin return still enforces its fixture-town requirement.
         let left = return_to_protection_zone(client, world).await.map(|_| ());
-        left?;
-        player.and(creature)
+        player.and(creature).and(left)
     }
     async fn player_push(
         client: &mut DevClientSession,
@@ -1329,10 +1344,15 @@ pub(super) mod e2ef1 {
     ) -> TestResult {
         let basis = spatial_basis::current(client)?;
         let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
-        let creature =
-            approach_spawn_target(client, world, &metadata.spawns, "oteryn:creature.rat")
-                .await?
-                .ok_or("no reachable adjacent rat to push")?;
+        let creature = approach_spawn_target(
+            client,
+            world,
+            &metadata.spawns,
+            "oteryn:creature.rat",
+            SpawnRespawn::Wait,
+        )
+        .await?
+        .ok_or("no reachable adjacent rat to push")?;
         let here = actor_tile(client)?;
         let from = served_tile(creature.position, basis)?;
         let landing = DIRS
@@ -1701,13 +1721,7 @@ pub(super) mod e2ef1 {
                 _ => unreachable!(),
             };
             if let Err(error) = &result {
-                let action = required
-                    .iter()
-                    .find(|action| !checks.passed.contains(**action))
-                    .copied()
-                    .unwrap_or("action");
-                verdicts.action_failure =
-                    Some((format!("{row}/{action}"), verdict::classify(error.as_ref())));
+                verdicts.action_failure = Some(checks.action_failure(required, error.as_ref()));
                 evidence(&format!("E2EF1_GAP row={row} error={error}"));
             }
             // Every position-changing row saves its actual landing via ordinary
@@ -1771,16 +1785,15 @@ pub(super) mod e2ef1 {
                 "E2EF1_ROW row={row} missing={gaps:?} result={result:?} durable={durable}"
             ));
             verdicts.done.insert(row);
-            verdicts.action_failure = None;
+            let action_failure = verdicts.action_failure.take();
             let suffix = if passed {
                 String::new()
+            } else if let Some((root, cause)) = action_failure {
+                cause.suffix(&root)
             } else {
-                let cause = match &result {
+                let cause = match &returned {
                     Err(error) => verdict::classify(error.as_ref()),
-                    Ok(()) => match &returned {
-                        Err(error) => verdict::classify(error.as_ref()),
-                        Ok(_) => verdict::Cause::Assertion,
-                    },
+                    Ok(_) => verdict::Cause::Assertion,
                 };
                 cause.suffix(&format!(
                     "{row}/{}",
@@ -1805,6 +1818,23 @@ pub(super) mod e2ef1 {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn m04_collision_verdict_keeps_the_classified_failure() {
+            let checks = Checks {
+                row: "M04",
+                ..Checks::default()
+            };
+            let failure = verdict::HarnessError::boxed(
+                verdict::Cause::ServerRefused { code: 5 },
+                "collision refusal",
+            );
+            let (root, cause) = checks.action_failure(ROWS[3].1, failure.as_ref());
+            assert_eq!(
+                cause.suffix(&root),
+                " cause=server-refused root=M04/collision"
+            );
+        }
+
         #[test]
         fn empty_starter_requires_ordinary_movement_item_acquisition() {
             assert!(acquire_movement_item(false));
