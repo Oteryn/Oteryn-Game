@@ -19,7 +19,7 @@ fn banshee_logic_use_flips_lever_without_overwriting_a_discordant_campfire() -> 
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("banshee-logic", || {
-        run(async |admin| exercise(admin, false).await)
+        run(async |admin| exercise(admin, Seal::Logic).await)
     })
 }
 
@@ -29,11 +29,27 @@ fn banshee_sacrifice_step_refuses_without_a_blood_splash() -> TestResult {
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("banshee-sacrifice", || {
-        run(async |admin| exercise(admin, true).await)
+        run(async |admin| exercise(admin, Seal::Sacrifice).await)
     })
 }
 
-async fn exercise(admin: String, sacrifice: bool) -> TestResult {
+#[test]
+fn banshee_queen_dialogue_refuses_a_pz_locked_kiss_and_clears_confirmation() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("banshee-queen", || {
+        run(async |admin| exercise(admin, Seal::Queen).await)
+    })
+}
+
+enum Seal {
+    Logic,
+    Queen,
+    Sacrifice,
+}
+
+async fn exercise(admin: String, seal_case: Seal) -> TestResult {
     reset();
     let h = Harness::create_with_admission_seed(admin, "banshee_logic", true, false).await?;
     prepare_current_session(&h).await?;
@@ -60,7 +76,7 @@ async fn exercise(admin: String, sacrifice: bool) -> TestResult {
         floor: -13,
     };
     let flame = (32250, 31892, -14);
-    let (source, objects) = if sacrifice {
+    let (source, objects) = if matches!(seal_case, Seal::Sacrifice) {
         (
             flame,
             vec![
@@ -156,20 +172,14 @@ async fn exercise(admin: String, sacrifice: bool) -> TestResult {
         )
         .map_err(debug)?;
     deps.initialize(&owner).await;
-    if sacrifice {
-        exercise_sacrifice(
-            &mut owner,
-            &h,
-            super::AdmittedSession {
-                runtime_actor: Some(actor),
-                ..deps.admitted
-            },
-            frame,
-            start,
-        )
-        .await?;
-    } else {
-        exercise_logic(&owner, &world, actor, fence, lever, campfire).await?;
+    let admitted = super::AdmittedSession {
+        runtime_actor: Some(actor),
+        ..deps.admitted
+    };
+    match seal_case {
+        Seal::Logic => exercise_logic(&owner, &world, actor, fence, lever, campfire).await?,
+        Seal::Queen => exercise_queen(&mut owner, &h, &admitted, fence).await?,
+        Seal::Sacrifice => exercise_sacrifice(&mut owner, &h, admitted, frame, start).await?,
     }
     drop(owner);
     drop(authority);
@@ -329,5 +339,112 @@ async fn exercise_sacrifice(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(receipts, 0);
+    Ok(())
+}
+
+async fn exercise_queen(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: &super::AdmittedSession,
+    fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+) -> TestResult {
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::foundation::{CommandId, CommandRef};
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, classic_talk::QUEEN,
+    };
+    const KEY: &str = "oteryn:quest-transition/test/banshee-kiss-prerequisites";
+    const QUEST: &str = "oteryn:quest.the_queen_of_the_banshees_quest";
+    const PREFIX: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/";
+    let catalogue = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(debug)?;
+    let catalogue = std::sync::Arc::new(
+        catalogue
+            .catalogue()
+            .with_fixture_transition(QuestTransition {
+                key: KEY.into(),
+                quest: QUEST.into(),
+                effects: ["fourth", "first", "second", "third", "fifth", "sixth"]
+                    .into_iter()
+                    .map(|seal| QuestEffect {
+                        track: format!("{PREFIX}{seal}_seal"),
+                        from: QuestComparison::Any,
+                        effect: QuestEffectKind::Set(1),
+                    })
+                    .collect(),
+                completes: false,
+                experience: None,
+                world_change: None,
+            })
+            .map_err(debug)?,
+    );
+    owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
+    let session = admitted.game_session_id;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let seeded = slot
+        .commit_quest_transition(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            QuestTransitionRequest {
+                transition_key: KEY.into(),
+                cause: QuestCause::Command(CommandRef::new(
+                    session,
+                    CommandId::new(101).map_err(debug)?,
+                )),
+            },
+            catalogue,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(seeded, QuestTransitionOutcome::Committed(_)));
+    drop(slot);
+    owner.admit_quest_session(admitted).await;
+
+    let [queen] = super::classic_quests::install(owner, admitted, [QUEEN]).await?;
+    super::classic_quests::talk(owner, admitted, queen, 1, "hi").await?;
+    super::classic_quests::talk(owner, admitted, queen, 2, "seventh seal").await?;
+    for command in 3..=8 {
+        super::classic_quests::talk(owner, admitted, queen, command, "yes").await?;
+    }
+    let offer = super::classic_quests::talk(owner, admitted, queen, 9, "kiss").await?;
+    assert!(
+        offer
+            .iter()
+            .any(|line| line.contains("prepared to receive my kiss"))
+    );
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    {
+        let mut spells = owner.states.spell_states.lock().await;
+        crate::gameplay_transport::pvp_live::lock_mut(&mut spells, actor, session)
+            .on_aggression(owner.owner_now());
+    }
+    let refused = super::classic_quests::talk(owner, admitted, queen, 10, "yes").await?;
+    assert!(
+        refused
+            .iter()
+            .any(|line| line.contains("spilled too much blood"))
+    );
+    let repeated = super::classic_quests::talk(owner, admitted, queen, 11, "yes").await?;
+    assert!(
+        !repeated
+            .iter()
+            .any(|line| line.contains("spilled too much blood"))
+    );
+    let writes: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_tracks WHERE track_key IN ($1,$2,$3) AND value=1",
+    )
+    .bind(format!("{PREFIX}last_seal"))
+    .bind(format!("{PREFIX}last_seal_door"))
+    .bind(format!("{PREFIX}banshee_door"))
+    .fetch_one(&h.pool).await?;
+    assert_eq!(writes, 0);
+    let arrivals: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pending_arrivals")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(arrivals, 0);
     Ok(())
 }
