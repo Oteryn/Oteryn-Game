@@ -524,12 +524,12 @@ pub(super) async fn exercise_azaram(
             .await
             .is_err()
     );
-    {
-        let mut runtime = owner.runtime.lock().await;
+    let (splinter, soul) = {
+        let runtime = owner.runtime.lock().await;
         assert!(runtime.matches_live_creature_identity(boss, SOUL.as_bytes()));
         let soul = runtime.companion_snapshot(boss).map_err(debug)?;
         assert_eq!(soul.health, soul.maximum_health * 3 / 10);
-        let splinters = runtime
+        let splinters: Vec<_> = runtime
             .current_live_creature_census()
             .map_err(debug)?
             .into_iter()
@@ -537,8 +537,55 @@ pub(super) async fn exercise_azaram(
                 runtime
                     .matches_live_creature_identity(actor, b"oteryn:creature.tainted_soul_splinter")
             })
-            .count();
-        assert_eq!(splinters, 4);
+            .collect();
+        assert_eq!(splinters.len(), 4);
+        (splinters[0], soul)
+    };
+    super::engenc2_cults::kill(
+        owner,
+        admitted,
+        splinter,
+        "oteryn:creature.tainted_soul_splinter",
+        103,
+    )
+    .await?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let (_, to) = runtime
+            .borrow_combat_death()
+            .projected_death(splinter)
+            .map_err(debug)?;
+        let from = crate::foundation::MovementLocalPosition { y: to.y - 1, ..to };
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(boss, before, from)
+            .map_err(debug)?;
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(boss, before, to)
+            .map_err(debug)?;
+        let map = owner.bundle_map().ok_or("admitted bundle map")?;
+        let step = crate::map::facts::MonsterStep {
+            actor: boss,
+            from,
+            to,
+        };
+        for _ in 0..2 {
+            assert!(map.facts.record_monster_step(step));
+            crate::gameplay_transport::paced_movement::monster_trap::apply_monster_trap_steps(
+                &mut runtime,
+                &states,
+                map,
+                now + 150_000,
+            );
+            assert_eq!(
+                runtime.companion_snapshot(boss).map_err(debug)?.health,
+                soul.health + soul.maximum_health / 3
+            );
+        }
         let maximum = u64::try_from(soul.maximum_health)?;
         let digest = runtime.content_pin().server_artifact_digest();
         runtime
