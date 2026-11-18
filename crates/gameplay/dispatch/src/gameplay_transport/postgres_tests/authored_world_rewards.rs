@@ -53,15 +53,9 @@ const WARZONE_PORTAL_CASES: [&str; 3] = [
 
 pub(super) fn warzone_portal(name: &str) -> Option<(Position, &'static str)> {
     let (x, y, boss) = match name {
-        "qengine-rewards-ddepths-portal-baron" => {
-            (33460, 32267, "oteryn:boss.the_baron_from_below")
-        }
-        "qengine-rewards-ddepths-portal-count" => {
-            (33324, 32109, "oteryn:boss.the_count_of_the_core")
-        }
-        "qengine-rewards-ddepths-portal-duke" => {
-            (33275, 32316, "oteryn:boss.the_duke_of_the_depths")
-        }
+        "qengine-rewards-ddepths-portal-baron" => (33460, 32267, "oteryn:boss.the_baron_from_below"),
+        "qengine-rewards-ddepths-portal-count" => (33324, 32109, "oteryn:boss.the_count_of_the_core"),
+        "qengine-rewards-ddepths-portal-duke" => (33275, 32316, "oteryn:boss.the_duke_of_the_depths"),
         _ => return None,
     };
     Some((Position { x, y, floor: -15 }, boss))
@@ -254,15 +248,10 @@ pub(super) async fn exercise_warzone_pump(
     (pos, award, combined, ordinal): (Position, &str, bool, u8),
 ) -> TestResult {
     if combined {
-        use crate::durability::quest_state::{
-            QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
-        };
+        use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
         use crate::foundation::{CommandId, CommandRef};
-        let fence = owner
-            .current_quest_fence(admitted.game_session_id)
-            .await
-            .map_err(debug)?
-            .ok_or("pump Character fence")?;
+        let fence = owner.current_quest_fence(admitted.game_session_id)
+            .await.map_err(debug)?.ok_or("pump Character fence")?;
         let catalogue = owner.quest_catalogue.clone().ok_or("pump catalogue")?;
         // Commit a real quest transition to establish the first Character revision
         // before staging the previously earned pump flags for this isolated case.
@@ -275,18 +264,11 @@ pub(super) async fn exercise_warzone_pump(
                 },
                 catalogue,
             ).await.map_err(debug)?;
-        assert!(
-            matches!(result, QuestTransitionOutcome::Committed(_)),
-            "{result:?}"
-        );
+        assert!(matches!(result, QuestTransitionOutcome::Committed(_)), "{result:?}");
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        for key in [
-            "the_baron_from_below_achiev",
-            "the_count_of_the_core_achiev",
-        ] {
+            .execute(&mut *tx).await?;
+        for key in ["the_baron_from_below_achiev", "the_count_of_the_core_achiev"] {
             sqlx::query(
                 "INSERT INTO game_character_quest_tracks
                 (character_id, track_key, quest_key, value, committed_character_revision)
@@ -307,28 +289,16 @@ pub(super) async fn exercise_warzone_pump(
     let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
         placement,
         expected_revision: map.facts.object_revision(key),
-    })
-    .map_err(debug)?;
+    }).map_err(debug)?;
     let result = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?;
-    assert_eq!(
-        oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
-        UseDisposition::Committed
-    );
+    assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
     let award = format!("oteryn:achievement/{award}");
     let combined_key = "oteryn:achievement/death_in_the_depths";
     let awards: Vec<String> = sqlx::query_scalar(
         "SELECT achievement_key FROM game_account_achievements WHERE achievement_key IN ($1,$2)
          ORDER BY achievement_key",
-    )
-    .bind(&award)
-    .bind(combined_key)
-    .fetch_all(&h.pool)
-    .await?;
-    let expected = if combined {
-        vec![combined_key.to_owned(), award]
-    } else {
-        vec![award]
-    };
+    ).bind(&award).bind(combined_key).fetch_all(&h.pool).await?;
+    let expected = if combined { vec![combined_key.to_owned(), award] } else { vec![award] };
     assert_eq!(awards, expected);
     Ok(())
 }
@@ -364,11 +334,7 @@ pub(super) async fn exercise_achievement_routes(
         }]
     });
     let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
-    let revision = owner
-        .quest_catalogue
-        .as_deref()
-        .ok_or("native catalogue")?
-        .content_revision();
+    let revision = owner.quest_catalogue.as_deref().ok_or("native catalogue")?.content_revision();
     let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
 
@@ -378,10 +344,9 @@ pub(super) async fn exercise_achievement_routes(
         let revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
         let target = target(owner, revision)?;
         let disposition = if command == 1 {
-            let payload =
-                oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
-            let result =
-                super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
+            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target)
+                .map_err(debug)?;
+            let result = super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
             oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?
         } else {
             // Reproduce progress committed outside this connection's quest
@@ -400,18 +365,15 @@ pub(super) async fn exercise_achievement_routes(
             assert_eq!(changed.rows_affected(), 1);
             tx.commit().await?;
             tokio::time::sleep(std::time::Duration::from_millis(210)).await;
-            owner
-                .use_world_object(
-                    admitted.runtime_actor.ok_or("actor")?,
-                    crate::gameplay_transport::connection::UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command,
-                        item_fence: admitted.item_fence,
-                    },
-                    target,
-                )
-                .await
-                .disposition
+            owner.use_world_object(
+                admitted.runtime_actor.ok_or("actor")?,
+                crate::gameplay_transport::connection::UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command,
+                    item_fence: admitted.item_fence,
+                },
+                target,
+            ).await.disposition
         };
         assert_eq!(disposition, UseDisposition::Committed);
         let earned: Vec<String> = sqlx::query_scalar(
