@@ -21,13 +21,25 @@ fn archivist_confirmation_debits_oramond_and_credits_dark_trails_in_one_revision
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    vote_case(admin, "archivist_vote", 2, 1)
+}
+
+#[test]
+fn archivist_confirmation_credits_dark_trails_after_votes_are_exhausted() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    vote_case(admin, "archivist_vote_exhausted", 0, 0)
+}
+
+fn vote_case(admin: String, database: &'static str, before: i64, after: i64) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
             run(async |_| {
-                let h = Harness::create_with_admission_seed(admin, "archivist_vote", false, false)
+                let h = Harness::create_with_admission_seed(admin, database, false, false)
                     .await?;
-                let result = Box::pin(exercise(&h)).await;
+                let result = Box::pin(exercise(&h, before, after)).await;
                 let cleanup = h.cleanup().await;
                 result?;
                 cleanup
@@ -39,13 +51,13 @@ fn archivist_confirmation_debits_oramond_and_credits_dark_trails_in_one_revision
     Ok(())
 }
 
-fn catalogue() -> TestResult<QuestStateCatalogue> {
+fn catalogue(before: i64) -> TestResult<QuestStateCatalogue> {
     let base = QuestStateCatalogue::new(
         "content-1",
         vec![QuestTrack {
             key: VOTES.into(),
             quest: ORAMOND.into(),
-            initial: 2,
+            initial: before,
             min: -1,
             max: i64::MAX,
         }],
@@ -66,8 +78,8 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
                 "participants":[{
                     "quest":ORAMOND,"storage":[],"state_ops":[{
                         "track":VOTES,
-                        "from":{"kind":"between","minimum":1,"maximum":i64::MAX},
-                        "effect":{"kind":"add","value":-1}
+                        "from":{"kind":"any"},
+                        "effect":{"kind":"subtract_if_at_least","amount":1}
                     }]
                 }],
                 "take":[],"reply":["Vote recorded."],"sources":[source]
@@ -78,8 +90,8 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
     Ok(binding.attach(&base)?)
 }
 
-async fn exercise(h: &Harness) -> TestResult {
-    with_npc(h, Arc::new(catalogue()?), "oteryn:npc.marvin", async |owner, admitted, marvin| {
+async fn exercise(h: &Harness, before: i64, after: i64) -> TestResult {
+    with_npc(h, Arc::new(catalogue(before)?), "oteryn:npc.marvin", async |owner, admitted, marvin| {
     talk(owner, admitted, marvin, 1, "hi").await?;
     let reply = talk(owner, admitted, marvin, 2, "yes").await?;
     assert_eq!(reply, ["Vote recorded."]);
@@ -91,7 +103,7 @@ async fn exercise(h: &Harness) -> TestResult {
     let rows = read().await?;
     assert_eq!(rows.len(), 2);
     assert_eq!((&*rows[0].0, rows[0].1), (ARCHIVES, 1));
-    assert_eq!((&*rows[1].0, rows[1].1), (VOTES, 1));
+    assert_eq!((&*rows[1].0, rows[1].1), (VOTES, after));
     assert_eq!(rows[0].2, rows[1].2);
     let _ = talk(owner, admitted, marvin, 2, "yes").await?;
     assert_eq!(read().await?, rows);

@@ -12,7 +12,10 @@ pub(super) fn refreshes_clock(callback: &Callback) -> bool {
     })
 }
 pub(super) fn valid(callback: &Callback) -> bool {
-    callback.operations().all(StateOperation::valid)
+    callback.operations().all(|operation| {
+        operation.valid()
+            && !matches!(operation.effect, StateMutation::SubtractIfAtLeast { .. })
+    })
         // The main spelling keeps its original Add/SetNow binding vocabulary.
         // QMECH's floor operation remains admitted through state_ops.
         && callback.state_operations.iter().all(|operation| {
@@ -60,7 +63,9 @@ pub(super) fn append_effects(
                 },
                 // Rejected for this spelling by valid(); state_ops above owns
                 // the floor operation and keeps its original unbound lowering.
-                StateMutation::AddAtLeast { .. } => effect.effect,
+                StateMutation::AddAtLeast { .. } | StateMutation::SubtractIfAtLeast { .. } => {
+                    effect.effect
+                }
             };
         }
         effects.push(effect);

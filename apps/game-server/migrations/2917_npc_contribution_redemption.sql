@@ -195,3 +195,29 @@ END $scarab_pickup$;
 
 REVOKE ALL ON FUNCTION game_item_portable_scarab_shell(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_item_portable_scarab_shell(UUID) TO oteryn_game_runtime;
+
+
+-- Crystal data-global/npc/marvin.lua:77-85 grants credit even when the
+-- participant holds no votes by confirmation time.
+DO $participant_debit$
+DECLARE
+    signature CONSTANT TEXT := 'game_quest_reward_effects_valid(jsonb,text[],bigint[],bigint[])';
+    anchor CONSTANT TEXT := 'WHEN ''set_now'' THEN';
+    body TEXT := pg_get_functiondef(signature::regprocedure);
+BEGIN
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'missing or ambiguous Quest reward effect branch';
+    END IF;
+    EXECUTE replace(body, anchor, $effect$
+            WHEN 'subtract_if_at_least' THEN
+                IF EXISTS(SELECT 1 FROM jsonb_object_keys(v_effect->'effect') key
+                          WHERE key NOT IN ('kind','amount'))
+                    OR jsonb_typeof(v_effect #> '{effect,amount}') IS DISTINCT FROM 'number'
+                    OR NOT coalesce((v_effect #>> '{effect,amount}') ~ '^[1-9][0-9]{0,9}$', false)
+                    THEN RETURN false; END IF;
+                v_expected := (v_effect #>> '{effect,amount}')::numeric;
+                IF v_expected > 4294967295 THEN RETURN false; END IF;
+                v_expected := CASE WHEN v_before[v_index] >= v_expected
+                    THEN v_before[v_index] - v_expected ELSE v_before[v_index] END;
+            WHEN 'set_now' THEN$effect$);
+END $participant_debit$;
