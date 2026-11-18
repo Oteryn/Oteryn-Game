@@ -10,7 +10,9 @@ use oteryn_gameplay_encounters::bosses::phase_controller::count_vlarkorth::{
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_encounters::bosses::phase_controller::duke_krule::DukeKruleEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::lord_azaram::LordAzaramEncounter;
-use oteryn_gameplay_encounters::bosses::phase_controller::zelos::ZelosEncounter;
+use oteryn_gameplay_encounters::bosses::phase_controller::zelos::{
+    ZelosEncounter, closest_free_zelos_tile,
+};
 use oteryn_gameplay_encounters::bosses::phase_controller::{
     earl_osam::{self, EarlOsamEncounter},
     sirs::SirsEncounter,
@@ -320,7 +322,7 @@ impl Registry {
         let landed = match direct {
             Ok(landed) => landed,
             Err(_) if corridor => {
-                let fallback = zelos::closest_vortex_landing(step.to, destination, |at| {
+                let fallback = closest_free_zelos_tile(step.to, destination, |at| {
                     crate::movement::relocate::creature_cell_admissible(cells, &doors, at)
                         && !runtime
                             .position_occupied_by_other(step.actor, at)
@@ -1575,7 +1577,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let (proof, locked) = match vortex {
             ZelosVortex::Corridor(destination) => (
                 prepare(destination, true).or_else(|| {
-                    zelos::closest_vortex_landing(entered.position(), destination, |at| {
+                    closest_free_zelos_tile(entered.position(), destination, |at| {
                         prepare(at, false).is_some()
                     })
                     .and_then(|at| prepare(at, false))

@@ -82,7 +82,7 @@ pub struct ZelosEncounter {
     start_us: u64,
     mass_due_us: Option<u64>,
     ritual_completed_us: Option<u64>,
-    magnor_at: MovementLocalPosition,
+    magnor_death: Option<MovementLocalPosition>,
     nargol_at: MovementLocalPosition,
     rewar_at: MovementLocalPosition,
     fetters: Vec<ExactActorRef>,
@@ -146,7 +146,7 @@ impl ZelosEncounter {
                 .map(|snapshot| snapshot.position())
         };
         let encounter = Self {
-            magnor_at: position(MAGNOR)?,
+            magnor_death: None,
             nargol_at: position(NARGOL)?,
             rewar_at: position(REWAR)?,
             fetters: Vec::with_capacity(FETTER_LIMIT),
@@ -239,7 +239,16 @@ impl ZelosEncounter {
             }
             return Ok(true);
         }
-        self.phase.projected_death(runtime, actor)
+        let magnor_death = if self.phase.actors[MAGNOR] == Some(actor) {
+            Some(runtime.borrow_combat_death().projected_death(actor)?.1)
+        } else {
+            None
+        };
+        let recorded = self.phase.projected_death(runtime, actor)?;
+        if recorded && let Some(position) = magnor_death {
+            self.magnor_death = Some(position);
+        }
+        Ok(recorded)
     }
 
     // Crystal 201189f grave_danger_king_zelos.lua:279–293.
@@ -425,22 +434,17 @@ impl ZelosEncounter {
     ) -> Result<(), CarrierError> {
         let key = ROLES[FIRST_SHARD].creature;
         let health = runtime.companion_policy(key)?.maximum_health;
-        let spawns = [(1, 0), (0, 1), (-1, 0), (0, -1)].map(|(dx, dy)| {
-            (
-                key,
-                health,
-                MovementLocalPosition {
-                    x: self.magnor_at.x + dx,
-                    y: self.magnor_at.y + dy,
-                    ..self.magnor_at
-                },
-            )
-        });
-        if spawns
-            .iter()
-            .any(|&(_, _, at)| !place(runtime, at) || !runtime.native_summon_cell_free(at))
-        {
-            return Err(CarrierError::PlanConflict);
+        // Crystal rechecks the space around the death tile for each shard.
+        let origin = self.magnor_death.ok_or(CarrierError::PlanConflict)?;
+        let mut spawns = Vec::with_capacity(MASS - FIRST_SHARD);
+        for _ in FIRST_SHARD..MASS {
+            let at = closest_free_zelos_tile(origin, origin, |at| {
+                place(runtime, at)
+                    && runtime.native_summon_cell_free(at)
+                    && !spawns.iter().any(|&(_, _, chosen)| chosen == at)
+            })
+            .ok_or(CarrierError::PlanConflict)?;
+            spawns.push((key, health, at));
         }
         let before = runtime.encounter_parts().0.clone();
         let mut projected = self.phase.clone();
@@ -660,4 +664,36 @@ fn refill_one(
         owned.extend(summoned);
     }
     Ok(())
+}
+
+// Crystal 201189f data/libs/functions/creature.lua:1–34 searches up to two
+// rings, breaking ties by distance from the creature and then ring order.
+pub fn closest_free_zelos_tile(
+    creature: MovementLocalPosition,
+    destination: MovementLocalPosition,
+    mut free: impl FnMut(MovementLocalPosition) -> bool,
+) -> Option<MovementLocalPosition> {
+    for radius in 1..=2 {
+        let west = (-radius..radius).rev().map(|dy| (-radius, dy));
+        let north = (-radius + 1..=radius).map(|dx| (dx, -radius));
+        let east = (-radius + 1..=radius).map(|dy| (radius, dy));
+        let south = (-radius..radius).rev().map(|dx| (dx, radius));
+        let landing = west
+            .chain(north)
+            .chain(east)
+            .chain(south)
+            .filter_map(|(dx, dy)| {
+                Some(MovementLocalPosition {
+                    x: destination.x.checked_add(dx)?,
+                    y: destination.y.checked_add(dy)?,
+                    ..destination
+                })
+            })
+            .filter(|&at| at != creature && free(at))
+            .min_by_key(|at| at.x.abs_diff(creature.x).max(at.y.abs_diff(creature.y)));
+        if landing.is_some() {
+            return landing;
+        }
+    }
+    None
 }

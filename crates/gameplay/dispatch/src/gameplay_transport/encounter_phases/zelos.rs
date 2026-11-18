@@ -45,35 +45,3 @@ pub(super) fn apply_magnor_burst(
         );
     }
 }
-
-// Crystal 201189f data/libs/functions/creature.lua:1–34 searches up to two
-// rings, breaking ties by distance from the creature and then ring order.
-pub(super) fn closest_vortex_landing(
-    entered: MovementLocalPosition,
-    destination: MovementLocalPosition,
-    mut free: impl FnMut(MovementLocalPosition) -> bool,
-) -> Option<MovementLocalPosition> {
-    for radius in 1..=2 {
-        let west = (-radius..radius).rev().map(|dy| (-radius, dy));
-        let north = (-radius + 1..=radius).map(|dx| (dx, -radius));
-        let east = (-radius + 1..=radius).map(|dy| (radius, dy));
-        let south = (-radius..radius).rev().map(|dx| (dx, radius));
-        let landing = west
-            .chain(north)
-            .chain(east)
-            .chain(south)
-            .filter_map(|(dx, dy)| {
-                Some(MovementLocalPosition {
-                    x: destination.x.checked_add(dx)?,
-                    y: destination.y.checked_add(dy)?,
-                    ..destination
-                })
-            })
-            .filter(|&at| at != entered && free(at))
-            .min_by_key(|at| at.x.abs_diff(entered.x).max(at.y.abs_diff(entered.y)));
-        if landing.is_some() {
-            return landing;
-        }
-    }
-    None
-}
