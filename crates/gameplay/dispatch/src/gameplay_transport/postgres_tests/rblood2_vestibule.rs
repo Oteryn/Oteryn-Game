@@ -13,11 +13,11 @@ fn rblood2_unpaid_blood_vestibule_step_relocates_and_costs_current_health() -> T
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?
-            .block_on(scenario(&admin))
+            .block_on(scenario(admin))
     })
 }
 
-async fn scenario(admin: &str) -> TestResult {
+async fn scenario(admin: String) -> TestResult {
     reset();
     let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
         x: 32954,
