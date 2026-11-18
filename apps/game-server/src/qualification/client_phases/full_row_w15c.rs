@@ -20,13 +20,13 @@ const FARE: u64 = 160;
 const PORT_HOPE: TilePos = TilePos {
     x: 32527,
     y: 32784,
-    floor: 6,
+    floor: -6,
 };
 // A jungle trail tile east of the harbor, within the bounded search of both endpoints.
 const TRAIL: TilePos = TilePos {
     x: 32647,
     y: 32785,
-    floor: 7,
+    floor: -7,
 };
 
 const NPC: &str = "oteryn:npc.grizzly_adams";
@@ -462,7 +462,6 @@ mod tests {
             ChannelId::decode(&v7(1, 3))?,
         )?;
         let grizzly = placement(&metadata.npcs, NPC)?;
-        let captain = placement(&metadata.npcs, CAPTAIN)?;
         let check_leg = |name, from: TilePos, path: Vec<StepDirection>| -> TestResult<TilePos> {
             assert!(!path.is_empty(), "{name} must walk");
             let mut at = from;
@@ -478,11 +477,6 @@ mod tests {
             );
             Ok(at)
         };
-        check_leg(
-            "Thais to Captain Bluebear",
-            TOWN,
-            route(&world, TOWN, |at| near(at, captain)).ok_or("captain unreachable")?,
-        )?;
         assert!(world.enterable(PORT_HOPE));
         let trail = check_leg(
             "Port Hope to jungle trail",
@@ -507,6 +501,12 @@ mod tests {
             )?,
             TRAIL
         );
+        let captain = placement(&metadata.npcs, CAPTAIN)?;
+        check_leg(
+            "Thais to Captain Bluebear",
+            TOWN,
+            route(&world, TOWN, |at| near(at, captain)).ok_or("captain unreachable")?,
+        )?;
         Ok(())
     }
 
