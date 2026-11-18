@@ -1267,16 +1267,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
                 }
-                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::RechargeCoolingDown)) => {
-                    if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
-                        pending.remove(&session);
-                    }
-                    if let Some(message) = &callback.effects.recharge_cooldown_message {
-                        self.states.chat.push_quest_feedback(session, message);
-                    }
-                    return UseDisposition::Rejected;
-                }
-                Ok(_) | Err(_) => {
+                refusal => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))
                     {
@@ -1287,8 +1278,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     // Returning STEP callbacks emit their refusal after restoring
                     // the origin in refuse_quest_step. Only one owner emits it.
+                    let mut message = callback.failure_message.as_ref();
+                    if matches!(refusal, Ok(QuestTransitionOutcome::Refused(
+                        oteryn_gameplay_quests::quest::QuestRefusal::RechargeCoolingDown
+                    ))) && let Some(cooldown) = callback.effects.recharge_cooldown_message.as_ref()
+                    {
+                        message = Some(cooldown);
+                    }
                     if (callback.trigger != Trigger::StepIn || !callback.return_on_failure)
-                        && let Some(message) = &callback.failure_message
+                        && let Some(message) = message
                     {
                         self.states.chat.push_quest_feedback(session, message);
                     }

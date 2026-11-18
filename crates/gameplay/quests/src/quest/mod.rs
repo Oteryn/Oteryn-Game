@@ -814,6 +814,10 @@ impl QuestStateCatalogue {
             let value = stored.get(&effect.track).copied().unwrap_or(track.initial);
             if !effect.from.holds(value, now) {
                 if matches!(effect.from, QuestComparison::ElapsedAtLeast(_))
+                    && matches!(
+                        effect.effect,
+                        QuestEffectKind::SetNow | QuestEffectKind::SetNowWithBinding { .. }
+                    )
                     && transition
                         .effects
                         .iter()
