@@ -586,6 +586,10 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         .fetch_optional(&h.pool)
         .await?;
         assert_eq!(hard_kills, None, "an easy victory earns no hard-win credit");
+        assert!(
+            !owner.runtime.lock().await.arbaziloth_doomforge_open(),
+            "an easy victory leaves the Doomforge portal closed"
+        );
         let outfits: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_account_appearance_unlock_receipts \
              WHERE granting_character_id=encode($1,'hex')::uuid AND unlock_key=$2",
