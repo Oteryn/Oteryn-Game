@@ -244,10 +244,13 @@ merge-authority workflow pin and command assertion. It passes
 `git apply --check --whitespace=error` against the pinned build tree.
 Applying it to a scratch Git index verified both proposed workflow blob
 pins. All five updated YAML documents parsed and the six changed run
-blocks passed `bash -n`. The offline-death step preserved a simulated
-Cargo exit 17 through `tee` even when the output contained success markers.
-The protected-base
-audit rejects a candidate that modifies the audit itself and checks the
+blocks passed `bash -n`. Shell simulations confirmed that the PR archive
+and unit selectors request `dispatch-pg` with its feature only when
+dispatch is in scope. Fixture metadata fed through the actual Merge Queue
+planner confirmed the new target and feature land in integration-rest.
+The offline-death step preserved a simulated Cargo exit 17 through `tee`
+even when the output contained success markers. The protected-base audit
+rejects a candidate that modifies the audit itself and checks the
 other workflow blobs against its own pins. This patch therefore requires
 an owner-authorized audit rotation. The corresponding command assertions
 in protected repository validators also need approved updates. The duration keys also need the new binary ID to retain
