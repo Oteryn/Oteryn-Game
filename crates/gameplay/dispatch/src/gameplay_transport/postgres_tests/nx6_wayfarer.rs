@@ -314,10 +314,48 @@ pub(super) async fn exercise(
     };
     assert_eq!(charm_count().await?, 0);
     talk(owner, admitted, dragon, 6310, "hi").await?;
+    advance(owner)?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "charm fence")?
+        .ok_or("charm fence")?;
+    let unoffered = owner
+        .npc_talk(
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: 6311,
+                item_fence: Some(fence.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor: dragon,
+                text: "yes".into(),
+            },
+        )
+        .await;
+    assert!(!unoffered.unknown);
+    assert_eq!(
+        charm_count().await?,
+        0,
+        "confirming without the offer cannot mint"
+    );
+
     talk(owner, admitted, dragon, 6312, "mission").await?;
     assert_eq!(charm_count().await?, 0, "offer alone cannot mint");
     talk(owner, admitted, dragon, 6313, "yes").await?;
     assert_eq!(charm_count().await?, 1);
+    assert_eq!(
+        progress(
+            owner,
+            admitted,
+            authority,
+            "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission10",
+        )
+        .await?,
+        1,
+    );
+
     assert_eq!(
         progress(owner, admitted, authority, quest::QUESTLINE).await?,
         29
