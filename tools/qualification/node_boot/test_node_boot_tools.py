@@ -1889,3 +1889,48 @@ class EmptyEvidenceGateTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def test_world_and_pvp_seed_each_platform_account_once():
+    """Expand the real seed commands without invoking Platform or Docker."""
+    declarations = '\n'.join(
+        line for line in RUN_TEXT.splitlines()
+        if re.match(r'^readonly (?:ACCOUNT_ID|SECOND_ACCOUNT_ID|PACKET_ACCOUNT_ID|'
+                    r'SECOND_PACKET_ACCOUNT_ID|EXTRA_WORLD_ACCOUNTS|PVP_ACCOUNT_IDS|'
+                    r'FRESH_KEY_ID|RECOVERY_KEY_ID)=', line)
+    )
+    script = '\n'.join([
+        declarations,
+        'NODE_BOOT_WORLD=1; FRESH_PUBLIC_HEX=unused; RECOVERY_PUBLIC_HEX=unused',
+        section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"'),
+        '''php_exec() {
+    if [[ "$1" == *'table("identities")->insert'* ]]; then
+        printf 'insert %s\n' "$1"
+    fi
+}
+run_interruptible() { "$@"; }
+evidence() { printf '%s\n' "$1"; }''',
+        section('run_interruptible php_exec ', 'fi # Platform lifecycle'),
+        '''printf 'world %s\n' "${BOOTSTRAP_ACCOUNTS[@]}"
+printf 'pvp %s\n' "${PVP_ACCOUNT_IDS[@]}"''',
+        section('pvp_character_bootstrap() {', '  for index in "${!PVP_ACCOUNT_IDS[@]}"; do'),
+        '}',
+        'pvp_character_bootstrap',
+    ])
+    lines = subprocess.check_output(['bash', '-eu', '-c', script], text=True).splitlines()
+    world = [line.split()[1] for line in lines if line.startswith('world ')]
+    pvp = [line.split()[1] for line in lines if line.startswith('pvp ')]
+    inserts = [line for line in lines if line.startswith('insert ')]
+    account_id = r'01934f10-7c00-7000-8000-[0-9a-f]{12}'
+
+    def accounts(statements):
+        return sorted(account for statement in statements
+                      for account in set(re.findall(account_id, statement)))
+
+    assert len(world) == len(set(world)) == 10
+    assert len(pvp) == len(set(pvp)) == 4
+    assert accounts(inserts[:-1]) == sorted(world)
+    assert accounts(inserts[-1:]) == sorted(pvp)
+    assert set(world).isdisjoint(pvp)
+    assert any(line.startswith(f'platform_seed=synthetic_accounts={len(world)} ')
+               for line in lines)

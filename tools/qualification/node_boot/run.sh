@@ -33,8 +33,8 @@ readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
 # The second, Open PvP (world_type=2) World of the World pass: its own Accounts, intents and node.
 readonly PVP_WORLD_ID=01934f10-7c02-7002-805b-3b1122334402
 readonly PVP_CHANNEL_ID=01934f10-7c03-7002-805b-3b1122334402
-readonly PVP_ACCOUNT_IDS=(01934f10-7c00-7000-8000-000000000005 01934f10-7c00-7000-8000-000000000006 01934f10-7c00-7000-8000-000000000007 01934f10-7c00-7000-8000-000000000008)
-readonly PVP_INTENT_OPERATIONS=(01934f10-7c04-7005-805b-3b1122334405 01934f10-7c04-7006-805b-3b1122334406 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408)
+readonly PVP_ACCOUNT_IDS=(01934f10-7c00-7000-8000-000000000005 01934f10-7c00-7000-8000-000000000006 01934f10-7c00-7000-8000-00000000000d 01934f10-7c00-7000-8000-00000000000e)
+readonly PVP_INTENT_OPERATIONS=(01934f10-7c04-7005-805b-3b1122334405 01934f10-7c04-7006-805b-3b1122334406 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e)
 readonly PVP_INTENT_NAMES=("Arena One" "Arena Two" "Arena Caster" "Arena Target")
 readonly PVP_DATABASE=oteryn_node_boot_pvp
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
@@ -950,11 +950,6 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Only the disposable gameplay packet accounts receive Premium. Use the
   # same audited Platform owner as the operator's Premium grant route.
   run_interruptible php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $operator=App\Identity\Models\Identity::where("account_id","'"$ACCOUNT_ID"'")->firstOrFail(); $ledger=app(App\ProductsEntitlements\Premium\PremiumTimeLedger::class); foreach (["'"$PACKET_ACCOUNT_ID"'","'"$SECOND_PACKET_ACCOUNT_ID"'"] as $account) { $target=App\Identity\Models\Identity::where("account_id",$account)->firstOrFail(); $ledger->grant($operator,$target,1,"Disposable node-boot gameplay qualification",(string) Illuminate\Support\Str::uuid()); }'
-fi
-if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-  for account in "${EXTRA_WORLD_ACCOUNTS[@]}"; do
-    php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"nb-'"$account"'@example.invalid","password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>"'"$account"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);'
-  done
 fi
 evidence "platform_seed=synthetic_accounts=${#BOOTSTRAP_ACCOUNTS[@]} fresh_trust=published_public_key_only client_identities=1"
 fi # Platform lifecycle
