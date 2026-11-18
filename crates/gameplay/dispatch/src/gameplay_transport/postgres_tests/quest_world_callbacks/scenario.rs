@@ -339,6 +339,7 @@ fn scenario_case(
                 | "questpc2-oldrak-npc"
                 | "questpc2-henricus-start"
                 | "questpc2-gerimor-assignments"
+                | super::super::cooldmech_gerimor::NAME
                 | "questpc2-gnomus-ordnance"
                 | "questpc2-albinius-four-tomes"
                 | "questpc2-albinius-five-tomes"
@@ -3114,6 +3115,10 @@ fn scenario_case(
         } else if name == super::super::cooldmech_essence::NAME {
             Box::pin(super::super::cooldmech_essence::exercise(
                 &mut owner, &mut admitted, &h, start,
+            )).await?;
+        } else if name == super::super::cooldmech_gerimor::NAME {
+            Box::pin(super::super::cooldmech_gerimor::exercise(
+                &mut owner, &mut admitted, &h, &authority,
             )).await?;
         } else if name == "questpc2-gerimor-assignments" {
             super::super::questpc2_gerimor::exercise(&mut owner, &mut admitted, &h, &authority)
