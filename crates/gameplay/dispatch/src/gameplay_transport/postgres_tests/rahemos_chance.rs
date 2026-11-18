@@ -92,12 +92,16 @@ pub(super) async fn exercise(
         let map = owner.bundle_map().ok_or("map")?;
         let mut placement=map.overlay.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
+        let revision = map.facts.object_revision(key);
         let result = owner.use_object(actor, UseCommand {
             game_session_id:session, command_id, item_fence:admitted.item_fence,
         }, WorldObjectTarget {
-            placement, expected_revision:map.facts.object_revision(key),
+            placement, expected_revision:revision,
         }).await;
         assert_eq!(result.disposition, UseDisposition::Committed);
+        if command_id == loss {
+            assert_eq!(map.facts.object_revision(key), revision, "a losing pull leaves the hat untouched");
+        }
         assert_eq!(appearance(owner, TARGET)?, expected);
         assert_eq!(appearance(owner, DOOR)?, door);
         assert!(owner.states.chat.drain(session).iter().any(|line|

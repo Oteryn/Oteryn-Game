@@ -226,15 +226,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             if !wins {
-                if !map.facts.apply_quest_callback(
-                    key,
-                    expected_revision,
-                    after,
-                    &[],
-                    &[],
-                    false,
-                    None,
-                ) {
+                // Crystal actions_oasis_lever_door.lua:43-45 damages the player
+                // without transforming the hat or invalidating another player's view.
+                if !map.facts.quest_callback_capacity(key, expected_revision, 0) {
                     return UseDisposition::StaleState;
                 }
                 if let Ok(snapshot) = runtime.read_actor_position(actor) {
