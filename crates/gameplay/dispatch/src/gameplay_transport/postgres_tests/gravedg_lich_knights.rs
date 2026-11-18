@@ -1033,15 +1033,19 @@ pub(super) async fn exercise_five(
     .bind(FIVE_CREDIT)
     .fetch_all(&h.pool)
     .await?;
-    let mut entrants = party
-        .iter()
-        .map(|member| {
-            member
-                .item_fence
-                .map(|fence| fence.character_id.as_bytes().to_vec())
-                .ok_or("party item fence")
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let mut entrants = {
+        let runtime = owner.runtime.lock().await;
+        party
+            .iter()
+            .map(|member| {
+                let actor = member.runtime_actor.ok_or("party actor")?;
+                let lease = runtime
+                    .bound_attacker_lease(actor, member.game_session_id)
+                    .map_err(debug)?;
+                Ok(lease.character_id().as_bytes().to_vec())
+            })
+            .collect::<TestResult<Vec<_>>>()?
+    };
     entrants.sort_unstable();
     assert_eq!(
         credited, entrants,
