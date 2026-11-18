@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 import sys
 
+import qcx89_unnatural_selection
+
 ROOT = Path(__file__).resolve().parents[3]
 SOURCE = "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua:1-23"
 
@@ -29,7 +31,7 @@ def generate():
         "sources": [SOURCE,
             "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua",
             "Committed native region-z14-x127-y125.b3: lever32600,32105,14 appearance2772 ordinal1; action30008 is not retained, so no legacy tag is invented."]
-    }]}
+    }, qcx89_unnatural_selection.ray_of_light(ROOT)]}
 
 
 if __name__ == "__main__":

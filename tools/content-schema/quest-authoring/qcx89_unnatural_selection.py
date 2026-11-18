@@ -57,3 +57,22 @@ def append(root, add, callbacks, offers, storage, greeting_source):
                  f'crystal:{PIN}:{PATH}:163-165:sha256:{digest}',
                  WIKI, SPOILER],
     )
+
+
+def ray_of_light(root):
+    packet = json.loads((root / 'tools/content-schema/quest-authoring/batches/quests4/unnatural_selection.json').read_bytes())
+    ray = next(row for row in packet['callbacks']
+               if row['key'] == 'oteryn:quest-callback/unnatural-selection-ray-of-light')
+    ray['key'] += '-native'
+    # The native object is bare. The original UID callback remains the sole
+    # owner on a map that carries the legacy startup attribute.
+    ray['selector'] = {
+        'position': None, 'unique': None, 'action': None, 'appearance': None,
+        'native': {
+            'position': {'x': 32982, 'y': 31431, 'floor': -1},
+            'ordinal': 2,
+            'appearance': 7807,
+        },
+    }
+    ray['sources'] += [f'crystal:{PIN}:data-global/startup/tables/item.lua:3859-3863', SPOILER]
+    return ray
