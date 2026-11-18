@@ -474,6 +474,88 @@
       ]
     },
     {
+      "npc": "oteryn:npc.bozo",
+      "keywords": [
+        "join"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Do you wish to become a jester and join the fools guild?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bozo",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Too bad, I'm convinced you have it in you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bozo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "So you want to make a total fool of yourself? Fine with me, but note that becoming a real fool means more than being just an ordinary fool ...",
+        "You will have to master a whole series of challenging, lengthy and, above all, totally foolish quests ...",
+        "Are you sure you want to waste a part of your limited lifetime on a quest that makes a fool of yourself and which might award you with the prestigious title of a grand fool in a far away future?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bozo",
+      "keywords": [
+        "no"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Too bad, I'm convinced you have it in you."
+      ]
+    },
+    {
       "npc": "oteryn:npc.brewster",
       "keywords": [
         "stake prayer"

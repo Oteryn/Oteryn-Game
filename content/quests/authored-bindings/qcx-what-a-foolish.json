@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.what_a_foolish_quest",
+      "recipe_sha256": "ad754e70576a002ff247c01a088e5cf19a65e4bbb8982a933d6888a4117ccae2",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 13
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        }
+      ],
+      "stages": [
+        {
+          "key": "join",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/what-a-foolish-join",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "npc": "oteryn:npc.bozo",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 2,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "What a foolish decision! You are indeed a worthy candidate! But let's talk about business ...",
+                "Being a jester is not just about telling jokes. A good jester heavily relies on requisites ...",
+                "Getting some requisites will be your first job. First of all we need a good supply of water squirt flowers ...",
+                "I'm making them on my own in my spare time but I need the right material. South of Thais, next to the Whiteflower Temple, you will find the ideal flowers ...",
+                "Take a kitchen knife, cut the thickest and healthiest flower and bring it here. Then talk to me about your mission."
+              ],
+              "sources": [
+                "https://tibia.fandom.com/?curid=19799&oldid=1094085",
+                "https://tibia.fandom.com/?curid=19801&oldid=1056289#Mission_1_-_First_Mission",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:624-687"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=19799&oldid=1094085",
+        "https://tibia.fandom.com/?curid=19801&oldid=1056289#Mission_1_-_First_Mission",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:624-687"
+      ]
+    }
+  ]
+}
