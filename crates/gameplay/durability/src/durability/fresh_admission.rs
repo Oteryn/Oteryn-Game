@@ -3326,6 +3326,7 @@ pub mod qualification_replay {
         }
         false
     }
+    #[cfg(test)]
     #[test]
     fn qualification_recovery_observation_requires_exact_epoch_and_is_single_use() {
         enable();

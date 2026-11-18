@@ -1587,6 +1587,32 @@ fn node_boot_spells_against_running_node() -> TestResult {
         })
 }
 
+const NODE_BOOT_SEAM_STACK_BYTES: usize = 256 << 20;
+
+// The debug qualification futures are polled by block_on's caller, so the
+// runtime's worker stack setting alone cannot protect the scenario.
+fn run_node_boot_seam(
+    scenario: impl FnOnce(&tokio::runtime::Runtime) -> TestResult + Send + 'static,
+) -> TestResult {
+    std::thread::Builder::new()
+        .name("node-boot-seam-scenario".into())
+        .stack_size(NODE_BOOT_SEAM_STACK_BYTES)
+        .spawn(move || {
+            let runtime = tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .thread_stack_size(NODE_BOOT_SEAM_STACK_BYTES)
+                .build()
+                .map_err(|error| error.to_string())?;
+            evidence(&format!(
+                "node_boot_seam scenario_stack_bytes={NODE_BOOT_SEAM_STACK_BYTES}"
+            ));
+            scenario(&runtime).map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "node boot seam scenario thread panicked")?
+        .map_err(Into::into)
+}
+
 #[test]
 #[ignore = "requires a running node in the disposable WP5 node-boot topology"]
 fn node_boot_seam_against_running_node() -> TestResult {
@@ -1596,10 +1622,8 @@ fn node_boot_seam_against_running_node() -> TestResult {
         required("WP5_S3A_ACCOUNT_ID")?,
         required("WP5_S3B_SECOND_ACCOUNT_ID")?,
     ];
-    tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
+    run_node_boot_seam(move |runtime| {
+        runtime.block_on(Box::pin(async move {
             let url = required("NODE_BOOT_DATABASE_URL")?;
             let world_path = std::env::var_os("NODE_BOOT_WORLD_BUNDLE");
             let packet_accounts = if world_path.is_some() {
@@ -1734,7 +1758,8 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 Box::pin(seam_clients(clients)).await
             }
 
-        })
+        }))
+    })
 }
 
 #[test]
@@ -3123,7 +3148,14 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     // Retain the plaintext socket through every phase, as in the original client flow.
     let (grant, _plaintext) =
         client_negatives::transport(&clients, &exact, &mut next_grant).await?;
-    client_negatives::admission_negatives(&clients, &exact, &grant).await?;
+    client_negatives::admission_negatives(
+        clients.address,
+        clients.characters,
+        clients.url,
+        &exact,
+        &grant,
+    )
+    .await?;
     let session = client_admission::admission(&clients, &exact, &grant).await?;
     let concurrent =
         client_admission::concurrent_and_control_loss(&clients, &exact, &mut next_grant, session)

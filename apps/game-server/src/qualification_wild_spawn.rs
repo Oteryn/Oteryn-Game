@@ -124,6 +124,7 @@ async fn spawn_when_verified<T, V, C, R>(
     publish(&mut owner, verified)
 }
 
+#[cfg(test)]
 #[test]
 fn qualification_spawn_verification_leaves_the_live_runtime_available()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -154,6 +155,7 @@ fn qualification_spawn_verification_leaves_the_live_runtime_available()
     Ok(())
 }
 
+#[cfg(test)]
 #[test]
 fn qualification_spawn_commit_refusal_has_no_visible_actor()
 -> Result<(), Box<dyn std::error::Error>> {

@@ -3323,6 +3323,7 @@ fn previous_fixture_item_committed(
     )
 }
 
+#[cfg(test)]
 #[test]
 fn fixture_repeat_accepts_only_the_same_durable_claim() {
     use crate::durability::reward_claim_mint::{

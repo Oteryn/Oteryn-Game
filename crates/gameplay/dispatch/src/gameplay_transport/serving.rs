@@ -360,6 +360,7 @@ fn listener_spell_lane(
     supplied.unwrap_or_else(|| super::qualification_observation::scope_lane(scope))
 }
 
+#[cfg(test)]
 #[tokio::test]
 async fn listener_and_fixture_share_the_lane_from_first_admission()
 -> Result<(), Box<dyn std::error::Error>> {
