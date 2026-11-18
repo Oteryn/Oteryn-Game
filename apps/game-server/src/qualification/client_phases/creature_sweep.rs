@@ -1010,19 +1010,11 @@ async fn hunt(
                     Ok(CorpseLootDraw {
                         reference,
                         table: &row.loot_table,
-                        seed: crate::combat::LootPlanDeathKey::new(
-                            clients.world,
-                            clients.channel,
-                            dead.scope_generation().get(),
-                            dead.actor_local_id(),
-                            dead.actor_local_generation(),
-                        ),
+                        actor: dead,
                     })
                 })
                 .transpose()?;
-            verify_corpse_loot(rows, items, &species.loot, &got, boost, draw, |key| {
-                rewards.is_daily_boss_equipment(key)
-            })?;
+            verify_corpse_loot(rows, items, &species.loot, &got, boost, draw, rewards)?;
         }
     }
     Ok(())
@@ -1039,7 +1031,7 @@ enum CorpseLootBoost {
 struct CorpseLootDraw<'a> {
     reference: &'a crate::combat::LootDefinitionRef,
     table: &'a crate::combat::LootTableDefinition,
-    seed: crate::combat::LootPlanDeathKey,
+    actor: crate::foundation::ExactActorRef,
 }
 
 fn verify_corpse_loot(
@@ -1049,7 +1041,7 @@ fn verify_corpse_loot(
     got: &BTreeMap<std::num::NonZeroU32, u64>,
     boost: CorpseLootBoost,
     draw: Option<CorpseLootDraw<'_>>,
-    is_equipment: impl Fn(&str) -> bool,
+    rewards: &CreatureRewardTable,
 ) -> Result<(), Failure> {
     let rolls = match boost {
         CorpseLootBoost::None => 0,
@@ -1068,9 +1060,23 @@ fn verify_corpse_loot(
             draw.table,
             rolls,
             matches!(boost, CorpseLootBoost::Boss(_)),
-            is_equipment,
+            |key| rewards.is_daily_boss_equipment(key),
         );
-        seeded_loot(draw.reference, &table, draw.seed, items)
+        let channel = draw.actor.channel_id().ok_or_else(|| {
+            failure(
+                "loot",
+                "content",
+                "creature sweep loot requires a channel actor",
+            )
+        })?;
+        let seed = crate::combat::LootPlanDeathKey::new(
+            *draw.actor.world_id().as_bytes(),
+            *channel.as_bytes(),
+            draw.actor.scope_generation().get(),
+            draw.actor.actor_local_id(),
+            draw.actor.actor_local_generation(),
+        );
+        seeded_loot(draw.reference, &table, seed, items)
             .map_err(|error| failure("loot", "content", error))?
     } else {
         BTreeMap::new()
@@ -1462,66 +1468,139 @@ mod evidence_tests {
             LootTableEntry,
         };
 
-        let items = crate::content::item_ref::ItemDefinitionIndex::decode(
-            br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i100","definition-r1"]]}"#,
+        use crate::foundation::{
+            ActorLocalGeneration, ActorLocalId, ActorRef, ChannelId, ExactActorRef,
+            ScopeOwnershipGeneration, WorldId,
+        };
+
+        let world = crate::node::uuid_bytes("01890f4c-3b2a-7c01-8d11-9a321b7c0004")
+            .ok_or("fixture world")?;
+        let channel = crate::node::uuid_bytes("01890f4c-3b2a-7c01-8d11-9a321b7c0005")
+            .ok_or("fixture channel")?;
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../content/spells.manifest.json");
+        let room = crate::content::qualify_native_entry_room_from_gameplay_manifest(
+            WorldId::decode(&world)?,
+            &manifest,
         )?;
-        let item = "oteryn:item.tibia.i100";
-        let binding = LootBinding::Table(vec![LootEntry {
-            item: item.into(),
-            min: 1,
-            max: 1,
-        }]);
+        let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
+        let rewards = native.reward_table();
+        let equipment = "oteryn:item.tibia.i3276";
+        let ordinary = "oteryn:item.tibia.i3031";
+        assert!(rewards.is_daily_boss_equipment(equipment));
+        assert!(!rewards.is_daily_boss_equipment(ordinary));
+        let items = native.item_index().ok_or("missing served item index")?;
+        let binding = LootBinding::Table(
+            [equipment, ordinary]
+                .into_iter()
+                .map(|item| LootEntry {
+                    item: item.into(),
+                    min: 1,
+                    max: 1,
+                })
+                .collect(),
+        );
         let source = LootTableDefinition {
             algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
-            entries: vec![LootTableEntry {
-                item: LootDefinitionRef::new("Item", item, "definition-r1"),
-                min_count: 1,
-                max_count: 1,
-                probability_ppm: Some(1_000_000),
-                details: Default::default(),
-            }],
+            entries: vec![
+                LootTableEntry {
+                    item: LootDefinitionRef::new("Item", ordinary, "definition-r1"),
+                    min_count: 1,
+                    max_count: 1,
+                    probability_ppm: Some(1_000_000),
+                    details: Default::default(),
+                },
+                LootTableEntry {
+                    item: LootDefinitionRef::new("Item", equipment, "definition-r1"),
+                    min_count: 1,
+                    max_count: 1,
+                    probability_ppm: Some(700_000),
+                    details: Default::default(),
+                },
+            ],
         };
         let reference =
             LootDefinitionRef::new("LootTable", "oteryn:loot.test_boss", "definition-r1");
-        let draw = CorpseLootDraw {
-            reference: &reference,
-            table: &source,
-            seed: LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
-        };
-        let expected = |rolls| {
-            let table = boosted_loot_table(&source, rolls, true, |_| true);
-            seeded_loot(&reference, &table, draw.seed, &items)
-        };
-        let two = expected(2)?;
-        let three = expected(3)?;
-        assert_ne!(two, three, "the third roll must change this fixture corpse");
-        for (occurrence, correct, wrong) in [([0; 16], &three, &two), ([6; 16], &two, &three)] {
-            let boost = CorpseLootBoost::Boss(Some(occurrence));
-            let mut rows = Rows::new("public_boss");
-            verify_corpse_loot(
-                &mut rows,
-                &items,
-                &binding,
-                wrong,
-                boost,
-                Some(draw),
-                |_| true,
-            )
-            .map_err(|failure| failure.detail)?;
-            assert_eq!(rows.counts.fail, 1);
-            let mut rows = Rows::new("public_boss");
-            verify_corpse_loot(
-                &mut rows,
-                &items,
-                &binding,
-                correct,
-                boost,
-                Some(draw),
-                |_| true,
-            )
-            .map_err(|failure| failure.detail)?;
-            assert_eq!(rows.counts.pass, 1);
+        // Build the oracle from the prescribed equipment-first table and the
+        // literal scope. Do not use the verifier's partition or seed builder.
+        let mut observed = BTreeSet::new();
+        for generation in 1..=12 {
+            let actor = ExactActorRef(ActorRef::from_owner_parts(
+                WorldId::decode(&world)?,
+                ChannelId::decode(&channel)?,
+                ScopeOwnershipGeneration::new(3).map_err(|_| "fixture scope generation")?,
+                ActorLocalId(8),
+                ActorLocalGeneration(generation),
+            ));
+            let draw = CorpseLootDraw {
+                reference: &reference,
+                table: &source,
+                actor,
+            };
+            let seed = LootPlanDeathKey::new(world, channel, 3, 8, generation);
+            let expected = |extra_rolls, boosted_entries| {
+                let table = LootTableDefinition {
+                    algorithm: LootSelectionAlgorithm::DailyBoosted {
+                        extra_rolls,
+                        boosted_entries,
+                    },
+                    entries: vec![source.entries[1].clone(), source.entries[0].clone()],
+                };
+                seeded_loot(&reference, &table, seed, items)
+            };
+            let two = expected(2, 1)?;
+            let three = expected(3, 1)?;
+            observed.insert(three.clone());
+            for (occurrence, rolls, correct, wrong) in
+                [([0; 16], 3, &three, &two), ([6; 16], 2, &two, &three)]
+            {
+                let boost = CorpseLootBoost::Boss(Some(occurrence));
+                let mut rows = Rows::new("public_boss");
+                verify_corpse_loot(
+                    &mut rows,
+                    items,
+                    &binding,
+                    correct,
+                    boost,
+                    Some(draw),
+                    rewards,
+                )
+                .map_err(|failure| failure.detail)?;
+                assert_eq!(rows.counts.pass, 1);
+                let oversupplied = expected(rolls, 2)?;
+                assert_ne!(&oversupplied, correct);
+                let mut rows = Rows::new("public_boss");
+                verify_corpse_loot(
+                    &mut rows,
+                    items,
+                    &binding,
+                    &oversupplied,
+                    boost,
+                    Some(draw),
+                    rewards,
+                )
+                .map_err(|failure| failure.detail)?;
+                assert_eq!(rows.counts.fail, 1);
+                if correct != wrong {
+                    let mut rows = Rows::new("public_boss");
+                    verify_corpse_loot(
+                        &mut rows,
+                        items,
+                        &binding,
+                        wrong,
+                        boost,
+                        Some(draw),
+                        rewards,
+                    )
+                    .map_err(|failure| failure.detail)?;
+                    assert_eq!(rows.counts.fail, 1);
+                }
+            }
         }
+        assert!(
+            observed.len() > 1,
+            "probabilistic fixture must distinguish actor generations"
+        );
         // The wire hunt must feed the occurrence on the matched receipt to the
         // same classifier that receives the corpse contents.
         let source = include_str!("creature_sweep.rs");
@@ -1531,7 +1610,8 @@ mod evidence_tests {
             .map(|(body, _)| body)
             .ok_or("missing hunt")?;
         assert!(hunt.contains("CorpseLootBoost::Boss(reward_occurrence)"));
-        assert!(hunt.contains("verify_corpse_loot("));
+        assert!(hunt.contains("actor: dead"));
+        assert!(hunt.contains("boost, draw, rewards"));
         Ok(())
     }
 
