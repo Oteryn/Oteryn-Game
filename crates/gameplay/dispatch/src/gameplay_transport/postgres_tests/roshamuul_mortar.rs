@@ -1,18 +1,25 @@
-//! Crystal 201189f8 data-global/scripts/quests/roshamuul_quest/actions_trough.lua:3-16.
+//! Crystal 201189f8 data-global/scripts/quests/roshamuul_quest/actions_trough.lua:3-16
+//! and data-global/npc/sandomo.lua:53-59,97-165.
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use super::archivist_vote::{FixtureItem, install_fixture_item_profiles};
+use super::classic_quests::install_above;
+use super::contribution_redemption::{
+    CLUSTER, FRAZZLEMAWS, GOLD, ITEM, MORTAR, NPC, SILENCERS, sandomo_catalogue,
+};
 use super::fixture::{Harness, debug, id, run};
+use super::hireling_lifecycle::cook::{Client, drive};
 use super::item_craft::exchange;
 use super::quest_world_callbacks::{input_item, world_with_objects};
-use super::{Dependencies, TestResult, prepare_current_session};
+use super::{
+    AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
+};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue,
     authored_bindings::Bindings,
     world_callbacks::{Callback, Offering, Position},
 };
@@ -22,7 +29,6 @@ use oteryn_protocol_oteryn::world_object::{
 use serde_json::json;
 
 const QUEST: &str = "oteryn:quest.roshamuul_quest";
-const TRACK: &str = "oteryn:quest-progress/quest/u10_30/roshamuul_quest/rosk_mortar_thrown";
 const FILLED: &str = "oteryn:item.tibia.i20170";
 const EMPTY: &str = "oteryn:item.tibia.i2873";
 // Fixture placement. The live binding uses the pin-qualified source trough placement.
@@ -38,7 +44,7 @@ const OTHER: Position = Position {
 };
 
 #[test]
-fn roshamuul_mortar_use_returns_selected_bucket_and_credits_the_trough_once() -> TestResult {
+fn roshamuul_mortar_use_returns_selected_bucket_and_funds_one_sandomo_cluster() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -68,7 +74,7 @@ async fn exercise(h: &Harness) -> TestResult {
         "selector":{"appearance":20216,"native":{"position":TROUGH,"ordinal":1,"appearance":20216}},
         "requires_world_admission":true,"reversible":false,"passages":[],"storage":[],"offerings":[],
         "item_on_target":{"item":FILLED,"count":1,"replacement":EMPTY,"selected_instance":true},
-        "state_ops":[{"track":TRACK,"from":{"kind":"any"},"effect":{"kind":"add_at_least","value":1,"minimum":1}}],
+        "state_ops":[{"track":MORTAR,"from":{"kind":"any"},"effect":{"kind":"add_at_least","value":1,"minimum":1}}],
         "effects":{"magic":{"position":TROUGH,"effect":10}},
         "return_on_failure":false,"sources":[source]
     });
@@ -78,13 +84,14 @@ async fn exercise(h: &Harness) -> TestResult {
             "quest":QUEST,
             "recipe_sha256":<sha2::Sha256 as sha2::Digest>::digest(source)
                 .iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
-            "tracks":[{"key":TRACK,"initial":-1,"minimum":-1,"maximum":i64::MAX}],
+            "tracks":[{"key":MORTAR,"initial":-1,"minimum":-1,"maximum":i64::MAX}],
             "stages":[{"key":"throw-mortar","completes":false,"trigger":{"kind":"map_use","callback":callback_json}}],
             "sources":[source]
         }]
     }).to_string().as_bytes())?;
-    let catalogue =
-        bindings.attach(&QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(debug)?)?;
+    // The production loader attaches map bindings after extending the NPC rules.
+    // Leave all four tracks at Crystal's absent value until real commands write them.
+    let catalogue = bindings.attach(&sandomo_catalogue(-1, [-1; 3])?)?;
     let world = world_with_objects(&callback, TROUGH, &[(OTHER, 100)], &[])?;
 
     prepare_current_session(h).await?;
@@ -98,12 +105,15 @@ async fn exercise(h: &Harness) -> TestResult {
     let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
     install_fixture_item_profiles(
         &mut input,
-        &[FixtureItem {
-            id: 20170,
-            name: "bucket of mortar",
-            weight: 200,
-            stackable: false,
-        }],
+        &[
+            FixtureItem {
+                id: 20170,
+                name: "bucket of mortar",
+                weight: 200,
+                stackable: false,
+            },
+            CLUSTER,
+        ],
     )?;
     let (controller, activated) =
         crate::content::native_gameplay::test_support::try_activate_input(world_id, &input)
@@ -157,6 +167,8 @@ async fn exercise(h: &Harness) -> TestResult {
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
             .ok_or("item map USE capabilities")?;
+    super::qd_world::select_talk_capabilities(&owner, &mut admitted, &[3, 6])?;
+    let [npc] = install_above(&owner, &admitted, [NPC]).await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -243,7 +255,7 @@ async fn exercise(h: &Harness) -> TestResult {
         )
         .bind(&instance)
         .bind(id(41).as_slice())
-        .bind(TRACK)
+        .bind(MORTAR)
         .bind(&callback.key)
         .fetch_one(&h.pool)
         .await
@@ -299,9 +311,72 @@ async fn exercise(h: &Harness) -> TestResult {
         },
     );
 
-    let (_, replayed, _) = exchange(&owner, admitted, command, &actual, None).await?;
+    let (admitted, replayed, _) = exchange(&owner, admitted, command, &actual, None).await?;
     assert_eq!(replayed, UseDisposition::Committed);
     assert_eq!(read().await?, committed);
     assert_eq!(map.facts.movement_effects_since(0), effects);
+    redeem_mortar(h, &owner, admitted, npc).await
+}
+
+async fn redeem_mortar(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+) -> TestResult {
+    let amount = |track: &'static str| async move {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT value FROM game_character_quest_tracks
+             WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(id(41).as_slice())
+        .bind(track)
+        .fetch_optional(&h.pool)
+        .await
+    };
+    let clusters = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COALESCE(sum(i.quantity),0)::bigint FROM game_item_instances i
+             JOIN game_item_container_entries e USING(item_instance_id)
+             WHERE i.definition_production_key=$2 AND i.lifecycle=1
+             AND e.character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .bind(ITEM)
+        .fetch_one(&h.pool)
+        .await
+    };
+    assert_eq!(amount(GOLD).await?, None);
+    assert_eq!(clusters().await?, 0);
+    let (mut server, peer) = tokio::io::duplex(1 << 20);
+    drive(owner, admitted, &mut server, async {
+        let mut client = Client::new(peer, admitted);
+        for word in ["hi", "gratitude", "repairs", "books", "yes"] {
+            client.talk(npc, word).await?;
+        }
+        assert_eq!(amount(GOLD).await?, Some(100));
+        for track in [MORTAR, FRAZZLEMAWS, SILENCERS] {
+            assert_eq!(amount(track).await?, Some(0));
+        }
+        client.talk(npc, "trade").await?;
+        assert_eq!(
+            client.talk(npc, "2").await?.lines,
+            ["Your balance cannot cover that quantity."],
+        );
+        assert_eq!(amount(GOLD).await?, Some(100));
+        assert_eq!(clusters().await?, 0);
+        let command = admitted.continuity.next_command_id + 7;
+        assert_eq!(client.talk(npc, "1").await?.lines, ["Clusters delivered."]);
+        assert_eq!(amount(GOLD).await?, Some(0));
+        assert_eq!(clusters().await?, 1);
+        assert_eq!(
+            client.talk_command(npc, "1", command).await?.lines,
+            ["Clusters delivered."],
+        );
+        assert_eq!(amount(GOLD).await?, Some(0));
+        assert_eq!(clusters().await?, 1);
+        client.close().await
+    })
+    .await?;
     Ok(())
 }

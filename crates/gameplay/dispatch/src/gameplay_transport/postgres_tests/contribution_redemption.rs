@@ -9,13 +9,13 @@ use oteryn_gameplay_quests::quest::{QuestStateCatalogue, npc_rules::NpcRuleCatal
 use serde_json::{Value, json};
 
 const QUEST: &str = "oteryn:quest.roshamuul_quest";
-const NPC: &str = "oteryn:npc.sandomo";
-const MORTAR: &str = "oteryn:quest-progress/quest/u10_30/roshamuul_quest/rosk_mortar_thrown";
-const FRAZZLEMAWS: &str =
+pub(super) const NPC: &str = "oteryn:npc.sandomo";
+pub(super) const MORTAR: &str = "oteryn:quest-progress/quest/u10_30/roshamuul_quest/rosk_mortar_thrown";
+pub(super) const FRAZZLEMAWS: &str =
     "oteryn:quest-progress/quest/u10_30/roshamuul_quest/rosk_killed_frazzlemaws";
-const SILENCERS: &str = "oteryn:quest-progress/quest/u10_30/roshamuul_quest/rosk_killed_silencers";
-const GOLD: &str = "oteryn:quest-progress/quest/u10_30/roshamuul_quest/rosk_gold_record";
-const ITEM: &str = "oteryn:item.tibia.i20062";
+pub(super) const SILENCERS: &str = "oteryn:quest-progress/quest/u10_30/roshamuul_quest/rosk_killed_silencers";
+pub(super) const GOLD: &str = "oteryn:quest-progress/quest/u10_30/roshamuul_quest/rosk_gold_record";
+pub(super) const ITEM: &str = "oteryn:item.tibia.i20062";
 const SOURCE: &str =
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandomo.lua:97-165";
 
@@ -65,6 +65,13 @@ fn redemption_case(
 }
 
 fn catalogue(recorded_gold: i64) -> TestResult<QuestStateCatalogue> {
+    sandomo_catalogue(recorded_gold, [3, 2, 1])
+}
+
+pub(super) fn sandomo_catalogue(
+    recorded_gold: i64,
+    [mortar, frazzlemaws, silencers]: [i64; 3],
+) -> TestResult<QuestStateCatalogue> {
     let terms = json!([
         {"track":MORTAR,"weight":100},
         {"track":FRAZZLEMAWS,"weight":1},
@@ -158,7 +165,7 @@ fn catalogue(recorded_gold: i64) -> TestResult<QuestStateCatalogue> {
         ),
     ];
     let tracks =
-        [(MORTAR, 3), (FRAZZLEMAWS, 2), (SILENCERS, 1), (GOLD, recorded_gold)].map(|(key, initial)| {
+        [(MORTAR, mortar), (FRAZZLEMAWS, frazzlemaws), (SILENCERS, silencers), (GOLD, recorded_gold)].map(|(key, initial)| {
             json!({
                 "key":key,"quest":QUEST,"initial":initial,"min":-1,"max":i64::MAX,"sources":[SOURCE]
             })
@@ -168,7 +175,7 @@ fn catalogue(recorded_gold: i64) -> TestResult<QuestStateCatalogue> {
     Ok(NpcRuleCatalog::from_json_documents(&[&source])?.with_fixture_npc_rules(base)?)
 }
 
-const CLUSTER: FixtureItem = FixtureItem {
+pub(super) const CLUSTER: FixtureItem = FixtureItem {
     id: 20062,
     name: "cluster of solace",
     weight: 280,

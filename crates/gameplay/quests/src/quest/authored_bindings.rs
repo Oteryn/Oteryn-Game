@@ -435,6 +435,7 @@ impl Bindings {
             return Err("compose all authored bindings in one immutable set".into());
         }
         catalogue.npc_legacy = base.npc_legacy.clone();
+        catalogue.npc_rule_source = base.npc_rule_source.clone();
         catalogue.native_recipe_evidence = base.native_recipe_evidence.clone();
         catalogue.predecessors = base.predecessors.clone();
         for (key, hash) in &base.hashes {
