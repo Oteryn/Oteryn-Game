@@ -225,6 +225,7 @@ export COMPOSE_OWNER
 REUSE_STATE_OWNED=0
 PG_CONTAINER_ID=""
 POSTGRES_CREATE_PENDING=""
+POSTGRES_CLEANUP_FAILED=0
 REUSE_STATE="${TMPDIR:-/tmp}/node-boot-reuse-$WP5_PROJECT.env"
 # Keep reuse and teardown mutually exclusive. Docker's container name also
 # serializes acquisition across callers using different temporary directories.
@@ -236,6 +237,7 @@ if [[ ! -d "$lock_directory" || -L "$lock_directory" || ! -O "$lock_directory" \
   rm -rf -- "$WORK"
   echo 'NODE_BOOT_RESULT=BLOCKED reason=project_in_use'; exit 2
 fi
+POSTGRES_JOURNAL="$lock_directory/postgres/$WP5_PROJECT"
 if [[ "$NODE_BOOT_REUSE_STACK" == 0 && -e "$REUSE_STATE" ]]; then
   rm -rf -- "$WORK"
   echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_exists'; exit 2
@@ -426,13 +428,16 @@ run_interruptible() {
   return "$rc"
 }
 create_owned_postgres() {
-  local drain_postgres_create=1
-  local rc=0
-  POSTGRES_CREATE_PENDING=$1
+  local drain_postgres_create=1 name=$1 rc=0
   shift
-  run_interruptible docker create --name "$POSTGRES_CREATE_PENDING" "$@" || rc=$?
-  # A local timeout cannot tell us whether Docker accepted the request.
-  if [[ $rc != 124 && $rc != 137 ]]; then
+  # Record intent before submitting the request. Any nonzero client exit can
+  # leave an accepted request in flight, even without a container ID.
+  local record="$POSTGRES_JOURNAL/$name.$COMPOSE_OWNER"
+  mkdir -p -- "$POSTGRES_JOURNAL" && : > "$record" || return
+  POSTGRES_CREATE_PENDING=$name
+  run_interruptible docker create --name "$name" "$@" || rc=$?
+  if [[ $rc == 0 ]]; then
+    rm -f -- "$record" || return
     POSTGRES_CREATE_PENDING=""
   fi
   return "$rc"
@@ -445,22 +450,77 @@ acquire_base() {
   [[ "$(stat -c '%d:%i' -- "$BASE")" == "$(<"$WORK/base.identity")" ]]
 }
 cleanup_owned_postgres() {
-  local name=$1 id=$2
+  local name=$1 id=$2 record="" lookup_failed=0
+  if [[ -n "${POSTGRES_JOURNAL:-}" && "${COMPOSE_OWNER:-}" =~ ^[a-f0-9]{32}$ ]]; then
+    record="$POSTGRES_JOURNAL/$name.$COMPOSE_OWNER"
+  fi
   if [[ -z "$id" && "${COMPOSE_OWNER:-}" =~ ^[a-f0-9]{32}$ ]]; then
-    # Only an ambiguous create for this name needs a reconciliation window.
-    local deadline=$((SECONDS + 30))
+    local limit=5 deadline=$((SECONDS + 30))
     while :; do
-      id=$(timeout --foreground --kill-after=2s 5s docker container ls --all --no-trunc -q \
-        --filter "name=^/$name$" --filter "label=org.oteryn.node-boot.owner=$COMPOSE_OWNER") || id=""
-      [[ -z "$id" && "${POSTGRES_CREATE_PENDING:-}" == "$name" ]] || break
-      if (( SECONDS >= deadline )); then
-        evidence "postgres_create_cleanup=unconfirmed container=$name"
-        break
+      if [[ "${POSTGRES_CREATE_PENDING:-}" == "$name" ]]; then
+        limit=$((deadline - SECONDS))
+        (( limit > 0 )) || break
+        (( limit <= 5 )) || limit=5
       fi
+      lookup_failed=0
+      id=$(timeout --foreground --signal=KILL "${limit}s" docker container ls --all --no-trunc -q \
+        --filter "name=^/$name$" --filter "label=org.oteryn.node-boot.owner=$COMPOSE_OWNER") || {
+          id=""
+          lookup_failed=1
+        }
+      [[ -z "$id" && "${POSTGRES_CREATE_PENDING:-}" == "$name" ]] || break
+      (( SECONDS < deadline )) || break
       sleep 0.25
     done
   fi
-  [[ -z "$id" ]] || timeout --foreground --kill-after=5s 45s docker rm --force --volumes "$id" >/dev/null 2>&1 || true
+  if [[ -n "$id" ]]; then
+    if timeout --foreground --kill-after=5s 45s docker rm --force --volumes "$id" >/dev/null 2>&1; then
+      [[ -z "$record" ]] || rm -f -- "$record" || POSTGRES_CLEANUP_FAILED=1
+      return 0
+    fi
+    if [[ -n "$record" ]]; then
+      mkdir -p -- "$POSTGRES_JOURNAL" && : > "$record" || \
+        evidence "postgres_create_cleanup=journal_failed container=$name"
+    fi
+    evidence "postgres_create_cleanup=remove_failed container=$name"
+  elif [[ -n "$record" && -f "$record" ]]; then
+    evidence "postgres_create_cleanup=pending container=$name lookup_failed=$lookup_failed"
+  else
+    return 0
+  fi
+  POSTGRES_CLEANUP_FAILED=1
+}
+recover_project_postgres() {
+  local project=$1 POSTGRES_JOURNAL=$2 COMPOSE_OWNER name record
+  for name in "$project-postgres" "$project-portal-postgres"; do
+    for record in "$POSTGRES_JOURNAL/$name".*; do
+      [[ -f "$record" ]] || continue
+      COMPOSE_OWNER=${record##*.}
+      cleanup_owned_postgres "$name" ""
+    done
+  done
+  rmdir -- "$POSTGRES_JOURNAL" 2>/dev/null || true
+}
+recover_owned_postgres() {
+  local journal project
+  for journal in "$lock_directory/postgres/"*; do
+    [[ -d "$journal" ]] || continue
+    project=${journal##*/}
+    [[ "$project" =~ ^[a-z0-9][a-z0-9_-]*$ ]] || continue
+    if [[ "$project" == "$WP5_PROJECT" ]]; then
+      recover_project_postgres "$project" "$journal"
+    else
+      # The caller already holds its own project lock. Skip any other project
+      # whose current run could still be provisioning or tearing down.
+      (
+        if flock -n 8; then
+          recover_project_postgres "$project" "$journal"
+        fi
+      ) 8>>"$lock_directory/$project"
+    fi
+  done
+  # An unresolved record remains available for later recovery.
+  return 0
 }
 cleanup_owned_compose() {
   [[ "${COMPOSE_OWNER:-}" =~ ^[a-f0-9]{32}$ ]] || return 0
@@ -558,7 +618,14 @@ cleanup() {
     find "$WORK" -type f -delete 2>/dev/null || true
     find "$WORK" -depth -type d -empty -delete 2>/dev/null || true
   fi
-  evidence "cleanup=complete"
+  [[ -z "${POSTGRES_JOURNAL:-}" ]] || rmdir -- "$POSTGRES_JOURNAL" 2>/dev/null || true
+  if [[ ${POSTGRES_CLEANUP_FAILED:-0} == 1 ]]; then
+    evidence "cleanup=incomplete"
+    result=NODE_BOOT_FAIL
+    (( rc != 0 )) || rc=1
+  else
+    evidence "cleanup=complete"
+  fi
   evidence "result_scope world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS stage=$ACTIVE_STAGE exit=$rc"
   echo "NODE_BOOT_RESULT=$result"
   exit "$rc"
@@ -566,6 +633,9 @@ cleanup() {
 trap cleanup EXIT
 trap 'interrupted INT 130' INT
 trap 'interrupted TERM 143' TERM
+if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
+  run_interruptible recover_owned_postgres
+fi
 if [[ "$NODE_BOOT_REUSE_STACK" == teardown ]]; then
   result=NODE_BOOT_TEARDOWN
   exit 0

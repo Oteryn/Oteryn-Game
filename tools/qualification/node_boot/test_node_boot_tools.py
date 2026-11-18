@@ -252,7 +252,7 @@ class ReuseTests(unittest.TestCase):
             result = bash('''
             set -Eeuo pipefail
             PG_PORT=15433; PG_IMAGE=fixture; WP5_PROJECT=fixture; GP_PG_CONTAINER=""
-            COMPOSE_OWNER=fixture
+            COMPOSE_OWNER=fixture POSTGRES_JOURNAL=$WORK
             run_interruptible() { "$@"; }
             openssl() { echo fixture; }
             docker() { return 1; }
@@ -425,75 +425,132 @@ class RoundTwoCallerTests(unittest.TestCase):
     def test_reconciles_postgres_after_create_timeout(self):
         lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',
                                         HERE.parent / 'game_platform/lifecycle.sh')).read_text()
-        for service, source, send_term in [
-            ('game', RUN_TEXT, True), ('portal', lifecycle, True),
-            ('game', RUN_TEXT, False), ('portal', lifecycle, False),
-        ]:
-            with self.subTest(service=service, send_term=send_term), tempfile.TemporaryDirectory() as temp:
-                create = next(line.strip().removesuffix(' \\') for line in source.splitlines()
-                              if 'docker create --label' in line or line.lstrip().startswith('create_owned_postgres '))
-                setup = r"""
-                    set -Eeuo pipefail
-                    WP5_PROJECT=fixture PG_CONTAINER=fixture-postgres PG_PORT=5432 port=5433
-                    COMPOSE_OWNER=0123456789abcdef0123456789abcdef ACTIVE_STAGE=setup NODE_BOOT_WORLD=0
-                    evidence() { :; }
-                    timeout() { while [[ $1 == --* ]]; do shift; done; shift; "$@"; }
-                    docker() {
-                        case "$1" in
-                          create)
-                            python3 -c 'import subprocess, sys; subprocess.Popen(
-                                ["bash", "-c", "until test -f \"$1/first-lookup\"; do sleep 0.02; done; "
-                                 "touch -- \"$1/registered\"", "publisher", sys.argv[1]],
-                                process_group=0,
-                                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL)' "$WORK"
-                            echo creating
-                            until [[ -f "$WORK/allow-client-timeout" ]]; do command sleep 0.02; done
-                            touch "$WORK/client-timed-out"
-                            return 124 ;;
-                          container)
-                            [[ " $* " == *" --filter name=^/$CONTAINER_NAME$ "* &&
-                               " $* " == *" --filter label=org.oteryn.node-boot.owner=$COMPOSE_OWNER "* ]] || return 1
-                            if [[ -f "$WORK/registered" ]]; then
-                                echo owned-id
-                            else
-                                touch "$WORK/first-lookup"
-                            fi ;;
-                          rm)
-                            [[ "${*: -1}" == owned-id ]] || return 1
-                            mv "$WORK/registered" "$WORK/removed" ;;
-                        esac
-                    }
-                    trap 'cleanup_owned_postgres "$CONTAINER_NAME" ""' EXIT
-                    trap 'interrupted TERM 143' TERM
-                """
-                script = '\n'.join(function(name) for name in
-                                   ('interrupted', 'run_interruptible', 'create_owned_postgres', 'cleanup_owned_postgres'))
-                with subprocess.Popen(['bash', '-c', script + '\n' + setup + '\n' + create],
-                                      env=dict(os.environ, WORK=temp, CONTAINER_NAME=(
-                                          'fixture-postgres' if service == 'game' else 'fixture-portal-postgres')),
-                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                      start_new_session=True) as proc:
-                    try:
-                        self.assertTrue(select.select([proc.stdout], [], [], 3)[0])
-                        self.assertEqual(proc.stdout.readline().strip(), 'creating')
-                        if send_term:
-                            proc.send_signal(signal.SIGTERM)
-                        Path(temp, 'allow-client-timeout').touch()
-                        proc.communicate(timeout=3)
-                        self.assertEqual(proc.returncode, 143 if send_term else 124)
-                        self.assertTrue(Path(temp, 'client-timed-out').exists())
-                        self.assertTrue(Path(temp, 'removed').exists())
-                    finally:
-                        groups = subprocess.run(
-                            ['ps', '-s', str(proc.pid), '-o', 'pgid='],
-                            capture_output=True, text=True, check=False, timeout=3,
-                        ).stdout.split()
-                        for group in set(map(int, groups)):
-                            try:
-                                os.killpg(group, signal.SIGKILL)
-                            except ProcessLookupError:
-                                pass
+        platform_cleanup = re.search(r'(?ms)^game_platform_cleanup\(\).*?^}', lifecycle).group(0)
+        entry_traps = section('trap cleanup EXIT', 'if [[ "$NODE_BOOT_REUSE_STACK" == teardown ]]')
+        for service, source in [('game', RUN_TEXT), ('portal', lifecycle)]:
+            for client_status, send_term, outcome in [
+                (124, True, 'late'),
+                (137, False, 'late'),
+                (1, False, 'immediate'),
+                (1, False, 'remove_failed'),
+                (1, False, 'fixture_timeout'),
+            ]:
+                with self.subTest(service=service, client_status=client_status, outcome=outcome), \
+                        tempfile.TemporaryDirectory() as temp:
+                    root = Path(temp)
+                    (root / 'work').mkdir()
+                    journal = root / 'locks/postgres/fixture'
+                    journal.mkdir(parents=True)
+                    name = f'fixture-{"portal-" if service == "portal" else ""}postgres'
+                    create = next(line.strip().removesuffix(' \\') for line in source.splitlines()
+                                  if line.lstrip().startswith('create_owned_postgres '))
+                    setup = r"""
+                        set -Eeuo pipefail
+                        WP5_PROJECT=fixture PG_CONTAINER=fixture-postgres PG_PORT=5432 port=5433
+                        COMPOSE_OWNER=0123456789abcdef0123456789abcdef ACTIVE_STAGE=setup
+                        NODE_BOOT_WORLD=0 NODE_BOOT_SPELLS=0 NODE_BOOT_REUSE_STACK=0 result=NODE_BOOT_FAIL
+                        COMPOSE_OWNED=0 GP_HARNESS_PID="" GP_PG_CONTAINER=""
+                        if [[ "$SERVICE" == portal ]]; then
+                            COMPOSE_OWNED=1 NODE_BOOT_LIFECYCLE=game_platform
+                        fi
+                        lock_directory=$FIXTURE/locks POSTGRES_JOURNAL=$FIXTURE/locks/postgres/fixture
+                        stop_runtime_diagnostics() { :; }
+                        stop_pg_sampler() { :; }
+                        game_platform_retain_test_logs() { :; }
+                        evidence() { echo "$*"; }
+                        timeout() { while [[ $1 == --* ]]; do shift; done; shift; "$@"; }
+                        sleep() {
+                            if [[ "$OUTCOME" == late ]]; then SECONDS=31; fi
+                        }
+                        docker() {
+                            case "$1" in
+                              create)
+                                echo creating
+                                local end=$((SECONDS + 2))
+                                until [[ -f "$FIXTURE/allow-client-exit" ]]; do
+                                    (( SECONDS < end )) || return 99
+                                    command sleep 0.02
+                                done
+                                touch "$FIXTURE/client-exited"
+                                return "$CLIENT_STATUS" ;;
+                              container)
+                                [[ " $* " == *" --filter name=^/$CONTAINER_NAME$ "* &&
+                                   " $* " == *" --filter label=org.oteryn.node-boot.owner=$COMPOSE_OWNER "* ]] || return 0
+                                echo lookup >> "$FIXTURE/lookups"
+                                if [[ -f "$FIXTURE/registered" ]]; then
+                                    echo owned-id
+                                elif [[ "$OUTCOME" != late ]]; then
+                                    touch "$FIXTURE/registered"
+                                fi ;;
+                              rm)
+                                [[ "${*: -1}" == owned-id && "$OUTCOME" != remove_failed ]] || return 1
+                                mv "$FIXTURE/registered" "$FIXTURE/removed" ;;
+                            esac
+                        }
+                    """
+                    script = setup + '\n'.join(function(n) for n in (
+                        'interrupted', 'run_interruptible', 'create_owned_postgres',
+                        'cleanup_owned_postgres', 'recover_project_postgres', 'recover_owned_postgres', 'cleanup',
+                    )) + '\n' + platform_cleanup + '\n'
+                    env = dict(os.environ, WORK=str(root / 'work'), FIXTURE=temp, SERVICE=service,
+                               CLIENT_STATUS=str(client_status), CONTAINER_NAME=name, OUTCOME=outcome)
+                    with subprocess.Popen(
+                        ['bash', '-c', script + entry_traps + create],
+                        env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                        text=True, start_new_session=True,
+                    ) as proc:
+                        try:
+                            self.assertTrue(select.select([proc.stdout], [], [], 3)[0])
+                            self.assertEqual(proc.stdout.readline().strip(), 'creating')
+                            if send_term:
+                                proc.send_signal(signal.SIGTERM)
+                            if outcome == 'fixture_timeout':
+                                with self.assertRaises(subprocess.TimeoutExpired):
+                                    proc.communicate(timeout=0.05)
+                            else:
+                                (root / 'allow-client-exit').touch()
+                                output, _ = proc.communicate(timeout=4)
+                        finally:
+                            # The controller owns publication and releases the
+                            # bounded mock client even when the fixture times out.
+                            (root / 'allow-client-exit').touch()
+                            if proc.poll() is None:
+                                try:
+                                    output, _ = proc.communicate(timeout=4)
+                                except subprocess.TimeoutExpired:
+                                    proc.kill()
+                                    raise
+                    if outcome == 'fixture_timeout':
+                        self.assertEqual(proc.returncode, client_status, output)
+                        self.assertTrue((root / 'client-exited').exists(), output)
+                        self.assertTrue((root / 'removed').exists(), output)
+                        continue
+                    self.assertEqual(proc.returncode, 143 if send_term else client_status, output)
+                    self.assertTrue((root / 'client-exited').exists(), output)
+                    if outcome == 'immediate':
+                        self.assertTrue((root / 'removed').exists(), output)
+                        continue
+                    self.assertIn('cleanup=incomplete', output)
+                    self.assertEqual(len(list(journal.iterdir())), 1)
+                    if outcome == 'late':
+                        self.assertEqual((root / 'lookups').read_text().splitlines(), ['lookup'])
+                        (root / 'registered').touch()
+                    else:
+                        self.assertIn('postgres_create_cleanup=remove_failed', output)
+                    # Start with a fresh owner and run the same recovery call used
+                    # by the entry shell before it begins a new provisioning pass.
+                    recover = next((line.strip() for line in RUN_TEXT.splitlines()
+                                    if line.strip() == 'run_interruptible recover_owned_postgres'), ':')
+                    recovery = 'WP5_PROJECT=next-project COMPOSE_OWNER=ffffffffffffffffffffffffffffffff\n' + recover
+                    recovery_env = dict(env, OUTCOME='late')
+                    locked = bash(script + 'exec 7>>"$lock_directory/fixture"; flock -n 7\n' + recovery,
+                                  recovery_env)
+                    self.assertEqual(locked.returncode, 0, locked.stdout + locked.stderr)
+                    self.assertTrue((root / 'registered').exists(), locked.stdout + locked.stderr)
+                    result = bash(script + recovery, recovery_env)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertTrue((root / 'removed').exists(), result.stdout + result.stderr)
+                    self.assertEqual(list(journal.glob("*")), [])
 
     def test_term_cleans_portal_before_pid_assignment(self):
         lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',
@@ -560,7 +617,7 @@ class RoundTwoCallerTests(unittest.TestCase):
                         invocation = 'secret_to root input output'
                     if phase == 'portal':
                         setup += r'''
-                            PG_PORT=15433 PG_IMAGE=fixture WP5_PROJECT=fixture COMPOSE_OWNER=fixture
+                            PG_PORT=15433 PG_IMAGE=fixture WP5_PROJECT=fixture COMPOSE_OWNER=fixture POSTGRES_JOURNAL=$WORK
                             docker() {
                                 if [[ "$1" == create ]]; then echo fixture-id; else blocked; fi
                             }
