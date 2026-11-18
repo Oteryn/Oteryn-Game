@@ -194,9 +194,8 @@ impl FloorTable {
 
     fn doomforge_portal(&self, at: TilePos) -> Option<u8> {
         let &(ordinal, appearance) = self.teleport_sources.get(&at)?;
-        let destination = self.teleport(at)?;
-        ((at.x, at.y, at.floor, appearance) == (34041, 32330, -14, 37000)
-            && (destination.x, destination.y, destination.floor) == (34062, 32334, -14))
+        (at.x, at.y, at.floor, appearance)
+            .eq(&(34041, 32330, -14, 37000))
             .then_some(ordinal)
     }
 
@@ -981,6 +980,14 @@ mod tests {
         table.add_teleport(entrance, forge);
         table.bind_teleport_source(entrance, 1, 37000);
         assert_eq!(table.teleport_for_source(entrance, |_| Some(37000)), None);
+
+        let mut retargeted = FloorTable::default();
+        retargeted.add_teleport(entrance, TilePos { y: 32335, ..forge });
+        retargeted.bind_teleport_source(entrance, 1, 37000);
+        assert_eq!(
+            retargeted.teleport_for_source(entrance, |_| Some(37000)),
+            None
+        );
 
         let other = TilePos {
             x: 34040,
