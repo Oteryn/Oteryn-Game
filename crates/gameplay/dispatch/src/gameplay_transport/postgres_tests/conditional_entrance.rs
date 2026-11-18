@@ -33,6 +33,7 @@ const GATE: Position = Position {
     floor: -10,
 };
 const LANDING: Position = Position { x: 32792, ..GATE };
+const SEASONAL_RETURN: Position = Position { y: 32332, ..GATE };
 const HOLY_TIBLE: &str = "oteryn:item.tibia.i2836";
 const ISLE_REFUSAL: &str = "You better talk to Rapanaio before leave the safety of the ship!";
 const ISLE_ADMITTED: &str = "You hear evil laughter from afar.";
@@ -155,7 +156,13 @@ impl Case {
             _ => json!({}),
         };
         if !self.is_use() {
-            refusal["push_back"] = json!({"kind":"from","dx":0,"dy":0});
+            refusal["push_back"] = if matches!(self, Self::Calendar { .. }) {
+                // Crystal movements_prohibit_entry.lua:11-15 uses a fixed
+                // return tile independently of the direction of approach.
+                json!({"kind":"fixed","position":SEASONAL_RETURN})
+            } else {
+                json!({"kind":"from","dx":0,"dy":0})
+            };
         }
         let trigger = if self.is_use() { "use" } else { "step_in" };
         let mut row = json!({
@@ -372,7 +379,13 @@ impl Case {
             h.root.set_test_quest_clock(utc_seconds)?;
             let result = self.attempt(owner, admitted, callback, 1).await?;
             assert_eq!(result, allowed);
-            let expected = if allowed { local(LANDING) } else { origin };
+            let expected = if allowed {
+                local(LANDING)
+            } else if self.is_use() {
+                origin
+            } else {
+                local(SEASONAL_RETURN)
+            };
             assert_eq!(
                 owner
                     .runtime
