@@ -118,6 +118,19 @@ async fn exercise(h: &Harness) -> TestResult {
     let mut admitted = deps.admitted;
     let actor = deps.actor;
     let session = admitted.game_session_id;
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
+        .bind(world_id.as_bytes().as_slice())
+        .bind(admitted.channel_id.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
+        .bind(world_id.as_bytes().as_slice())
+        .bind(admitted.channel_id.as_bytes().as_slice())
+        .bind(active.identity().server_artifact_digest().as_slice())
+        .bind(active.identity().client_artifact_digest().as_slice())
+        .bind(frame.as_slice())
+        .execute(&h.pool)
+        .await?;
     let premium = super::espher_arkulius::premium_fixture(h).await?;
     let mut owner = deps.owner(h, &authority);
     owner.premium_coordinator = Some(&premium);
