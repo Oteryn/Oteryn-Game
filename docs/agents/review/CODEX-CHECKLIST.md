@@ -45,3 +45,14 @@ Every item below is a class that Codex has actually flagged on Oteryn PRs (P1/P2
 29. **No silent end of a stream.** Every EOF or disconnect after a session is accepted (join, join_snapshot, dispatch) logs or returns its cause. A test asserts the cause, not just the close. (#3112)
 30. **Overflow refuses, it does not wrap.** Additions to durable value (gold, bounty, counters) use checked arithmetic up to `i64::MAX` and refuse with a named outcome. Add a test at the bound. (#3115 ClaimBounty)
 31. **Watchdogs bound the hang.** A watchdog or deadline covers the whole wait it guards (including retries and the shutdown path) and fails with a message naming the stage, instead of letting the job hang until the CI timeout.
+
+## Recurring classes from the review retro (2026-11-18)
+32. **A durable value moves in one transaction.** Boss death, chest, XP, quest settlement and their fallbacks commit together, or the code has a named recovery path. Test: fail between the writes, then replay. (#3263)
+33. **No literal that an environment knob overrides.** When a harness or deploy setting replaces a value (route revision, port, limit), grep every literal copy of it; one source only. (route_revision 1109 vs 1116)
+34. **Every new creation or admission path has a first-entry PG case** for each new character shape: create, enter the world, act once. (#3277 vocation first entry)
+35. **One policy, one source.** A rule enforced in Rust, a validator and SQL is generated from or tested against one source with a parity test. (#3263 healer policy)
+36. **Test-only code stays in test builds.** `cargo build --locked -p <package>` (no test targets) of the changed package is clean. (ungated `#[tokio::test]` in serving.rs)
+37. **Exact counts and digests follow the data.** A change to rewards, tracks, catalogue, item profiles or placements updates every exact-count test (Rust and Python) and regenerates digests and pins; after the generators `git status --porcelain` is empty.
+38. **Temporary files.** Tests and tools use `TempDir`, never a shared name or `temp_dir()` plus a pid.
+39. **No blocking I/O on a frame or tick schedule** (Bevy main schedule, game tick): file, network and screenshot work runs off it.
+40. **A feature flag is a boundary.** With the flag off, no route, job, worker or retention task of the feature runs or writes. A test proves it.
