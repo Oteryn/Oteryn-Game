@@ -2288,14 +2288,24 @@ async fn open_corpse(
     Ok(got)
 }
 
-/// Provision the level-1000 knight build once (the fenced fixture command), then reuse it. The
-/// fixture is one-shot per character: a refusal on a character that already reads the sweep level
-/// means "already provisioned". The default profile is `sweep` (`OTERYN_E2E_SWEEP_PROFILE` overrides it; run.sh always exports `NODE_BOOT_PROFILE`)
-/// and the ruthless axe (item 6553) is wielded through the player's own protocol, as MP01 does,
-/// whether the build was just provisioned or already present: a bare-fisted player cannot kill
-/// the larger species.
-fn fixture_ready(_level: u32, classed: bool, equipped_and_supplied: bool) -> bool {
-    classed && equipped_and_supplied
+/// Reuse the sweep build once the knight carries or wields its axe. A committed build can
+/// precede the item grant, so vocation and backpack alone cannot skip fixture reconciliation.
+fn fixture_ready(
+    classed: bool,
+    inventory: Option<&oteryn_protocol_oteryn::item_view::CharacterInventory>,
+    axe: std::num::NonZeroU32,
+) -> bool {
+    classed
+        && inventory.is_some_and(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .any(|entry| entry.item_definition_ref == axe)
+                || inventory
+                    .equipment
+                    .iter()
+                    .any(|entry| entry.item.item_definition_ref == axe)
+        })
 }
 
 async fn prepare_player(
@@ -2305,11 +2315,10 @@ async fn prepare_player(
     let client = session.as_mut().ok_or("session absent")?;
     let (xp, level, vocation) = read_stats_with_vocation(client).await?;
     let classed = vocation.is_some_and(|id| Some(id) == character::vocation_id("knight"));
-    let supplied = client
-        .inventory()
-        .is_some_and(|inventory| inventory.main_backpack.is_some());
-    if fixture_ready(level, classed, supplied) {
-        return ensure_weapon(client).await;
+    let definitions = provisioning::item_index()?;
+    let axe = provisioning::item_reference(&definitions, SWEEP_WEAPON_ID)?;
+    if fixture_ready(classed, client.inventory(), axe) {
+        return ensure_weapon(client, axe).await;
     }
     if (xp != 0 || level != 1) && !classed {
         return Err("sweep setup requires a pristine or previously classed character".into());
@@ -2357,7 +2366,7 @@ async fn prepare_player(
         )
         .into());
     }
-    let equipped = ensure_weapon(&mut fresh).await;
+    let equipped = ensure_weapon(&mut fresh, axe).await;
     *session = Some(fresh);
     equipped?;
     evidence(&format!(
@@ -2369,9 +2378,7 @@ async fn prepare_player(
 
 /// Wield the sweep weapon (item 6553) unless it is already worn; a refusal is an error with the
 /// server's detail. Same protocol path as MP01 (`mp/mp01_party_pvp.rs`, axe equip).
-async fn ensure_weapon(client: &mut DevClientSession) -> TestResult {
-    let definitions = provisioning::item_index()?;
-    let axe = provisioning::item_reference(&definitions, SWEEP_WEAPON_ID)?;
+async fn ensure_weapon(client: &mut DevClientSession, axe: std::num::NonZeroU32) -> TestResult {
     let wielded = client.inventory().is_some_and(|inventory| {
         inventory
             .equipment
@@ -3646,10 +3653,48 @@ mod evidence_tests {
     }
 
     #[test]
-    fn delta_sweep_resumes_incomplete_build_and_reuses_equipped_class_after_death() {
-        assert!(!fixture_ready(100, false, false));
-        assert!(!fixture_ready(100, true, false));
-        assert!(fixture_ready(99, true, true));
+    fn qualification_sweep_readiness_reconciles_a_classed_character_missing_the_axe() -> TestResult
+    {
+        use oteryn_protocol_oteryn::item_view::{
+            CharacterInventory, EquipmentSlot, EquippedItem, ItemEntry,
+        };
+        use std::num::{NonZeroU32, NonZeroU64};
+
+        let axe = NonZeroU32::new(SWEEP_WEAPON_ID).ok_or("missing axe reference")?;
+        let backpack = ItemEntry {
+            appearance_id: 0,
+            handle: NonZeroU64::MIN,
+            item_definition_ref: NonZeroU32::MIN,
+            count: NonZeroU32::MIN,
+            sub_type: 0,
+        };
+        let mut inventory = CharacterInventory {
+            main_backpack: Some(backpack),
+            ..Default::default()
+        };
+        assert!(!fixture_ready(false, None, axe));
+        assert!(!fixture_ready(true, None, axe));
+        assert!(
+            !fixture_ready(true, Some(&inventory), axe),
+            "the live readiness gate must reconcile a classed character with only a backpack"
+        );
+
+        let axe_entry = ItemEntry {
+            handle: NonZeroU64::new(2).ok_or("missing axe handle")?,
+            item_definition_ref: axe,
+            ..backpack
+        };
+        inventory.entries.push(axe_entry);
+        assert!(!fixture_ready(false, Some(&inventory), axe));
+        assert!(fixture_ready(true, Some(&inventory), axe));
+
+        inventory.entries.clear();
+        inventory.equipment.push(EquippedItem {
+            slot: EquipmentSlot::LeftHand,
+            item: axe_entry,
+        });
+        assert!(fixture_ready(true, Some(&inventory), axe));
+        Ok(())
     }
 
     #[test]
@@ -3700,8 +3745,7 @@ mod evidence_tests {
             .and_then(|(_, body)| body.split_once("async fn read_stats("))
             .map(|(body, _)| body)
             .ok_or("missing sweep setup boundary")?;
-        assert!(prepare.contains("inventory.main_backpack.is_some()"));
-        assert!(prepare.contains("fixture_ready(level, classed, supplied)"));
+        assert!(prepare.contains("if fixture_ready(classed, client.inventory(), axe)"));
         assert!(prepare.contains("run_fixture_command("));
 
         let mp = include_str!("mp/mp09_party_xp.rs");
