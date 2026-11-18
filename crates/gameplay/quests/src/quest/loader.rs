@@ -729,10 +729,11 @@ mod tests {
             "diprath-switch-gate",
             "ashmunrah-switch-gate",
             "diprath-room",
+            "rahemos-carrot",
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/ancient-tombs-{suffix}")));
         }
-        assert_eq!(expected.len() - before_main_native, 14);
+        assert_eq!(expected.len() - before_main_native, 15);
         let before_elvenbane = expected.len();
         for suffix in ["poison", "dragon-floor"] {
             assert!(expected.insert(format!("oteryn:quest-callback/elvenbane/{suffix}")));

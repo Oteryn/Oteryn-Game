@@ -640,7 +640,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()
                 || effects.encounter.is_some()
-                || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
+                || (!callback.passages.is_empty()
+                    && effects.passages_reset_after_ms.is_none()
+                    && !super::per_use_reward::rahemos(callback))
         })
         || effects.passages_reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)

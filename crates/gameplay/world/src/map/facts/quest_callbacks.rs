@@ -74,13 +74,6 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
-    /// A source lever and the temporary item it creates share a deadline.
-    TimedItemPresence {
-        due: u64,
-        restore: EntryFacts,
-        position: TilePos,
-        entry: EntryFacts,
-    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -168,7 +161,6 @@ pub(super) struct CallbackStates {
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
-    timed_presences: BTreeMap<(u64, u64), TilePos>,
     naginata_picks: Vec<NaginataPick>,
 }
 
@@ -224,35 +216,6 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
-            QuestCallbackProjection::TimedItemPresence {
-                due,
-                restore,
-                position,
-                entry,
-            } => {
-                if close
-                    || self.presences.contains_key(&owner)
-                    || !self.project(
-                        owner,
-                        &QuestCallbackProjection::ItemPresence {
-                            position: *position,
-                            entry: *entry,
-                        },
-                        false,
-                    )
-                    || !self.project(
-                        owner,
-                        &QuestCallbackProjection::TimedTransform {
-                            due: *due,
-                            restore: *restore,
-                        },
-                        false,
-                    )
-                {
-                    return false;
-                }
-                self.timed_presences.insert((*due, owner), *position);
-            }
             QuestCallbackProjection::TimedEntrance {
                 due,
                 restore,
@@ -873,14 +836,6 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
-            .chain(
-                states
-                    .timed_presences
-                    .iter()
-                    .find_map(|((due, _), position)| {
-                        (!states.position_reserved(*position)).then_some(*due)
-                    }),
-            )
             .min()
     }
 
@@ -901,24 +856,6 @@ impl BundleFacts {
         for owner in expired {
             states.remove_portals(owner);
             changed += 1;
-        }
-        let expired_items: Vec<_> = states
-            .timed_presences
-            .range(..=(now, u64::MAX))
-            .filter(|(_, position)| !states.position_reserved(**position))
-            .map(|(key, _)| *key)
-            .collect();
-        for key in expired_items {
-            states.timed_presences.remove(&key);
-            if let Some((position, id)) = states.presences.remove(&key.1)
-                && let Some(entries) = states.movement_items.get_mut(&position)
-            {
-                entries.retain(|entry| entry.source != view::EntrySource::Added(id));
-                if entries.is_empty() {
-                    states.movement_items.remove(&position);
-                }
-                changed += 1;
-            }
         }
         let due: Vec<_> = states
             .movement_decays
@@ -1711,7 +1648,6 @@ impl BundleFacts {
                     entries.iter().any(|(key, _, _)| states.key_reserved(*key))
                 }
                 QuestCallbackProjection::ItemPresence { position, .. }
-                | QuestCallbackProjection::TimedItemPresence { position, .. }
                 | QuestCallbackProjection::ItemCycle { position, .. } => {
                     states.position_reserved(*position)
                 }

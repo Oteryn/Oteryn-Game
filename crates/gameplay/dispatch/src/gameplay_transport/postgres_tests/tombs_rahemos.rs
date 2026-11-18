@@ -8,11 +8,10 @@ use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot, 
 use sha2::{Digest, Sha256};
 
 const LEVER: Position = Position { x: 33124, y: 32765, floor: -14 };
-const HAT: TilePos = TilePos { x: 33123, y: 32765, floor: -14 };
 const DOOR: TilePos = TilePos { x: 33122, y: 32765, floor: -14 };
 
 #[test]
-fn tombs_rahemos_oasis_win_opens_door_and_expires_carrot() -> TestResult {
+fn tombs_rahemos_oasis_win_opens_door_and_grants_carrot_to_backpack() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
     run("qengine-rewards-rahemos-oasis-win")
 }
@@ -32,6 +31,7 @@ fn run(case: &'static str) -> TestResult {
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
+    h: &super::fixture::Harness,
     win: bool,
 ) -> TestResult {
     let map = owner.bundle_map().ok_or("Rahemos map")?;
@@ -65,14 +65,19 @@ pub(super) async fn exercise(
         view::compose_tile(&map.overlay, &map.facts.pinned(), position)
             .is_ok_and(|tile| tile.is_some_and(|tile| tile.entries.iter().any(|entry| entry.facts.appearance_id == appearance)))
     };
-    assert_eq!(has_appearance(HAT, 3595), win);
+    let carrots: i64 = sqlx::query_scalar(
+        "SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i
+         JOIN game_item_container_entries e USING(item_instance_id)
+         WHERE e.character_id=encode($1,'hex')::uuid
+           AND i.definition_production_key='oteryn:item.tibia.i3595' AND i.lifecycle=1",
+    ).bind(super::fixture::id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(carrots, i64::from(win));
     assert_eq!(has_appearance(DOOR, 1663), win);
     assert_eq!(map.facts.object_revision(placement_key), u64::from(win));
     if win {
         let due = map.facts.next_movement_decay_time().ok_or("Rahemos reset deadline")?;
         assert_eq!(map.facts.expire_movement_items(due - 1), 0);
-        assert_eq!(map.facts.expire_movement_items(due), 2);
-        assert!(!has_appearance(HAT, 3595));
+        assert_eq!(map.facts.expire_movement_items(due), 1);
         assert!(has_appearance(DOOR, 1663));
         assert_eq!(map.facts.object_revision(placement_key), 2);
     } else {

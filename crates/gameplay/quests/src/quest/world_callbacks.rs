@@ -696,6 +696,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/l6-item-rewards.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/l6-rahemos-oasis.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-tools.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -997,7 +1000,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
-                && (!callback.has_state_writes()
+                && ((!callback.has_state_writes() && !per_use_reward::rahemos(callback))
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use
@@ -1076,7 +1079,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback
                 .passages
                 .iter()
-                .any(|p| p.if_present && callback.effects.passages_reset_after_ms.is_none())
+                .any(|p| p.if_present && callback.effects.passages_reset_after_ms.is_none() && !per_use_reward::rahemos(callback))
             || unique_storage.len() != callback.storage.len()
             || callback.storage.iter().filter(|s| s.add.is_some()).count() > 1
             || callback.storage.iter().any(|s| {

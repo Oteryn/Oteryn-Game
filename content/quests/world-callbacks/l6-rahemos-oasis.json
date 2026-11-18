@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-rahemos-carrot",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "action": 12107,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33122,
+            "y": 32765,
+            "floor": -14
+          },
+          "appearance": 1662,
+          "replacement": 1663,
+          "if_present": true
+        }
+      ],
+      "world_requirements": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "state_ops": [],
+      "offerings": [],
+      "item_on_target": null,
+      "requires_world_admission": true,
+      "admission": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found the carrot and opened the door.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3595",
+          "count": 1,
+          "contents": []
+        },
+        "item_reward_per_use": true,
+        "reset_after_ms": 4000
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_oasis_lever_door.lua:26-39"
+      ]
+    }
+  ]
+}

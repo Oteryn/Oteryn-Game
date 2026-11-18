@@ -1,11 +1,18 @@
 //! Renewable physical producers retain the ordinary command receipt and mint owners.
 use super::{ActorKind, Callback, Trigger};
 
+pub(super) fn rahemos(callback: &Callback) -> bool {
+    callback.key == "oteryn:quest-callback/ancient-tombs-rahemos-carrot"
+        && callback.selector.action == Some(12107)
+        && callback.selector.appearance == Some(2772)
+        && callback.effects.item_reward_per_use
+}
+
 pub(super) fn admitted(callback: &Callback) -> bool {
     let effects = &callback.effects;
     effects.item_reward_per_use
         && callback.requires_world_admission
-        && callback.selector.native.is_some()
+        && (callback.selector.native.is_some() || rahemos(callback))
         && callback.actor_kind == ActorKind::Player
         && callback.trigger == Trigger::Use
         && !callback.reversible

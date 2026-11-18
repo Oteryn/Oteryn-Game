@@ -964,7 +964,7 @@ pub(super) async fn exercise(
         .await;
     }
     if name.starts_with("qengine-rewards-rahemos-oasis-") {
-        return Box::pin(super::tombs_rahemos::exercise(owner, admitted, name.ends_with("-win"))).await;
+        return Box::pin(super::tombs_rahemos::exercise(owner, admitted, h, name.ends_with("-win"))).await;
     }
     if name.starts_with("qengine-rewards-m56-wax") {
         return Box::pin(super::m56_cursed_crystal_wax::exercise(

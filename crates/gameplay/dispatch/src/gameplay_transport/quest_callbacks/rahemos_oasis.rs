@@ -1,6 +1,6 @@
 //! Crystal 201189f8, actions_oasis_lever_door.lua:1-49.
 use super::*;
-use crate::map::{facts::QuestCallbackProjection, view};
+use crate::map::view;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -42,8 +42,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         resolved: &super::super::world_map::MapObjectTarget<()>,
         target: &WorldObjectTarget,
     ) -> Option<UseDisposition> {
-        let _permit = self.spell_lane_permit().await?;
-        let runtime = self.runtime.lock().await;
+        let permit = self.spell_lane_permit().await?;
+        let fence = self
+            .current_quest_fence(command.game_session_id)
+            .await
+            .ok()??;
+        if command.item_fence != Some(fence.item_fence()) {
+            return None;
+        }
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.try_lock().ok()?;
         let session = command.game_session_id;
         if runtime
@@ -132,46 +140,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if map.facts.house_tile(hat) {
             return None;
         }
-        let projection = QuestCallbackProjection::TimedItemPresence {
-            due: now.get().checked_add(4_000_000)?,
-            restore: current,
-            position: hat,
-            entry: view::EntryFacts {
-                pickupable: false,
-                ..map.facts.movement_item_facts(3595)?
-            },
-        };
-        let lever = map
-            .facts
-            .quest_callback_replacement(resolved.placement_key, 2773)?;
-        let mut replacements = Vec::new();
-        if let Some(door) = view::compose_tile(&map.overlay, &map.facts.pinned(), DOOR).ok()?
-            && let Some(key) = door
-                .entries
-                .iter()
-                .find_map(|entry| match entry.source.key() {
-                    view::MapEntryKey::Base(key) if entry.facts.appearance_id == 1662 => Some(key),
-                    _ => None,
-                })
-        {
-            replacements.push((key, map.facts.quest_callback_replacement(key, 1663)?, true));
-        }
-        if !map.facts.apply_quest_callback(
+        let callback = callbacks().iter().find(|callback| {
+            callback.key == "oteryn:quest-callback/ancient-tombs-rahemos-carrot"
+        })?;
+        let result = Box::pin(self.execute_quest_callback(
+            &permit,
+            &mut runtime,
+            &mut states,
+            actor,
+            session,
+            map,
+            callback,
             resolved.placement_key,
             target.expected_revision,
-            lever,
-            &[],
-            &replacements,
-            false,
-            Some(&projection),
-        ) {
-            return Some(UseDisposition::Exhausted);
+            QuestCause::Use(CommandRef::new(
+                session,
+                CommandId::new(command.command_id).ok()?,
+            )),
+            Some(fence),
+            Some(&mut slot),
+            None,
+            None,
+            None,
+            None,
+        ))
+        .await;
+        if result == UseDisposition::Committed {
+            map.facts.emit_movement_effect(hat, 15);
+            map.facts.emit_movement_effect(DOOR, 15);
         }
-        map.facts.emit_movement_effect(hat, 15);
-        map.facts.emit_movement_effect(DOOR, 15);
-        self.states
-            .chat
-            .push_quest_feedback(session, "You found the carrot and opened the door.");
-        Some(UseDisposition::Committed)
+        Some(result)
     }
 }
