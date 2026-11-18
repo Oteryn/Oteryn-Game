@@ -23,8 +23,9 @@ pub(super) const SPENT: &str = "haunted-cellar-ectoplasm-spent";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const STARTED: &str = "oteryn:quest-progress/crystalserver/quest/u12_00/the_dream_courts/haunted_house/questline";
 const BEGIN: &str = "oteryn:quest-transition/haunted-cellar-fixture/start";
-const USE: &str = "oteryn:quest-callback/haunted-cellar-egg/32703-32244";
-const EGG: Position = Position { x:32703, y:32244, floor:-8 };
+const USE: &str = "oteryn:quest-callback/haunted-cellar-egg/32722-32231-z9";
+// Crystal world.otbm, first top-level egg in the Haunted Cellar approach.
+const EGG: Position = Position { x:32722, y:32231, floor:-9 };
 // The fixture uses content-admitted portable forms. Production uses
 // i29310, i29307, i29308 and i29309 in the same order.
 const EMPTY: &str = "oteryn:item.tibia.i2874";
