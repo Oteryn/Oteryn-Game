@@ -37,6 +37,21 @@ impl Captures {
     }
 }
 
+fn visible_target(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    target: ExactActorRef,
+    session: GameSessionId,
+    now: u64,
+) -> bool {
+    !states.is_dead(target)
+        && states.get(runtime, target, session).is_some_and(|player| {
+            !player
+                .owned_conditions()
+                .has_status(StatusKind::Invisible, now)
+        })
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) fn queue_creature_capture(
         &self,
@@ -73,12 +88,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .spell_appearances()
                 .and_then(|a| a.for_look_type(u32::from(rule.look_type)))
                 .is_none()
-            || states.get(runtime, target, session).is_none_or(|player| {
-                states.is_dead(target)
-                    || player
-                        .owned_conditions()
-                        .has_status(StatusKind::Invisible, now)
-            })
+            || !visible_target(runtime, states, target, session, now)
             || self.bundle_map().is_none_or(|map| {
                 map.overlay
                     .base()
@@ -178,6 +188,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(()) => return,
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+            let runtime = self.runtime.lock().await;
+            let now = self.owner_now().get();
+            let eligible = {
+                let states = self.states.spell_states.lock().await;
+                // Crystal mission05_web_terror.lua:88-103 and spider_queen_wrap.lua:23-30.
+                // A queued cast resolves only against a current, visible combat target.
+                visible_target(&runtime, &states, capture.target, capture.session, now)
+                    && capture
+                        .proof
+                        .target_is_current(&runtime, &capture.rule, capture.source, now)
+            };
+            if !eligible {
+                self.update_capture(&capture, None);
+                continue;
+            }
             let result = slot
                 .commit_creature_capture(
                     self.root,
@@ -188,6 +213,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     catalogue,
                 )
                 .await;
+            drop(runtime);
             drop(slot);
             match result {
                 Ok(

@@ -1,7 +1,7 @@
 //! A creature capture originates in the Channel's current native target turn.
 use super::*;
 use crate::foundation::{ChannelRuntimeV1, CharacterLease, ExactActorRef};
-use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback};
+use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, creature_capture::CreatureCapture};
 
 #[derive(Debug, Clone)]
 pub struct QualifiedCreatureCapture {
@@ -26,21 +26,10 @@ impl QualifiedCreatureCapture {
         let capture = callback.effects.creature_capture.as_ref()?;
         let transition = callback.creature_capture_key()?;
         let definition = catalogue.definition_hash(&callback.quest)?;
-        if runtime.current_live_creature_identity(source).ok()? != capture.creature.as_bytes()
-            || runtime.owner_fence().is_err()
-            || runtime.current_player_reentry_protection(target, session, now).ok()?
-            || catalogue.transition(&transition) != callback.creature_capture_transition().ok()?.as_ref()
-        {
+        if catalogue.transition(&transition) != callback.creature_capture_transition().ok()?.as_ref() {
             return None;
         }
-        let lease = runtime.bound_attacker_lease(target, session).ok()?;
-        let origin = runtime.read_actor_position(source).ok()?.position();
-        let victim = runtime.read_actor_position(target).ok()?.position();
-        if origin.floor != victim.floor
-            || origin.x.abs_diff(victim.x).max(origin.y.abs_diff(victim.y)) > u32::from(capture.range)
-        {
-            return None;
-        }
+        let lease = target_lease(runtime, capture, source, target, session, now)?;
         let hash = Sha256::new()
             .chain_update(b"oteryn:creature-capture:v1")
             .chain_update(source.placement_identity())
@@ -62,6 +51,16 @@ impl QualifiedCreatureCapture {
 
     pub fn occurrence(&self) -> [u8; 16] {
         *self.occurrence.as_bytes()
+    }
+
+    pub fn target_is_current(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        rule: &CreatureCapture,
+        source: ExactActorRef,
+        now: u64,
+    ) -> bool {
+        target_lease(runtime, rule, source, self.target, self.session, now) == Some(self.lease)
     }
 
     pub(super) fn current_for(&self, catalogue: &QuestStateCatalogue) -> bool {
@@ -92,6 +91,30 @@ impl QualifiedCreatureCapture {
         binding[1..].copy_from_slice(&digest);
         binding
     }
+}
+
+fn target_lease(
+    runtime: &ChannelRuntimeV1,
+    rule: &CreatureCapture,
+    source: ExactActorRef,
+    target: ExactActorRef,
+    session: GameSessionId,
+    now: u64,
+) -> Option<CharacterLease> {
+    if runtime.current_live_creature_identity(source).ok()? != rule.creature.as_bytes()
+        || runtime.owner_fence().is_err()
+        || runtime.current_player_reentry_protection(target, session, now).ok()?
+    {
+        return None;
+    }
+    let origin = runtime.read_actor_position(source).ok()?.position();
+    let victim = runtime.read_actor_position(target).ok()?.position();
+    if origin.floor != victim.floor
+        || origin.x.abs_diff(victim.x).max(origin.y.abs_diff(victim.y)) > u32::from(rule.range)
+    {
+        return None;
+    }
+    runtime.bound_attacker_lease(target, session).ok()
 }
 
 impl DurabilityRoot {

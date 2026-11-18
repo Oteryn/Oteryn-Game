@@ -1,4 +1,4 @@
-//! Crystal 201189f8 mission05_web_terror.lua:88-111,147-161;
+//! Crystal 201189f8 mission05_web_terror.lua:88-138,147-161;
 //! spider_queen_wrap.lua:1-42 and spider_queen.lua:67-69.
 use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{local, wire};
@@ -236,6 +236,29 @@ pub(super) async fn exercise(
         stage(h).await?,
         2,
         "the queen cannot target a greased player"
+    );
+
+    rewind(owner, 120)?;
+    for _ in 0..4 {
+        owner.drain_monster_melee().await;
+        if owner.states.quest_callbacks.next_encounter_due_us().is_some() {
+            break;
+        }
+        rewind(owner, 5)?;
+    }
+    assert!(
+        owner.states.quest_callbacks.next_encounter_due_us().is_some(),
+        "the native AI queued a wrap after the first grease expired"
+    );
+    assert_eq!(
+        use_object(owner, admitted, STONE).await?,
+        UseDisposition::Committed
+    );
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(
+        stage(h).await?,
+        2,
+        "greasing again before the queued wrap resolves keeps the player invisible"
     );
 
     rewind(owner, 120)?;
