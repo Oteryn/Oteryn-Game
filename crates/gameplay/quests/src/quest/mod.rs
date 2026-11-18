@@ -30,6 +30,7 @@ pub mod barbarian_arena;
 pub mod barbarian_mead;
 #[cfg(test)]
 pub mod batch3_a;
+pub mod blood_brothers_castle;
 pub mod carried_step;
 pub mod children_puzzle;
 pub mod classic_dialogue;
