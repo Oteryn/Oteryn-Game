@@ -462,17 +462,20 @@ pub(super) async fn exercise_wave(
         UseDisposition::NothingToUse,
         "the selected net requires the authored trap ground"
     );
+    let map = owner.bundle_map().ok_or("map")?;
     assert!(map.facts.movement_items(ordinary_ground).is_empty());
     assert_eq!(
         use_quest_tool(owner, admitted, early, 0, 1, 70).await?,
         UseDisposition::NothingToUse,
         "the selected backpack cannot stand in for a carried net"
     );
+    let map = owner.bundle_map().ok_or("map")?;
     assert!(map.facts.movement_items(early).is_empty());
     assert_eq!(
         use_quest_tool(owner, admitted, early, 0, 2, 71).await?,
         UseDisposition::Committed
     );
+    let map = owner.bundle_map().ok_or("map")?;
     assert_eq!(
         map.facts.movement_items(early)[0].facts.appearance_id,
         12187
@@ -488,6 +491,7 @@ pub(super) async fn exercise_wave(
         use_quest_tool(owner, admitted, pos, 0, 3, 72).await?,
         UseDisposition::Committed
     );
+    let map = owner.bundle_map().ok_or("map")?;
     assert!(
         map.facts
             .movement_items(pos)
