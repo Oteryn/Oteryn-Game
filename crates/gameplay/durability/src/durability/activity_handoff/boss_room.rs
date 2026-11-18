@@ -704,19 +704,18 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     // no after-kill timer when the authored value is zero.
     let after_kill_ms: i64 = row.try_get("after_kill_ms")?;
     // The Lore Keeper's lever schedules one kick at the original room deadline.
-    let exit = if row.try_get::<&str, _>("boss_creature_key")?
-        == "oteryn:creature.the_last_lore_keeper"
-    {
-        Some(row.try_get::<i64, _>("deadline")?)
-    } else if after_kill_ms == 0 {
-        None
-    } else {
-        Some(
-            minted
-                .checked_add(after_kill_ms)
-                .ok_or(DurabilityError::InvalidStoredState)?,
-        )
-    };
+    let exit =
+        if row.try_get::<&str, _>("boss_creature_key")? == "oteryn:creature.the_last_lore_keeper" {
+            Some(row.try_get::<i64, _>("deadline")?)
+        } else if after_kill_ms == 0 {
+            None
+        } else {
+            Some(
+                minted
+                    .checked_add(after_kill_ms)
+                    .ok_or(DurabilityError::InvalidStoredState)?,
+            )
+        };
     sqlx::query("UPDATE game_boss_room_activities SET state=2,terminal_at=$3,exit_deadline=$4,defeat_id=encode($5,'hex')::uuid WHERE world_id=encode($1,'hex')::uuid AND instance_id=encode($2,'hex')::uuid AND state=1")
         .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(minted).bind(exit).bind(death.as_slice()).execute(&mut **tx).await?;
     // This native death transaction already proved the exact room, generation and deadline.
