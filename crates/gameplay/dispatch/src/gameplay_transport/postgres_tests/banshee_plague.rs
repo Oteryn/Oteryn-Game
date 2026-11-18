@@ -298,6 +298,11 @@ fn scenario() -> TestResult {
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(1))
                 .ok_or("advance step clock")?;
+            let effect_cursor = map
+                .facts
+                .movement_effects_since(0)
+                .last()
+                .map_or(0, |cue| cue.0);
             let (outcome, _) = owner
                 .ordinary_paced_step(
                     actor,
@@ -318,6 +323,13 @@ fn scenario() -> TestResult {
                 .read_actor_position(actor)
                 .map_err(debug)?;
             assert_eq!(after.position(), local(destination));
+            let cues: Vec<_> = map
+                .facts
+                .movement_effects_since(effect_cursor)
+                .into_iter()
+                .map(|(_, at, effect)| (at, effect))
+                .collect();
+            assert_eq!(cues, [(destination, 11)]);
             assert_eq!(quantity(&h, &pearl).await?, remaining);
             if let Some(second) = &second {
                 assert_eq!(quantity(&h, second).await?, remaining);
