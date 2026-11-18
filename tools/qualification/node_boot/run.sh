@@ -533,7 +533,28 @@ recover_project_postgres() {
   rmdir -- "$POSTGRES_JOURNAL" 2>/dev/null || true
 }
 import_legacy_postgres_project() {
-  local project=$1 journal=$2 record marker
+  local project=$1 journal=$2 record marker records limit scan_rc=0
+  limit=$((POSTGRES_RECOVERY_DEADLINE - SECONDS))
+  if (( limit <= 0 )); then
+    evidence "postgres_recovery=deadline operation=legacy_scan project=$project"
+    return 1
+  fi
+  records=$(mktemp "$WORK/legacy-postgres.XXXXXX") || return 1
+  # Collect a complete scan before importing markers. The parent holds the
+  # project locks, so the bounded scanner does not need to inherit them.
+  timeout --foreground --signal=KILL "${limit}s" find "$journal" -mindepth 1 -maxdepth 1 -type f \
+    \( -name "$project-postgres.*" -o -name "$project-portal-postgres.*" \) -print0 \
+    > "$records" 7>&- 8>&- 9>&- || scan_rc=$?
+  if (( scan_rc != 0 )); then
+    rm -f -- "$records"
+    evidence "postgres_recovery=legacy_scan_failed project=$project exit=$scan_rc"
+    return 1
+  fi
+  if (( SECONDS >= POSTGRES_RECOVERY_DEADLINE )); then
+    rm -f -- "$records"
+    evidence "postgres_recovery=deadline operation=legacy_scan project=$project"
+    return 1
+  fi
   while IFS= read -r -d '' record; do
     marker=${record##*/}
     [[ "${marker##*.}" =~ ^[a-f0-9]{32}$ ]] || continue
@@ -548,8 +569,8 @@ import_legacy_postgres_project() {
         evidence "postgres_recovery=legacy_import_failed project=$project"
         return 1
       }
-  done < <(find "$journal" -mindepth 1 -maxdepth 1 -type f \
-    \( -name "$project-postgres.*" -o -name "$project-portal-postgres.*" \) -print0)
+  done < "$records"
+  rm -f -- "$records"
   rmdir -- "$journal" 2>/dev/null || true
 }
 recover_legacy_postgres() {
@@ -590,27 +611,51 @@ recover_legacy_postgres() {
   done
 }
 recover_owned_postgres() {
-  local journal project POSTGRES_CLEANUP_FAILED=0
+  local journal project name inventory limit POSTGRES_CLEANUP_FAILED=0
   local POSTGRES_RECOVERY_DEADLINE=$((SECONDS + 60))
   recover_legacy_postgres || return 1
+  local -A candidates=()
+  for journal in "$POSTGRES_JOURNALS/"*; do
+    [[ -d "$journal" && "${journal##*/}" != "$WP5_PROJECT" ]] || continue
+    limit=$((POSTGRES_RECOVERY_DEADLINE - SECONDS))
+    if (( limit <= 0 )); then
+      evidence "postgres_recovery=deadline operation=inventory"
+      return 1
+    fi
+    (( limit <= 5 )) || limit=5
+    # Discover foreign candidates in one call. Their actual ownership is
+    # checked against a freshly queried inventory under each project lock.
+    inventory=$(timeout --foreground --signal=KILL "${limit}s" docker container ls --all \
+      --filter label=org.oteryn.node-boot.owner \
+      --format '{{.Names}}') || {
+        evidence "postgres_recovery=inventory_failed scope=foreign_projects"
+        return 1
+      }
+    while IFS= read -r name; do
+      [[ "$name" =~ ^[a-z0-9][a-z0-9_-]*-postgres$ ]] || continue
+      candidates["$name"]=1
+    done <<< "$inventory"
+    break
+  done
+  journal="$POSTGRES_JOURNALS/$WP5_PROJECT"
+  # The requested project always gets a fresh lookup before the foreign sweep.
+  if [[ -d "$journal" ]]; then
+    recover_project_postgres "$WP5_PROJECT" "$journal" || return 1
+  fi
   for journal in "$POSTGRES_JOURNALS/"*; do
     [[ -d "$journal" ]] || continue
     project=${journal##*/}
-    [[ "$project" =~ ^[a-z0-9][a-z0-9_-]*$ ]] || continue
-    if (( SECONDS >= POSTGRES_RECOVERY_DEADLINE )); then
-      evidence "postgres_recovery=deadline operation=project_scan project=$project"
-      return 1
+    [[ "$project" =~ ^[a-z0-9][a-z0-9_-]*$ && "$project" != "$WP5_PROJECT" ]] || continue
+    [[ -n "${candidates["$project-postgres"]:-}" || -n "${candidates["$project-portal-postgres"]:-}" ]] || continue
+    if (( POSTGRES_RECOVERY_DEADLINE - SECONDS < 5 )); then
+      evidence "postgres_recovery=deferred operation=foreign_project_scan project=$project"
+      break
     fi
-    if [[ "$project" == "$WP5_PROJECT" ]]; then
-      recover_project_postgres "$project" "$journal" || return 1
-    else
-      # The caller already holds its own project lock. Skip active projects.
-      (
-        if flock -n 8; then
-          recover_project_postgres "$project" "$journal"
-        fi
-      ) 8>>"$lock_directory/$project" || return 1
-    fi
+    (
+      if flock -n 8; then
+        recover_project_postgres "$project" "$journal"
+      fi
+    ) 8>>"$lock_directory/$project" || return 1
   done
 }
 cleanup_owned_compose() {

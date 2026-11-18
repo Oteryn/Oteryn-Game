@@ -442,20 +442,28 @@ class RoundTwoCallerTests(unittest.TestCase):
 
     def test_postgres_recovery_with_legacy_and_concurrent_journals(self):
         owner = '0123456789abcdef0123456789abcdef'
+        legacy_discovery = function('recover_legacy_postgres').replace(
+            ' /tmp "${NODE_BOOT_LEGACY_TMPDIR:-}"',
+            ' "$FIXTURE/default" "${NODE_BOOT_LEGACY_TMPDIR:-}"',
+        )
         for service in ('postgres', 'portal-postgres'):
-            for scenario in ('legacy', 'legacy_custom', 'legacy_pending', 'legacy_locked',
-                             'vanished_first', 'late_registration', 'inventory_failed'):
+            for scenario in ('legacy', 'legacy_custom', 'legacy_default', 'legacy_pending', 'legacy_locked',
+                             'legacy_scan_failed', 'legacy_scan_timeout', 'vanished_first',
+                             'late_registration', 'inventory_failed', 'budget_starvation', 'foreign_lock'):
                 with self.subTest(service=service, scenario=scenario), tempfile.TemporaryDirectory() as temp:
                     root = Path(temp)
                     current = root / 'tmp'
                     original = root / 'original'
+                    default = root / 'default'
                     locks = root / 'locks'
                     journals = root / 'journal'
-                    for path in (current, original, locks, journals):
+                    for path in (current, original, default, locks, journals):
                         path.mkdir()
+                    work = root / 'work'
+                    work.mkdir()
                     name = f'fixture-{service}'
                     if scenario.startswith('legacy'):
-                        prior = original if scenario == 'legacy_custom' else current
+                        prior = {'legacy_custom': original, 'legacy_default': default}.get(scenario, current)
                         journal = prior / f'node-boot-locks-{os.getuid()}' / 'postgres/fixture'
                         journal.parent.parent.mkdir(mode=0o700)
                     else:
@@ -467,27 +475,60 @@ class RoundTwoCallerTests(unittest.TestCase):
                     if scenario in ('vanished_first', 'late_registration'):
                         first.parent.mkdir()
                         first.touch()
+                    if scenario == 'budget_starvation':
+                        for index in range(13):
+                            project = f'earlier{index:02}'
+                            pending = journals / project
+                            pending.mkdir()
+                            (pending / f'{project}-postgres.{owner}').touch()
                     if scenario not in ('late_registration', 'legacy_pending'):
                         (root / 'registered').touch()
                     setup = r"""
                         set -Eeuo pipefail
                         WP5_PROJECT=fixture lock_directory=$FIXTURE/locks POSTGRES_JOURNALS=$FIXTURE/journal
-                        exec 9>>"$lock_directory/fixture"
+                        WORK=$FIXTURE/work
+                        if [[ "$SCENARIO" == foreign_lock ]]; then WP5_PROJECT=other; fi
+                        exec 9>>"$lock_directory/$WP5_PROJECT"
                         flock -n 9
                         evidence() { echo "$*"; }
-                        timeout() { while [[ $1 == --* ]]; do shift; done; shift; "$@"; }
+                        timeout() {
+                            while [[ $1 == --* ]]; do shift; done
+                            shift
+                            if [[ "$1" == find && "$SCENARIO" == legacy_scan_timeout ]]; then
+                                [[ ! -e /proc/$BASHPID/fd/7 && ! -e /proc/$BASHPID/fd/9 ]] || return 99
+                                return 124
+                            fi
+                            "$@"
+                        }
+                        find() {
+                            [[ "$SCENARIO" != legacy_scan_failed ]] || return 1
+                            command find "$@"
+                        }
                         docker() {
                             case "$1" in
                               container)
                                 if [[ " $* " == *" --format "* ]]; then
+                                    if [[ " $* " == *--filter*fixture-postgres* ]] &&
+                                        flock -n "$lock_directory/fixture" true; then
+                                        echo 'scoped inventory ran without the fixture project lock' >&2
+                                        return 98
+                                    fi
                                     if [[ "$SCENARIO" == inventory_failed ]]; then return 124; fi
+                                    if [[ "$SCENARIO" == budget_starvation && " $* " == *earlier* ]]; then
+                                        echo "$((SECONDS + 5))" > "$FIXTURE/clock"
+                                        return 0
+                                    fi
                                     if [[ "$SCENARIO" == vanished_first ]]; then rm -f -- "$FIRST"; fi
                                     if [[ "$SCENARIO" == late_registration && " $* " != *--filter*fixture-postgres* ]]; then
                                         touch "$FIXTURE/registered"
                                         return 0
                                     fi
                                     if [[ -f "$FIXTURE/registered" ]]; then
-                                        echo "$CONTAINER_NAME $OWNER"
+                                        if [[ "${*: -1}" == '{{.Names}}' ]]; then
+                                            echo "$CONTAINER_NAME"
+                                        else
+                                            echo "$CONTAINER_NAME $OWNER"
+                                        fi
                                     fi
                                 elif [[ -f "$FIXTURE/registered" && " $* " == *"name=^/$CONTAINER_NAME$ "* ]]; then
                                     echo owned-id
@@ -503,23 +544,40 @@ class RoundTwoCallerTests(unittest.TestCase):
                     if scenario == 'vanished_first':
                         setup += r"""
                             set -T
-                            trap 'if [[ $BASH_COMMAND == *"records[0]"* ]]; then rm -f -- "$FIRST"; fi' DEBUG
+                            trap 'if [[ $BASH_COMMAND == "[[ -f "* && $BASH_COMMAND == *"[0]"* ]]; then
+                                rm -f -- "$FIRST"
+                            fi' DEBUG
+                        """
+                    if scenario == 'budget_starvation':
+                        setup += r"""
+                            unset SECONDS
+                            SECONDS=0
+                            set -T
+                            echo 0 > "$FIXTURE/clock"
+                            trap 'read -r SECONDS < "$FIXTURE/clock"' DEBUG
                         """
                     if scenario == 'legacy_locked':
                         setup += 'exec 6>>"$LEGACY_LOCK"; flock -n 6\n'
                     script = setup + '\n'.join(function(n) for n in (
                         'cleanup_owned_postgres', 'recover_project_postgres',
-                        'import_legacy_postgres_project', 'recover_legacy_postgres', 'recover_owned_postgres',
-                    )) + '\nrecover_owned_postgres\n'
+                        'import_legacy_postgres_project', 'recover_owned_postgres',
+                    )) + '\n' + legacy_discovery + '\nrecover_owned_postgres\n'
                     env = dict(FIXTURE=temp, TMPDIR=str(current), SCENARIO=scenario,
                                FIRST=str(first), CONTAINER_NAME=name, OWNER=owner,
                                LEGACY_LOCK=str(journal.parent.parent / 'fixture'),
                                NODE_BOOT_LEGACY_TMPDIR=str(original) if scenario == 'legacy_custom' else '')
                     result = bash(script, env)
-                    if scenario in ('legacy_locked', 'inventory_failed'):
+                    if scenario in ('legacy_locked', 'inventory_failed', 'legacy_scan_failed', 'legacy_scan_timeout'):
                         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-                        reason = 'legacy_project_in_use' if scenario == 'legacy_locked' else 'inventory_failed'
+                        reason = {
+                            'legacy_locked': 'legacy_project_in_use',
+                            'inventory_failed': 'inventory_failed',
+                            'legacy_scan_failed': 'legacy_scan_failed',
+                            'legacy_scan_timeout': 'legacy_scan_failed',
+                        }[scenario]
                         self.assertIn(f'postgres_recovery={reason} project=fixture', result.stdout)
+                        if scenario == 'legacy_scan_timeout':
+                            self.assertIn('exit=124', result.stdout)
                         self.assertTrue(record.exists())
                         self.assertFalse((root / 'removed').exists())
                         continue
@@ -532,6 +590,8 @@ class RoundTwoCallerTests(unittest.TestCase):
                         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                     self.assertTrue((root / 'removed').exists(), result.stdout + result.stderr)
                     self.assertFalse(record.exists())
+                    if scenario == 'budget_starvation':
+                        self.assertEqual((root / 'clock').read_text().strip(), '0')
 
     def test_postgres_cleanup_failure_retains_node_boot_artifacts(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -661,7 +721,11 @@ class RoundTwoCallerTests(unittest.TestCase):
                               container)
                                 if [[ " $* " == *" --format "* ]]; then
                                     if [[ -f "$FIXTURE/registered" ]]; then
-                                        echo "$CONTAINER_NAME 0123456789abcdef0123456789abcdef"
+                                        if [[ "${*: -1}" == '{{.Names}}' ]]; then
+                                            echo "$CONTAINER_NAME"
+                                        else
+                                            echo "$CONTAINER_NAME 0123456789abcdef0123456789abcdef"
+                                        fi
                                     fi
                                     return 0
                                 fi
