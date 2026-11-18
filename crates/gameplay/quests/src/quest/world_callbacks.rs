@@ -681,7 +681,26 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 }
 
 pub fn load() -> Result<Vec<Callback>, String> {
-    let mut callbacks = parse(EMBEDDED)?;
+    load_with_source(EMBEDDED)
+}
+
+/// Admit source fixtures through the production document parser and the full
+/// callback registry before a test installs them in dispatch.
+#[cfg(feature = "test-support")]
+pub fn load_with_source_fixture(rows: &[Callback]) -> Result<Vec<Callback>, String> {
+    let mut document: serde_json::Value =
+        serde_json::from_str(EMBEDDED).map_err(|error| error.to_string())?;
+    let callbacks = document["callbacks"]
+        .as_array_mut()
+        .ok_or("embedded source callbacks")?;
+    for row in rows {
+        callbacks.push(serde_json::to_value(row).map_err(|error| error.to_string())?);
+    }
+    load_with_source(&document.to_string())
+}
+
+fn load_with_source(source: &str) -> Result<Vec<Callback>, String> {
+    let mut callbacks = parse(source)?;
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
     ))?);

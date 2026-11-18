@@ -460,8 +460,16 @@ pub(super) async fn lord(
         }))?);
     }
     if entry_pool.is_some() {
-        callbacks.push(entry::binding()?);
+        let entrance = entry::binding()?;
+        let Err(refused) = oteryn_gameplay_quests::quest::world_callbacks::load_with_source_fixture(
+            std::slice::from_ref(&entrance),
+        ) else {
+            return Err("an entrance without its source circuit must not load".into());
+        };
+        assert!(refused.contains("missing chamber window"), "{refused}");
+        callbacks.push(entrance);
     }
+    let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load_with_source_fixture(&callbacks)?;
     assert!(owner.states.quest_callbacks.fixture.set(callbacks).is_ok());
     if let Some(pool) = entry_pool {
         entry::assert_entry(owner, members, map, pool).await?;
