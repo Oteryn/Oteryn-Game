@@ -86,7 +86,8 @@ pub use effects::{
     EncounterPhase, EncounterPlayer, EncounterTiming, Facing, FluidRelocation, ItemCycle,
     ItemDisguiseRequirement, ItemPresence, MagicEffect, MountReward, PartyStation, PartyTransfer,
     Portal, PortalPair, QuestCompletion, RewardDoor, StepDamage, StepDamageKind,
-    StepDamageVocation, TargetTransform, UseChance, UseSummon, VocationStepDamage,
+    StepDamageVocation, SummonAltarBranch, TargetTransform, UseChance, UseSummon,
+    VocationStepDamage,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
@@ -862,6 +863,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             || peers.iter().any(|peer| {
                 !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
+                    && !effects::summon_branches_disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
                     && !(selector_gates::disjoint(peer, callback)
                         && selector_partitions::disjoint(peer, callback))

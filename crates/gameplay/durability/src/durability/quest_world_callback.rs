@@ -27,6 +27,7 @@ pub async fn test_ground_stack_matches_in_transaction(
 pub mod shared_count;
 mod shared_input;
 pub mod shared_switch;
+mod summon_offering;
 
 use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
@@ -468,6 +469,19 @@ pub(super) async fn consume(
     }
     if !context_is_current(tx, permit, fence, context).await? {
         return Ok(false);
+    }
+    if let Some(branch) = callback
+        .effects
+        .use_summon
+        .as_ref()
+        .and_then(|summon| summon.altar_branch.as_ref())
+        .filter(|branch| !branch.all_present)
+    {
+        // The full offering branch locks and consumes the exact Ground items below.
+        // The alternate branch also checks its absence under the current scope lock.
+        if summon_offering::all_present(tx, fence, context, &branch.altars).await? {
+            return Ok(false);
+        }
     }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
         return Ok(false);

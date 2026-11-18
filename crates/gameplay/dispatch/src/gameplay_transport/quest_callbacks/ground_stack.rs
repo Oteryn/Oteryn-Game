@@ -1,7 +1,6 @@
 //! Read the same Channel overlay used by native movement and pickup.
 use super::*;
 use crate::content::item_ref::ItemDefinitionIndex;
-#[cfg(test)]
 use crate::map::overlay::AddedItem;
 use crate::map::overlay::{ChannelOverlay, quest_ground::snapshot};
 #[cfg(test)]
@@ -62,6 +61,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         candidates.retain(|callback| {
+            if let Some(branch) = callback
+                .effects
+                .use_summon
+                .as_ref()
+                .and_then(|summon| summon.altar_branch.as_ref())
+            {
+                let all_present = branch.altars.iter().all(|altar| {
+                    let pos = tile(altar.position);
+                    ground.overlay().tile(pos).is_some_and(|view| {
+                        view.added().iter().any(|entry| {
+                            let AddedItem::Ground(item) = entry.item() else {
+                                return false;
+                            };
+                            item.definition.family == "Item"
+                                && item.definition.production_key == altar.item
+                                && u64::from(item.quantity) >= u64::from(altar.count)
+                                && item.ground.corpse_ref.starts_with(
+                                    crate::durability::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX,
+                                )
+                        })
+                    })
+                });
+                if all_present != branch.all_present {
+                    return false;
+                }
+            }
             advisory_requirements_match(&callback.world_requirements, index, &|position, count| {
                 snapshot(ground.overlay(), &map.facts, tile(position), count, &|id| {
                     ground.ground_ordinal(id)

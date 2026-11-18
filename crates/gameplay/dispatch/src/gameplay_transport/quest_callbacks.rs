@@ -1049,9 +1049,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .item_reward()
                         .as_ref()
                         .is_none_or(|reward| !reward.premium)
-                    && callback.world_requirements.iter().any(|requirement| {
+                    && (callback.world_requirements.iter().any(|requirement| {
                         requirement.ground.is_some() || requirement.ground_stack.is_some()
-                    })
+                    }) || callback
+                        .effects
+                        .use_summon
+                        .as_ref()
+                        .is_some_and(|summon| summon.altar_branch.is_some()))
             })
         {
             // Completed wire commands replay before this fresh route; pending

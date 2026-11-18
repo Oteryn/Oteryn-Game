@@ -224,6 +224,49 @@ pub struct FluidRelocation {
 #[serde(deny_unknown_fields)]
 pub struct UseSummon {
     pub creature: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub altar_branch: Option<SummonAltarBranch>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SummonAltarBranch {
+    /// Choose this branch when all the altar offerings are present.
+    pub all_present: bool,
+    pub altars: Vec<Offering>,
+}
+
+impl SummonAltarBranch {
+    fn valid(&self, callback: &Callback) -> bool {
+        let unique: BTreeSet<_> = self.altars.iter().map(|altar| altar.position).collect();
+        (1..=8).contains(&self.altars.len())
+            && unique.len() == self.altars.len()
+            && self.altars.iter().all(|altar| {
+                (-15..=0).contains(&altar.position.floor)
+                    && (1..=100).contains(&altar.count)
+                    && super::super::valid_quest_key(&altar.item)
+            })
+            && if self.all_present {
+                callback.offerings == self.altars
+            } else {
+                callback.offerings.is_empty()
+            }
+    }
+}
+
+pub(super) fn summon_branches_disjoint(left: &Callback, right: &Callback) -> bool {
+    fn branch(callback: &Callback) -> Option<&SummonAltarBranch> {
+        callback
+            .effects
+            .use_summon
+            .as_ref()
+            .and_then(|summon| summon.altar_branch.as_ref())
+    }
+    branch(left)
+        .zip(branch(right))
+        .is_some_and(|(left, right)| {
+            left.altars == right.altars && left.all_present != right.all_present
+        })
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -549,6 +592,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || effects.encounter.is_some()
             || effects.scene.is_some()
             || effects.reward_door.is_some()
+            || summon
+                .altar_branch
+                .as_ref()
+                .is_some_and(|branch| !branch.valid(callback))
             || !summon.creature.starts_with("oteryn:creature.")
             || !super::super::valid_quest_key(&summon.creature)
     }) {

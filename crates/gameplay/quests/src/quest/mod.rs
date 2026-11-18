@@ -695,16 +695,19 @@ impl QuestStateCatalogue {
     }
 
     #[cfg(any(test, feature = "test-support"))]
-    pub fn with_world_callback_fixture(
+    pub fn with_world_callback_fixtures(
         &self,
-        callback: world_callbacks::Callback,
+        callbacks: Vec<world_callbacks::Callback>,
     ) -> Result<Self, String> {
-        world_callbacks::validate_callbacks(std::slice::from_ref(&callback))?;
-        let mut enabled = self
-            .with_fixture_transition(world_callbacks::primary_transition(&callback)?)
-            .map_err(|error| format!("{error:?}"))?;
-        enabled.world_fixture = Some(vec![callback]);
-        Ok(enabled)
+        world_callbacks::validate_callbacks(&callbacks)?;
+        let mut catalogue = self.clone();
+        for callback in &callbacks {
+            catalogue = catalogue
+                .with_fixture_transition(world_callbacks::primary_transition(callback)?)
+                .map_err(|error| format!("{error:?}"))?;
+        }
+        catalogue.world_fixture = Some(callbacks);
+        Ok(catalogue)
     }
 
     /// A catalogue with no quest: every transition request is unknown.

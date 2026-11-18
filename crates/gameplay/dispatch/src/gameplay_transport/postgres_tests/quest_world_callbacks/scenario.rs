@@ -410,6 +410,8 @@ fn scenario_case(
         super::super::haunted_ruin::callback(trigger)?
     } else if name == super::super::rahemos_chance::NAME {
         super::super::rahemos_chance::callback(trigger)?
+    } else if name.starts_with(super::super::vampire_hunt::PREFIX) {
+        super::super::vampire_hunt::callback(false)?
     } else if classic_npc {
         callback("behemoth")?
     } else if rotten_purchase {

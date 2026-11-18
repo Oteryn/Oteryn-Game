@@ -50,8 +50,14 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
+    {
+        use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+        let native = owner.active_generation.and_then(|g| g.native_gameplay()).ok_or("native")?;
+        let mut runtime = owner.runtime.lock().await;
+        native.install_companion_policies(&mut runtime).map_err(debug)?;
+    }
     let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    owner.quest_catalogue = Some(Arc::new(catalogue.with_world_callback_fixture(callback(TARGET)?)?));
+    owner.quest_catalogue = Some(Arc::new(catalogue.with_world_callback_fixtures(vec![callback(TARGET)?])?));
     let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
     let old_hash = catalogue.definition_hash(QUEST).ok_or("quest hash")?;
     sqlx::query(
