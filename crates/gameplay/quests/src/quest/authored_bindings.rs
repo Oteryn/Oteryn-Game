@@ -452,10 +452,17 @@ impl Bindings {
         }
         let mut world = super::world_callbacks::load()?;
         world.extend(self.world_callbacks().cloned());
-        if world.len() > MAX_BOUND_STAGES
-            || world.iter().map(|c| &c.key).collect::<BTreeSet<_>>().len() != world.len()
-        {
-            return Err("authored/base world binding collision or bound".into());
+        // Parsed base callbacks and authored stages each have their own input limit.
+        // Composing the two validated registries must preserve both allowances.
+        if world.len() > super::world_callbacks::MAX_RUNTIME_CALLBACKS + MAX_BOUND_STAGES {
+            return Err("combined authored/base world binding limit exceeded".into());
+        }
+        let mut keys = BTreeSet::new();
+        if let Some(duplicate) = world.iter().find(|callback| !keys.insert(&callback.key)) {
+            return Err(format!(
+                "authored/base world binding collision: {}",
+                duplicate.key
+            ));
         }
         catalogue.authored_bindings = Some(std::sync::Arc::new(RuntimeBindings {
             source: self.clone(),
