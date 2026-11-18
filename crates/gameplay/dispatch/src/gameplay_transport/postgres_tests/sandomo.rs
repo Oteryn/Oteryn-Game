@@ -282,7 +282,9 @@ fn scenario(delivery: bool) -> TestResult {
                 (5, "yes", "201"),
                 (6, "trade", "100"),
                 (7, "3", "2 clusters"),
-                (8, "2.0", "1 inquisition gold"),
+                (8, "0", "positive whole number"),
+                (9, "1.5", "positive whole number"),
+                (10, "2.0", "1 inquisition gold"),
             ] {
                 owner.clock_origin = owner
                     .clock_origin
@@ -308,7 +310,7 @@ fn scenario(delivery: bool) -> TestResult {
                     )
                     .await;
                 assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{message}");
-                assert_eq!(outcome.inventory_changed, command_id == 8, "{message}");
+                assert_eq!(outcome.inventory_changed, command_id == 10, "{message}");
                 assert!(
                     outcome.conversation.is_some_and(|reply| reply
                         .lines
