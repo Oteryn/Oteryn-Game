@@ -63,7 +63,8 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             command,
             callback: callback.key.clone(),
             key: Some(callback.creature_target.clone()?),
-            self_target: None, target: Target::FreshCorpse,
+            self_target: None,
+            target: Target::FreshCorpse,
             intent: intent.clone(),
             corpse: Some(CorpseUse {
                 actor: CorpseActorSnapshot::read_current(runtime, actor, fence)?,
@@ -103,8 +104,10 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             || if callback.direct_corpse_use() {
                 carried.is_some()
             } else {
-                carried.and_then(|use_| decode_use_intent_target(&[4, 11, 15], &use_.intent).ok())
-                    .as_ref() != Some(&self.intent)
+                carried
+                    .and_then(|use_| decode_use_intent_target(&[4, 11, 15], &use_.intent).ok())
+                    .as_ref()
+                    != Some(&self.intent)
             }
         {
             return Ok(false);
@@ -137,26 +140,67 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             Err(SpellItemError::Durability(error)) => return Err(error),
             Err(_) => return Ok(false),
         };
-        match corpse
-            .actor
-            .read_in_transaction(
-                tx,
-                &authority,
-                FreshCorpseTarget {
-                    ground: &corpse.operand.ground,
-                    item: corpse.operand.item,
-                    race: &profile.profile.target.key,
-                    race_revision: &profile.profile.target.revision,
-                    // First-form/native expiry remains authoritative; no guessed quest age.
-                    maximum_age_ms: std::num::NonZeroU32::MAX,
-                },
-            )
-            .await
-        {
+        let result = if callback.direct_corpse_use() {
+            let Some(definition) = source_corpse(&profile.profile.data) else {
+                return Ok(false);
+            };
+            if native
+                .creature_profiles()
+                .records
+                .iter()
+                .filter(|record| source_corpse(&record.profile.data) == Some(definition))
+                .count()
+                != 1
+            {
+                return Ok(false);
+            }
+            corpse
+                .actor
+                .read_selected_in_transaction(
+                    tx,
+                    &authority,
+                    &corpse.operand.ground,
+                    corpse.operand.item,
+                    &crate::durability::item_mint::TypedDefinitionRef {
+                        family: "Item".into(),
+                        production_key: definition.key.clone(),
+                        revision_ref: definition.revision.clone(),
+                    },
+                )
+                .await
+        } else {
+            corpse
+                .actor
+                .read_in_transaction(
+                    tx,
+                    &authority,
+                    FreshCorpseTarget {
+                        ground: &corpse.operand.ground,
+                        item: corpse.operand.item,
+                        race: &profile.profile.target.key,
+                        race_revision: &profile.profile.target.revision,
+                        // First-form/native expiry remains authoritative; no guessed quest age.
+                        maximum_age_ms: std::num::NonZeroU32::MAX,
+                    },
+                )
+                .await
+        };
+        match result {
             Ok(value) => Ok(value.is_some()),
             Err(SpellItemError::Database(error)) => Err(error.into()),
             Err(SpellItemError::Durability(error)) => Err(error),
             Err(_) => Ok(false),
         }
     }
+}
+
+fn source_corpse(
+    profile: &oteryn_gameplay_content::content::ProjectV2AuthoringProfileData,
+) -> Option<&oteryn_gameplay_content::content::ProjectV2DefinitionRef> {
+    let oteryn_gameplay_content::content::ProjectV2AuthoringProfileData::Creature(profile) =
+        profile
+    else {
+        return None;
+    };
+    profile.details.as_ref()?.corpse_item.as_ref()
 }

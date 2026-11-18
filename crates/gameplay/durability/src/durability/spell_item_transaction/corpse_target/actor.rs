@@ -67,6 +67,41 @@ impl<'runtime> CorpseActorSnapshot<'runtime> {
         authority: &SpellItemAuthority,
         target: FreshCorpseTarget<'_>,
     ) -> Result<Option<TypedDefinitionRef>> {
+        let Some(scope) = self.read_scope(tx, authority, target.ground).await? else {
+            return Ok(None);
+        };
+        read_current_fresh(
+            tx,
+            &scope,
+            target.ground,
+            target.item,
+            target.race,
+            target.race_revision,
+            target.maximum_age_ms,
+        )
+        .await
+    }
+
+    pub(crate) async fn read_selected_in_transaction(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        authority: &SpellItemAuthority,
+        ground: &SpellGroundTarget,
+        item: [u8; 16],
+        definition: &TypedDefinitionRef,
+    ) -> Result<Option<TypedDefinitionRef>> {
+        let Some(scope) = self.read_scope(tx, authority, ground).await? else {
+            return Ok(None);
+        };
+        super::read_selected_fresh(tx, &scope, ground, item, definition).await
+    }
+
+    async fn read_scope(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        authority: &SpellItemAuthority,
+        ground: &SpellGroundTarget,
+    ) -> Result<Option<SpellItemScopeAuthority>> {
         let fence = self.fence;
         check_transaction(tx, authority).await?;
         if authority.due_read_only
@@ -79,9 +114,8 @@ impl<'runtime> CorpseActorSnapshot<'runtime> {
         {
             return Ok(None);
         }
-        let cell =
-            crate::durability::spell_items_abi::decode_ground_cell(&target.ground.spatial_position)
-                .map_err(SpellItemError::Rejected)?;
+        let cell = crate::durability::spell_items_abi::decode_ground_cell(&ground.spatial_position)
+            .map_err(SpellItemError::Rejected)?;
         // Native corpse custody stores -z; runtime actor positions use z.
         if i32::from(self.position.floor) != -cell.z
             || self.position.x.abs_diff(cell.x) > 1
@@ -91,22 +125,12 @@ impl<'runtime> CorpseActorSnapshot<'runtime> {
         }
         // The Character issuer already acquired the shared physical owner lock,
         // after locking its Character. Preserve that order and physical XID.
-        let scope = SpellItemScopeAuthority {
+        Ok(Some(SpellItemScopeAuthority {
             physical_transaction: authority.physical_transaction.clone(),
             runtime_scope: authority.runtime_scope,
             world: authority.world,
             channel: authority.channel,
             ownership_generation: authority.ownership_generation,
-        };
-        read_current_fresh(
-            tx,
-            &scope,
-            target.ground,
-            target.item,
-            target.race,
-            target.race_revision,
-            target.maximum_age_ms,
-        )
-        .await
+        }))
     }
 }
