@@ -1508,6 +1508,24 @@ fn extend_callbacks(
                 });
             }
         }
+        if let Some(rite) = &callback.effects.party_rite {
+            let entry = callback
+                .storage
+                .iter()
+                .find(|storage| storage.track == rite.entry_track)
+                .ok_or("missing party rite entry guard")?;
+            let track = tracks
+                .iter()
+                .find(|track| track.key == rite.entry_track)
+                .ok_or("missing party rite entry track")?;
+            // Crystal movements_unlock_entrace.lua:95-108 admits an unset entry flag.
+            if !(entry.minimum..=entry.maximum).contains(&track.initial) {
+                return Err(format!(
+                    "party rite {} excludes the initial entry flag",
+                    callback.key
+                ));
+            }
+        }
         state_operations::extend_tracks(callback, &mut tracks)?;
         // Pure gates must not acquire a generic transition: even ADD(0)
         // creates a Character revision, quest state and receipt.

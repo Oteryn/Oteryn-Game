@@ -58,7 +58,7 @@ fn binding() -> Value {
         "requires_world_admission":true,
         "storage":[
             {"track":MISSION,"minimum":3,"maximum":4,"set":3,"preserve":true},
-            {"track":ENTRY,"minimum":0,"maximum":1,"set":1}
+            {"track":ENTRY,"minimum":-1,"maximum":1,"set":1}
         ],
         "effects":{"party_rite":{"stations":stations,"admission_item":CRYSTAL,"entry_track":ENTRY}},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/movements_unlock_entrace.lua:4-119"]
@@ -76,6 +76,13 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
+    assert_eq!(base.track(ENTRY).ok_or("Castle entry track")?.initial, -1);
+    let mut excludes_first_entry = binding();
+    excludes_first_entry["storage"][1]["minimum"] = json!(0);
+    let invalid = json!({"schema":1,"callbacks":[excludes_first_entry]}).to_string();
+    let refusal = world_callbacks::with_fixture_callbacks(base.clone(), &invalid)
+        .err().ok_or("accepted a rite that excludes the initial entry flag")?;
+    assert!(refusal.contains("excludes the initial entry flag"), "{refusal}");
     let fixture = json!({"schema":1,"callbacks":[binding()]}).to_string();
     owner.quest_catalogue = Some(std::sync::Arc::new(
         world_callbacks::with_fixture_callbacks(base.clone(), &fixture)?,
@@ -135,12 +142,16 @@ pub(super) async fn exercise(
         members.push(peer);
     }
     for (index, member) in members.iter().enumerate() {
-        let entered = i64::from(index == 3);
+        // Preserve absent entry rows for the initiator and the member missing a crystal.
+        let mut prerequisites = vec![(MISSION.into(), 3)];
+        if index == 1 || index == 3 {
+            prerequisites.push((ENTRY.into(), i64::from(index == 3)));
+        }
         super::qengine_outfit_stories::seed_quest_prerequisites(
             h,
             owner,
             member,
-            &[(MISSION.into(), 3), (ENTRY.into(), entered)],
+            &prerequisites,
             210 + u8::try_from(index)?,
         )
         .await?;
@@ -151,7 +162,7 @@ pub(super) async fn exercise(
 
     step(owner, admitted, StepDirection::East).await?;
     verify_positions(owner, &members, &STATIONS).await?;
-    assert_eq!(entry_flags(h).await?, vec![0, 0, 0, 1]);
+    assert_eq!(entry_flags(h).await?, vec![0, 1]);
 
     step(owner, admitted, StepDirection::West).await?;
     give_crystal(owner, &members[2], 2).await?;
