@@ -26,6 +26,8 @@ const QUEST: &str = "oteryn:quest.the_rookie_guard_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission06";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua:137-168";
 const EXIT_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua:93-96";
+const TIMEOUT_MESSAGE: &str =
+    "Oh no... you were too slow and the wolves caught up with you. You may try again.";
 
 #[test]
 fn wolf_escape_timer_returns_only_unfinished_attempts_and_allows_retry() -> TestResult {
@@ -47,7 +49,7 @@ fn document() -> serde_json::Value {
          "storage":[{"track":TRACK,"minimum":4,"maximum":4,"set":5}],
          "success_message":"RUUUUUUUUUUUUUUUUUN!",
          "effects":{"personal_return":{"delay_ms":25000,"landing":RETURN,"retry_value":4,
-             "failure_message":"Oh no... you were too slow and the wolves caught up with you. You may try again.",
+             "failure_message":TIMEOUT_MESSAGE,
              "haste":{"multiplier":300,"offset":-24}}},
          "sources":[SOURCE]},
         {"key":"oteryn:quest-callback/rookie-guard-wolf-exit", "quest":QUEST, "trigger":"step_in",
@@ -131,11 +133,53 @@ pub(super) async fn exercise(
         .ok_or("clock")?;
     wire(owner, admitted, 2, 1, step.clone()).await?;
     assert_eq!(stage(h).await?, 5);
+    for command in 3..=4 {
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        wire(
+            owner,
+            admitted,
+            command,
+            1,
+            encode_step_intent(StepDirection::West),
+        )
+        .await?;
+    }
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        local(RETURN)
+    );
+    assert_eq!(stage(h).await?, 5);
+    owner.states.chat.drain(session);
+    expire(h).await?;
+    owner.drain_quest_timers(actor, session).await;
+    assert_eq!(stage(h).await?, 4);
+    assert!(owner.states.chat.drain(session).iter().any(|line| matches!(
+        line,
+        oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == TIMEOUT_MESSAGE
+    )));
+    owner.drain_quest_timers(actor, session).await;
+    assert!(owner.states.chat.drain(session).is_empty());
+
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(26))
+        .ok_or("clock")?;
+    wire(owner, admitted, 5, 1, step.clone()).await?;
+    assert_eq!(stage(h).await?, 5);
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
-    wire(owner, admitted, 3, 1, step).await?;
+    wire(owner, admitted, 6, 1, step).await?;
     assert_eq!(stage(h).await?, 6);
     expire(h).await?;
     owner.drain_quest_timers(actor, session).await;
@@ -152,7 +196,7 @@ pub(super) async fn exercise(
     );
     let returns: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE cause_kind='server_timer' AND transition_key='oteryn:quest-personal-return/rookie-guard-wolf-return'")
         .fetch_one(&h.pool).await?;
-    assert_eq!(returns, 1);
+    assert_eq!(returns, 2);
     Ok(())
 }
 

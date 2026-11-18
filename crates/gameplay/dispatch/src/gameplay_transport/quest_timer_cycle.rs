@@ -188,20 +188,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => return true,
             }
         };
-        if committed {
-            if let Some(proof) = proof {
-                if runtime.commit_source_step(proof).is_err() {
-                    return true;
-                }
-                self.states
-                    .chat
-                    .push_quest_feedback(session, &timer.failure_message);
-            }
+        if committed
+            && let Some(proof) = proof
+            && runtime.commit_source_step(proof).is_err()
+        {
+            return true;
         }
-        let _ = self
+        // Crystal mission06_run_like_wolf.lua:137-143 sends the timeout message
+        // even when the player is already standing on the return tile.
+        let finished = self
             .root
             .finish_personal_return(self.character, self.holder, fence, due)
             .await;
+        if committed && finished.is_ok() {
+            self.states
+                .chat
+                .push_quest_feedback(session, &timer.failure_message);
+        }
         true
     }
 }
