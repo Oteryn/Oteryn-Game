@@ -9,7 +9,7 @@ use crate::map::{
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(super) const MAX_TIMED_ENCOUNTERS: usize = 64;
-const MERCHANT_LOOT_RETRY_US: u64 = 100_000;
+const MERCHANT_CLEANUP_RETRY_US: u64 = 100_000;
 
 pub(super) struct TimedEncounter {
     callback: Callback,
@@ -228,7 +228,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if loot.is_empty() {
                     pending.remove(index);
                 } else {
-                    *due = now.saturating_add(MERCHANT_LOOT_RETRY_US);
+                    *due = now.saturating_add(MERCHANT_CLEANUP_RETRY_US);
                     index += 1;
                 }
                 continue;
@@ -236,6 +236,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if memo.callback.starts_merchant_wave() && now >= memo.reset_at {
                 if let Some((pos, key)) = map.facts.merchant_barricade(memo.key) {
                     if !map.facts.remove_movement_item(pos, key, 3682) {
+                        // A reserved entrance can settle before the next cleanup turn.
+                        memo.attempted_spawn = true;
+                        memo.reset_at = now.saturating_add(MERCHANT_CLEANUP_RETRY_US);
                         index += 1;
                         continue;
                     }
