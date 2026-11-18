@@ -2,6 +2,48 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-callback/blood-brothers-quest-blood-goblet",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32953,
+          "y": 31473,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4285,
+        "ordinal": 1
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/blood_goblet",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The pile of bones is empty.",
+      "success_message": "You have found a blood goblet.",
+      "item_reward": {
+        "item": "oteryn:item.tibia.i8531",
+        "count": 1,
+        "contents": []
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_blood_goblet.lua:3-19",
+        "https://tibia.fandom.com/?curid=30703&oldid=1132612",
+        "tools/content-schema/quest-authoring/samples/chests/empty_containers.json:1728-1743"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/l6/waterskin-of-mead",
       "quest": "oteryn:quest.the_ice_islands_quest",
       "trigger": "use",
