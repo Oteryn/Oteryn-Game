@@ -993,29 +993,37 @@ async fn hunt(
     };
     match open_corpse(client, handle).await {
         Err(error) => rows.fail("loot", "protocol", &error.to_string()),
-        Ok(got) => verify_corpse_loot(rows, items, &species.loot, &got, boost, |extra_rolls| {
-            if !physical {
-                return Ok(BTreeMap::new());
-            }
-            let row = rewards
-                .row(&species.key)
-                .map_err(|error| format!("pinned loot row: {error:?}"))?;
-            let reference = row
-                .loot_table_ref
+        Ok(got) => {
+            let row = if physical {
+                Some(rewards.row(&species.key).map_err(|error| {
+                    failure("loot", "content", format!("pinned loot row: {error:?}"))
+                })?)
+            } else {
+                None
+            };
+            let draw = row
                 .as_ref()
-                .ok_or("pinned loot table has no identity")?;
-            let table = boosted_loot_table(&row.loot_table, extra_rolls, boss_boosted, |key| {
+                .map(|row| {
+                    let reference = row.loot_table_ref.as_ref().ok_or_else(|| {
+                        failure("loot", "content", "pinned loot table has no identity")
+                    })?;
+                    Ok(CorpseLootDraw {
+                        reference,
+                        table: &row.loot_table,
+                        seed: crate::combat::LootPlanDeathKey::new(
+                            clients.world,
+                            clients.channel,
+                            dead.scope_generation().get(),
+                            dead.actor_local_id(),
+                            dead.actor_local_generation(),
+                        ),
+                    })
+                })
+                .transpose()?;
+            verify_corpse_loot(rows, items, &species.loot, &got, boost, draw, |key| {
                 rewards.is_daily_boss_equipment(key)
-            });
-            let seed = crate::combat::LootPlanDeathKey::new(
-                clients.world,
-                clients.channel,
-                dead.scope_generation().get(),
-                dead.actor_local_id(),
-                dead.actor_local_generation(),
-            );
-            seeded_loot(reference, &table, seed, items)
-        })?,
+            })?;
+        }
     }
     Ok(())
 }
@@ -1027,13 +1035,21 @@ enum CorpseLootBoost {
     Boss(Option<[u8; 16]>),
 }
 
+#[derive(Clone, Copy)]
+struct CorpseLootDraw<'a> {
+    reference: &'a crate::combat::LootDefinitionRef,
+    table: &'a crate::combat::LootTableDefinition,
+    seed: crate::combat::LootPlanDeathKey,
+}
+
 fn verify_corpse_loot(
     rows: &mut Rows<'_>,
     items: &crate::content::item_ref::ItemDefinitionIndex,
     binding: &LootBinding,
     got: &BTreeMap<std::num::NonZeroU32, u64>,
     boost: CorpseLootBoost,
-    draw: impl FnOnce(u8) -> TestResult<BTreeMap<std::num::NonZeroU32, u64>>,
+    draw: Option<CorpseLootDraw<'_>>,
+    is_equipment: impl Fn(&str) -> bool,
 ) -> Result<(), Failure> {
     let rolls = match boost {
         CorpseLootBoost::None => 0,
@@ -1047,7 +1063,18 @@ fn verify_corpse_loot(
             ));
         }
     };
-    let expected = draw(rolls).map_err(|error| failure("loot", "content", error))?;
+    let expected = if let Some(draw) = draw {
+        let table = boosted_loot_table(
+            draw.table,
+            rolls,
+            matches!(boost, CorpseLootBoost::Boss(_)),
+            is_equipment,
+        );
+        seeded_loot(draw.reference, &table, draw.seed, items)
+            .map_err(|error| failure("loot", "content", error))?
+    } else {
+        BTreeMap::new()
+    };
     judge_loot(rows, items, binding, got, &expected, rolls != 0);
     Ok(())
 }
@@ -1456,23 +1483,43 @@ mod evidence_tests {
         };
         let reference =
             LootDefinitionRef::new("LootTable", "oteryn:loot.test_boss", "definition-r1");
-        let draw = |rolls| {
-            let table = boosted_loot_table(&source, rolls, true, |_| true);
-            let seed = LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1);
-            seeded_loot(&reference, &table, seed, &items)
+        let draw = CorpseLootDraw {
+            reference: &reference,
+            table: &source,
+            seed: LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
         };
-        let two = draw(2)?;
-        let three = draw(3)?;
+        let expected = |rolls| {
+            let table = boosted_loot_table(&source, rolls, true, |_| true);
+            seeded_loot(&reference, &table, draw.seed, &items)
+        };
+        let two = expected(2)?;
+        let three = expected(3)?;
         assert_ne!(two, three, "the third roll must change this fixture corpse");
         for (occurrence, correct, wrong) in [([0; 16], &three, &two), ([6; 16], &two, &three)] {
             let boost = CorpseLootBoost::Boss(Some(occurrence));
             let mut rows = Rows::new("public_boss");
-            verify_corpse_loot(&mut rows, &items, &binding, wrong, boost, draw)
-                .map_err(|failure| failure.detail)?;
+            verify_corpse_loot(
+                &mut rows,
+                &items,
+                &binding,
+                wrong,
+                boost,
+                Some(draw),
+                |_| true,
+            )
+            .map_err(|failure| failure.detail)?;
             assert_eq!(rows.counts.fail, 1);
             let mut rows = Rows::new("public_boss");
-            verify_corpse_loot(&mut rows, &items, &binding, correct, boost, draw)
-                .map_err(|failure| failure.detail)?;
+            verify_corpse_loot(
+                &mut rows,
+                &items,
+                &binding,
+                correct,
+                boost,
+                Some(draw),
+                |_| true,
+            )
+            .map_err(|failure| failure.detail)?;
             assert_eq!(rows.counts.pass, 1);
         }
         // The wire hunt must feed the occurrence on the matched receipt to the
@@ -1618,7 +1665,7 @@ mod evidence_tests {
         );
         assert!(hunt.contains("boosted_xp("));
         assert!(hunt.contains("expects_physical_loot(definition.reward_boss, death_stamina)"));
-        assert!(hunt.contains("boosted_loot_table("));
+        assert!(hunt.contains("CorpseLootDraw {"));
         assert!(hunt.contains("verify_corpse_loot("));
         let prepare = source
             .split_once("async fn prepare_player(")
