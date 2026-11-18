@@ -328,5 +328,7 @@ fn portal(capacity: Option<u8>) -> TestResult<Callback> {
     Ok(serde_json::from_value(callback)?)
 }
 
+#[path = "feaster_entrance/unwelcome.rs"]
+mod unwelcome;
 #[path = "feaster_entrance/zarganash.rs"]
 mod zarganash;
