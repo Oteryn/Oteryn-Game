@@ -75,9 +75,9 @@ pub const VIEW_WIDTH: i32 = 18;
 pub const VIEW_HEIGHT: i32 = 14;
 pub const VIEW_LEFT: i32 = 8;
 pub const VIEW_TOP: i32 = 6;
-/// The surface native floor; floors `-7..=0` are on or above it.
+/// The Global ground floor. Floors `0..=7` are on or above it.
 pub const SURFACE_FLOOR: i16 = 7;
-/// The highest and lowest native floors.
+/// The highest and lowest Global floors.
 pub const TOP_FLOOR: i16 = 0;
 pub const BOTTOM_FLOOR: i16 = 15;
 

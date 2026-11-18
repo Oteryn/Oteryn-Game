@@ -37,8 +37,6 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
             return Err(fail(format!("unsupported schema; expected {PIN_SCHEMA}")));
         }
         let old: Pin = serde_json::from_value(old).map_err(|e| fail(e.to_string()))?;
-        let identity = derive_identity(root, &slug)?;
-        let (bytes, registry) = build_twice(root, &identity)?;
         let entry_start = super::EntryStart {
             floor: old
                 .entry_start
@@ -48,6 +46,8 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
                 .ok_or_else(|| fail("entry_start: Global floor outside 0..15".into()))?,
             ..old.entry_start
         };
+        let identity = derive_identity(root, &slug)?;
+        let (bytes, registry) = build_twice(root, &identity)?;
         super::entry_start::check(&bytes, entry_start, &registry)?;
         write(
             &pins.join(format!("{slug}.identity.json")),
