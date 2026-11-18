@@ -592,6 +592,19 @@ pub(super) async fn exercise_azaram(
             .commit_creature_relocation(boss, before, to)
             .map_err(debug)?;
         let map = owner.bundle_map().ok_or("admitted bundle map")?;
+        let remains_count = || {
+            map.facts
+                .movement_item_entries()
+                .into_iter()
+                .filter(|(_, entry)| entry.facts.appearance_id == 31160)
+                .count()
+        };
+        assert_eq!(
+            remains_count(),
+            1,
+            "death publishes a physical Cleansed Soul Splinter"
+        );
+
         let step = crate::map::facts::MonsterStep {
             actor: boss,
             from,
@@ -608,6 +621,11 @@ pub(super) async fn exercise_azaram(
             assert_eq!(
                 runtime.companion_snapshot(boss).map_err(debug)?.health,
                 soul.health + soul.maximum_health / 3
+            );
+            assert_eq!(
+                remains_count(),
+                0,
+                "committed monster step consumes the physical remains"
             );
         }
         let maximum = u64::try_from(soul.maximum_health)?;
