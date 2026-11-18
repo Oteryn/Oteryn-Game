@@ -5,6 +5,12 @@ use serde::{Deserialize, Serialize};
 pub const FLUID_POOL: &str = "oteryn:item.tibia.i2886";
 pub const SACRIFICE_FIRE: &str = "oteryn:item.tibia.i2118";
 pub const STONE_KEY: &str = "oteryn:quest-callback/offering-portal/dreamers-challenge-stone";
+const STONE_OFFERINGS: [(u16, u16, &str); 4] = [
+    (32878, 32270, FLUID_POOL),
+    (32881, 32267, "oteryn:item.tibia.i3052"),
+    (32881, 32273, "oteryn:item.tibia.i6299"),
+    (32884, 32270, SACRIFICE_FIRE),
+];
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -22,7 +28,8 @@ impl OfferingPortal {
             && callback.selector.native.as_ref().is_some_and(|source| {
                 source.position != self.position && source.position.floor == self.position.floor
             })
-            && self.position.x > 0 && self.position.y > 0
+            && self.position.x > 0
+            && self.position.y > 0
             && (-15..=0).contains(&self.position.floor)
             && self.sealed > 0
             && self.opened > 0
@@ -35,11 +42,20 @@ impl OfferingPortal {
             && callback.teleport.is_none()
             && callback.item_on_target.is_none()
             && callback.offerings.len() > 1
-            && (callback.key == STONE_KEY
-                || callback
+            && if callback.key == STONE_KEY {
+                callback.offerings.len() == STONE_OFFERINGS.len()
+                    && callback.offerings.iter().zip(STONE_OFFERINGS).all(
+                        |(offering, (x, y, item))| {
+                            offering.position == Position { x, y, floor: -14 }
+                                && offering.item == item
+                        },
+                    )
+            } else {
+                callback
                     .offerings
                     .iter()
-                    .all(|offering| offering.item != FLUID_POOL && offering.item != SACRIFICE_FIRE))
+                    .all(|offering| offering.item != FLUID_POOL && offering.item != SACRIFICE_FIRE)
+            }
             && callback.offerings.iter().all(|offering| {
                 offering.position.floor == self.position.floor && offering.count == 1
             })

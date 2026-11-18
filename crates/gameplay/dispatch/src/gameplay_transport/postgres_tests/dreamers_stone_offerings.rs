@@ -120,8 +120,11 @@ async fn field(
     fence:CurrentCharacterGameplayFence,
 )->TestResult {
     let map = owner.bundle_map().ok_or("map")?;
-    let pin = owner.runtime.lock().await.content_pin().clone();
-    let content = format!("sha256:{}", crate::gameplay_transport::quest_callbacks::hex(&pin.server_artifact_digest()));
+    let (digest, frame) = {
+        let runtime = owner.runtime.lock().await;
+        (runtime.content_pin().server_artifact_digest(), runtime.content_pin().frame_binding_digest())
+    };
+    let content = format!("sha256:{}", digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>());
     let map_revision = crate::map::overlay::map_revision(map.overlay.base());
     let (pos, key) = MATERIALS[3];
     let spatial = crate::durability::map_item_mint_audit::map_item_spatial_position(pos.x,pos.y,pos.floor);
@@ -136,7 +139,7 @@ async fn field(
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8,$9,1)")
         .bind(item.as_slice()).bind(owner.world_id.as_bytes().as_slice()).bind(owner.channel_id.as_bytes().as_slice())
         .bind(fence.scope_ownership_generation.get().to_string()).bind(&spatial).bind(source.as_slice()).bind(&map_revision)
-        .bind(&content).bind(pin.frame_binding_digest().as_slice()).execute(&mut *tx).await?;
+        .bind(&content).bind(frame.as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_spell_item_lines(transaction_id,ordinal,operation_kind,item_instance_id,definition_family,definition_production_key,definition_revision,
         quantity_before,quantity_after,state_revision_before,world_id,channel_id,spatial_position,map_revision,
         content_revision,placement_context,content_generation_digest,immovable_block_solid,expires_at_unix_ms)
@@ -145,7 +148,7 @@ async fn field(
           floor(extract(epoch from clock_timestamp())*1000)::bigint+70000)")
         .bind(source.as_slice()).bind(item.as_slice()).bind(key).bind(owner.world_id.as_bytes().as_slice())
         .bind(owner.channel_id.as_bytes().as_slice()).bind(&spatial).bind(&map_revision).bind(&content)
-        .bind(pin.frame_binding_digest().as_slice()).bind(pin.server_artifact_digest().as_slice()).execute(&mut *tx).await?;
+        .bind(frame.as_slice()).bind(digest.as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
 }
