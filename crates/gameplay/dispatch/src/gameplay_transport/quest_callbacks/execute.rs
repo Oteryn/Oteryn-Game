@@ -1038,45 +1038,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 movement_revision: expected.revision(),
                 party: party_context,
             };
-            let (context, selected_tool, retained_claim) = if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
-                let record = pending.entry(session).or_insert(Pending {
-                    actor,
-                    session,
-                    expected,
-                    callback: callback.key.clone(),
-                    key,
-                    revision: expected_revision,
-                    cause,
-                    origin: None,
-                    context: None,
-                    flame: None,
-                    ingress_settled: false,
-                    participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
-                    flame_effect_sent: false,
-                    projection_target: None,
-                    selected_tool: None,
-                    claim_vitals: None,
-                });
-                record.projection_target = projection_target;
-                // The tool is bound with the first durable context. A replay keeps
-                // that exact binding instead of the replaying caller's tool.
-                if record.context.is_none() {
-                    record.selected_tool = selected_tool.cloned();
-                }
-                let retained_claim = callback.effects.claim.is_some()
-                    && record.context.is_some()
-                    && record.cause == cause
-                    && record.callback == callback.key
-                    && record.key == key
-                    && record.revision == expected_revision;
-                (
-                    record.context.get_or_insert(context).clone(),
-                    record.selected_tool.clone(),
-                    retained_claim,
-                )
-            } else {
-                return UseDisposition::Rejected;
-            };
+            let (context, selected_tool, retained_claim) =
+                if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                    let record = pending.entry(session).or_insert(Pending {
+                        actor,
+                        session,
+                        expected,
+                        callback: callback.key.clone(),
+                        key,
+                        revision: expected_revision,
+                        cause,
+                        origin: None,
+                        context: None,
+                        flame: None,
+                        ingress_settled: false,
+                        participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
+                        flame_effect_sent: false,
+                        projection_target: None,
+                        selected_tool: None,
+                        claim_vitals: None,
+                    });
+                    record.projection_target = projection_target;
+                    // The tool is bound with the first durable context. A replay keeps
+                    // that exact binding instead of the replaying caller's tool.
+                    if record.context.is_none() {
+                        record.selected_tool = selected_tool.cloned();
+                    }
+                    let retained_claim = callback.effects.claim.is_some()
+                        && record.context.is_some()
+                        && record.cause == cause
+                        && record.callback == callback.key
+                        && record.key == key
+                        && record.revision == expected_revision;
+                    (
+                        record.context.get_or_insert(context).clone(),
+                        record.selected_tool.clone(),
+                        retained_claim,
+                    )
+                } else {
+                    return UseDisposition::Rejected;
+                };
             let context = if let Some((source, intent)) = selected_tool {
                 let Some(context) = context.with_selected_tool(source, intent) else {
                     return UseDisposition::Rejected;
@@ -1726,7 +1727,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(message) = success_preface {
             self.states.chat.push_quest_feedback(session, message);
         }
-        if (fresh_effects || claim_presentation) && let Some(speech) = &callback.effects.player_speech {
+        if (fresh_effects || claim_presentation)
+            && let Some(speech) = &callback.effects.player_speech
+        {
             self.states
                 .chat
                 .publish_quest_speech(runtime, actor, session, speech);

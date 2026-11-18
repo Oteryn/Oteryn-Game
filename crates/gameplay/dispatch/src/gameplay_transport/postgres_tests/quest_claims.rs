@@ -46,6 +46,7 @@ const COUNT: &str = "oteryn:quest-progress/qonce-dispatch/count";
 const WELL_ACHIEVEMENT: &str = "oteryn:achievement/fountain_of_life";
 const HOARD_ACHIEVEMENT: &str = "oteryn:achievement/hoard_of_the_dragon";
 const DAILY_REFUSAL: &str = "At the moment there is neither a treasure nor anything else in the fountain. Perhaps you might return later.";
+const FOUNTAIN_RED_GEM: &str = "Something sparkles in the fountain's water. You draw out a red gem.";
 const ANNUAL_REFUSAL: &str = "The chest is empty.";
 const ANNUAL_INELIGIBLE: &str = "You are not eligible to claim these rewards yet.";
 const FEATHERS: &str = "oteryn:quest-progress/qonce-dispatch/feathers";
@@ -391,6 +392,11 @@ async fn fountain_transform(
             *id,
         ).ok_or("fountain source facts")?.appearance_id)
     };
+    let holy_area_count = |owner: &ComposedFreshAdmission<'_, '_, '_>| -> TestResult<usize> {
+        let map = owner.bundle_map().ok_or("fountain map")?;
+        Ok(map.facts.movement_effects_since(0).into_iter()
+            .filter(|(_, _, effect)| *effect == HOLY_AREA_EFFECT).count())
+    };
     assert_eq!(source_appearance(owner)?, LIONS_FOUNTAIN);
     let before = super::qengine_voucher_stories::quantity(h, 3039).await?;
     let original = claim_target(owner)?;
@@ -400,18 +406,27 @@ async fn fountain_transform(
     assert!(super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await.is_err());
     assert!(owner.has_pending_quest_callback(admitted.game_session_id));
     assert_eq!(source_appearance(owner)?, LIONS_FOUNTAIN);
+    assert_eq!(holy_area_count(owner)?, 0);
     assert_eq!(receipts(h).await?, 1);
+    assert_eq!(track_value(h, CHOICE).await?, 1);
     assert_eq!(super::qengine_voucher_stories::quantity(h, 3039).await?, before + 1);
 
     assert!(owner.reconcile_quest_callbacks(admitted.game_session_id).await);
     assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
     assert_eq!(source_appearance(owner)?, LIONS_SANCTUARY_ROCK);
     assert_eq!(claim_target(owner)?.expected_revision, original.expected_revision + 1);
+    assert_eq!(holy_area_count(owner)?, 1);
+    assert!(owner.reconcile_quest_callbacks(admitted.game_session_id).await);
     h.root.advance_test_quest_clock(DAILY_PERIOD).map_err(debug)?;
     advance_interaction(owner)?;
     assert_eq!(use_claim(owner, *admitted, 2).await?, UseDisposition::NothingToUse);
     assert_eq!(receipts(h).await?, 1, "an expired personal clock cannot reopen the shared rock");
     assert_eq!(super::qengine_voucher_stories::quantity(h, 3039).await?, before + 1);
+    assert_eq!(holy_area_count(owner)?, 1);
+    let reward_lines = owner.states.chat.drain(admitted.game_session_id).into_iter()
+        .filter(|line| matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. }
+            if text == FOUNTAIN_RED_GEM)).count();
+    assert_eq!(reward_lines, 1, "recover the selected reward message once");
     Ok(())
 }
 
@@ -472,9 +487,12 @@ pub(super) async fn exercise(
                 "exclude_owned_mount":LION_MOUNT
             }));
         }
+        if name == FOUNTAIN_TRANSFORM {
+            rewards[0]["message"] = json!(FOUNTAIN_RED_GEM);
+        }
         effects = json!({"reset":{"kind":"elapsed","track":LEDGER,"seconds":seconds},
             "selection_track":CHOICE,"rewards":rewards});
-        if name == DAILY {
+        if matches!(name, DAILY | FOUNTAIN_TRANSFORM) {
             effects["actor_magic_effect"] = json!(HOLY_AREA_EFFECT);
         }
         if name == ANNUAL {
