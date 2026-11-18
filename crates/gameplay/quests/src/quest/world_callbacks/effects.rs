@@ -367,6 +367,7 @@ impl TerminalTransfer {
     }
 
     fn valid(self) -> bool {
+        let pos = |position: Position| (-15..=0).contains(&position.floor);
         pos(self.area_min)
             && pos(self.area_max)
             && pos(self.destination)
