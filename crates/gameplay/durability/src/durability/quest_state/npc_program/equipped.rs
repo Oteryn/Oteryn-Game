@@ -38,6 +38,30 @@ pub(super) async fn inventory(
     Ok(inventory)
 }
 
+/// Resolve both custody views within the same transaction for an exchange
+/// whose reward branch can depend on a worn item.
+#[allow(clippy::too_many_arguments, reason = "shares the existing equipment authority inputs")]
+pub(super) async fn exchange_inventory(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
+    command: CommandRef,
+    digest: [u8; 32],
+    keys: &[String],
+    requires_equipment: bool,
+) -> StoredResult<NpcInventorySnapshot> {
+    let mut snapshot = if requires_equipment {
+        inventory(tx, recovery, node, fence, command, digest).await?
+    } else {
+        NpcInventorySnapshot::default()
+    };
+    snapshot.items = super::fathers_burden::inventory_for(tx, fence, keys)
+        .await?
+        .items;
+    Ok(snapshot)
+}
+
 impl DurabilityRoot {
     /// Isolated engine fixture; retains digest admission and every production fence.
     #[cfg(feature = "test-support")]

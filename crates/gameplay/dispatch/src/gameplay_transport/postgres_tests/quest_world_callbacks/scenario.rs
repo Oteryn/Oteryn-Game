@@ -342,6 +342,7 @@ fn scenario_case(
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
+                | super::super::thieves_guild_uniform::NAME
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
         );
@@ -2522,6 +2523,8 @@ fn scenario_case(
                 &mut admitted,
             ))
             .await?;
+        } else if name == super::super::thieves_guild_uniform::NAME {
+            Box::pin(super::super::thieves_guild_uniform::exercise(&mut owner, &admitted, &h)).await?;
         } else if name == "catalogue-npc-inventory" {
             Box::pin(super::super::npc_program_inventory::exercise(
                 &mut owner,

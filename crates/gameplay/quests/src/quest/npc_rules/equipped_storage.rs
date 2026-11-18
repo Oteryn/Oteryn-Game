@@ -2,6 +2,15 @@
 use super::*;
 
 impl NpcRuleCatalog {
+    pub fn has_equipment_guard(&self, npc: &str) -> bool {
+        self.programs
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .filter(|rule| rule.npc == npc)
+            .flat_map(|rule| &rule.guards)
+            .any(|guard| matches!(guard, NpcRuleGuard::Equipped { .. }))
+    }
+
     /// Closed equipment-and-storage branches; item mutation remains on its owner.
     pub fn equipped_storage_requirements(&self, npc: &str) -> Option<BTreeMap<String, String>> {
         let mut required = BTreeMap::new();

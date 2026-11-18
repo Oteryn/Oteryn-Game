@@ -25,6 +25,9 @@ impl NpcRuleCatalog {
                     | NpcRuleGuard::Premium { .. }
                     | NpcRuleGuard::Outfit { .. }
                     | NpcRuleGuard::Sex { .. } => {}
+                    // Crystal 201189f8 data-global/npc/chantalle.lua:82-88.
+                    NpcRuleGuard::Equipped { slot, .. }
+                        if matches!(slot.as_str(), "head" | "necklace") => {}
                     NpcRuleGuard::Item {
                         item,
                         count: 1..=100,

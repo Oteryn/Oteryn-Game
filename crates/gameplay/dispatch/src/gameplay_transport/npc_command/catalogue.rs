@@ -69,9 +69,10 @@ pub(super) async fn inventory(
         let runtime = admission.runtime.lock().await;
         let npc =
             service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
-        let source = NpcRuleCatalog::runtime()
+        let native = admission.quest_catalogue.as_ref()?;
+        let source = NpcRuleCatalog::for_catalogue(native)
             .ok()?
-            .admitted_for_npc(&npc.key, admission.quest_catalogue.as_ref()?)
+            .admitted_for_npc(&npc.key, native)
             .ok()??;
         if !npc_program::inventory_prefetch_required(&npc.key, &source) {
             return None;
@@ -120,7 +121,7 @@ pub(super) async fn appearance(
         // read-only; prepare rechecks the engaged NPC before using the snapshot.
         let npc =
             service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
-        NpcRuleCatalog::runtime()
+        NpcRuleCatalog::for_catalogue(admission.quest_catalogue.as_ref()?)
             .ok()?
             .programs()
             .iter()
@@ -190,7 +191,7 @@ pub(super) fn prepare(
         intent,
     )?;
     let catalogue = admission.quest_catalogue.as_ref()?;
-    let source = NpcRuleCatalog::runtime()
+    let source = NpcRuleCatalog::for_catalogue(catalogue)
         .ok()?
         .admitted_for_npc(&context.2, catalogue)
         .ok()??;

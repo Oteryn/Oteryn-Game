@@ -63,7 +63,7 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let source = NpcRuleCatalog::runtime()
+        let source = NpcRuleCatalog::for_catalogue(catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .admitted_for_npc(npc, catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?
@@ -72,6 +72,7 @@ impl DurabilityRoot {
             .outfit_exchange_keys(npc)
             .or_else(|| source.item_exchange_keys(npc));
         let equipped = source.equipped_storage_requirements(npc).is_some();
+        let requires_equipment = source.has_equipment_guard(npc);
         if !inventory_prefetch_required(npc, &source) {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -105,7 +106,17 @@ impl DurabilityRoot {
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
                         fathers_burden::inventory_for(&mut tx, fence, &keys).await?
                     } else if let Some(keys) = plain {
-                        fathers_burden::inventory_for(&mut tx, fence, &keys).await?
+                        super::equipped::exchange_inventory(
+                            &mut tx,
+                            &recovery,
+                            &node,
+                            fence,
+                            command,
+                            content.loop_content_digest(),
+                            &keys,
+                            requires_equipment,
+                        )
+                        .await?
                     } else if npc == "oteryn:npc.tereban" {
                         fathers_burden::inventory(&mut tx, fence).await?
                     } else if npc == "oteryn:npc.pemaret" {

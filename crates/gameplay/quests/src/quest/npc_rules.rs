@@ -336,13 +336,13 @@ fn npc_false(value: &bool) -> bool {
     !*value
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRuleProgram {
     pub document: NpcRuleDocument,
     pub digest: [u8; 32],
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcRuleCatalog {
     programs: Vec<NpcRuleProgram>,
 }
@@ -501,6 +501,26 @@ impl NpcRuleCatalog {
             .map_err(Clone::clone)
     }
 
+    pub fn for_catalogue(native: &super::QuestStateCatalogue) -> Result<&Self, NpcRuleError> {
+        #[cfg(feature = "test-support")]
+        if let Some(fixture) = &native.npc_fixture {
+            return Ok(fixture);
+        }
+        let _ = native;
+        Self::runtime()
+    }
+
+    /// Validate the fixture and bind its rule digest exactly as content loading does.
+    #[cfg(feature = "test-support")]
+    pub fn bind_fixture(
+        self,
+        native: super::QuestStateCatalogue,
+    ) -> Result<super::QuestStateCatalogue, String> {
+        let mut bound = extend_from_source(native, &BTreeMap::new(), &self)?;
+        bound.npc_fixture = Some(self);
+        Ok(bound)
+    }
+
     /// A..M programs with read-compatible legacy definitions, plus the already active Stag.
     pub fn runtime() -> Result<&'static Self, NpcRuleError> {
         static RUNTIME: std::sync::OnceLock<Result<NpcRuleCatalog, NpcRuleError>> =
@@ -555,6 +575,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
+                                | "oteryn:quest.the_thieves_guild_quest"
                                 | "oteryn:quest.tower_defence_quest"
                         )
                 });
@@ -758,6 +779,14 @@ pub(super) fn extend(
     source_tracks: &BTreeMap<String, String>,
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    extend_from_source(catalogue, source_tracks, source)
+}
+
+fn extend_from_source(
+    catalogue: super::QuestStateCatalogue,
+    source_tracks: &BTreeMap<String, String>,
+    source: &NpcRuleCatalog,
+) -> Result<super::QuestStateCatalogue, String> {
     let mut legacy = catalogue.npc_legacy.clone();
     let predecessors = catalogue.predecessors.clone();
     for program in source.programs() {
