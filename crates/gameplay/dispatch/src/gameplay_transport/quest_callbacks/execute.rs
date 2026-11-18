@@ -736,6 +736,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 if source_flame {
                     3
+                } else if callback.effects.place_item.is_some() || callback.effects.loot_merchant {
+                    8
                 } else {
                     callback.passages.len()
                 },
