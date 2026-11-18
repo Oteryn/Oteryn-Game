@@ -437,3 +437,90 @@ fn fugue_native_combat_closure_qualifies_every_source_attack_and_heal()
     );
     Ok(())
 }
+
+#[test]
+fn arbaziloth_replacement_retries_refused_placement() {
+    use crate::content::creature_policy::CompiledCreaturePolicies;
+    use oteryn_gameplay_entities::{
+        ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId,
+    };
+
+    let world = WorldId::decode(&uuid(1)).unwrap();
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&uuid(2)).unwrap(),
+        NodeId::decode(&uuid(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        32,
+        ChannelContentPin::test(world),
+    )
+    .unwrap();
+    let boss_key = "oteryn:creature.arbaziloth";
+    let forgemaster_key = "oteryn:creature.the_forgemaster";
+    let enraged_key = "oteryn:creature.enraged_arbaziloth";
+    runtime
+        .install_companion_policies(
+            CompiledCreaturePolicies::from_active_artifact(
+                runtime.content_pin().server_artifact_digest(),
+                [boss_key, forgemaster_key, enraged_key]
+                    .into_iter()
+                    .map(policy)
+                    .collect(),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    let session = GameSessionId::decode(&uuid(4)).unwrap();
+    let reservation = runtime.reserve_fresh_session(session).unwrap();
+    let player = runtime.commit_fresh_session(reservation).unwrap();
+    let position = MovementLocalPosition {
+        x: 34030,
+        y: 32330,
+        floor: 14,
+    };
+    let actors = runtime
+        .commit_quest_creature_spawn(&[
+            (boss_key, 100, position),
+            (
+                forgemaster_key,
+                100,
+                MovementLocalPosition {
+                    x: 34031,
+                    ..position
+                },
+            ),
+        ])
+        .unwrap();
+    let (boss, forgemaster) = (actors[0], actors[1]);
+    let mut encounter =
+        arbaziloth::ArbazilothEncounter::bind(&runtime, &[(player, session)], boss, forgemaster)
+            .unwrap();
+    assert!(encounter.shields_for(forgemaster).is_none());
+    let shields = encounter.shields_for(boss).unwrap();
+    for health in [100, 80, 60, 40] {
+        assert_eq!(shields.limit_damage(health, 100, health), 20);
+        assert!(shields.step_on_fire());
+        assert!(shields.use_rod(100, 100));
+    }
+    assert_eq!(
+        encounter.advance(&mut runtime, 3099, |_, _| true).unwrap(),
+        None
+    );
+    assert!(encounter.advance(&mut runtime, 3100, |_, _| false).is_err());
+    assert!(runtime.contains_live_creature(boss));
+    assert!(runtime.contains_live_creature(forgemaster));
+    let enraged = encounter
+        .advance(&mut runtime, 3101, |_, at| at == position)
+        .unwrap()
+        .unwrap();
+    assert!(runtime.matches_live_creature_identity(enraged, enraged_key.as_bytes()));
+    assert!(!runtime.contains_live_creature(boss));
+    assert!(!runtime.contains_live_creature(forgemaster));
+    assert_eq!(
+        encounter.advance(&mut runtime, 3102, |_, _| true).unwrap(),
+        None
+    );
+}
