@@ -29,6 +29,7 @@ enum Case {
     Window,
     WindowConsumed,
     WindowStateless,
+    WindowVisual,
     Area,
     DefeatTime,
     Summon,
@@ -115,12 +116,23 @@ fn stateless_seal_exit_moves_both_players_without_a_quest_write() -> TestResult 
     run(admin, Case::WindowStateless)
 }
 
+#[test]
+fn seal_portal_changes_on_death_and_restores_after_both_players_use_it() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::WindowVisual)
+}
+
 impl Case {
     fn is_window(self) -> bool {
         matches!(
             self,
-            Self::Window | Self::WindowConsumed | Self::WindowStateless
+            Self::Window | Self::WindowConsumed | Self::WindowStateless | Self::WindowVisual
         )
+    }
+    fn is_stateless_window(self) -> bool {
+        matches!(self, Self::WindowStateless | Self::WindowVisual)
     }
 }
 
@@ -148,12 +160,15 @@ fn window_callback(at: MovementLocalPosition, case: Case) -> TestResult<Callback
         "return_on_failure":true,
         "sources":["Crystal201189f creaturescripts_inquisition_boss.lua:19-29"]
     });
-    if case == Case::WindowStateless {
+    if case.is_stateless_window() {
         callback["storage"] = json!([]);
         callback["sources"] =
             json!(["Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:126-134"]);
         callback["effects"]["death_window"]["duration_ms"] = json!(60_000);
         callback["effects"]["death_window"]["required_deaths"] = json!(1);
+    }
+    if case == Case::WindowVisual {
+        callback["effects"]["death_window"]["open_appearance"] = json!(22761);
     }
     Ok(serde_json::from_value(callback)?)
 }
@@ -172,7 +187,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         "summon_owner": case == Case::Summon
     });
     let source = match case {
-        Case::WindowStateless => {
+        Case::WindowStateless | Case::WindowVisual => {
             "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:126-134"
         }
         Case::DefeatTime => {
@@ -275,10 +290,17 @@ fn run(admin: String, case: Case) -> TestResult {
         };
         let world = if case.is_window() {
             let callback = window_callback(at, case)?;
-            Some(super::quest_world_callbacks::world(
-                &callback,
-                callback.selector.position.ok_or("exit tile")?,
-            )?)
+            let position = callback.selector.position.ok_or("exit tile")?;
+            Some(if case == Case::WindowVisual {
+                super::quest_world_callbacks::world_with_objects(
+                    &callback,
+                    position,
+                    &[],
+                    &[22761],
+                )?
+            } else {
+                super::quest_world_callbacks::world(&callback, position)?
+            })
         } else {
             None
         };
@@ -367,12 +389,14 @@ fn run(admin: String, case: Case) -> TestResult {
         let mut owner = deps.owner_from(&h.root, &h.node, &authority);
         owner.active_generation = Some(generation);
         owner.quest_catalogue = Some(Arc::new(catalogue(case, at)?));
+        if let Some(cells) = &cells {
+            owner.movement_cells = cells.into();
+        }
         for player in &players {
             owner.refresh_quest_session(player.session, true).await;
         }
 
-        if let Some(cells) = &cells {
-            owner.movement_cells = cells.into();
+        if cells.is_some() {
             exercise_window(&owner, &players, at, &h.pool, case).await?;
             drop(owner);
             drop(authority);
@@ -470,7 +494,7 @@ fn run(admin: String, case: Case) -> TestResult {
                 assert!((before..=after).contains(&actual));
                 [actual, actual, 0]
             }
-            Case::Window | Case::WindowConsumed | Case::WindowStateless => {
+            Case::Window | Case::WindowConsumed | Case::WindowStateless | Case::WindowVisual => {
                 return Err("timed exit requires bundle cells".into());
             }
         };
@@ -508,17 +532,23 @@ async fn exercise_window(
     for (player, origin) in players.iter().zip(original) {
         assert_eq!(enter_exit(owner, *player, portal).await?, origin);
     }
+    if case == Case::WindowVisual {
+        assert_eq!(portal_appearance(owner, portal)?, 1949);
+    }
     set_clock(199_000);
     death(owner, players, RAT, landing, case, 99).await?;
     set_clock(200_000);
     death(owner, players, RAT, ward, Case::Window, 100).await?;
-    if case != Case::WindowStateless {
+    if !case.is_stateless_window() {
         assert_eq!(enter_exit(owner, players[0], portal).await?, original[0]);
         set_clock(201_000);
         death(owner, players, CAVE_RAT, ward, case, 101).await?;
     }
     set_clock(202_000);
     death(owner, players, RAT, ward, case, 102).await?;
+    if case == Case::WindowVisual {
+        assert_eq!(portal_appearance(owner, portal)?, 22761);
+    }
     assert_eq!(enter_exit(owner, players[0], portal).await?, landing);
     move_to(owner, players[0], original[0]).await?;
     if case == Case::WindowConsumed {
@@ -539,8 +569,8 @@ async fn exercise_window(
     .bind(EXIT)
     .fetch_one(pool)
     .await?;
-    assert_eq!(passed, if case == Case::WindowStateless { 0 } else { 2 });
-    set_clock(if case == Case::WindowStateless {
+    assert_eq!(passed, if case.is_stateless_window() { 0 } else { 2 });
+    set_clock(if case.is_stateless_window() {
         260_000
     } else {
         801_000
@@ -548,7 +578,46 @@ async fn exercise_window(
     for (player, origin) in players.iter().zip(original) {
         assert_eq!(enter_exit(owner, *player, portal).await?, origin);
     }
+    if case == Case::WindowVisual {
+        // The same decay owner runs on the live source cycle.
+        let map = owner.bundle_map().ok_or("seal bundle map")?;
+        assert_eq!(portal_appearance(owner, portal)?, 22761);
+        assert_eq!(map.facts.expire_movement_items(259_999_999), 0);
+        assert_eq!(map.facts.expire_movement_items(260_000_000), 1);
+        assert_eq!(portal_appearance(owner, portal)?, 1949);
+    }
     Ok(())
+}
+
+fn portal_appearance(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    portal: MovementLocalPosition,
+) -> TestResult<u16> {
+    use crate::map::{overlay::TilePos, view::MapFacts};
+    let map = owner.bundle_map().ok_or("seal bundle map")?;
+    let position = TilePos {
+        x: u16::try_from(portal.x)?,
+        y: u16::try_from(portal.y)?,
+        floor: i8::try_from(-portal.floor)?,
+    };
+    let base = map
+        .overlay
+        .base()
+        .tile(position.x, position.y, position.floor)
+        .ok_or("seal tile")?;
+    let id = base
+        .ids()
+        .iter()
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(1)
+        .map(|(id, _)| *id)
+        .ok_or("seal portal")?;
+    Ok(map
+        .facts
+        .base_entry(position, 1, id)
+        .ok_or("seal portal appearance")?
+        .appearance_id)
 }
 
 async fn enter_exit(
