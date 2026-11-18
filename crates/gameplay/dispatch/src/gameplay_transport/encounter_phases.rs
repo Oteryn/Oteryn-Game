@@ -4,6 +4,7 @@ use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
     MovementPositionSnapshot,
 };
+use oteryn_gameplay_encounters::bosses::phase_controller::count_vlarkorth::CountVlarkorthEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_encounters::bosses::phase_controller::duke_krule::DukeKruleEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::zelos::ZelosEncounter;
@@ -59,6 +60,7 @@ impl TimedRoom {
 
 #[derive(Debug)]
 enum Fight {
+    CountVlarkorth(CountVlarkorthEncounter),
     Cults(CultsEncounter),
     DukeKrule(DukeKruleEncounter),
     EarlOsam(EarlOsamEncounter),
@@ -70,6 +72,7 @@ impl Fight {
     fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
         match self {
             Self::Cults(fight) => fight.is_current(runtime),
+            Self::CountVlarkorth(fight) => fight.is_current(runtime),
             Self::DukeKrule(fight) => fight.is_current(runtime),
             Self::EarlOsam(fight) => fight.is_current(runtime),
             Self::Sirs(fight) => fight.is_current(runtime),
@@ -80,6 +83,7 @@ impl Fight {
     fn contains(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains(actor),
+            Self::CountVlarkorth(fight) => fight.contains(actor),
             Self::DukeKrule(fight) => fight.contains(actor),
             Self::EarlOsam(fight) => fight.contains(actor),
             Self::Sirs(fight) => fight.contains(actor),
@@ -90,6 +94,7 @@ impl Fight {
     fn owns_scoped_credit(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(_) => false,
+            Self::CountVlarkorth(fight) => fight.contains(actor),
             Self::DukeKrule(fight) => fight.contains(actor),
             Self::EarlOsam(fight) => fight.contains(actor),
             Self::Sirs(fight) => fight.contains(actor),
@@ -100,7 +105,9 @@ impl Fight {
     fn contains_terminal(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains_terminal(actor),
-            Self::DukeKrule(_) | Self::EarlOsam(_) | Self::Sirs(_) => false,
+            Self::CountVlarkorth(_) | Self::DukeKrule(_) | Self::EarlOsam(_) | Self::Sirs(_) => {
+                false
+            }
             Self::Zelos(fight) => fight.contains_terminal(actor),
         }
     }
@@ -111,6 +118,7 @@ impl Fight {
     ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
         match self {
             Self::Cults(fight) => fight.victors(runtime),
+            Self::CountVlarkorth(fight) => fight.victors(runtime),
             Self::DukeKrule(fight) => fight.victors(runtime),
             Self::EarlOsam(fight) => fight.victors(runtime),
             Self::Sirs(fight) => fight.victors(runtime),
@@ -125,6 +133,7 @@ impl Fight {
     ) -> Result<bool, CarrierError> {
         match self {
             Self::Cults(fight) => fight.projected_death(runtime, actor),
+            Self::CountVlarkorth(fight) => fight.projected_death(runtime, actor),
             Self::DukeKrule(fight) => fight.projected_death(runtime, actor),
             Self::EarlOsam(fight) => fight.projected_death(runtime, actor),
             Self::Sirs(fight) => fight.projected_death(runtime, actor),
@@ -135,6 +144,7 @@ impl Fight {
     fn timeout_participants(&self, now: u64) -> Option<&[(ExactActorRef, GameSessionId)]> {
         match self {
             Self::Cults(_) => None,
+            Self::CountVlarkorth(fight) => fight.timeout_participants(now),
             Self::DukeKrule(fight) => fight.timeout_participants(now),
             Self::EarlOsam(fight) => fight.timeout_participants(now),
             Self::Sirs(fight) => fight.timeout_participants(now),
@@ -145,6 +155,7 @@ impl Fight {
     fn retire(&self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
         match self {
             Self::Cults(_) => Err(CarrierError::PlanConflict),
+            Self::CountVlarkorth(fight) => fight.retire(runtime),
             Self::DukeKrule(fight) => fight.retire(runtime),
             Self::EarlOsam(fight) => fight.retire(runtime),
             Self::Sirs(fight) => fight.retire(runtime),
@@ -171,7 +182,7 @@ impl Fight {
         };
         match self {
             Self::Cults(fight) => fight.advance(runtime, at).map(|_| true),
-            Self::DukeKrule(_) => Err(CarrierError::PlanConflict),
+            Self::CountVlarkorth(_) | Self::DukeKrule(_) => Err(CarrierError::PlanConflict),
             Self::EarlOsam(fight) => match now {
                 Some(now) => fight.advance(runtime, now, at, relocate),
                 None => Ok(true),
@@ -203,6 +214,7 @@ impl Registry {
             .iter()
             .filter_map(|phase| {
                 phase.victory_exit_us.or_else(|| match &phase.fight {
+                    Fight::CountVlarkorth(fight) => Some(fight.next_due_us()),
                     Fight::Cults(_) => None,
                     Fight::DukeKrule(fight) => Some(fight.next_due_us()),
                     Fight::EarlOsam(fight) => Some(fight.next_due_us()),
@@ -440,6 +452,18 @@ pub(super) fn bind(
         })
     };
     let timed = match encounter.phase {
+        Some(EncounterPhase::GraveDangerCountVlarkorth { exit }) => {
+            let room = make_room(exit, None)?;
+            if room.contains(room.exit) || !placement(&cells, runtime, room.exit) {
+                return Err(CarrierError::PlanConflict);
+            }
+            Some((
+                Fight::CountVlarkorth(CountVlarkorthEncounter::bind(
+                    runtime, players, actors, now,
+                )?),
+                room,
+            ))
+        }
         Some(EncounterPhase::GraveDangerDukeKrule { exit }) => {
             let room = make_room(exit, None)?;
             if room.contains(room.exit) || !placement(&cells, runtime, room.exit) {
@@ -694,6 +718,36 @@ fn tick_phase_kind(
             if let Some(participants) = fight.timeout_participants(now) {
                 return !evacuate(runtime, cells, room, participants, &mut exits)
                     || fight.retire(runtime).is_err();
+            }
+            if let Fight::CountVlarkorth(count) = fight {
+                if let Err(error) = count.advance(
+                    runtime,
+                    now,
+                    |at| room.contains(at),
+                    |runtime, at| placement(cells, runtime, at),
+                    |runtime, actor, session| {
+                        use oteryn_gameplay_spell::spell::Vocation::*;
+                        std::option::Option::Some(
+                            match states
+                                .get(runtime, actor, session)?
+                                .character_facts()
+                                .vocation
+                            {
+                                Druid | ElderDruid => "oteryn:creature.dark_druid",
+                                Knight | EliteKnight => "oteryn:creature.dark_knight",
+                                Monk | ExaltedMonk => "oteryn:creature.dark_merudri",
+                                Paladin | RoyalPaladin => "oteryn:creature.dark_paladin",
+                                Sorcerer | MasterSorcerer => "oteryn:creature.dark_sorcerer",
+                                None => return std::option::Option::None,
+                            },
+                        )
+                    },
+                ) {
+                    super::operator_event(&format!(
+                        "encounter_phase_deferred key={key} reason={error:?}"
+                    ));
+                }
+                return true;
             }
             if let Fight::DukeKrule(duke) = fight {
                 if let Ok((source, effects)) =

@@ -6,6 +6,7 @@ use oteryn_gameplay_entities::carrier::Slot;
 use oteryn_gameplay_entities::{CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 
+pub mod count_vlarkorth;
 pub mod cults;
 pub mod duke_krule;
 pub mod earl_osam;
