@@ -134,6 +134,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Ok(None)
     }
 
+    pub(super) async fn lock_quest_teleport_owners(
+        &self,
+    ) -> Option<(
+        tokio::sync::MutexGuard<'_, ChannelRuntimeV1>,
+        tokio::sync::MutexGuard<'_, ChannelSpellStates>,
+    )> {
+        tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            loop {
+                let runtime = self.runtime.lock().await;
+                if let Ok(states) = self.states.spell_states.try_lock() {
+                    break (runtime, states);
+                }
+                // Wait without holding the runtime, then retry in owner order.
+                drop(runtime);
+                drop(self.states.spell_states.lock().await);
+            }
+        })
+        .await
+        .ok()
+    }
+
     pub(super) async fn step_dynamic_quest_portal(
         &self,
         permit: &SpellLanePermit,
@@ -154,20 +175,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return entered;
         };
         let optional_pvp = self.special_movement_policy(permit, actor, session).await;
-        let locks = tokio::time::timeout(std::time::Duration::from_secs(10), async {
-            loop {
-                let runtime = self.runtime.lock().await;
-                if let Ok(states) = self.states.spell_states.try_lock() {
-                    break (runtime, states);
-                }
-                // Keep the established runtime -> spell-state lock order, but
-                // wait for a busy state owner without holding the runtime.
-                drop(runtime);
-                drop(self.states.spell_states.lock().await);
-            }
-        })
-        .await;
-        let Ok((mut runtime, mut states)) = locks else {
+        let Some((mut runtime, mut states)) = self.lock_quest_teleport_owners().await else {
             return entered;
         };
         if runtime.read_actor_position(actor) != Ok(entered)

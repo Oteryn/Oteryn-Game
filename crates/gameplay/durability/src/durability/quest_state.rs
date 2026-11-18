@@ -64,6 +64,8 @@ use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::{CommandId, CommandRef, GameSessionId, RuntimeScopeRefV1};
 
 mod counter_alias;
+mod faction_access;
+pub use faction_access::DepthsFaction;
 mod map_marks;
 pub use map_marks::{PersonalQuestMapMark, QuestMapMarksSnapshot};
 pub mod npc_program;

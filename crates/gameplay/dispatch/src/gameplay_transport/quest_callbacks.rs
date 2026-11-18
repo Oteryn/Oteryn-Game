@@ -15,6 +15,7 @@ mod dreamer_carrot;
 mod effects;
 mod encounter;
 mod execute;
+mod faction_entry;
 mod goblin_elevator;
 mod ground_stack;
 mod mead;
@@ -1382,6 +1383,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Ambiguous content never chooses one action by incidental registration order.
         if selected.is_empty() {
             if !had_callbacks && trigger == Trigger::StepIn {
+                if let Some(destination) = self
+                    .step_depths_faction_entry(permit, actor, session, origin, entered)
+                    .await
+                {
+                    return destination;
+                }
                 return self
                     .step_daily_world_gate(permit, actor, session, origin, entered)
                     .await;
