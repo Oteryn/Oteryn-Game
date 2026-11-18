@@ -61,7 +61,11 @@ fn nightmare_intruders_requires_combined_kills_and_kroazur_in_live_dialogue() ->
                         ).bind(id(41).as_slice()).bind(NIGHTMARE).bind(track).bind(value).execute(&mut *tx).await?;
                     }
                     tx.commit().await?;
-                    owner.refresh_quest_session(admitted.game_session_id, false).await;
+                    if stage == 1 {
+                        owner.refresh_quest_session(admitted.game_session_id, false).await;
+                    }
+                    // The successful confirmation still sees a session copy without
+                    // Kroazur credit. The locked write must use the durable value.
                     talk(&mut owner, &admitted, npc, command, "mission").await?;
                     let lines = talk(&mut owner, &admitted, npc, command + 1, "yes").await?;
                     assert_eq!(lines, threatened_dreams::reply(NPC, line).ok_or("source reply")?);

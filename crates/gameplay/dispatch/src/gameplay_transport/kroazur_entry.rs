@@ -108,6 +108,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if runtime.committed_movement_occurrence(actor) != Ok(Some(movement))
             || runtime.read_actor_position(actor) != Ok(movement.after())
             || states.is_dead(actor)
+            || states.has_pending_spell_commit(actor, session)
         {
             return None;
         }
