@@ -123,11 +123,8 @@ async fn exercise(h: &Harness) -> TestResult {
         .ok_or("native training formula")?;
     let before = DurableBuildState::default();
     let after = convert_vocation(formula, &before, "druid").map_err(debug)?;
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(|()| "build fence")?
-        .ok_or("build fence")?;
+    let fence =
+        super::death_ml_loss_composed::current_fence(&owner, admitted.game_session_id).await?;
     let build = h
         .root
         .commit_character_build(
@@ -149,11 +146,8 @@ async fn exercise(h: &Harness) -> TestResult {
         matches!(build, BuildCommitOutcome::Committed(_)),
         "{build:?}"
     );
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(|()| "experience fence")?
-        .ok_or("experience fence")?;
+    let fence =
+        super::death_ml_loss_composed::current_fence(&owner, admitted.game_session_id).await?;
     let award = h
         .root
         .commit_character_experience(
