@@ -12,12 +12,15 @@ class TamorilSeasonalProgramme(unittest.TestCase):
         value = producer.document()
         self.assertEqual(value, json.loads(producer.TARGET.read_text()))
         self.assertFalse(value['rules'][0]['guards'][0]['within'])
-        for rule in value['rules'][1:]:
+        # The spoiler (oldid 1054086) identifies Tamoril as the seasonal
+        # start contact and Gelidrazah's Thirst as a separate quiz.
+        tamoril = [rule for rule in value['rules'] if rule['npc'] == 'oteryn:npc.tamoril']
+        for rule in tamoril[1:]:
             self.assertEqual(rule['guards'][0], {
                 'kind': 'calendar_window', 'start_month': 1, 'start_day': 14,
                 'end_month': 2, 'end_day': 12, 'within': True})
         reset = {effect['track'].rsplit('/', 1)[-1]
-                 for rule in value['rules'] for effect in rule['effects']
+                 for rule in tamoril for effect in rule['effects']
                  if effect['kind'] == 'set' and effect['value'] == 0}
         self.assertTrue({'dragon_counter', 'gelidrazah_access', 'secrets_counter'} <= reset)
 
