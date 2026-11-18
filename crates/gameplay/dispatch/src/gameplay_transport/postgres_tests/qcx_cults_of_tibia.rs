@@ -272,13 +272,17 @@ fn run_cases(cases: &'static [(&'static str, Option<Position>)]) -> TestResult {
                         .catalogue()
                         .clone(),
                     ));
+                    owner.admit_quest_session(&admitted).await;
                     let [npc] =
                         install_positions(&owner, &admitted, ["oteryn:npc.gerimor"], [trigger])
                             .await?;
                     talk(&mut owner, &admitted, npc, 32000, "hi").await?;
                     talk(&mut owner, &admitted, npc, 32001, "mission").await?;
                     let offer = talk(&mut owner, &admitted, npc, 32002, "minotaurs").await?;
-                    assert!(offer.iter().any(|line| line.contains("animal-like cult")));
+                    assert!(
+                        offer.iter().any(|line| line.contains("animal-like cult")),
+                        "Gerimor offer: {offer:?}"
+                    );
                     talk(&mut owner, &admitted, npc, 32003, "yes").await?;
                     assert_eq!(
                         progress(
