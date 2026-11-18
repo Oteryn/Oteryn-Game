@@ -103,9 +103,13 @@ pub(super) async fn npc(
     // This transport fixture publishes session 50 and lease generation 2.
     // Resolve live authority independently; only the semantic cursor may be retained for replay.
     let session = crate::foundation::GameSessionId::decode(&id(50)).map_err(debug)?;
-    let mut fence = owner.current_quest_fence(session).await
-        .map_err(|_| "M41 current quest fence")?.ok_or("M41 active quest session")?;
-    fence.expected_character_revision = crate::domain::CharacterRevision::new(revision).map_err(debug)?;
+    let mut fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "M41 current quest fence")?
+        .ok_or("M41 active quest session")?;
+    fence.expected_character_revision =
+        crate::domain::CharacterRevision::new(revision).map_err(debug)?;
     owner
         .root
         .commit_character_npc_program(
@@ -142,9 +146,13 @@ pub(super) async fn ready(
     // This transport fixture publishes session 50 and lease generation 2.
     // Resolve live authority independently; only the semantic cursor may be retained for replay.
     let session = crate::foundation::GameSessionId::decode(&id(50)).map_err(debug)?;
-    let mut fence = owner.current_quest_fence(session).await
-        .map_err(|_| "M41 current quest fence")?.ok_or("M41 active quest session")?;
-    fence.expected_character_revision = crate::domain::CharacterRevision::new(revision).map_err(debug)?;
+    let mut fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "M41 current quest fence")?
+        .ok_or("M41 active quest session")?;
+    fence.expected_character_revision =
+        crate::domain::CharacterRevision::new(revision).map_err(debug)?;
     let outcome = owner
         .root
         .commit_character_quest_transition(

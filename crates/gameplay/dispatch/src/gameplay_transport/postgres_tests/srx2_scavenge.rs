@@ -1090,6 +1090,27 @@ async fn exercise_rabbit(
         );
     }
     assert_eq!(body().await?, "oteryn:item.tibia.i4302");
+    let retry = UseCommand {
+        command_id: command_id + 1,
+        ..command
+    };
+    let spent = owner
+        .use_cooking_conversion(
+            actor,
+            retry,
+            intent,
+            Some(ItemKey::Instance(id(71))),
+            Some(ItemKey::Instance(corpse)),
+        )
+        .await;
+    assert!(spent.is_none_or(|outcome| outcome.disposition != UseDisposition::Committed));
+    let attempts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_corpse_skinning_records WHERE corpse_item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(corpse.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(attempts, 1);
     let feet: i64 = sqlx::query_scalar("SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i12172' AND lifecycle=1")
         .fetch_one(&h.pool).await?;
     assert_eq!(feet, 2);
