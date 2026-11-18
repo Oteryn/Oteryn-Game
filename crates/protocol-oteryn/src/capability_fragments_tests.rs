@@ -258,3 +258,13 @@ fn accepted_extensions_require_their_prerequisites() {
         assert!(crate::validate_capability_closure(&[id]).is_err(), "{id}");
     }
 }
+
+#[test]
+fn inventory_capacity_declares_the_redundant_acceptance_prerequisite() {
+    // The handshake cannot isolate 508 -> 6 because 508 -> 4 -> 6 also rejects it.
+    assert!(
+        crate::CAPABILITY_REQUIREMENTS_V1
+            .iter()
+            .any(|(id, requires)| *id == 508 && requires.contains(&6))
+    );
+}

@@ -667,139 +667,206 @@ fn negotiated_names_survive_join_delta_and_visibility_leave() -> Result<(), BoxE
 
 #[test]
 fn retained_entity_handles_are_unique_after_enter_and_update() -> Result<(), BoxError> {
-    let mut first = corpse(1, at(1, 0));
-    first.detail = EntityDetail::Object {
-        item_definition_ref: 9,
-        quantity: 1,
-        item_handle: Some(handle(7)),
-    };
-    let mut second = corpse(2, at(2, 0));
-    second.detail = EntityDetail::Object {
-        item_definition_ref: 9,
-        quantity: 1,
-        item_handle: Some(handle(8)),
-    };
-    let snapshot = WorldSpatialEntitiesSnapshot {
-        content_generation: CONTENT_GENERATION,
-        actor_position: at(0, 0),
-        own_identity: OWN,
-        entities: vec![own(at(0, 0)), first, second],
-    };
-    let store = WorldEntities::from_snapshot(&snapshot, Default::default());
-    second.detail = first.detail;
-    for update in [false, true] {
-        let mut incoming = second;
-        if !update {
-            incoming.entity.identity = [3; 16];
+    block_on(async {
+        let first = loot_corpse(1, 7, at(1, 0));
+        let second = loot_corpse(2, 8, at(2, 0));
+        for native in [false, true] {
+            let capabilities: &[u32] = if native { &[4, 6, 386] } else { &[4, 6] };
+            let (client, peer) =
+                entity_peer(item_snapshot(vec![first, second])?, capabilities, vec![]);
+            let mut session = Session::admit(client, entity_admission()?).await?;
+            for update in [false, true] {
+                let mut incoming = second;
+                if !update {
+                    incoming.entity.identity = [3; 16];
+                }
+                incoming.detail = if native {
+                    EntityDetail::ObjectWithAppearance {
+                        item_definition_ref: 9,
+                        quantity: 1,
+                        item_handle: Some(handle(7)),
+                        appearance_id: std::num::NonZeroU16::MIN,
+                    }
+                } else {
+                    first.detail
+                };
+                assert!(matches!(
+                    retained_entity_delta_error(&mut session, capabilities, incoming, update)?,
+                    SessionError::EntityStoreInconsistent {
+                        reason: "duplicate item handle in entity store"
+                    }
+                ));
+            }
+            assert_eq!(session.visible_appearances().len(), 3);
+            drop(session);
+            peer.await??;
         }
-        let delta = WorldSpatialEntitiesDelta {
-            content_generation: CONTENT_GENERATION,
-            actor_position: at(0, 0),
-            enter: if update { vec![] } else { vec![incoming] },
-            update: if update { vec![incoming] } else { vec![] },
-            leave: vec![],
-        };
-        assert!(store.after(&delta, &Default::default()).is_err());
-        let mut native = delta;
-        let changed = if update {
-            &mut native.update
-        } else {
-            &mut native.enter
-        };
-        changed[0].detail = EntityDetail::ObjectWithAppearance {
-            item_definition_ref: 9,
-            quantity: 1,
-            item_handle: Some(handle(7)),
-            appearance_id: std::num::NonZeroU16::MIN,
-        };
-        assert!(store.after(&native, &Default::default()).is_err());
-        assert_eq!(store.len(), 3);
-    }
-    Ok(())
+        Ok(())
+    })?
 }
 
 #[test]
-fn retained_view_refuses_forecasts_on_other_actors() {
-    let other = actor(EntityKind::Creature, 1, 1, at(1, 0));
-    let mut forecast = other;
-    forecast.motion = Some(oteryn_protocol_oteryn::actor_motion::ActorMotion {
-        prewalk_ms: [100; 8],
-        ..Default::default()
-    });
-    for update in [false, true] {
-        let mut entities = vec![own(at(0, 0))];
-        if update {
-            entities.push(other);
+fn retained_view_refuses_forecasts_on_other_actors() -> Result<(), BoxError> {
+    block_on(async {
+        let capabilities = &[6, 13, 25, 502];
+        let (appearance, player, _) = appearance_session_tests::appearance_fixture::snapshot()?;
+        let other = actor(EntityKind::Creature, 1, 1, at(1, 0));
+        let appearance = appearance.encode().map_err(|e| format!("{e:?}"))?;
+        for update in [false, true] {
+            let mut entities = vec![player];
+            if update {
+                entities.push(other);
+            }
+            let snapshot = WorldSpatialEntitiesSnapshot {
+                content_generation: CONTENT_GENERATION,
+                actor_position: player.position,
+                own_identity: OWN,
+                entities,
+            };
+            let snapshot =
+                world_spatial_entities::encode_world_spatial_entities_snapshot_with_fields(
+                    &snapshot,
+                    world_spatial_entities::EntityFields::selected(capabilities),
+                    &Default::default(),
+                )
+                .map_err(|e| format!("{e:?}"))?;
+            let (client, mut server) = tokio::io::duplex(256 * 1024);
+            let domain = (21, 1, 1, appearance.clone());
+            let peer = tokio::spawn(async move {
+                join_peer_with(
+                    &mut server,
+                    CLIENT_SUPPORTED_CAPABILITIES,
+                    capabilities,
+                    &[],
+                    (2, snapshot),
+                    &[domain],
+                )
+                .await
+            });
+            let mut session = Session::admit(client, entity_admission()?).await?;
+            peer.await??;
+            let mut forecast = other;
+            forecast.motion = Some(oteryn_protocol_oteryn::actor_motion::ActorMotion {
+                prewalk_ms: [100; 8],
+                ..Default::default()
+            });
+            assert!(matches!(
+                retained_entity_delta_error(&mut session, capabilities, forecast, update)?,
+                SessionError::WorldSpatial(world_spatial::WorldSpatialError::Malformed)
+            ));
         }
-        let snapshot = WorldSpatialEntitiesSnapshot {
-            content_generation: CONTENT_GENERATION,
-            actor_position: at(0, 0),
-            own_identity: OWN,
-            entities,
-        };
-        let store = WorldEntities::from_snapshot(&snapshot, Default::default());
-        let delta = WorldSpatialEntitiesDelta {
-            content_generation: CONTENT_GENERATION,
-            actor_position: at(0, 0),
-            enter: if update { vec![] } else { vec![forecast] },
-            update: if update { vec![forecast] } else { vec![] },
-            leave: vec![],
-        };
-        assert!(store.after(&delta, &Default::default()).is_err());
-    }
+        Ok(())
+    })?
+}
+
+fn retained_entity_delta_error(
+    session: &mut Session<DuplexStream>,
+    capabilities: &[u32],
+    incoming: WorldSpatialEntity,
+    update: bool,
+) -> Result<SessionError, BoxError> {
+    let delta = entities_delta(
+        at(0, 0),
+        if update { vec![] } else { vec![incoming] },
+        if update { vec![incoming] } else { vec![] },
+        vec![],
+    );
+    let bytes = world_spatial_entities::encode_world_spatial_entities_delta_with_fields(
+        &delta,
+        world_spatial_entities::EntityFields::selected(capabilities),
+        &Default::default(),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let frame = encode_state_delta(1, 41, 1, 5, 6, 2, &bytes)?;
+    session
+        .apply_state_delta(41, decode_wire_envelope(&frame)?.payload())
+        .err()
+        .ok_or_else(|| "contradictory visibility delta was applied".into())
 }
 
 #[test]
 fn trade_snapshots_require_registered_type() -> Result<(), BoxError> {
-    use oteryn_protocol_oteryn::{DomainSnapshot, decode_snapshot_chunk_framing, player_trade};
-    for (domain_id, capability, payload) in [
-        (8, 3, vec![]),
-        (
-            26,
-            60,
-            player_trade::encode_state(&Default::default())
-                .map_err(|error| format!("{error:?}"))?,
-        ),
-    ] {
-        let spatial = spatial(0);
-        let decode = |snapshot_type,
-                      previous: Option<&crate::snapshot_state::SnapshotState>|
-         -> Result<_, BoxError> {
-            let frames = encode_single_chunk_snapshot(
-                1,
-                1,
-                1,
-                &[
-                    DomainSnapshot {
-                        domain_id: 1,
-                        revision: 1,
-                        snapshot_type: 1,
-                        payload: &spatial,
-                    },
-                    DomainSnapshot {
-                        domain_id,
-                        revision: 1,
-                        snapshot_type,
-                        payload: &payload,
-                    },
-                ],
-            )?;
-            let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frames[1])?;
-            let (_, body) = decode_snapshot_chunk_framing(envelope.payload())?;
-            Ok(crate::snapshot_state::SnapshotState::decode(
-                body,
-                1,
-                &[capability],
-                None,
-                previous,
-            ))
-        };
-        let state = decode(1, None)??;
-        for previous in [None, Some(&state)] {
-            assert!(
-                matches!(decode(2, previous)?, Err(SessionError::UnregisteredSnapshotType { domain_id: id, snapshot_type: 2 }) if id == domain_id)
-            );
+    block_on(async {
+        for (domain_id, capabilities, payload) in [
+            (8, &[3][..], vec![]),
+            (
+                26,
+                &[4, 6, 60][..],
+                player_trade::encode_state(&Default::default())
+                    .map_err(|error| format!("{error:?}"))?,
+            ),
+        ] {
+            for replacement in [false, true] {
+                let payload = payload.clone();
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let (spatial_type, spatial) = if domain_id == 26 {
+                    item_snapshot(vec![])?
+                } else {
+                    (1, spatial(0))
+                };
+                let peer = tokio::spawn(async move {
+                    join_peer_with(
+                        &mut server,
+                        capabilities,
+                        capabilities,
+                        &[],
+                        (spatial_type, spatial.clone()),
+                        &[(
+                            domain_id,
+                            1,
+                            if replacement { 1 } else { 2 },
+                            payload.clone(),
+                        )],
+                    )
+                    .await?;
+                    if replacement {
+                        let frames = encode_single_chunk_snapshot(
+                            1,
+                            2,
+                            41,
+                            &[
+                                DomainSnapshot {
+                                    domain_id: 1,
+                                    revision: 5,
+                                    snapshot_type: spatial_type,
+                                    payload: &spatial,
+                                },
+                                DomainSnapshot {
+                                    domain_id,
+                                    revision: 2,
+                                    snapshot_type: 2,
+                                    payload: &payload,
+                                },
+                            ],
+                        )?;
+                        for frame in frames {
+                            write_frame(&mut server, &frame).await?;
+                        }
+                    }
+                    Ok::<_, BoxError>(())
+                });
+                let admitted = Session::admit(client, admission_with(capabilities)?).await;
+                let error = if replacement {
+                    let mut session = admitted?;
+                    let result = session.service_liveness(Duration::from_millis(300)).await;
+                    assert_eq!(
+                        session
+                            .gated_snapshot(domain_id)
+                            .ok_or("original trade snapshot")?
+                            .revision,
+                        1
+                    );
+                    result.err()
+                } else {
+                    admitted.err()
+                };
+                peer.await??;
+                assert!(
+                    matches!(error, Some(SessionError::UnregisteredSnapshotType { domain_id: id, snapshot_type: 2 }) if id == domain_id),
+                    "domain {domain_id}, replacement={replacement}: {error:?}"
+                );
+            }
         }
-    }
-    Ok(())
+        Ok(())
+    })?
 }

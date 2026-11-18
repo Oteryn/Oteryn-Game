@@ -203,8 +203,31 @@ mod tests {
             fields,
             &EntityLights::new(),
         )?;
+        assert!(
+            bytes
+                .windows(8)
+                .any(|wire| wire == [0x72, 6, 8, 0, 16, 22, 24, 5])
+        );
+        assert!(bytes.windows(3).any(|wire| wire == [0x82, 1, 48]));
         let (decoded, _) = decode_world_spatial_entities_snapshot_with_fields(&bytes, fields)?;
         assert_eq!(decoded.entities, snapshot.entities);
+        let registry: serde_json::Value =
+            serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)
+                .map_err(|_| WorldSpatialError::Malformed)?;
+        let motion = registry["capabilities"]
+            .as_array()
+            .and_then(|entries| entries.iter().find(|entry| entry["id"] == 502))
+            .ok_or(WorldSpatialError::Malformed)?;
+        assert!(
+            motion["offer_gate"]
+                .as_str()
+                .is_some_and(|gate| gate.contains("Field 16 "))
+        );
+        let schema =
+            include_str!("../../../docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto");
+        assert!(schema.contains("repeated NativeCreatureIconV1 native_icons = 14;"));
+        assert!(schema.contains("bytes actor_motion = 16;"));
+
         Ok(())
     }
     #[test]

@@ -1,10 +1,13 @@
 //! Depot command body; predicate and connection control flow stay in `connection.rs`.
 
 use super::super::{
-    AdmittedSession, ExactActorRef, FreshAdmissionAuthority, SessionItemView, UseCommand,
+    AdmittedSession, ExactActorRef, FreshAdmissionAuthority, ItemKey, SessionItemView, UseCommand,
 };
 use super::Dispatch;
-use oteryn_protocol_oteryn::ClientCommandView;
+use oteryn_protocol_oteryn::{
+    ClientCommandView,
+    depot::{DepotAction, DepotOutcome},
+};
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -23,25 +26,30 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             oteryn_protocol_oteryn::depot::decode_depot_intent_at(command.payload, manual_sort)
         {
             let item = match intent.action {
-                oteryn_protocol_oteryn::depot::DepotAction::Deposit(handle) => {
+                DepotAction::Deposit(handle) => {
                     item_view.as_ref().and_then(|view| view.resolve(handle))
                 }
-                oteryn_protocol_oteryn::depot::DepotAction::Withdraw(ordinal) => {
-                    item_view.as_ref().and_then(|view| {
-                        let (town, number) = view.open_depot?;
-                        if view.depot_withdraw_needs_browse
-                            || intent.town != Some(town)
-                            || intent.box_number != number
-                        {
-                            return None;
-                        }
-                        let (_, item) =
-                            view.depot_items.iter().find(|(seen, _)| *seen == ordinal)?;
-                        Some(crate::gameplay_transport::item_view::ItemKey::Instance(
-                            *item,
-                        ))
+                DepotAction::WithdrawDisplayed(ordinal) => item_view.as_ref().and_then(|view| {
+                    let scope = (intent.town?, intent.box_number, intent.page);
+                    if view.depot_selection != Some(scope) {
+                        return None;
+                    }
+                    view.depot_items.iter().find_map(|(shown, item)| {
+                        (*shown == ordinal).then_some(ItemKey::Instance(*item))
                     })
-                }
+                }),
+                DepotAction::Withdraw(ordinal) => item_view.as_ref().and_then(|view| {
+                    let (town, number) = view.open_depot?;
+                    if view.depot_withdraw_needs_browse
+                        || intent.town != Some(town)
+                        || intent.box_number != number
+                    {
+                        return None;
+                    }
+                    view.depot_items.iter().find_map(|(shown, item)| {
+                        (*shown == ordinal).then_some(ItemKey::Instance(*item))
+                    })
+                }),
                 _ => None,
             };
             // A new attempt replaces the connection's previous view, including when
@@ -50,10 +58,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 .as_mut()
                 .map(|view| {
                     view.open_depot = None;
+                    view.depot_selection = None;
                     std::mem::take(&mut view.depot_items)
                 })
                 .unwrap_or_default();
-            let observation = authority
+            let mut observation = authority
                 .depot_at(
                     actor,
                     UseCommand {
@@ -66,40 +75,65 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     item,
                 )
                 .await?;
-            let reply = observation.reply;
-            // A historical MOVED receipt can arrive without a current town/page.
-            // Only a freshly opened, encodable view records owner-observed box data.
-            // This does not grant reach: the writer must still recheck under the lane.
+            let mut reply = observation.reply;
+            let opened = matches!(reply.outcome, DepotOutcome::Opened | DepotOutcome::Moved);
+            // A historical MOVED receipt can arrive without a current town or page.
+            // An encodable current page can issue selection ordinals. Text writing still
+            // records only successful opens and moves, and independently rechecks reach.
             if let Some(view) = item_view.as_mut()
                 && reply.box_number == intent.box_number
                 && reply.page == intent.page
-                && matches!(
-                    reply.outcome,
-                    oteryn_protocol_oteryn::depot::DepotOutcome::Opened
-                        | oteryn_protocol_oteryn::depot::DepotOutcome::Moved
-                )
+                && (opened || manual_sort)
                 && oteryn_protocol_oteryn::depot::encode_depot_reply(&reply).is_ok()
                 && observation.items.len() == reply.entries.len()
-                && observation.items.iter().zip(&reply.entries)
+                && observation
+                    .items
+                    .iter()
+                    .zip(&reply.entries)
                     .all(|((ordinal, _), entry)| *ordinal == entry.ordinal)
-                && !observation.items.iter().enumerate().any(|(index, (_, item))|
-                    observation.items[..index].iter().any(|(_, previous)| previous == item))
+                && !observation
+                    .items
+                    .iter()
+                    .enumerate()
+                    .any(|(index, (_, item))| {
+                        observation.items[..index]
+                            .iter()
+                            .any(|(_, previous)| previous == item)
+                    })
+                && let Some(town) = reply.town
             {
-                view.open_depot = reply.town.map(|town| (town, reply.box_number));
-                if view.open_depot.is_some() {
-                    if intent.action == oteryn_protocol_oteryn::depot::DepotAction::Browse {
-                        view.depot_withdraw_needs_browse = false;
-                    } else {
-                        view.depot_withdraw_needs_browse |=
-                            previous_items.iter().any(|(old_ordinal, old_id)| {
-                                observation
-                                    .items
-                                    .iter()
-                                    .any(|(ordinal, id)| ordinal == old_ordinal && id != old_id)
-                            });
+                if manual_sort {
+                    // A refreshed page always gets new ordinals, even when a
+                    // durable receipt is replayed or the box order did not change.
+                    let next = view.reserve_depot_ordinals(reply.entries.len())?;
+                    for (offset, (entry, (ordinal, _))) in reply
+                        .entries
+                        .iter_mut()
+                        .zip(&mut observation.items)
+                        .enumerate()
+                    {
+                        *ordinal = next - offset as u64;
+                        entry.ordinal = *ordinal;
                     }
-                    view.depot_items = observation.items;
+                    view.depot_selection = Some((town, reply.box_number, reply.page));
+                } else if intent.action == DepotAction::Browse {
+                    view.depot_withdraw_needs_browse = false;
+                } else {
+                    // Legacy pages expose storage ordinals, which a move can reassign.
+                    view.depot_withdraw_needs_browse |=
+                        previous_items.iter().any(|(old_ordinal, old_id)| {
+                            observation
+                                .items
+                                .iter()
+                                .any(|(ordinal, id)| ordinal == old_ordinal && id != old_id)
+                        });
                 }
+                if opened {
+                    view.open_depot = Some((town, reply.box_number));
+                }
+                view.depot_items = observation.items;
+            } else if manual_sort && !reply.entries.is_empty() {
+                return None;
             }
             Dispatch::Depot(reply)
         } else {

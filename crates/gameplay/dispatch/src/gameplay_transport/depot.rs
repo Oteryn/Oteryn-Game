@@ -192,6 +192,17 @@ pub(super) async fn execute(
                         && selected_item == Some(ItemKey::Instance(entry.item.item_instance_id))
                 })
                 .map(|entry| entry.item.item_instance_id),
+            DepotAction::WithdrawDisplayed(_) => match selected_item {
+                Some(ItemKey::Instance(item))
+                    if page
+                        .entries
+                        .iter()
+                        .any(|entry| entry.item.item_instance_id == item) =>
+                {
+                    Some(item)
+                }
+                _ => None,
+            },
             DepotAction::Browse => None,
         };
         outcome = if let Some(item) = item {

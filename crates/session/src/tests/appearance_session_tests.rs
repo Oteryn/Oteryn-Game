@@ -1,4 +1,4 @@
-mod appearance_fixture;
+pub(super) mod appearance_fixture;
 mod item_dictionary_tests;
 mod native_icons;
 use super::*;

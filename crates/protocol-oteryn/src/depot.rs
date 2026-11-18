@@ -12,6 +12,8 @@ pub enum DepotAction {
     Browse,
     Deposit(ItemHandle),
     Withdraw(u64),
+    /// Server routing form of a withdrawal using a capability-510 display ordinal.
+    WithdrawDisplayed(u64),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,7 +71,10 @@ pub fn encode_depot_intent(value: DepotIntent) -> Result<Vec<u8>, Error> {
 pub fn encode_depot_intent_at(value: DepotIntent, slot: Option<u32>) -> Result<Vec<u8>, Error> {
     if !valid(value.box_number, value.page)
         || (value.town.is_none() && value.action != DepotAction::Browse)
-        || matches!(value.action, DepotAction::Withdraw(0))
+        || matches!(
+            value.action,
+            DepotAction::Withdraw(0) | DepotAction::WithdrawDisplayed(0)
+        )
         || (slot.is_some() && !matches!(value.action, DepotAction::Deposit(_)))
     {
         return Err(Error::Malformed);
@@ -77,7 +82,7 @@ pub fn encode_depot_intent_at(value: DepotIntent, slot: Option<u32>) -> Result<V
     let (action, item) = match value.action {
         DepotAction::Browse => (1, 0),
         DepotAction::Deposit(handle) => (2, handle.get()),
-        DepotAction::Withdraw(ordinal) => (3, ordinal),
+        DepotAction::Withdraw(ordinal) | DepotAction::WithdrawDisplayed(ordinal) => (3, ordinal),
     };
     let mut out = Vec::new();
     for (field, number) in [
@@ -126,6 +131,7 @@ pub fn decode_depot_intent_at(
     let action = match fields[0] {
         Some(1) if item == 0 => DepotAction::Browse,
         Some(2) => DepotAction::Deposit(ItemHandle::new(item).ok_or(Error::Malformed)?),
+        Some(3) if item > 0 && manual_sort => DepotAction::WithdrawDisplayed(item),
         Some(3) if item > 0 => DepotAction::Withdraw(item),
         _ => return Err(Error::Malformed),
     };

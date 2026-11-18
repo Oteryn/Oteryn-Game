@@ -198,19 +198,16 @@ pub fn decode_intent(bytes: &[u8]) -> Result<Intent, Error> {
                 }
             }
             let body = body.ok_or(Error::Malformed)?;
-            let number = number.ok_or(Error::Malformed)?;
             if tag == 10 {
                 Intent::Offer {
                     partner: read_entity(body)?,
-                    item: number,
-                }
-            } else if number <= 1 {
-                Intent::Look {
-                    trade_id: id(body)?,
-                    counter_offer: number == 1,
+                    item: number.ok_or(Error::Malformed)?,
                 }
             } else {
-                return Err(Error::Malformed);
+                Intent::Look {
+                    trade_id: id(body)?,
+                    counter_offer: boolean(number.unwrap_or_default())?,
+                }
             }
         }
         _ => return Err(Error::Malformed),
@@ -356,13 +353,13 @@ pub fn decode_state_for(bytes: &[u8], details: bool) -> Result<State, Error> {
         own,
         counter,
         accepted: [
-            accepted_own.ok_or(Error::Malformed)?,
-            accepted_counter.ok_or(Error::Malformed)?,
+            accepted_own.unwrap_or_default(),
+            accepted_counter.unwrap_or_default(),
         ],
         phase: phase.ok_or(Error::Malformed)?,
-        reason: reason.ok_or(Error::Malformed)?,
-        message: message.ok_or(Error::Malformed)?,
-        look: look.ok_or(Error::Malformed)?,
+        reason: reason.unwrap_or_default(),
+        message: message.unwrap_or_default(),
+        look: look.unwrap_or_default(),
     };
     encode_state_for(&state, details)?;
     Ok(state)
@@ -401,7 +398,7 @@ fn read_offer(bytes: &[u8]) -> Result<Offer, Error> {
     let value = Offer {
         definition: definition.ok_or(Error::Malformed)?,
         count: count.ok_or(Error::Malformed)?,
-        sub_type: sub_type.ok_or(Error::Malformed)?,
+        sub_type: sub_type.unwrap_or_default(),
     };
     offer(value)?;
     Ok(value)
