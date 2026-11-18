@@ -269,7 +269,13 @@ pub(super) async fn exercise_osam(
             .ok_or("Earl admitted through USE")?
     };
     let (step, _) = owner
-        .ordinary_paced_step(second, partner.game_session_id, StepDirection::North, None, None)
+        .ordinary_paced_step(
+            second,
+            partner.game_session_id,
+            StepDirection::North,
+            None,
+            None,
+        )
         .await;
     assert_eq!(step.disposition, StepDisposition::Moved);
     assert_position(owner, second, 116, 116).await?;
@@ -533,7 +539,10 @@ async fn use_count_remains(
             .into_iter()
             .find(|&actor| runtime.matches_live_creature_identity(actor, DARK.as_bytes()))
             .ok_or("Dark Knight")?;
-        (dark, runtime.read_actor_position(dark).map_err(debug)?.position())
+        (
+            dark,
+            runtime.read_actor_position(dark).map_err(debug)?.position(),
+        )
     };
     super::engenc2_cults::kill(owner, admitted, dark, DARK, 110).await?;
     assert_eq!(
@@ -546,12 +555,15 @@ async fn use_count_remains(
         y: u16::try_from(dark_position.y)?,
         floor: -i8::try_from(dark_position.floor)?,
     };
-    let remains = map.facts.movement_items(tile).into_iter().find_map(|entry| {
-        match entry.source {
+    let remains = map
+        .facts
+        .movement_items(tile)
+        .into_iter()
+        .find_map(|entry| match entry.source {
             EntrySource::Added(id) if entry.facts.appearance_id == 31203 => Some(id.get()),
             _ => None,
-        }
-    }).ok_or("Dark Knight remains on its death tile")?;
+        })
+        .ok_or("Dark Knight remains on its death tile")?;
     let intent = {
         let mut runtime = owner.runtime.lock().await;
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -1054,6 +1066,72 @@ pub(super) async fn exercise_five(
     super::gravedg_zelos::tick_at(owner, owner.owner_now().get() + 60_000_000).await;
     for member in party {
         assert_position(owner, member.runtime_actor.ok_or("party actor")?, 103, 100).await?;
+    }
+    repeat_after_cooldown(h, owner, party, key).await
+}
+
+async fn repeat_after_cooldown(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    party: &[AdmittedSession],
+    boss: &str,
+) -> TestResult {
+    use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+    use crate::map::view::MapFacts;
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+
+    let expired = sqlx::query(
+        "UPDATE game_character_boss_cooldowns SET available_at = 0 WHERE boss_key = $1",
+    )
+    .bind(boss)
+    .execute(&h.pool)
+    .await?;
+    assert_eq!(expired.rows_affected(), 5);
+    for (index, member) in party.iter().enumerate() {
+        let actor = member.runtime_actor.ok_or("party actor")?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .place_respawned_player(
+                actor,
+                member.game_session_id,
+                MovementLocalPosition {
+                    x: 100,
+                    y: 100 + i32::try_from(index)?,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        owner.admit_quest_session(member).await;
+    }
+    let leader = party.first().ok_or("party leader")?;
+    let map = owner.bundle_map().ok_or("encounter map")?;
+    let key = oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
+    let expected_revision = map.facts.object_revision(key);
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let retry = owner
+        .use_object(
+            leader.runtime_actor.ok_or("leader actor")?,
+            UseCommand {
+                game_session_id: leader.game_session_id,
+                command_id: 111,
+                item_fence: leader.item_fence,
+            },
+            WorldObjectTarget {
+                placement,
+                expected_revision,
+            },
+        )
+        .await;
+    assert_eq!(
+        retry.disposition,
+        UseDisposition::Committed,
+        "credited entrants can fight again when their cooldown expires"
+    );
+    for member in party {
+        assert_position(owner, member.runtime_actor.ok_or("party actor")?, 116, 117).await?;
     }
     Ok(())
 }
