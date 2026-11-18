@@ -9,8 +9,6 @@ mod catalogue {
     include!("immovable_catalogue.rs");
 }
 
-/// Unknown source identities remain blocked. A placement's unique id or action 100
-/// overrides source movability, just as Item::canBeMoved does in the donor.
 fn source_item_type_mask(source_id: u32) -> Option<u8> {
     usize::try_from(source_id)
         .ok()
@@ -24,6 +22,8 @@ pub fn source_item_type_movable(source_id: u16) -> Option<bool> {
     source_item_type_mask(u32::from(source_id)).map(|mask| mask & 8 != 0)
 }
 
+/// Unknown source identities remain blocked. A placement's unique id or action 100
+/// overrides source movability, just as Item::canBeMoved does in the donor.
 pub(super) fn flags(source_id: u32, attrs: &Attrs) -> [bool; 3] {
     let Some(mask) = source_item_type_mask(source_id) else {
         return [true; 3];

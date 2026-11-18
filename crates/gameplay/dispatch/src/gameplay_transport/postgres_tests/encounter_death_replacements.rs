@@ -1,4 +1,4 @@
-//! Crystal 201189f8, forgotten_knowledge/creaturescripts_thorn_knight_death.lua:12-23
+//! Crystal 201189f8, forgotten_knowledge/creaturescripts_thorn_knight_death.lua:1-23
 //! and the_first_dragon/creaturescripts_death_dragon_essence.lua:3-12.
 use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult, fixture::Harness, fixture::debug,
@@ -18,6 +18,10 @@ pub(super) const LORE: &str = "forgotten-knowledge-lore-keeper-death-phase";
 pub(super) const VICTORY: &str = "first-dragon-reward-room-transfer";
 const MOUNTED: &str = "oteryn:creature.mounted_thorn_knight";
 const MOUNTED_SPAWN: Position = at(32624, 32880);
+const SHIELDED_DEATH_TILE: Position = at(32625, 32880);
+// Crystal 201189f8, data/items/items.xml:38499-38504,4091-4093 and data/items/appearances.dat.
+const BLOOD: [u16; 2] = [18615, 18616];
+const MOVABLE_STATUE: u16 = 2025;
 const MOUNTED_ANNOUNCEMENT: &str = "The thorn knight unmounts!";
 const SHIELDED: &str = "oteryn:creature.the_shielded_thorn_knight";
 const ENRAGED: &str = "oteryn:creature.the_enraged_thorn_knight";
@@ -114,7 +118,8 @@ fn angry_plant_corpse_converts_unbeatable_dragon_and_preserves_encounter_members
 }
 
 #[test]
-fn thorn_knight_deaths_spawn_the_shielded_knight_and_steed_then_enraged_knight() -> TestResult {
+fn thorn_knight_advances_both_phases_and_clears_only_fixed_items_on_the_death_tiles() -> TestResult
+{
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -294,7 +299,7 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
     let (quest, source, from, arrival, min, max, monsters, mut death_phases) = if name == EARTH {
         (
             "oteryn:quest.forgotten_knowledge_quest",
-            "forgotten_knowledge/creaturescripts_thorn_knight_death.lua:12-23",
+            "forgotten_knowledge/creaturescripts_thorn_knight_death.lua:1-23",
             at(32657, 32877),
             at(32624, 32886),
             at(32613, 32869),
@@ -302,8 +307,9 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
             vec![json!({"creature":MOUNTED,"position":MOUNTED_SPAWN})],
             json!({"terminal":ENRAGED,"replacements":[
                 {"defeated":MOUNTED,"announcement":{"text":MOUNTED_ANNOUNCEMENT},
+                 "clear_fixed_items_after_ms":1,
                  "spawn":[{"creature":SHIELDED},{"creature":STEED}]},
-                {"defeated":SHIELDED,"spawn":[{"creature":ENRAGED}]}
+                {"defeated":SHIELDED,"spawn":[{"creature":ENRAGED}],"clear_fixed_items_after_ms":1}
             ]}),
         )
     } else {
@@ -451,6 +457,24 @@ pub(super) fn world(
             &CHALLENGERS.map(|at| (at, LEGACY_PORTAL_APPEARANCE)),
             &[],
             &extra,
+        );
+    }
+    if name == EARTH {
+        let mut objects = Vec::new();
+        for position in [MOUNTED_SPAWN, SHIELDED_DEATH_TILE] {
+            objects.extend(
+                BLOOD
+                    .into_iter()
+                    .chain([MOVABLE_STATUE])
+                    .map(|appearance| (position, appearance)),
+            );
+        }
+        return super::quest_world_callbacks::world_with_scene_cells(
+            callback,
+            lever,
+            &objects,
+            &[],
+            &[],
         );
     }
     super::quest_world_callbacks::world_with_cells(callback, lever, &extra)
@@ -731,6 +755,8 @@ pub(super) async fn exercise(
     } else if name == BOWL {
         flower_bowl(owner, admitted, h).await?;
     } else if name == EARTH {
+        use crate::map::view::{MapFacts, placement_key};
+
         let map = owner.bundle_map().ok_or("Earth room")?;
         let announcements = || {
             map.facts
@@ -766,10 +792,56 @@ pub(super) async fn exercise(
                 floor: MOUNTED_SPAWN.floor,
             }
         );
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let expected = runtime.read_actor_position(shielded).map_err(debug)?;
+            runtime
+                .borrow_movement_position()
+                .commit_creature_relocation(
+                    shielded,
+                    expected,
+                    super::quest_world_callbacks::local(SHIELDED_DEATH_TILE),
+                )
+                .map_err(debug)?;
+        }
         super::engenc2_cults::kill(owner, admitted, shielded, SHIELDED, 102).await?;
         assert_eq!(live(owner, ENRAGED).await?.len(), 1);
         assert_eq!(live(owner, STEED).await?.len(), 1);
         assert_eq!(announcements(), lines);
+        let keys = [MOUNTED_SPAWN, SHIELDED_DEATH_TILE].map(|position| {
+            let tile = crate::map::overlay::TilePos {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            };
+            [0, 1, 2, 3].map(|ordinal| placement_key(tile, ordinal).expect("test tile"))
+        });
+        assert!(
+            keys.iter()
+                .flatten()
+                .all(|key| !map.facts.base_hidden(*key))
+        );
+        assert!(map.facts.next_movement_decay_time().is_some());
+        let stop = oteryn_foundation::CancellationToken::new();
+        let observe = async {
+            loop {
+                if keys.iter().all(|[_, first, second, _]| {
+                    map.facts.base_hidden(*first) && map.facts.base_hidden(*second)
+                }) {
+                    stop.cancel();
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+            }
+        };
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            super::fixture::join_two(owner.run_source_owner_cycles(&stop), observe).await;
+        })
+        .await?;
+        assert!(keys.iter().all(|[ground, _, _, statue]| {
+            !map.facts.base_hidden(*ground) && !map.facts.base_hidden(*statue)
+        }));
+        assert_eq!(map.facts.next_movement_decay_time(), None);
     } else if name == ENERGY {
         let map = owner.bundle_map().ok_or("Energy room")?;
         let return_cell = crate::map::overlay::TilePos {
