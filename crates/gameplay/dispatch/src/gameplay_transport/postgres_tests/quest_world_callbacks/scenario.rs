@@ -350,10 +350,18 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if name == super::super::first_dragon_portal::FLOWER {
+    let monster_tile = matches!(
+        name,
+        super::super::first_dragon_portal::BOWL | super::super::first_dragon_portal::FLOWER
+    );
+    let mut callback = if monster_tile {
         let mut binding = callback("first-dragon-exit-35005")?;
         binding.selector.unique = Some(1066);
-        binding.selector.appearance = Some(3657);
+        binding.selector.appearance = Some(if name == super::super::first_dragon_portal::FLOWER {
+            3657
+        } else {
+            2983
+        });
         binding.teleport = None;
         binding
     } else if m03_use {
@@ -1872,8 +1880,10 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if name == super::super::first_dragon_portal::FLOWER {
-            super::super::first_dragon_portal::exercise_blossom(&owner, trigger).await?;
+        if monster_tile {
+            super::super::first_dragon_portal::exercise_monster_tile(
+                &owner, trigger, name == super::super::first_dragon_portal::FLOWER,
+            ).await?;
         } else if name == super::super::first_dragon_portal::NAME {
             Box::pin(super::super::first_dragon_portal::exercise(
                 &owner, &mut admitted, &h, &callback, origin,

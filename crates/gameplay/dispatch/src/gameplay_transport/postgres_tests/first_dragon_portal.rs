@@ -30,18 +30,12 @@ pub(super) async fn exercise(
     wire(owner, admitted, 1, 1, step.clone()).await?;
     let actor = admitted.runtime_actor.ok_or("portal actor")?;
     assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), origin);
-    let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
-    let hash = catalogue.definition_hash(&callback.quest).ok_or("quest definition")?;
-    let mut seed = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *seed).await?;
-    sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) SELECT character_id,$1,'content-1',$2,character_revision,character_revision FROM game_character_roots")
-        .bind(&callback.quest).bind(hash.as_slice()).execute(&mut *seed).await?;
-    for state in &callback.storage {
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$1,$2,$3,character_revision FROM game_character_roots")
-            .bind(&state.track).bind(&callback.quest).bind(state.minimum).execute(&mut *seed).await?;
-    }
-    seed.commit().await?;
+    let requirements: Vec<_> = callback.storage.iter()
+        .map(|state| (state.track.clone(), state.minimum))
+        .collect();
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        h, owner, admitted, owner.character, &requirements, 105,
+    ).await?;
     owner.admit_quest_session(admitted).await;
     wire(owner, admitted, 2, 1, step).await?;
     let encounter = callback.effects.encounter.as_ref().ok_or("descendant encounter")?;
@@ -62,35 +56,42 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+pub(super) const BOWL: &str = "first-dragon-flower-bowl";
 pub(super) const FLOWER: &str = "first-dragon-heaven-blossom";
 
 #[test]
-fn first_dragon_heaven_blossom_replaces_spirit_at_committed_step_postgres() -> TestResult {
+fn first_dragon_native_monster_tiles_transform_source_creatures_postgres() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run(FLOWER, || {
-        super::quest_world_callbacks::scenario(FLOWER, Position { x: 33625, y: 31021, floor: -14 }, false)
+        let target = Position { x: 33625, y: 31021, floor: -14 };
+        super::quest_world_callbacks::scenario(FLOWER, target, false)?;
+        super::quest_world_callbacks::scenario(BOWL, target, false)
     })
 }
 
-pub(super) async fn exercise_blossom(
+pub(super) async fn exercise_monster_tile(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     target: Position,
+    consume: bool,
 ) -> TestResult {
     use crate::map::view::MapFacts;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
-    const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
-    const PLANT: &str = "oteryn:creature.angry_plant";
+    let (source, replacement) = if consume {
+        ("oteryn:creature.spirit_of_fertility", "oteryn:creature.angry_plant")
+    } else {
+        ("oteryn:creature.unbeatable_dragon", "oteryn:creature.somewhat_beatable")
+    };
     let tile = super::quest_world_callbacks::local(target);
     let from = MovementLocalPosition { y: tile.y + 1, ..tile };
     let map = owner.bundle_map().ok_or("blossom bundle")?;
     let mut runtime = owner.runtime.lock().await;
     let native = owner.active_generation.and_then(|g| g.native_gameplay()).ok_or("native policies")?;
     native.install_companion_policies(&mut runtime).map_err(debug)?;
-    let health = runtime.companion_policy(SPIRIT).map_err(debug)?.maximum_health;
-    let spirits = runtime.commit_quest_creature_spawn(&[(SPIRIT, health, from)]).map_err(debug)?;
+    let health = runtime.companion_policy(source).map_err(debug)?.maximum_health;
+    let spirits = runtime.commit_quest_creature_spawn(&[(source, health, from)]).map_err(debug)?;
     let spirit = *spirits.first().ok_or("spawned spirit")?;
     runtime.commit_quest_platform_displacement(from, tile, |_, _, _| true, || {
         map.facts.record_monster_step(crate::map::facts::MonsterStep { actor: spirit, from, to: tile })
@@ -102,9 +103,9 @@ pub(super) async fn exercise_blossom(
     assert!(!runtime.contains_live_creature(spirit));
     assert!(runtime.positioned_melee_census().map_err(debug)?.iter().any(|(actor, position, session)| {
         session.is_none() && position.position() == tile
-            && runtime.companion_snapshot(*actor).is_ok_and(|snapshot| snapshot.state.policy.definition_key == PLANT)
+            && runtime.companion_snapshot(*actor).is_ok_and(|snapshot| snapshot.state.policy.definition_key == replacement)
     }));
     let key = oteryn_world_bundle::bundle::placement_key(target.floor, target.x, target.y, 1).ok_or("blossom placement")?;
-    assert!(map.facts.base_hidden(key));
+    assert_eq!(map.facts.base_hidden(key), consume);
     Ok(())
 }
