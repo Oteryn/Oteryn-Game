@@ -65,7 +65,7 @@ fn signed_field(payload: &mut [u8], path: &[u8]) {
                 if path == [field as u8] {
                     // Every valid Global z fits one byte in either zigzag form.
                     assert_eq!(cursor, start + 1);
-                    assert!(value > 0 && value <= 30 && value % 2 == 0);
+                    assert!(value > 0 && value <= 30 && value.is_multiple_of(2));
                     payload[start] -= 1;
                 }
             }
