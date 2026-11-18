@@ -500,6 +500,7 @@ fn labelled_offer_inspection_routes_each_side_and_displays_server_description() 
 #[test]
 fn trade_contents_decode_render_and_indexed_inspection_use_the_retained_snapshot() -> TestResult {
     let (mut app, mut commands, outbox) = app()?;
+    super::super::item_details::install(&mut app);
     let mut state = panel().state.ok_or("state")?;
     let root = state.own.ok_or("own")?;
     state.contents[0] = vec![
@@ -530,13 +531,16 @@ fn trade_contents_decode_render_and_indexed_inspection_use_the_retained_snapshot
             value: state,
         },
     )]);
-    app.world()
+    let link = app
+        .world()
         .non_send::<HostOwner>()
         .play
         .as_ref()
         .ok_or("play")?
         .link
-        .bevy_item_details_selected(true);
+        .bevy_item_details_link();
+    link.bevy_item_details_selected(true);
+    assert!(!link.inspection_panel().open);
     app.update();
     assert!(
         app.world_mut()
@@ -557,6 +561,37 @@ fn trade_contents_decode_render_and_indexed_inspection_use_the_retained_snapshot
             counter: false,
             index: 1
         }
+    );
+    use oteryn_client_ui::inspection::{InspectedItem, Reply, encode_reply};
+    let payload = encode_reply(&Reply {
+        status: 1,
+        requests: vec![],
+        catalogue: None,
+        items: vec![InspectedItem {
+            slot: 0,
+            definition_ref: 42,
+            count: 7,
+            tier: 0,
+            name: "fish".into(),
+            attributes: vec![("Description".into(), "Freshly caught fish".into())],
+        }],
+    })
+    .map_err(|error| format!("{error:?}"))?;
+    link.bevy_item_details_response(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 3,
+            status: CommandStatus::Accepted,
+            payload,
+        },
+    );
+    app.update();
+    assert!(link.inspection_panel().open);
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("Freshly caught fish"))
     );
     Ok(())
 }

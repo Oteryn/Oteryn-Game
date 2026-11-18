@@ -48,6 +48,7 @@ pub struct NativeLoginConfig {
     /// chsw (capability 512): after the server released the session for a Channel switch, the
     /// next entry takes this character into this Channel of the same World without the picker.
     pub channel_switch: Option<(String, String)>,
+    pub(crate) require_character_picker: bool,
 }
 
 impl Debug for NativeLoginConfig {
@@ -103,6 +104,7 @@ impl NativeLoginConfig {
             coin_shop: Arc::new(crate::coin_shop::present),
             premium: Arc::new(crate::premium::present),
             channel_switch: None,
+            require_character_picker: false,
         }))
     }
 }

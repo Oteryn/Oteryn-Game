@@ -36,10 +36,8 @@ enum Content {
         npc: Option<(TileCoord, oteryn_session::EntityRef)>,
         /// The name of the clicked player other than the own character.
         player: Option<String>,
-        /// The clicked creature or player Alt+click would attack.
-        /// The clicked player or monster Alt+click would attack (never the own character or
-        /// an NPC), and whether it is the current target.
-        attack: Option<(TileCoord, bool)>,
+        /// The clicked opponent and the attack state displayed when the menu opened.
+        attack: Option<(TileCoord, (oteryn_session::EntityRef, bool))>,
     },
 }
 #[derive(Clone, Copy, Component)]
@@ -158,8 +156,8 @@ impl HostOwner {
                     )
                 })
             })
-            .and_then(|play| play.view.attack_context(tile, &play.link))
-            .map(|attacking| (tile, attacking));
+            .and_then(|play| play.view.attack_target(tile, &play.link))
+            .map(|target| (tile, target));
         if self.phase == Phase::Playing
             && (menu.is_some()
                 || npc.is_some()
@@ -307,14 +305,24 @@ impl HostOwner {
             (_, Choice::Cancel | Choice::CopyName) => true,
             (
                 Content::Context {
-                    attack: Some((tile, _)),
+                    attack: Some((tile, (target, attacking))),
                     ..
                 },
                 Choice::Attack,
-            ) => self
-                .play
-                .as_ref()
-                .is_some_and(|play| play.view.attack_toggle_click(tile, &play.link)),
+            ) => self.play.as_ref().is_some_and(|play| {
+                if play.view.gameplay_input_blocked(&play.link)
+                    || play.view.attack_target(tile, &play.link) != Some((target, attacking))
+                {
+                    return false;
+                }
+                use crate::combat_input::CombatCommand;
+                play.link.request_combat(if attacking {
+                    CombatCommand::Stop
+                } else {
+                    CombatCommand::Attack(target)
+                });
+                true
+            }),
             (
                 Content::Context {
                     player: Some(name), ..

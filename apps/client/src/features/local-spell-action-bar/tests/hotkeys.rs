@@ -287,3 +287,33 @@ fn saved_item_subtype_selects_matching_container_and_multiaction_readiness()
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn automatic_text_hotkeys_send_without_auto_composer_focus()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{combat_input::PlayCommand, play::{CustomAction, mailbox::lock, tests::view}};
+    use oteryn_client_ui::chat::ComposerMode;
+    use oteryn_session::ChatIntent;
+
+    for action_bar in [false, true] {
+        let (link, mut commands, outbox) = play_channel();
+        outbox.chat_initialize(true);
+        link.chat_text("unfinished draft".into());
+        lock(&link.mailbox).chat.console.mode = ComposerMode::Auto;
+        let text = "A greeting".to_string();
+        if action_bar {
+            assert!(link.assign_bar_action(0, BarAction::Text {
+                text: text.clone(), send_automatically: true,
+            }));
+            link.cast_spell_slot(NonZeroU32::MIN);
+        } else {
+            link.custom_hotkey_action(&view()?, &CustomAction::Text { text: text.clone(), send: true });
+        }
+        assert!(matches!(commands.try_recv()?, PlayCommand::ChatPublic(ChatIntent::Say { text: sent, .. }) if sent == text));
+        let panel = link.chat_panel();
+        assert_eq!(panel.text, "unfinished draft");
+        assert_eq!(panel.console.mode, ComposerMode::Auto);
+        assert!(!panel.console.auto_focus);
+    }
+    Ok(())
+}

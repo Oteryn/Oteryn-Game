@@ -190,7 +190,7 @@ impl PlayLink {
             }
             CustomAction::Utility { action } => self.utility_action(*action),
             CustomAction::Text { text, send } => {
-                use oteryn_client_ui::chat::{ComposerMode, Mode};
+                use oteryn_client_ui::chat::ComposerMode;
                 let mut mailbox = lock(&self.mailbox);
                 if mailbox.custom_hotkeys_ended
                     || mailbox.chat_public_shutdown
@@ -200,19 +200,11 @@ impl PlayLink {
                     return false;
                 }
                 if *send {
-                    let old = std::mem::replace(&mut mailbox.chat.text, text.clone());
-                    let mode = mailbox.chat.console.mode;
-                    if mode == ComposerMode::Off {
-                        mailbox.chat.console.mode = ComposerMode::Temporary;
-                    }
-                    crate::play::feature_0007_chat::input::enqueue(
+                    crate::play::feature_0007_chat::input::enqueue_hotkey_text(
                         &mut mailbox,
                         &self.commands,
-                        Mode::Say,
-                        "",
+                        text.clone(),
                     );
-                    mailbox.chat.text = old;
-                    mailbox.chat.console.mode = mode;
                     mailbox.chat.pending
                 } else {
                     mailbox.chat.text.clone_from(text);

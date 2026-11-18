@@ -1,7 +1,7 @@
 //! Snapshot-bound shared desktop controls over the retained Wheel owner.
-use super::{enqueue, wheel_presentation};
+use super::wheel_presentation;
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::wheel_allocation::{Intent, WheelPanel, diagram};
+use oteryn_client_ui::wheel_allocation::{WheelPanel, diagram};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WheelControl {
@@ -162,7 +162,7 @@ impl PlayLink {
                 {
                     return false;
                 }
-                enqueue(&mut m, &self.commands, Intent::Reset);
+                return diagram::reset_draft(&mut m.wheel);
             }
             WheelControl::Refresh => wheel_presentation::activate(
                 &mut m,

@@ -73,7 +73,7 @@ pub(super) async fn authorize(
                 .await?,
         );
     }
-    let mut quick = true;
+    let mut quick = !config.require_character_picker;
     let platform = PlatformClientConfig::new(&config.platform_url)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
     let directory_client = oteryn_platform_client::PlatformClient::new(platform)

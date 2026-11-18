@@ -741,3 +741,35 @@ fn nearby_loot_shortcut_dispatches_without_opening_panel() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn holding_a_spell_key_does_not_queue_unacknowledged_casts() -> TestResult {
+    use crate::combat_input::{CombatCommand, PlayCommand};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+
+    let mut host = HostOwner::new(None)?;
+    let (view, _) = admitted_view([9; 16])?;
+    let (link, mut commands, _) = crate::play::play_channel();
+    assert!(link.spell_bar_bind(&["71", "", "", ""].map(str::to_owned)));
+    host.install_play(view, link);
+    let key = |repeat| -> Result<_, oteryn_input_actions::InputError> {
+        Ok(NormalizedInputEvent::Key {
+            code: KeyCode::new(30)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+            repeat,
+        })
+    };
+    for repeat in std::iter::once(false).chain([true; 8]) {
+        host.route_input(&[key(repeat)?], false);
+        let play = host.play.as_mut().ok_or("play")?;
+        play.view
+            .tick(&play.link)
+            .map_err(|end| format!("{end:?}"))?;
+    }
+    assert!(
+        matches!(commands.try_recv()?, PlayCommand::Combat(CombatCommand::Cast(id)) if id.get() == 71)
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

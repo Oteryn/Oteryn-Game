@@ -244,7 +244,7 @@ pub(super) fn context_items(
     };
     let mut groups: Vec<Vec<(Item, Choice)>> = Vec::new();
     let mut first = Vec::new();
-    if let Some((_, attacking)) = attack {
+    if let Some((_, (_, attacking))) = attack {
         let label = if *attacking { "Stop Attack" } else { "Attack" };
         first.push((Item::shortcut(label, ATTACK), Choice::Attack));
     }

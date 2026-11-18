@@ -19,6 +19,12 @@ impl Reentry {
         true
     }
 
+    #[cfg(all(test, bevy_shell))]
+    pub(crate) fn arm_cancel_fixture(&mut self) {
+        self.state = EntryState::Entering;
+        self.attempt_cancellation = Some(CancellationToken::new());
+    }
+
     /// Opens a Platform web page in the system browser; `false` without native login.
     pub fn open_web_link(&self, link: crate::web_links::WebLink) -> bool {
         self.client

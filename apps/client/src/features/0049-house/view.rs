@@ -18,6 +18,11 @@ impl PlayLink {
         if panel.activity_revision != revision || panel.model != *expected {
             return Vec::new();
         }
+        // An ACL read restores its selected row and draft together when it finishes.
+        if panel.model.pending.is_some() && !panel.model.pending_acl_read {
+            panel.model.feedback = tr!("Waiting for the server").into();
+            return Vec::new();
+        }
         let index = drafts[2]
             .trim()
             .parse::<usize>()

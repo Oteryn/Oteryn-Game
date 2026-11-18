@@ -24,5 +24,6 @@ pub(in crate::play) fn open_locked(mailbox: &mut Mailbox) -> bool {
     }
     mailbox.chat.guild_open = true;
     mailbox.chat.open = true;
+    mailbox.chat.console.open_channel(oteryn_client_ui::chat::ChannelTab::Guild);
     true
 }

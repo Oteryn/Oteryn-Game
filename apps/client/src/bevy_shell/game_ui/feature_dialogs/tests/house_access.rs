@@ -724,3 +724,28 @@ fn house_window_action_with_map(
     assert!(receiver.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn entrance_map_keeps_the_edit_row_bound_while_a_bid_is_pending() -> TestResult {
+    use crate::{combat_input::PlayCommand, play::play_channel};
+
+    let (link, mut commands, _) = play_channel();
+    link.bevy_house_map_fixture();
+    link.house_edit(3, "1250".into());
+    link.house_edit(6, "CONFIRM".into());
+    link.house_request(2);
+    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(_)));
+    let pending = link.house_panel();
+    assert!(pending.model.pending.is_some());
+    let mut drafts = pending.fields.clone();
+    drafts[2] = "2".into();
+
+    link.house_map(pending.activity_revision, &pending.model, drafts);
+    let selected = link.house_panel();
+    assert_eq!(
+        selected.model.index + 1,
+        selected.fields[2].parse::<usize>()?
+    );
+    assert_eq!(selected.model.index, 0);
+    Ok(())
+}

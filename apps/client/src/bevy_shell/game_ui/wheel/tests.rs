@@ -332,10 +332,63 @@ fn wheel_preset_intents() -> TestResult {
     assert_eq!(request.points[14], 9);
     assert_eq!(request.expected_revision, 2);
     assert!(commands.try_recv().is_err());
-    publish(&outbox, model());
+    let mut allocated = model();
+    allocated.points[14] = 9;
+    allocated
+        .confirmed_wheel
+        .as_mut()
+        .ok_or("allocation")?
+        .points = allocated.points;
+    publish(&outbox, allocated);
     app.update();
     let reset = control(&mut app, Kind::Reset)?;
     app.world_mut().trigger(Activate { entity: reset });
+    assert!(
+        commands.try_recv().is_err(),
+        "Reset must only edit the draft"
+    );
+    let reset_draft = panel(&app)?;
+    assert_eq!(reset_draft.points, [0; 36]);
+    assert!(reset_draft.diagram.reset_requested);
+    assert_eq!(
+        reset_draft.confirmed_wheel.ok_or("allocation")?.points[14],
+        9
+    );
+
+    app.update();
+    let PlayCommand::Feature(preview) = commands.try_recv()? else {
+        return Err("preview command".into());
+    };
+    let request = wire::Request::decode(&preview.payload).ok_or("preview request")?;
+    assert_eq!(request.points, [0; 36]);
+    let mut pending = panel(&app)?;
+    let mut reply = pending.diagram.reply.clone().ok_or("preview metadata")?;
+    reply.request = request;
+    reply.revelations = (0..4)
+        .map(|domain| wire::Revelation {
+            domain,
+            name: "Revelation".into(),
+            stages: [25, 50, 100]
+                .into_iter()
+                .map(|minimum_points| wire::Stage {
+                    minimum_points,
+                    effects: vec![],
+                })
+                .collect(),
+        })
+        .collect();
+    let result = oteryn_client_runtime::raw_feature::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+        payload: reply.encode().ok_or("preview reply")?,
+    };
+    diagram::apply(&mut pending, &preview, &result);
+    publish(&outbox, pending);
+    app.update();
+    assert!(commands.try_recv().is_err());
+    let save = control(&mut app, Kind::Save)?;
+    app.world_mut().trigger(Activate { entity: save });
     let PlayCommand::Wheel(c) = commands.try_recv()? else {
         return Err("reset command".into());
     };

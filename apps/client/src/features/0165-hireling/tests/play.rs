@@ -97,3 +97,46 @@ fn hireling_controls_use_real_codec_requests_and_apply_replies() -> Result<(), E
     })??;
     Ok(())
 }
+
+#[test]
+fn map_pick_summons_at_the_actor_position_on_the_wire() -> Result<(), Error> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+        runtime.block_on(async {
+            use crate::play::{PlayView, mailbox::lock};
+            use oteryn_renderer::TileCoord;
+            use oteryn_session::{ActorPosition, AppliedDelta, WorldSpatialObservation};
+
+            let commands = Arc::new(Mutex::new(Vec::new()));
+            let (link, incoming, outbox) = play_channel();
+            outbox.push(vec![SessionEvent::WorldSpatial(AppliedDelta {
+                server_sequence: 1,
+                base_revision: 0,
+                new_revision: 1,
+                value: WorldSpatialObservation {
+                    content_generation: [0; 32],
+                    actor_position: ActorPosition { x: 100, y: 100, floor: -7 },
+                },
+            })]);
+            let task = tokio::spawn(run_session(
+                Peer { commands: Arc::clone(&commands) },
+                incoming,
+                outbox,
+            ));
+            ready(&link).await;
+            let mut view = PlayView::new(TileCoord::new(100, 100), -7, &[])?;
+            let form = crate::play::feature_0165_hireling::view::form(&link);
+            (form.submit)(&mut lock(&link.mailbox), &link.commands, 3, Vec::new());
+            view.primary_click(TileCoord::new(101, 100), &link)?;
+            (form.submit)(&mut lock(&link.mailbox), &link.commands, 0, Vec::new());
+            ready(&link).await;
+            assert_eq!(
+                *commands.lock().unwrap_or_else(PoisonError::into_inner),
+                [hireling::Request::Summon { x: 100, y: 100, floor: -7 }]
+            );
+            drop(link);
+            task.await?;
+            Ok::<(), Error>(())
+        })?
+    })?.join().map_err(|_| "hireling test thread panicked")?
+}

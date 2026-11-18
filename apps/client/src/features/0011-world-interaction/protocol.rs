@@ -101,3 +101,10 @@ macro_rules! dispatch {
     };
 }
 pub(in crate::play) use dispatch;
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    pub(crate) fn bevy_world_look_selected(&self) {
+        self.world_context_initialize(true, false);
+    }
+}

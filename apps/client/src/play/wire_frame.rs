@@ -78,6 +78,10 @@ impl WireTracker {
         self.refresh();
     }
 
+    pub(super) fn own_native(&self) -> Option<ActorPosition> {
+        self.wire.map(|position| self.frame.to_native(position))
+    }
+
     fn refresh(&mut self) {
         if let (Some(wire), Some(origin)) = (self.wire, self.origin) {
             self.frame = WireFrame::derive(self.frame, wire, origin);

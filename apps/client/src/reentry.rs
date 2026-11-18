@@ -91,12 +91,27 @@ impl Reentry {
     /// Starts a user-requested attempt without blocking the window. Existing native entry
     /// owns bounded admission retries; there is no automatic outer retry loop.
     pub fn request(&mut self) -> bool {
+        self.request_entry(false)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn request_picker(&mut self) -> bool {
+        self.request_entry(true)
+    }
+
+    fn request_entry(&mut self, require_character_picker: bool) -> bool {
         if !self.state.begin() {
             return false;
         }
         let (sender, receiver) = mpsc::channel();
         self.pending = Some(receiver);
-        let config = self.client.native_login.clone();
+        let mut config = self.client.native_login.clone();
+        if let Some(config) = &mut config {
+            config.require_character_picker = require_character_picker;
+            if require_character_picker {
+                config.training_queue.clear();
+            }
+        }
         let cancellation = self.client.runtime.cancellation();
         let attempt_cancellation = CancellationToken::new();
         self.attempt_cancellation = Some(attempt_cancellation.clone());

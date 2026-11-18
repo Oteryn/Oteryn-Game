@@ -45,8 +45,7 @@ impl PlayLink {
 }
 
 impl crate::play::PlayView {
-    /// While the banker form waits for a summon location, a primary click on a tile next
-    /// to the player becomes the summon target; any other tile keeps the form waiting.
+    /// Confirm the summon by clicking the actor or a neighboring tile.
     pub(in crate::play) fn hireling_pick(
         &self,
         tile: oteryn_renderer::TileCoord,
@@ -57,11 +56,10 @@ impl crate::play::PlayView {
             if !mailbox.hireling_picking {
                 return false;
             }
-            let adjacent = tile != self.own
-                && (tile.x - self.own.x).abs() <= 1
-                && (tile.y - self.own.y).abs() <= 1;
+            let in_reach = tile.x.abs_diff(self.own.x) <= 1
+                && tile.y.abs_diff(self.own.y) <= 1;
             match (
-                adjacent,
+                in_reach,
                 u16::try_from(tile.x),
                 u16::try_from(tile.y),
                 i8::try_from(self.floor),

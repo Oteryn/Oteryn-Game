@@ -1,4 +1,4 @@
-use crate::combat_input::PlayCommand;
+use crate::combat_input::{CombatCommand, PlayCommand};
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::battle::{self, Action};
 use oteryn_renderer::TileCoord;
@@ -18,7 +18,7 @@ impl crate::play::PlayView {
     pub fn attack_context(&self, tile: TileCoord, link: &PlayLink) -> Option<bool> {
         self.attack_target(tile, link).map(|(_, attacking)| attacking)
     }
-    fn attack_target(
+    pub(crate) fn attack_target(
         &self,
         tile: TileCoord,
         link: &PlayLink,
@@ -69,11 +69,12 @@ impl PlayLink {
         if mailbox.properties.pvp_expert.pending {
             return;
         }
-        if let Some(command) = battle::request(&mut mailbox.battle, action)
-            && self.commands.send(PlayCommand::Battle(command)).is_err()
-        {
-            mailbox.battle.pending = false;
-            mailbox.battle.pending_command = None;
+        if let Some(command) = battle::request(&mut mailbox.battle, action) {
+            mailbox.cancel_walk_for_combat(command);
+            if self.commands.send(PlayCommand::Battle(command)).is_err() {
+                mailbox.battle.pending = false;
+                mailbox.battle.pending_command = None;
+            }
         }
     }
     pub fn battle_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
@@ -91,6 +92,14 @@ impl PlayLink {
             }
         }
         true
+    }
+}
+
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn cancel_walk_for_combat(&mut self, command: CombatCommand) {
+        if matches!(command, CombatCommand::Attack(_) | CombatCommand::Stop) {
+            oteryn_client_ui::target_move::cancel(&mut self.target_walk);
+        }
     }
 }
 

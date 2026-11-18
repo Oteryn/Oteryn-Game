@@ -353,13 +353,16 @@ impl PlayLink {
     }
 
     pub fn request_combat(&self, command: CombatCommand) {
-        let mailbox = lock(&self.mailbox);
+        let mut mailbox = lock(&self.mailbox);
         if !mailbox.world_input_blocked() {
+            mailbox.cancel_walk_for_combat(command);
             let _ = self.commands.send(PlayCommand::Combat(command));
         }
     }
 
     pub fn request_logout(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        oteryn_client_ui::target_move::cancel(&mut mailbox.target_walk);
         let _ = self.commands.send(PlayCommand::Logout);
     }
 

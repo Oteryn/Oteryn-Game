@@ -149,7 +149,11 @@ impl PlayLink {
                 oteryn_client_ui::inspection::Request::Trade { counter, index },
             );
             drop(mailbox);
-            return command.is_some_and(|command| self.discovery_send(command));
+            if !command.is_some_and(|command| self.discovery_send(command)) {
+                return false;
+            }
+            self.inspection_set_open(true);
+            return true;
         }
         let command = match action {
             TradeAction::Inspect { .. } => return false,

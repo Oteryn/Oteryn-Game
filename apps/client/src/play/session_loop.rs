@@ -527,7 +527,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Hireling(request)) => match session.hireling(&request).await {
+            Ok(PlayCommand::Hireling(request)) => match session.hireling(&outbox.wire_hireling(request)).await {
                 Ok(response) => {
                     outbox.hireling_result(&response);
                     publish(&mut session, &outbox, &mut held);

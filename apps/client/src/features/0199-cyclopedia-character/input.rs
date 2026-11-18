@@ -47,6 +47,8 @@ impl PlayLink {
             }
             // Never present a previous character/profile's holdings as this inbox.
             panel.items.page = None;
+            panel.items.location = None;
+            panel.items.search.clear();
         }
         self.cyclopedia_character_request(Intent::Items);
     }

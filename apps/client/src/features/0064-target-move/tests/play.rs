@@ -599,3 +599,59 @@ fn t14_an_action_that_walks_to_its_object_ends_the_click_walk()
     }
     Ok(())
 }
+
+#[test]
+fn combat_and_logout_commands_end_retries_of_an_accepted_walk()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::{CombatCommand, PlayCommand};
+    use oteryn_client_runtime::target_move::WalkDisposition;
+    use oteryn_client_ui::battle::Action;
+
+    let target = EntityRef { identity: [3; 16], generation: 7 };
+    for expected in [
+        PlayCommand::Combat(CombatCommand::Attack(target)),
+        PlayCommand::Combat(CombatCommand::Stop),
+        PlayCommand::Battle(CombatCommand::Attack(target)),
+        PlayCommand::Battle(CombatCommand::Stop),
+        PlayCommand::Logout,
+    ] {
+        let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
+        let (link, mut commands, outbox) = play_channel();
+        outbox.target_walk_initialize(true);
+        enable_combat(&link);
+        super::super::mailbox::lock(&outbox.0).battle.rows.push(
+            oteryn_session::WorldSpatialEntity {
+                entity: target,
+                kind: oteryn_session::EntityKind::Creature,
+                position: ActorPosition { x: 101, y: 200, floor: 0 },
+                detail: oteryn_session::EntityDetail::Actor {
+                    direction: oteryn_session::StepDirection::South,
+                    appearance_ref: 1,
+                    health_percent: 100,
+                },
+                motion: None,
+                display_name: None,
+            }
+        );
+        view.click(TileCoord::new(104, 200))?;
+        assert_eq!(view.tick(&link), Ok(()));
+        assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+        walk_reply(&outbox, WalkDisposition::Accepted);
+        assert_eq!(view.tick(&link), Ok(()));
+        match &expected {
+            PlayCommand::Combat(command) => link.request_combat(*command),
+            PlayCommand::Battle(CombatCommand::Attack(target)) => link.battle_request(Action::Attack(*target)),
+            PlayCommand::Battle(CombatCommand::Stop) => link.battle_request(Action::Stop),
+            PlayCommand::Logout => link.request_logout(),
+            _ => return Err("unexpected command".into()),
+        }
+        assert_eq!(commands.try_recv()?, expected);
+        let stalled = std::time::Instant::now()
+            .checked_sub(oteryn_client_ui::target_move::WALK_STALL)
+            .ok_or("clock")?;
+        super::super::mailbox::lock(&outbox.0).target_walk.last_progress = Some(stalled);
+        assert_eq!(view.tick(&link), Ok(()));
+        assert!(commands.try_recv().is_err(), "retried walk after {expected:?}");
+    }
+    Ok(())
+}

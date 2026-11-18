@@ -76,3 +76,37 @@ fn t095_item_summary_caller_requests_all_locations_and_filters_confirmed_rows()
     assert!(panel.feedback.is_some());
     Ok(())
 }
+
+#[test]
+fn store_inbox_opens_with_an_unfiltered_holdings_query() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cyclopedia_character::items::filtered;
+
+    let (link, mut commands, outbox) = play_channel();
+    outbox.cyclopedia_character_initialize(true);
+    outbox.holdings_initialize(true);
+    assert!(link.cyclopedia_holdings_filter("sword", Some(Location::Stash)));
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("missing Stash query".into());
+    };
+    let stash = filtered::Query::decode(&command.payload).map_err(|error| format!("{error:?}"))?;
+    assert_eq!(stash.location, Some(Location::Stash));
+    assert_eq!(stash.search, "sword");
+    outbox.cyclopedia_character_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: filtered::Page {
+            holdings: Page { offset: 0, total: 0, rows: Vec::new() },
+            names: Vec::new(),
+        }.encode().map_err(|error| format!("{error:?}"))?,
+    });
+
+    link.store_inbox_set_open(true);
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("missing Store Inbox query".into());
+    };
+    assert_eq!(filtered::Query::decode(&command.payload).map_err(|error| format!("{error:?}"))?, filtered::Query {
+        offset: 0, location: None, search: String::new(),
+    });
+    Ok(())
+}

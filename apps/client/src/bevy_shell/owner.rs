@@ -317,8 +317,10 @@ impl HostOwner {
     pub fn cancel_login(&mut self) {
         self.selection.cancel();
         self.services.cancel();
-        if let Some(entry) = &mut self.entry {
-            entry.cancel_entry();
+        if let Some(entry) = &mut self.entry
+            && entry.cancel_entry()
+        {
+            entry.forget_native_session();
         }
     }
     /// The login window's explicit sign-out, as the Win32 options offered it: turns
@@ -331,7 +333,8 @@ impl HostOwner {
         let mut preferences = self.settings.preferences.clone();
         preferences.miscellaneous.remember_device = false;
         self.settings.apply(preferences);
-        self.cancel_login();
+        self.selection.cancel();
+        self.services.cancel();
         // Before the first sign-in of this process the entry has no Platform yet.
         let configured = self.login.form.settings.config().is_ok_and(|config| {
             self.entry
@@ -492,7 +495,7 @@ impl HostOwner {
             && self
                 .entry
                 .as_mut()
-                .is_some_and(|entry| entry.is_entering() || entry.request())
+                .is_some_and(|entry| entry.is_entering() || entry.request_picker())
         {
             self.phase = Phase::Entering;
         }
@@ -556,4 +559,86 @@ mod selection_return_tests {
         owner.close();
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn cancel_login_schedules_remembered_device_revocation() -> Result<(), Box<dyn std::error::Error>> {
+    use std::sync::Arc;
+
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let config = crate::NativeLoginConfig::from_env(|name| {
+        Some(match name {
+            "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" => "https://localhost:1".into(),
+            "OTERYN_OAUTH_CLIENT_ID" => "019a5f4a-1000-7000-8000-000000000001".into(),
+            "OTERYN_DEV_ROOT" => "/tmp/reentry-unused-root".into(),
+            _ => String::new(),
+        })
+    })?
+    .ok_or("native login config")?;
+    let device = Arc::clone(&config.device_sessions);
+    let held_session = runtime.block_on(device.hold_session_for_reentry_test());
+    let mut owner = HostOwner::new(None)?;
+    let entry = owner.entry.as_mut().ok_or("reentry")?;
+    assert!(entry.configure(config));
+    entry.arm_cancel_fixture();
+    owner.phase = Phase::Entering;
+    let owners = Arc::strong_count(&device);
+    owner.cancel_login();
+    assert_eq!(Arc::strong_count(&device), owners + 1);
+
+    drop(held_session);
+    owner.close();
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn logout_reaches_the_picker_even_when_quick_login_has_a_valid_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        use crate::character_selection::SelectionAction;
+        use crate::native_entry::test_support::{Stack, channel_node::CHANNEL_B};
+        use std::sync::Arc;
+
+        let run = || -> Result<(), Box<dyn std::error::Error>> {
+            let stack = Stack::start_two_channels()?;
+            let folder = tempfile::tempdir()?;
+            let mut config = stack.config();
+            let preferences = folder.path().join("preferences.json");
+            crate::play::MiscellaneousPreferences {
+                stay_logged_in: true,
+                quick_login: true,
+                ..Default::default()
+            }.save(&preferences.with_extension("session-options.json"))?;
+            config.preference_path = Some(preferences);
+            config.device_sessions = Arc::new(crate::device_login::DeviceLogin::quick_login_fixture(
+                folder.path().to_path_buf(),
+            ));
+            std::fs::write(folder.path().join("last-character.json"), serde_json::to_vec(
+                &serde_json::json!({ "character": &config.character_id, "channel": CHANNEL_B }),
+            )?)?;
+            let (calls, observed) = std::sync::mpsc::channel();
+            let character = config.character_id.clone();
+            config.select_character = Arc::new(move |rows, _, _| {
+                let available = rows.iter().any(|row| {
+                    row.available && row.character.character_id == character
+                        && row.channels.iter().any(|channel| channel.id == CHANNEL_B)
+                });
+                let _ = calls.send(available);
+                SelectionAction::Cancel
+            });
+            let mut owner = HostOwner::new(None)?;
+            assert!(owner.entry.as_mut().ok_or("entry")?.configure(config));
+            owner.finish_play(PlayEnd::LoggedOut);
+            assert_eq!(owner.phase, Phase::Entering);
+            assert!(observed.recv_timeout(std::time::Duration::from_secs(10))?);
+            owner.close();
+            stack.finish();
+            Ok(())
+        };
+        run().map_err(|error| error.to_string())
+    })?.join().map_err(|_| "logout picker scenario panicked")?.map_err(Into::into)
 }

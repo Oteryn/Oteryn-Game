@@ -3,7 +3,7 @@
 mod container;
 use super::owner::HostOwner;
 use crate::{input::MouseActions, spell::SpellHotkeys};
-use oteryn_input_actions::{InputError, NormalizedInputEvent};
+use oteryn_input_actions::{InputError, NormalizedInputEvent, RepeatPolicy};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum ContainerTool {
     BrowseField,
@@ -41,7 +41,7 @@ impl Controls {
         Ok(Self {
             highscores_generation: None,
             mouse: MouseActions::new()?,
-            spells: SpellHotkeys::new()?,
+            spells: SpellHotkeys::with_repeat_policy(RepeatPolicy::Ignore)?,
             satellite: false,
             container_tool: None,
             house: None,

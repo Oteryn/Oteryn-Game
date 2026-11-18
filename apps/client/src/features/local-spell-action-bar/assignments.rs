@@ -427,14 +427,7 @@ fn activate_inner(
             }
         }
         BarAction::Text { text, .. } => {
-            let draft = std::mem::replace(&mut mailbox.chat.text, text);
-            crate::play::feature_0007_chat::input::enqueue(
-                mailbox,
-                commands,
-                oteryn_client_ui::chat::Mode::Say,
-                "",
-            );
-            mailbox.chat.text = draft;
+            crate::play::feature_0007_chat::input::enqueue_hotkey_text(mailbox, commands, text);
         }
         BarAction::Passive { .. } => {
             mailbox.spell_bar.feedback = "Passive status: no cast command is sent".into();
