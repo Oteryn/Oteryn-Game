@@ -51,7 +51,12 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 let request = source.activity_room_request(session, transport, &uuid(character.as_bytes()), [60;32], now)?;
                 let committed = FreshAdmissionStore::from_root(h.root.clone()).commit(&request).await?;
                 assert!(matches!(committed, crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1::Committed(_)), "{committed:?}");
+                let (consumer, clock, activation, _) = crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+                h.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us, activation.switch_over_us + 60_000_000).await.map_err(debug)?;
+                let premium = crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(consumer, Some(clock), Some(activation), Some(h.root.clone()));
                 let mut owner = deps.owner(&h, &authority);
+                owner.premium_coordinator = Some(&premium);
+                owner.admit_premium(id(40), session);
                 owner.active_generation = Some(active);
                 let (outcome, _, _) = Box::pin(owner.initialize_first_entry(&request, session, transport, deps.actor)).await;
                 assert_eq!(outcome, FirstEntryOutcome::Positioned, "{vocation}");
