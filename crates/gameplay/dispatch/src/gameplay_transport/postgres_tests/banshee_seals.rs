@@ -325,8 +325,16 @@ async fn exercise_logic(
         oteryn_world_bundle::bundle::placement_key(p.floor, p.x, p.y, 1).ok_or("placement")
     };
     let campfire_key = placement_key(campfire)?;
+    let (campfire_tile, campfire_ordinal) =
+        crate::map::view::placement_of(campfire_key).ok_or("campfire position")?;
     let lever_key = placement_key(lever)?;
     let map = owner.bundle_map().ok_or("bundle map")?;
+    let campfire_palette_id = map
+        .overlay
+        .base()
+        .tile(campfire.x, campfire.y, campfire.floor)
+        .and_then(|tile| tile.ids().get(usize::from(campfire_ordinal)).copied())
+        .ok_or("base campfire")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&lever_key.to_be_bytes());
     let initial = map.facts.object_revision(campfire_key);
@@ -335,7 +343,9 @@ async fn exercise_logic(
         y: 31978,
         floor: 13,
     };
-    for (command_id, changed) in [(1, false), (2, true), (3, true)] {
+    for (command_id, changed, expected_appearance) in
+        [(1, false, 1996), (2, true, 1998), (3, true, 1996)]
+    {
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))
@@ -357,6 +367,13 @@ async fn exercise_logic(
             .await;
         assert_eq!(outcome.disposition, UseDisposition::Committed);
         assert_eq!(map.facts.object_revision(campfire_key) != initial, changed);
+        assert_eq!(
+            map.facts
+                .base_entry(campfire_tile, campfire_ordinal, campfire_palette_id)
+                .ok_or("shared campfire")?
+                .appearance_id,
+            expected_appearance
+        );
         if command_id == 1 {
             continue;
         }
