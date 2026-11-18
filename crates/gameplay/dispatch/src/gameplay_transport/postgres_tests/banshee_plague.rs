@@ -58,7 +58,7 @@ fn bindings() -> TestResult<Bindings> {
     let callback = serde_json::json!({
         "key":"oteryn:quest-callback/banshee/plague-entrance",
         "quest":QUEST, "trigger":"step_in",
-        "selector":{"position":position(TRIGGER),"ordinal":1},
+        "selector":{"position":position(TRIGGER),"appearance":1949},
         "requires_world_admission":true, "reversible":false, "passages":[],
         "return_on_failure":true, "teleport":position(DESTINATION),
         "storage":[{"track":SECOND,"minimum":-1,"maximum":0,"set":0,"preserve":true}],
@@ -187,6 +187,19 @@ fn scenario() -> TestResult {
         owner.admit_quest_session(&admitted).await;
 
         let map = owner.bundle_map().ok_or("bundle map")?;
+        let portals = crate::gameplay_transport::quest_callbacks::CallbackPortals {
+            inner: &crate::map::floor::BundleDoors(&map.facts),
+            map: Some(map),
+            callbacks: owner.callback_content(),
+        };
+        assert!(crate::map::floor::CellBlocker::suppresses_native_teleport(
+            &portals,
+            crate::content::LogicalCell {
+                x: i32::from(TRIGGER.x),
+                y: i32::from(TRIGGER.y),
+                z: -i32::from(TRIGGER.floor),
+            },
+        ));
         let content = format!(
             "sha256:{}",
             server
