@@ -26,6 +26,13 @@ const PREOWNED_OUTFIT_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/preow
 const FIRST_DEFEAT_MESSAGE: &str =
     "You have defeated Arbaziloth for the first time. You have won the Fiend Slayer Outfit.";
 
+// Crystal 201189f8 forge_teleport.lua:18-34.
+const FORGE_COLD: &str = "The forge lies cold. There is no way through right now.";
+const FORGE_RUNNING: &str = "The power surging to Arbaziloth prevents you from entering!";
+const FORGE_EASY: &str =
+    "The Forgemaster has been defeated, the lack of power prevents you from entering!";
+const FORGE_OPEN: &str = "You enter the forge!";
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     All,
@@ -303,7 +310,11 @@ fn mode_exit(at: MovementLocalPosition) -> TestResult<Callback> {
         "key":"oteryn:quest-callback/qcredit-fixture/forge-exit","quest":QUEST,"trigger":"step_in",
         "selector":{"position":{"x":x+6,"y":y,"floor":floor},"appearance":37000},
         "teleport":{"x":x+8,"y":y,"floor":floor},"reversible":false,"passages":[],"storage":[],"offerings":[],
-        "effects":{"require_encounter_outcome":{"group":OUTCOME_GROUP,"mode":"hard"}},
+        "effects":{
+            "require_encounter_outcome":{"group":OUTCOME_GROUP,"mode":"hard"},
+            "encounter_outcome_feedback":{"running":FORGE_RUNNING,"wrong_outcome":FORGE_EASY}
+        },
+        "failure_message":FORGE_COLD,"success_message":FORGE_OPEN,
         "return_on_failure":true,"sources":["Crystal 201189f8 forge_teleport.lua:17-34"]
     }))?)
 }

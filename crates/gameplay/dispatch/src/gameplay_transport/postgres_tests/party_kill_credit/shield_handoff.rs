@@ -111,13 +111,18 @@ pub(super) async fn exercise(
     placement.extend_from_slice(&key.to_be_bytes());
     let command = |id| UseCommand { game_session_id:player.session, command_id:id, item_fence:Some(fence) };
     set_clock(1_000);
+    let portal = MovementLocalPosition { x: at.x + 6, ..at };
+    for member in players {
+        let origin = owner.runtime.lock().await.read_actor_position(member.actor).map_err(debug)?.position();
+        assert_eq!(enter_exit(owner, *member, portal).await?, origin);
+        assert_forge_feedback(owner, *member, FORGE_COLD);
+    }
     let result = owner.use_quest_callback(player.actor, command(501), map, &WorldObjectTarget {
         placement:placement.clone(), expected_revision:map.facts.object_revision(key),
     }).await.ok_or("lever result")?;
     assert_eq!(result.disposition, UseDisposition::Committed);
 
     let room = MovementLocalPosition { x: at.x + 3, ..at };
-    let portal = MovementLocalPosition { x: at.x + 6, ..at };
     let landing = MovementLocalPosition { x: at.x + 8, ..at };
     let (boss, support, target, max_hp, spawn_at) = {
         let runtime = owner.runtime.lock().await;
@@ -133,6 +138,7 @@ pub(super) async fn exercise(
     let intent = UseIntent { target:UseTarget::ItemByDefinition(rod), use_with:Some(target), use_with_map_item:None, use_with_position:None };
     for member in players {
         assert_eq!(enter_exit(owner, *member, portal).await?, room);
+        assert_forge_feedback(owner, *member, FORGE_RUNNING);
     }
 
     if case == Case::ShieldPulse {
@@ -219,6 +225,7 @@ pub(super) async fn exercise(
     };
     for member in players {
         assert_eq!(enter_exit(owner, *member, portal).await?, room);
+        assert_forge_feedback(owner, *member, FORGE_RUNNING);
     }
     let terminal_definition = if hard { CAVE_RAT } else { RAT };
     if matches!(case, Case::ShieldEasy | Case::ShieldHard) {
@@ -244,6 +251,7 @@ pub(super) async fn exercise(
     }
     for (member, character) in players.iter().zip([60,61]) {
         assert_eq!(enter_exit(owner, *member, portal).await?, if hard { landing } else { room });
+        assert_forge_feedback(owner, *member, if hard { FORGE_OPEN } else { FORGE_EASY });
         assert_eq!(track_value(pool, character).await?, i64::from(!hard));
         let hard_wins:i64 = sqlx::query_scalar("SELECT COALESCE((SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),0)")
             .bind(id(character).as_slice()).bind(HARD_TRACK).fetch_one(pool).await?;
@@ -262,6 +270,20 @@ pub(super) async fn exercise(
             .filter(|(actor, _, _)| runtime.matches_live_creature_identity(*actor, DEMON.as_bytes())).count(), 2);
     }
     Ok(())
+}
+
+fn assert_forge_feedback(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    member: Player,
+    expected: &str,
+) {
+    use oteryn_protocol_oteryn::chat::ChatLine;
+    let lines = owner.states.chat.drain(member.session);
+    let feedback: Vec<_> = lines.iter().filter_map(|line| match line {
+        ChatLine::Private { speaker_name, text } if speaker_name == "Game" => Some(text.as_str()),
+        _ => None,
+    }).collect();
+    assert_eq!(feedback, [expected]);
 }
 
 #[allow(clippy::too_many_arguments, reason = "measure two exact participants at the real scheduled pulse")]
