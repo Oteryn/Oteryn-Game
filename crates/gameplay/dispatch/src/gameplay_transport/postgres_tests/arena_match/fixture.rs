@@ -198,7 +198,15 @@ fn bundle_layout(
             id: reference.get() - 1,
             terrain: None,
         });
-        for (y, unique) in [(31066, 6223), (31061, 6227)] {
+        // A claim with any unmatched native variant is withheld by the binder.
+        for (y, unique) in [
+            (31057, 6229),
+            (31059, 6228),
+            (31061, 6227),
+            (31064, 6224),
+            (31066, 6223),
+            (31068, 6222),
+        ] {
             for x in 32234..=32235 {
                 let mut tile = bundle.sectors[0].tiles[0].clone();
                 tile.x = x;
