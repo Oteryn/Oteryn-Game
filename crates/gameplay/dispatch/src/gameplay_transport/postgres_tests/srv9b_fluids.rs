@@ -334,17 +334,45 @@ fn scenario(charged: bool, drink: bool) -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
             assert_eq!(remaining, 0, "committed drink empties the mug");
+            let expiry = now + 60_000_000;
+            {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let state = states
+                    .get(&runtime, deps.actor, session)
+                    .ok_or("player spell state")?;
+                assert!(state.owned_conditions().has_status(StatusKind::Drunk, now));
+                assert!(
+                    state
+                        .owned_conditions()
+                        .has_status(StatusKind::Drunk, expiry - 1)
+                );
+                assert!(
+                    !state
+                        .owned_conditions()
+                        .has_status(StatusKind::Drunk, expiry)
+                );
+            }
+            owner
+                .states
+                .test_owner_time
+                .store(expiry + 1, std::sync::atomic::Ordering::Relaxed);
+            assert_eq!(
+                owner
+                    .use_item(deps.actor, command(18), item)
+                    .await
+                    .disposition,
+                UseDisposition::Committed
+            );
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
             let state = states
                 .get(&runtime, deps.actor, session)
-                .ok_or("player spell state")?;
-            let now = owner.owner_now().get();
-            assert!(state.owned_conditions().has_status(StatusKind::Drunk, now));
+                .ok_or("player spell state after replay")?;
             assert!(
                 !state
                     .owned_conditions()
-                    .has_status(StatusKind::Drunk, now + 60_000_000)
+                    .has_status(StatusKind::Drunk, expiry)
             );
             return Ok(());
         }
