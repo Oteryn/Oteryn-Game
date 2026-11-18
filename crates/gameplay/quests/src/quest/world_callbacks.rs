@@ -951,7 +951,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none()
-                && selector.native.is_none())
+                && selector.native.is_none()
+                && !(selector.appearance.is_some()
+                    && (callback.effects.earth_hit.is_some() || callback.effects.finish_area.is_some())))
             || selector.position.is_some_and(|p| !valid_pos(p))
             || selector
                 .native

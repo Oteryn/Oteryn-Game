@@ -131,9 +131,8 @@ fn scenario(admin: String, case: Case) -> TestResult {
             // Crystal movements_area_damage.lua:3-16. The fixture forces a
             // fixed roll so it can verify the real HP owner deterministically.
             callback.trigger = Trigger::StepIn;
-            callback.selector.ordinal = Some(0);
+            callback.selector.position = None;
             callback.selector.unique = None;
-            callback.selector.appearance = None;
             callback.effects.encounter = None;
             callback.effects.earth_hit = Some(EarthHit {
                 chance: Chance { wins: 1, rolls: 1 },

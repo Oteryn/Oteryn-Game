@@ -1520,7 +1520,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
+            } else if !callback.is_read_only()
+                && !personal_gift_preserves_object
+                && !(callback.effects.earth_hit.is_some()
+                    && callback.effects.retaliation.is_none()
+                    && before == after
+                    && passages.is_empty()
+                    && replacements.is_empty()
+                    && projection.is_none())
+                && !apply_scene()
             {
                 return UseDisposition::Rejected;
             }

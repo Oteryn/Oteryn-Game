@@ -79,7 +79,9 @@ pub(super) fn publish(
             session,
             u32::from(hit.minimum) + offset,
             crate::player_lethal::PlayerHitKind::Earth,
-            owner.owner_now(),
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                owner.owner_now().get(),
+            ),
             oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
         );
         if committed.is_some()
