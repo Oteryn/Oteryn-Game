@@ -33,6 +33,7 @@ const CHOSEN: &str = "oteryn:creature.lizard_chosen";
 pub(super) struct SurvivalRun {
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     map: [u8; 32],
+    content: [u8; 32],
     began: u64,
     wave: u8,
     credits: Option<Vec<(ExactActorRef, CommandRef)>>,
@@ -87,16 +88,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut occupants = 0;
         for (x, y) in PLATES {
-            if let Some((who, _, Some(other))) = census.iter().rev().find(|(_, position, _)| {
+            if let Some((who, _, Some(other))) = census.iter().find(|(who, position, _)| {
                 let at = position.position();
-                at.x == i32::from(x) && at.y == i32::from(y) && at.floor == 8
-            }) {
-                if !states.is_dead(*who) {
-                    self.states
-                        .chat
-                        .push_quest_feedback(*other, "A clicking sound tatters the silence.");
-                    occupants += 1;
-                }
+                at.x == i32::from(x)
+                    && at.y == i32::from(y)
+                    && at.floor == 8
+                    && runtime.is_current_top_actor(*who) == Ok(true)
+            }) && !states.is_dead(*who)
+            {
+                self.states
+                    .chat
+                    .push_quest_feedback(*other, "A clicking sound tatters the silence.");
+                occupants += 1;
             }
         }
         if occupants != PLATES.len() {
@@ -155,6 +158,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         *active = Some(SurvivalRun {
             scope: runtime.encounter_owner_scope(),
             map: map.overlay.base().digest(),
+            content: runtime.content_pin().server_artifact_digest(),
             began,
             wave: 1,
             credits: None,
@@ -178,6 +182,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.owner_fence().is_err()
                 || runtime.encounter_owner_scope() != run.scope
                 || map.overlay.base().digest() != run.map
+                || runtime.content_pin().server_artifact_digest() != run.content
             {
                 *active = None;
                 return;
