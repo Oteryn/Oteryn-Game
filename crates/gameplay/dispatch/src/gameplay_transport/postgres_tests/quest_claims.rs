@@ -30,6 +30,7 @@ const HOARD: &str = "qengine-rewards-qonce-hoard";
 const STEP: &str = "qengine-rewards-qonce-step";
 const SOCKET_WINDOW: &str = "qengine-rewards-qonce-socket-window";
 const SOCKET_REPEAT: &str = "qengine-rewards-qonce-socket-repeat";
+const SOCKET_CATCHUP: &str = "qengine-rewards-qonce-socket-catchup";
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const CLAIM: &str = "oteryn:quest-callback/qonce-dispatch-claim";
 const LEDGER: &str = "oteryn:quest-progress/qonce-dispatch/ledger";
@@ -101,13 +102,13 @@ pub(super) fn map_fixture(name: &str, callback: &mut Callback) {
         callback.selector.appearance = Some(LIONS_FOUNTAIN);
         callback.effects.transform = Some(LIONS_SANCTUARY_ROCK);
     }
-    if matches!(name, SOCKET_WINDOW | SOCKET_REPEAT) {
+    if matches!(name, SOCKET_WINDOW | SOCKET_REPEAT | SOCKET_CATCHUP) {
         callback.selector.appearance = Some(SOCKETS[0].1);
     }
 }
 
 pub(super) fn socket_world(name: &str, callback: &Callback) -> Option<TestResult<crate::map::boot::BundleWorld>> {
-    matches!(name, SOCKET_WINDOW | SOCKET_REPEAT).then(|| {
+    matches!(name, SOCKET_WINDOW | SOCKET_REPEAT | SOCKET_CATCHUP).then(|| {
         let mut objects: Vec<_> = SOCKETS.iter().skip(1).map(|(pos, appearance, _, _)| (*pos, *appearance)).collect();
         objects.push((CENTRE, LIONS_SANCTUARY_ROCK));
         let mut appearances: Vec<_> = SOCKETS.iter().map(|(_, _, _, field)| *field).collect();
@@ -128,6 +129,13 @@ fn lions_socket_window_rearms_after_the_daily_claim_clock_postgres() -> TestResu
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::qengine_rewards::scenario(SOCKET_REPEAT)
+}
+
+#[test]
+fn lions_socket_window_opens_on_elapsed_overlap_when_scheduler_catches_up_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(SOCKET_CATCHUP)
 }
 
 #[test]
@@ -221,12 +229,14 @@ async fn socket_window(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
-    repeat: bool,
+    name: &str,
 ) -> TestResult {
     use crate::map::overlay::TilePos;
     use oteryn_gameplay_quests::quest::world_callbacks::Offering;
     use std::sync::atomic::Ordering;
 
+    let repeat = name == SOCKET_REPEAT;
+    let catchup = name == SOCKET_CATCHUP;
     let mut stages = Vec::new();
     let fence = owner.current_quest_fence(admitted.game_session_id).await
         .map_err(|()| "socket fence unavailable")?.ok_or("socket fence")?;
@@ -304,6 +314,11 @@ async fn socket_window(
         let tile = TilePos { x: position.x, y: position.y, floor: position.floor };
         let present = || map.facts.movement_items(tile).into_iter()
             .any(|item| item.facts.appearance_id == field);
+        expiry.push((at + 60_000_000, tile));
+        if catchup {
+            assert!(!present());
+            continue;
+        }
         let starts = at + 2_000_000;
         assert_eq!(map.facts.next_movement_decay_time(), Some(starts));
         assert_eq!(map.facts.expire_movement_items(starts - 1), 0);
@@ -316,9 +331,21 @@ async fn socket_window(
         }
         owner.drain_paid_presence_opening().await;
         assert_eq!(map.facts.object_revision(centre), if index + 1 == count { 1 } else { 0 });
-        expiry.push((at + 60_000_000, tile));
     }
     let map = owner.bundle_map().ok_or("socket map")?;
+    if catchup {
+        // The scheduler first runs after even the last field's visible lifetime.
+        let last_expiry = expiry.last().ok_or("socket deadlines")?.0;
+        owner.states.test_owner_time.store(last_expiry, Ordering::Relaxed);
+        assert_eq!(map.facts.expire_movement_items(last_expiry), count * 2);
+        assert!(map.facts.next_movement_decay_time().is_none());
+        for (_, tile) in expiry.drain(..) {
+            assert!(map.facts.movement_items(tile).is_empty());
+        }
+        assert_eq!(map.facts.object_revision(centre), 0);
+        assert!(map.facts.next_presence_opening().is_some());
+        owner.drain_paid_presence_opening().await;
+    }
     assert_eq!(track_value(h, SOCKET_PHASE).await?, 10);
     owner.drain_paid_presence_opening().await;
     let opened: Vec<(i64, i64)> = sqlx::query_as(
@@ -677,8 +704,8 @@ pub(super) async fn exercise(
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
-    if matches!(name, SOCKET_WINDOW | SOCKET_REPEAT) {
-        return Box::pin(socket_window(owner, admitted, h, name == SOCKET_REPEAT)).await;
+    if matches!(name, SOCKET_WINDOW | SOCKET_REPEAT | SOCKET_CATCHUP) {
+        return Box::pin(socket_window(owner, admitted, h, name)).await;
     }
 
     // The source tile is installed by the common dispatch fixture. Build the binding

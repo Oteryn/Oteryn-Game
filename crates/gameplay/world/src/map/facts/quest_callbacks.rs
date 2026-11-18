@@ -80,6 +80,12 @@ struct TimedPresence {
     window: Option<PresenceWindow>,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum PresenceDeadline {
+    Expire,
+    Spawn,
+}
+
 #[derive(Clone, Debug)]
 pub struct PresenceWindow {
     pub target: u64,
@@ -228,13 +234,13 @@ impl CallbackStates {
         true
     }
 
-    fn open_presence_window(&mut self, window: PresenceWindow, now: u64) {
+    fn open_presence_window(&mut self, window: PresenceWindow, at: u64) {
         let count = self
             .timed_presences
             .values()
             .filter(|field| {
                 field.published.is_some()
-                    && field.expires > now
+                    && field.expires > at
                     && field.window.as_ref().is_some_and(|other| {
                         other.target == window.target && other.player == window.player
                     })
@@ -1082,30 +1088,26 @@ impl BundleFacts {
             states.remove_portals(owner);
             changed += 1;
         }
-        let mut ready: Vec<_> = states
-            .timed_presences
-            .iter()
-            .filter(|(_, p)| {
-                !states.timed_presence_blocked(p)
-                    && (p.expires <= now || (p.published.is_none() && p.starts <= now))
-            })
-            .map(|(key, presence)| {
-                (
-                    if presence.published.is_some() {
-                        presence.expires
-                    } else {
-                        presence.starts
-                    },
-                    *key,
-                )
-            })
-            .collect();
+        let mut ready = Vec::new();
+        for (&key, presence) in &states.timed_presences {
+            if states.timed_presence_blocked(presence) {
+                continue;
+            }
+            if presence.published.is_none() && presence.starts <= now {
+                ready.push((presence.starts, PresenceDeadline::Spawn, key));
+            }
+            if presence.expires <= now {
+                ready.push((presence.expires, PresenceDeadline::Expire, key));
+            }
+        }
+        // Crystal gems.lua:187-188 schedules two events. Preserve their overlap
+        // even when both are overdue, with expiry first at a shared deadline.
         ready.sort_unstable();
-        for (_, key) in ready {
+        for (deadline, event, key) in ready {
             let Some(mut presence) = states.timed_presences.remove(&key) else {
                 continue;
             };
-            if presence.expires <= now {
+            if event == PresenceDeadline::Expire {
                 if let Some(entry) = presence.published
                     && let Some(entries) = states.movement_items.get_mut(&presence.position)
                 {
@@ -1131,7 +1133,7 @@ impl BundleFacts {
                 let window = presence.window.clone();
                 states.timed_presences.insert(key, presence);
                 if let Some(window) = window {
-                    states.open_presence_window(window, now);
+                    states.open_presence_window(window, deadline);
                 }
                 changed += 1;
             }
