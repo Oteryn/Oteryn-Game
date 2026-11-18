@@ -40,9 +40,10 @@ pub(super) fn binding() -> TestResult<Callback> {
             {"track":STARTED,"minimum":1,"maximum":1,"set":1,"preserve":true},
             {"track":TOMB,"minimum":0,"maximum":0,"set":0,"preserve":true}
         ],
-        "failure_message":"The opening of the last sarcophagus still haunts you. Wait some time for your spirits to return.",
+        "success_message":"You got a strangely ornamented key!",
         "effects":{"roll_reward":{"sides":10,"minimum_success":7,"failure_creature":MUMMY,
             "failure_effect":3,"failure_text":"The curse of disturbing this fragile, ancient peace is your price to pay!",
+            "busy_text":"The opening of the last sarcophagus still haunts you. Wait some time for your spirits to return.",
             "rearm_ms":30000,"source_action":23104},
             "item_reward":{"item":FIXTURE_ITEM,"count":1,"contents":[]}},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/actions_sacrophagus_use.lua:1-62"]

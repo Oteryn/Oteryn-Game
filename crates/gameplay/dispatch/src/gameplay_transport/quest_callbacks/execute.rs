@@ -217,9 +217,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .facts
                 .quest_callback_action_ready(key, roll.source_action)
         {
-            if let Some(message) = &callback.failure_message {
-                self.states.chat.push_quest_feedback(session, message);
-            }
+            self.states.chat.push_quest_feedback(session, &roll.busy_text);
             return UseDisposition::NothingToUse;
         }
         if oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(callback)

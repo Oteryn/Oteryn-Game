@@ -11,6 +11,7 @@ pub struct RollReward {
     pub failure_creature: String,
     pub failure_effect: u16,
     pub failure_text: String,
+    pub busy_text: String,
     pub rearm_ms: u32,
     pub source_action: u16,
 }
@@ -25,6 +26,9 @@ impl RollReward {
             && !self.failure_text.is_empty()
             && self.failure_text.len() <= 512
             && !(self.failure_text.chars().any(char::is_control))
+            && !self.busy_text.is_empty()
+            && self.busy_text.len() <= 512
+            && !(self.busy_text.chars().any(char::is_control))
             && (1..=600_000).contains(&self.rearm_ms)
             && self.source_action != 0
             && callback.trigger == Trigger::Use
