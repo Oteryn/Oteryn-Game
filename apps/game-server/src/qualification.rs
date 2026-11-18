@@ -90,6 +90,11 @@ fn source_authority() -> String {
     env::var("WP5_S3A_SOURCE_AUTHORITY").unwrap_or_else(|_| "platform".into())
 }
 
+/// The Platform harness routes the Channel under its seeded revision; the legacy WP5 node under `route-s3b-1`.
+fn route_revision() -> String {
+    env::var("WP5_S3A_ROUTE_REVISION").unwrap_or_else(|_| "route-s3b-1".into())
+}
+
 fn required(name: &str) -> Result<String, io::Error> {
     env::var(name).map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, name))
 }
@@ -572,7 +577,7 @@ fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
         "world_id": uuid_text(&grant.world_id),
         "channel_id": uuid_text(&grant.channel_id),
         "account_security_generation": grant.security_generation.to_string(),
-        "route_revision": "route-s3b-1",
+        "route_revision": route_revision(),
         "runtime_observation_revision": RUNTIME_OBSERVATION,
         "scope_ownership_generation": grant.scope_generation.to_string(),
         "protocol_major": 1,

@@ -126,6 +126,7 @@ game_platform_start() {
   WP5_PORT="$PORTAL_E2E_INTERNAL_PORT"
   WP5_SERVER_NAME=localhost
   WP5_SOURCE_AUTHORITY=oteryn-platform-e2e
+  WP5_ROUTE_REVISION="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["seed"]["route"]["routeRevision"])' "$WORK/portal-report.json")"
   evidence "platform_roles=migrate,serve,worker,gateway platform_pg=18.6 game_pg=18.6 separate_database_roles=1 clients=16"
 }
 game_platform_config() {
