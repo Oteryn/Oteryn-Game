@@ -535,6 +535,17 @@ pub(super) fn lever_world(
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
+    if matches!(
+        callback
+            .effects
+            .encounter
+            .as_ref()
+            .and_then(|encounter| encounter.phase),
+        Some(EncounterPhase::GraveDangerZelos { .. })
+    ) {
+        // The native push owner requires known source ground and zone facts.
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i4526".into();
+    }
     let lever = callback.lever.ok_or("phase lever pair")?;
     for (i, appearance) in lever.into_iter().enumerate() {
         data.manifest.palette.push(bundle::PaletteEntry {
