@@ -1,4 +1,5 @@
 //! The latest admitted encounter owns its outcome until the next admission.
+mod reinforcements;
 mod shields;
 mod tool_use;
 
@@ -26,6 +27,7 @@ pub(in crate::gameplay_transport) struct Run {
     death: Option<CreatureDeathOccurrenceKey>,
     room: Option<Encounter>,
     shield: Option<shields::Fight>,
+    reinforcements: Option<reinforcements::Roster>,
 }
 
 impl Run {
@@ -55,6 +57,10 @@ impl Outcomes {
             .get(&outcome.outcome.group)
             .map_or(self.0.len() < MAX_GROUPS, |run| {
                 !runtime.contains_live_creature(run.target)
+                    && run
+                        .reinforcements
+                        .as_ref()
+                        .is_none_or(|roster| !roster.active(runtime))
             })
     }
 
@@ -66,6 +72,7 @@ impl Outcomes {
         actors: &[ExactActorRef],
         party: &[(ExactActorRef, GameSessionId)],
         map: &BundleMap,
+        now_ms: u64,
     ) -> Result<Run, CarrierError> {
         let terminal = actors
             .iter()
@@ -87,6 +94,12 @@ impl Outcomes {
         } else {
             None
         };
+        let reinforcements = outcome
+            .shield_handoff
+            .as_ref()
+            .and_then(|shield| shield.reinforcements.as_ref())
+            .map(|rule| reinforcements::Roster::bind(runtime, room, actors, rule, now_ms))
+            .transpose()?;
         Ok(Run {
             result: outcome.outcome.clone(),
             target: terminal,
@@ -95,6 +108,7 @@ impl Outcomes {
             death: None,
             room: shield.is_some().then(|| room.clone()),
             shield,
+            reinforcements,
         })
     }
 
@@ -132,15 +146,18 @@ impl Outcomes {
             if !run.current(runtime) {
                 continue;
             }
-            let Some(shield) = &mut run.shield else {
-                continue;
-            };
-            if let Some(terminal) = shield.advance(runtime, run.target, map, now, |at, runtime| {
+            let placeable = |at, runtime: &ChannelRuntimeV1| {
                 super::super::encounter_phases::placement(cells, runtime, at)
-            }) {
+            };
+            if let Some(shield) = &mut run.shield
+                && let Some(terminal) = shield.advance(runtime, run.target, map, now, placeable)
+            {
                 run.target = terminal;
                 run.result.mode = EncounterMode::Hard;
                 run.shield = None;
+            }
+            if let Some(roster) = &mut run.reinforcements {
+                roster.advance(runtime, run.target, now, placeable);
             }
         }
     }

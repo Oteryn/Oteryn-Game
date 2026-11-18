@@ -490,6 +490,18 @@ pub struct ShieldHandoff {
     pub tool_appearance: u16,
     pub dodge_percent: u8,
     pub handoff_delay_ms: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reinforcements: Option<EncounterReinforcements>,
+}
+
+/// The authored encounter roster supplies the first bodies and their spawn tiles.
+/// Crystal 201189f8 arbaziloth_fight.lua:298-373 defines the refill clock.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterReinforcements {
+    pub creature: String,
+    pub check_interval_ms: u32,
+    pub respawn_delay_ms: u32,
 }
 
 impl ShieldHandoff {
@@ -538,6 +550,18 @@ impl ShieldHandoff {
             && (1..=60_000).contains(&self.fire_delay_ms)
             && (1..=60_000).contains(&self.handoff_delay_ms)
             && self.dodge_percent < 100
+            && self.reinforcements.as_ref().is_none_or(|adds| {
+                creature(&adds.creature)
+                    && adds.creature != outcome.terminal
+                    && adds.creature != self.terminal
+                    && adds.creature != self.support
+                    && (1..=60_000).contains(&adds.check_interval_ms)
+                    && (1..=60_000).contains(&adds.respawn_delay_ms)
+                    && room
+                        .monsters
+                        .iter()
+                        .any(|spawn| spawn.creature == adds.creature)
+            })
     }
 }
 

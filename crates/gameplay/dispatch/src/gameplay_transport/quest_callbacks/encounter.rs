@@ -407,6 +407,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let prepared_outcome = outcome.map(|outcome| {
                     super::super::grizzly_kills::encounter_outcomes::Outcomes::prepare(
                         runtime, &callback.key, outcome, encounter, actors, &party, map,
+                        self.owner_now().get() / 1_000,
                     )
                 }).transpose()?;
                 credits
