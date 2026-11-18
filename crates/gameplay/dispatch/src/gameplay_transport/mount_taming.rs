@@ -53,10 +53,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
         if intent.use_with_map_item.is_some() {
-            let corpse = match item_target {
-                Some(ItemKey::Instance(id)) => Some(id),
-                _ => None,
-            };
+            let corpse = super::quest_tool_use::corpse_target(item_target);
             if let Some(result) = self
                 .use_carried_quest_item(actor, command, &intent, source, corpse)
                 .await?

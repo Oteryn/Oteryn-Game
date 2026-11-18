@@ -107,16 +107,25 @@ pub(super) async fn exercise(
         .bind(SCEPTRE).fetch_one(&h.pool).await?;
     let corpse: sqlx::types::Uuid = sqlx::query_scalar("SELECT i.item_instance_id FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i11361' AND i.lifecycle=1")
         .fetch_one(&h.pool).await?;
+    let corpse_handle = owner
+        .runtime
+        .lock()
+        .await
+        .visible_corpses()
+        .into_iter()
+        .find(|body| body.item.item_instance_id == *corpse.as_bytes())
+        .ok_or("visible incarnation remains")?
+        .identity;
     let intent = UseIntent {
         target: UseTarget::Item(NonZeroU64::MIN),
         use_with: None,
         use_with_position: None,
         use_with_map_item: Some(MapUseTarget::Item(NonZeroU64::new(2).ok_or("body handle")?)),
     };
-    for (id, expected) in [
-        (9200, UseDisposition::Committed),
-        (9200, UseDisposition::Committed),
-        (9201, UseDisposition::Rejected),
+    for (id, target, expected) in [
+        (9200, Some(ItemKey::Entity(corpse_handle)), UseDisposition::Committed),
+        (9200, None, UseDisposition::Committed),
+        (9201, Some(ItemKey::Instance(*corpse.as_bytes())), UseDisposition::Rejected),
     ] {
         let fence = owner
             .current_quest_fence(session)
@@ -133,7 +142,7 @@ pub(super) async fn exercise(
                 },
                 intent.clone(),
                 Some(ItemKey::Instance(*source.as_bytes())),
-                Some(ItemKey::Instance(*corpse.as_bytes())),
+                target,
             )
             .await
             .map_err(|()| "sceptre USE")?

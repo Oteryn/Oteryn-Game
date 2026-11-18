@@ -1200,12 +1200,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .use_carried_item_disguise(actor, command, &intent, source)
                 .await;
         }
-        let corpse = match target {
-            Some(item_view::ItemKey::Instance(id)) if intent.use_with_map_item.is_some() => {
-                Some(id)
-            }
-            _ => None,
-        };
+        let corpse = intent
+            .use_with_map_item
+            .as_ref()
+            .and_then(|_| crate::gameplay_transport::quest_tool_use::corpse_target(target));
         if let Some(outcome) = self
             .use_carried_quest_item(actor, command, &intent, source, corpse)
             .await?

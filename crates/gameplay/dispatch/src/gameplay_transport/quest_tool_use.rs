@@ -11,6 +11,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 mod direct_corpse;
 
+pub(super) fn corpse_target(target: Option<ItemKey>) -> Option<ItemKey> {
+    target.filter(|key| matches!(key, ItemKey::Entity(_) | ItemKey::Instance(_)))
+}
+
 // A possibly committed capture cannot leave the target available to another
 // action. Cancellation and an unknown acknowledgement retire this owner turn.
 struct CreatureTurn<'a> {
@@ -34,7 +38,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
-        corpse: Option<[u8; 16]>,
+        corpse: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
@@ -242,7 +246,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         let creature = if callback.creature_target.is_some() || callback.self_target.is_some() {
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
-            let proof = if let Some(corpse) = corpse {
+            let proof = if let Some(target) = corpse {
+                // An ordinary world object handle names the visible corpse.
+                // A browse-field handle names the same durable Ground Item.
+                let corpse = match target {
+                    ItemKey::Entity(identity) => runtime
+                        .bound_corpse(identity)
+                        .map(|body| body.item.item_instance_id),
+                    ItemKey::Instance(item) => Some(item),
+                    _ => None,
+                };
+                let Some(corpse) = corpse else {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                };
                 crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current_corpse(
                     runtime, actor, fence, command_ref, &callback, intent, corpse)
             } else {
