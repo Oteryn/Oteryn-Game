@@ -185,13 +185,19 @@ impl FloorTable {
             }
             // The retained Doomforge map portal has no action ID. Its base
             // destination cannot grant travel independently of encounter state.
-            if (pos.x, pos.y, pos.floor, appearance) == (34041, 32330, -14, 37000)
-                && (destination.x, destination.y, destination.floor) == (34062, 32334, -14)
-            {
+            if self.doomforge_portal(pos).is_some() {
                 return None;
             }
         }
         Some(destination)
+    }
+
+    fn doomforge_portal(&self, at: TilePos) -> Option<u8> {
+        let &(ordinal, appearance) = self.teleport_sources.get(&at)?;
+        let destination = self.teleport(at)?;
+        ((at.x, at.y, at.floor, appearance) == (34041, 32330, -14, 37000)
+            && (destination.x, destination.y, destination.floor) == (34062, 32334, -14))
+            .then_some(ordinal)
     }
 
     /// How many tiles teleport.
@@ -518,7 +524,6 @@ pub fn table_of(cells: &NativeEntryMovementCells) -> Option<&FloorTable> {
 }
 
 fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<TilePos> {
-    use crate::map::view::{MapFacts, placement_key};
     let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
         return None;
     };
@@ -526,22 +531,41 @@ fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<Til
     if let Some(destination) = bundle.facts.phase_teleport(at) {
         return destination;
     }
-    bundle.floors.teleport_for_source(at, |ordinal| {
-        let key = placement_key(at, ordinal)?;
-        if bundle.facts.base_hidden(key) {
-            return None;
-        }
-        let tile = bundle.overlay.base().tile(at.x, at.y, at.floor)?;
-        let (&id, _) = tile
-            .ids()
-            .iter()
-            .zip(tile.depths())
-            .filter(|(_, depth)| **depth == 0)
-            .nth(usize::from(ordinal))?;
-        bundle
-            .facts
-            .base_entry(at, ordinal, id)
-            .map(|facts| facts.appearance_id)
+    bundle
+        .floors
+        .teleport_for_source(at, |ordinal| source_appearance(bundle, at, ordinal))
+}
+
+fn source_appearance(bundle: &super::boot::BundleMap, at: TilePos, ordinal: u8) -> Option<u16> {
+    use crate::map::view::{MapFacts, placement_key};
+    let key = placement_key(at, ordinal)?;
+    if bundle.facts.base_hidden(key) {
+        return None;
+    }
+    let tile = bundle.overlay.base().tile(at.x, at.y, at.floor)?;
+    let (&id, _) = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(usize::from(ordinal))?;
+    bundle
+        .facts
+        .base_entry(at, ordinal, id)
+        .map(|facts| facts.appearance_id)
+}
+
+fn cold_doomforge(cells: &NativeEntryMovementCells, cell: Cell) -> bool {
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return false;
+    };
+    let map = index.map();
+    // Crystal forge_teleport.lua returns a refused entrant to the source tile.
+    // Keep the original position instead of committing movement onto the portal.
+    pos(cell.0, cell.1, cell.2).is_some_and(|at| {
+        map.floors
+            .doomforge_portal(at)
+            .is_some_and(|ordinal| source_appearance(map, at, ordinal) == Some(37000))
     })
 }
 
@@ -740,7 +764,8 @@ fn destination(
             x: cell.0,
             y: cell.1,
             z: cell.2,
-        }) {
+        }) || cold_doomforge(cells, cell)
+        {
             Ground::Blocked
         } else {
             ground(cell)

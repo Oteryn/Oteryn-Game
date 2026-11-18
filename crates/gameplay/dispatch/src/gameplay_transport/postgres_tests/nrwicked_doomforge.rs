@@ -101,7 +101,7 @@ fn scenario(admin: String) -> TestResult {
             let (outcome, _) = owner
                 .paced_step(deps.actor, session, StepDirection::East)
                 .await;
-            assert_eq!(outcome.disposition, StepDisposition::Moved);
+            assert_eq!(outcome.disposition, StepDisposition::Blocked);
             assert_eq!(
                 deps.runtime
                     .lock()
@@ -110,8 +110,8 @@ fn scenario(admin: String) -> TestResult {
                     .map_err(debug)?
                     .position(),
                 MovementLocalPosition {
-                    x: i32::from(PORTAL.x),
-                    y: i32::from(PORTAL.y),
+                    x: i32::from(START.x),
+                    y: i32::from(START.y),
                     floor: 14
                 },
             );
