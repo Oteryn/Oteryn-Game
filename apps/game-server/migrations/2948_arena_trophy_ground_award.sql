@@ -2,7 +2,8 @@
 CREATE TABLE game_arena_trophy_mints (
     transaction_id uuid PRIMARY KEY CHECK (game_character_is_uuid_v7(transaction_id)),
     event_id uuid NOT NULL UNIQUE CHECK (game_character_is_uuid_v7(event_id)),
-    item_instance_id uuid NOT NULL UNIQUE CHECK (game_character_is_uuid_v7(item_instance_id)),
+    item_instance_id uuid NOT NULL UNIQUE CHECK (game_character_is_uuid_v7(item_instance_id))
+        REFERENCES game_item_instances DEFERRABLE INITIALLY DEFERRED,
     character_id uuid NOT NULL REFERENCES game_character_roots,
     world_id uuid NOT NULL,
     channel_id uuid NOT NULL,
@@ -62,6 +63,11 @@ END $$;
 CREATE CONSTRAINT TRIGGER game_arena_trophy_mint_proven
     AFTER INSERT ON game_arena_trophy_mints DEFERRABLE INITIALLY DEFERRED
     FOR EACH ROW EXECUTE FUNCTION game_arena_trophy_mint_proven();
+CREATE TRIGGER game_arena_trophy_mint_immutable BEFORE UPDATE OR DELETE ON game_arena_trophy_mints
+    FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_arena_trophy_mint_no_truncate BEFORE TRUNCATE ON game_arena_trophy_mints
+    FOR EACH STATEMENT EXECUTE FUNCTION game_item_immutable();
+
 
 DO $migration$
 DECLARE

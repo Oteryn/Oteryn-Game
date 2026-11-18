@@ -365,8 +365,8 @@ message OneItemRewardClaimMintV1 {
   OneItemRewardClaimCauseV1 source = 3;
   // Explicit semantic absence of a prior item; not a nil or zero identifier.
   bool before_semantically_absent = 4;
-  // Exactly this field or the legacy after/destination, never both. Source and
-  // before_semantically_absent=true are mandatory in either shape.
+  // Inbox is exclusive with after/destination and arena Ground. Source and
+  // before_semantically_absent=true are mandatory for every destination.
   RewardClaimInboxMintV1 inbox = 5;
   // Arena trophy StepIn uses a single fresh Ground item with the same claim cause.
   // Ground is exclusive with destination and inbox.

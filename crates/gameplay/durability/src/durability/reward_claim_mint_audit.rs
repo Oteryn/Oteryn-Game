@@ -9,8 +9,8 @@
 //! contents, optional key and public authored Text-owner initialization;
 //! deferred guards require all children in the root's physical transaction.
 //!
-//! There is no Ground and no creature-death source. The cause is the actual
-//! player USE CommandRef and the claimed RewardClaim definition. Every
+//! Arena trophy StepIn adds the exact Ground placement and current session
+//! generation. The cause retains the player ingress and claimed RewardClaim. Every
 //! registered bound is checked before encode allocation and oversize input is
 //! rejected, never truncated.
 
@@ -93,7 +93,7 @@ pub const REWARD_CLAIM_MINT_USAGE: TransactionResourceUsage = TransactionResourc
     events: 1,
 };
 
-/// The closed legacy CHEST-1 or additive Inbox shape and its source-specific bounds.
+/// Validate the destination and its source-specific bounds.
 pub fn check_reward_claim_mint(value: &OneItemRewardClaimMintV1) -> Result<(), AuditError> {
     if let Some(ground) = &value.ground {
         let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
@@ -260,7 +260,7 @@ fn reward_scope(value: &OneItemRewardClaimMintV1) -> Result<(&[u8], u64), AuditE
 }
 
 /// Envelope identity fixed before the first commit attempt, with the fenced
-/// Channel (the payload carries no Ground).
+/// Channel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RewardClaimMintEventIdentity<'a> {
     pub event_id: [u8; 16],
