@@ -336,13 +336,13 @@ fn npc_false(value: &bool) -> bool {
     !*value
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRuleProgram {
     pub document: NpcRuleDocument,
     pub digest: [u8; 32],
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcRuleCatalog {
     programs: Vec<NpcRuleProgram>,
 }
@@ -499,6 +499,15 @@ impl NpcRuleCatalog {
             })
             .as_ref()
             .map_err(Clone::clone)
+    }
+
+    /// Resolve the source registry for a pinned quest catalogue.
+    pub fn for_catalogue(_catalogue: &super::QuestStateCatalogue) -> Result<&Self, NpcRuleError> {
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(fixture) = &_catalogue.npc_program_fixture {
+            return Ok(fixture);
+        }
+        Self::runtime()
     }
 
     /// A..M programs with read-compatible legacy definitions, plus the already active Stag.

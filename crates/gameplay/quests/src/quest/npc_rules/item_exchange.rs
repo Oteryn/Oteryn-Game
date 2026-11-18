@@ -2,8 +2,12 @@
 use super::*;
 use std::collections::BTreeSet;
 
+// Arkulius' vocation branches share one custody snapshot. The NPC-wide bound
+// must cover their distinct inputs (Crystal 201189f8, npc/arkulius.lua:104-165).
+const MAX_PLAIN_ITEM_IDENTITIES: usize = 11;
+
 impl NpcRuleCatalog {
-    /// A source NPC may require eight plain item types and grant twenty types.
+    /// A source NPC may inspect eleven plain item types and grant twenty per branch.
     /// Outfit effects use the shared appearance participant; money and optional removals stay closed.
     pub fn item_exchange_keys(&self, npc: &str) -> Option<Vec<String>> {
         let mut keys = BTreeSet::new();
@@ -69,7 +73,7 @@ impl NpcRuleCatalog {
                     _ => return None,
                 }
             }
-            if grants > 20 || keys.len() > 8 {
+            if grants > 20 || keys.len() > MAX_PLAIN_ITEM_IDENTITIES {
                 return None;
             }
         }

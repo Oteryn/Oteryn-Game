@@ -310,6 +310,7 @@ fn scenario_case(
                 | "catalogue-npc-calendar"
                 | "catalogue-npc-xp"
                 | "nx6-wayfarer"
+                | super::super::qespike_arkulius::NAME
                 | "npc-item-exchanges"
                 | "m42-hot-typed"
                 | "m42-hot-final"
@@ -2462,6 +2463,8 @@ fn scenario_case(
                 name.ends_with("-fault"),
             ))
             .await?;
+        } else if name == super::super::qespike_arkulius::NAME {
+            Box::pin(super::super::qespike_arkulius::exercise(&mut owner, &mut admitted, &h, &authority)).await?;
         } else if name == "m16-marker" {
             Box::pin(super::super::m16_personal_map_marker::exercise(
                 &mut owner,

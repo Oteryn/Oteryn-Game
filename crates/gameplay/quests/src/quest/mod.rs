@@ -431,6 +431,8 @@ pub struct QuestStateCatalogue {
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
+    #[cfg(any(test, feature = "test-support"))]
+    npc_program_fixture: Option<npc_rules::NpcRuleCatalog>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -440,6 +442,13 @@ struct NpcDefinitionPredecessor {
 }
 
 impl QuestStateCatalogue {
+    /// A test may supply a source registry. Its normal program pin is still required.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn with_npc_program_fixture(mut self, source: npc_rules::NpcRuleCatalog) -> Self {
+        self.npc_program_fixture = Some(source);
+        self
+    }
+
     /// Check every key, bound and effect, and compute each quest's definition hash.
     pub fn new(
         content_revision: impl Into<String>,
@@ -621,6 +630,8 @@ impl QuestStateCatalogue {
             predecessors: BTreeMap::new(),
             authored_bindings: None,
             native_recipe_evidence: None,
+            #[cfg(any(test, feature = "test-support"))]
+            npc_program_fixture: None,
         })
     }
 
