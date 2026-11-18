@@ -120,7 +120,10 @@ impl ActiveWaveRun {
             }
             return false;
         }
-        if let Some(wave) = plan.waves.get(self.next)
+        // Crystal action_arena.lua:80-83 and movements_click.lua:115-118
+        // schedule each wave independently. One delayed tick can cross
+        // several deadlines, so dispatch all due waves in authored order.
+        while let Some(wave) = plan.waves.get(self.next)
             && elapsed >= Duration::from_millis(wave.at_ms.into())
         {
             let terminal = if self.next + 1 == plan.waves.len() {

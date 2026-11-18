@@ -494,17 +494,21 @@ async fn wave_scenario(
     assert_eq!(position(owner, peer_actor).await?, local(PEER_LANDING));
     advance(owner, 999).await;
     assert!(creatures(owner).await?.is_empty());
-    advance(owner, 1).await;
-    let first = creatures(owner).await?;
-    assert_eq!(first.len(), 1);
-    assert_eq!(first[0].1, local(FIRST));
     if victory {
+        advance(owner, 1).await;
+        let first = creatures(owner).await?;
+        assert_eq!(first.len(), 1);
+        assert_eq!(first[0].1, local(FIRST));
         project_wave_death(owner, first[0].0, b"first-wave").await?;
         owner.drain_quest_encounter_deadlines().await;
         assert_eq!(position(owner, player).await?, local(LANDING));
         assert_eq!(position(owner, peer_actor).await?, local(PEER_LANDING));
+        advance(owner, 2_000).await;
+    } else {
+        // Both independent timers are due when the node next drains its
+        // scheduler (Crystal action_arena.lua:80-83).
+        advance(owner, 2_001).await;
     }
-    advance(owner, 2_000).await;
     let active = creatures(owner).await?;
     assert_eq!(active.len(), if victory { 1 } else { 2 });
     let exit = if victory {
@@ -519,6 +523,7 @@ async fn wave_scenario(
         owner.drain_quest_encounter_deadlines().await;
         VICTORY_EXIT
     } else {
+        assert!(active.iter().any(|(_, at)| *at == local(FIRST)));
         assert!(active.iter().any(|(_, at)| *at == local(SECOND)));
         advance(owner, 7_000).await;
         EXIT
