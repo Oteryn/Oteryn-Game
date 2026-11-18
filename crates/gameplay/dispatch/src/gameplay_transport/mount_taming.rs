@@ -20,6 +20,8 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+const IKSUPAN_ENTRANCE: &str = "oteryn:quest-callback/galthen-iksupan-entrance";
+
 fn outcome(disposition: UseDisposition) -> UseOutcome {
     UseOutcome {
         disposition,
@@ -124,15 +126,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let callbacks = self.callback_content();
         let Some(callback) = callbacks.iter().find(|callback| {
-            (quest_objects::accepts(callback)
-                || callback.key == "oteryn:quest-callback/galthen-iksupan-entrance")
+            (quest_objects::accepts(callback) || callback.key == IKSUPAN_ENTRANCE)
                 && super::quest_callbacks::matches(map, callback, resolved.placement_key)
         }) else {
             return Ok(None);
         };
-        let Some(required) = &callback.item_on_target else {
-            // Crystal's Iksupan entrance accepts direct USE only.
+        // Crystal actions_iksupan_entrance.lua:7–19 registers direct USE only.
+        if callback.key == IKSUPAN_ENTRANCE {
             return Ok(Some(outcome(UseDisposition::NotPossible)));
+        }
+        let Some(required) = &callback.item_on_target else {
+            return Err(());
         };
         let Some(fence) = command.item_fence else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
