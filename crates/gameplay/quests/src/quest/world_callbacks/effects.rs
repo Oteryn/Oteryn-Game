@@ -1296,7 +1296,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || encounter.players.iter().any(|p| {
                 !pos(p.from)
                     || !pos(p.to)
-                    || !in_room(p.to)
+                    // Crystal 201189f8, the_first_dragon/actions_lever.lua:10-21,24-27.
+                    // Shared pad landings are independently collision-checked by Channel;
+                    // the donor uses several beyond its same-floor occupancy rectangle.
+                    || (!in_room(p.to)
+                        && (!encounter.shared_staging || p.to.floor != encounter.room_min.floor))
                     || (in_room(p.from) && callback.personal_room_entry() != Some(p.from))
             })
             || encounter.monsters.iter().any(|m| {

@@ -205,6 +205,27 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
         return Ok(callback);
     }
     if name == FALLEN {
+        // Crystal actions_lever.lua:7-27 stages fifteen players at five landings,
+        // two of which are outside the source occupancy rectangle.
+        let players: Vec<_> = [
+            (STAGING[0], ARRIVALS[0]),
+            (STAGING[1], ARRIVALS[1]),
+            (at(33584, 30993), at(33592, 31035)),
+            (at(33582, 30994), at(33574, 31035)),
+            (at(33583, 30994), at(33583, 31026)),
+            (at(33584, 30994), ARRIVALS[1]),
+            (at(33582, 30995), ARRIVALS[0]),
+            (at(33583, 30995), at(33592, 31035)),
+            (at(33584, 30995), at(33574, 31035)),
+            (at(33582, 30996), at(33583, 31026)),
+            (at(33583, 30996), ARRIVALS[1]),
+            (at(33584, 30996), ARRIVALS[0]),
+            (at(33582, 30997), at(33592, 31035)),
+            (at(33583, 30997), at(33574, 31035)),
+            (at(33584, 30997), at(33583, 31026)),
+        ]
+        .map(|(from, to)| json!({"from":from,"to":to}))
+        .into();
         let data = json!({"schema": 1, "callbacks": [{
             "key": format!("oteryn:quest-callback/{FALLEN}"),
             "quest": "oteryn:quest.the_first_dragon_quest", "trigger": "use",
@@ -213,10 +234,7 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
             "return_on_failure": false,
             "effects": {"encounter": {
                 "minimum_level": 0, "shared_staging": true,
-                "players": [
-                    {"from": STAGING[0], "to": ARRIVALS[0]},
-                    {"from": STAGING[1], "to": ARRIVALS[1]}
-                ],
+                "players": players,
                 "monsters": [
                     {"creature": CHALLENGER, "position": CHALLENGERS[0]},
                     {"creature": CHALLENGER, "position": CHALLENGERS[1]},
