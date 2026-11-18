@@ -256,7 +256,7 @@ impl crate::durability::DurabilityRoot {
                         .map_err(|_| DurabilityError::InvalidStoredState)?);
                 }
                 let admission = if let Some(admission) = compensate {
-                    super::preparation::compensate_boss_cooldowns_data(&mut tx, &keys, admission)
+                    compensate_boss_cooldowns_data(&mut tx, &keys, admission)
                         .await.map_err(|_| DurabilityError::InvalidStoredState)?;
                     admission
                 } else {
@@ -277,4 +277,37 @@ impl crate::durability::DurabilityRoot {
             })
         }).await
     }
+}
+
+// An admission's actual ABANDONED/no-arrival predicate must be locked by its owner first.
+// Matching only that admission never refunds a participant's later spent cooldown. This
+// helper is private and cannot interpret raw IDs as permission to compensate an admission.
+pub(super) async fn compensate_boss_cooldowns_data(
+    tx: &mut Transaction<'_, Postgres>,
+    keys: &[BossRewardKey],
+    admission: [u8; 16],
+) -> RewardResult<u64> {
+    if keys.is_empty() || keys.len() > 15 || !reward_uuid(&admission) {
+        return Err(BossRewardStateError::InvalidInput);
+    }
+    let sorted: std::collections::BTreeSet<_> = keys.iter().cloned().collect();
+    if sorted.len() != keys.len() || keys.iter().any(|key| key.boss != keys[0].boss) {
+        return Err(BossRewardStateError::InvalidInput);
+    }
+    let keys: Vec<_> = sorted.into_iter().collect();
+    lock_reward_roots(tx, &keys).await?;
+    let mut deleted = 0;
+    for key in &keys {
+        deleted += sqlx::query(
+            "DELETE FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid \
+             AND boss_key=$2 AND admission=encode($3,'hex')::uuid",
+        )
+        .bind(key.character.as_bytes().as_slice())
+        .bind(key.boss.as_str())
+        .bind(admission.as_slice())
+        .execute(&mut **tx)
+        .await?
+        .rows_affected();
+    }
+    Ok(deleted)
 }
