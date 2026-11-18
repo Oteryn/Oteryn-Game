@@ -1169,26 +1169,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     std::sync::Arc::clone(catalogue), &permit, context,
                 ).await;
                 if !matches!(allowed, Ok(true)) {
-                    // A refused travel USE stays on its starting tile. Level and
-                    // cooldown gates still publish the donor's teleport effect there.
-                    if matches!(allowed, Ok(false))
-                        && (callback.return_on_failure
-                            || callback.minimum_level.is_some()
-                            || callback.boss_cooldown_requirement().is_some())
-                        && let Some(effect) = callback.effects.teleport_effect
-                        && let Some(at) = native(expected.position())
-                    {
+                    if matches!(allowed, Ok(false)) {
                         let runtime = self.runtime.lock().await;
                         if runtime.owner_fence().is_ok()
                             && runtime.read_actor_position(actor) == Ok(expected)
                             && runtime.player_control_facts(actor, command.game_session_id)
                                 .is_ok_and(|facts| facts.control_loss.is_none())
                         {
-                            let _ = map.facts.emit_movement_effect(at, effect);
+                            // Crystal sends the refusal cue at the unchanged USE origin.
+                            if (callback.return_on_failure
+                                || callback.minimum_level.is_some()
+                                || callback.boss_cooldown_requirement().is_some())
+                                && let Some(effect) = callback.effects.teleport_effect
+                                && let Some(at) = native(expected.position())
+                            {
+                                let _ = map.facts.emit_movement_effect(at, effect);
+                            }
+                            if let Some(message) = &callback.failure_message {
+                                self.states.chat.push_quest_feedback(command.game_session_id, message);
+                            }
                         }
-                    }
-                    if let Some(message) = &callback.failure_message {
-                        self.states.chat.push_quest_feedback(command.game_session_id, message);
                     }
                     return UseDisposition::Rejected;
                 }
