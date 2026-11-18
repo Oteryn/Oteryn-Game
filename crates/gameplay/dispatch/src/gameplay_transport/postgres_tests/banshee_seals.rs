@@ -535,7 +535,7 @@ async fn exercise_sacrifice(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(receipts, 0);
-    pour_sacrifice_fluids(owner, h, &admitted, start).await?;
+    pour_sacrifice_fluids(owner, h, &admitted, start, [TRACK, DOOR]).await?;
 
     owner.clock_origin = owner
         .clock_origin
@@ -592,6 +592,7 @@ async fn pour_sacrifice_fluids(
     h: &Harness,
     admitted: &super::AdmittedSession,
     start: NativeEntryStart,
+    seal_tracks: [&str; 2],
 ) -> TestResult {
     use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
     use crate::gameplay_transport::{item_ref_admission::NativeItemWeights, item_view::ItemKey};
@@ -710,7 +711,11 @@ async fn pour_sacrifice_fluids(
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
                 .ok_or("step clock")?;
-            owner.paced_step(actor, session, StepDirection::East).await;
+            let (step, _) = owner.paced_step(actor, session, StepDirection::East).await;
+            assert_eq!(
+                step.disposition,
+                oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
+            );
             let at = owner
                 .runtime
                 .lock()
@@ -718,6 +723,16 @@ async fn pour_sacrifice_fluids(
                 .read_actor_position(actor)
                 .map_err(debug)?;
             assert_eq!(at.position(), origin, "the altar still has no blood");
+            let seal_writes: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM game_character_quest_tracks
+                 WHERE character_id=encode($1,'hex')::uuid AND track_key IN ($2,$3) AND value=1)",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(seal_tracks[0])
+            .bind(seal_tracks[1])
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(!seal_writes, "refused offerings cannot grant either flag");
         }
     }
     Ok(())
