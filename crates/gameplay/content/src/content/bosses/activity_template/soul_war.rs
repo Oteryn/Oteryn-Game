@@ -143,6 +143,7 @@ impl ActiveGeneration {
             source_exit_position: exit,
             exit_position: exit,
             exit_teleporter: None,
+            use_exit: None,
             minimum_players: recipe.minimum_players,
             minimum_level: recipe.minimum_level,
             cooldown_seconds: if source == PinnedActivitySourceRoom::GoshnarsMegalomania {

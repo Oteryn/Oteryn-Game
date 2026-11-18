@@ -112,6 +112,23 @@ GALTHEN_CLOSURES = {
 }
 
 
+GALTHEN_USE_EXIT_PATH = "data-global/scripts/quests/adventures_of_galthen/actions_mitmah_vanguard_exit.lua"
+GALTHEN_USE_EXIT_SHA256 = "c3f77d9b03aa49462940df41bdc709b1525be39a5d6f18b8ab0cc3cde1034198"
+
+
+def galthen_use_exit(root):
+    source = root / GALTHEN_USE_EXIT_PATH
+    if not source.is_file() or sha(source.read_bytes()) != GALTHEN_USE_EXIT_SHA256:
+        return None
+    text = source.read_text()
+    return {
+        "path": GALTHEN_USE_EXIT_PATH,
+        "sha256": GALTHEN_USE_EXIT_SHA256,
+        "trigger": position(text, r"\barenaExit"),
+        "destination": position(text, r"\bdestination"),
+    }
+
+
 def galthen_callback_closure(root, path, key, profiles):
     proof = GALTHEN_CLOSURES.get(key)
     if proof is None:
@@ -222,6 +239,8 @@ def capture(root, path, profiles, defaults, *, configuration=None):
     if galthen is not None:
         row["source_callback_closure"] = galthen[0]
         row["source_exit_teleporter"] = galthen[1]
+        if key == "oteryn:creature.mitmah_vanguard" and (use_exit := galthen_use_exit(root)):
+            row["source_use_exit"] = use_exit
     for target, source, default in [
         ("minimum_players","minPlayers",1),("minimum_level","requiredLevel",0),
         ("cooldown_seconds","timeToFightAgain",defaults["cooldown"]),

@@ -13,7 +13,7 @@ mod first_dragon;
 
 #[path = "activity_template/galthen.rs"]
 mod galthen;
-pub use galthen::{BossCallbackSourceClosure, QualifiedBossExitTeleporter, vanguard_use_exit};
+pub use galthen::{BossCallbackSourceClosure, BossUseExitSource, QualifiedBossExitTeleporter};
 mod outburst;
 #[path = "activity_template/rotten_blood.rs"]
 mod rotten_blood;
@@ -44,6 +44,8 @@ pub struct BossLeverCandidate {
     pub exit_position: Option<[i32; 3]>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_exit_teleporter: Option<[i32; 3]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_use_exit: Option<BossUseExitSource>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_callback_closure: Option<BossCallbackSourceClosure>,
     pub blockers: Vec<String>,
@@ -149,6 +151,7 @@ pub struct QualifiedActivityRoomTemplate {
     source_exit_position: LogicalCell,
     exit_position: LogicalCell,
     exit_teleporter: Option<QualifiedBossExitTeleporter>,
+    use_exit: Option<QualifiedBossExitTeleporter>,
     minimum_players: u32,
     minimum_level: u32,
     cooldown_seconds: u32,
@@ -210,6 +213,9 @@ impl QualifiedActivityRoomTemplate {
     }
     pub fn exit_teleporter(&self) -> Option<QualifiedBossExitTeleporter> {
         self.exit_teleporter
+    }
+    pub fn use_exit(&self) -> Option<QualifiedBossExitTeleporter> {
+        self.use_exit
     }
     pub fn minimum_players(&self) -> u32 {
         self.minimum_players
@@ -444,6 +450,7 @@ impl ActiveGeneration {
             source_exit_position: exit,
             exit_position: exit,
             exit_teleporter: None,
+            use_exit: None,
             minimum_players: 1,
             minimum_level: 500,
             cooldown_seconds: 72_000,
@@ -659,6 +666,21 @@ impl ContentActivationController {
             return Err(R::UnknownPlacement);
         }
 
+        if !galthen::exact_use_exit(candidate) || (candidate.source_use_exit.is_some() && !galthen)
+        {
+            return Err(R::SourceHookUnavailable);
+        }
+        let use_exit = candidate
+            .source_use_exit
+            .as_ref()
+            .map(|exit| {
+                Ok(QualifiedBossExitTeleporter {
+                    trigger: project(exit.trigger)?,
+                    destination: project(exit.destination)?,
+                })
+            })
+            .transpose()?;
+
         let levers = candidate
             .lever_positions
             .iter()
@@ -682,11 +704,35 @@ impl ContentActivationController {
         if !inside(boss) || entries.iter().any(|p| !inside(*p)) {
             return Err(R::IncompleteLayout);
         }
+        if let Some(exit) = use_exit {
+            let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+                room.movement_cells().index()
+            else {
+                return Err(R::UnknownPlacement);
+            };
+            let trigger = exit.trigger();
+            if source.is_some()
+                || !inside(trigger)
+                || index
+                    .map()
+                    .overlay
+                    .base()
+                    .tile(
+                        u16::try_from(trigger.x).map_err(|_| R::UnknownPlacement)?,
+                        u16::try_from(trigger.y).map_err(|_| R::UnknownPlacement)?,
+                        i8::try_from(-trigger.z).map_err(|_| R::UnknownPlacement)?,
+                    )
+                    .is_none()
+            {
+                return Err(R::UnknownPlacement);
+            }
+        }
         for position in levers
             .iter()
             .chain(entries.iter())
             .copied()
             .chain([boss, exit])
+            .chain(use_exit.map(|exit| exit.destination()))
         {
             if room
                 .movement_cells()
@@ -799,6 +845,7 @@ impl ContentActivationController {
             source_exit_position: exit,
             exit_position: exit,
             exit_teleporter,
+            use_exit,
             minimum_players: minimum,
             minimum_level: level,
             cooldown_seconds: cooldown,

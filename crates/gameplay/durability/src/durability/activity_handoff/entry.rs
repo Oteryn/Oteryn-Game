@@ -53,6 +53,8 @@ pub(super) fn valid_request(r: &ActivityEnterRequest, boss_room: bool) -> bool {
             || p.source_position_write_sequence == 0
             || p.source_position.world_id != world_id
             || p.exit_position.world_id != world_id
+            || (p.use_exit_cell.is_some() && !boss_room)
+            || p.use_exit_cell != first.use_exit_cell
             || p.source_position.vitals.is_none()
             || !characters.insert(*p.source.character_id.as_bytes())
             || !sessions.insert(*p.destination_game_session_id.as_bytes())
@@ -128,6 +130,12 @@ fn binding(
             p.destination_cell,
             p.exit_position.cell,
         ] {
+            hash_field(&mut hash, &cell.x.to_be_bytes());
+            hash_field(&mut hash, &cell.y.to_be_bytes());
+            hash_field(&mut hash, &cell.floor.to_be_bytes());
+        }
+        if let Some(cell) = p.use_exit_cell {
+            hash_field(&mut hash, b"native-use-exit.v1");
             hash_field(&mut hash, &cell.x.to_be_bytes());
             hash_field(&mut hash, &cell.y.to_be_bytes());
             hash_field(&mut hash, &cell.floor.to_be_bytes());
@@ -446,14 +454,6 @@ async fn insert_participant(
         .bind(s.cell.x).bind(s.cell.y).bind(s.cell.floor).bind(s.coordinate_frame_digest.as_slice()).bind(s.map_revision_digest.as_slice()).bind(s.server_artifact_digest.as_slice())
         .bind(world_id.as_bytes().as_slice()).execute(&mut **tx).await?;
     let exit = p.exit_position;
-    let use_exit = oteryn_gameplay_content::content::bosses::activity_template::vanguard_use_exit(
-        &r.activity_key,
-        &r.template_revision,
-    )
-    .map(|exit| {
-        let cell = exit.destination();
-        vec![cell.x, cell.y, cell.z]
-    });
     let rest = s
         .rest
         .map(|values| {
@@ -472,7 +472,7 @@ async fn insert_participant(
         .bind(s.vitals.map(|v| i32::try_from(v.mana())).transpose().map_err(|_| DurabilityError::InvalidStoredState)?)
         .bind(rest).bind(p.destination_transport.map(|t| t.to_bytes().to_vec()))
         .bind(p.selected_capabilities.iter().map(|id| i64::from(*id)).collect::<Vec<_>>())
-        .bind(use_exit)
+        .bind(p.use_exit_cell.map(|cell| [cell.x, cell.y, i32::from(cell.floor)].to_vec()))
         .execute(&mut **tx).await?;
     Ok(())
 }

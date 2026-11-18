@@ -325,6 +325,7 @@ async fn admit_inner(
                 y: 31151,
                 floor: 8,
             },
+            use_exit_cell: None,
             exit_position: LastPositionRecord {
                 cell: LastPositionCell {
                     x: 32373,
