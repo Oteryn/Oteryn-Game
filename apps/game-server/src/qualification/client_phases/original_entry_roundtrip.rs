@@ -157,15 +157,24 @@ async fn journey(clients: &SeamClients<'_>, active: &mut Option<DevClientSession
     let client = active
         .as_ref()
         .ok_or("original entry fresh client missing")?;
-    if client.join_snapshot().game_session_id == joined.game_session_id
-        || client.world_spatial().actor_position != final_position
-        || client.world_spatial().content_generation != content
-        || committed_admissions(clients.url).await? != admissions + 2
+    let admissions_after = committed_admissions(clients.url).await?;
+    let session_is_new = client.join_snapshot().game_session_id != joined.game_session_id;
+    let observed_position = client.world_spatial().actor_position;
+    let content_matches = client.world_spatial().content_generation == content;
+    evidence(&format!(
+        "original_entry phase=fresh-relogin-observed old_session={} new_session={} session_is_new={session_is_new} actual_position={observed_position:?} expected_position={final_position:?} content_matches={content_matches} admissions_before={admissions} admissions_after={admissions_after}",
+        uuid_text(joined.game_session_id.as_bytes()),
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+    ));
+    if !session_is_new
+        || observed_position != final_position
+        || !content_matches
+        || admissions_after != admissions + 2
     {
-        return Err(
-            "fresh original entry admission did not preserve saved position in a new session"
-                .into(),
-        );
+        return Err(format!(
+            "fresh original entry admission mismatch: new_session={session_is_new}, position={observed_position:?}/{final_position:?}, content_matches={content_matches}, admissions={admissions_after}/{}",
+            admissions + 2,
+        ).into());
     }
     evidence(&format!(
         "original_entry phase=fresh-relogin old_session={} new_session={} position={},{},{} admissions_delta=2",
