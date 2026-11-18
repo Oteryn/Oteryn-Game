@@ -196,11 +196,11 @@ impl ZelosEncounter {
             let mut bursts = Vec::with_capacity(MASS - FIRST_SHARD);
             for role in FIRST_SHARD..MASS {
                 let shard = self.phase.actors[role].ok_or(CarrierError::PlanConflict)?;
-                // The lethal projection may already have detached the live position
-                // for the shard actually struck. All four occupy this encounter room.
-                let position = runtime
-                    .read_actor_position(shard)
-                    .map_or(self.magnor_at, |snapshot| snapshot.position());
+                let position = if shard == actor {
+                    runtime.borrow_combat_death().projected_death(shard)?.1
+                } else {
+                    runtime.read_actor_position(shard)?.position()
+                };
                 bursts.push(MagnorBurst { shard, position });
             }
             for &MagnorBurst { shard, .. } in &bursts {
