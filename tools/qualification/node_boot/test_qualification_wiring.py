@@ -118,11 +118,15 @@ class QualificationWiringTests(unittest.TestCase):
 
     def test_blocked_spawn_route_replans_other_lanes(self):
         source = (PHASES / "world.rs").read_text().split("async fn approach_spawn_target", 1)[1]
-        self.assertTrue("remaining_lanes.retain" in source)
+        self.assertIn("blocked_edges.insert", source)
+        self.assertNotIn("remaining_lanes.retain", source)
 
     def test_partial_gold_approach_retains_species_priority(self):
         source = (PHASES / "full_gold.rs").read_text()
-        self.assertTrue("partial_species = Some" in source)
+        self.assertIn("is::<SpawnProbeExpired>()", source)
+    def test_resumed_species_has_a_separate_slice(self):
+        source = (PHASES / "full_gold.rs").read_text()
+        self.assertIn("continuation_probe_deadline(now, round_deadline, species_left)", source)
 
     def test_spawn_exchange_has_a_hard_cutoff(self):
         source = (PHASES / "world.rs").read_text()

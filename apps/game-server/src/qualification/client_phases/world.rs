@@ -2192,11 +2192,11 @@ pub(super) async fn reach_route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
-    reach_route_until(client, world, from, goal, None).await
+    reach_route_until(client, world, from, goal, None, &BTreeSet::new()).await
 }
 
 #[derive(Debug)]
-struct SpawnProbeExpired;
+pub(super) struct SpawnProbeExpired;
 
 impl std::fmt::Display for SpawnProbeExpired {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -2254,6 +2254,7 @@ async fn reach_route_until(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
     deadline: Option<tokio::time::Instant>,
+    blocked_edges: &BTreeSet<(TilePos, TilePos)>,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     let mut origin = from;
     loop {
@@ -2266,7 +2267,7 @@ async fn reach_route_until(
         if observed != origin {
             origin = observed;
         }
-        let path = reach_route_serviced(world, origin, &goal, async || {
+        let path = reach_route_serviced(world, origin, &goal, blocked_edges, async || {
             if probe_expired(deadline) {
                 return Err(SpawnProbeExpired.into());
             }
@@ -2295,6 +2296,7 @@ async fn reach_route_serviced(
     world: &BundleWorld,
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
+    blocked_edges: &BTreeSet<(TilePos, TilePos)>,
     mut service: impl AsyncFnMut() -> TestResult,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     let mut queue = VecDeque::from([from]);
@@ -2327,7 +2329,7 @@ async fn reach_route_serviced(
             let Some(next) = destination(world, at, direction) else {
                 continue;
             };
-            if parents.contains_key(&next) {
+            if blocked_edges.contains(&(at, next)) || parents.contains_key(&next) {
                 continue;
             }
             parents.insert(next, Some((at, direction)));
@@ -2505,16 +2507,25 @@ async fn probe_step(
     }
 }
 
+#[derive(Debug)]
+struct BlockedSpawnEdge(TilePos, TilePos);
+impl std::fmt::Display for BlockedSpawnEdge {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "blocked spawn edge {:?} -> {:?}", self.0, self.1)
+    }
+}
+impl std::error::Error for BlockedSpawnEdge {}
+
 async fn walk_until(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
     deadline: Option<tokio::time::Instant>,
     tolerate_refusal: bool,
-) -> TestResult<bool> {
+) -> TestResult {
     for &direction in path {
         if probe_expired(deadline) {
-            return Ok(false);
+            return Err(SpawnProbeExpired.into());
         }
         let before = client.world_spatial().actor_position;
         let basis = spatial_basis::current(client)?;
@@ -2549,11 +2560,11 @@ async fn walk_until(
             let Some(delay) = delay else { break };
             client.take_events();
             if !retry_fits_probe(tokio::time::Instant::now(), deadline, delay) {
-                return Ok(false);
+                return Err(SpawnProbeExpired.into());
             }
             tokio::time::sleep(delay).await;
             if probe_expired(deadline) {
-                return Ok(false);
+                return Err(SpawnProbeExpired.into());
             }
             outcome = if deadline.is_some() {
                 probe_step(client, direction, deadline).await?
@@ -2569,7 +2580,9 @@ async fn walk_until(
             && client.world_spatial().actor_position == before
         {
             client.take_events();
-            return Ok(false);
+            let from = served_tile(before, basis)?;
+            let to = destination(world, from, direction).ok_or("invalid refused STEP edge")?;
+            return Err(BlockedSpawnEdge(from, to).into());
         }
         if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none() {
             return Err(format!(
@@ -2589,7 +2602,7 @@ async fn walk_until(
         }
         client.take_events();
     }
-    Ok(true)
+    Ok(())
 }
 
 pub(super) async fn logout_retrying_busy(
@@ -5329,13 +5342,14 @@ async fn approach_spawn_target(
         at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
     };
     let mut remaining_lanes = authored;
+    let mut blocked_edges = BTreeSet::new();
     let mut last_respawn = None;
     let mut search = true;
     let mut chase_steps = 0;
     let mut deadline = tokio::time::Instant::now();
     loop {
         if probe_expired(probe_deadline) {
-            return Ok(None);
+            return Err(SpawnProbeExpired.into());
         }
         if search {
             chase_steps = 0;
@@ -5364,33 +5378,25 @@ async fn approach_spawn_target(
                         })
                 },
                 probe_deadline,
+                &blocked_edges,
             )
-            .await;
-            let path = match path {
-                Err(error) if error.is::<SpawnProbeExpired>() => return Ok(None),
-                result => result?,
-            };
+            .await?;
             if let Ok(path) = path {
-                let destination_tile = path
-                    .iter()
-                    .try_fold(from, |at, direction| destination(world, at, *direction));
-                if !walk_until(
+                match walk_until(
                     client,
                     world,
                     &path,
                     probe_deadline,
                     probe_deadline.is_some(),
                 )
-                .await?
+                .await
                 {
-                    if probe_expired(probe_deadline) {
-                        return Ok(None);
-                    }
-                    if let Some(at) = destination_tile {
-                        remaining_lanes.retain(|lane, _| !near(at, *lane));
+                    Err(error) if error.is::<BlockedSpawnEdge>() => {
+                        let edge = error.downcast::<BlockedSpawnEdge>()?;
+                        blocked_edges.insert((edge.0, edge.1));
                         continue;
                     }
-                    return Err("spawn route endpoint is invalid".into());
+                    result => result?,
                 }
                 let here = actor_tile(client)?;
                 let visited: Vec<_> = remaining_lanes
@@ -5473,14 +5479,16 @@ async fn approach_spawn_target(
         {
             chase_steps += 1;
             let deadline = probe_deadline.map_or(deadline, |limit| deadline.min(limit));
-            if !walk_until(client, world, &[direction], Some(deadline), true).await? {
-                // A declined or paced pursuit leaves the connection synchronized.
-                chase_steps = 32;
+            match walk_until(client, world, &[direction], Some(deadline), true).await {
+                Err(error) if error.is::<BlockedSpawnEdge>() || error.is::<SpawnProbeExpired>() => {
+                    chase_steps = 32;
+                }
+                result => result?,
             }
             continue;
         }
         match probe_liveness(client, Duration::from_millis(100), probe_deadline).await {
-            Err(error) if error.is::<SpawnProbeExpired>() => return Ok(None),
+            Err(error) if error.is::<SpawnProbeExpired>() => return Err(error),
             result => result?,
         }
         client.take_events();
@@ -5745,6 +5753,7 @@ fn qualification_profile_return_reaches_home_temple_after_m04_respawn() -> TestR
                         world,
                         from,
                         |at| return_protection_zone(world, at),
+                        &BTreeSet::new(),
                         async || {
                             tokio::task::yield_now().await;
                             Ok(())
@@ -5769,6 +5778,7 @@ fn qualification_profile_return_reaches_home_temple_after_m04_respawn() -> TestR
                         world,
                         at,
                         |at| at == TOWN,
+                        &BTreeSet::new(),
                         async || Ok(()),
                     ))?
                     .err()
@@ -5783,18 +5793,40 @@ fn qualification_profile_return_reaches_home_temple_after_m04_respawn() -> TestR
                         world,
                         TOWN,
                         |at| return_protection_zone(world, at),
+                        &BTreeSet::new(),
                         async || Ok(()),
                     ))?
                     .map_err(|failure| {
                         format!("fixture town lost its protection zone: {failure}")
                     })?;
                 assert!(town.is_empty());
+                let first = runtime
+                    .block_on(reach_route_serviced(
+                        world,
+                        TOWN,
+                        |at| at != TOWN,
+                        &BTreeSet::new(),
+                        async || Ok(()),
+                    ))?
+                    .map_err(|failure| failure.to_string())?;
+                let blocked = destination(world, TOWN, first[0]).ok_or("missing first edge")?;
+                let alternative = runtime
+                    .block_on(reach_route_serviced(
+                        world,
+                        TOWN,
+                        |at| at != TOWN,
+                        &BTreeSet::from([(TOWN, blocked)]),
+                        async || Ok(()),
+                    ))?
+                    .map_err(|failure| failure.to_string())?;
+                assert_ne!(destination(world, TOWN, alternative[0]), Some(blocked));
                 // A search that lasts a chunk must propagate a failed liveness service.
                 let mut services = 0;
                 let refused = runtime.block_on(reach_route_serviced(
                     world,
                     TOWN,
                     |_| false,
+                    &BTreeSet::new(),
                     async || {
                         services += 1;
                         Err("route service failed".into())

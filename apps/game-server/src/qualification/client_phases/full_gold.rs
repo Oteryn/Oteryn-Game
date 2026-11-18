@@ -390,6 +390,14 @@ fn species_probe_deadline(
     now + (round_deadline - now) / species_left
 }
 
+fn continuation_probe_deadline(
+    now: tokio::time::Instant,
+    round_deadline: tokio::time::Instant,
+    species_left: u32,
+) -> tokio::time::Instant {
+    now + (round_deadline - now) / species_left.div_ceil(2).max(species_left.min(2))
+}
+
 /// Hunt the best-paying reachable creature and loot its gold until the character carries
 /// `needed`; returns the carried gold.
 ///
@@ -451,7 +459,7 @@ pub(super) async fn earn(
             next_species = (next_species + 1) % ranked.len();
             let species_left = u32::try_from(ranked.len() - index)?;
             let probe_deadline = if continuing == Some(candidate_index) {
-                deadline
+                continuation_probe_deadline(now, round_deadline, species_left)
             } else {
                 species_probe_deadline(now, round_deadline, species_left)
             };
@@ -464,14 +472,20 @@ pub(super) async fn earn(
             .map_err(|_| {
                 client.session_mut().invalidate_after_cancellation();
                 format!("{row}: gold-earning-budget during spawn approach")
-            })??;
+            })?;
+            let travel = match travel {
+                Err(error) if error.is::<SpawnProbeExpired>() => {
+                    if continuing != Some(candidate_index) && actor_tile(client)? != before {
+                        partial_species = Some(candidate_index);
+                        break;
+                    }
+                    None
+                }
+                result => result?,
+            };
             if let Some(target) = travel {
                 next_species = 0;
                 picked = Some((candidate, target));
-                break;
-            }
-            if tokio::time::Instant::now() >= probe_deadline && actor_tile(client)? != before {
-                partial_species = Some(candidate_index);
                 break;
             }
         }
@@ -481,11 +495,12 @@ pub(super) async fn earn(
                 let wait = deadline.saturating_duration_since(tokio::time::Instant::now())
                     .min(Duration::from_millis(100));
                 match tokio::time::timeout_at(deadline, client.service_liveness(wait)).await {
-                    Ok(result) if tokio::time::Instant::now() < deadline => result?,
-                    Ok(_) => return Err(format!("{row}: gold-earning-budget during respawn wait").into()),
+                    Ok(Err(error)) => return Err(error.into()),
+                    Ok(Ok(())) if tokio::time::Instant::now() < deadline => {},
+                    Ok(_) => return Err(verdict::HarnessError::boxed(verdict::Cause::Deadline { phase: "gold-respawn" }, format!("{row}: gold-earning-budget during respawn wait"))),
                     Err(_) => {
                         client.session_mut().invalidate_after_cancellation();
-                        return Err(format!("{row}: gold-earning-budget during respawn wait").into());
+                        return Err(verdict::HarnessError::boxed(verdict::Cause::Deadline { phase: "gold-respawn" }, format!("{row}: gold-earning-budget during respawn wait")));
                     }
                 }
                 client.take_events();
@@ -714,6 +729,14 @@ pub(super) async fn equip(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn resumed_species_leaves_a_slice_for_its_competitor() {
+        let now = tokio::time::Instant::now();
+        let end = now + Duration::from_secs(20);
+        assert_eq!(continuation_probe_deadline(now, end, 2), now + Duration::from_secs(10));
+        assert_eq!(continuation_probe_deadline(now, end, 1), end);
+    }
 
     #[test]
     fn first_depleted_species_leaves_time_for_later_species() {
