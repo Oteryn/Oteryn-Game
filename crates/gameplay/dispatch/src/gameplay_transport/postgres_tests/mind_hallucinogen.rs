@@ -2,8 +2,10 @@
 use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::foundation::MovementFacing;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::Position,
 };
@@ -54,7 +56,16 @@ fn hallucinogen_use_checks_ring_and_temple_and_commits_only_the_chosen_side() ->
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(exercise)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, false).await)
+}
+
+#[test]
+fn hallucinogen_use_can_arrive_at_either_occupied_brain_landing() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, true).await)
 }
 
 fn catalogue() -> TestResult<QuestStateCatalogue> {
@@ -84,7 +95,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
     Ok(Bindings::parse(&serde_json::to_vec(&data)?)?.attach(&base)?)
 }
 
-async fn exercise(admin: String) -> TestResult {
+async fn exercise(admin: String, occupied_landings: bool) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "mind_potion", true, false).await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -239,6 +250,26 @@ async fn exercise(admin: String) -> TestResult {
             );
         }
     }
+    let occupants = if occupied_landings {
+        // Crystal game.cpp:3167-3192 asks the chosen existing tile for FLAG_NOLIMIT.
+        // Occupy both outcomes so this assertion is independent of the database draw.
+        let (player, _) =
+            super::grizzly_boss::second_player(&owner, &deps, &h, local(LANDINGS[0])).await?;
+        let mut runtime = owner.runtime.lock().await;
+        let native = generation.native_gameplay().ok_or("native gameplay")?;
+        native
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        let key = "oteryn:creature.fire_devil";
+        let health = runtime.companion_policy(key).map_err(debug)?.maximum_health;
+        let spawned = runtime
+            .commit_quest_creature_spawn(&[(key, health, local(LANDINGS[1]))])
+            .map_err(debug)?;
+        let creature = spawned.first().copied().ok_or("right landing creature")?;
+        Some([player, creature])
+    } else {
+        None
+    };
     let committed = wire(
         &owner,
         &mut admitted,
@@ -261,16 +292,23 @@ async fn exercise(admin: String) -> TestResult {
         .get(usize::try_from(selected - 1)?)
         .copied()
         .ok_or("bounded brain side")?;
-    assert_eq!(
-        owner
-            .runtime
-            .lock()
-            .await
-            .read_actor_position(deps.actor)
-            .map_err(debug)?
-            .position(),
-        local(expected)
-    );
+    {
+        let runtime = owner.runtime.lock().await;
+        let arrival = runtime.read_actor_position(deps.actor).map_err(debug)?;
+        assert_eq!(arrival.position(), local(expected));
+        assert_eq!(arrival.facing(), Some(MovementFacing::East));
+        if let Some(occupants) = occupants {
+            for (occupant, original) in occupants.into_iter().zip(LANDINGS) {
+                assert_eq!(
+                    runtime
+                        .read_actor_position(occupant)
+                        .map_err(debug)?
+                        .position(),
+                    local(original)
+                );
+            }
+        }
+    }
     assert_eq!(
         wire(&owner, &mut admitted, 5, COMMAND_TYPE_USE_INTENT, payload).await?,
         committed
