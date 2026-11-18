@@ -1325,6 +1325,18 @@ pub(super) async fn exercise(
             ],
             142,
         ),
+        // TibiaWiki `Shaman_Outfits_Quest/Spoiler`: Hairycles gives the outfit, Chondur the addons.
+        "qengine-rewards-qb-shaman-story" => (
+            "shaman",
+            &[
+                ("hairycles", None, None, Some(0)),
+                ("staff-start", None, None, None),
+                ("staff", Some((3002, 5)), None, Some(2)),
+                ("mask-start", None, None, None),
+                ("mask", Some((3403, 5)), None, Some(1)),
+            ],
+            158,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
     let outfit_family = if family == "druid-rook" {
@@ -1398,6 +1410,12 @@ pub(super) async fn exercise(
                 .iter()
                 .map(amount)
                 .collect();
+        }
+        if family == "shaman" && *suffix == "staff" {
+            expected_take = [(3002, 5), (5014, 1)].iter().map(amount).collect();
+        }
+        if family == "shaman" && *suffix == "mask" {
+            expected_take = [(3403, 5), (3348, 5)].iter().map(amount).collect();
         }
         if family == "barbarian" && *suffix == "bron-cloth" {
             expected_take = [(5910, 50), (5911, 50)].iter().map(amount).collect();
@@ -1486,6 +1504,9 @@ pub(super) async fn exercise(
         if family == "beggar" && *suffix == "first-start" {
             assert_eq!(callback.requires_outfits, vec!["oteryn:outfit.beggar"]);
         }
+        if family == "shaman" && matches!(*suffix, "staff-start" | "mask-start") {
+            assert_eq!(callback.requires_outfits, vec!["oteryn:outfit.shaman"]);
+        }
         if family == "golden" {
             assert_eq!(
                 serde_json::to_value(&callback)?["fee"],
@@ -1529,6 +1550,18 @@ pub(super) async fn exercise(
                 track: format!("{SHATTERED}shipwrecked"),
                 minimum: 2,
                 maximum: 2,
+            }]
+        } else if family == "shaman" && *suffix == "hairycles" {
+            vec![Requirement {
+                track: "oteryn:quest-progress/quest/u7_6/the_ape_city/questline".into(),
+                minimum: 18,
+                maximum: 18,
+            }]
+        } else if family == "shaman" && *suffix == "staff-start" {
+            vec![Requirement {
+                track: format!("{SHATTERED}reputation_in_sabrehaven"),
+                minimum: 12,
+                maximum: 22,
             }]
         } else if family == "festive" && *suffix != "base" {
             vec![Requirement {
@@ -1728,6 +1761,14 @@ pub(super) async fn exercise(
             "oteryn:quest-progress/quest/u7_6/the_ape_city/questline".into(),
             16,
         )]
+    } else if family == "shaman" {
+        vec![
+            (
+                "oteryn:quest-progress/quest/u7_6/the_ape_city/questline".into(),
+                18,
+            ),
+            (format!("{SHATTERED}reputation_in_sabrehaven"), 12),
+        ]
     } else if family == "assassin" {
         vec![(format!("{SHATTERED}shipwrecked"), 2)]
     } else if family == "oriental" {
@@ -1867,6 +1908,7 @@ pub(super) async fn exercise(
             | "knight"
             | "hunter"
             | "mage"
+            | "shaman"
             | "warrior"
     ) {
         // The fixture carries full source batches and a surplus unit to verify exact
@@ -2041,6 +2083,12 @@ pub(super) async fn exercise(
             "oteryn:npc.cornelia",
             "oteryn:npc.morgan",
         ];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "shaman" {
+        let keys = ["oteryn:npc.hairycles", "oteryn:npc.chondur"];
         let actors = super::classic_quests::install(owner, admitted, keys).await?;
         for (key, actor) in keys.into_iter().zip(actors) {
             npcs.insert(key.to_owned(), actor);

@@ -1484,7 +1484,7 @@ fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
         .key
         .strip_prefix("oteryn:quest-reward/")
         .is_some_and(|key| {
-            ["qb-barbarian-", "qb-citizen-", "qb-warrior-"]
+            ["qb-barbarian-", "qb-citizen-", "qb-shaman-", "qb-warrior-"]
                 .iter()
                 .any(|prefix| key.starts_with(prefix))
         })
@@ -2161,6 +2161,7 @@ mod tests {
         Ok(())
     }
 
+    /// Regenerate with tools/content-schema/quest-authoring/refresh_reward_hash_baselines.py.
     #[test]
     fn published_ungated_quest_hash_baseline() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
@@ -2215,9 +2216,9 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
-        // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
+        // QB routes: 17 Barbarian, 5 Citizen, 5 Shaman and 9 Warrior.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1);
+        assert_eq!(load()?.len(), 243 + 59 + 125 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2243,7 +2244,7 @@ mod tests {
     -> Result<(), String> {
         let shared = parse(DOCUMENTS[0])?;
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
-        assert_eq!(qb.len(), 31);
+        assert_eq!(qb.len(), 36);
         let added_keys = [
             "oteryn:quest-reward/l2-wizard-flowers",
             "oteryn:quest-reward/l2-wizard-flowers-start",
@@ -3052,7 +3053,9 @@ mod outfit_reward_predecessor_tests {
                 .iter()
                 .filter(|callback| callback.quest == QUEST)
                 .count(),
-            143
+            // 112 retained rows plus 31 QB Barbarian/Citizen/Warrior and four
+            // QB Shaman addon rows; Hairycles belongs to The Ape City.
+            147
         );
         document
             .callbacks

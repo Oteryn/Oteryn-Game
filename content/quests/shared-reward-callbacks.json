@@ -9441,6 +9441,217 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/qb-shaman-hairycles",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 18,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/shaman_outfit",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.shaman",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Friend of the ape people! Take my gift and become me apprentice! Here is shaman clothing for you!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hairycles.lua:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 18,
+          "maximum": 18
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-shaman-mask",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.chondur",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/shaman_outfits/addon_staff_mask",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/shaman_outfits/mission_mask",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3403",
+          "count": 5
+        },
+        {
+          "item": "oteryn:item.tibia.i3348",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.shaman",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Well done, my child! I hereby grant you the right to wear a shamanic mask. Do it proudly."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chondur.lua:sha256:c68f518fdef95b3162032cd73a2380df057b7df0d24ee8408e50dbe91ebc0f62"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-shaman-mask-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.chondur",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/shaman_outfits/addon_staff_mask",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/shaman_outfits/mission_mask",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good! Come back once you have collected 5 tribal masks and 5 banana staffs."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chondur.lua:sha256:c68f518fdef95b3162032cd73a2380df057b7df0d24ee8408e50dbe91ebc0f62"
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.shaman"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-shaman-staff",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.chondur",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/shaman_outfits/addon_staff_mask",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/shaman_outfits/mission_staff",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3002",
+          "count": 5
+        },
+        {
+          "item": "oteryn:item.tibia.i5014",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.shaman",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "I'm proud of you my child, excellent work. This staff shall be yours from now on!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chondur.lua:sha256:c68f518fdef95b3162032cd73a2380df057b7df0d24ee8408e50dbe91ebc0f62"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-shaman-staff-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.chondur",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/shaman_outfits/addon_staff_mask",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/shaman_outfits/mission_staff",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good! Come back once you've found a mandrake and collected 5 dworcish voodoo dolls."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chondur.lua:sha256:c68f518fdef95b3162032cd73a2380df057b7df0d24ee8408e50dbe91ebc0f62"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "minimum": 12,
+          "maximum": 22
+        }
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.shaman"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/qb-warrior-shoulder",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.cornelia",

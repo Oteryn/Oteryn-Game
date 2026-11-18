@@ -657,3 +657,6 @@ mod qb_barbarian_npcs;
 
 #[path = "npcs/qb_outfit_npcs.rs"]
 mod qb_outfit_npcs;
+
+#[path = "npcs/qb_shaman_npcs.rs"]
+mod qb_shaman_npcs;
