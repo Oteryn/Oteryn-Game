@@ -310,11 +310,12 @@ fn producer_descriptor(authority: &str, cert: &str, key: &str) -> TestResult<Pro
     let ca = pem_der(&required("WP5_S3A_CA_CERT")?, "CERTIFICATE")?;
     let client = pem_der(&required(cert)?, "CERTIFICATE")?;
     let key = pem_der(&required(key)?, "PRIVATE KEY")?;
+    let server_name = env::var("WP5_S3A_SERVER_NAME").unwrap_or_else(|_| "source.test".into());
     Ok(ProducerDescriptor::new(
         authority.into(),
         ("127.0.0.1".into(), port),
-        "source.test".into(),
-        "source.test".into(),
+        server_name.clone(),
+        server_name,
         vec![CertificateDer::from(ca)],
         vec![CertificateDer::from(client)],
         PrivateKeyDer::try_from(key)?,

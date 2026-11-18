@@ -124,6 +124,7 @@ game_platform_start() {
   cp "$PORTAL_E2E_OUT/certs/clients/native-evidence.pem" "$WP5_PKI/client.crt"
   cp "$PORTAL_E2E_OUT/certs/clients/native-evidence.key" "$WP5_PKI/client.key"
   WP5_PORT="$PORTAL_E2E_INTERNAL_PORT"
+  WP5_SERVER_NAME=localhost
   evidence "platform_roles=migrate,serve,worker,gateway platform_pg=18.6 game_pg=18.6 separate_database_roles=1 clients=16"
 }
 game_platform_config() {
