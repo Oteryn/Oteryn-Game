@@ -124,13 +124,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let callbacks = self.callback_content();
         let Some(callback) = callbacks.iter().find(|callback| {
-            quest_objects::accepts(callback)
+            (quest_objects::accepts(callback)
+                || callback.key == "oteryn:quest-callback/galthen-iksupan-entrance")
                 && super::quest_callbacks::matches(map, callback, resolved.placement_key)
         }) else {
             return Ok(None);
         };
         let Some(required) = &callback.item_on_target else {
-            return Err(());
+            // Crystal's Iksupan entrance accepts direct USE only.
+            return Ok(Some(outcome(UseDisposition::NotPossible)));
         };
         let Some(fence) = command.item_fence else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
