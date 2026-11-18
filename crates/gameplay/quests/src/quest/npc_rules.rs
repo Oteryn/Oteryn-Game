@@ -503,6 +503,10 @@ impl NpcRuleCatalog {
 
     /// A..M programs with read-compatible legacy definitions, plus the already active Stag.
     pub fn runtime() -> Result<&'static Self, NpcRuleError> {
+        #[cfg(feature = "test-support")]
+        if let Some(fixture) = fixture_runtime::SOURCE.get() {
+            return Ok(fixture);
+        }
         static RUNTIME: std::sync::OnceLock<Result<NpcRuleCatalog, NpcRuleError>> =
             std::sync::OnceLock::new();
         RUNTIME
@@ -921,3 +925,47 @@ mod draconia_source_tests {
 mod engnpc_finales;
 
 mod completion_predecessors;
+
+#[cfg(feature = "test-support")]
+mod fixture_runtime {
+    std::thread_local! {
+        pub(super) static SOURCE: std::cell::Cell<Option<&'static super::NpcRuleCatalog>> =
+            const { std::cell::Cell::new(None) };
+    }
+}
+
+#[cfg(feature = "test-support")]
+impl NpcRuleCatalog {
+    /// Build a validated content revision for a composed scenario.
+    pub fn with_fixture_document(&self, document: &str) -> Result<Self, NpcRuleError> {
+        let mut source = Self::from_json_documents(&[document])?;
+        let program = source
+            .programs
+            .pop()
+            .ok_or_else(|| NpcRuleError::Invalid("missing fixture programme".into()))?;
+        let mut catalogue = self.clone();
+        let current = catalogue
+            .programs
+            .iter_mut()
+            .find(|current| {
+                current.document.program_key == program.document.program_key
+                    && current.document.quest == program.document.quest
+            })
+            .ok_or_else(|| NpcRuleError::Invalid("unknown fixture programme".into()))?;
+        *current = program;
+        validate::catalogue(&catalogue)?;
+        Ok(catalogue)
+    }
+
+    /// Run a single-threaded composed scenario against a validated content revision.
+    pub fn in_fixture_runtime<T>(&'static self, run: impl FnOnce() -> T) -> T {
+        struct Restore(Option<&'static NpcRuleCatalog>);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                fixture_runtime::SOURCE.set(self.0);
+            }
+        }
+        let _restore = Restore(fixture_runtime::SOURCE.replace(Some(self)));
+        run()
+    }
+}

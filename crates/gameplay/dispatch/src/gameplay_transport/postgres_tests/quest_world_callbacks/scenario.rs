@@ -340,6 +340,7 @@ fn scenario_case(
                 | "questpc2-albinius-five-tomes"
                 | "questpc2-albinius-combined"
                 | "questpc2-albinius-portals-exact"
+                | "questpc2-albinius-portals-ice"
                 | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"

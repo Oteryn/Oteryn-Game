@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.questpc2-albinius-tomes",
+  "quest": "oteryn:quest.forgotten_knowledge_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_ice",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:172-192"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/ice-offer",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "ice portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_door",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You may pass this portal if you have 50 fish as offering. Do you have the fish with you?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:172-192"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/ice-prerequisite",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "ice portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Sorry, you first need to bring my Heavy Old Tomes or do the quest before continuing."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:172-192"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/ice-prerequisite-contactman",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "ice portal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tomes",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_door",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Sorry, you first need to bring my Heavy Old Tomes or do the quest before continuing."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:172-192"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/ice-already",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_ice",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I'm sorry, you don't have enough fish. Return if you can offer fifty of them."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:172-192"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/ice-missing",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_ice",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3578",
+          "count": 50,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "I'm sorry, you don't have enough fish. Return if you can offer fifty of them."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:172-192"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/ice-accept",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_ice",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3578",
+          "count": 50,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Thank you for your offering. You may pass the Portal to the Powers of Ice now."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3578",
+          "count": 50,
+          "optional": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_ice",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:172-192"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/forgotten_knowledge/albinius/ice-decline",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "In this case I'm sorry, you may not pass this portal."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/albinius.lua:172-192"
+      ],
+      "continue_matching": true,
+      "exclude_keywords": [
+        "buy",
+        "astral shaper rune",
+        "yes"
+      ],
+      "topics": [
+        2
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/albinius.lua",
+      "sha256": "1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    }
+  ]
+}
