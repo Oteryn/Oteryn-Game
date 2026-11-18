@@ -36,7 +36,7 @@ native_case!(srvenc_m24_postgres_morguthis_stage, "morguthis");
 native_case!(srvenc_m24_postgres_rahemos_stage, "rahemos");
 native_case!(srvenc_m24_postgres_herald_top_damage, "herald_of_fire");
 
-fn scenario(name: &'static str, creature: &'static str) -> TestResult {
+pub(super) fn scenario(name: &'static str, creature: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -179,6 +179,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     owner.quest_catalogue = Some(Arc::clone(&catalogue));
     let mut admitted = deps.admitted;
     admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+    admitted.runtime_actor = Some(deps.actor);
     let fresh = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -568,5 +569,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         i64::try_from(kills)?,
         "duplicate corpse projection must retain the first captured receipt"
     );
+    if rule.creature == super::bosscred_ungreez::CREATURE {
+        super::bosscred_ungreez::report(&mut owner, &mut admitted, &authority).await?;
+    }
     Ok(())
 }
