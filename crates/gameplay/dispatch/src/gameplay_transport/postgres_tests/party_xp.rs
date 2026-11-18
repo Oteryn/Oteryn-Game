@@ -1644,8 +1644,7 @@ async fn scenario(
         use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
         use oteryn_simulation_determinism::SemanticTimeMicros;
         for (index, (actor, session)) in players.iter().copied().enumerate() {
-            let now = owner.owner_now();
-            owner.tick_spell_periodic_at(actor, session, now).await;
+            owner.tick_spell_periodic(actor, session).await;
             let (first_pulse, expected) = {
                 let runtime = owner.runtime.lock().await;
                 let mut states = owner.states.spell_states.lock().await;
