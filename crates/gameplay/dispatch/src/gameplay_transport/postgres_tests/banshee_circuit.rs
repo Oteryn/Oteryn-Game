@@ -370,28 +370,12 @@ fn world(circuit: Circuit) -> TestResult<boot::BundleWorld> {
         }
     };
     let mut records = vec![
-        (circuit.start(), Some((2, None))),
+        (circuit.start(), None),
         (circuit.switch, Some((1, Some(circuit.unique)))),
         (circuit.passage, Some((3, None))),
     ];
     if let Some(plate) = circuit.plate {
-        records.extend([
-            (plate, None),
-            (
-                TilePos {
-                    x: plate.x + 1,
-                    ..plate
-                },
-                Some((4, None)),
-            ),
-            (
-                TilePos {
-                    x: plate.x + 2,
-                    ..plate
-                },
-                Some((5, None)),
-            ),
-        ]);
+        records.push((plate, None));
     }
     let mut floors = std::collections::BTreeSet::new();
     let mut by_sector = std::collections::BTreeMap::<_, Vec<_>>::new();
