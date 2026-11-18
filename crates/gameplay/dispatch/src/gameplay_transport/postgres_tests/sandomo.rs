@@ -24,13 +24,28 @@ fn sandomo_postgres_dispatch_records_contributions_and_mints_requested_quantity(
     assert!(!admin.is_empty());
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Sandomo PostgreSQL thread panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn roshamuul_mortar_postgres_production_use_replaces_selected_bucket_and_credits_delivery()
+-> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Roshamuul mortar PostgreSQL thread panicked")??;
+    Ok(())
+}
+
+fn scenario(delivery: bool) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "sandomo", true, false).await?;
@@ -45,6 +60,12 @@ fn scenario() -> TestResult {
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) = activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active content")?;
+        let trough = delivery.then(|| trough_world(world, active)).transpose()?;
+        let movement = trough
+            .as_ref()
+            .map(|map| map.movement_cells(pin.qualified_room().movement_cells()))
+            .transpose()
+            .map_err(debug)?;
         let channel_pin = ChannelContentPin::from_activation(
             world,
             pin.activation_sequence(),
@@ -52,7 +73,7 @@ fn scenario() -> TestResult {
             pin.identity().client_artifact_digest(),
             pin.frame_binding().digest(),
             pin.qualified_room().map_revision_digest(),
-            (2, 0, 7),
+            (if delivery { 6 } else { 2 }, 0, 7),
         );
         let dependencies = Dependencies::with_content(
             channel_pin,
@@ -64,6 +85,9 @@ fn scenario() -> TestResult {
             SpellPremiumCoordinator::new(consumer.clone(), Some(clock), None, Some(h.root.clone()));
         let mut owner = dependencies.owner(&h, &authority);
         owner.active_generation = Some(active);
+        if let Some(cells) = &movement {
+            owner.movement_cells = cells.into();
+        }
         let quest_state =
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?;
@@ -213,6 +237,21 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
             .bind(character.as_slice()).bind(id(238).as_slice()).bind(id(42).as_slice()).bind(id(245).as_slice())
             .execute(&mut *tx).await?;
+        if delivery {
+            sqlx::raw_sql(sqlx::AssertSqlSafe(
+                crate::durability::item_fee_burn::test_support::item(
+                    239,
+                    "oteryn:item.tibia.i20170",
+                    "definition-r1",
+                    1,
+                ),
+            ))
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($5,'hex')::uuid)")
+                .bind(character.as_slice()).bind(id(238).as_slice()).bind(id(239).as_slice())
+                .bind(id(42).as_slice()).bind(id(246).as_slice()).execute(&mut *tx).await?;
+        }
         tx.commit().await?;
         h.root
             .initialize_admission_equipment(
@@ -232,65 +271,197 @@ fn scenario() -> TestResult {
             .assert_actor_spell_unreserved(dependencies.actor)
             .map_err(debug)?;
         owner.refresh_quest_session(session, true).await;
-        for (command_id, message, expected) in [
-            (1, "hi", ""),
-            (2, "gratitude", "repairs"),
-            (3, "repairs", "201"),
-            (4, "books", "201"),
-            (5, "yes", "201"),
-            (6, "trade", "100"),
-            (7, "3", "2 clusters"),
-            (8, "2.0", "1 inquisition gold"),
-        ] {
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(std::time::Duration::from_secs(2))
-                .ok_or("clock")?;
-            let current = owner
-                .current_quest_fence(session)
-                .await
-                .map_err(debug)?
-                .ok_or("fence")?;
-            let outcome = owner
-                .npc_talk(
-                    dependencies.actor,
-                    UseCommand {
-                        game_session_id: session,
-                        command_id,
-                        item_fence: Some(current.item_fence()),
-                    },
-                    NpcTalkIntent {
-                        npc_actor: npc,
-                        text: message.into(),
-                    },
-                )
-                .await;
-            assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{message}");
-            assert_eq!(outcome.inventory_changed, command_id == 8, "{message}");
-            assert!(
-                outcome
-                    .conversation
-                    .is_some_and(|reply| reply.lines.iter().any(|line| line.contains(expected))),
-                "{message}"
-            );
-        }
-        let balance: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/roshamuul/gold-record'")
+        if delivery {
+            deliver_mortar(&owner, &dependencies, fence.item_fence(), &h).await?;
+        } else {
+            for (command_id, message, expected) in [
+                (1, "hi", ""),
+                (2, "gratitude", "repairs"),
+                (3, "repairs", "201"),
+                (4, "books", "201"),
+                (5, "yes", "201"),
+                (6, "trade", "100"),
+                (7, "3", "2 clusters"),
+                (8, "2.0", "1 inquisition gold"),
+            ] {
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(2))
+                    .ok_or("clock")?;
+                let current = owner
+                    .current_quest_fence(session)
+                    .await
+                    .map_err(debug)?
+                    .ok_or("fence")?;
+                let outcome = owner
+                    .npc_talk(
+                        dependencies.actor,
+                        UseCommand {
+                            game_session_id: session,
+                            command_id,
+                            item_fence: Some(current.item_fence()),
+                        },
+                        NpcTalkIntent {
+                            npc_actor: npc,
+                            text: message.into(),
+                        },
+                    )
+                    .await;
+                assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{message}");
+                assert_eq!(outcome.inventory_changed, command_id == 8, "{message}");
+                assert!(
+                    outcome.conversation.is_some_and(|reply| reply
+                        .lines
+                        .iter()
+                        .any(|line| line.contains(expected))),
+                    "{message}"
+                );
+            }
+            let balance: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/roshamuul/gold-record'")
             .bind(character.as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(balance, 1);
-        let outstanding: i64 = sqlx::query_scalar(
+            assert_eq!(balance, 1);
+            let outstanding: i64 = sqlx::query_scalar(
             "SELECT coalesce(sum(value),0)::bigint FROM game_character_quest_tracks              WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2              AND track_key IN ('oteryn:quest-progress/roshamuul/mortar','oteryn:quest-progress/roshamuul/silencers')",
         )
         .bind(character.as_slice())
         .bind(quest)
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!(outstanding, 0);
-        let minted: i64 = sqlx::query_scalar("SELECT coalesce(sum(m.quantity),0)::bigint FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.character_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i20062'")
+            assert_eq!(outstanding, 0);
+            let minted: i64 = sqlx::query_scalar("SELECT coalesce(sum(m.quantity),0)::bigint FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.character_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i20062'")
             .bind(character.as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(minted, 2);
+            assert_eq!(minted, 2);
+        }
         drop(owner);
         drop(authority);
         drop(seal);
         h.cleanup().await
     })
+}
+
+fn trough_world(
+    world: crate::foundation::WorldId,
+    generation: &crate::content::ActiveGeneration,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle::{bundle, writer};
+    let native = generation.native_gameplay().ok_or("native item index")?;
+    let index = native.item_index().ok_or("native definitions")?;
+    let bag = "oteryn:item.tibia.i2854";
+    let bucket = "oteryn:item.tibia.i2873";
+    let bag_id = index
+        .definition_ref("Item", bag, "definition-r1")
+        .ok_or("bag")?;
+    let bucket_id = index
+        .definition_ref("Item", bucket, "definition-r1")
+        .ok_or("bucket")?;
+    let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
+        (bag, bag_id.get() - 1),
+        (bucket, bucket_id.get() - 1),
+    );
+    let mut data = bundle::read(&bytes)?;
+    data.manifest.palette[4] = bundle::PaletteEntry {
+        key: "oteryn:terrain.tibia.i20216".into(),
+        id: 3,
+        family: bundle::Family::Terrain,
+        terrain: Some(bundle::Terrain {
+            kind: bundle::TerrainKind::Common,
+            walkable: None,
+            ground_speed: None,
+            blocks_projectile: None,
+        }),
+    };
+    let sectors = data
+        .sectors
+        .into_iter()
+        .map(|sector| writer::Sector {
+            floor: sector.floor,
+            sx: sector.sx,
+            sy: sector.sy,
+            tiles: sector.tiles,
+        })
+        .collect::<Vec<_>>();
+    let bytes = writer::write(&data.manifest, &sectors, &Default::default())?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start: crate::map::overlay::TilePos {
+                x: 6,
+                y: 0,
+                floor: -7,
+            },
+        },
+        world,
+        crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+        |key| {
+            Some(crate::map::facts::ItemDefinition {
+                reference: native
+                    .item_index()?
+                    .definition_ref("Item", key, "definition-r1")?,
+                solid: Some(false),
+                blocks_projectile: false,
+                pickupable: true,
+                door: false,
+            })
+        },
+    )
+    .map_err(debug)
+}
+
+async fn deliver_mortar(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    dependencies: &Dependencies,
+    item_fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    h: &Harness,
+) -> TestResult {
+    use crate::gameplay_transport::item_view::ItemKey;
+    use crate::map::view::MapFacts;
+    use oteryn_protocol_oteryn::world_object::{
+        MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+    };
+
+    let map = owner.bundle_map().ok_or("trough map")?;
+    let key = oteryn_world_bundle::bundle::placement_key(-7, 7, 0, 1).ok_or("trough key")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let use_intent = UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        })),
+        use_with_position: None,
+    };
+    let outcome = owner
+        .tame_mount(
+            dependencies.actor,
+            UseCommand {
+                game_session_id: dependencies.admitted.game_session_id,
+                command_id: 1,
+                item_fence: Some(item_fence),
+            },
+            use_intent,
+            Some(ItemKey::Instance(id(239))),
+            None,
+            true,
+        )
+        .await
+        .map_err(debug)?;
+    assert_eq!(
+        outcome.map(|result| result.disposition),
+        Some(UseDisposition::Committed)
+    );
+    let delivered: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/roshamuul/mortar'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(delivered, 3);
+    let contents: Vec<String> = sqlx::query_scalar(
+        "SELECT i.definition_production_key FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE i.lifecycle=1 ORDER BY e.placement_ordinal",
+    ).fetch_all(&h.pool).await?;
+    assert_eq!(contents, ["oteryn:item.tibia.i2873"]);
+    Ok(())
 }

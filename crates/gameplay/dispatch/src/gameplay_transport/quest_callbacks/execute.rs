@@ -1613,6 +1613,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);
         }
+        if fresh_effects
+            && callback.key == oteryn_gameplay_quests::quest::roshamuul::TROUGH
+            && let Some((position, _)) = crate::map::view::placement_of(key)
+        {
+            // Crystal actions_trough.lua:10 emits this on the selected trough.
+            map.facts.emit_movement_effect(position, 10);
+        }
         if fresh_effects && callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
         {
             for (x, y) in oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITION_POSITIONS {

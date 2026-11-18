@@ -767,6 +767,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     bindings::apply(&mut callbacks)?;
     let mut native_callbacks = vec![
+        super::roshamuul::mortar_callback()?,
         super::rotten_blood::altar_callback(),
         super::schrodinger_island::callback(),
     ];
@@ -937,7 +938,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none()
-                && selector.native.is_none())
+                && selector.native.is_none()
+                && !(callback.key == super::roshamuul::TROUGH
+                    && selector.appearance == Some(20216)))
             || selector.position.is_some_and(|p| !valid_pos(p))
             || selector
                 .native

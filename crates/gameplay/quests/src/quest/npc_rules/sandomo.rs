@@ -9,7 +9,7 @@ const CLUSTER: &str = "oteryn:item.tibia.i20062";
 pub(in crate::quest) const TRACKS: [&str; 4] = [
     "oteryn:quest-progress/roshamuul/frazzlemaws",
     "oteryn:quest-progress/roshamuul/gold-record",
-    "oteryn:quest-progress/roshamuul/mortar",
+    crate::quest::roshamuul::MORTAR_TRACK,
     "oteryn:quest-progress/roshamuul/silencers",
 ];
 

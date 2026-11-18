@@ -1,5 +1,33 @@
 //! Lower Roshamuul bookkeeping from Crystal 201189f8, data-global/npc/sandomo.lua:53-59,97-165.
 
+pub const TROUGH: &str = "oteryn:quest-callback/roshamuul/mortar-delivery";
+pub(crate) const MORTAR_TRACK: &str = "oteryn:quest-progress/roshamuul/mortar";
+
+pub(super) fn mortar_callback() -> Result<super::world_callbacks::Callback, String> {
+    let document = serde_json::json!({"schema":1,"callbacks":[{
+        "key": TROUGH,
+        "quest": "oteryn:quest.roshamuul_quest",
+        "trigger": "use",
+        "selector": {"position":null,"unique":null,"action":null,"appearance":20216},
+        "lever":null,"reversible":false,"requires_world_admission":true,
+        "passages":[],"teleport":null,
+        "track_initials":{(MORTAR_TRACK):0},
+        "storage":[{
+            "track":MORTAR_TRACK,"minimum":0,"maximum":u32::MAX - 1,"set":1,"increment":true
+        }],
+        "offerings":[],
+        "item_on_target":{
+            "selected_instance":true,"item":"oteryn:item.tibia.i20170","count":1,
+            "replacement":"oteryn:item.tibia.i2873","target_replacement":null
+        },
+        "return_on_failure":false,"failure_message":null,
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/actions_trough.lua:3-17"]
+    }]});
+    super::world_callbacks::parse(&document.to_string())?
+        .pop()
+        .ok_or_else(|| "missing Roshamuul mortar delivery callback".into())
+}
+
 pub const GOLD_PER_CLUSTER: u32 = 100;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
