@@ -351,7 +351,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if name == super::super::first_dragon_descendant::CASE {
+        super::super::first_dragon_descendant::callback()?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
@@ -1699,6 +1701,11 @@ fn scenario_case(
                 super::super::engenc_asura_dispatch::catalogue(name)?,
             ));
         }
+        if name == super::super::first_dragon_descendant::CASE {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::first_dragon_descendant::catalogue(&callback)?,
+            ));
+        }
         if m44_flower {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::m44_flower_lifecycle::catalogue(
@@ -1867,7 +1874,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if name == super::super::first_dragon_descendant::CASE {
+            Box::pin(super::super::first_dragon_descendant::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
                 &mut owner,
                 &mut admitted,
