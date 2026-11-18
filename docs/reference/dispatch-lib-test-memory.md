@@ -32,6 +32,7 @@ durability checks passed. The focused case used that retained cluster.
 | Dispatch lib test, independent pinned-base run | 2 | 16,436,944 | 2747.548 | rustc SIGKILL before link |
 | Dispatch lib test, dependencies cached | 1 | 16,559,372 | 392.963 | rustc SIGKILL before link |
 | Dispatch lib test with the combined package profile, dependencies cached | 1 | 16,340,144 | 1296.471 | Linked and listed 4,339 tests (4,341 output lines) |
+| Dispatch lib test with the checked-in profile, dependencies rebuilt | 1 | 16,283,852 | 939.934 | Linked and listed 4,339 tests (4,341 output lines) |
 | Dispatch LLD replay with the combined package profile | — | 4,846,628 | 40.141 | Linked |
 | Dispatch lib test with the combined package profile, dependencies cached | 2 | 16,393,060 | 1005.117 | rustc SIGKILL with two LLVM workers |
 | Dispatch lib test with 512 units, dependencies cached | 2 | ≥16,393,384 | 647.152 | OOM counter increased before Cargo was stopped |
@@ -248,6 +249,15 @@ link received 241 rlibs (1,487,495,302 bytes) and 258 objects
 (1,447,076,144 bytes). Its ELF comment identifies LLD 23.1.5. Replaying
 the captured linker command against the same inputs measured 4,846,628
 KiB over 40.141 s.
+
+The resubmission independently built the checked-in profile with
+`CARGO_BUILD_JOBS=1 cargo test --locked -p oteryn-gameplay-dispatch --lib --no-run --timings -v`.
+It used the same 48 direct rlibs totaling 1,163,839,310 bytes and produced
+a 1,259,896,936-byte test executable. The last pre-LLVM sample was
+14,564,112 KiB, and the 16,283,852 KiB peak had already occurred when LLD
+first appeared. The cgroup recorded zero OOM kills. Running the matching
+`cargo test -- --list` produced 4,341 lines and listed 4,339 tests,
+matching the pinned base's compiler registry count.
 
 The complete executable ran the exact
 `boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger`
