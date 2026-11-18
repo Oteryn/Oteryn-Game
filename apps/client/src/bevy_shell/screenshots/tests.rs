@@ -7,7 +7,7 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 pub(super) type TestResult = Result<(), Box<dyn std::error::Error>>;
-fn frame() -> Image {
+pub(super) fn frame() -> Image {
     colored_frame([20, 40, 60, 255])
 }
 pub(super) fn colored_frame(color: [u8; 4]) -> Image {
@@ -68,7 +68,7 @@ pub(super) fn capture_frame(app: &mut App, image: Image) -> TestResult {
     wait_for_writes(app)?;
     Ok(())
 }
-fn wait_for_writes(app: &mut App) -> TestResult {
+pub(super) fn wait_for_writes(app: &mut App) -> TestResult {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
     loop {
         app.update();
@@ -976,39 +976,5 @@ fn crop_fixture_preserves_previous_process_directory() -> TestResult {
         std::fs::read(template)?
     );
     assert_one_test_passed(&child);
-    Ok(())
-}
-
-#[test]
-fn f12_observer_returns_before_reporting_the_write_result() -> TestResult {
-    let fixture = TestDir::new()?;
-    let mut app = app(fixture.path(), true)?;
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::F12);
-    app.update();
-    let entity = app
-        .world_mut()
-        .query_filtered::<Entity, With<Screenshot>>()
-        .single(app.world())?;
-    app.world_mut().trigger(ScreenshotCaptured {
-        entity,
-        image: frame(),
-    });
-    assert_eq!(
-        app.world().non_send::<HostOwner>().status,
-        "Capturing screenshot…"
-    );
-    app.world_mut().despawn(entity);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .reset_all();
-    wait_for_writes(&mut app)?;
-    assert!(
-        app.world()
-            .non_send::<HostOwner>()
-            .status
-            .starts_with("Screenshot saved:")
-    );
     Ok(())
 }

@@ -164,4 +164,6 @@ fn save_audit(
 #[cfg(all(test, unix))]
 mod audit_tests;
 #[cfg(test)]
+mod observer_tests;
+#[cfg(test)]
 mod tests;
