@@ -804,7 +804,7 @@ async fn crystal_citizen(
     Ok(())
 }
 
-fn select_outfit_capabilities(
+pub(super) fn select_outfit_capabilities(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
 ) -> TestResult {
@@ -946,6 +946,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.ends_with("-main-outfit-pin") {
+        return Box::pin(super::outfit_participant_pins::exercise(owner, admitted, h, name)).await;
+    }
     if name.starts_with("qengine-rewards-qb-crystal-") {
         return Box::pin(crystal_citizen(owner, admitted, h, name)).await;
     }

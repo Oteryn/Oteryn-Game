@@ -40,8 +40,8 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
     ),
     (
         "oteryn:quest.grave_danger_quest",
-        hash(b"8cb40f052f6304f54079a7986e0a77c4802b5e3260fe2242e0d2faa5c937c751"),
-        hash(b"5054575cd55c76480522bdc31bab711873fc7dd859b3832d4bcacbeeede0259e"),
+        hash(b"5c6e9bc04b7dc5881f879e073bf3165d452e599d3633b64416cf1f611ac9523d"),
+        hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
     ),
     (
         "oteryn:quest.grimvale_quest",
@@ -133,6 +133,36 @@ mod tests {
     use crate::quest::{loader, npc_rules};
 
     #[test]
+    fn package_keeps_main_grave_danger_and_ape_city_pins() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let grave = "oteryn:quest.grave_danger_quest";
+        assert_eq!(
+            catalogue.definition_hash(grave),
+            Some(hash(
+                b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"
+            ))
+        );
+        assert!(
+            npc_rules::legacy_defaults(
+                catalogue,
+                grave,
+                &hash(b"5054575cd55c76480522bdc31bab711873fc7dd859b3832d4bcacbeeede0259e"),
+            )
+            .is_some()
+        );
+        let ape_city = "oteryn:quest.the_ape_city_quest";
+        let pin = hash(b"18884601e04fc41671d5b24abc67f63cc0cf234813bc1f967ab24297871d1e05");
+        assert_ne!(catalogue.definition_hash(ape_city), Some(pin));
+        assert_eq!(
+            npc_rules::legacy_defaults(catalogue, ape_city, &pin),
+            Some(&Default::default())
+        );
+        Ok(())
+    }
+
+    #[test]
     fn reviewed_package_keeps_exact_published_definition_pins() -> Result<(), String> {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
@@ -140,13 +170,7 @@ mod tests {
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
-            // Main's Grave Danger gameplay update has its own definition pin.
-            let expected = if quest == "oteryn:quest.grave_danger_quest" {
-                hash(b"5c6e9bc04b7dc5881f879e073bf3165d452e599d3633b64416cf1f611ac9523d")
-            } else {
-                published
-            };
-            assert_eq!(catalogue.definition_hash(quest), Some(expected), "{quest}");
+            assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
             let mut unrelated_revision = refreshed;
             unrelated_revision[0] ^= 1;
             assert_eq!(

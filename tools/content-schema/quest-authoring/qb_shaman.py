@@ -30,6 +30,7 @@ def append(add, storage, offers, callbacks, prefix):
     def callback(name, quest, npc, states, reply, **kwargs):
         add('qb-shaman-' + name, quest, npc, ['yes'], states, **kwargs)
         callbacks[-1]['reply'] = [reply]
+        callbacks[-1]['requires_premium'] = True
 
     def at(before, after):
         return [storage(stage, before, after)]

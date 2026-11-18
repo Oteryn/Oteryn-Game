@@ -9476,7 +9476,8 @@
           "minimum": 18,
           "maximum": 18
         }
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-shaman-mask",
@@ -9522,7 +9523,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chondur.lua:sha256:c68f518fdef95b3162032cd73a2380df057b7df0d24ee8408e50dbe91ebc0f62"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-shaman-mask-start",
@@ -9557,6 +9559,7 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chondur.lua:sha256:c68f518fdef95b3162032cd73a2380df057b7df0d24ee8408e50dbe91ebc0f62"
       ],
+      "requires_premium": true,
       "requires_outfits": [
         "oteryn:outfit.shaman"
       ]
@@ -9605,7 +9608,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chondur.lua:sha256:c68f518fdef95b3162032cd73a2380df057b7df0d24ee8408e50dbe91ebc0f62"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-shaman-staff-start",
@@ -9647,6 +9651,7 @@
           "maximum": 22
         }
       ],
+      "requires_premium": true,
       "requires_outfits": [
         "oteryn:outfit.shaman"
       ]

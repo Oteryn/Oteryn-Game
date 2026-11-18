@@ -1204,18 +1204,25 @@ const ROOK_CITIZEN_BEFORE_NORMA_RESTART: [u8; 32] = [
     0x3b, 0x94, 0x9b, 0x19, 0x08, 0x96, 0x3c, 0x93, 0x5a, 0x57, 0xfb, 0x99, 0x24, 0x4d, 0xef, 0x4a,
 ];
 
+// The published Ape City definition before the Hairycles Shaman reward.
+const MAIN_APE_CITY_DEFINITION: [u8; 32] = [
+    0x18, 0x88, 0x46, 0x01, 0xe0, 0x4f, 0xc4, 0x16, 0x71, 0xd5, 0xb2, 0x4a, 0xbc, 0x67, 0xf6, 0x3c,
+    0xc0, 0xcf, 0x23, 0x48, 0x13, 0xbc, 0x1f, 0x96, 0x7a, 0xb2, 0x42, 0x97, 0x87, 0x1d, 0x1e, 0x05,
+];
+
 pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
     // These changes preserve every track default.
     for (quest, hash) in [
         (
-            "oteryn:quest.outfit_and_addon_quests",
-            MAIN_OUTFIT_DEFINITION,
-        ),
-        (
             "oteryn:quest.citizen_outfits_quest_on_rook",
             ROOK_CITIZEN_BEFORE_NORMA_RESTART,
         ),
+        (
+            "oteryn:quest.outfit_and_addon_quests",
+            MAIN_OUTFIT_DEFINITION,
+        ),
+        ("oteryn:quest.the_ape_city_quest", MAIN_APE_CITY_DEFINITION),
     ] {
         catalogue
             .predecessors

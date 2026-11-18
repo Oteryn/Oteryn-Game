@@ -142,8 +142,6 @@ Not modelled (reported, not faked):
   the pirate voodoo dolls).
 - Chondur's stage-dependent greeting, his "Maybe next time" reply to "no", and Hairycles'
   "You already are shaman and doctor" and "journey for wisdom" replies.
-- Premium-account gating of the outfit and addons (the wiki lists them as premium; the other QB
-  outfit callbacks do not gate either).
 
 Tests: `postgres_tests/qb_shaman.rs` (placement index and `qengine-rewards-qb-shaman-story` on
 PostgreSQL in CI), `tests/npcs/qb_shaman_npcs.rs` and `test_qb_shaman_placements.py`.

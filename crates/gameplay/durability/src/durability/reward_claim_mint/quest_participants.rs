@@ -1,10 +1,23 @@
 //! Atomic, source-bound writes through existing foreign quest owners.
 use crate::durability::quest_state::{QuestCause, QuestTransitionRequest};
 use crate::durability::{DurabilityError, character_progression::CurrentCharacterGameplayFence};
-use oteryn_gameplay_quests::quest::QuestStateCatalogue;
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, npc_rules};
 use oteryn_gameplay_quests::quest::reward_callbacks::{RewardCallback, participant_key};
 use sqlx::{Postgres, Row, Transaction};
 use std::collections::BTreeMap;
+
+fn accepts_definition_pin(
+    catalogue: &QuestStateCatalogue,
+    quest: &str,
+    current: [u8; 32],
+    stored: &[u8],
+    completed: bool,
+) -> bool {
+    stored == current
+        || completed
+        || <&[u8; 32]>::try_from(stored)
+            .is_ok_and(|hash| npc_rules::legacy_defaults(catalogue, quest, hash).is_some())
+}
 
 /// Character root and the sorted union of all source track locks are already held.
 /// A false result rolls back the entire source transaction, including these writes.
@@ -48,7 +61,13 @@ pub(super) async fn apply(
             .bind(id).bind(&participant.quest).fetch_optional(&mut **tx).await?;
         let (pin, hash) = if let Some(state) = &state {
             let hash: Vec<u8> = state.try_get("definition_hash")?;
-            if hash.as_slice() != current_hash && !state.try_get::<bool, _>("completed")? {
+            if !accepts_definition_pin(
+                catalogue,
+                &participant.quest,
+                current_hash,
+                &hash,
+                state.try_get("completed")?,
+            ) {
                 return Ok(false);
             }
             (state.try_get::<String, _>("pinned_content_revision")?, hash)
@@ -108,4 +127,36 @@ pub(super) async fn apply(
         }
     }
     Ok(true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_gameplay_quests::quest::loader;
+
+    #[test]
+    fn unfinished_participants_accept_only_current_or_exact_predecessor_pins() -> Result<(), String> {
+        const OUTFIT: &str = "oteryn:quest.outfit_and_addon_quests";
+        const ROOK: &str = "oteryn:quest.citizen_outfits_quest_on_rook";
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let current = catalogue.definition_hash(OUTFIT).ok_or("Outfit definition")?;
+        let prior = [
+            0xf0, 0x3f, 0xaa, 0x35, 0xab, 0xd9, 0xaf, 0x89, 0xc2, 0x81, 0xd3, 0xb4, 0xf7, 0xdb,
+            0x2d, 0xd5, 0x69, 0xae, 0x32, 0xea, 0xdd, 0x91, 0x87, 0x72, 0x7e, 0x78, 0x82, 0xe4,
+            0xc9, 0x0e, 0x3c, 0xcf,
+        ];
+        assert_ne!(current, prior);
+        assert!(accepts_definition_pin(catalogue, OUTFIT, current, &current, false));
+        assert!(accepts_definition_pin(catalogue, OUTFIT, current, &prior, false));
+        let mut unknown = prior;
+        unknown[0] ^= 1;
+        assert!(!accepts_definition_pin(catalogue, OUTFIT, current, &unknown, false));
+        assert!(!accepts_definition_pin(catalogue, OUTFIT, current, &prior[..31], false));
+        assert!(accepts_definition_pin(catalogue, OUTFIT, current, &unknown, true));
+        let rook_current = catalogue.definition_hash(ROOK).ok_or("Rook definition")?;
+        assert!(!accepts_definition_pin(catalogue, ROOK, rook_current, &prior, false));
+        Ok(())
+    }
 }
