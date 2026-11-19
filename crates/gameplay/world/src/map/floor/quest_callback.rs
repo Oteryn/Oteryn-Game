@@ -82,7 +82,7 @@ pub fn prepare_quest_encounter_entry<'a>(
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
     player_stack: bool,
-) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+) -> Result<impl crate::foundation::SourceStepCommitProof + 'a + use<'a>, MovementError> {
     let proof = CallbackTeleport {
         cells,
         actor,

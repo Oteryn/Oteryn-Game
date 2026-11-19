@@ -321,6 +321,7 @@ async fn refused_vacant_reentry(
     roster: &[ExactActorRef],
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("first player")?;
+    let old_boss = *roster.first().ok_or("original Brain Head")?;
     let map = owner.bundle_map().ok_or("room map")?;
     let approach = at(ALIAS.x - 1, ALIAS.y);
     {
@@ -337,6 +338,16 @@ async fn refused_vacant_reentry(
         )
         .map_err(debug)?;
         runtime.commit_source_step(proof).map_err(debug)?;
+        // The previous boss can wander onto the next participant's landing.
+        // Refusal must leave it there, while admitted replacement clears it.
+        crate::movement::relocate::relocate_creature(
+            &mut runtime,
+            old_boss,
+            owner.movement_cells(),
+            &doors,
+            local(ENTRY),
+        )
+        .map_err(debug)?;
     }
     let deadline = owner.states.quest_callbacks.next_encounter_due_us().ok_or("original visit deadline")?;
     let command = admitted.continuity.next_command_id;
@@ -352,6 +363,7 @@ async fn refused_vacant_reentry(
     let runtime = owner.runtime.lock().await;
     assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), local(EXIT));
     assert!(roster.iter().all(|&actor| runtime.contains_live_creature(actor)));
+    assert_eq!(runtime.read_actor_position(old_boss).map_err(debug)?.position(), local(ENTRY));
     assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), Some(deadline));
     Ok(())
 }
