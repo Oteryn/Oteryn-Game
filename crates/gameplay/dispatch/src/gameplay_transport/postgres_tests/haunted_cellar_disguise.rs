@@ -302,7 +302,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn carried_bucket(
+pub(super) async fn carried_bucket(
     harness: &Harness,
     fence: CurrentCharacterGameplayFence,
     definition: &str,
@@ -320,7 +320,7 @@ async fn carried_bucket(
     .await?)
 }
 
-async fn apply_self_outfit(
+pub(super) async fn apply_self_outfit(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     actor: crate::foundation::ExactActorRef,

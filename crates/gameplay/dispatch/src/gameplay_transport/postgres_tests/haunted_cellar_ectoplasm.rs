@@ -264,7 +264,7 @@ pub(super) async fn exercise(
     );
     let current: String = sqlx::query_scalar(
         "SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=$1::uuid AND lifecycle=1",
-    ).bind(original).fetch_one(&harness.pool).await?;
+    ).bind(&original).fetch_one(&harness.pool).await?;
     assert_eq!(current, if won { PARTIAL } else { input });
     let proofs: (i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key=$1),
@@ -286,5 +286,10 @@ pub(super) async fn exercise(
             .appearance_id,
         29305
     );
+    if name == FULL_BUCKET {
+        use super::haunted_cellar_disguise::{apply_self_outfit, carried_bucket};
+        apply_self_outfit(owner, admitted, actor, None).await?;
+        assert_eq!(carried_bucket(harness, fence, EMPTY).await?.0, original);
+    }
     Ok(())
 }
