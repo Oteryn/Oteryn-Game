@@ -326,8 +326,15 @@ pub fn with_fixture_rule(
     let mut rule: Rule = serde_json::from_str(document).map_err(|error| error.to_string())?;
     rule.quest = quest.into();
     rule.validate()?;
-    if !rule.define_transition || rule_for(catalogue, &rule.transition).is_some() {
-        return Err("invalid fixture source death transition".into());
+    if !rule.define_transition {
+        return Err("fixture source death must define its transition".into());
+    }
+    let transition = rule.transition()?;
+    if let Some(existing) = rule_for(catalogue, &rule.transition) {
+        if existing == &rule && catalogue.transition(&rule.transition) == Some(&transition) {
+            return Ok(catalogue.clone());
+        }
+        return Err("fixture source death conflicts with the registered transition".into());
     }
     let tracks = rule
         .effects
@@ -347,7 +354,7 @@ pub fn with_fixture_rule(
         })
         .collect();
     let mut with_rule = catalogue
-        .with_fixture_transition_and_tracks(rule.transition()?, tracks)
+        .with_fixture_transition_and_tracks(transition, tracks)
         .map_err(|error| format!("{error:?}"))?;
     with_rule
         .fixture_source_deaths

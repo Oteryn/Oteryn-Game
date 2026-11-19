@@ -279,15 +279,20 @@ async fn second_player(
         .await
         .map_err(debug)?;
 
+    use crate::gameplay_transport::connection::SessionContinuity;
+
     let mut admitted = AdmittedSession {
         game_session_id: session,
         runtime_actor: Some(actor),
         controller: None,
         item_fence: Some(fence),
+        continuity: SessionContinuity {
+            connection_generation: current.current_connection_generation().get(),
+            selected_capabilities: first.continuity.selected_capabilities,
+            ..SessionContinuity::FRESH
+        },
         ..*first
     };
-    admitted.continuity.connection_generation = current.current_connection_generation().get();
-    admitted.continuity.next_command_id = 1;
     owner.admit_progression_session(&mut admitted).await;
     owner.admit_quest_session(&admitted).await;
     Ok(admitted)
