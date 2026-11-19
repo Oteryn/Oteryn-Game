@@ -382,7 +382,7 @@ fn scenario_case(
     use super::super::nightmare_dreamcatcher_supply;
     let nightmare_supply = name == nightmare_dreamcatcher_supply::NAME;
     let board_exit = name == dreamers_board_exit::NAME;
-    let board_portal = matches!(name, dreamers_board_portal::READY | dreamers_board_portal::MISSING);
+    let board_portal = matches!(name, dreamers_board_portal::MISSING | dreamers_board_portal::MIXED | dreamers_board_portal::READY);
     use super::super::dreamers_color_grid;
     let color_grid = dreamers_color_grid::matches(name);
     use super::super::dreamers_knightwatch_toll;
@@ -763,7 +763,7 @@ fn scenario_case(
     } else if board_exit {
         dreamers_board_exit::world(&callback)?
     } else if board_portal {
-        dreamers_board_portal::world(&callback, name == dreamers_board_portal::READY)?
+        dreamers_board_portal::world(&callback, name)?
     } else if color_grid {
         dreamers_color_grid::world(&callback, name)?
     } else if sacrifice_route {
@@ -3124,7 +3124,7 @@ fn scenario_case(
             Box::pin(dreamers_board_portal::exercise(
                 &mut owner,
                 &mut admitted,
-                name == dreamers_board_portal::READY,
+                name,
             )).await?;
         } else if color_grid {
             Box::pin(dreamers_color_grid::exercise(&owner, &mut admitted, name)).await?;

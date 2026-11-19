@@ -32,6 +32,7 @@ pub(super) const TOKENS: [(Position, u16); 9] = [
 ];
 pub(super) const READY: &str = "dreamers-board-ready";
 pub(super) const MISSING: &str = "dreamers-board-missing";
+pub(super) const MIXED: &str = "dreamers-board-mixed-pillars";
 
 const fn at(x: u16, y: u16) -> Position {
     Position { x, y, floor: -14 }
@@ -65,12 +66,11 @@ pub(super) fn binding() -> TestResult<Callback> {
     }))?)
 }
 
-pub(super) fn world(
-    callback: &Callback,
-    solved: bool,
-) -> TestResult<crate::map::boot::BundleWorld> {
+pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::boot::BundleWorld> {
+    let solved = name == READY;
     let objects = PILLARS
         .into_iter()
+        .skip(usize::from(name == MIXED))
         .map(|p| (p, 2153))
         .chain(TOKENS.into_iter().take(if solved { 9 } else { 8 }))
         .chain([(PORTAL, 6298)])
@@ -105,11 +105,22 @@ fn dreamers_tic_tac_lever_toggles_the_pillars_with_an_incomplete_board() -> Test
     super::kill_reward_e2e::scenario_thread::run(MISSING, || scenario(MISSING, LEVER, false))
 }
 
+#[test]
+fn dreamers_tic_tac_lever_recreates_and_removes_a_missing_native_pillar() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(MIXED, || scenario(MIXED, LEVER, false))
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    solved: bool,
+    name: &str,
 ) -> TestResult {
+    let solved = name == READY;
+    let mixed = name == MIXED;
     let key = placement_key(tile(LEVER), 1).ok_or("lever placement")?;
     let mut placement = owner
         .bundle_map()
@@ -135,9 +146,27 @@ pub(super) async fn exercise(
             UseDisposition::Committed
         );
         let map = owner.bundle_map().ok_or("map")?;
-        for pillar in PILLARS {
+        for pillar in PILLARS.into_iter().skip(usize::from(mixed)) {
             let key = placement_key(tile(pillar), 1).ok_or("pillar placement")?;
             assert_eq!(map.facts.base_hidden(key), revision % 2 == 0);
+        }
+        if mixed {
+            // Crystal actions_tic_tac_teleport.lua:17-24 toggles each tile
+            // from its own starting state, independently of the board tokens.
+            let missing = tile(PILLARS[0]);
+            assert_eq!(
+                map.facts
+                    .movement_items(missing)
+                    .iter()
+                    .filter(|item| item.facts.appearance_id == 2153)
+                    .count(),
+                usize::from(revision % 2 == 0),
+            );
+            assert_eq!(
+                map.facts
+                    .quest_callback_blocked(map.overlay.base(), missing, false),
+                revision % 2 == 0,
+            );
         }
         let portal = tile(PORTAL);
         let id = map
