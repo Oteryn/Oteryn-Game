@@ -413,7 +413,9 @@ def directory_reference_occurrences(
                 )
             )
         )
-        if bounded:
+        # A package literal starts at a quote, a `/` join or the start of the file; prose
+        # that merely names a directory ("... content or docs/reference") is not a consumer.
+        if bounded and (index == 0 or content[index - 1:index] in {b'"', b"'", b"/"}):
             matches.append(index)
         start = index + 1
 

@@ -2,6 +2,7 @@ use super::*;
 
 fn entry(status: Status) -> PresenceEntry {
     PresenceEntry {
+        channel: None,
         entry: 1,
         name: "Alice".into(),
         status,
@@ -72,4 +73,23 @@ fn vip_presence_caps_and_local_numbers_are_enforced() {
     batch.entries[0].entry = 1;
     batch.entries[0].name = "\n".into();
     assert!(encode(&batch).is_err());
+}
+
+#[test]
+fn only_an_online_entry_carries_its_channel() -> Result<(), Error> {
+    let mut online = entry(Status::Online);
+    online.channel = Some([7; 16]);
+    let batch = PresenceBatch {
+        entries: vec![online],
+    };
+    assert_eq!(decode(&encode(&batch)?)?, batch);
+    let mut offline = entry(Status::Offline);
+    offline.channel = Some([7; 16]);
+    assert!(
+        encode(&PresenceBatch {
+            entries: vec![offline]
+        })
+        .is_err()
+    );
+    Ok(())
 }

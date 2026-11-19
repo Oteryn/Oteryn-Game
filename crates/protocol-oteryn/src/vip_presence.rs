@@ -6,8 +6,9 @@ pub const CAPABILITY_VIP_PRESENCE_V1: u32 = 258;
 pub const DELTA_TYPE_VIP_PRESENCE_V1: u32 = 5;
 pub const MAX_ENTRIES: usize = 100;
 pub const CONFIRMED_FOR_MS: u32 = 10_000;
-/// Per entry: a 120-byte name plus worst-case protobuf tags, lengths and integers.
-pub const MAX_BYTES: usize = MAX_ENTRIES * (crate::chat::MAX_CHAT_NAME_BYTES + 24);
+/// Per entry: a 120-byte name plus worst-case protobuf tags, lengths and integers, and the
+/// optional 16-byte Channel field of capability 513.
+pub const MAX_BYTES: usize = MAX_ENTRIES * (crate::chat::MAX_CHAT_NAME_BYTES + 24 + 18);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -24,6 +25,9 @@ pub struct PresenceEntry {
     pub status: Status,
     pub announce: bool,
     pub confirmed_for_ms: u32,
+    /// The Channel of this World the Online target is on (SOCIAL_CHANNEL_V1, capability 513);
+    /// None unless Online and the capability was selected.
+    pub channel: Option<[u8; 16]>,
 }
 
 /// A full replacement. No global identity or location is encoded; replacing the view also
@@ -42,6 +46,7 @@ fn validate_entry(entry: &PresenceEntry) -> Result<(), Error> {
             && !(1..=CONFIRMED_FOR_MS).contains(&entry.confirmed_for_ms))
         || (entry.status != Status::Online && entry.confirmed_for_ms != 0)
         || (entry.status == Status::Unconfirmed && entry.announce)
+        || (entry.status != Status::Online && entry.channel.is_some())
     {
         return Err(Error::Malformed);
     }
@@ -67,6 +72,9 @@ pub fn encode(batch: &PresenceBatch) -> Result<Vec<u8>, Error> {
         push_varint_field(&mut inner, 3, entry.status as u64);
         push_varint_field(&mut inner, 4, u64::from(entry.announce));
         push_varint_field(&mut inner, 5, u64::from(entry.confirmed_for_ms));
+        if let Some(channel) = &entry.channel {
+            push_message_field(&mut inner, 6, channel);
+        }
         push_message_field(&mut out, 1, &inner);
     }
     Ok(out)
@@ -90,6 +98,7 @@ pub fn decode(bytes: &[u8]) -> Result<PresenceBatch, Error> {
         let inner = read_bytes(bytes, &mut cursor)?;
         let (mut entry, mut name, mut status, mut announce, mut confirmed_for_ms) =
             (None, None, None, None, None);
+        let mut channel = None;
         let mut at = 0;
         while at < inner.len() {
             match read_varint(inner, &mut at)? {
@@ -127,6 +136,11 @@ pub fn decode(bytes: &[u8]) -> Result<PresenceBatch, Error> {
                     &mut confirmed_for_ms,
                     u32::try_from(read_varint(inner, &mut at)?).map_err(|_| Error::Malformed)?,
                 )?,
+                50 => set_once(
+                    &mut channel,
+                    <[u8; 16]>::try_from(read_bytes(inner, &mut at)?)
+                        .map_err(|_| Error::Malformed)?,
+                )?,
                 _ => return Err(Error::Malformed),
             }
         }
@@ -136,6 +150,7 @@ pub fn decode(bytes: &[u8]) -> Result<PresenceBatch, Error> {
             status: status.ok_or(Error::Malformed)?,
             announce: announce.ok_or(Error::Malformed)?,
             confirmed_for_ms: confirmed_for_ms.ok_or(Error::Malformed)?,
+            channel,
         };
         validate_entry(&value)?;
         if value.entry <= previous {

@@ -111,8 +111,22 @@ pub(super) fn build(
             if pending {
                 commands.entity(button).insert(InteractionDisabled);
             }
-            let name = label(commands, skin, button, &member.name);
-            if member.leader {
+            // chsw (capability 513): the row names the member's Channel; a member on another
+            // Channel of the World is greyed out (no shared experience, loot or Party spells).
+            let text = if panel.own_channel.is_some() {
+                oteryn_client_ui::social_channel::party_member_text(&panel.channel_names, member)
+            } else {
+                member.name.clone()
+            };
+            let name = label(commands, skin, button, &text);
+            if oteryn_client_ui::social_channel::party_member_on_other_channel(
+                panel.own_channel,
+                member,
+            ) {
+                commands
+                    .entity(name)
+                    .insert(TextColor(Color::srgb_u8(128, 128, 128)));
+            } else if member.leader {
                 commands
                     .entity(name)
                     .insert(TextColor(Color::srgb_u8(248, 219, 56)));

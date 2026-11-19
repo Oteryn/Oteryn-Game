@@ -19,6 +19,7 @@ fn party_wire_roundtrips() -> Result<()> {
         disposition: PartyDisposition::Ok,
         shared_xp_enabled: true,
         members: vec![PartyEntry {
+            channel: None,
             list: Vec::new(),
             handle: 1,
             name: "Leader".into(),
@@ -27,6 +28,7 @@ fn party_wire_roundtrips() -> Result<()> {
             party_spell_remaining_ms: None,
         }],
         invitations: vec![PartyEntry {
+            channel: None,
             list: Vec::new(),
             handle: 2,
             name: "Inviter".into(),
@@ -70,6 +72,7 @@ fn party_wire_bounds_and_malformed_inputs() -> Result<()> {
     let mut maximum = PartyResult::refused(PartyDisposition::Ok);
     for i in 1..=50 {
         maximum.members.push(PartyEntry {
+            channel: None,
             list: Vec::new(),
             handle: i,
             name: "a".repeat(64),
@@ -80,6 +83,7 @@ fn party_wire_bounds_and_malformed_inputs() -> Result<()> {
     }
     for i in 51..=70 {
         maximum.invitations.push(PartyEntry {
+            channel: None,
             list: Vec::new(),
             handle: i,
             name: "a".repeat(64),
@@ -174,6 +178,7 @@ fn party_list_wire_bounds_range_and_portrait_identity() -> Result<()> {
     };
     let mut result = PartyResult::refused(PartyDisposition::Ok);
     result.members.push(PartyEntry {
+        channel: None,
         list: vec![row],
         handle: 1,
         name: "Knight".into(),
@@ -225,6 +230,7 @@ fn large_party_list_result() -> PartyResult {
             });
         }
         result.members.push(PartyEntry {
+            channel: None,
             handle,
             name: "n".repeat(64),
             leader: handle == 1,
@@ -281,5 +287,31 @@ fn party_result_party_list_peer_supports_65536_bytes() -> Result<()> {
         decode_party_result(&vec![0; 65537]),
         Err(PartyWireError::LimitExceeded)
     );
+    Ok(())
+}
+#[test]
+fn a_member_carries_its_channel_and_an_invitation_never_does() -> Result<()> {
+    let member = |channel| PartyEntry {
+        channel,
+        list: Vec::new(),
+        handle: 1,
+        name: "Leader".into(),
+        leader: true,
+        expires_at: 0,
+        party_spell_remaining_ms: None,
+    };
+    let mut result = PartyResult::refused(PartyDisposition::Ok);
+    result.members.push(member(Some([9; 16])));
+    assert_eq!(decode_party_result(&encode_party_result(&result)?)?, result);
+    result.invitations.push(PartyEntry {
+        channel: Some([9; 16]),
+        list: Vec::new(),
+        handle: 2,
+        name: "Inviter".into(),
+        leader: false,
+        expires_at: 100,
+        party_spell_remaining_ms: None,
+    });
+    assert!(encode_party_result(&result).is_err());
     Ok(())
 }

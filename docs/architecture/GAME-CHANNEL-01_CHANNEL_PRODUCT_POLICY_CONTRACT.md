@@ -4,9 +4,9 @@
 - Gate: `GAME-CHANNEL-01`
 - Delivery task: `OTV2-20260812-game-channel-01-architecture`
 - Delivery PR: #209
-- Status on delivery branch: **CANDIDATE / NONBINDING**
+- Status: **ACCEPTED** (delivered by #209; owner decisions of 2026-11-17 fix the §10 cooldown at five minutes of server clock — task `chsw`)
 - Canonical semantic effect: only after accepted delivery merge; programme `ACCEPTED / LIFECYCLE_CLOSED` promotion requires a separate lifecycle closeout
-- ImplementationStatus: **NOT_STARTED**
+- ImplementationStatus: **IN_PROGRESS** (task `chsw`, `docs/agents/tasks/CHSW.md`)
 - Runtime/client authority: **NONE**
 - PostgreSQL DDL/migration authority: **NONE**
 - Production authority: **NONE**

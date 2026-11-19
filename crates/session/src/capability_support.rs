@@ -175,6 +175,10 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
     oteryn_protocol_oteryn::highscores_loyalty::CAPABILITY_HIGHSCORES_LOYALTY_V1,
     oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1,
+    // chsw in-game Channel switch (512), commands 6247, 6248 and 6251.
+    oteryn_protocol_oteryn::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1,
+    // chsw Channel on Party, VIP and Guild rows (513).
+    oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -289,6 +293,10 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     atelier::v2::CAPABILITY_GEM_ATELIER_V2,
     // WU26 own sanction record, command 6240.
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
+    // chsw in-game Channel switch, commands 6247, 6248 and 6251.
+    oteryn_protocol_oteryn::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1,
+    // chsw Channel on Party, VIP and Guild rows (513).
+    oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

@@ -36,6 +36,9 @@ pub enum SessionError {
     AdmissionRefused {
         code: u32,
     },
+    ChannelFull {
+        code: u32,
+    },
     AdmissionQueued {
         code: u32,
         queue: AdmissionQueue,
@@ -221,6 +224,7 @@ impl fmt::Display for SessionError {
                 "admission queued with code {code}, position {}",
                 queue.position
             ),
+            Self::ChannelFull { .. } => formatter.write_str("This channel is full."),
             Self::AdmissionRefused { code } => {
                 write!(formatter, "admission refused with code {code}")
             }

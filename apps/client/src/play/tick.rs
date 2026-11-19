@@ -61,6 +61,7 @@ impl PlayView {
         if marks_changed {
             self.rebuild().map_err(|_error| UNAVAILABLE)?;
         }
+        self.present_vip_channel_notices(link);
         self.apply_target_turn(link).map_err(|_error| UNAVAILABLE)?;
         self.advance_presentation(std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;

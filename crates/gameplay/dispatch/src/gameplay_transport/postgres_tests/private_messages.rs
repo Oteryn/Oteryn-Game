@@ -35,6 +35,15 @@ fn private_messages_postgres_cross_node_wire_delivery_replay_and_world_boundary(
                 prepare_current_session(&h).await?;
                 let (second_node, second) = world::admit_second_node(&h).await.map_err(|e| format!("recipient setup: {e}"))?;
                 {
+                    use crate::durability::guild_chat_fixture as guild;
+                    let mut party = h.pool.begin().await?;
+                    sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES($1::uuid,$2::uuid,$3::uuid,1,3)")
+                        .bind(guild::uuid(id(201))).bind(guild::uuid(id(42))).bind(guild::uuid(id(41))).execute(&mut *party).await?;
+                    for (member, channel, seq) in [(41,43,1_i32),(world::RECIPIENT,world::RECIPIENT_CHANNEL,2)] {
+                        sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES($1::uuid,$2::uuid,$3,1,$4::uuid)")
+                            .bind(guild::uuid(id(member))).bind(guild::uuid(id(201))).bind(seq).bind(guild::uuid(id(channel))).execute(&mut *party).await?;
+                    }
+                    party.commit().await?;
                     let seal = h.recovery.seal_current().map_err(debug)?;
                     let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
                     let mut first = Dependencies::new()?;
@@ -50,9 +59,13 @@ fn private_messages_postgres_cross_node_wire_delivery_replay_and_world_boundary(
                             ).map_err(debug)?).map_err(debug)?;
                     }
                     first.admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
-                    let owner = first.owner(&h, &authority);
+                    let coordinator = crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                        Default::default(), None, None, Some(h.root.clone()));
+                    let mut owner = first.owner(&h, &authority);
+                    owner.premium_coordinator = Some(&coordinator);
                     let mut target = second.owner(&h, &authority);
                     target.holder = &second_node;
+                    target.premium_coordinator = Some(&coordinator);
                     assert_ne!(owner.holder.fact().node_id(), target.holder.fact().node_id());
                     assert_ne!(owner.channel_id, target.channel_id);
                     assert_eq!(owner.world_id, target.world_id);
@@ -60,8 +73,16 @@ fn private_messages_postgres_cross_node_wire_delivery_replay_and_world_boundary(
                     second.initialize(&target).await;
                     let mut admitted = first.admitted;
                     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-                        owner.offered_capabilities(), &[6, 7]).ok_or("chat selection")?;
+                        crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 7, 36, 40, 42, 240]).ok_or("chat selection")?;
                     target.chat_admit(second.actor, second.admitted.game_session_id).await;
+                    let mut recipient = second.admitted;
+                    recipient.continuity.selected_capabilities = admitted.continuity.selected_capabilities;
+                    use oteryn_protocol_oteryn::guild::GuildIntent;
+                    let guild = super::guild_bank_fixtures::guild(&owner, &mut admitted, GuildIntent::Found { name: "Channel Guild".into() }).await?.guild;
+                    super::guild_bank_fixtures::guild(&owner, &mut admitted, GuildIntent::Invite { guild, name: world::RECIPIENT_NAME.into() }).await?;
+                    super::guild_bank_fixtures::guild(&target, &mut recipient, GuildIntent::Join { guild }).await?;
+                    target.chat_party_admit(recipient).await;
+                    target.guild_chat_admit(recipient).await;
                     let ring = RelayKeyRing::new(vec![RelayKey::new(1, 0, [19; 32])]).map_err(debug)?;
                     let options = h.root.chat_relay_connect_options().ok_or("relay endpoint")?;
                     let sender_relay = Arc::new(ChatRelay::new(ring.clone(), id(42), options.clone()).map_err(debug)?);
@@ -94,6 +115,23 @@ fn private_messages_postgres_cross_node_wire_delivery_replay_and_world_boundary(
                         assert!(matches!(received, ChatLine::Private { text, .. } if text == "across two nodes"));
                         target.chat_delivered(second.admitted.game_session_id).await;
                         assert!(target.chat_next_bound(second.admitted, &mut 64).await.is_none());
+                        for intent in [ChatIntent::Guild { text: "Guild across channels".into() },
+                                       ChatIntent::Party { text: "Party across channels".into() }] {
+                            command_intent(&owner, &mut admitted, &intent, ChatDisposition::Ok).await?;
+                            assert_ne!(audit.recv().await?.payload(), "barrier");
+                            let line = tokio::time::timeout(Duration::from_secs(10), async {
+                                loop {
+                                    if let Some(line) = target.chat_next_bound(recipient, &mut 64).await { break line; }
+                                    tokio::time::sleep(Duration::from_millis(10)).await;
+                                }
+                            }).await?;
+                            match (intent, line) {
+                                (ChatIntent::Guild { text }, ChatLine::Guild(line)) => assert_eq!(line.text, text),
+                                (ChatIntent::Party { text }, ChatLine::Party { text: received, .. }) => assert_eq!(received, text),
+                                other => return Err(format!("cross-Channel membership egress: {other:?}").into()),
+                            }
+                            target.chat_delivered(recipient.game_session_id).await;
+                        }
                         let name = crate::domain::character_name::CharacterName::parse(world::RECIPIENT_NAME).map_err(debug)?;
                         assert_eq!(h.root.read_chat_recipient(&authority, id(42), &name).await.map_err(debug)?, Some(id(world::RECIPIENT)));
                         assert!(h.root.read_chat_recipient(&authority, id(99), &name).await.map_err(debug)?.is_none(),
@@ -127,6 +165,24 @@ async fn command(
     admitted: &mut AdmittedSession,
     expected: ChatDisposition,
 ) -> TestResult {
+    command_intent(
+        owner,
+        admitted,
+        &ChatIntent::Private {
+            recipient_name: world::RECIPIENT_NAME.into(),
+            text: "across two nodes".into(),
+        },
+        expected,
+    )
+    .await
+}
+
+async fn command_intent(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    intent: &ChatIntent,
+    expected: ChatDisposition,
+) -> TestResult {
     let session = *admitted;
     let (mut server, mut client) = tokio::io::duplex(16_384);
     let serving = async {
@@ -143,11 +199,7 @@ async fn command(
                 break;
             }
         }
-        let payload = chat::encode_chat_intent(&ChatIntent::Private {
-            recipient_name: world::RECIPIENT_NAME.into(),
-            text: "across two nodes".into(),
-        })
-        .map_err(debug)?;
+        let payload = chat::encode_chat_intent(intent).map_err(debug)?;
         let frame = encode_client_command(
             session.continuity.connection_generation,
             &ClientCommandValue {

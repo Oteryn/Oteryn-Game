@@ -75,7 +75,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .await
             .map_err(debug)?;
     }
-    super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 5)]).await?;
+    super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 5)]).await?;
     let child_before = backpack_child_snapshot(&h).await?;
     assert_eq!(child_before.len(), 1);
     // Initial custody fixture only; death and all item changes use the real runtime writers.

@@ -1,0 +1,932 @@
+//! Native USE and death/clock dispatch for the Grave Danger ritual.
+use super::{
+    AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult,
+    fixture::{Harness, debug},
+};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
+use oteryn_gameplay_quests::quest::world_callbacks::{
+    Callback, EncounterPhase, Position, ZelosPassages,
+};
+
+const KNIGHTS: [&str; 4] = [
+    "oteryn:creature.magnor_mournbringer",
+    "oteryn:creature.nargol_the_impaler",
+    "oteryn:creature.rewar_the_bloody",
+    "oteryn:creature.the_red_knight",
+];
+
+pub(super) fn configure(callback: &mut Callback) -> TestResult {
+    callback.key = "oteryn:quest-callback/grave-danger/zelos-ritual".into();
+    callback.storage.clear();
+    let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+    let at = |x, y| Position { x, y, floor: -7 };
+    encounter.phase = Some(EncounterPhase::GraveDangerZelos {
+        exit: Position {
+            x: 103,
+            y: 100,
+            floor: -7,
+        },
+        north_gate: Position {
+            x: 116,
+            y: 116,
+            floor: -7,
+        },
+        passages: Some(ZelosPassages {
+            pairs: [
+                [at(115, 117), at(111, 117)],
+                [at(110, 106), at(113, 106)],
+                [at(119, 106), at(122, 106)],
+                [at(110, 109), at(113, 109)],
+                [at(119, 109), at(122, 109)],
+                [at(110, 112), at(113, 112)],
+                [at(119, 112), at(122, 112)],
+                [at(119, 125), at(122, 125)],
+            ],
+            corners: [at(110, 118), at(126, 106), at(106, 126), at(126, 126)],
+        }),
+        north_arrival: Position {
+            x: 115,
+            y: 114,
+            floor: -7,
+        },
+    });
+    encounter.minimum_level = 1;
+    let entry = encounter.players.first().ok_or("party arrival")?.to;
+    encounter.players = (0..10)
+        .map(
+            |i| oteryn_gameplay_quests::quest::world_callbacks::EncounterPlayer {
+                from: Position {
+                    x: 100 + i / 5,
+                    y: 100 + i % 5,
+                    floor: -7,
+                },
+                to: entry,
+            },
+        )
+        .collect();
+    encounter.monsters.truncate(4);
+    for (monster, name) in encounter.monsters.iter_mut().zip(KNIGHTS) {
+        monster.creature = name.into();
+    }
+    encounter.monsters.push(
+        oteryn_gameplay_quests::quest::world_callbacks::EncounterMonster {
+            creature: "oteryn:creature.king_zelos".into(),
+            position: Position {
+                x: 115,
+                y: 113,
+                floor: -7,
+            },
+        },
+    );
+    Ok(())
+}
+
+pub(super) async fn admit_partner(
+    h: &Harness,
+    deps: &Dependencies,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    leader: &AdmittedSession,
+) -> TestResult<AdmittedSession> {
+    admit_party_member(h, deps, owner, leader, 1).await
+}
+
+pub(super) async fn admit_party_member(
+    h: &Harness,
+    deps: &Dependencies,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    leader: &AdmittedSession,
+    index: u8,
+) -> TestResult<AdmittedSession> {
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    use crate::world_party_runtime_postgres_cases::{
+        FreshPlayerOwners, committed_fresh_player_from_source_owned,
+    };
+    let (current, _) = committed_fresh_player_from_source_owned(
+        &FreshPlayerOwners {
+            root: h.root.clone(),
+            node: h.node.clone(),
+            recovery: &h.recovery,
+        },
+        // The first peer opens the independent platform source once per harness.
+        59 + index,
+        61 + index,
+        69 + index,
+        now,
+        (index > 1).then_some("platform"),
+    )
+    .await
+    .map_err(|error| format!("second player's durable admission: {error}"))?;
+    let session = current.current_game_session_id();
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .bind_attacker_lease(actor, session, current.current_character_lease())
+            .map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: 100 + i32::from(index / 5),
+                    y: 100 + i32::from(index % 5),
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        actor
+    };
+    let mut admitted = AdmittedSession {
+        game_session_id: session,
+        runtime_actor: Some(actor),
+        controller: None,
+        item_fence: None,
+        ..*leader
+    };
+    owner.admit_progression_session(&mut admitted).await;
+    deps.initialize_player(owner, actor, session).await;
+    owner.admit_quest_session(&admitted).await;
+    assert!(owner.refresh_source_party_presence(actor, session).await);
+    Ok(admitted)
+}
+
+pub(super) async fn exercise_full_party(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    party: &[AdmittedSession],
+    unstaged: &AdmittedSession,
+    before_admission: u64,
+) -> TestResult {
+    const WINDOW_US: u64 = 24 * 60 * 1_000_000;
+    let after_admission = owner.owner_now().get();
+    let assert_placement = async |expected| -> TestResult {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(party.len(), 10);
+        for member in party {
+            let at = runtime
+                .read_actor_position(member.runtime_actor.ok_or("party actor")?)
+                .map_err(debug)?
+                .position();
+            assert_eq!((at.x, at.y, at.floor), expected);
+        }
+        let outside = runtime
+            .read_actor_position(unstaged.runtime_actor.ok_or("unstaged actor")?)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (outside.x, outside.y, outside.floor),
+            (102, 100, 7),
+            "the player outside all ten staging tiles stays outside the encounter"
+        );
+        Ok(())
+    };
+    assert_placement((116, 117, 7)).await?;
+    let first_poll = owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .encounter_phases
+        .next_due_us()
+        .ok_or("Zelos source deadline")?;
+    assert!(
+        (before_admission + 1_000_000..=after_admission + 1_000_000).contains(&first_poll),
+        "Rewar polls for entrants one second after the lever opens"
+    );
+    let unstaged_character = owner
+        .runtime
+        .lock()
+        .await
+        .bound_attacker_lease(
+            unstaged.runtime_actor.ok_or("unstaged actor")?,
+            unstaged.game_session_id,
+        )
+        .map_err(debug)?
+        .character_id();
+    let cooldowns: (i64, i64, i64) = sqlx::query_as(
+        "SELECT count(*), count(DISTINCT admission),
+                count(*) FILTER (WHERE character_id = encode($2,'hex')::uuid)
+         FROM game_character_boss_cooldowns WHERE boss_key = $1",
+    )
+    .bind("oteryn:creature.king_zelos")
+    .bind(unstaged_character.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        cooldowns,
+        (10, 1, 0),
+        "one durable decision for ten entrants"
+    );
+    tick_at(owner, before_admission + WINDOW_US - 1).await;
+    assert_placement((116, 117, 7)).await?;
+    tick_at(owner, after_admission + WINDOW_US).await;
+    assert_placement((103, 100, 7)).await?;
+    assert!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .encounter_phases
+            .next_due_us()
+            .is_none(),
+        "the timeout retires the room and its remaining phase deadlines"
+    );
+    Ok(())
+}
+
+fn live_actor(runtime: &ChannelRuntimeV1, key: &str) -> TestResult<Option<ExactActorRef>> {
+    Ok(runtime
+        .current_live_creature_census()
+        .map_err(debug)?
+        .into_iter()
+        .find(|&actor| runtime.matches_live_creature_identity(actor, key.as_bytes())))
+}
+
+pub(super) async fn exercise(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    partner: &AdmittedSession,
+) -> TestResult {
+    let player = admitted.runtime_actor.ok_or("admitted player")?;
+    let partner_session = partner.game_session_id;
+    let partner = partner.runtime_actor.ok_or("second admitted player")?;
+    let nargol = {
+        let runtime = owner.runtime.lock().await;
+        for member in [player, partner] {
+            let at = runtime
+                .read_actor_position(member)
+                .map_err(debug)?
+                .position();
+            assert_eq!((at.x, at.y, at.floor), (116, 117, 7));
+        }
+        live_actor(&runtime, KNIGHTS[1])?.ok_or("Nargol spawned by native USE")?
+    };
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    let (step, _) = owner
+        .ordinary_paced_step(
+            player,
+            admitted.game_session_id,
+            StepDirection::North,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(step.disposition, StepDisposition::Moved);
+    {
+        let runtime = owner.runtime.lock().await;
+        let at = runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (at.x, at.y, at.floor),
+            (116, 117, 7),
+            "the locked vortex returns the entrant"
+        );
+    }
+    for (direction, expected) in [
+        (StepDirection::West, (110, 117, 7)),
+        (StepDirection::South, (116, 117, 7)),
+    ] {
+        tick_at(owner, owner.owner_now().get() + 2_000_000).await;
+        let (step, _) = owner
+            .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
+            .await;
+        assert_eq!(step.disposition, StepDisposition::Moved);
+        let runtime = owner.runtime.lock().await;
+        let position = runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position();
+        assert_eq!((position.x, position.y, position.floor), expected);
+    }
+    let nargol_origin = {
+        let mut runtime = owner.runtime.lock().await;
+        let original = runtime.read_actor_position(nargol).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(
+                nargol,
+                original,
+                MovementLocalPosition {
+                    x: 110,
+                    y: 117,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        original.position()
+    };
+    for (direction, expected) in [
+        (StepDirection::West, (111, 116, 7)),
+        (StepDirection::South, (116, 117, 7)),
+    ] {
+        tick_at(owner, owner.owner_now().get() + 2_000_000).await;
+        let (step, _) = owner
+            .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
+            .await;
+        assert_eq!(step.disposition, StepDisposition::Moved);
+        let runtime = owner.runtime.lock().await;
+        let position = runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (position.x, position.y, position.floor),
+            expected,
+            "blocked vortex landing"
+        );
+    }
+    use oteryn_protocol_oteryn::creature_push::{CreaturePushDisposition, CreaturePushIntent};
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+    let (troll, intent) = {
+        let mut runtime = owner.runtime.lock().await;
+        let key = "oteryn:creature.troll";
+        let health = runtime.companion_policy(key).map_err(debug)?.maximum_health;
+        let at = MovementLocalPosition {
+            x: 116,
+            y: 116,
+            floor: 7,
+        };
+        let troll = runtime
+            .commit_quest_creature_spawn(&[(key, health, at)])
+            .map_err(debug)?[0];
+        let visible = runtime.visible_entities();
+        let target = visible
+            .creatures
+            .iter()
+            .find(|entity| entity.actor == troll)
+            .ok_or("visible troll")?;
+        let to = MovementLocalPosition {
+            x: 115,
+            y: 117,
+            floor: 7,
+        };
+        let destination = owner
+            .wire_observation(&runtime, to)
+            .ok_or("visible vortex")?
+            .actor_position;
+        (
+            troll,
+            CreaturePushIntent {
+                target: EntityRef {
+                    identity: troll.placement_identity(),
+                    generation: target.generation,
+                },
+                destination,
+            },
+        )
+    };
+    assert_eq!(
+        owner
+            .push_creature_now(player, admitted.game_session_id, intent)
+            .await,
+        CreaturePushDisposition::Moved,
+    );
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let landing = runtime
+            .read_actor_position(troll)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (landing.x, landing.y, landing.floor),
+            (111, 116, 7),
+            "a pushed monster takes the same blocked vortex route"
+        );
+        runtime.remove_test_actor(troll).map_err(debug)?;
+    }
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let current = runtime.read_actor_position(nargol).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(nargol, current, nargol_origin)
+            .map_err(debug)?;
+    }
+    super::engenc2_cults_fixtures::kill(owner, admitted, nargol, KNIGHTS[1], 101).await?;
+    let now = owner.owner_now().get();
+    tick_at(owner, now).await;
+    let mass = "oteryn:creature.regenerating_mass";
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            live_actor(&runtime, mass)?.is_some(),
+            "mass replaces Nargol"
+        );
+        assert!(
+            live_actor(&runtime, "oteryn:creature.fetter")?.is_some(),
+            "Rewar room starts Fetter waves"
+        );
+    }
+    let fetter = "oteryn:creature.fetter";
+    let fetters = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter(|&actor| runtime.matches_live_creature_identity(actor, fetter.as_bytes()))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(fetters.len(), 2);
+    let unlock = owner.owner_now().get() + 200_000;
+    for (command, fetter_actor) in (201..).zip(fetters) {
+        super::engenc2_cults_fixtures::kill(owner, admitted, fetter_actor, fetter, command).await?;
+    }
+    assert_eq!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .encounter_phases
+            .next_due_us(),
+        Some(unlock),
+        "Fetter deaths schedule Rewar's vulnerability check"
+    );
+    tick_at(owner, unlock - 1).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(live_actor(&runtime, "oteryn:creature.rewar_the_bloody_inv")?.is_some());
+    }
+    tick_at(owner, unlock).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(live_actor(&runtime, KNIGHTS[2])?.is_some());
+    }
+    tick_at(owner, now + 29_999_999).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            live_actor(&runtime, mass)?.is_some(),
+            "mass survives until the deadline"
+        );
+        for add in [
+            "oteryn:creature.vampiric_blood",
+            "oteryn:creature.risen_soldier",
+        ] {
+            assert!(
+                live_actor(&runtime, add)?.is_some(),
+                "ritual replenishes {add}"
+            );
+        }
+    }
+    let blood = {
+        let runtime = owner.runtime.lock().await;
+        live_actor(&runtime, "oteryn:creature.vampiric_blood")?.ok_or("vampiric blood")?
+    };
+    let red_before = {
+        let runtime = owner.runtime.lock().await;
+        let red = live_actor(&runtime, KNIGHTS[3])?.ok_or("red knight")?;
+        runtime.companion_snapshot(red).map_err(debug)?.health
+    };
+    super::engenc2_cults_fixtures::kill(
+        owner,
+        admitted,
+        blood,
+        "oteryn:creature.vampiric_blood",
+        102,
+    )
+    .await?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let red = live_actor(&runtime, KNIGHTS[3])?.ok_or("red survives the first drowning hit")?;
+        let red_after = runtime.companion_snapshot(red).map_err(debug)?.health;
+        assert!((20_000..=25_000).contains(&(red_before - red_after)));
+    }
+    tick_at(owner, now + 30_000_000).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            live_actor(&runtime, mass)?.is_none(),
+            "mass expires at 30 seconds"
+        );
+        assert_ne!(
+            live_actor(&runtime, KNIGHTS[1])?.ok_or("regenerated Nargol")?,
+            nargol
+        );
+        let king = live_actor(&runtime, "oteryn:creature.king_zelos")?.ok_or("admitted king")?;
+        assert!(
+            runtime
+                .encounter_hooks()
+                .is_some_and(|hooks| hooks.contains(king))
+        );
+    }
+    let magnor_death = MovementLocalPosition {
+        x: 121,
+        y: 120,
+        floor: 7,
+    };
+    let (magnor, blocker) = {
+        let mut runtime = owner.runtime.lock().await;
+        let actor = live_actor(&runtime, KNIGHTS[0])?.ok_or("admitted Magnor")?;
+        let spawn = runtime.read_actor_position(actor).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(actor, spawn, magnor_death)
+            .map_err(debug)?;
+        let blocker_key = "oteryn:creature.troll";
+        let health = runtime
+            .companion_policy(blocker_key)
+            .map_err(debug)?
+            .maximum_health;
+        let blocker = runtime
+            .commit_quest_creature_spawn(&[(
+                blocker_key,
+                health,
+                MovementLocalPosition {
+                    x: magnor_death.x + 1,
+                    ..magnor_death
+                },
+            )])
+            .map_err(debug)?[0];
+        (actor, blocker)
+    };
+    super::engenc2_cults_fixtures::kill(owner, admitted, magnor, KNIGHTS[0], 103).await?;
+    tick_at(owner, now + 31_000_000).await;
+    let shard_key = "oteryn:creature.shard_of_magnor";
+    let party = [
+        (player, admitted.game_session_id),
+        (partner, partner_session),
+    ];
+    let starting_health = 10_000;
+    let (shard, burst_count) = {
+        let mut runtime = owner.runtime.lock().await;
+        let shards: Vec<_> = runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter(|&actor| runtime.matches_live_creature_identity(actor, shard_key.as_bytes()))
+            .collect();
+        assert_eq!(
+            shards.len(),
+            4,
+            "Magnor finds room for all four linked shards even with a nearby tile occupied"
+        );
+        runtime.remove_test_actor(blocker).map_err(debug)?;
+        for &shard in &shards {
+            let at = runtime
+                .read_actor_position(shard)
+                .map_err(debug)?
+                .position();
+            assert_eq!(at.floor, magnor_death.floor);
+            assert!(
+                at.x.abs_diff(magnor_death.x) <= 1 && at.y.abs_diff(magnor_death.y) <= 1,
+                "shards spawn around the death tile"
+            );
+        }
+        let player_at = runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            runtime
+                .read_actor_position(partner)
+                .map_err(debug)?
+                .position(),
+            player_at
+        );
+        let shard = shards[0];
+        let original = runtime.read_actor_position(shard).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(
+                shard,
+                original,
+                MovementLocalPosition {
+                    x: player_at.x + 1,
+                    ..player_at
+                },
+            )
+            .map_err(debug)?;
+        let mut burst_count = 0;
+        for shard in shards {
+            let at = runtime
+                .read_actor_position(shard)
+                .map_err(debug)?
+                .position();
+            if at.floor == player_at.floor
+                && at.x.abs_diff(player_at.x) <= 2
+                && at.y.abs_diff(player_at.y) <= 2
+            {
+                burst_count += 1;
+            }
+        }
+        assert!(burst_count > 0, "the party must be in burst range");
+        let mut states = owner.states.spell_states.lock().await;
+        for (member, session) in party {
+            let state = states
+                .get_mut(&runtime, member, session)
+                .ok_or("party spell state")?;
+            // Keep both entrants alive through all four bursts to read the full HP loss.
+            state
+                .apply_wheel_maximum_bonus(starting_health, 0)
+                .map_err(debug)?;
+            state.restore_saved_vitals(starting_health, state.vitals().mana);
+        }
+        (shard, burst_count)
+    };
+    super::engenc2_cults_fixtures::kill(owner, admitted, shard, shard_key, 104).await?;
+    tick_at(owner, now + 32_000_000).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            live_actor(&runtime, shard_key)?.is_none(),
+            "one hit kills the linked shards"
+        );
+        let states = owner.states.spell_states.lock().await;
+        for (member, session) in party {
+            let health = states
+                .get(&runtime, member, session)
+                .ok_or("party spell state")?
+                .vitals()
+                .health;
+            let damage = starting_health - health;
+            assert!(
+                (1800 * burst_count..=2200 * burst_count).contains(&damage),
+                "{burst_count} nearby shards should deal life drain to {member:?}, observed {damage}"
+            );
+        }
+    }
+    exercise_slow_ritual(owner, admitted, now).await?;
+    tick_at(owner, now + 24 * 60 * 1_000_000).await;
+    let runtime = owner.runtime.lock().await;
+    for knight in KNIGHTS.into_iter().chain([
+        "oteryn:creature.king_zelos",
+        "oteryn:creature.rewar_the_bloody_inv",
+    ]) {
+        assert!(
+            live_actor(&runtime, knight)?.is_none(),
+            "timeout cleans up {knight}"
+        );
+    }
+    for member in [player, partner] {
+        let exit = runtime
+            .read_actor_position(member)
+            .map_err(debug)?
+            .position();
+        assert_eq!((exit.x, exit.y, exit.floor), (103, 100, 7));
+    }
+    Ok(())
+}
+
+async fn exercise_slow_ritual(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    now: u64,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
+    let player = admitted.runtime_actor.ok_or("admitted player")?;
+    let fetter = "oteryn:creature.fetter";
+    let mass = "oteryn:creature.regenerating_mass";
+    let fetters = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter(|&actor| runtime.matches_live_creature_identity(actor, fetter.as_bytes()))
+            .collect::<Vec<_>>()
+    };
+    for (command, actor) in (300..).zip(fetters) {
+        super::engenc2_cults_fixtures::kill(owner, admitted, actor, fetter, command).await?;
+    }
+    tick_at(owner, owner.owner_now().get() + 200_000).await;
+    let live = async |key: &str| -> TestResult<_> {
+        let runtime = owner.runtime.lock().await;
+        live_actor(&runtime, key)
+    };
+    let rewar = live(KNIGHTS[2]).await?.ok_or("vulnerable Rewar")?;
+    super::engenc2_cults_fixtures::kill(owner, admitted, rewar, KNIGHTS[2], 310).await?;
+    let blood = "oteryn:creature.vampiric_blood";
+    for command in 320..340 {
+        if live(KNIGHTS[3]).await?.is_none() {
+            break;
+        }
+        tick_at(owner, owner.owner_now().get() + 10_000_000).await;
+        let add = live(blood).await?.ok_or("replenished Vampiric Blood")?;
+        super::engenc2_cults_fixtures::kill(owner, admitted, add, blood, command).await?;
+    }
+    assert!(
+        live(KNIGHTS[3]).await?.is_none(),
+        "drowning defeats the Red Knight"
+    );
+    tick_at(owner, now + 6 * 60 * 1_000_000).await;
+    let nargol = live(KNIGHTS[1]).await?.ok_or("restored Nargol")?;
+    super::engenc2_cults_fixtures::kill(owner, admitted, nargol, KNIGHTS[1], 340).await?;
+    tick_at(owner, owner.owner_now().get()).await;
+    let mass_actor = live(mass).await?.ok_or("regenerating mass")?;
+    let ritual_due = owner.owner_now().get() + 300_000;
+    super::engenc2_cults_fixtures::kill(owner, admitted, mass_actor, mass, 341).await?;
+    assert_eq!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .encounter_phases
+            .next_due_us(),
+        Some(ritual_due),
+        "the last knight death schedules the gate without an extra owner tick"
+    );
+
+    tick_at(owner, ritual_due - 1).await;
+    let (closed, _) = owner
+        .ordinary_paced_step(
+            player,
+            admitted.game_session_id,
+            StepDirection::North,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(closed.disposition, StepDisposition::Moved);
+    {
+        let runtime = owner.runtime.lock().await;
+        let at = runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (at.x, at.y, at.floor),
+            (116, 117, 7),
+            "gate holds for 300 ms"
+        );
+    }
+    tick_at(owner, ritual_due).await;
+    assert!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .encounter_phases
+            .next_due_us()
+            .is_some_and(|due| due > ritual_due),
+        "the owner consumes the gate deadline at exactly 300 ms"
+    );
+    tick_at(owner, ritual_due + 2_000_000).await;
+    let (opened, _) = owner
+        .ordinary_paced_step(
+            player,
+            admitted.game_session_id,
+            StepDirection::North,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(opened.disposition, StepDisposition::Moved);
+    let king_key = "oteryn:creature.king_zelos";
+    let king = live(king_key).await?.ok_or("King Zelos")?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let at = runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (at.x, at.y, at.floor),
+            (115, 114, 7),
+            "ritual unlocks the north gate"
+        );
+    }
+    super::engenc2_cults_fixtures::kill(owner, admitted, king, king_key, 342).await?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let health = runtime.companion_snapshot(king).map_err(debug)?;
+        assert_eq!(
+            health.health,
+            health.maximum_health - health.maximum_health / 2
+        );
+    }
+    Ok(())
+}
+
+pub(super) async fn tick_at(owner: &ComposedFreshAdmission<'_, '_, '_>, now: u64) {
+    use std::sync::atomic::Ordering;
+    owner
+        .states
+        .test_owner_time
+        .store(now + 1, Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
+}
+
+/// A single-sector qualified room shared by native phase lever tests.
+pub(super) fn lever_world(
+    callback: &Callback,
+    trigger: Position,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use super::fixture::id;
+    use oteryn_world_bundle::{bundle, sector};
+
+    let (bytes, mut pins) = crate::map::boot::tests::bundle();
+    let mut data = bundle::read(&bytes)?;
+    data.manifest.palette.truncate(1);
+    if matches!(
+        callback
+            .effects
+            .encounter
+            .as_ref()
+            .and_then(|encounter| encounter.phase),
+        Some(EncounterPhase::GraveDangerZelos { .. })
+    ) {
+        // The native push owner requires known source ground and zone facts.
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i4526".into();
+    }
+    let lever = callback.lever.ok_or("phase lever pair")?;
+    for (i, appearance) in lever.into_iter().enumerate() {
+        data.manifest.palette.push(bundle::PaletteEntry {
+            id: u32::try_from(i + 1)?,
+            key: format!("oteryn:terrain.tibia.i{appearance}"),
+            family: bundle::Family::Terrain,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+    }
+
+    let first = 96;
+    let end = 127;
+    data.manifest.world = bundle::Extent {
+        min_x: first,
+        min_y: first,
+        max_x: end + 1,
+        max_y: end + 1,
+        floors: vec![trigger.floor],
+    };
+    let mut tiles = Vec::new();
+    for y in first..=end {
+        for x in first..=end {
+            let mut items = vec![sector::Item {
+                palette: 0,
+                depth: 0,
+                attrs: Default::default(),
+            }];
+            if (x, y) == (trigger.x, trigger.y) {
+                items.push(sector::Item {
+                    palette: 1,
+                    depth: 0,
+                    attrs: sector::Attrs {
+                        unique: callback.selector.unique,
+                        action: callback.selector.action,
+                        ..Default::default()
+                    },
+                });
+            }
+            tiles.push(sector::Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: vec![],
+                items,
+            });
+        }
+    }
+    let sector = bundle::Sector {
+        floor: trigger.floor,
+        sx: first / 32,
+        sy: first / 32,
+        tiles,
+    };
+    let bytes = oteryn_world_bundle::writer::write(&data.manifest, &[sector], &Default::default())?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start: crate::map::overlay::TilePos {
+                x: trigger.x - 1,
+                y: trigger.y,
+                floor: trigger.floor,
+            },
+        },
+        crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
+        crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+        |key| {
+            if key != "oteryn:item.tibia.i31160" {
+                return crate::map::boot::native_item_definition(Some(native), key);
+            }
+            Some(crate::map::facts::ItemDefinition {
+                reference: std::num::NonZeroU32::new(31160)?,
+                solid: Some(false),
+                blocks_projectile: false,
+                pickupable: false,
+                door: false,
+            })
+        },
+    )
+    .map_err(debug)
+}

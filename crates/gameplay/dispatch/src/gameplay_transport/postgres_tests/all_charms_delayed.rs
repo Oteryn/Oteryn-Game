@@ -1,5 +1,5 @@
 //! Current assignments, qualified Leech and joined children through real timer callbacks.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
@@ -213,7 +213,7 @@ async fn scenario_with_harness(
         charm,
         "leech" | "batch" | "overpower_lethal" | "critical" | "zero" | "leech_minors"
     ) {
-        super::item_spell_augments::activate(world, true)?
+        super::item_spell_augments_fixtures::activate(world, true)?
     } else {
         production_generation_with_source(
             world,

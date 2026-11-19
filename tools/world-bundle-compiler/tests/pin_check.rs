@@ -314,6 +314,7 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
     let edit = |path: &str, from: &str, to: &str| {
         let text = fs::read_to_string(dir.path(path)).unwrap();
         assert_eq!(text.matches(from).count(), 1, "{path}: {from}");
+        assert_ne!(from, to, "{path}: {from}");
         fs::write(dir.path(path), text.replacen(from, to, 1)).unwrap();
         git(&dir.0, &["add", "-A"]);
     };
@@ -322,6 +323,27 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
             &dir.0,
             &["checkout", "-q", "HEAD", "--", "Cargo.toml", "Cargo.lock"],
         )
+    };
+    // Read the current versions and checksums from the copied workspace. Dependency updates
+    // must not invalidate the mutations before the digest comparison can run.
+    let lock = fs::read_to_string(dir.path("Cargo.lock")).unwrap();
+    let lock_field = |name: &str, field: &str| {
+        let package = format!("name = \"{name}\"\n");
+        lock.split("\n[[package]]\n")
+            .find(|entry| entry.starts_with(&package))
+            .expect("locked package")
+            .lines()
+            .find(|line| line.starts_with(field))
+            .expect("locked package field")
+    };
+    let manifest = fs::read_to_string(dir.path("Cargo.toml")).unwrap();
+    let workspace_version = |prefix: &str| {
+        let value = manifest
+            .lines()
+            .find(|line| line.starts_with(prefix))
+            .expect("workspace dependency");
+        let end = value[prefix.len()..].find('"').expect("version end");
+        &value[..prefix.len() + end + 1]
     };
 
     // An unrelated workspace member, its new lock package, an unrelated dependency bump in the
@@ -339,13 +361,13 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
     );
     edit(
         "Cargo.lock",
-        "8774e05a7d0de114588e6a28fe7e71694b82614ed569d86d8b389dfbc98b8ad8",
-        &"9".repeat(64),
+        lock_field("rcgen", "checksum = "),
+        &format!("checksum = \"{}\"", "9".repeat(64)),
     );
     edit(
         "Cargo.toml",
-        "rcgen = { version = \"=0.14.10\"",
-        "rcgen = { version = \"=0.14.11\"",
+        workspace_version("rcgen = { version = \"="),
+        "rcgen = { version = \"=999.0.0\"",
     );
     edit(
         "Cargo.toml",
@@ -358,21 +380,22 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
 
     // The checksum or version of a package in the closure, a World workspace dependency and a
     // profile each move it.
+    let zstd_lock_version = format!("name = \"zstd\"\n{}", lock_field("zstd", "version = "));
     for (path, from, to) in [
         (
             "Cargo.lock",
-            "db3ae9bf90af6e40197bef767eeefc46ad6397420fe873830bd85e5fbbfb3c70",
-            "0".repeat(64),
+            lock_field("zstd", "checksum = "),
+            format!("checksum = \"{}\"", "0".repeat(64)),
         ),
         (
             "Cargo.lock",
-            "name = \"zstd\"\nversion = \"0.14.3\"",
-            "name = \"zstd\"\nversion = \"0.14.4\"".to_owned(),
+            zstd_lock_version.as_str(),
+            "name = \"zstd\"\nversion = \"999.0.0\"".to_owned(),
         ),
         (
             "Cargo.toml",
-            "zstd = { version = \"=0.14.3\"",
-            "zstd = { version = \"=0.14.4\"".to_owned(),
+            workspace_version("zstd = { version = \"="),
+            "zstd = { version = \"=999.0.0\"".to_owned(),
         ),
         (
             "Cargo.toml",

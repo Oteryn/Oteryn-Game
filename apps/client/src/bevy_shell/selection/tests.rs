@@ -41,7 +41,12 @@ fn picker_buttons_return_server_channel_through_existing_callback()
                     availability: CharacterAvailability::Available,
                 },
                 world_name: "Server world".into(),
-                channels: vec![("server-channel".into(), "Server channel".into())],
+                channels: vec![crate::character_selection::ChannelChoice {
+                    id: "server-channel".into(),
+                    name: "Server channel".into(),
+                    pvp_type: oteryn_platform_contracts::DirectoryPvpType::OptionalPvp,
+                    region: "EU".into(),
+                }],
                 available: true,
             }],
             "server-character",
@@ -242,7 +247,12 @@ fn scaled_picker_keeps_footer_inside_frame_and_selected_row_on_resize()
                     availability: CharacterAvailability::Available,
                 },
                 world_name: "World".into(),
-                channels: vec![("channel".into(), "Channel".into())],
+                channels: vec![crate::character_selection::ChannelChoice {
+                    id: "channel".into(),
+                    name: "Channel".into(),
+                    pvp_type: oteryn_platform_contracts::DirectoryPvpType::OptionalPvp,
+                    region: "EU".into(),
+                }],
                 available: true,
             })
             .collect::<Vec<_>>();

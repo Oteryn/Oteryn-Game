@@ -82,7 +82,7 @@ fn team_finder_leader_listing_create_edit_remove_survives_relog_through_the_wire
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("team-finder-leader", scenario)?;
+    super::kill_reward_e2e_fixtures::scenario_thread::run("team-finder-leader", scenario)?;
     eprintln!(
         "S14A_PG_CASE_EXECUTED elapsed_ms={}",
         started.elapsed().as_millis()
@@ -107,7 +107,7 @@ fn scenario() -> TestResult {
         // Qualify native progression/training against the same content-1
         // durable fixture revision as the full-world logout scenario.
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let room = activated.qualified_room().clone();
         let active = controller.active().ok_or("active generation")?;
         let deps = Dependencies::with_content(
@@ -353,7 +353,7 @@ fn scenario() -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
         assert_eq!(active_before, 1);
-        super::party_skull::logout(&reopened, &mut admitted).await?;
+        super::party_skull_fixtures::logout(&reopened, &mut admitted).await?;
         assert_eq!(listing(&h).await?, edited);
         let active_after: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_team_finder_active_listings")

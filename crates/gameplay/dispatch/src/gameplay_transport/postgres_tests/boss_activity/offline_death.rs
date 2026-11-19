@@ -120,7 +120,7 @@ async fn current_fence(
 }
 
 async fn seed_amulet(h: &Harness) -> TestResult {
-    super::super::item_look::seed_main_backpack(h, &[]).await?;
+    super::super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
     // Preexisting custody is fixture data. Loss and every subsequent lifecycle
     // transition below run with the actual database owners and triggers enabled.
     let mut tx = h.pool.begin().await?;
@@ -313,7 +313,7 @@ async fn assert_build_scope_fences(
         ..current
     };
     let foreign = CurrentCharacterGameplayFence {
-        runtime_scope: super::super::activity_runtime::allocate_ready_instance(h, 216).await?,
+        runtime_scope: super::super::activity_runtime_fixtures::allocate_ready_instance(h, 216).await?,
         scope_ownership_generation: ScopeOwnershipGeneration::new(1).map_err(debug)?,
         ..current
     };
@@ -646,7 +646,7 @@ async fn assert_refusals_preserve_offline_return(
         let credential = if invalid_credential {
             "invalid".to_owned()
         } else {
-            super::super::house_transfer::RecoverySource::token(nonce)?
+            super::super::house_transfer_fixtures::RecoverySource::token(nonce)?
         };
         let admission_owner = if nonce == 218 { &requiring } else { owner };
         let refusal = admission_owner
@@ -704,7 +704,7 @@ async fn assert_refusals_preserve_offline_return(
             None,
         );
     }
-    let credential = super::super::house_transfer::RecoverySource::token(220)?;
+    let credential = super::super::house_transfer_fixtures::RecoverySource::token(220)?;
     let refusal = tokio::time::timeout(
         Duration::from_secs(2),
         owner.resume_session(ResumeAttempt {
@@ -787,7 +787,7 @@ async fn refuse_authenticated_mismatch(
             *cap != oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_V1
         })
         .collect();
-    let credential = super::super::house_transfer::RecoverySource::token(nonce)?;
+    let credential = super::super::house_transfer_fixtures::RecoverySource::token(nonce)?;
     let refused = tokio::time::timeout(
         Duration::from_secs(30),
         owner.resume_session(ResumeAttempt {

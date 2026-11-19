@@ -57,6 +57,7 @@ impl Stepper for Peer {
                         leader: true,
                         expires_at: 0,
                         party_spell_remaining_ms: None,
+                        channel: None,
                     });
                     self.view.members.push(party::PartyEntry {
                         list: Vec::new(),
@@ -65,6 +66,7 @@ impl Stepper for Peer {
                         leader: false,
                         expires_at: 0,
                         party_spell_remaining_ms: None,
+                        channel: None,
                     });
                 }
                 party::PartyIntent::Invite(_) => {
@@ -176,6 +178,7 @@ fn party_controls_use_real_codec_requests_and_apply_server_views() -> Result<(),
                             leader: false,
                             expires_at: 99,
                             party_spell_remaining_ms: None,
+                            channel: None,
                         }],
                     },
                     commands: Arc::clone(&commands),

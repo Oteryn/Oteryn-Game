@@ -31,6 +31,10 @@ pub struct PartyPanel {
     pub awaiting_shared_feedback: bool,
     pub server_feedback: Option<String>,
     pub feedback: Option<&'static str>,
+    /// chsw (capability 513): the own Channel and the names of the World's Channels, so a
+    /// member row names its Channel and a member on another Channel is shown apart.
+    pub own_channel: Option<[u8; 16]>,
+    pub channel_names: crate::social_channel::ChannelNames,
 }
 
 impl PartyPanel {

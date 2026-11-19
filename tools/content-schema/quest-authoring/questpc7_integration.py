@@ -55,6 +55,7 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     feaster_worlds, _, feaster_callbacks = feaster.build(root)
     formal_worlds.extend(feaster_worlds)
     lane_callbacks.extend(feaster_callbacks)
+    offers.append(feaster.mission_offer())
     main_keys={row['key'] for row in callbacks}
     callbacks.extend(row for row in lane_callbacks if row['key'] not in main_keys)
     for row in formal_worlds:

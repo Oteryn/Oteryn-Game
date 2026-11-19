@@ -1,0 +1,10 @@
+{
+  "id": 6248,
+  "name": "CHANNEL_SWITCH_REQUEST",
+  "owner_decision": "chsw owner decisions 2026-11-17; GAME-CHANNEL-01 §7-§11",
+  "capability": 512,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/channel-switch-v1.md#switch-request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/channel-switch-v1.md#result",
+  "max_payload_bytes": 16,
+  "max_result_payload_bytes": 5
+}

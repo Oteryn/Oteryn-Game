@@ -81,15 +81,19 @@ fn member(m: &GuildMember) -> Vec<u8> {
     put(&mut b, 2, m.name.as_bytes());
     num(&mut b, 3, u64::from(m.level));
     put(&mut b, 4, m.title.as_bytes());
+    if let Some(channel) = &m.channel {
+        put(&mut b, 5, channel);
+    }
     b
 }
 fn read_member(bytes: &[u8]) -> WireResult<GuildMember> {
-    let f = fields(bytes, 4)?;
+    let f = fields(bytes, 5)?;
     let m = GuildMember {
         character: uuid(required(&f, 1)?)?,
         name: text(required(&f, 2)?, 29)?,
         level: rank(&f, 3)?,
         title: text(required(&f, 4)?, 116)?,
+        channel: optional_bytes(&f, 5)?.map(uuid).transpose()?,
     };
     if m.title.chars().count() > 29 {
         return bad();

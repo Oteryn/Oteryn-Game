@@ -234,3 +234,19 @@ fn shared_experience_preserves_full_scope_identity_when_uuid_bytes_match() {
         Ok(None)
     );
 }
+
+#[test]
+fn a_member_on_another_channel_of_the_world_gets_no_share_and_does_not_dilute_it() {
+    // chsw (owner 2026-11-17): the Party survives a Channel switch, but shared experience still
+    // needs the same Channel. A member on another Channel neither shares nor divides the pool.
+    let mut members = [member(1), member(2), member(3)];
+    members[2].channel = [2; 16];
+    let here = shared_experience_share(true, [1; 16], [1; 16], false, &members, pool(101, 0));
+    assert_eq!(here, split(&members[..2], 101));
+    assert_eq!(here, Ok(Some(61)));
+    // On the other Channel the leader is absent, so nobody there shares.
+    assert_eq!(
+        shared_experience_share(true, [1; 16], [2; 16], false, &members, pool(101, 0)),
+        Ok(None)
+    );
+}

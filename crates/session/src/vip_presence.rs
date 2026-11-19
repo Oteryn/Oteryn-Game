@@ -20,25 +20,25 @@ impl VipPresenceStore {
 
     fn at(&self, now: Instant) -> PresenceBatch {
         let mut batch = self.batch.clone();
-        let age = now.saturating_duration_since(self.confirmed_at);
-        for entry in &mut batch.entries {
-            // Announcements are events; rendering the persistent view must not repeat one.
-            entry.announce = false;
-            if entry.status == Status::Online {
-                let lifetime = Duration::from_millis(u64::from(entry.confirmed_for_ms));
-                if age >= lifetime {
-                    entry.status = Status::Unconfirmed;
-                    entry.confirmed_for_ms = 0;
-                } else {
-                    entry.confirmed_for_ms =
-                        u32::try_from((lifetime - age).as_millis()).unwrap_or(0);
-                    if entry.confirmed_for_ms == 0 {
-                        entry.status = Status::Unconfirmed;
-                    }
-                }
+        expire_vip_presence(&mut batch, now.saturating_duration_since(self.confirmed_at));
+        batch
+    }
+}
+
+/// Applies the monotonic confirmation deadline to a persistent presence view.
+pub fn expire_vip_presence(batch: &mut PresenceBatch, age: Duration) {
+    for entry in &mut batch.entries {
+        // Announcements are events; rendering the persistent view must not repeat one.
+        entry.announce = false;
+        if entry.status == Status::Online {
+            let lifetime = Duration::from_millis(u64::from(entry.confirmed_for_ms));
+            entry.confirmed_for_ms =
+                u32::try_from(lifetime.saturating_sub(age).as_millis()).unwrap_or(0);
+            if entry.confirmed_for_ms == 0 {
+                entry.status = Status::Unconfirmed;
+                entry.channel = None;
             }
         }
-        batch
     }
 }
 
@@ -77,6 +77,7 @@ mod tests {
         let store = VipPresenceStore {
             batch: PresenceBatch {
                 entries: vec![PresenceEntry {
+                    channel: Some([1; 16]),
                     entry: 1,
                     name: "Alice".into(),
                     status: Status::Online,
@@ -92,6 +93,7 @@ mod tests {
         assert!(!before.entries[0].announce);
         let expired = store.at(at + Duration::from_secs(10));
         assert_eq!(expired.entries[0].status, Status::Unconfirmed);
+        assert_eq!(expired.entries[0].channel, None);
         assert_eq!(expired.entries[0].confirmed_for_ms, 0);
         assert_eq!(store.at(at + Duration::from_secs(100)), expired);
     }

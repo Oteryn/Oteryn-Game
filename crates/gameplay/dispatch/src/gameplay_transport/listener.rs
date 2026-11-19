@@ -165,6 +165,9 @@ fn connection_end_kind(end: &connection::ConnectionEnd) -> &'static str {
     use connection::{AdmissionRefusal, ConnectionEnd};
     match end {
         ConnectionEnd::ProtocolViolation(_) => "protocol_violation",
+        ConnectionEnd::AdmissionRefused(AdmissionRefusal::ChannelSwitch(_)) => {
+            "refused_channel_switch"
+        }
         ConnectionEnd::AdmissionRefused(AdmissionRefusal::PremiumRequired) => "refused_premium",
         ConnectionEnd::AdmissionRefused(AdmissionRefusal::Rejected) => "refused_rejected",
         ConnectionEnd::AdmissionRefused(AdmissionRefusal::Unavailable) => "refused_unavailable",

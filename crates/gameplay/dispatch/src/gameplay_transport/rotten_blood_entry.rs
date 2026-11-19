@@ -165,7 +165,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || definition.policy.maximum_players != 5
             || definition.policy.minimum_level != 250
             || definition.policy.cooldown_ms != u64::from(template.cooldown_seconds()) * 1000
-            || definition.policy.time_limit_ms != 1_200_000
+            || definition.policy.time_limit_ms != u64::from(template.time_limit_seconds()) * 1000
             || definition.after_kill_ms != 60_000
             || definition.lever_positions
                 != template

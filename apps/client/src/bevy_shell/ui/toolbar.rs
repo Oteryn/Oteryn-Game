@@ -7,6 +7,7 @@ use bevy::prelude::*;
 pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Analysers", Control::Analysers),
     ("Battle", Control::Panel("battle")),
+    ("Change Channel", Control::ChangeChannel),
     ("Chat", Control::Panel("chat")),
     ("Inspection", Control::Inspection),
     ("Inventory", Control::Panel("inventory")),
@@ -27,6 +28,7 @@ pub(super) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
     }
     match control {
         Control::Options => owner.open_graphics(),
+        Control::ChangeChannel => owner.request_channel_switch(),
         Control::Market => crate::bevy_shell::game_ui::open_market(owner),
         Control::Party => crate::bevy_shell::game_ui::open_party(owner),
         Control::Quests => crate::bevy_shell::game_ui::open_quests(owner),

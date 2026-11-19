@@ -61,7 +61,7 @@ fn load() -> Result<Replay, Error> {
         roster: guild::encode_guild_query_result(&guild::GuildQueryResult::Roster {
             guild: id,
             revision: 1,
-            members: vec![guild::GuildMember {
+            members: vec![guild::GuildMember { channel: None,
                 character: uuid7(8),
                 name: "Aurelia".into(),
                 level: 1,

@@ -29,6 +29,26 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alyxo.lua:190-204"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/lyre",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alyxo.lua:143-157"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/presente",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alyxo.lua:158-173"
+      ]
     }
   ],
   "rules": [
@@ -46,6 +66,18 @@
           "track": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/fafnar",
           "op": "eq",
           "value": 301
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/lyre",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/presente",
+          "op": "eq",
+          "value": 3
         }
       ],
       "effects": [
@@ -78,6 +110,18 @@
           "track": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/fafnar",
           "op": "eq",
           "value": 301
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/lyre",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/presente",
+          "op": "eq",
+          "value": 3
         }
       ],
       "effects": [
