@@ -78,7 +78,9 @@ fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
 
 #[test]
 fn essence_native_lever_sets_twenty_hour_cooldown_for_both_admitted_characters() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     cults_scenario(false, true)
 }
@@ -90,7 +92,7 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
         return Ok(());
     }
     let began = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("engenc2-cults", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("engenc2-cults", move || {
         run(async |admin| {
             reset();
             let h =
@@ -112,18 +114,43 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
                 floor: -7,
             };
             let exits = [
-                (Position { x:117, y:117, floor:-7 }, Position { x:127, y:117, floor:-7 }),
-                (Position { x:115, y:117, floor:-7 }, Position { x:105, y:117, floor:-7 }),
+                (
+                    Position {
+                        x: 117,
+                        y: 117,
+                        floor: -7,
+                    },
+                    Position {
+                        x: 127,
+                        y: 117,
+                        floor: -7,
+                    },
+                ),
+                (
+                    Position {
+                        x: 115,
+                        y: 117,
+                        floor: -7,
+                    },
+                    Position {
+                        x: 105,
+                        y: 117,
+                        floor: -7,
+                    },
+                ),
             ];
             let world = if cooldown {
-                let cells = exits.into_iter().flat_map(|(from, to)| [from, to]).collect::<Vec<_>>();
-                super::quest_world_callbacks::world_with_cells(&callback, trigger, &cells)?
+                let cells = exits
+                    .into_iter()
+                    .flat_map(|(from, to)| [from, to])
+                    .collect::<Vec<_>>();
+                super::quest_world_callbacks_fixtures::world_with_cells(&callback, trigger, &cells)?
             } else {
-                super::quest_world_callbacks::world(&callback, trigger)?
+                super::quest_world_callbacks_fixtures::world(&callback, trigger)?
             };
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
-                super::death_ml_loss_composed::production_generation_with_pin(
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                     deps.admitted.world_id,
                     "content-1",
                 )?;
@@ -304,10 +331,20 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
                 }
             }
             let peer = if cooldown {
-                Some(super::classic_quests::install_peer(
-                    &owner, &h, &authority, admitted,
-                    MovementLocalPosition { x:107, y:108, floor:7 },
-                ).await?)
+                Some(
+                    super::classic_quests_fixtures::install_peer(
+                        &owner,
+                        &h,
+                        &authority,
+                        admitted,
+                        MovementLocalPosition {
+                            x: 107,
+                            y: 108,
+                            floor: 7,
+                        },
+                    )
+                    .await?,
+                )
             } else {
                 None
             };
@@ -328,34 +365,62 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
             if let Some((peer, session)) = peer {
-                let rejected = owner.use_object(
-                    deps.actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: 11,
-                        item_fence: admitted.item_fence,
-                    },
-                    WorldObjectTarget { placement: placement.clone(), expected_revision: 0 },
-                ).await;
+                let rejected = owner
+                    .use_object(
+                        deps.actor,
+                        UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: 11,
+                            item_fence: admitted.item_fence,
+                        },
+                        WorldObjectTarget {
+                            placement: placement.clone(),
+                            expected_revision: 0,
+                        },
+                    )
+                    .await;
                 assert_eq!(rejected.disposition, UseDisposition::Occupied);
-                assert_eq!(sqlx::query_scalar::<_, i64>(
-                    "SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key=$1"
-                ).bind(ESSENCE).fetch_one(&h.pool).await?, 0);
+                assert_eq!(
+                    sqlx::query_scalar::<_, i64>(
+                        "SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key=$1"
+                    )
+                    .bind(ESSENCE)
+                    .fetch_one(&h.pool)
+                    .await?,
+                    0
+                );
                 let mut runtime = owner.runtime.lock().await;
                 let expected = runtime.read_actor_position(peer).map_err(debug)?;
                 let doors = crate::map::floor::BundleDoors(world.facts());
                 let proof = crate::map::floor::prepare_quest_callback_teleport(
-                    &runtime, &cells, peer, session, expected,
-                    MovementLocalPosition { x: 100, y: 101, floor: 7 },
-                    false, &doors,
-                ).map_err(debug)?;
-                runtime.commit_source_steps_and_project(vec![proof], || true).map_err(debug)?;
+                    &runtime,
+                    &cells,
+                    peer,
+                    session,
+                    expected,
+                    MovementLocalPosition {
+                        x: 100,
+                        y: 101,
+                        floor: 7,
+                    },
+                    false,
+                    &doors,
+                )
+                .map_err(debug)?;
+                runtime
+                    .commit_source_steps_and_project(vec![proof], || true)
+                    .map_err(debug)?;
                 drop(runtime);
-                owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(1)).ok_or("retry clock")?;
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(1))
+                    .ok_or("retry clock")?;
             }
             let before: i64 = sqlx::query_scalar(
-                "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint"
-            ).fetch_one(&h.pool).await?;
+                "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+            )
+            .fetch_one(&h.pool)
+            .await?;
             let outcome = owner
                 .use_object(
                     deps.actor,
@@ -379,17 +444,35 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
                 let deadlines: Vec<(i64, String)> = sqlx::query_as(
                     "SELECT available_at,admission::text FROM game_character_boss_cooldowns
                      WHERE boss_key=$1 ORDER BY character_id",
-                ).bind(ESSENCE).fetch_all(&h.pool).await?;
+                )
+                .bind(ESSENCE)
+                .fetch_all(&h.pool)
+                .await?;
                 let after: i64 = sqlx::query_scalar(
-                    "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint"
-                ).fetch_one(&h.pool).await?;
+                    "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+                )
+                .fetch_one(&h.pool)
+                .await?;
                 assert_eq!(deadlines.len(), 2);
                 assert_eq!(deadlines[0], deadlines[1]);
                 assert!((before + 72_000_000..=after + 72_000_000).contains(&deadlines[0].0));
                 let runtime = owner.runtime.lock().await;
-                let landing = MovementLocalPosition { x:116, y:117, floor:7 };
-                assert_eq!(runtime.read_actor_position(deps.actor).map_err(debug)?.position(), landing);
-                assert_eq!(runtime.read_actor_position(peer).map_err(debug)?.position(), landing);
+                let landing = MovementLocalPosition {
+                    x: 116,
+                    y: 117,
+                    floor: 7,
+                };
+                assert_eq!(
+                    runtime
+                        .read_actor_position(deps.actor)
+                        .map_err(debug)?
+                        .position(),
+                    landing
+                );
+                assert_eq!(
+                    runtime.read_actor_position(peer).map_err(debug)?.position(),
+                    landing
+                );
             }
 
             assert_eq!(
@@ -534,17 +617,33 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
                 for ((actor, session, direction), (_, exit)) in [
                     (deps.actor, admitted.game_session_id, StepDirection::East),
                     (peer, peer_session, StepDirection::West),
-                ].into_iter().zip(exits) {
-                    let (outcome, _) = owner.ordinary_paced_step(actor, session, direction, None, None).await;
+                ]
+                .into_iter()
+                .zip(exits)
+                {
+                    let (outcome, _) = owner
+                        .ordinary_paced_step(actor, session, direction, None, None)
+                        .await;
                     assert_eq!(outcome.disposition, StepDisposition::Moved);
                     let runtime = owner.runtime.lock().await;
-                    assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(),
-                        super::quest_world_callbacks::local(exit));
+                    assert_eq!(
+                        runtime
+                            .read_actor_position(actor)
+                            .map_err(debug)?
+                            .position(),
+                        super::quest_world_callbacks_fixtures::local(exit)
+                    );
                 }
-                assert_eq!(sqlx::query_scalar::<_, i64>(
-                    "SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key=$1
+                assert_eq!(
+                    sqlx::query_scalar::<_, i64>(
+                        "SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key=$1
                      AND available_at>floor(extract(epoch FROM clock_timestamp())*1000)::bigint"
-                ).bind(ESSENCE).fetch_one(&h.pool).await?, 2);
+                    )
+                    .bind(ESSENCE)
+                    .fetch_one(&h.pool)
+                    .await?,
+                    2
+                );
             }
             if reenter {
                 {

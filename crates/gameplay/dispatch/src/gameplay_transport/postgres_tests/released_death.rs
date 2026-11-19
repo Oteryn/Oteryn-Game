@@ -28,9 +28,9 @@ enum Case {
 }
 
 fn scenario(case: Case) -> TestResult {
-    kill_reward_e2e::scenario_thread::run_async(async move |admin| {
+    kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         let started = std::time::Instant::now();
-        let (generation, pin) = death_ml_loss_composed::production_generation_with_pin(
+        let (generation, pin) = death_ml_loss_composed_fixtures::production_generation_with_pin(
             fence(1)?.runtime_scope.world_id(),
             "content-1",
         )?;
@@ -76,7 +76,7 @@ fn scenario(case: Case) -> TestResult {
         let mut admitted = deps.admitted;
         owner.admit_progression_session(&mut admitted).await;
         admitted.item_fence = Some(
-            death_ml_loss_composed::current_fence(&owner, session)
+            death_ml_loss_composed_fixtures::current_fence(&owner, session)
                 .await?
                 .item_fence(),
         );
@@ -89,7 +89,7 @@ fn scenario(case: Case) -> TestResult {
                 DurableFamiliarState, FamiliarLifecycleV2, FamiliarLifecycleWriter,
                 FamiliarStateOccurrence, FamiliarStateRequest,
             };
-            let fence = death_ml_loss_composed::current_fence(&owner, session).await?;
+            let fence = death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
             let before = DurableFamiliarState::default();
             let after = DurableFamiliarState {
                 lifecycle: Some(FamiliarLifecycleV2 {
@@ -233,7 +233,7 @@ fn scenario(case: Case) -> TestResult {
                             FamiliarStateOccurrence, FamiliarStateRequest,
                         };
                         use crate::durability::character_progression::CharacterProgressionError;
-                        let fence = death_ml_loss_composed::current_fence(&owner, session).await?;
+                        let fence = death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
                         let before = h
                             .root
                             .read_character_familiar_state(&authority, fence.character_id)

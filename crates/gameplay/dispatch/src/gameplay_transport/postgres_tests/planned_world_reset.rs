@@ -1,9 +1,9 @@
 //! Reuse the existing real fresh-admission/Channel fixture, mounted once.
-#[path = "planned_world_reset/planned_world_reset_fixture.rs"]
-pub(super) mod reset_fixture;
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use super::planned_world_reset_fixtures::{reset_fixture};
+
 use super::*;
 use crate::foundation::ControlLossCauseV1;
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
 #[test]
 fn planned_world_reset_healthy_session_loses_control_and_releases_through_grace() -> TestResult {

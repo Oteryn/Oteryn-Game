@@ -11,7 +11,7 @@ use oteryn_protocol_oteryn::potion_durations::{
 
 #[test]
 fn nx8_potion_durations_postgres_online_offline_xp_sources_and_expiry() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         let started = std::time::Instant::now();
         reset();
         let h =
@@ -82,7 +82,7 @@ fn nx8_potion_durations_postgres_online_offline_xp_sources_and_expiry() -> TestR
                 .bind(id(claim).as_slice()).bind(start).bind(end).bind(percent).execute(&mut *tx).await?;
             }
             tx.commit().await?;
-            let (status, payload) = super::cyclopedia::support::exchange(
+            let (status, payload) = super::cyclopedia_fixtures::support::exchange(
                 &owner,
                 &mut admitted,
                 1,
@@ -105,7 +105,7 @@ fn nx8_potion_durations_postgres_online_offline_xp_sources_and_expiry() -> TestR
             sqlx::query("UPDATE nx8_potion_clock SET at=at+interval '1 minute'")
                 .execute(&h.pool)
                 .await?;
-            let (_, payload) = super::cyclopedia::support::exchange(
+            let (_, payload) = super::cyclopedia_fixtures::support::exchange(
                 &owner,
                 &mut admitted,
                 2,
@@ -125,7 +125,7 @@ fn nx8_potion_durations_postgres_online_offline_xp_sources_and_expiry() -> TestR
             sqlx::query("UPDATE nx8_potion_clock SET at=at+interval '2 hours'")
                 .execute(&h.pool)
                 .await?;
-            let (_, payload) = super::cyclopedia::support::exchange(
+            let (_, payload) = super::cyclopedia_fixtures::support::exchange(
                 &owner,
                 &mut admitted,
                 3,
