@@ -1,4 +1,5 @@
 // Keep delegated lane futures off the shared scenario stack as the integration grows.
+use super::super::conditional_entrance_fixtures::Case as ConditionalEntranceCase;
 use super::*;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
@@ -19,7 +20,7 @@ pub(crate) fn stateless_scenario(
 
 pub(in super::super) fn conditional_entrance_scenario(
     trigger: Position,
-    case: super::super::conditional_entrance_fixtures::Case,
+    case: ConditionalEntranceCase,
 ) -> TestResult {
     scenario_case("conditional-entrance", trigger, false, None, Some(case))
 }
@@ -29,7 +30,7 @@ fn scenario_case(
     trigger: Position,
     lever_fixture: bool,
     stateless_destination: Option<Position>,
-    conditional_entrance: Option<super::super::conditional_entrance_fixtures::Case>,
+    conditional_entrance: Option<ConditionalEntranceCase>,
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
@@ -658,9 +659,16 @@ fn scenario_case(
     }
     let world = if matches!(
         conditional_entrance,
-        Some(super::super::conditional_entrance_fixtures::Case::Stair | super::super::conditional_entrance_fixtures::Case::Premium)
+        Some(ConditionalEntranceCase::Stair | ConditionalEntranceCase::Premium)
     ) {
-        world_with_cells(&callback, trigger, &[Position { floor: trigger.floor - 1, ..trigger }])?
+        world_with_cells(
+            &callback,
+            trigger,
+            &[Position {
+                floor: trigger.floor - 1,
+                ..trigger
+            }],
+        )?
     } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals_fixtures::world()?
     } else if name == "nx6-wayfarer" {
@@ -1574,7 +1582,7 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if conditional_entrance == Some(super::super::conditional_entrance_fixtures::Case::Premium)
+        let premium = if conditional_entrance == Some(ConditionalEntranceCase::Premium)
             || name.starts_with("authored-")
             || name == "nx6-wayfarer"
             || name == "m07-carrot-premium"
@@ -1768,7 +1776,7 @@ fn scenario_case(
         if name.starts_with("qengine-rewards-questpc4-admission-")
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
             || conditional_entrance.is_some_and(|case| {
-                case != super::super::conditional_entrance_fixtures::Case::ChyllfroestReward
+                case != ConditionalEntranceCase::ChyllfroestReward
             })
             || lever_fixture
             || target_swap
@@ -1886,7 +1894,16 @@ fn scenario_case(
         }
         owner.admit_quest_session(&admitted).await;
         if let Some(case) = conditional_entrance {
-            Box::pin(case.exercise(&mut owner, &mut admitted, &h, &authority, deps.actor, fence, &callback)).await?;
+            Box::pin(case.exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                deps.actor,
+                fence,
+                &callback,
+            ))
+            .await?;
         } else if m03_use {
             Box::pin(super::super::qengine_m03_use_fixtures::exercise(
                 &mut owner,

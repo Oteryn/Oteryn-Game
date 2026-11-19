@@ -1,6 +1,6 @@
 //! Conditional entrances through ordinary STEP and literal USE over PostgreSQL.
 use super::fixture::{Harness, debug, id};
-use super::quest_world_callbacks_fixtures::{conditional_entrance_scenario, input_item, local, wire};
+use super::quest_world_callbacks_fixtures::{input_item, local, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::{
     character_authority::ReconciledCharacterAuthority,
@@ -27,7 +27,7 @@ use oteryn_protocol_oteryn::{
 };
 use serde_json::json;
 
-const GATE: Position = Position {
+pub(super) const GATE: Position = Position {
     x: 32791,
     y: 32331,
     floor: -10,
@@ -802,10 +802,4 @@ fn isle_exit_track(travel: bool) -> String {
     } else {
         format!("{}mission07", isle_of_evil::PREFIX)
     }
-}
-
-pub(super) fn scenario(case: Case) -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("conditional-entrance", move || {
-        conditional_entrance_scenario(GATE, case)
-    })
 }

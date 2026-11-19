@@ -1,6 +1,14 @@
 //! Conditional entrances through ordinary STEP and literal USE over PostgreSQL.
 use super::TestResult;
-use super::conditional_entrance_fixtures::{Case, scenario};
+use super::conditional_entrance_fixtures::{Case, GATE};
+use super::kill_reward_e2e_fixtures::scenario_thread;
+use super::quest_world_callbacks_fixtures::conditional_entrance_scenario;
+
+fn scenario(case: Case) -> TestResult {
+    scenario_thread::run("conditional-entrance", move || {
+        conditional_entrance_scenario(GATE, case)
+    })
+}
 
 #[test]
 fn conditional_step_admits_inquisition_with_any_exact_throne_value() -> TestResult {
