@@ -288,7 +288,11 @@ pub(super) async fn prepare_player_with_operation(
             quest,
             BuildChangeRequest {
                 occurrence: BuildOccurrence::from_bytes(build_occurrence).map_err(debug)?,
-                cause: BuildCause::VocationChoice,
+                cause: if before.vocation() == "none" {
+                    BuildCause::VocationChoice
+                } else {
+                    BuildCause::VocationTrial
+                },
                 before,
                 after,
                 pruned_stance: None,

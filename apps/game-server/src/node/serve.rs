@@ -38,7 +38,9 @@ use crate::durability::admission_authority_guards::{
 use crate::durability::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority,
 };
-use crate::durability::character_command::{Classified, classify_intent};
+use crate::durability::character_command::{
+    Classified, RetainedCreatePublisherStore, classify_intent,
+};
 use crate::durability::native_admission_source::{DescriptorRegistration, FreshStoreProvenance};
 use crate::durability::runtime_scope_assignment::{
     AssignmentError, AssignmentState, BootstrapSecret, LaunchBinding, NodeIncarnationProof,
@@ -61,7 +63,7 @@ use crate::native_admission_source::account_characters::{
 };
 use crate::native_admission_source::bazaar::transport as bazaar_transport;
 use crate::native_admission_source::character_commands::{
-    CommandDescriptor, Consumer, Decider, Decision, Input, MtlsSource,
+    CommandDescriptor, Consumer, CreateSendability, Decider, Decision, Input, MtlsSource,
 };
 use crate::native_admission_source::descriptor::ProducerDescriptor;
 use crate::native_admission_source::public_projections::{
@@ -1515,6 +1517,36 @@ pub async fn decide_character_service_for_node(
 }
 
 impl Decider for CommandDecider<'_, '_, '_> {
+    async fn sendable_create(
+        &mut self,
+        operation_id: &str,
+    ) -> Result<CreateSendability, crate::native_admission_source::SourceError> {
+        self.root
+            .sendable_create_receipt(
+                self.authority,
+                self.proof,
+                &self.source_authority,
+                operation_id,
+            )
+            .await
+            .map_err(|_| crate::native_admission_source::SourceError::Unavailable)
+    }
+
+    async fn stop_retained_create_receipt(
+        &mut self,
+        operation_id: &str,
+    ) -> Result<(), crate::native_admission_source::SourceError> {
+        self.root
+            .stop_retained_create_receipt(self.authority, self.proof, operation_id)
+            .await
+            .map_err(|_| {
+                event(
+                    "event=character_commands state=pending reason=retained_create_stop_dependency",
+                );
+                crate::native_admission_source::SourceError::Unavailable
+            })
+    }
+
     async fn stop_services_receipt(&mut self, operation: &str, receipt: &[u8]) {
         if self
             .root
@@ -1741,6 +1773,20 @@ async fn character_commands_loop(
             make_decider(),
             event,
         );
+    let descriptor_for_retained = descriptor.clone();
+    let retained_create_publisher = async {
+        match RetainedCreatePublisherStore::new(root, authority, proof, &source_authority) {
+            Ok(store) => {
+                crate::native_admission_source::character_commands::run_retained_create_publications(
+                    SystemClock::default(),
+                    MtlsSource::new(descriptor_for_retained),
+                    store,
+                    event,
+                ).await;
+            }
+            Err(_) => event("event=character_commands alarm=retained_create_holder_unavailable"),
+        }
+    };
     let consumer = Consumer::new(
         SystemClock::default(),
         MtlsSource::new(descriptor),
@@ -1770,7 +1816,10 @@ async fn character_commands_loop(
         }
     };
     first(
-        both(both(consumer.run(), publisher), delivery),
+        both(
+            both(consumer.run(), publisher),
+            both(delivery, retained_create_publisher),
+        ),
         stop.cancelled(),
     )
     .await;
