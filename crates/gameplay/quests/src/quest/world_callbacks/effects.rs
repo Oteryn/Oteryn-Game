@@ -49,6 +49,7 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
     /// Opt in to source-script displacement onto a present blocked pad.
+    /// With an explicit STEP failure destination, both branches use present-tile landings.
     #[serde(default, skip_serializing_if = "is_false")]
     pub scripted_teleport: bool,
     /// Current native occupants must be absent before a previously started stage commits.

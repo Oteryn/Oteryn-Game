@@ -672,9 +672,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         } else if let Some(to) = destination {
             let facing = facing.or(callback.effects.facing.map(super::effects::facing));
-            // Crystal actions_mission09.lua:26-30 moves the folio reader with
-            // Creature:teleportTo, which accepts an occupied destination tile.
-            let proof = if callback.effects.random_use.is_some() && callback.teleport == Some(to) {
+            // Crystal actions_mission09.lua:26-30 and movements_firetp.lua:49-98
+            // use Creature:teleportTo, which accepts an occupied destination.
+            let proof = if callback.teleport == Some(to)
+                && (callback.effects.random_use.is_some() || scripted_step_route(callback))
+            {
                 crate::map::floor::prepare_quest_teleport_to_present_tile(
                     runtime,
                     self.movement_cells(),

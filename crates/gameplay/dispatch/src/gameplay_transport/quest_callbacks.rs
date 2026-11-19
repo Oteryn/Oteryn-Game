@@ -1645,17 +1645,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
-            runtime,
-            self.movement_cells(),
-            actor,
-            session,
-            entered,
-            callback.failure_teleport.map_or(origin.position(), local),
-            blocked,
-            &closed,
-            None,
-        ) && let Ok(snapshot) = runtime.commit_source_step(proof)
+        let destination = callback.failure_teleport.map_or(origin.position(), local);
+        let proof = if scripted_step_route(callback) {
+            crate::map::floor::prepare_quest_teleport_to_present_tile(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                destination,
+                None,
+            )
+        } else {
+            crate::map::floor::prepare_scripted_quest_teleport_facing(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                destination,
+                blocked,
+                &closed,
+                None,
+                false,
+            )
+        };
+        if let Ok(proof) = proof
+            && let Ok(snapshot) = runtime.commit_source_step(proof)
         {
             states.stage_special_movement_step(
                 runtime,
@@ -1688,6 +1704,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.states.chat.push_quest_feedback(session, message);
         }
     }
+}
+
+/// Crystal movements_firetp.lua:49-98 scripts both the solved and unsolved landings.
+fn scripted_step_route(callback: &Callback) -> bool {
+    callback.effects.scripted_teleport && callback.failure_teleport.is_some()
 }
 
 fn hex(bytes: &[u8]) -> String {
