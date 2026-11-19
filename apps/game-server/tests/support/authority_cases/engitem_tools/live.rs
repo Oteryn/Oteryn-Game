@@ -103,6 +103,9 @@ pub(super) async fn sample(
     let source: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i17673' AND lifecycle=1").fetch_one(&h.pool).await?;
     let carried = QuestCarriedUse {
         recipe_target: None,
+        location: None,
+        tracking_cycle: None,
+        tracking_probe: None,
         source: source.try_into().map_err(|_| "source UUID")?,
         intent: encode_item_use_intent(&intent).map_err(f::debug)?,
     };

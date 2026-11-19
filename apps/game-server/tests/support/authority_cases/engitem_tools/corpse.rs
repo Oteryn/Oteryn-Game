@@ -131,6 +131,9 @@ pub(super) async fn sample(
             .ok_or("corpse proof")?;
             let carried = QuestCarriedUse {
                 recipe_target: None,
+                location: None,
+                tracking_cycle: None,
+                tracking_probe: None,
                 source,
                 intent: encode_item_use_intent(intent).map_err(f::debug)?,
             };

@@ -257,7 +257,11 @@ async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestRes
     changed.target = UseTarget::ItemByDefinition(
         NonZeroU32::new(definition.get() + 1).ok_or("changed definition")?,
     );
-    let bad = QuestCarriedUse { recipe_target: None,
+    let bad = QuestCarriedUse {
+        recipe_target: None,
+        location: None,
+        tracking_cycle: None,
+        tracking_probe: None,
         source: f::id(92),
         intent: encode_item_use_intent(&changed).map_err(f::debug)?,
     };
@@ -289,7 +293,11 @@ async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestRes
     );
     assert_eq!(h.root_revision().await?, "1");
     assert_eq!(h.count("game_character_quest_receipts").await?, 0);
-    let good = QuestCarriedUse { recipe_target: None,
+    let good = QuestCarriedUse {
+        recipe_target: None,
+        location: None,
+        tracking_cycle: None,
+        tracking_probe: None,
         source: f::id(92),
         intent: encode_item_use_intent(&intent).map_err(f::debug)?,
     };
@@ -348,6 +356,9 @@ async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestRes
         let spare = QuestCarriedUse {
             source: f::id(93),
             recipe_target: None,
+            location: None,
+            tracking_cycle: None,
+            tracking_probe: None,
             intent: good.intent.clone(),
         };
         let refused = h
