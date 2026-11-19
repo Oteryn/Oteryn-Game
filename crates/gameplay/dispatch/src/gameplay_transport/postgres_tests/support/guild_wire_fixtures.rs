@@ -582,10 +582,7 @@ pub(super) async fn capture_activity_return(
     };
     let (ended, result): (_, TestResult<_>) = tokio::time::timeout(
         std::time::Duration::from_secs(30),
-        fixture::join_two(
-            crate::durability::DurabilityRoot::with_holder_owner(serving),
-            driving,
-        ),
+        fixture::join_two(serving, driving),
     )
     .await?;
     match ended {

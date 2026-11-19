@@ -1,4 +1,5 @@
 //! Source-qualified native USE crosses the real activity barrier and starts real actors.
+use super::srx3_native_source_cast_fixtures::{NativeOwnerClock, drain_ready_monster_melee_at};
 #[path = "srx3_soulpit_native/capture.rs"]
 mod capture;
 #[path = "srx3_soulpit_native/early_exit.rs"]
@@ -297,6 +298,7 @@ fn native_soulpit_scenario_with_entry_cue(
             if fault_after_commit {
                 crate::gameplay_transport::native_activity::srx3_faults::stop_after_soulpit_commit_once();
             }
+            h.root.await_ready().await?;
             let result = if fault_after_commit { owner
                 .dispatch_soulpit_items(
                     deps.actor,
@@ -627,6 +629,7 @@ fn native_soulpit_scenario_with_entry_cue(
                 }
             );
             drop(runtime);
+            h.root.await_ready().await?;
             owner
                 .drive_shared_soulpits(owner.owner_now().get(), false)
                 .await
@@ -794,49 +797,55 @@ fn native_soulpit_scenario_with_entry_cue(
                 );
                 owner.clock_origin = instance.clock_origin;
                 if wave == 4 {
+                    use oteryn_gameplay_domain::domain::soulpit::{
+                        TIME_LIMIT_MICROS, WAVE_CHECK_DELAY_MICROS,
+                    };
                     native_capture.before_return = Some(player);
                     let returning_player = player;
                     // The capture starts another live serve after the final reward pass.
                     // Let its initial Instance snapshot start with an idle holder.
                     h.root.await_ready().await?;
+                    let snapshot = checkpoint.encounter.snapshot();
+                    let mut now = owner.owner_now().get();
+                    let mut global_due = now.max(
+                        snapshot.wave_started_at_micros.saturating_add(WAVE_CHECK_DELAY_MICROS)
+                    );
+                    let expires = snapshot.started_at_micros.saturating_add(TIME_LIMIT_MICROS);
+                    let channel_clock = NativeOwnerClock::new(&owner);
+                    let instance_clock = NativeOwnerClock::new(&instance);
+                    channel_clock.set(now);
+                    instance_clock.set(now);
                     completed_return = Some(super::guild_wire_fixtures::capture_activity_return(
                         &owner, &mut player, &mut native_capture.return_frames,
-                        crate::durability::DurabilityRoot::with_background_holder(async {
+                        async {
                             // The real Node owner (soulpit/cadence.rs) honors returned
                             // retry deadlines and keeps global clearance on its one-second
-                            // clock. Its background scope also shares one holder grant
-                            // across discovery and the room's completion passes.
+                            // clock. This standalone fixture has no Node maintenance task.
                             tokio::time::timeout(std::time::Duration::from_secs(10), async {
-                                let mut global_due = owner.owner_now().get();
                                 loop {
                                     // A capture read or the preceding cadence pass can still
                                     // be returning the holder. Re-establish readiness before
                                     // consuming a global clearance tick. An action error
                                     // cancels the capture reader that answers liveness probes.
                                     h.root.await_ready().await.map_err(|error| format!("{error:?}"))?;
-                                    // A durable return can remove the room from the active
-                                    // scan before its native transfer and barrier are installed.
-                                    // Drive the same retained-return recovery as the Node's
-                                    // activity lifecycle, within this capture's deadline.
-                                    let return_retry = owner.drain_native_return_attempts().await.is_err();
-                                    if owner.activity_runtimes.current_connection(returning_player).game_session_id
-                                        != returning_player.game_session_id { break; }
-                                    let now = owner.owner_now().get();
+                                    if now >= expires {
+                                        return Err("actual Source clearance did not finish before encounter expiry".into());
+                                    }
+                                    channel_clock.set(now);
+                                    instance_clock.set(now);
                                     let global = now >= global_due;
                                     if global { global_due = now.saturating_add(1_000_000); }
                                     let deadline = owner.drive_shared_soulpits(now,global).await
                                         .map_err(|_| "actual Source completion return")?;
                                     if owner.activity_runtimes.current_connection(returning_player).game_session_id
                                         != returning_player.game_session_id { break; }
-                                    let due = deadline.map_or(global_due,|at|at.min(global_due));
-                                    let due = if return_retry { due.min(now.saturating_add(50_000)) } else { due };
-                                    tokio::time::sleep(std::time::Duration::from_micros(
-                                        due.saturating_sub(owner.owner_now().get()))).await;
+                                    now = deadline.map_or(global_due, |due| due.min(global_due)).max(now);
+                                    tokio::task::yield_now().await;
                                 }
                                 Ok::<(),String>(())
                             }).await.map_err(|_| "actual Source completion retry deadline exceeded")??;
                             Ok(())
-                        }),
+                        },
                     ).await?);
                     native_capture.returned = Some(player);
                 } else {owner
@@ -967,7 +976,7 @@ async fn fight_source_monster(
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(3))
             .ok_or("advance native combat owner clock")?;
-        owner.drain_monster_melee().await;
+        drain_ready_monster_melee_at(owner, owner.owner_now().get()).await?;
         owner
             .drive_shared_soulpits(owner.owner_now().get(), false)
             .await
@@ -979,7 +988,7 @@ async fn fight_source_monster(
             .clock_origin
             .checked_sub(std::time::Duration::from_micros(1_600_001))
             .ok_or("actual native opponent attack window")?;
-        owner.drain_monster_melee().await;
+        drain_ready_monster_melee_at(owner, owner.owner_now().get()).await?;
         owner
             .drive_shared_soulpits(owner.owner_now().get(), false)
             .await
