@@ -91,7 +91,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// Crystal src/map/map.cpp:234-306 tries the requested tile first and then
-    /// shuffles normal adjacent offsets, skipping teleports in the fallback.
+    /// shuffles normal adjacent offsets. src/items/tile.cpp:626-629 refuses a
+    /// masterless creature on a protection zone or teleport.
     pub(super) fn quest_creature_landing(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -99,6 +100,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         at: MovementLocalPosition,
         seed: &[u8],
     ) -> Result<Option<MovementLocalPosition>, UseDisposition> {
+        // Map::placeCreature keeps every fallback inside the centre's PZ.
+        // None of those tiles can admit the masterless quest creature.
+        if native(at).is_some_and(|position| protection_zone(map, position)) {
+            return Ok(None);
+        }
         let census = runtime
             .positioned_melee_census()
             .map_err(|_| UseDisposition::Rejected)?;
@@ -133,9 +139,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let cells = self.movement_cells();
                 cells.index().lookup(cells.scope(), cell) == Ok(CollisionClass::Walkable)
-                    // Crystal src/map/map.cpp:293-295 excludes teleport tiles
-                    // from the neighbouring positions considered for a spawn.
-                    && (*landing == at || !crate::map::floor::is_teleport(cells, cell))
+                    && !crate::map::floor::is_teleport(cells, cell)
                     && native_position_open(map, *landing)
                     && !census
                         .iter()
@@ -165,8 +169,16 @@ pub(super) fn publish_optional_quest_spawn(
 fn native_position_open(map: &BundleMap, landing: MovementLocalPosition) -> bool {
     native(landing).is_some_and(|pos| {
         !map.facts.house_tile(pos)
+            && !protection_zone(map, pos)
             && !map
                 .facts
                 .quest_callback_blocked(map.overlay.base(), pos, false)
     })
+}
+
+fn protection_zone(map: &BundleMap, position: TilePos) -> bool {
+    map.overlay
+        .base()
+        .tile(position.x, position.y, position.floor)
+        .is_some_and(|tile| tile.protection_zone())
 }

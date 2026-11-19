@@ -359,7 +359,7 @@ fn scenario_case(
     use super::super::dreamers_wall_portal;
     let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR | dreamers_wall_portal::FOREIGN_UID | dreamers_wall_portal::LIVE_CLEAR);
     use super::super::lucifuga_bait_spawn;
-    let lucifuga = matches!(name, lucifuga_bait_spawn::NAME | lucifuga_bait_spawn::NO_SLOT | lucifuga_bait_spawn::PORTALS);
+    let lucifuga = matches!(name, lucifuga_bait_spawn::NAME | lucifuga_bait_spawn::NO_SLOT | lucifuga_bait_spawn::PORTALS | lucifuga_bait_spawn::PROTECTED);
     use super::super::faceless_bane_phase;
     let faceless_bane = matches!(name, faceless_bane_phase::LIMITED_SLOTS | faceless_bane_phase::NAME);
     use super::super::feaster_brain_head;
@@ -773,6 +773,8 @@ fn scenario_case(
         dreamers_stone_exit::world(&callback)?
     } else if kroazur {
         super::world_with_cells(&callback, trigger, &[kroazur_solo_room::EXIT])?
+    } else if name == lucifuga_bait_spawn::PROTECTED {
+        super::world_cells_with_protected_source(&callback, trigger)?
     } else if dreamers_wall {
         dreamers_wall_portal::world(&callback, name)?
     } else if name == "authored-wrath-crystals" {

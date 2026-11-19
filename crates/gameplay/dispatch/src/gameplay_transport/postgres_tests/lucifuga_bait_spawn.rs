@@ -22,6 +22,7 @@ use std::sync::Arc;
 pub(super) const NAME: &str = "lucifuga-bait-spawn";
 pub(super) const NO_SLOT: &str = "lucifuga-bait-no-slot";
 pub(super) const PORTALS: &str = "lucifuga-bait-portals";
+pub(super) const PROTECTED: &str = "lucifuga-bait-protected-source";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const BAIT: &str =
     "oteryn:quest-progress/crystalserver/quest/u12_00/the_dream_courts/unsafe_release/has_bait";
@@ -81,6 +82,15 @@ fn lucifuga_rearms_even_when_the_channel_has_no_free_creature_slot() -> TestResu
     super::kill_reward_e2e::scenario_thread::run(NO_SLOT, || scenario(NO_SLOT, TRIGGER, false))
 }
 
+#[test]
+fn lucifuga_rearms_without_spawning_across_a_protection_zone_boundary() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(PROTECTED, || scenario(PROTECTED, TRIGGER, false))
+}
+
 async fn step(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -110,6 +120,11 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let portals = name == PORTALS;
     let map = owner.bundle_map().ok_or("map")?;
+    if name == PROTECTED {
+        let base = map.overlay.base();
+        assert!(base.tile(TRIGGER.x, TRIGGER.y, TRIGGER.floor).is_some_and(|tile| tile.protection_zone()));
+        assert!(base.tile(TRIGGER.x - 1, TRIGGER.y, TRIGGER.floor).is_some_and(|tile| tile.walkable() && !tile.protection_zone()));
+    }
     let key = placement_key(
         TilePos {
             x: TRIGGER.x,
@@ -163,7 +178,7 @@ pub(super) async fn exercise(
     assert!(due >= before + 60_000_000);
     assert!(due <= owner.owner_now().get() + 600_000_000);
     let spiders = creatures(owner, SPIDER).await?;
-    if portals || name == NO_SLOT {
+    if portals || matches!(name, NO_SLOT | PROTECTED) {
         assert!(spiders.is_empty());
         assert_eq!(map.facts.expire_movement_items(due - 1), 0);
         assert_eq!(map.facts.expire_movement_items(due), 1);
