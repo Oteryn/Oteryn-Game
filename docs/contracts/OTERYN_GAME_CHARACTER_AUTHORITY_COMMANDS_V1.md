@@ -185,10 +185,11 @@ Platform holds no intent with that `(issuer_authority, operation_id)`. `409` mea
 that pair for another `command`; Game stores a `REJECTED` `CHAR_CMD_OPERATION_CONFLICT` receipt
 (§5.1) and raises an operator alarm.
 
-`CreateCharacter` intent:
+`CreateCharacter` intent v2 (Platform PR #1940, merged at
+`6d04b52a16145723eedb0c56640ad052dbd26e94`):
 
 ```json
-{"contract_version":1,"command":"CreateCharacter","variant":"PLATFORM_USER_CREATE","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"0192a000-0000-7000-8000-0000000000a1","source_revision":"17","operation_id":"0192a000-0000-7000-8000-000000000001","account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c6","target_world_id":"01934f10-7c02-7001-805b-3b1122334401","requested_name":"Aldric","issued_at_source":"1790000000","expires_at_source":"1790000300","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}
+{"contract_version":2,"command":"CreateCharacter","variant":"PLATFORM_USER_CREATE","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"0192a000-0000-7000-8000-0000000000a1","source_revision":"17","operation_id":"0192a000-0000-7000-8000-000000000001","account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c6","target_world_id":"01934f10-7c02-7001-805b-3b1122334401","requested_name":"Aldric","requested_sex":"Male","requested_vocation":"Knight","issued_at_source":"1790000000","expires_at_source":"1790000300","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}
 ```
 
 `TransferCharacterOwnership` intent:
@@ -206,15 +207,48 @@ that pair for another `command`; Game stores a `REJECTED` `CHAR_CMD_OPERATION_CO
 | `operation_id` | the idempotency key (§5) |
 | `account_id`, `expected_from_account_id`, `to_account_id` | Platform `AccountId`s; Game copies them and never mints one |
 | `target_world_id` | requested World; Game decides whether it accepts creation there |
+| `requested_sex` | required in create v2; exactly `Female` or `Male` |
+| `requested_vocation` | required in create v2; exactly `Knight`, `Paladin`, `Sorcerer`, `Druid`, or `Monk` |
 | `requested_name` | 2..29 bytes of the CHAR-NAME-1 repertoire (boundary §6.1); Game validates it, Platform's check is advisory |
 | `character_id` | the Character to transfer |
 | `purpose` | closed set, for audit only: `BAZAAR_LISTING_ESCROW`, `BAZAAR_SETTLEMENT`, `BAZAAR_ESCROW_RETURN` |
 | `issued_at_source`, `expires_at_source` | `issued < expires ≤ issued + 300` (the bootstrap intent's technical TTL); `issued` at most 5 s after trusted Game time (§5.3) |
 
-Creation choices other than name and World (sex, outfit, vocation) are not v1 inputs: Character
-sex is not yet a creation input (`OTERYN_GAME_CHARACTER_APPEARANCE_OWNER_DECISION_2026-09-28.md`)
-and the canonical starter state applies (boundary §6). Adding a choice is a new
-`contract_version` (U-CC2).
+Create v1 is retired. Create v2 inserts `requested_sex`, then
+`requested_vocation`, immediately after `requested_name` in the canonical member
+order above. Both are case-sensitive JSON strings with no default, numeric form,
+or case normalization. Missing, extra, duplicate, reordered or invalid choice
+members yield `CHAR_CMD_INTENT_INVALID`; canonical re-encoding must match the
+received bytes exactly. A retired create v1 yields `CHAR_CMD_UNSUPPORTED`.
+Transfer intents, pending/read envelopes and `PublishCharacterCommandReceiptV1`
+remain v1; create receipts do not echo sex or vocation. Outfit is not an input.
+Game persists both creation choices and uses the Game-admitted
+`newhaven-starter-r1` kit and first-admission position. Byte-exact vectors live in
+`docs/contracts/fixtures/character-create-v2/`.
+
+#### Deploy order
+
+Platform sends create v2 and bootstrap v4 before the upgraded Game consumer is
+deployed (Platform PRs #1940 and #1938). Mixed versions fail closed; coordinate
+enablement after the Game rollout. A pending v1 create delivered to the upgraded
+Game gets `CHAR_CMD_UNSUPPORTED`; Platform normally excludes retired v1 rows from
+pending/read. An unacknowledged v3 bootstrap already committed by old Game and
+retried as v4 after the upgrade gets `Conflict`: tag 4 binds vocation and cannot
+match its retained tag-3 binding. Reconcile that original operation and its
+historical receipt; do not reissue it as a new creation. Historical tag-2/tag-3
+receipts remain verifiable, and stored v1 create receipts remain republishable.
+
+Game reconciles retained committed create receipts independently of the pending
+intent feed at command-publisher startup and on subsequent bounded passes.
+An exhausted cursor restarts the scan, covering a late commit from the cutover
+window; already accepted receipts replay idempotently. Each read revalidates the recovery fence
+and current node incarnation, and verifies the receipt's source, operation,
+immutable row fields and canonical v1 encoding. The bounded publisher advances its
+operation cursor only after an accepted v1 receipt acknowledgement; a publication
+failure retries the identical bytes. Retiring a create intent or returning 404
+therefore cannot strand its committed receipt. This path never decides a new
+creation without an intent, and never changes a historical receipt or binding.
+
 
 ### 4.3 Receipt publication
 
@@ -367,8 +401,9 @@ In one transaction, holding the account portfolio lock (§6.3) of `account_id`, 
   exactly one winner (boundary §16 scenario 3);
 - account limit: the account may hold at most 64 listed Characters, the LCFA wire bound
   (`LCA-CHARACTERS`); the product slot quota stays open (U-CC1);
-- allocate a fresh `CharacterId`, apply the canonical starter state, write the root, revision 1
-  and all dependent state;
+- allocate a fresh `CharacterId`, persist the requested sex and immutable birth vocation,
+  seed the build at revision 1, and write the root and all dependent state; the admitted
+  `newhaven-starter-r1` reference selects the existing kit and position on first admission;
 - advance the account's LCFA `projection_revision` and record the outbox row (LCFA §5);
 - store the receipt with the complete binding, the audit event and its outbox state.
 
@@ -632,7 +667,7 @@ The implementation packet registers the new limits in `docs/contracts/RESOURCE_L
 | ID | Question | v1 position |
 |---|---|---|
 | U-CC1 | product Character slot quota | open; only the 64 wire bound applies |
-| U-CC2 | creation choices beyond name and World (sex, outfit, vocation) | not inputs; a new `contract_version` |
+| U-CC2 | creation choices beyond name and World | sex and vocation are required create-v2 inputs (Platform #1940); outfit remains outside this contract |
 | U-CC3 | per-account create rate limit | Platform's to set on the web page |
 | U-CC4 | exact Platform account page route | client configuration; expected `/account/characters/create` until Platform confirms |
 | U-CC5 | production PKI and Character Authority host list | open, as LCFA U-LC6 |

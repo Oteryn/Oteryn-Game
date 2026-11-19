@@ -24,6 +24,7 @@ pub(super) async fn native_death(
     admitted: &mut AdmittedSession,
     fence: CurrentCharacterItemFence,
     creature: &str,
+    atomic_fault: bool,
 ) -> TestResult {
     let native = owner
         .active_generation
@@ -36,9 +37,7 @@ pub(super) async fn native_death(
         .policies()
         .policies()
         .iter()
-        .find(|policy| {
-            policy.definition_key == creature && policy.reward_boss == Some(true)
-        })
+        .find(|policy| policy.definition_key == creature && policy.reward_boss == Some(true))
         .ok_or("compiled native reward-boss fixture")?;
     native
         .reward_table()
@@ -137,6 +136,43 @@ pub(super) async fn native_death(
         );
         batch
     };
+    if atomic_fault {
+        for statement in [
+            "CREATE SEQUENCE overlordcr_chest_fault",
+            "CREATE FUNCTION overlordcr_chest_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NOT EXISTS (SELECT 1 FROM game_character_boss_reward_chests) THEN RAISE EXCEPTION 'chests must precede XP in the same transaction'; END IF; PERFORM nextval('overlordcr_chest_fault'); RAISE EXCEPTION 'fault after chests before XP' USING ERRCODE='23514'; END $$",
+            "CREATE TRIGGER overlordcr_chest_fault BEFORE INSERT ON game_party_kill_xp_receipts FOR EACH ROW EXECUTE FUNCTION overlordcr_chest_fault()",
+        ] {
+            sqlx::query(statement).execute(&h.pool).await?;
+        }
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Deferred
+        );
+        let reached: bool = sqlx::query_scalar("SELECT is_called FROM overlordcr_chest_fault")
+            .fetch_one(&h.pool)
+            .await?;
+        assert!(
+            reached,
+            "fault reached after real production chests and before XP"
+        );
+        let counts: (i64,i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_party_kill_xp_receipts), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_boss_reward_items)").fetch_one(&h.pool).await?;
+        assert_eq!(
+            counts,
+            (0, 0, 0, 0, 0),
+            "death, chests, items and XP roll back together"
+        );
+        let canonical: i64 = sqlx::query_scalar("SELECT count(*) FROM game_boss_death_settlements")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(canonical, 0, "the canonical death receipt rolls back too");
+        for statement in [
+            "DROP TRIGGER overlordcr_chest_fault ON game_party_kill_xp_receipts",
+            "DROP FUNCTION overlordcr_chest_fault()",
+            "DROP SEQUENCE overlordcr_chest_fault",
+        ] {
+            sqlx::query(statement).execute(&h.pool).await?;
+        }
+    }
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
@@ -210,7 +246,11 @@ pub(super) async fn native_death(
         usize::try_from(count.3)?.min(MAX_PAGE_ROWS)
     );
     let first = page.rows.first().ok_or("native personal reward row")?;
-    let take = encode_take_request(&TakeRequest { death, ordinal: first.ordinal }).map_err(debug)?;
+    let take = encode_take_request(&TakeRequest {
+        death,
+        ordinal: first.ordinal,
+    })
+    .map_err(debug)?;
     let (_, bytes) = exchange(owner, admitted, 2, COMMAND_TYPE_BOSS_REWARD_TAKE, &take).await?;
     let collected = decode_collect_reply(&bytes).map_err(debug)?;
     assert_eq!(collected.status, BossRewardStatus::Ok);
@@ -218,8 +258,14 @@ pub(super) async fn native_death(
     let custody: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_boss_reward_items r JOIN game_boss_reward_item_collections c ON c.transaction_id=r.collected_transaction_id AND c.death_id=r.death_id AND c.item_ordinal=r.item_ordinal JOIN game_item_instances i ON i.item_instance_id=c.item_instance_id JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.parent_item_instance_id=c.parent_item_instance_id JOIN game_item_container_slots s ON s.item_instance_id=e.parent_item_instance_id AND s.character_id=r.character_id WHERE r.death_id=encode($1,'hex')::uuid AND r.item_ordinal=$2 AND i.lifecycle=1",
     ).bind(death.as_slice()).bind(i32::from(first.ordinal)).fetch_one(&h.pool).await?;
-    assert_eq!(custody, 1, "the native entitlement reaches live backpack Item custody");
+    assert_eq!(
+        custody, 1,
+        "the native entitlement reaches live backpack Item custody"
+    );
     let (_, replay) = exchange(owner, admitted, 2, COMMAND_TYPE_BOSS_REWARD_TAKE, &take).await?;
-    assert_eq!(bytes, replay, "physical collection command replay preserves its receipt");
+    assert_eq!(
+        bytes, replay,
+        "physical collection command replay preserves its receipt"
+    );
     Ok(())
 }

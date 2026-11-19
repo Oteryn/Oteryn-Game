@@ -192,6 +192,17 @@ impl ChannelRuntimeV1 {
             .map(|_| ())
     }
 
+    /// Preview a phased encounter whose first monsters are spawned by its scheduler.
+    /// The preview always restores the carrier, including all player positions.
+    pub fn preflight_quest_encounter_with_phase<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<(), CarrierError> {
+        self.quest_encounter_with_phase(players, monsters, |_, _, _| Ok(()), || true, false, true)
+            .map(|_| ())
+    }
+
     pub fn commit_quest_encounter_entry_with_roster<P: SourceStepCommitProof>(
         &mut self,
         players: Vec<P>,
@@ -204,6 +215,7 @@ impl ChannelRuntimeV1 {
             |_, actors, _| Ok(actors.to_vec()),
             project,
             true,
+            false,
         )
     }
     pub fn commit_quest_encounter_with_phase<P: SourceStepCommitProof, T>(
@@ -218,6 +230,7 @@ impl ChannelRuntimeV1 {
             monsters,
             |runtime, actors, _| bind(runtime, actors),
             project,
+            true,
             true,
         )
     }
@@ -265,6 +278,7 @@ impl ChannelRuntimeV1 {
             |_, actors, positions| prepare(positions.to_vec(), actors.to_vec()),
             project,
             true,
+            false,
         )
         .map(|(_, prepared)| prepared)
     }
@@ -275,8 +289,15 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
         publish: bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
-        self.quest_encounter_with_phase(players, monsters, |_, _, _| Ok(()), project, publish)
-            .map(|(positions, ())| positions)
+        self.quest_encounter_with_phase(
+            players,
+            monsters,
+            |_, _, _| Ok(()),
+            project,
+            publish,
+            false,
+        )
+        .map(|(positions, ())| positions)
     }
     fn quest_encounter_with_phase<P: SourceStepCommitProof, T>(
         &mut self,
@@ -289,8 +310,13 @@ impl ChannelRuntimeV1 {
         ) -> Result<T, CarrierError>,
         project: impl FnOnce() -> bool,
         publish: bool,
+        deferred_spawns: bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
-        if players.is_empty() || players.len() > 16 || monsters.is_empty() || monsters.len() > 16 {
+        if players.is_empty()
+            || players.len() > 16
+            || (!deferred_spawns && monsters.is_empty())
+            || monsters.len() > 16
+        {
             return Err(CarrierError::PlanConflict);
         }
         for proof in &players {
@@ -374,6 +400,7 @@ impl ChannelRuntimeV1 {
 
     /// Publish a bounded spawn and its already observed world readset together.
     /// A stale or refused map projection restores every staged actor and policy.
+    /// Starting health may be reduced; maximum health remains the native policy's.
     pub fn commit_quest_creature_spawn_with_projection(
         &mut self,
         monsters: &[(&str, i64, MovementLocalPosition)],
@@ -389,8 +416,20 @@ impl ChannelRuntimeV1 {
         let before = self.carrier.clone();
         let result = (|| {
             for (key, health, at) in monsters {
-                let actor = self.admit_encounter_actor(key, *health, *at)?;
+                let maximum = self.companion_policy(key)?.maximum_health;
+                if *health <= 0 || *health > maximum {
+                    return Err(CarrierError::InvalidCreatureHealth);
+                }
+                let actor = self.admit_encounter_actor(key, maximum, *at)?;
                 self.install_creature_policy(actor, key)?;
+                let index = self.encounter_actor_index(actor)?;
+                let Slot::CreatureOccupied {
+                    health: current, ..
+                } = &mut self.carrier.slots[index]
+                else {
+                    return Err(CarrierError::NotCreature);
+                };
+                *current = *health;
                 actors.push(actor);
             }
             if !project() {
