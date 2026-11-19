@@ -25,7 +25,7 @@ fn familiar_first_entry_removes_expired_premium_vocation_look_postgres() -> Test
 }
 
 fn scenario(name: &'static str, premium_current: bool) -> TestResult {
-    kill_reward_e2e::scenario_thread::run_async(async move |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, name, false, false).await?;
         let result: TestResult = async {
             let request = prepare_current_session(&h).await?;
