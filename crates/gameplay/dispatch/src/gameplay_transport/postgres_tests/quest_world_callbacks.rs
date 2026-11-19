@@ -334,6 +334,62 @@ fn world_with_extra(
     )
 }
 
+pub(super) fn surround_with_portals(
+    map: &crate::map::boot::BundleMap,
+    trigger: Position,
+    due: u64,
+) -> TestResult {
+    use crate::map::{
+        facts::QuestCallbackProjection,
+        overlay::TilePos,
+        view::{MapFacts, placement_key},
+    };
+
+    let destination = TilePos {
+        x: trigger.x + 4,
+        y: trigger.y,
+        floor: trigger.floor,
+    };
+    for dx in -1..=1 {
+        for dy in -1..=1 {
+            if (dx, dy) == (0, 0) {
+                continue;
+            }
+            let position = TilePos {
+                x: trigger.x + dx,
+                y: trigger.y + dy,
+                floor: trigger.floor,
+            };
+            let tile = map
+                .overlay
+                .base()
+                .tile(position.x, position.y, position.floor)
+                .ok_or("portal fixture tile")?;
+            let id = *tile.ids().first().ok_or("portal fixture ground")?;
+            let entry = map
+                .facts
+                .base_entry(position, 0, id)
+                .ok_or("ground facts")?;
+            let key = placement_key(position, 0).ok_or("portal fixture placement")?;
+            let portal = QuestCallbackProjection::TimedEntrance {
+                due,
+                restore: entry,
+                position,
+                destination,
+            };
+            assert!(
+                map.facts
+                    .apply_quest_callback(key, 0, entry, &[], &[], false, Some(&portal))
+            );
+            assert_eq!(
+                map.facts.quest_portal_destination(position, due - 1),
+                Some(destination)
+            );
+        }
+    }
+    Ok(())
+}
+
 pub(super) fn world_with_cells(
     callback: &Callback,
     trigger: Position,

@@ -1,19 +1,14 @@
 //! Crystal 201189f data-global/scripts/quests/the_dream_courts/movements_spider_summon.lua:16-31.
 use super::TestResult;
 use super::fixture::debug;
-use super::quest_world_callbacks::{scenario, wire};
+use super::quest_world_callbacks::{scenario, surround_with_portals, wire};
 use crate::durability::{
     character_progression::CurrentCharacterGameplayFence,
     quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest},
 };
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::{AdmittedSession, ComposedFreshAdmission};
-use crate::map::{
-    boot::BundleMap,
-    facts::QuestCallbackProjection,
-    overlay::TilePos,
-    view::{MapFacts, placement_key},
-};
+use crate::map::{overlay::TilePos, view::placement_key};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     world_callbacks::{self, Callback, Position},
@@ -74,52 +69,6 @@ fn lucifuga_skips_adjacent_portals_and_rearms_when_no_spawn_tile_is_available() 
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(PORTALS, || scenario(PORTALS, TRIGGER, false))
-}
-
-fn surround_with_portals(map: &BundleMap, due: u64) -> TestResult {
-    let destination = TilePos {
-        x: TRIGGER.x + 4,
-        y: TRIGGER.y,
-        floor: TRIGGER.floor,
-    };
-    for dx in -1..=1 {
-        for dy in -1..=1 {
-            if (dx, dy) == (0, 0) {
-                continue;
-            }
-            let position = TilePos {
-                x: TRIGGER.x + dx,
-                y: TRIGGER.y + dy,
-                floor: TRIGGER.floor,
-            };
-            let tile = map
-                .overlay
-                .base()
-                .tile(position.x, position.y, position.floor)
-                .ok_or("portal fixture tile")?;
-            let id = *tile.ids().first().ok_or("portal fixture ground")?;
-            let entry = map
-                .facts
-                .base_entry(position, 0, id)
-                .ok_or("ground facts")?;
-            let key = placement_key(position, 0).ok_or("portal fixture placement")?;
-            let portal = QuestCallbackProjection::TimedEntrance {
-                due,
-                restore: entry,
-                position,
-                destination,
-            };
-            assert!(
-                map.facts
-                    .apply_quest_callback(key, 0, entry, &[], &[], false, Some(&portal))
-            );
-            assert_eq!(
-                map.facts.quest_portal_destination(position, due - 1),
-                Some(destination)
-            );
-        }
-    }
-    Ok(())
 }
 
 async fn step(
@@ -192,7 +141,7 @@ pub(super) async fn exercise(
 
     let before = owner.owner_now().get();
     if portals {
-        surround_with_portals(map, before + 900_000_000)?;
+        surround_with_portals(map, TRIGGER, before + 900_000_000)?;
     }
     step(owner, admitted, 3, StepDirection::East).await?;
     assert_eq!(map.facts.action_at(key), None);

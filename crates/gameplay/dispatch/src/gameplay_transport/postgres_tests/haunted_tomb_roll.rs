@@ -1,6 +1,6 @@
 //! Crystal 201189f the_dream_courts/actions_sacrophagus_use.lua:16-62 and items.xml:55554-55559.
 use super::fixture::{Harness, debug};
-use super::quest_world_callbacks::{scenario, wire, world_cells};
+use super::quest_world_callbacks::{scenario, surround_with_portals, wire, world_cells};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::{
     character_progression::CurrentCharacterGameplayFence,
@@ -16,10 +16,15 @@ use oteryn_protocol_oteryn::world_object::{
     COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, decode_use_result,
     encode_use_intent,
 };
+use oteryn_protocol_oteryn::world_spatial::{
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+    encode_step_intent,
+};
 use std::sync::Arc;
 
 pub(super) const PRIZE: &str = "haunted-tomb-prize";
 pub(super) const MUMMY_CASE: &str = "haunted-tomb-mummy";
+pub(super) const PORTALS: &str = "haunted-tomb-portals";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const STARTED: &str =
     "oteryn:quest-progress/crystalserver/quest/u12_00/the_dream_courts/haunted_house/questline";
@@ -108,14 +113,25 @@ fn haunted_tomb_failed_roll_spawns_a_mummy_without_minting_the_reward() -> TestR
     })
 }
 
+#[test]
+fn haunted_tomb_failed_roll_rearms_when_only_adjacent_portals_are_free() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(PORTALS, || scenario(PORTALS, SARCOPHAGUS, false))
+}
+
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
     fence: CurrentCharacterGameplayFence,
     callback: &Callback,
-    won: bool,
+    case: &str,
 ) -> TestResult {
+    let won = case == PRIZE;
+    let portals = case == PORTALS;
     let map = owner.bundle_map().ok_or("map")?;
     let source = placement_key(
         TilePos {
@@ -166,15 +182,42 @@ pub(super) async fn exercise(
         .await;
 
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    let revision = owner
+    if portals {
+        let reply = wire(
+            owner,
+            admitted,
+            2,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            encode_step_intent(StepDirection::East),
+        )
+        .await?;
+        assert_eq!(
+            decode_step_result(&reply).map_err(debug)?,
+            StepDisposition::Moved,
+        );
+        surround_with_portals(map, SARCOPHAGUS, owner.owner_now().get() + 900_000_000)?;
+    }
+    let actor_position = owner
         .runtime
         .lock()
         .await
         .read_actor_position(actor)
-        .map_err(debug)?
-        .revision();
+        .map_err(debug)?;
+    if portals {
+        let at = actor_position.position();
+        assert_eq!(
+            (at.x, at.y, at.floor),
+            (
+                i32::from(SARCOPHAGUS.x),
+                i32::from(SARCOPHAGUS.y),
+                -i16::from(SARCOPHAGUS.floor)
+            ),
+        );
+    }
+    let revision = actor_position.revision();
     let roll = callback.effects.roll_reward.as_ref().ok_or("roll")?;
-    let command = (2..=64)
+    let first_command = if portals { 3 } else { 2 };
+    let command = (first_command..=64)
         .find(|ordinal| {
             roll.succeeds(
                 KEY,
@@ -185,7 +228,7 @@ pub(super) async fn exercise(
             ) == won
         })
         .ok_or("fixture roll occurrence")?;
-    for ordinal in 2..command {
+    for ordinal in first_command..command {
         let reply = wire(
             owner,
             admitted,
@@ -216,7 +259,7 @@ pub(super) async fn exercise(
         super::engworldchg_journals::live_creatures(owner, MUMMY)
             .await?
             .len(),
-        usize::from(!won)
+        usize::from(!won && !portals)
     );
     let due = map
         .facts

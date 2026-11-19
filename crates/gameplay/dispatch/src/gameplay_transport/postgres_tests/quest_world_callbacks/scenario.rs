@@ -370,7 +370,10 @@ fn scenario_case(
     use super::super::haunted_cellar_ectoplasm;
     let ectoplasm = matches!(name, haunted_cellar_ectoplasm::FILLED | haunted_cellar_ectoplasm::SPENT);
     use super::super::haunted_tomb_roll;
-    let haunted_tomb = matches!(name, haunted_tomb_roll::PRIZE | haunted_tomb_roll::MUMMY_CASE);
+    let haunted_tomb = matches!(
+        name,
+        haunted_tomb_roll::PRIZE | haunted_tomb_roll::MUMMY_CASE | haunted_tomb_roll::PORTALS
+    );
     use super::super::kroazur_solo_room;
     let kroazur = name == kroazur_solo_room::NAME;
     use super::super::{dreamers_board_exit, dreamers_board_portal};
@@ -3086,7 +3089,7 @@ fn scenario_case(
         } else if feaster_solo {
             Box::pin(feaster_solo_rooms::exercise(&mut owner, &mut admitted, &h, fence, name)).await?;
         } else if haunted_tomb {
-            Box::pin(haunted_tomb_roll::exercise(&owner, &mut admitted, &h, fence, &callback, name == haunted_tomb_roll::PRIZE)).await?;
+            Box::pin(haunted_tomb_roll::exercise(&owner, &mut admitted, &h, fence, &callback, name)).await?;
         } else if ectoplasm {
             Box::pin(haunted_cellar_ectoplasm::exercise(&owner, &mut admitted, &h, fence, &callback, name == haunted_cellar_ectoplasm::FILLED)).await?;
         } else if haunted_cellar {
