@@ -28,10 +28,6 @@ const VIAL: &str = "oteryn:item.tibia.i2874";
 
 pub(super) fn goshnar_blood_use_with_checks_world_policy_then_moves_two_staged_players_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, || {
         super::quest_world_callbacks_fixtures::scenario(NAME, TARGET, false)
     })
@@ -39,10 +35,6 @@ pub(super) fn goshnar_blood_use_with_checks_world_policy_then_moves_two_staged_p
 
 pub(super) fn goshnar_blood_use_respects_the_open_pvp_stance_of_a_landing_occupant_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(OPEN_NAME, || {
         super::quest_world_callbacks_fixtures::scenario(OPEN_NAME, TARGET, false)
     })
@@ -50,10 +42,6 @@ pub(super) fn goshnar_blood_use_respects_the_open_pvp_stance_of_a_landing_occupa
 
 pub(super) fn goshnar_blood_use_accepts_a_native_gravestone_with_an_inscription_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(NATIVE_NAME, || {
         super::quest_world_callbacks_fixtures::scenario(NATIVE_NAME, TARGET, false)
     })

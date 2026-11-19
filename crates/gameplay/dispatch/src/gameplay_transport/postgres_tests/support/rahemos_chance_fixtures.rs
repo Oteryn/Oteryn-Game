@@ -26,10 +26,6 @@ const FAILURE: &str = "You guessed wrong! Take this! Carrot changed now the Hat!
 
 pub(super) fn rahemos_hat_roll_controls_damage_carrot_and_passage_to_the_oasis_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, || {
         super::quest_world_callbacks_fixtures::scenario(NAME, TARGET, false)
     })

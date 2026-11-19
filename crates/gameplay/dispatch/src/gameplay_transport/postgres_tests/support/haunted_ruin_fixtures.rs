@@ -29,10 +29,6 @@ const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-glob
 
 pub(super) fn haunted_ruin_holy_water_sets_mission_spawns_ghost_and_opens_timed_door_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, || {
         super::quest_world_callbacks_fixtures::scenario(NAME, TARGET, false)
     })
@@ -40,10 +36,6 @@ pub(super) fn haunted_ruin_holy_water_sets_mission_spawns_ghost_and_opens_timed_
 
 pub(super) fn haunted_ruin_holy_water_reaches_the_native_ground_and_resets_the_door_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(NATIVE_NAME, || {
         super::quest_world_callbacks_fixtures::scenario(NATIVE_NAME, TARGET, false)
     })

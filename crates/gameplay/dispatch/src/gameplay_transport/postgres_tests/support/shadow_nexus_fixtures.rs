@@ -21,10 +21,6 @@ const CHARGE: &str = "oteryn:quest-charge/inquisition/shadow-nexus";
 
 pub(super) fn shadow_nexus_native_use_with_decays_and_spends_only_the_shared_charge_count_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, || {
         super::quest_world_callbacks_fixtures::scenario(NAME, TARGET, false)
     })

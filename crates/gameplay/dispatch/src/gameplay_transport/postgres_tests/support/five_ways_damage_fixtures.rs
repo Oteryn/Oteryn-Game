@@ -10,10 +10,6 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 pub(super) fn five_ways_step_in_uses_base_vocation_and_final_field_element_protection_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| quest_step_scenario(QuestStepCase::FiveWays).map_err(|error| error.to_string()))?
@@ -24,10 +20,6 @@ pub(super) fn five_ways_step_in_uses_base_vocation_and_final_field_element_prote
 
 pub(super) fn five_ways_final_field_spends_one_ordinary_equipped_protection_charge_per_hit_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("five ways equipped protection", || {
         quest_step_scenario(QuestStepCase::FiveWaysCharged)
     })

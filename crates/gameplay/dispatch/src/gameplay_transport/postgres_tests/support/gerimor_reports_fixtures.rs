@@ -25,10 +25,6 @@ const REPORTS: [(&str, &str, i64, i64); 7] = [
 
 pub(super) fn gerimor_reports_preserve_prior_assignment_pin_and_settle_finale_once_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::qengine_rewards_fixtures::scenario(NAME)
 }
 

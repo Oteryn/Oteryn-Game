@@ -23,10 +23,6 @@ const CANDLE: &str = "oteryn:item.tibia.i3083";
 
 pub(super) fn vampire_hunt_uses_all_three_altar_items_for_weakened_count_only_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("vampire hunt", || {
         for suffix in ["missing", "all"] {
             super::quest_world_callbacks_fixtures::scenario(
@@ -41,10 +37,6 @@ pub(super) fn vampire_hunt_uses_all_three_altar_items_for_weakened_count_only_sc
 
 pub(super) fn vampire_hunt_routes_both_native_ground_targets_to_their_summon_branches_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("vampire hunt native ground", || {
         for (suffix, target) in [
             ("native-north-missing", NORTH),

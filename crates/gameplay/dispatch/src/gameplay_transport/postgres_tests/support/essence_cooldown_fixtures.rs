@@ -9,10 +9,6 @@ const BOSS: &str = "oteryn:boss.essence_of_malice";
 
 pub(super) fn essence_staging_portal_returns_character_until_boss_cooldown_expires_scenario()
 -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| {
