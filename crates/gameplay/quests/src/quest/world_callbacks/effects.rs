@@ -579,13 +579,17 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.facing.is_some()
             || callback.remote_teleport.is_some()
             || callback.reversible
+            || callback.requires_world_admission
+            || effects.magic.as_ref().is_some_and(|magic| {
+                !(1..=255).contains(&magic.effect) || !(-15..=0).contains(&magic.position.floor)
+            })
             || *effects
-                != CallbackEffects {
+                != CallbackEffectSet::from_shared(CallbackEffects {
                     teleport_via: Some(via),
                     teleport_effect: effects.teleport_effect,
                     magic: effects.magic.clone(),
                     ..Default::default()
-                }
+                })
     }) {
         return false;
     }
