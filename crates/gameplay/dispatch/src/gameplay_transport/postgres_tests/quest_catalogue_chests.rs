@@ -215,8 +215,7 @@ fn quest_catalogue_chests_mixed_binding_requires_all_crystal_sources() -> TestRe
     Ok(())
 }
 
-#[test]
-fn quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal() -> TestResult {
+fn a_m_catalogue_cases() -> TestResult<Vec<CatalogueChest>> {
     // Frozen run-8 claims remain exercised after qualification promotes their
     // coverage status. New claims join a later batch with their own PG evidence.
     let claims: BTreeSet<_> = [
@@ -392,8 +391,88 @@ fn quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refus
         claims,
         "every A..M run-8 claim needs every source placement exercised"
     );
-    execute(selected)
+    Ok(selected)
 }
+
+#[test]
+fn quest_catalogue_chests_a_m_slices_cover_frozen_source_placements() -> TestResult {
+    let cases = a_m_catalogue_cases()?;
+    let mut next_placement = 0;
+    let mut seen_claims = BTreeSet::new();
+    for index in 0..CATALOGUE_SLICE_COUNT {
+        let range = catalogue_slice(index, &cases);
+        assert!(!range.is_empty(), "A..M slice {index} is empty");
+        assert_eq!(
+            range.start, next_placement,
+            "A..M slice {index} is not contiguous"
+        );
+        next_placement = range.end;
+        let slice_claims: BTreeSet<_> = cases[range]
+            .iter()
+            .map(|case| case.claim.as_str())
+            .collect();
+        for claim in slice_claims {
+            assert!(seen_claims.insert(claim), "A..M claim {claim} spans slices");
+        }
+    }
+    assert_eq!(
+        next_placement,
+        cases.len(),
+        "A..M slices must cover every placement"
+    );
+    Ok(())
+}
+
+fn run_a_m_catalogue_slice(index: usize) -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    let mut cases = a_m_catalogue_cases()?;
+    let range = catalogue_slice(index, &cases);
+    execute(cases.drain(range).collect())
+}
+
+macro_rules! native_case {
+    ($test:ident, $slice:literal) => {
+        #[test]
+        fn $test() -> TestResult {
+            run_a_m_catalogue_slice($slice)
+        }
+    };
+}
+
+native_case!(
+    quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_1_of_8,
+    0
+);
+native_case!(
+    quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_2_of_8,
+    1
+);
+native_case!(
+    quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_3_of_8,
+    2
+);
+native_case!(
+    quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_4_of_8,
+    3
+);
+native_case!(
+    quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_5_of_8,
+    4
+);
+native_case!(
+    quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_6_of_8,
+    5
+);
+native_case!(
+    quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_7_of_8,
+    6
+);
+native_case!(
+    quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal_slice_8_of_8,
+    7
+);
 
 #[test]
 fn standalone_claims_bear_berserk_berserker_black_knight_dead_archer() -> TestResult {
