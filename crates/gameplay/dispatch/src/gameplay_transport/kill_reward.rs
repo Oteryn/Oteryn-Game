@@ -1962,23 +1962,8 @@ pub fn record_creature_kill(
             observed_at.map_or(now_ms.saturating_mul(1_000), |at| at.get()),
         )
     }) {
-        let top = runtime.borrow_combat_death().top_damage_contributor(linked);
-        if let Ok(top) = top
-            && let Some(winner) = top.present()
-        {
-            record_creature_kill(
-                runtime,
-                sink,
-                linked,
-                CapturedRewardPrincipal {
-                    character: winner.character,
-                    lease_generation: winner.lease_generation,
-                    session: winner.session,
-                    actor: winner.actor,
-                },
-                now_ms,
-                observed_at,
-            );
+        if let Some(contributor) = linked_death_contributor(runtime, linked) {
+            record_creature_kill(runtime, sink, linked, contributor, now_ms, observed_at);
         } else {
             // The script's hit carries no Character attribution. With no
             // contributor, publish its physical death without assigning credit.
@@ -2637,6 +2622,50 @@ pub fn record_creature_kill(
         no_progression_logged: false,
     };
     accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
+}
+
+fn linked_death_contributor(
+    runtime: &mut ChannelRuntimeV1,
+    target: ExactActorRef,
+) -> Option<CapturedRewardPrincipal> {
+    let owner = runtime.borrow_combat_death();
+    if let Some(winner) = owner.top_damage_contributor(target).ok()?.present() {
+        return Some(CapturedRewardPrincipal {
+            character: winner.character,
+            lease_generation: winner.lease_generation,
+            session: winner.session,
+            actor: winner.actor,
+        });
+    }
+    // Crystal Feaster actions_bosses_killed.lua:13-17 and functions.lua:1075-1082
+    // visit every still-present damaging player. A departed top contributor
+    // does not erase the remaining damage map when Brother Worm supplies the
+    // killing blow. Ordinary reward selection still sees the departed top.
+    let shares = owner.reward_damage_shares(target).ok()?;
+    let census = runtime.positioned_melee_census().ok()?;
+    shares
+        .into_iter()
+        .filter(|share| share.total > 0)
+        .find_map(|share| {
+            let session = share.session?;
+            let lease_generation = share.lease_generation?;
+            let actor = census.iter().find_map(|&(actor, _, bound)| {
+                (bound == Some(session)
+                    && runtime
+                        .bound_attacker_lease(actor, session)
+                        .is_ok_and(|lease| {
+                            lease.character_id() == share.character
+                                && lease.generation() == lease_generation
+                        }))
+                .then_some(actor)
+            })?;
+            Some(CapturedRewardPrincipal {
+                character: share.character,
+                lease_generation,
+                session,
+                actor,
+            })
+        })
 }
 
 /// Crystal 201189f player.cpp:6584-6607,12932-12936: only the non-summon stack-40
