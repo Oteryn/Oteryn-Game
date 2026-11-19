@@ -61,7 +61,7 @@ fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestRe
             let callback = callback(name)?;
             assert_eq!(callback.selector.position, Some(position(source)));
             assert_eq!(callback.teleport, Some(position(destination)));
-            exercise(callback, appearance, ordinal, None)?;
+            exercise(callback, appearance, ordinal, None, false)?;
         }
         Ok(())
     })
@@ -97,12 +97,18 @@ fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> Test
             assert!(callback.is_read_only());
             assert_eq!(callback.storage[0].minimum, minimum);
             for stage in [None, Some(minimum - 1), Some(minimum), Some(13)] {
-                exercise(callback.clone(), appearance, ordinal, stage)?;
+                exercise(callback.clone(), appearance, ordinal, stage, false)?;
             }
         }
         // The production map contains the pre-startup wall too; position-based
         // server dispatch must not depend on the donor's visual transform.
-        exercise(callback("order-of-the-stag-crypt-exit")?, 1507, 1, None)?;
+        exercise(
+            callback("order-of-the-stag-crypt-exit")?,
+            1507,
+            1,
+            None,
+            false,
+        )?;
         Ok(())
     })
 }

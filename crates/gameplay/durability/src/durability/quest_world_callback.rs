@@ -32,6 +32,7 @@ use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
     spell_owner_commit::SpellLanePermit,
 };
+use oteryn_gameplay_quests::quest::npc_rules::legacy_defaults;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -138,6 +139,7 @@ impl super::DurabilityRoot {
                      FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
                 ).bind(fence.character_id.as_bytes().as_slice()).bind(&callback.quest)
                     .fetch_optional(&mut *tx).await?;
+                let mut historical_defaults = None;
                 if let Some(pin) = pin {
                     let pin = super::quest_state::QuestStateRecord {
                         pinned_content_revision: pin.try_get("pinned_content_revision")?,
@@ -148,6 +150,9 @@ impl super::DurabilityRoot {
                     if !read_only_pin_allows(&pin, &catalogue, &callback.quest)? {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
+                    historical_defaults = legacy_defaults(
+                        &catalogue, &callback.quest, &pin.definition_hash,
+                    );
                 }
                 for storage in &callback.storage {
                     let Some(track) = catalogue.track(&storage.track).filter(|track| track.quest == callback.quest) else {
@@ -158,7 +163,9 @@ impl super::DurabilityRoot {
                          WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
                     ).bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track)
                         .bind(&callback.quest).fetch_optional(&mut *tx).await?;
-                    if !(storage.minimum..=storage.maximum).contains(&value.unwrap_or(track.initial)) {
+                    let value = value.or_else(|| historical_defaults?.get(&storage.track).copied())
+                        .unwrap_or(track.initial);
+                    if !(storage.minimum..=storage.maximum).contains(&value) {
                         return Ok(Ok(false));
                     }
                 }
@@ -174,12 +181,24 @@ fn read_only_pin_allows(
     catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     quest: &str,
 ) -> Result<bool, DurabilityError> {
+    // The fully loaded definition at main 4740f9a8. Qpkgw5 adds Zalamon
+    // transitions while keeping the Phantom Army access track and its predicate.
+    // This predecessor grants passage reads independently of quest write compatibility.
+    const CHILDREN_MAIN_ERA_HASH: [u8; 32] = [
+        0xe9, 0x1b, 0x65, 0xcb, 0x6e, 0x0a, 0x69, 0xe9, 0xb4, 0x47, 0x3b, 0xb8, 0x3d, 0xb9, 0x70,
+        0xa1, 0x15, 0xbd, 0x63, 0x1a, 0xcb, 0xfa, 0xe3, 0x4b, 0x7a, 0x7e, 0x5f, 0x8d, 0x74, 0x0e,
+        0x52, 0xc2,
+    ];
     let current_hash = catalogue
         .definition_hash(quest)
         .ok_or(DurabilityError::InvalidStoredState)?;
-    // QUEST-STATE-0 §6: unchanged definitions retain their historical content
-    // pin; completed quests keep access even when the definition changes.
-    Ok(stored.definition_hash == current_hash || stored.completed)
+    // Read the existing progress under its saved pin. Only exact registered
+    // predecessors qualify alongside the active definition and completed saves.
+    Ok(stored.definition_hash == current_hash
+        || stored.completed
+        || legacy_defaults(catalogue, quest, &stored.definition_hash).is_some()
+        || (quest == "oteryn:quest.children_of_the_revolution_quest"
+            && stored.definition_hash == CHILDREN_MAIN_ERA_HASH))
 }
 
 struct Input {
@@ -1302,6 +1321,86 @@ pub(super) async fn completion_claims_are_current(
 mod read_only_pin_tests {
     use super::*;
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
+
+    #[test]
+    fn phantom_army_passage_accepts_only_the_exact_main_era_predecessor() -> Result<(), String> {
+        let quest = "oteryn:quest.children_of_the_revolution_quest";
+        let catalogue = QuestStateCatalogue::new(
+            "content-current",
+            vec![QuestTrack {
+                key: "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access"
+                    .into(),
+                quest: quest.into(),
+                initial: 0,
+                min: 0,
+                max: 1,
+            }],
+            vec![],
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let mut stored = super::super::quest_state::QuestStateRecord {
+            pinned_content_revision: "content-main-era".into(),
+            // The loaded definition at 4740f9a8, before the Zalamon changes.
+            definition_hash: [
+                0xe9, 0x1b, 0x65, 0xcb, 0x6e, 0x0a, 0x69, 0xe9, 0xb4, 0x47, 0x3b, 0xb8, 0x3d, 0xb9,
+                0x70, 0xa1, 0x15, 0xbd, 0x63, 0x1a, 0xcb, 0xfa, 0xe3, 0x4b, 0x7a, 0x7e, 0x5f, 0x8d,
+                0x74, 0x0e, 0x52, 0xc2,
+            ],
+            completed: false,
+        };
+        assert_ne!(
+            catalogue.definition_hash(quest),
+            Some(stored.definition_hash)
+        );
+        assert!(
+            read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?,
+            "the deployed Phantom Army pin must retain passage access"
+        );
+        stored.definition_hash[0] ^= 1;
+        assert!(
+            !read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_callback_accepts_registered_main_era_save() -> Result<(), String> {
+        let quest = "oteryn:quest.grave_danger_quest";
+        let loaded =
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-current")
+                .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        // Grave Danger's deployed definition at 871c1dec7.
+        let stored = super::super::quest_state::QuestStateRecord {
+            pinned_content_revision: "content-previous".into(),
+            definition_hash: [
+                0x50, 0x54, 0x57, 0x5c, 0xd5, 0x5c, 0x76, 0x48, 0x05, 0x22, 0xbd, 0xc3, 0x1b, 0xab,
+                0x71, 0x18, 0x73, 0xfc, 0x7d, 0xd8, 0x59, 0xb3, 0x83, 0x2d, 0x4b, 0xca, 0xcb, 0xee,
+                0xed, 0xe0, 0x25, 0x9e,
+            ],
+            completed: false,
+        };
+        assert_ne!(
+            catalogue.definition_hash(quest),
+            Some(stored.definition_hash)
+        );
+        assert!(
+            oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                catalogue,
+                quest,
+                &stored.definition_hash
+            )
+            .is_some()
+        );
+        assert!(
+            read_only_pin_allows(&stored, catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?,
+            "a registered predecessor must retain passage access"
+        );
+        Ok(())
+    }
 
     #[test]
     fn read_only_callback_keeps_access_on_an_unchanged_historical_content_pin() -> Result<(), String>
