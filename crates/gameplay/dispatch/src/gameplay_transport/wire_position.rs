@@ -1,11 +1,16 @@
 //! Project one proven physical position into the existing wire position fields.
-//! Floors use Global z in every room, with ground at 7.
-use crate::content::{NativeEntryMovementCells, QualifiedNativeEntryRoom};
+//! Wire floors use Global z, with ground at 7. Older source and entry indices use signed floors.
+use crate::content::{
+    NativeEntryMovementCells, QualifiedNativeEntryRoom,
+    native_cell_lookup::NativeMovementCollisionIndex,
+};
 use crate::foundation::{ChannelContentPin, MovementLocalPosition};
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 
 #[derive(Clone, Copy)]
-pub(super) struct WirePositionFrame(());
+pub(super) struct WirePositionFrame {
+    signed_floor: bool,
+}
 impl WirePositionFrame {
     pub(super) fn from_pin(
         room: Option<&QualifiedNativeEntryRoom>,
@@ -13,11 +18,9 @@ impl WirePositionFrame {
         pin: &ChannelContentPin,
         map: [u8; 32],
     ) -> Option<Self> {
-        let native_source_bundle = room.is_some_and(|r| r.pinned_activity_source_room().is_some())
-            && matches!(
-                cells.index(),
-                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
-            );
+        let bundle = matches!(cells.index(), NativeMovementCollisionIndex::Bundle(_));
+        let native_source_bundle =
+            bundle && room.is_some_and(|r| r.pinned_activity_source_room().is_some());
         if native_source_bundle {
             let room = room?;
             if cells.scope() != room.movement_cells().scope()
@@ -31,16 +34,27 @@ impl WirePositionFrame {
                 return None;
             }
         }
-        Some(Self(()))
+        // The bundle collision owner uses Global z. The qualified legacy frame
+        // or the runtime's pinned start identifies the signed source convention.
+        let signed_floor = match cells.index() {
+            NativeMovementCollisionIndex::Bundle(_) => false,
+            NativeMovementCollisionIndex::Source(index) => index.entry_start().floor < 0,
+            NativeMovementCollisionIndex::Entry(_) => pin.entry_start().floor < 0,
+        };
+        Some(Self { signed_floor })
     }
     pub(super) fn project(self, physical: MovementLocalPosition) -> Option<ActorPosition> {
-        if !(0..=15).contains(&physical.floor) {
-            return None;
-        }
+        let floor = if self.signed_floor {
+            crate::movement::interest::tibia_floor(physical.floor)?
+        } else {
+            (0..=15)
+                .contains(&physical.floor)
+                .then_some(physical.floor)?
+        };
         Some(ActorPosition {
             x: physical.x,
             y: physical.y,
-            floor: physical.floor,
+            floor,
         })
     }
     pub(super) fn project_entity(
@@ -61,7 +75,11 @@ impl WirePositionFrame {
         Some(MovementLocalPosition {
             x: wire.x,
             y: wire.y,
-            floor: wire.floor,
+            floor: if self.signed_floor {
+                -wire.floor
+            } else {
+                wire.floor
+            },
         })
     }
 }

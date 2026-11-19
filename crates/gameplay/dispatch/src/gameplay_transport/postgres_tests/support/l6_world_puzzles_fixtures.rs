@@ -356,7 +356,7 @@ pub(super) async fn use_added_ladder(
             .find(|tile| {
                 tile.position.x == i32::from(position.x)
                     && tile.position.y == i32::from(position.y)
-                    && tile.position.floor == i16::from(position.floor)
+                    && tile.position.floor == -i16::from(position.floor)
             })
             .ok_or("ladder tile")?;
         let handle = tile

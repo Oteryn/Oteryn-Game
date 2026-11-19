@@ -202,12 +202,14 @@ pub(super) async fn prepare(
                 oteryn_protocol_oteryn::world_spatial::ActorPosition {
                     x: origin.x,
                     y: origin.y,
-                    floor: origin.floor,
+                    floor: crate::movement::interest::tibia_floor(origin.floor)
+                        .ok_or(SpellCastDisposition::TargetIllegal)?,
                 },
                 oteryn_protocol_oteryn::world_spatial::ActorPosition {
                     x: target.x,
                     y: target.y,
-                    floor: target.floor,
+                    floor: crate::movement::interest::tibia_floor(target.floor)
+                        .ok_or(SpellCastDisposition::TargetIllegal)?,
                 },
             ))
     {

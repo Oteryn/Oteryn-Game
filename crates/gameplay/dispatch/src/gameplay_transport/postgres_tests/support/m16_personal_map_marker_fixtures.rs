@@ -101,7 +101,7 @@ pub(super) async fn exercise(
     let expected = vec![QuestMapMark {
         x: 31948,
         y: 31924,
-        floor: -7,
+        floor: 7,
         text: "Treasure".into(),
     }];
     let (before, delta) =

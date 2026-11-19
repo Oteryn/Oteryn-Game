@@ -156,8 +156,16 @@ pub(super) async fn replay(h: &Harness, owner: &ComposedFreshAdmission<'_, '_, '
             // Actor handles are a live projection, never an immutable receipt.
             Reply::Projection(Vec::new())
         } else {
+            let mut stored_answer = recorded.answer.clone();
+            if let Reply::State(entries) = &mut stored_answer {
+                for entry in entries {
+                    if let Some((_, _, floor)) = &mut entry.position {
+                        *floor = -*floor;
+                    }
+                }
+            }
             assert_eq!(owner.root.read_hireling_command_receipt(owner.character, current,
-                command, recorded.request).await.map_err(debug)?, Some(recorded.answer.clone()),
+                command, recorded.request).await.map_err(debug)?, Some(stored_answer),
                 "the original framed operation already has its durable answer");
             recorded.answer
         };

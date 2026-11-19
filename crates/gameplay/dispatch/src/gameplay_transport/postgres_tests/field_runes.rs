@@ -1274,7 +1274,7 @@ async fn field_scenario_inner(
             assert!(
                 delta.tiles.iter().any(|tile| tile.position.x == start.x + 1
                     && tile.position.y == start.y
-                    && tile.position.floor == -7
+                    && tile.position.floor == start.floor
                     && tile.items.len() > 1),
                 "appearance reaches the persistent real map consumer"
             );
