@@ -1,6 +1,8 @@
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult,
+    death_ml_loss_composed_fixtures::{current_fence, production_generation_with_pin},
     fixture::{Harness, debug, id},
+    kill_reward_e2e_fixtures::scenario_thread,
     prepare_current_session,
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
@@ -38,7 +40,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
+    scenario_thread::run_async(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "rottin_walls", false, false).await?;
         super::reset();
         prepare_current_session(&h).await?;
@@ -50,10 +52,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
-                deps.admitted.world_id,
-                "content-1",
-            )?;
+            production_generation_with_pin(deps.admitted.world_id, "content-1")?;
         let generation = controller.active().ok_or("generation")?;
         let native = generation.native_gameplay().ok_or("wall policies")?;
         let definition = crate::content::ProjectV2DefinitionRef {
@@ -130,8 +129,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.runtime_actor = Some(deps.actor);
-        let fence =
-            super::death_ml_loss_composed_fixtures::current_fence(&owner, admitted.game_session_id).await?;
+        let fence = current_fence(&owner, admitted.game_session_id).await?;
         admitted.item_fence = Some(fence.item_fence());
         owner
             .runtime

@@ -1,5 +1,6 @@
 //! P01: normal composed tool use commits a minted source corpse exactly once.
 use super::fixture::{Harness, debug, id, run};
+use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_mint::{
     CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintOutcome,
@@ -27,13 +28,14 @@ fn srx2_scavenge_production_use_minted_corpse_atomic_replay_postgres() -> TestRe
     );
     Ok(())
 }
+
 #[test]
 fn rottin_rabbit_skinning_uses_mature_corpse_and_keeps_decay_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run("rottin-rabbit-skinning", || scenario(true))
+    scenario_thread::run("rottin-rabbit-skinning", || scenario(true))
 }
 
 fn scenario(rabbit: bool) -> TestResult {
@@ -164,8 +166,11 @@ fn scenario(rabbit: bool) -> TestResult {
             ("oteryn:item.tibia.i5942", 1),
             ("oteryn:item.tibia.i3469", 1),
         ];
-        super::item_look_fixtures::seed_main_backpack(&harness, if rabbit { &tools } else { &tools[..2] })
-            .await?;
+        super::item_look_fixtures::seed_main_backpack(
+            &harness,
+            if rabbit { &tools } else { &tools[..2] },
+        )
+        .await?;
 
         if rabbit {
             let result = exercise_rabbit(&owner, &harness, native, fence, deps.actor).await;
