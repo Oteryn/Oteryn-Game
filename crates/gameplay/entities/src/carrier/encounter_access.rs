@@ -237,6 +237,7 @@ impl ChannelRuntimeV1 {
         &mut self,
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
+        retire: &[ExactActorRef],
         bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
         project: impl FnOnce() -> bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
@@ -245,7 +246,7 @@ impl ChannelRuntimeV1 {
             monsters,
             |runtime, actors, _| bind(runtime, actors),
             project,
-            (&[], true),
+            (retire, true),
         )
     }
     /// Build the participant-bound defender owner before the map CAS; every failure rolls back.

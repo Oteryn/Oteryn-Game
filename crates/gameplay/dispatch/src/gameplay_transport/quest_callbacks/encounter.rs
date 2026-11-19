@@ -308,47 +308,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         });
     }
 
-    /// Crystal actions_portal_minis_feaster.lua:74-95 clears the previous
-    /// encounter after checking for players. Retire only this owner's old visit.
-    fn clear_vacant_solo_visit(
-        &self,
-        runtime: &mut ChannelRuntimeV1,
-        map: &BundleMap,
-        room: &world_callbacks::Encounter,
-    ) -> Result<(), UseDisposition> {
-        let scope = runtime.encounter_owner_scope();
-        let digest = map.overlay.base().digest();
-        let mut visits = self
-            .states
-            .quest_callbacks
-            .encounters
-            .lock()
-            .map_err(|_| UseDisposition::Rejected)?;
-        let mut index = 0;
-        while index < visits.len() {
-            let visit = &visits[index];
-            if visit.owner_scope != scope
-                || &visit.room != room
-                || visit
-                    .expires
-                    .as_ref()
-                    .is_none_or(|expiry| expiry.bundle_digest != digest)
-            {
-                index += 1;
-                continue;
-            }
-            for actor in visit.creatures.iter().copied() {
-                if runtime.contains_live_creature(actor) {
-                    runtime
-                        .remove_encounter_actor(actor)
-                        .map_err(|_| UseDisposition::Occupied)?;
-                }
-            }
-            visits.swap_remove(index);
-        }
-        Ok(())
-    }
-
     fn spawn_linked_arrival(
         &self,
         runtime: &mut ChannelRuntimeV1,
@@ -599,16 +558,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }) {
             return UseDisposition::Occupied;
         }
-        let census = if preflight && encounter.solo_expiry.is_some() {
-            if let Err(disposition) = self.clear_vacant_solo_visit(runtime, map, encounter) {
-                return disposition;
-            }
-            let Ok(current) = runtime.positioned_melee_census() else {
+        // Crystal actions_portal_minis_feaster.lua:87-100 and
+        // movement_kroazur_room.lua:45-62 check cooldown before clearing the
+        // room. Stage this owner's vacant visit as part of the replacement.
+        let scope = runtime.encounter_owner_scope();
+        let digest = map.overlay.base().digest();
+        let abandoned_solo = |visit: &EncounterVisit| {
+            encounter.solo_expiry.is_some()
+                && visit.owner_scope == scope
+                && &visit.room == encounter
+                && visit
+                    .expires
+                    .as_ref()
+                    .is_some_and(|expiry| expiry.bundle_digest == digest)
+        };
+        let retired = if encounter.solo_expiry.is_some() {
+            let Ok(visits) = self.states.quest_callbacks.encounters.lock() else {
                 return UseDisposition::Rejected;
             };
-            current
+            visits
+                .iter()
+                .filter(|visit| abandoned_solo(visit))
+                .flat_map(|visit| visit.creatures.iter().copied())
+                .collect::<Vec<_>>()
         } else {
-            census
+            Vec::new()
         };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
@@ -709,7 +683,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tile(monster.position),
                     false,
                 )
-                || census.iter().any(|(_, pos, _)| pos.position() == at)
+                || census
+                    .iter()
+                    .any(|(who, pos, _)| pos.position() == at && !retired.contains(who))
             {
                 return UseDisposition::Occupied;
             }
@@ -805,7 +781,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if preflight {
             return if runtime
-                .preflight_quest_encounter_entry(proofs, &monsters)
+                .preflight_quest_encounter_replacing_visit(proofs, &monsters, &retired)
                 .is_ok()
             {
                 UseDisposition::Committed
@@ -874,8 +850,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             visits.retain(|visit| visit.active(runtime));
-            if visits.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
-                || visits.try_reserve(1).is_err()
+            if !visits.iter().any(&abandoned_solo)
+                && (visits.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                    || visits.try_reserve(1).is_err())
             {
                 return UseDisposition::Exhausted;
             }
@@ -886,6 +863,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
+            &retired,
             |runtime, actors| {
                 let roster = if prepared.is_some() {
                     Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
@@ -928,6 +906,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if let Some(visits) = &mut visits {
+            visits.retain(|visit| !abandoned_solo(visit));
             visits.push(EncounterVisit {
                 room: encounter.clone(),
                 participants: party,
