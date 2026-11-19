@@ -108,70 +108,55 @@ pub(crate) fn callbacks() -> [Callback; 6] {
     })
 }
 
-/// Retain both shipped Rottin pins for characters with progress before payout wiring.
-pub(super) fn retain_predecessors(
-    catalogue: &mut super::QuestStateCatalogue,
-) -> Result<(), String> {
-    const ADDED_TRACKS: &[&str] = &[
-        "oteryn:quest-progress/crystalserver/kv/handyman-task",
-        "oteryn:quest-progress/crystalserver/kv/lucky-loop-rewarded",
-        "oteryn:quest-progress/crystalserver/kv/lucky-loop-task",
-        "oteryn:quest-progress/crystalserver/kv/nest-timer",
-        "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount",
-        "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count",
-    ];
-    let tracks: Vec<_> = catalogue
-        .tracks
-        .values()
-        .filter(|track| track.quest == QUEST && !ADDED_TRACKS.contains(&track.key.as_str()))
-        .cloned()
-        .collect();
-    // Prior Rottin had six plain repair transitions and no reward or World plan
-    // markers. Keep the generic donor journal transitions in both predecessors.
-    let transitions: Vec<_> = catalogue
-        .transitions
-        .values()
-        .filter(|transition| {
-            transition.quest == QUEST
-                && ![
-                    "oteryn:quest-callback/rottin-wood/",
-                    "oteryn:quest-reward/rottin-wood/",
-                    "oteryn:quest-reward-rule/",
-                    "oteryn:quest-world-plan/",
-                ]
-                .iter()
-                .any(|prefix| transition.key.starts_with(prefix))
-        })
-        .cloned()
-        .collect();
-    let defaults: std::collections::BTreeMap<_, _> = tracks
-        .iter()
-        .map(|track| (track.key.clone(), track.initial))
-        .collect();
-    let with_hammer = super::QuestStateCatalogue::new(
-        catalogue.content_revision(),
-        tracks.clone(),
-        transitions.clone(),
-    )
-    .map_err(|error| format!("{error:?}"))?;
-    let before_hammer = super::QuestStateCatalogue::new(
-        catalogue.content_revision(),
-        tracks
-            .into_iter()
+/// Retain both shipped definitions for characters who already started Disrepair.
+pub(super) fn retain_predecessor(catalogue: &mut super::QuestStateCatalogue) -> Result<(), String> {
+    use super::classic_talk::ROTTIN_WALLCOUNT;
+
+    let legacy_track = |key: &str| {
+        !matches!(
+            key,
+            "oteryn:quest-progress/crystalserver/kv/handyman-task"
+                | "oteryn:quest-progress/crystalserver/kv/lucky-loop-task"
+                | "oteryn:quest-progress/crystalserver/kv/nest-timer"
+                | "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount"
+                | "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count"
+                | "oteryn:quest-progress/rottin-wood/net-replacements"
+        )
+    };
+    for before_hammer in [true, false] {
+        let tracks: Vec<_> = catalogue
+            .tracks
+            .values()
+            .filter(|track| track.quest == QUEST && legacy_track(&track.key))
+            .cloned()
             .map(|mut track| {
-                if track.key == super::classic_talk::ROTTIN_WALLCOUNT {
+                if before_hammer && track.key == ROTTIN_WALLCOUNT {
                     track.max = 0;
                 }
                 track
             })
-            .collect(),
-        transitions
-            .into_iter()
-            .filter(|transition| !transition.key.starts_with(PREFIX))
-            .collect(),
-    )
-    .map_err(|error| format!("{error:?}"))?;
-    for predecessor in [before_hammer, with_hammer] {
+            .collect();
+        let defaults = tracks
+            .iter()
+            .map(|track| (track.key.clone(), track.initial))
+            .collect();
+        let transitions = catalogue
+            .transitions
+            .values()
+            .filter(|transition| {
+                transition.quest == QUEST
+                    && (transition.key.starts_with("oteryn:quest-transition/")
+                        || (!before_hammer && transition.key.starts_with(PREFIX)))
+                    && transition
+                        .effects
+                        .iter()
+                        .all(|effect| legacy_track(&effect.track))
+            })
+            .cloned()
+            .collect();
+        let predecessor =
+            super::QuestStateCatalogue::new(catalogue.content_revision(), tracks, transitions)
+                .map_err(|error| format!("{error:?}"))?;
         let hash = predecessor
             .definition_hash(QUEST)
             .ok_or("Rottin predecessor definition")?;
@@ -179,10 +164,7 @@ pub(super) fn retain_predecessors(
             .predecessors
             .entry(QUEST.into())
             .or_default()
-            .push(super::NpcDefinitionPredecessor {
-                hash,
-                defaults: defaults.clone(),
-            });
+            .push(super::NpcDefinitionPredecessor { hash, defaults });
     }
     Ok(())
 }

@@ -11,10 +11,12 @@ use crate::map::view::MapFacts;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::creature_push::{CreaturePushDisposition, CreaturePushIntent};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use tokio::io::DuplexStream;
 
 const MISSION: &str =
@@ -23,6 +25,8 @@ const CAPTURES: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-corpse
 const QUESTLINE: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline";
 const ROTTIN: &str = "oteryn:npc.rottin_wood";
+const START: &str = "oteryn:quest-reward/rottin-wood/start-bushwhacking";
+const TURN_IN: &str = "oteryn:quest-reward/rottin-wood/bushwhacking";
 const MERRY_ADVENTURES: &str = "oteryn:achievement/merry_adventures";
 const LOOT: &str = "oteryn:quest-callback/rottin-wood/loot-merchant";
 
@@ -30,56 +34,60 @@ const NETS: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count
 const EARLY_NET: &str = "oteryn:quest-callback/rottin-wood/place-net";
 const FINAL_NET: &str = "oteryn:quest-callback/rottin-wood/final-net";
 
-pub(super) const WAVE_ORIGIN: (u16, u16) = (32650, 32177);
-pub(super) const WAVE_START: (u16, u16) = (32659, 32180);
-pub(super) const WAVE_NETS: [(u16, u16); 2] = [(32660, 32180), (32660, 32181)];
-pub(super) const BLOCKED_SPAWN: (u16, u16) = (32656, 32182);
-
-pub(super) async fn seed_prerequisites(
-    h: &Harness,
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
-    wave: bool,
-) -> TestResult {
-    let tracks = [
-        (MISSION.into(), 1),
-        (QUESTLINE.into(), 5),
-        (CAPTURES.into(), if wave { 0 } else { 4 }),
-        (NETS.into(), if wave { 3 } else { 5 }),
-        ("oteryn:quest-progress/crystalserver/kv/nest-timer".into(), std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?.as_secs().try_into()?),
-    ];
-    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(h, owner, admitted, &tracks, 170)
-        .await
-}
-
 pub(super) async fn accept(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
+    npc: EntityRef,
 ) -> TestResult {
-    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
-        h, owner, admitted, &[(QUESTLINE.into(), 4)], 170,
-    ).await?;
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
-    let [npc] = install(owner, admitted, [ROTTIN]).await?;
-    for (command, text) in [(1701, "hi"), (1702, "mission"), (1703, "yes"), (1704, "yes")] {
-        talk(owner, admitted, npc, command, text).await?;
-    }
-    let (net_instances, net_quantity, stage, questline): (i64, i64, i64, i64) = sqlx::query_as(
+    use super::rottin_rewards_fixtures::source_reply;
+
+    let speaker = owner
+        .states
+        .chat
+        .speaker_name(admitted.game_session_id)
+        .ok_or("Bushwhacking customer name")?;
+    let offer: Vec<_> = source_reply("line-111")?
+        .iter()
+        .map(|line| line.replace("|PLAYERNAME|", &speaker))
+        .collect();
+    assert_eq!(
+        talk(owner, admitted, npc, 1609, "mission").await?,
+        offer
+    );
+    assert_eq!(
+        talk(owner, admitted, npc, 1610, "yes").await?,
+        source_reply("line-197")?
+    );
+    assert_eq!(
+        talk(owner, admitted, npc, 1611, "yes").await?,
+        source_reply("line-205")?
+    );
+    let state: (i64, i64, i64) = sqlx::query_as(
         "SELECT
-          (SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1),
-          (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1),
-          (SELECT value FROM game_character_quest_tracks WHERE track_key=$2),
-          (SELECT value FROM game_character_quest_tracks WHERE track_key=$3)",
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$2),
+         (SELECT COALESCE(sum(item.quantity),0)::bigint FROM game_quest_reward_sources AS reward
+          JOIN game_item_instances AS item ON item.minted_transaction_id=reward.mint_transaction_id
+          WHERE reward.transition_key=$3 AND item.definition_production_key='oteryn:item.tibia.i12186'
+            AND item.lifecycle=1)",
     )
-    .bind("oteryn:item.tibia.i12186")
     .bind(MISSION)
     .bind(QUESTLINE)
+    .bind(START)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!((net_instances, net_quantity, stage, questline), (5, 5, 1, 5));
+    assert_eq!(state, (1, 5, 5));
     Ok(())
+}
+
+pub(super) async fn seed(h: &Harness, wave: bool) -> TestResult {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
+    super::rottin_rewards_fixtures::seed_tracks(h, &[
+        (MISSION, 1), (QUESTLINE, 5), (CAPTURES, if wave { 0 } else { 4 }),
+        (NETS, if wave { 3 } else { 0 }),
+        ("oteryn:quest-progress/crystalserver/kv/nest-timer", i64::try_from(now)?),
+    ]).await
 }
 
 pub(super) async fn exercise(
@@ -110,6 +118,14 @@ pub(super) async fn exercise(
     assert!(map.facts.create_movement_item(tile, 12187, 0, || true));
     let before = map.facts.movement_items(tile);
     assert_eq!(before.len(), 1);
+    let gameplay = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay());
+    let trap = crate::map::boot::native_item_definition(gameplay, "oteryn:item.tibia.i12187")
+        .ok_or("shipped merchant trap")?;
+    let captured = crate::map::boot::native_item_definition(gameplay, "oteryn:item.tibia.i12189")
+        .ok_or("shipped captured merchant")?;
+    assert_eq!(before[0].facts.definition, MapDefinition::Item(trap.reference));
     let intent = CreaturePushIntent {
         target: reference(owner, merchant).await?,
         destination: ActorPosition {
@@ -129,6 +145,7 @@ pub(super) async fn exercise(
     assert_eq!(after.len(), 1);
     assert_eq!(after[0].source, before[0].source);
     assert_eq!(after[0].facts.appearance_id, 12189);
+    assert_eq!(after[0].facts.definition, MapDefinition::Item(captured.reference));
     if let Some(h) = loot {
         super::autowalk_fixtures::place(owner, admitted, at(3, 2)).await?;
         let crate::map::view::EntrySource::Added(id) = after[0].source else {
@@ -222,26 +239,29 @@ pub(super) async fn exercise_mission(
         .await;
     assert_eq!(
         talk(owner, &admitted, npc, 1703, "mission").await?,
-        oteryn_gameplay_quests::quest::classic_dialogue::reply(ROTTIN, "line-119").ok_or("shipped Bushwhacking payout reply")?
+        super::rottin_rewards_fixtures::source_reply("line-119")?
     );
     assert_eq!(
         super::rottin_rewards_fixtures::experience(h).await?,
         before_xp + 1000
     );
-    let (stage, questline, platinum, achievement): (i64, i64, i64, bool) = sqlx::query_as(
+    let (stage, questline, platinum, achievement, payouts): (i64, i64, i64, bool, i64) = sqlx::query_as(
         "SELECT
          (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
          (SELECT value FROM game_character_quest_tracks WHERE track_key=$3),
          (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances
           WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1),
-         EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key=$2)",
+         EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key=$2),
+         (SELECT count(*) FROM game_quest_reward_sources
+          WHERE transition_key=$4 AND mint_transaction_id IS NOT NULL)",
     )
     .bind(MISSION)
     .bind(MERRY_ADVENTURES)
     .bind(QUESTLINE)
+    .bind(TURN_IN)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!((stage, questline, platinum, achievement), (2, 6, 6, true));
+    assert_eq!((stage, questline, platinum, achievement, payouts), (2, 6, 6, true, 1));
     Ok(())
 }
 
@@ -302,10 +322,38 @@ pub(super) async fn exercise_wave(
     expected_merchants: usize,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("tool user")?;
+    let gameplay = owner.active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("active creature policies")?;
+    gameplay
+        .install_companion_policies(&mut *owner.runtime.lock().await)
+        .map_err(super::fixture::debug)?;
+    let trap = crate::map::boot::native_item_definition(Some(gameplay), "oteryn:item.tibia.i12187")
+        .ok_or("shipped merchant trap")?;
+    let captured =
+        crate::map::boot::native_item_definition(Some(gameplay), "oteryn:item.tibia.i12189")
+            .ok_or("shipped captured merchant")?;
     let map = owner.bundle_map().ok_or("map")?;
-    let [early, pos] = WAVE_NETS.map(|(x, y)| TilePos { x, y, floor: -7 });
-    let entrance = TilePos { x: 32662, y: 32190, floor: -7 };
-    let ordinary_ground = TilePos { x: early.x - 1, y: early.y - 1, ..early };
+    let early = TilePos {
+        x: 32659,
+        y: 32182,
+        floor: -7,
+    };
+    let pos = TilePos {
+        x: 32660,
+        y: 32182,
+        floor: -7,
+    };
+    let entrance = TilePos {
+        x: 32662,
+        y: 32190,
+        floor: -7,
+    };
+    let ordinary_ground = TilePos {
+        x: 32658,
+        y: 32181,
+        floor: -7,
+    };
     assert!(
         !map.facts
             .quest_callback_blocked(map.overlay.base(), entrance, false)
@@ -329,10 +377,10 @@ pub(super) async fn exercise_wave(
         UseDisposition::Committed
     );
     let map = owner.bundle_map().ok_or("map")?;
-    assert_eq!(
-        map.facts.movement_items(early)[0].facts.appearance_id,
-        12187
-    );
+    let early_traps = map.facts.movement_items(early);
+    assert_eq!(early_traps.len(), 1);
+    assert_eq!(early_traps[0].facts.appearance_id, 12187);
+    assert_eq!(early_traps[0].facts.definition, MapDefinition::Item(trap.reference));
     assert!(
         owner
             .states
@@ -349,7 +397,8 @@ pub(super) async fn exercise_wave(
         map.facts
             .movement_items(pos)
             .iter()
-            .any(|entry| entry.facts.appearance_id == 12187)
+            .any(|entry| entry.facts.appearance_id == 12187
+                && entry.facts.definition == MapDefinition::Item(trap.reference))
     );
     assert!(
         map.facts
@@ -421,7 +470,8 @@ pub(super) async fn exercise_wave(
         map.facts
             .movement_items(pos)
             .iter()
-            .any(|entry| entry.facts.appearance_id == 12189)
+            .any(|entry| entry.facts.appearance_id == 12189
+                && entry.facts.definition == MapDefinition::Item(captured.reference))
     );
     drain_next(owner).await?;
     let map = owner.bundle_map().ok_or("map")?;

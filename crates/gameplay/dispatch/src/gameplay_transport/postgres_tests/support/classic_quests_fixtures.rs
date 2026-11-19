@@ -105,12 +105,19 @@ async fn install_offsets<const N: usize>(
     let model = catalogue.service_model_for_project().map_err(debug)?;
     let source =
         oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime().map_err(debug)?;
+    let rewards = oteryn_gameplay_quests::quest::reward_callbacks::load().map_err(debug)?;
     let native_npcs = source
         .programs()
         .iter()
         .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+        .chain(
+            rewards
+                .iter()
+                .filter(|reward| reward.npc == ROTTIN && reward.carried_item.is_none())
+                .map(|reward| reward.npc.as_str()),
+        )
         .chain(std::iter::once("oteryn:npc.viola"))
-        .chain(keys.iter().copied())
+        .chain(keys.iter().copied().filter(|key| *key != ROTTIN))
         .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();

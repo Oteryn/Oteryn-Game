@@ -377,7 +377,7 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
-    super::rottin_walls::retain_predecessors(&mut lowered.catalogue)
+    super::rottin_walls::retain_predecessor(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
     restrict_runtime_scope(lowered, content_revision)
 }
@@ -810,6 +810,9 @@ mod tests {
             "rottin-repair-42504",
             "rottin-repair-42505",
             "rottin-repair-42506",
+            "rottin-wood/final-net",
+            "rottin-wood/loot-merchant",
+            "rottin-wood/place-net",
             "srv7-reliable-ram",
             "uneasy-alliance-crystal",
             "worldchg-m31/fire_from_the_earth/volcano",
@@ -826,7 +829,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 75);
+        assert_eq!(expected.len() - before_qmech_native, 78);
         assert_eq!(
             callbacks
                 .into_iter()

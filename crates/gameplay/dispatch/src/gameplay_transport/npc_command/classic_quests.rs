@@ -58,13 +58,7 @@ pub(super) fn prepare(
         command.game_session_id,
         intent,
     )?;
-    if ![
-        classic_talk::JEROM,
-        classic_talk::QUEEN,
-        classic_talk::ROTTIN,
-    ]
-    .contains(&context.2.as_str())
-    {
+    if ![classic_talk::JEROM, classic_talk::QUEEN].contains(&context.2.as_str()) {
         return None;
     }
     let tracks = {
@@ -99,10 +93,6 @@ pub(super) fn prepare(
         previous.as_ref().map(|p| p.topic),
         &tracks,
     )?;
-    // A Rottin branch owned by classic dialogue supersedes any prior reward offer.
-    if context.2 == classic_talk::ROTTIN && !state.quest_dialogue.retire_for_source(&context) {
-        return Some(Step::Held);
-    }
     if choice.deferred {
         return Some(Step::Refused);
     }

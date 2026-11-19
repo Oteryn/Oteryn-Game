@@ -4,27 +4,25 @@ use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::item_view::{ItemKey, SessionItemView, inventory_from_backpack};
+use oteryn_gameplay_quests::quest::{classic_dialogue, classic_talk::ROTTIN_STATE};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 use serde_json::json;
 
+const QUEST: &str = "oteryn:quest.rottin_wood_and_the_married_men_quest";
 const TRACK: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01";
 const COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/lucky-loop-task";
 const ACHIEVEMENT: &str = "oteryn:achievement/bunny_slipped";
+const CHARMS_PAYOUT: &str = "oteryn:quest-reward/rottin-wood/lucky-charms";
 const PAYOUT: &str = "oteryn:quest-reward/rottin-wood/lucky-loop";
+const START_CHARMS: &str = "oteryn:quest-reward/rottin-wood/start-lucky-charms";
+const START_LOOP: &str = "oteryn:quest-reward/rottin-wood/start-lucky-loop";
+const START_LOOP_REPEAT: &str = "oteryn:quest-reward/rottin-wood/start-lucky-loop-repeat";
 const ROTTIN: &str = "oteryn:npc.rottin_wood";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
 const RING: &str = "oteryn:item.tibia.i3053";
 const CHARM: &str = "oteryn:item.tibia.i12173";
-const HORN: &str = "oteryn:item.tibia.i12260";
-const RIBBON: &str = "oteryn:item.tibia.i12171";
-const FOOT: &str = "oteryn:item.tibia.i12172";
-pub(super) const QUESTLINE: &str =
-    "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline";
-const MISSION: &str =
-    "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01";
-
 fn payout_key(repeat: bool) -> &'static str {
     if repeat {
         "oteryn:quest-reward/rottin-wood/lucky-loop-repeat"
@@ -33,37 +31,72 @@ fn payout_key(repeat: bool) -> &'static str {
     }
 }
 
-pub(super) async fn seed_loop_prerequisites(
-    h: &Harness,
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
-    repeat: bool,
-) -> TestResult {
-    let mut tracks = vec![(QUESTLINE.into(), 2)];
-    if repeat {
-        tracks.extend([
-            (TRACK.into(), 2),
-            (COOLDOWN.into(), 1),
-            ("oteryn:quest-progress/crystalserver/kv/lucky-loop-rewarded".into(), 1),
-        ]);
+const RIBBON: &str = "oteryn:item.tibia.i12171";
+const FOOT: &str = "oteryn:item.tibia.i12172";
+const HORN: &str = "oteryn:item.tibia.i12260";
+
+pub(super) async fn seed_tracks(h: &Harness, tracks: &[(&str, i64)]) -> TestResult {
+    // Establish the predecessor snapshot without synthetic callback definitions.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (track, value) in tracks {
+        let inserted = sqlx::query(
+            "INSERT INTO game_character_quest_tracks
+              (character_id,track_key,quest_key,value,committed_character_revision)
+             SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots
+             WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .bind(track)
+        .bind(QUEST)
+        .bind(value)
+        .execute(&mut *tx)
+        .await?;
+        assert_eq!(inserted.rows_affected(), 1);
     }
-    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(h, owner, admitted, &tracks, 168)
-        .await
+    tx.commit().await?;
+    Ok(())
+}
+
+pub(super) async fn seed_loop(h: &Harness, repeat: bool) -> TestResult {
+    seed_tracks(h, &[
+        (&format!("{ROTTIN_STATE}questline"), 2),
+        (TRACK, if repeat { 2 } else { 0 }),
+        (COOLDOWN, i64::from(repeat)),
+    ]).await
+}
+
+async fn minted_quantity(h: &Harness, transition: &str, item: &str) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT COALESCE(sum(item.quantity),0)::bigint
+         FROM game_quest_reward_sources AS reward
+         JOIN game_item_instances AS item ON item.minted_transaction_id=reward.mint_transaction_id
+         WHERE reward.transition_key=$1 AND item.definition_production_key=$2 AND item.lifecycle=1",
+    )
+    .bind(transition)
+    .bind(item)
+    .fetch_one(&h.pool)
+    .await?)
 }
 
 async fn start_lucky_loop(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    h: &Harness,
+    repeat: bool,
 ) -> TestResult<oteryn_protocol_oteryn::world_spatial_entities::EntityRef> {
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
-    for (command, text) in [
-        (1701, "hi"),
-        (1702, "task"),
-        (1703, "lucky charms"),
-        (1704, "yes"),
-    ] {
+    for (command, text) in [(1700, "hi"), (1701, "task"), (1702, "lucky charms")] {
         talk(owner, admitted, npc, command, text).await?;
     }
+    assert_eq!(talk(owner, admitted, npc, 1703, "yes").await?, source_reply("line-225")?);
+    let start = if repeat { START_LOOP_REPEAT } else { START_LOOP };
+    assert_eq!(minted_quantity(h, start, RIBBON).await?, 7);
+    let active: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+        .bind(TRACK).fetch_one(&h.pool).await?;
+    assert_eq!(active, 1);
     Ok(npc)
 }
 
@@ -71,44 +104,41 @@ async fn open_lucky_loop(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
+    repeat: bool,
 ) -> TestResult<oteryn_protocol_oteryn::world_spatial_entities::EntityRef> {
-    let npc = start_lucky_loop(owner, admitted).await?;
-    talk(owner, admitted, npc, 1705, "task").await?;
-    talk(owner, admitted, npc, 1706, "lucky charms").await?;
-    assert_ribbons(h, TRACK, 1).await?;
+    let npc = start_lucky_loop(owner, admitted, h, repeat).await?;
+    talk(owner, admitted, npc, 1704, "task").await?;
+    assert_eq!(talk(owner, admitted, npc, 1705, "lucky charms").await?, source_reply("line-345")?);
     Ok(npc)
 }
 
-async fn assert_ribbons(h: &Harness, track: &str, expected_stage: i64) -> TestResult {
-    let (ribbons, stage): (i64, i64) = sqlx::query_as(
-        "SELECT
-         (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1),
-         (SELECT value FROM game_character_quest_tracks WHERE track_key=$2)",
-    )
-    .bind(RIBBON)
-    .bind(track)
-    .fetch_one(&h.pool)
-    .await?;
-    assert_eq!((ribbons, stage), (7, expected_stage));
-    Ok(())
-}
-
-pub(super) async fn accept_lucky_charms(
+pub(super) async fn lucky_charms(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
 ) -> TestResult {
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
-    for (command, text) in [(1701, "hi"), (1702, "mission"), (1703, "yes"), (1704, "yes")] {
+    for (command, text) in [(1700, "hi"), (1701, "mission"), (1702, "yes")] {
         talk(owner, admitted, npc, command, text).await?;
     }
-    assert_ribbons(h, MISSION, 1).await?;
-    let stage: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
-        .bind(QUESTLINE)
-        .fetch_one(&h.pool)
-        .await?;
-    assert_eq!(stage, 1);
+    assert_eq!(talk(owner, admitted, npc, 1703, "yes").await?, source_reply("line-152")?);
+    assert_eq!(minted_quantity(h, START_CHARMS, RIBBON).await?, 7);
+    let mission = format!("{ROTTIN_STATE}mission01");
+    let stage = || sqlx::query_scalar::<_, i64>(
+        "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+    ).bind(&mission).fetch_one(&h.pool);
+    assert_eq!(stage().await?, 1);
+    let before_xp = experience(h).await?;
+    talk(owner, admitted, npc, 1704, "mission").await?;
+    assert_eq!(talk(owner, admitted, npc, 1705, "yes").await?, source_reply("line-163")?);
+    assert_eq!(stage().await?, 2);
+    assert_eq!(experience(h).await?, before_xp + 100);
+    assert_eq!(minted_quantity(h, CHARMS_PAYOUT, PLATINUM).await?, 5);
     Ok(())
+}
+
+pub(super) fn source_reply(branch: &str) -> TestResult<&'static [String]> {
+    classic_dialogue::reply(ROTTIN, branch).ok_or_else(|| format!("missing source reply {branch}").into())
 }
 
 pub(super) async fn seed_rabbit_foot(h: &Harness) -> TestResult {
@@ -120,8 +150,7 @@ pub(super) async fn craft_lucky_charm(
     admitted: &AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    start_lucky_loop(owner, admitted).await?;
-    assert_ribbons(h, TRACK, 1).await?;
+    start_lucky_loop(owner, admitted, h, false).await?;
     let owner = &*owner;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
@@ -226,7 +255,7 @@ pub(super) async fn refuse_short_hand_in(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    let npc = open_lucky_loop(owner, admitted, h).await?;
+    let npc = open_lucky_loop(owner, admitted, h, false).await?;
     let before_xp = experience(h).await?;
     owner.clock_origin = owner
         .clock_origin
@@ -242,7 +271,7 @@ pub(super) async fn refuse_short_hand_in(
             admitted.runtime_actor.ok_or("quest actor")?,
             UseCommand {
                 game_session_id: admitted.game_session_id,
-                command_id: 1707,
+                command_id: 1706,
                 item_fence: Some(fence.item_fence()),
             },
             NpcTalkIntent {
@@ -255,7 +284,7 @@ pub(super) async fn refuse_short_hand_in(
     assert!(!refusal.unknown);
     assert_eq!(
         refusal.conversation.ok_or("refusal reply")?.lines,
-        ["You do not have sufficient rabbit's foot."]
+        source_reply("line-258")?
     );
     assert_eq!(experience(h).await?, before_xp);
     let actual: (i64, i64, i64) = sqlx::query_as(
@@ -284,12 +313,12 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    let npc = open_lucky_loop(owner, admitted, h).await?;
+    let npc = open_lucky_loop(owner, admitted, h, repeat).await?;
     let before_xp = experience(h).await?;
     let before_stamp = i64::from(repeat);
     assert_eq!(
-        talk(owner, admitted, npc, 1707, "yes").await?,
-        ["Good hunt. That will be enough to help us uhm... get through the winter yes. Here is your reward for today."]
+        talk(owner, admitted, npc, 1706, "yes").await?,
+        source_reply("line-239")?
     );
     assert_eq!(experience(h).await?, before_xp + 100);
     let actual: (i64, i64, i64, i64, i64) = sqlx::query_as(
@@ -300,7 +329,8 @@ pub(super) async fn exercise(
          (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$4 AND lifecycle=1),
          (SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$5 AND mint_transaction_id IS NOT NULL)"
     ).bind(CHARM).bind(PLATINUM).bind(RING).bind(HORN).bind(payout_key(repeat)).fetch_one(&h.pool).await?;
-    let (awarded_bundle, ordinary_bonus, rare_bonus, percentile): (serde_json::Value, i32, i32, Option<i32>) =
+    assert!(matches!(actual, (0, 5, 0, 0, 1) | (0, 3, 1, 0, 1) | (0, 0, 0, 1, 1)), "{actual:?}");
+    let (awarded_bundle, retained_odds, horn_odds, percentile): (serde_json::Value, i32, i32, Option<i32>) =
         sqlx::query_as(
             "SELECT plan->'give', (plan #>> '{weighted_rewards,0,chance}')::integer,
                 (plan #>> '{weighted_rewards,1,chance}')::integer,
@@ -310,17 +340,19 @@ pub(super) async fn exercise(
         .bind(payout_key(repeat))
         .fetch_one(&h.pool)
         .await?;
-    assert_eq!((ordinary_bonus, rare_bonus), (9, 1));
+    assert_eq!(retained_odds, 9);
     let percentile = percentile.ok_or("weighted payout receipt lacks the recorded draw")?;
-    let (expected, output, count) = match percentile {
-        0..=89 => ((0, 5, 0, 0, 1), PLATINUM, 5),
-        90..=98 => ((0, 3, 1, 0, 1), PLATINUM, 3),
-        99 => ((0, 0, 0, 1, 1), HORN, 1),
-        _ => return Err("invalid payout percentile".into()),
-    };
-    assert_eq!(actual, expected);
-    assert_eq!(awarded_bundle["item"], output);
-    assert_eq!(awarded_bundle["count"], count);
+    assert!((0..100).contains(&percentile));
+    assert_eq!(horn_odds, 1);
+    assert_eq!((90..99).contains(&percentile), actual.2 == 1);
+    assert_eq!(percentile == 99, actual.3 == 1);
+    if actual.3 == 1 {
+        assert_eq!(awarded_bundle["item"], HORN);
+        assert_eq!(awarded_bundle["count"], 1);
+    } else {
+        assert_eq!(awarded_bundle["item"], PLATINUM);
+        assert_eq!(awarded_bundle["count"], actual.1);
+    }
     if actual.2 == 1 {
         assert_eq!(
             awarded_bundle["additional"],

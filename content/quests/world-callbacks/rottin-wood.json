@@ -34,19 +34,6 @@
         "minimum": 4,
         "maximum": 4
       },
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:87-121"
-      ],
-      "item_on_target": {
-        "item": "oteryn:item.tibia.i12186",
-        "count": 1,
-        "selected_instance": true
-      },
-      "teleport": {
-        "x": 32660,
-        "y": 32193,
-        "floor": -7
-      },
       "effects": {
         "place_item": 12187,
         "merchant_entrance": {
@@ -130,6 +117,19 @@
             "reset_after_ms": 300000
           }
         }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:69-123"
+      ],
+      "teleport": {
+        "x": 32660,
+        "y": 32193,
+        "floor": -7
+      },
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i12186",
+        "count": 1,
+        "selected_instance": true
       }
     },
     {
@@ -165,16 +165,16 @@
         "minimum": 0,
         "maximum": 4
       },
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_corpse.lua:9-36"
-      ],
       "effects": {
         "loot_merchant": true,
         "item_reward": {
           "item": "oteryn:item.tibia.i3035",
           "count": 1
         }
-      }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_corpse.lua:3-36"
+      ]
     },
     {
       "key": "oteryn:quest-callback/rottin-wood/place-net",
@@ -209,16 +209,16 @@
         "minimum": 0,
         "maximum": 3
       },
+      "effects": {
+        "place_item": 12187
+      },
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:65-86"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:69-123"
       ],
       "item_on_target": {
         "item": "oteryn:item.tibia.i12186",
         "count": 1,
         "selected_instance": true
-      },
-      "effects": {
-        "place_item": 12187
       }
     }
   ]

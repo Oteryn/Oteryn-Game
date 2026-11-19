@@ -7,21 +7,10 @@
       "initial": 0,
       "min": 0,
       "max": 9223372036854775807,
-      "writable": true,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:277-291"
-      ]
-    },
-    {
-      "key": "oteryn:quest-progress/crystalserver/kv/lucky-loop-rewarded",
-      "quest": "oteryn:quest.rottin_wood_and_the_married_men_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 1,
-      "writable": true,
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:250-255"
-      ]
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:261-290"
+      ],
+      "writable": true
     },
     {
       "key": "oteryn:quest-progress/crystalserver/kv/lucky-loop-task",
@@ -29,10 +18,10 @@
       "initial": 0,
       "min": 0,
       "max": 9223372036854775807,
-      "writable": true,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:238-255"
-      ]
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:222-259"
+      ],
+      "writable": true
     },
     {
       "key": "oteryn:quest-progress/crystalserver/kv/nest-timer",
@@ -40,10 +29,10 @@
       "initial": 0,
       "min": 0,
       "max": 9223372036854775807,
-      "writable": true,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:203-218"
-      ]
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:204-220"
+      ],
+      "writable": true
     },
     {
       "key": "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount",
@@ -51,10 +40,10 @@
       "initial": 0,
       "min": 0,
       "max": 5,
-      "writable": true,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:203-218"
-      ]
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:117-138"
+      ],
+      "writable": true
     },
     {
       "key": "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count",
@@ -62,10 +51,10 @@
       "initial": 0,
       "min": 0,
       "max": 5,
-      "writable": true,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:203-218"
-      ]
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:129-137"
+      ],
+      "writable": true
     }
   ],
   "callbacks": [
@@ -103,7 +92,7 @@
         "You did it!! And I assume you took only what you needed? Heh. No, I know it. Because my men took the rest. Thanks for helping us, you did a very good job. In fact I have a little 'extra' for you here, thanks again."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:117-127"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:119-127"
       ],
       "requires": [
         {
@@ -125,16 +114,16 @@
       "next_topic": 0,
       "storage": [
         {
-          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 4
-        },
-        {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission02",
           "minimum": 1,
           "maximum": 1,
           "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
         }
       ],
       "take": [],
@@ -149,7 +138,7 @@
         "The walls look as if they will come off in a matter of hours. Oh well, you can always come back and repair this mess, ask me for a task if you want to. Yeah, yeah and here's your reward for today."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:180-194"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:182-190"
       ],
       "requires": [
         {
@@ -189,17 +178,17 @@
         "The walls look as if they will come off in a matter of hours. Oh well, you can always come back and repair this mess, ask me for a task if you want to. Yeah, yeah and here's your reward for today."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:277-291"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:279-287"
       ],
       "requires": [
         {
-          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
-          "minimum": 4,
+          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-wallcount",
+          "minimum": 6,
           "maximum": 6
         },
         {
-          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-wallcount",
-          "minimum": 6,
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
+          "minimum": 4,
           "maximum": 6
         }
       ],
@@ -207,16 +196,15 @@
         {
           "track": "oteryn:quest-progress/crystalserver/kv/handyman-task",
           "from": {
-            "kind": "elapsed_at_least",
-            "seconds": 72001
+            "kind": "any"
           },
           "effect": {
             "kind": "set_now"
           }
         }
       ],
-      "experience": 500,
-      "per_occurrence_mint": true
+      "per_occurrence_mint": true,
+      "experience": 500
     },
     {
       "key": "oteryn:quest-reward/rottin-wood/lucky-charms",
@@ -229,13 +217,13 @@
       "next_topic": 0,
       "storage": [
         {
-          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01",
           "minimum": 1,
           "maximum": 1,
           "set": 2
         },
         {
-          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01",
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
           "minimum": 1,
           "maximum": 1,
           "set": 2
@@ -257,8 +245,9 @@
         "Good hunt. That will be enough to help us uhm... get through the winter yes. Now if you want to help us getting even more lucky charms, you can always ask."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:162-172"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:163-172"
       ],
+      "experience": 100,
       "failure_reply": [
         "You do not have sufficient rabbit's foot."
       ],
@@ -268,8 +257,7 @@
           "minimum": 7,
           "maximum": 4294967295
         }
-      ],
-      "experience": 100
+      ]
     },
     {
       "key": "oteryn:quest-reward/rottin-wood/lucky-loop",
@@ -286,12 +274,6 @@
           "minimum": 1,
           "maximum": 1,
           "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/crystalserver/kv/lucky-loop-rewarded",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
         }
       ],
       "take": [
@@ -310,7 +292,7 @@
         "Good hunt. That will be enough to help us uhm... get through the winter yes. Here is your reward for today."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:238-259"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:239-259"
       ],
       "requires": [
         {
@@ -357,14 +339,14 @@
       "failure_reply": [
         "You do not have sufficient rabbit's foot."
       ],
+      "experience": 100,
       "inventory": [
         {
           "item": "oteryn:item.tibia.i12173",
           "minimum": 7,
           "maximum": 4294967295
         }
-      ],
-      "experience": 100
+      ]
     },
     {
       "key": "oteryn:quest-reward/rottin-wood/lucky-loop-repeat",
@@ -399,32 +381,29 @@
         "Good hunt. That will be enough to help us uhm... get through the winter yes. Here is your reward for today."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:238-259"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:239-259"
       ],
       "requires": [
         {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
           "minimum": 2,
           "maximum": 6
-        },
-        {
-          "track": "oteryn:quest-progress/crystalserver/kv/lucky-loop-rewarded",
-          "minimum": 1,
-          "maximum": 1
         }
       ],
       "state_ops": [
         {
           "track": "oteryn:quest-progress/crystalserver/kv/lucky-loop-task",
           "from": {
-            "kind": "elapsed_at_least",
-            "seconds": 72001
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 9223372036854775807
           },
           "effect": {
             "kind": "set_now"
           }
         }
       ],
+      "per_occurrence_mint": true,
       "weighted_rewards": [
         {
           "chance": 9,
@@ -447,21 +426,20 @@
           }
         }
       ],
-      "per_occurrence_mint": true,
       "failure_reply": [
         "You do not have sufficient rabbit's foot."
       ],
+      "experience": 100,
       "inventory": [
         {
           "item": "oteryn:item.tibia.i12173",
           "minimum": 7,
           "maximum": 4294967295
         }
-      ],
-      "experience": 100
+      ]
     },
     {
-      "key": "oteryn:quest-reward/rottin-wood/replace-bushwhacking-nets",
+      "key": "oteryn:quest-reward/rottin-wood/replace-nets",
       "quest": "oteryn:quest.rottin_wood_and_the_married_men_quest",
       "npc": "oteryn:npc.rottin_wood",
       "keywords": [
@@ -480,25 +458,7 @@
       "take": [],
       "give": {
         "item": "oteryn:item.tibia.i12186",
-        "count": 1,
-        "additional": [
-          {
-            "item": "oteryn:item.tibia.i12186",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i12186",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i12186",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i12186",
-            "count": 1
-          }
-        ]
+        "count": 5
       },
       "outfit": null,
       "achievement": null,
@@ -506,9 +466,14 @@
         "It looks like you need more traps to finish the job. Here. Go now, and happy hunting."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:129-137"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:131-136"
       ],
       "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount",
+          "minimum": 0,
+          "maximum": 4
+        },
         {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
           "minimum": 5,
@@ -518,11 +483,6 @@
           "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission03",
           "minimum": 1,
           "maximum": 1
-        },
-        {
-          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount",
-          "minimum": 0,
-          "maximum": 4
         }
       ],
       "state_ops": [
@@ -533,14 +493,19 @@
             "seconds": 1801
           },
           "effect": {
-            "kind": "set_now"
+            "kind": "add",
+            "value": 0
           }
         }
       ],
       "per_occurrence_mint": true,
       "failure_reply": [
         "I can only get you more traps in half an hour."
-      ]
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/rottin-wood/net-replacements",
+        "maximum": 1000000000000
+      }
     },
     {
       "key": "oteryn:quest-reward/rottin-wood/start-bushwhacking",
@@ -553,25 +518,25 @@
       "next_topic": 0,
       "storage": [
         {
-          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
-          "minimum": 4,
-          "maximum": 4,
-          "set": 5
-        },
-        {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission03",
           "minimum": -1,
           "maximum": 0,
           "set": 1
         },
         {
-          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count",
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount",
           "minimum": 0,
           "maximum": 5,
           "set": 0
         },
         {
-          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount",
+          "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count",
           "minimum": 0,
           "maximum": 5,
           "set": 0
@@ -580,25 +545,7 @@
       "take": [],
       "give": {
         "item": "oteryn:item.tibia.i12186",
-        "count": 1,
-        "additional": [
-          {
-            "item": "oteryn:item.tibia.i12186",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i12186",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i12186",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i12186",
-            "count": 1
-          }
-        ]
+        "count": 5
       },
       "outfit": null,
       "achievement": null,
@@ -612,7 +559,7 @@
         "Off you go and - good hunt, heh."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:203-218"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:205-220"
       ],
       "state_ops": [
         {
@@ -660,7 +607,7 @@
         "So what do you say, in for this one?"
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:261-275"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:264-272"
       ],
       "requires": [
         {
@@ -681,9 +628,6 @@
             "value": 0
           }
         }
-      ],
-      "failure_reply": [
-        "Come back when the task cooldown ends."
       ]
     },
     {
@@ -720,7 +664,7 @@
         "So what do you say, in for this one?"
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:261-275"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:264-272"
       ],
       "requires": [
         {
@@ -741,9 +685,6 @@
             "value": 0
           }
         }
-      ],
-      "failure_reply": [
-        "Come back when the task cooldown ends."
       ]
     },
     {
@@ -757,13 +698,13 @@
       "next_topic": 0,
       "storage": [
         {
-          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01",
           "minimum": 0,
           "maximum": 0,
           "set": 1
         },
         {
-          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01",
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
           "minimum": 0,
           "maximum": 0,
           "set": 1
@@ -783,7 +724,7 @@
         "If you need some more ribbons just come back to me and ask."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:151-161"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:152-161"
       ]
     },
     {
@@ -817,7 +758,7 @@
         "If you need some more ribbons just come back to me and I will see what I can do."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:221-237"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:225-233"
       ],
       "requires": [
         {
@@ -839,10 +780,7 @@
           }
         }
       ],
-      "per_occurrence_mint": true,
-      "failure_reply": [
-        "Come back when the task cooldown ends."
-      ]
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/rottin-wood/start-lucky-loop-repeat",
@@ -875,7 +813,7 @@
         "If you need some more ribbons just come back to me and I will see what I can do."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:221-237"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:225-233"
       ],
       "requires": [
         {
@@ -897,10 +835,7 @@
           }
         }
       ],
-      "per_occurrence_mint": true,
-      "failure_reply": [
-        "Come back when the task cooldown ends."
-      ]
+      "per_occurrence_mint": true
     }
   ]
 }
