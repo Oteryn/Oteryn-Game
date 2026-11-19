@@ -670,7 +670,7 @@ fn run_native_soulpit_scenario(
             );
             assert!(
                 creatures <= 7,
-                "seven source attempts never redraw a blocked cell"
+                "each of the seven source attempts can place at most one monster"
             );
             drop(runtime);
             let entities = destination_view

@@ -7,6 +7,10 @@ use oteryn_gameplay_domain::domain::soulpit::{
     enrage_retained_percent, overpower_damage, wave_stacks,
 };
 use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+};
+use sha2::{Digest, Sha256};
 
 #[path = "soulpit/oppressor.rs"]
 mod oppressor;
@@ -134,6 +138,31 @@ struct WaveReceipt {
 struct PreparedWave {
     request: SoulpitWaveRequest,
     next_cue: u8,
+}
+
+fn shuffled_spawn_neighbours(
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+    ordinal: usize,
+) -> Result<[(i32, i32); 8], CarrierError> {
+    let mut offsets = [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+    ];
+    for end in (1..offsets.len()).rev() {
+        let index = (ordinal * offsets.len() + end) as u64;
+        let draw = deterministic_decision_u64(root, occurrence, "soulpit_spawn_fallback", index)
+            .map_err(|_| CarrierError::InvalidCommitBinding)?;
+        let selected = (draw % (end as u64 + 1)) as usize;
+        offsets.swap(end, selected);
+    }
+    Ok(offsets)
 }
 
 /// Physical admission receipts only. The durable SoulpitEncounter owns phases, survivors,
@@ -380,8 +409,8 @@ impl ChannelActorCarrier {
         Ok(())
     }
 
-    /// Executes each retained spawn attempt once. The boss may land beside its fixed tile
-    /// when that tile is blocked. If placement or carrier admission fails, retain None.
+    /// Executes each retained spawn attempt once. If the preferred tile is blocked,
+    /// try shuffled neighbours on the same floor. Retain None if the attempt fails.
     pub fn spawn_soulpit_wave(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -479,6 +508,16 @@ impl ChannelActorCarrier {
             .waves
             .try_reserve(1)
             .map_err(|_| CarrierError::AllocationFailed)?;
+        let root = GameplayDecisionRoot::from_bytes(content.server_artifact_digest());
+        let digest = Sha256::new()
+            .chain_update(b"oteryn.soulpit.spawn.v1")
+            .chain_update(request.handoff_id)
+            .chain_update(self.scope_generation.get().to_be_bytes())
+            .chain_update([request.wave])
+            .finalize();
+        let mut occurrence = [0; 16];
+        occurrence.copy_from_slice(&digest[..16]);
+        let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
         let mut actors = [None; MONSTERS_PER_WAVE];
         for (ordinal, (position, stack)) in
             request.positions.iter().copied().zip(stacks).enumerate()
@@ -500,29 +539,17 @@ impl ChannelActorCarrier {
             };
             let landing = if available(&local) {
                 Some(local)
-            } else if stack == SoulpitStack::Boss {
-                // Crystal Map::placeCreature tries the eight adjacent tiles when
-                // the requested tile is refused. The retained plan still owns
-                // the preferred boss tile and its preparation cues.
-                [
-                    (-1, -1),
-                    (0, -1),
-                    (1, -1),
-                    (-1, 0),
-                    (1, 0),
-                    (-1, 1),
-                    (0, 1),
-                    (1, 1),
-                ]
-                .into_iter()
-                .map(|(dx, dy)| LocalPosition {
-                    x: local.x + dx,
-                    y: local.y + dy,
-                    ..local
-                })
-                .find(available)
             } else {
-                None
+                // Crystal shuffles the eight neighbours. Key the shuffle to the
+                // wave and slot so unrelated draws cannot affect placement.
+                shuffled_spawn_neighbours(&root, occurrence, ordinal)?
+                    .into_iter()
+                    .map(|(dx, dy)| LocalPosition {
+                        x: local.x + dx,
+                        y: local.y + dy,
+                        ..local
+                    })
+                    .find(available)
             };
             let Some(local) = landing else {
                 continue;

@@ -137,9 +137,11 @@ fn hit(
 #[test]
 fn instance_wave_attempts_preserve_partial_failure_and_replay_without_refill() -> TestResult {
     let (mut carrier, owner, pin, policies) = fixture(3, true)?;
-    let request = request(1, BossAbility::Overpower);
+    let mut request = request(1, BossAbility::Overpower);
+    let blocked = request.positions[0].as_mut().ok_or("preferred tile")?;
+    blocked.y = 31137;
     let first = carrier
-        .spawn_soulpit_wave(&owner, &pin, &policies, request.clone(), |at| at.x != 32363)
+        .spawn_soulpit_wave(&owner, &pin, &policies, request.clone(), |at| at.y == 31133)
         .map_err(debug)?;
     assert!(first[0].is_none());
     assert_eq!(
@@ -191,6 +193,39 @@ fn instance_wave_attempts_preserve_partial_failure_and_replay_without_refill() -
         Err(CarrierError::WrongScope)
     );
     assert_eq!(channel, before, "Channel cannot become a Soulpit scope");
+    Ok(())
+}
+
+#[test]
+fn ordinary_soulpit_spawn_uses_a_legal_neighbour_when_its_tile_is_occupied() -> TestResult {
+    let (mut carrier, owner, pin, policies) = fixture(2, true)?;
+    let mut request = request(1, BossAbility::Overpower);
+    let preferred = request.positions[0].ok_or("preferred tile")?;
+    let neighbour = MovementLocalPosition {
+        x: preferred.x + 1,
+        y: preferred.y + 1,
+        ..preferred
+    };
+    request.positions = [None; MONSTERS_PER_WAVE];
+    request.positions[..2].fill(Some(preferred));
+    let actors = carrier
+        .spawn_soulpit_wave(&owner, &pin, &policies, request, |at| {
+            at == preferred || at == neighbour
+        })
+        .map_err(debug)?;
+    let first = actors[0].ok_or("first ordinary spawn")?;
+    let second = actors[1].ok_or("ordinary spawn beside the occupied tile")?;
+    let census = carrier.soulpit_actors(&owner, id(7)).map_err(debug)?;
+    assert!(
+        census
+            .iter()
+            .any(|facts| facts.actor == first.actor && facts.position == preferred)
+    );
+    assert!(
+        census
+            .iter()
+            .any(|facts| facts.actor == second.actor && facts.position == neighbour)
+    );
     Ok(())
 }
 

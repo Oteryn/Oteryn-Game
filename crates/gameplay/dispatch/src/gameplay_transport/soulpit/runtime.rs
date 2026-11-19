@@ -204,8 +204,8 @@ fn retain_wave_plan(
     }
     let stacks = wave_stacks(wave).map_err(|_| SoulpitRuntimeError::InvalidState)?;
     let floor = kernel.content.entry_start().floor;
-    // Crystal zones.lua12–35 filters real ground first. Occupancy is deliberately
-    // excluded: Game.createSoulPitMonster may fail later without redrawing.
+    // Crystal zones.lua:12–35 filters ground before drawing preferred tiles.
+    // Creation checks live occupancy and can place a monster on an adjacent tile.
     let mut eligible = Vec::new();
     for y in 31132..=31153 {
         for x in 32362..=32390 {
