@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "bb8f2a595d2cffe0446637c0a86271a0ea36fef2c07852ee1747cbd57a10ddab",
+  "input_sha256": "f4f70d7f7c70552bbb9bc29afa4f8020c4713f85115f45dc4f95238a9ab5d8a8",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2417,6 +2417,7 @@
     "oteryn:creature.rorc",
     "oteryn:creature.rot_elemental",
     "oteryn:creature.rotten_golem",
+    "oteryn:creature.rotworm",
     "oteryn:creature.rustheap_golem",
     "oteryn:creature.sabretooth",
     "oteryn:creature.sacred_spider",

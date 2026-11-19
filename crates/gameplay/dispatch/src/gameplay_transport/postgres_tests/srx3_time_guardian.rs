@@ -4,12 +4,11 @@ use super::fixture::{Harness, debug, run};
 use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_player};
 use super::srx3_native_source_cast_fixtures::{
     NATIVE_TURN_TIMEOUT, drain_ready_monster_melee_at, next_native_melee_deadline,
-    settle_monster_melee_at,
+    settle_monster_melee_at_until,
 };
 use super::{Dependencies, TestResult, reset};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::foundation::MovementLocalPosition;
-use crate::gameplay_transport::monster_profile_cycle::with_main_native_ai_seed;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 const ARENA: MovementLocalPosition = MovementLocalPosition {
@@ -109,42 +108,35 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
             };
             let mut selected = false;
             let mut now = owner.owner_now().get();
-            // The 10% defence draw is keyed to the actor and committed Think
-            // sequence. Honor source deadlines too: the alternate defence can
-            // park the caster until its retained return callback moves it back.
-            for _ in 0..128 {
-                with_main_native_ai_seed(settle_monster_melee_at(&owner, now)).await?;
-                let runtime = owner.runtime.lock().await;
-                assert!(
-                    runtime.contains_live_creature(base),
-                    "source base remains a live distinct actor"
-                );
-                let states = owner.states.spell_states.lock().await;
-                selected = states
-                    .monster_melee
-                    .creature_ai
-                    .last_report_for_test(base)
-                    .is_some_and(|report| {
-                        report.proposals.iter().any(|proposal| {
-                            proposal.ability.key == "oteryn:ability.spell.time_guardian"
+            // Keep the source scenario's two-second budget per pass while
+            // honoring every native deadline within it.
+            let time_limit =
+                now + 128 * 2 * crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000;
+            while now < time_limit {
+                selected = settle_monster_melee_at_until(&owner, now, async || {
+                    assert!(
+                        owner.runtime.lock().await.contains_live_creature(base),
+                        "source base remains a live distinct actor"
+                    );
+                    owner
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .monster_melee
+                        .creature_ai
+                        .last_report_for_test(base)
+                        .is_some_and(|report| {
+                            report.proposals.iter().any(|proposal| {
+                                proposal.ability.key == "oteryn:ability.spell.time_guardian"
+                            })
                         })
-                    });
+                })
+                .await?;
                 if selected {
                     break;
                 }
-                let parked = runtime.read_actor_position(base).map_err(debug)?.position().floor
-                    != ARENA.floor;
-                if parked {
-                    now = states
-                        .native_callbacks
-                        .next_source_due_time()
-                        .map_err(debug)?
-                        .ok_or("alternate guardian defence retained its return deadline")?;
-                    continue;
-                }
-                drop(states);
-                drop(runtime);
-                now = next_native_melee_deadline(&owner).await?;
+                now = next_native_melee_deadline(&owner).await?.max(now + 1);
             }
             assert!(
                 selected,
@@ -207,8 +199,7 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                 .ok_or("retained time guardian return deadline")?;
             tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
                 loop {
-                    with_main_native_ai_seed(drain_ready_monster_melee_at(&owner, return_due))
-                        .await?;
+                    drain_ready_monster_melee_at(&owner, return_due).await?;
                     if owner
                         .states
                         .spell_states

@@ -82,5 +82,11 @@ rustls = { workspace = true, features = ["tls12"] }
 syn.workspace = true
 tokio = { workspace = true, features = ["test-util", "macros"] }
 
+# The target name preserves the library harness's Rust crate name and test paths.
+[[test]]
+name = "oteryn-gameplay-dispatch"
+path = "src/ci_unit_archive.rs"
+test = false
+
 [lints]
 workspace = true
