@@ -307,6 +307,12 @@ impl KillCounter {
             gate: &self.gate,
             gate_value: self.gate_value,
             gate_bounds: self.gate_bounds(),
+            // An explicit full range on the progress track has no mission gate.
+            // Earlier queued deaths may already have advanced that same track.
+            gate_is_progress: self.track == self.gate
+                && self.gate_value == self.minimum
+                && self.maximum.checked_sub(1) == self.gate_maximum
+                && self.gate_maximum.is_some(),
             minimum: self.minimum,
             maximum: self.maximum,
             death_area: self.death_area,
