@@ -1,4 +1,5 @@
 //! Crystal 201189f8, ferumbras_ascension/actions_flower_puzzle_lever.lua:1-11,29-37,63-66.
+use super::fixture::debug;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
@@ -182,5 +183,199 @@ pub(super) async fn exercise_cycle(
         }
         super::questpc7_ferumbras::step(owner, admitted, StepDirection::West).await?;
     }
+    Ok(())
+}
+pub(super) const PORTAL_CASE: &str = "ferumbras-shulgrax-personal-portal";
+const PORTAL_KEY: &str = "oteryn:quest-callback/ferumbras/shulgrax/flower-portal";
+const QUEST: &str = "oteryn:quest.ferumbras_ascension_quest";
+const WINDOW: &str = "oteryn:quest-progress/quest/u10_90/ferumbras_ascension/flower_puzzle_timer";
+const ARM_FIXTURE: &str = "oteryn:quest-transition/ferumbras/shulgrax/arm-fixture";
+const PORTAL_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/movements_shulgrax_lever.lua:3-24";
+// The fixture mounts AID 34301 at the flower lever's gate center.
+const PORTAL: Position = at(33477, 32698);
+const REFUSAL: Position = at(33477, 32699);
+const LANDING: Position = Position {
+    x: 33436,
+    y: 32800,
+    floor: -13,
+};
+const TELEPORT: u16 = 11; // Crystal src/utils/utils_definitions.hpp:66.
+
+#[test]
+fn shulgrax_portal_admits_only_the_character_with_a_current_flower_flag() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(PORTAL_CASE, || {
+        super::quest_world_callbacks::scenario(PORTAL_CASE, PORTAL, false)
+    })
+}
+
+pub(super) fn portal_callback() -> TestResult<Callback> {
+    let document = json!({"schema":1,"callbacks":[{
+        "key":PORTAL_KEY,"quest":QUEST,"trigger":"step_in",
+        "selector":{"action":34301},
+        "reversible":false,"passages":[],"offerings":[],
+        "storage":[{"track":WINDOW,"minimum":1,"maximum":1,"set":1,"read_only":true}],
+        "teleport":LANDING,"return_on_failure":true,"failure_teleport":REFUSAL,
+        "failure_message":"You not proven your worth. There is no escape for you here.",
+        "effects":{"teleport_effect":TELEPORT,"refusal_effect_on_source":TELEPORT},
+        "sources":[PORTAL_SOURCE]
+    }]});
+    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
+        .try_into()
+        .map_err(|_| "one Shulgrax portal callback")?;
+    Ok(callback)
+}
+
+pub(super) fn portal_catalogue(
+    callback: &Callback,
+) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+        QuestTransition, authored_bindings::Bindings,
+    };
+    use sha2::{Digest, Sha256};
+    let document = json!({"schema":1,"quests":[{
+        "quest":QUEST,"recipe_sha256":format!("{:x}", Sha256::digest(PORTAL_SOURCE)),
+        "sources":[PORTAL_SOURCE],"tracks":[{"key":WINDOW,"initial":0,"minimum":0,"maximum":1}],
+        "stages":[{"key":"flower-puzzle-portal","completes":false,
+            "trigger":{"kind":"step_in","callback":callback}}]
+    }]});
+    let base = QuestStateCatalogue::new(
+        "content-1",
+        vec![QuestTrack {
+            key: WINDOW.into(),
+            quest: QUEST.into(),
+            initial: 0,
+            min: 0,
+            max: 1,
+        }],
+        vec![QuestTransition {
+            key: ARM_FIXTURE.into(),
+            quest: QUEST.into(),
+            effects: vec![QuestEffect {
+                track: WINDOW.into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Set(1),
+            }],
+            completes: false,
+            experience: None,
+            world_change: None,
+        }],
+    );
+    let base = base.map_err(debug)?;
+    let catalogue = Bindings::parse(&serde_json::to_vec(&document)?)?.attach(&base)?;
+    assert!(
+        catalogue.transition(PORTAL_KEY).is_none(),
+        "the portal performs a fenced read"
+    );
+    Ok(catalogue)
+}
+
+pub(super) async fn exercise_portal(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &super::fixture::Harness,
+    callback: Callback,
+) -> TestResult {
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::foundation::{CommandId, CommandRef};
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
+    owner
+        .states
+        .quest_callbacks
+        .fixture
+        .set(vec![callback])
+        .map_err(|_| "callback installed")?;
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    let primary = admitted.runtime_actor.ok_or("player")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    // Only the permission fixture is seeded. Admission and refusal use ordinary STEP.
+    let armed = slot
+        .commit_quest_transition(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            QuestTransitionRequest {
+                transition_key: ARM_FIXTURE.into(),
+                cause: QuestCause::Command(CommandRef::new(
+                    admitted.game_session_id,
+                    CommandId::new(1000).map_err(debug)?,
+                )),
+            },
+            std::sync::Arc::clone(catalogue),
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(armed, QuestTransitionOutcome::Committed(_)));
+    drop(slot);
+    let peer = super::ferumbras_crystal_reset::admit_peer(
+        owner,
+        h,
+        Position {
+            y: PORTAL.y - 1,
+            ..PORTAL
+        },
+    )
+    .await?;
+    let session = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .into_iter()
+            .find_map(|(actor, _, session)| (actor == peer).then_some(session).flatten())
+            .ok_or("peer session")?
+    };
+    super::questpc7_ferumbras::step(owner, admitted, StepDirection::East).await?;
+    let (result, _) = owner
+        .ordinary_paced_step(peer, session, StepDirection::South, None, None)
+        .await;
+    assert_eq!(result.disposition, StepDisposition::Moved);
+    let runtime = owner.runtime.lock().await;
+    for (actor, destination) in [(primary, LANDING), (peer, REFUSAL)] {
+        assert_eq!(
+            runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            super::quest_world_callbacks::local(destination)
+        );
+    }
+    let map = owner.bundle_map().ok_or("flower gate map")?;
+    let cues: Vec<_> = map
+        .facts
+        .movement_effects_since(0)
+        .into_iter()
+        .filter(|(_, _, effect)| *effect == TELEPORT)
+        .map(|(_, at, _)| (at.x, at.y, at.floor))
+        .collect();
+    assert_eq!(
+        cues,
+        [
+            (LANDING.x, LANDING.y, LANDING.floor),
+            (PORTAL.x, PORTAL.y, PORTAL.floor)
+        ]
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1"
+        )
+        .bind(PORTAL_KEY)
+        .fetch_one(&h.pool)
+        .await?,
+        0
+    );
     Ok(())
 }

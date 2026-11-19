@@ -358,6 +358,8 @@ fn scenario_case(
         super::super::shulgrax_flower_pattern::cycle_callback()?
     } else if name == super::super::shulgrax_flower_pattern::CASE {
         super::super::shulgrax_flower_pattern::callback()?
+    } else if name == super::super::shulgrax_flower_pattern::PORTAL_CASE {
+        super::super::shulgrax_flower_pattern::portal_callback()?
     } else if super::super::warzone_portal_cooldown::is_victory(name) {
         super::super::warzone_portal_cooldown::terminal_callback(name, trigger)?
     } else if monster_step {
@@ -1742,6 +1744,9 @@ fn scenario_case(
         if super::super::zamulosh_monster_step::is_habitat(name) {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::super::zamulosh_monster_step::habitat_catalogue(&callback)?));
         }
+        if name == super::super::shulgrax_flower_pattern::PORTAL_CASE {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::shulgrax_flower_pattern::portal_catalogue(&callback)?));
+        }
         if super::super::first_dragon_descendant::handles(name) {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::first_dragon_descendant::catalogue(&callback)?,
@@ -1919,6 +1924,8 @@ fn scenario_case(
             Box::pin(super::super::shulgrax_flower_pattern::exercise_cycle(&owner, &mut admitted, callback.clone())).await?;
         } else if name == super::super::shulgrax_flower_pattern::CASE {
             Box::pin(super::super::shulgrax_flower_pattern::exercise(&owner, &mut admitted, callback.clone())).await?;
+        } else if name == super::super::shulgrax_flower_pattern::PORTAL_CASE {
+            Box::pin(super::super::shulgrax_flower_pattern::exercise_portal(&owner, &mut admitted, &h, callback.clone())).await?;
         } else if super::super::warzone_portal_cooldown::is_victory(name) {
             Box::pin(super::super::warzone_portal_cooldown::exercise_victory(&owner, &mut admitted, &h, callback.clone(), name, trigger)).await?;
         } else if monster_step {

@@ -110,6 +110,9 @@ pub struct CallbackEffects {
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
+    /// Cue at the entered object after a refused STEP relocates its actor.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refusal_effect_on_source: Option<u16>,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1396,6 +1399,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
             .magic
             .as_ref()
             .is_some_and(|m| !pos(m.position) || m.effect == 0)
+        || effects.refusal_effect_on_source.is_some_and(|effect| {
+            !(1..=255).contains(&effect)
+                || callback.actor_kind != ActorKind::Player
+                || callback.trigger != Trigger::StepIn
+                || !callback.return_on_failure
+        })
         || (callback.trigger == Trigger::StepOut && callback.return_on_failure)
     {
         return false;

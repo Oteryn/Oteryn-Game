@@ -1671,10 +1671,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
             self.punish_carrot_refusal(runtime, states, actor, session, entered, snapshot);
-            if let Some(effect) = callback.effects.teleport_effect.or_else(|| {
-                oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
-                    .map(|gate| gate.effect)
-            }) && let Some(at) = native(snapshot.position())
+            // Crystal 201189f8, movements_shulgrax_lever.lua:9-18. A refused
+            // participant sees the cue on the gate they just entered.
+            let (cue, position) = if let Some(effect) = callback.effects.refusal_effect_on_source {
+                (Some(effect), entered.position())
+            } else {
+                (
+                    callback.effects.teleport_effect.or_else(|| {
+                        oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
+                            .map(|gate| gate.effect)
+                    }),
+                    snapshot.position(),
+                )
+            };
+            if let Some(effect) = cue
+                && let Some(at) = native(position)
             {
                 let _ = map.facts.emit_movement_effect(at, effect);
             }
