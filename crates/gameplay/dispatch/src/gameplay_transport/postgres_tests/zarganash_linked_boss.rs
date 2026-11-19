@@ -14,9 +14,20 @@ use oteryn_protocol_oteryn::world_object::{
 use std::time::Duration;
 
 pub(super) const NAME: &str = "zarganash-linked-boss";
+pub(super) const DEPARTED_TOP: &str = "zarganash-linked-boss-departed-top";
 pub(super) const OCCUPIED_ARRIVAL: &str = "zarganash-linked-boss-occupied-arrival";
 const UNWELCOME: &str = "oteryn:creature.the_unwelcome";
 const BROTHER: &str = "oteryn:creature.brother_worm";
+const QUEST: &str = "oteryn:quest.feaster_of_souls_quest";
+const CREDIT_TRACK: &str = "oteryn:quest-progress/quest/u12_30/feaster_of_souls/unwelcome_killed";
+// Crystal Feaster actions_bosses_killed.lua:1-18 and storages.lua:2978.
+const CREDIT_RULE: &str = r#"{
+    "creature":"oteryn:creature.the_unwelcome",
+    "transition":"oteryn:quest-transition/source-death/feaster-unwelcome-killed",
+    "effects":[{"track":"oteryn:quest-progress/quest/u12_30/feaster_of_souls/unwelcome_killed",
+                "default":-1,"from":{"kind":"lt","value":1},"set":1}],
+    "define_transition":true
+}"#;
 const ARRIVAL: Position = at(33705, 31539);
 const LEVER: Position = at(33735, 31537);
 const ENTRY: Position = at(33707, 31545);
@@ -76,11 +87,33 @@ fn zarganash_two_players_enter_and_exit_as_brother_worm_finishes_only_its_linked
     super::kill_reward_e2e::scenario_thread::run(NAME, || scenario(NAME, LEVER, false))
 }
 
+#[test]
+fn zarganash_unwelcome_credits_the_remaining_attacker_after_brother_worm_kills_it() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(DEPARTED_TOP, || {
+        scenario(DEPARTED_TOP, LEVER, false)
+    })
+}
+
+pub(super) fn with_credit_rule(
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    Ok(oteryn_gameplay_quests::quest::source_deaths::with_fixture_rule(
+        catalogue, QUEST, CREDIT_RULE,
+    )?)
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    occupied_arrival: bool,
+    harness: &super::fixture::Harness,
+    name: &str,
 ) -> TestResult {
+    let occupied_arrival = name == OCCUPIED_ARRIVAL;
+    let departed_top = name == DEPARTED_TOP;
     let player = admitted.runtime_actor.ok_or("actor")?;
     let second_session = GameSessionId::decode(&id(110)).map_err(debug)?;
     let second = {
@@ -243,6 +276,26 @@ pub(super) async fn exercise(
         let now = owner.owner_now();
         let mut runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
+        if departed_top {
+            for (attacker, session, damage) in [
+                (player, admitted.game_session_id, 1),
+                (second, second_session, 2),
+            ] {
+                let hit = runtime.borrow_exact_actor_commit_at_us(now.get())
+                    .commit_damage_for_bound_attacker(
+                        original, attacker, CommandRef::new(session, CommandId::new(3199).map_err(debug)?),
+                        0, OwnerDamageCommand {
+                            target: UNWELCOME.as_bytes(),
+                            occurrence: b"unwelcome-damage",
+                            binding: b"unwelcome-damage-before-linked-lethal",
+                            damage,
+                        },
+                    ).map_err(debug)?;
+                assert_eq!(hit.health_before - hit.health_after, damage);
+            }
+            runtime.remove_test_actor(second).map_err(debug)?;
+            assert!(runtime.borrow_combat_death().top_damage_contributor(original).map_err(debug)?.is_gone());
+        }
         let lease = runtime
             .bound_attacker_lease(player, admitted.game_session_id)
             .map_err(debug)?;
@@ -288,9 +341,20 @@ pub(super) async fn exercise(
         assert!(!runtime.contains_live_creature(original));
         assert!(runtime.contains_live_creature(unrelated));
     }
+    if departed_top {
+        use crate::gameplay_transport::kill_reward::DrainOutcome;
+        assert_eq!(owner.drain_kill_rewards(admitted.game_session_id).await, DrainOutcome::Drained);
+        let value: Option<i64> = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks WHERE quest_key=$1 AND track_key=$2",
+        ).bind(QUEST).bind(CREDIT_TRACK).fetch_optional(&harness.pool).await?;
+        assert_eq!(value, Some(1));
+    }
     advance_to_deadline(owner)?;
     owner.drain_quest_encounter_deadlines().await;
     for member in [player, second] {
+        if departed_top && member == second {
+            continue;
+        }
         assert_eq!(
             owner
                 .runtime

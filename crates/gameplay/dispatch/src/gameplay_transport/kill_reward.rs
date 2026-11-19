@@ -1867,6 +1867,18 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
+    record_creature_kill_inner(runtime, sink, target, lethal, now_ms, observed_at, false);
+}
+
+fn record_creature_kill_inner(
+    runtime: &mut ChannelRuntimeV1,
+    sink: KillSink<'_>,
+    target: ExactActorRef,
+    lethal: CapturedRewardPrincipal,
+    now_ms: u64,
+    observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+    linked_death: bool,
+) {
     // Physical statistics precede every reward/principal/Bestiary admission.
     // The owner-issued lethal receipt proves death even for a no-corpse arena
     // or Instance; projections and rewards retain their existing independent rules.
@@ -1963,7 +1975,15 @@ pub fn record_creature_kill(
         )
     }) {
         if let Some(contributor) = linked_death_contributor(runtime, linked) {
-            record_creature_kill(runtime, sink, linked, contributor, now_ms, observed_at);
+            record_creature_kill_inner(
+                runtime,
+                sink,
+                linked,
+                contributor,
+                now_ms,
+                observed_at,
+                true,
+            );
         } else {
             // The script's hit carries no Character attribution. With no
             // contributor, publish its physical death without assigning credit.
@@ -2046,6 +2066,19 @@ pub fn record_creature_kill(
         refuse("damage_shares_unavailable", &creature);
         return;
     };
+    if linked_death && top.is_gone() {
+        let mut entry = PendingKillSettlement::without_materialization(
+            facts,
+            creature,
+            None,
+            ground,
+            target,
+            observed_at,
+        );
+        entry.damage_shares = damage_shares;
+        accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
+        return;
+    }
     if !top.is_gone()
         && let Some(states) = sink.prey
     {

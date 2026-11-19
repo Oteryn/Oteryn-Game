@@ -397,7 +397,7 @@ fn scenario_case(
     use super::super::dreamers_sacrifice_routes;
     let sacrifice_route = matches!(name, dreamers_sacrifice_routes::BROTHERHOOD | dreamers_sacrifice_routes::NIGHTMARE);
     use super::super::zarganash_linked_boss;
-    let zarganash = matches!(name, zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL);
+    let zarganash = matches!(name, zarganash_linked_boss::DEPARTED_TOP | zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL);
     let mut callback = if zarganash {
         zarganash_linked_boss::binding()?
     } else if izcandar {
@@ -1508,7 +1508,7 @@ fn scenario_case(
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             dream_scar_izcandar_forms::NAME | faceless_bane_phase::LIMITED_SLOTS | faceless_bane_phase::NAME | feaster_brain_head::CLOSED | feaster_brain_head::FULL | feaster_brain_head::NAME | feaster_brain_head::VACANT | feaster_solo_rooms::IRGIX
             | feaster_solo_rooms::IRGIX_RETURN | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK
-            | zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL => Some(250),
+            | zarganash_linked_boss::DEPARTED_TOP | zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL => Some(250),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -1890,6 +1890,11 @@ fn scenario_case(
                     &binding,
                 )?,
             ));
+        }
+        if name == zarganash_linked_boss::DEPARTED_TOP {
+            owner.quest_catalogue = Some(std::sync::Arc::new(zarganash_linked_boss::with_credit_rule(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
+            )?));
         }
         if board_exit {
             owner.quest_catalogue = Some(dreamers_board_exit::catalogue(
@@ -3095,7 +3100,7 @@ fn scenario_case(
             )
             .await?;
         } else if zarganash {
-            Box::pin(zarganash_linked_boss::exercise(&mut owner, &mut admitted, name == zarganash_linked_boss::OCCUPIED_ARRIVAL)).await?;
+            Box::pin(zarganash_linked_boss::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if izcandar {
             Box::pin(dream_scar_izcandar_forms::exercise(&mut owner, &mut admitted)).await?;
         } else if faceless_bane {
