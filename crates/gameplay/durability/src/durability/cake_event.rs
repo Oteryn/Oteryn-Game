@@ -93,6 +93,7 @@ pub struct CakeBite {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CakeBiteOutcome {
+    Eaten,
     Use(UseDisposition),
     Cooldown { seconds_left: i32 },
     Full,
@@ -150,7 +151,7 @@ impl DurabilityRoot {
             let year:Option<i32>=sqlx::query_scalar("SELECT event_year FROM game_cake_bite_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
             let year=match year {Some(year)=>Some(year),None=>latest_year(&mut tx,world).await?};
-            let Some(year)=year else{return Ok(CakeBiteOutcome::Use(UseDisposition::NotPossible))};
+            let Some(year)=year else{return Ok(CakeBiteOutcome::NotEating)};
             let prepared:String=sqlx::query_scalar("SELECT game_cake_bite_prepare(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,$6,$7,$8,$9,$10)")
                 .bind(world.as_bytes().as_slice()).bind(year).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
                 .bind(fence.character_id.as_bytes().as_slice()).bind(&request.mutation.placement).bind(request.mutation.expected_revision)
@@ -191,7 +192,7 @@ impl DurabilityRoot {
             sqlx::query("UPDATE game_terrain_tool_transforms SET cake_event_year=$5,cake_source_item=$6 WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND placement=$3 AND reset_epoch=$4")
                 .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(request.mutation.placement).bind(request.scope.reset_epoch).bind(year)
                 .bind(i32::try_from(request.mutation.before).map_err(|_|DurabilityError::InvalidStoredState)?).execute(&mut **tx).await?;
-            tx.commit(deadline).await?;Ok(CakeBiteOutcome::Use(UseDisposition::Committed))
+            tx.commit(deadline).await?;Ok(CakeBiteOutcome::Eaten)
         })).await
     }
 

@@ -1,5 +1,5 @@
 //! Actual Channel USE of a source Cake tile, with durable world and native map proofs.
-//! Crystal 201189f8, a_piece_of_cake/actions_cake_bite.lua:28-55.
+//! Crystal 201189f8, a_piece_of_cake/actions_cake_bite.lua:28-57.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
@@ -106,6 +106,13 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                     speaker_name: "Game".into(),
                     text: "You can't eat any more cake this window - you've had your fill! Wait for the next one.".into(),
                 }]);
+                let speech = map.facts.movement_speech_since(0);
+                let [(_, bite)] = speech.as_slice() else {
+                    return Err("exactly one speech cue for the fresh bite, replay and refusals".into());
+                };
+                assert_eq!(bite.speaker, deps.actor);
+                assert_eq!(bite.position, crate::map::overlay::TilePos { x: 33302, y: 32070, floor: -7 });
+                assert_eq!((bite.talk_type, bite.text.as_str()), (36, "Mmmm!"));
                 let progress:i16=sqlx::query_scalar("SELECT layer_progress FROM game_cake_phases WHERE world_id=encode($1,'hex')::uuid AND event_year=2026").bind(id(42).as_slice()).fetch_one(&h.pool).await?;
                 let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_cake_bite_receipts WHERE world_id=encode($1,'hex')::uuid").bind(id(42).as_slice()).fetch_one(&h.pool).await?;
                 assert_eq!((progress,receipts),(1,1));

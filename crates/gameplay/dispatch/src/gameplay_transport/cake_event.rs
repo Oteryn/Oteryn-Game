@@ -518,6 +518,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .bite_world_cake(&permit, self.character, self.holder, fence, request)
             .await
         {
+            Ok(CakeBiteOutcome::Eaten) => {
+                let _ = self.refresh_cake_world_map().await;
+                // Crystal actions_cake_bite.lua:54-57 speaks after a fresh bite.
+                if let (Ok(x), Ok(y), Ok(floor)) = (
+                    u16::try_from(at.x),
+                    u16::try_from(at.y),
+                    i8::try_from(-i32::from(at.floor)),
+                ) {
+                    map.facts.emit_movement_speech(crate::map::facts::MovementSpeech {
+                        speaker: actor,
+                        position: TilePos { x, y, floor },
+                        talk_type: 36,
+                        text: "Mmmm!".into(),
+                        captured_name: None,
+                    });
+                }
+                return Some(outcome(UseDisposition::Committed));
+            }
             Ok(CakeBiteOutcome::Use(disposition)) => {
                 if disposition == UseDisposition::Committed {
                     let _ = self.refresh_cake_world_map().await;
