@@ -1936,15 +1936,10 @@ impl DurabilityRoot {
                         }
                     }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
-                        && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await?
+                        && let Err(refusal) = super::super::quest_world_callback::consume(
+                            &mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)
+                        ).await?
                     {
-                        let refusal = if callback.effects.fluid_offering.as_ref()
-                            .is_some_and(|offering| offering.missing_return_effect.is_some())
-                        {
-                            QuestRefusal::SourceOfferingMissing
-                        } else {
-                            QuestRefusal::StageMismatch
-                        };
                         return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
                     }
                     if native_claim {

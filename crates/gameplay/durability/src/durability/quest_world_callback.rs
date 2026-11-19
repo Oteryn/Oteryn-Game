@@ -32,6 +32,7 @@ use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
     spell_owner_commit::SpellLanePermit,
 };
+use oteryn_gameplay_quests::quest::QuestRefusal;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -441,41 +442,42 @@ pub(super) async fn consume(
         &crate::character_recovery_fence::CharacterRecoveryFenceV1,
         &super::runtime_scope_assignment::NodeIncarnationProof,
     ),
-) -> Result<bool, DurabilityError> {
+) -> Result<Result<(), QuestRefusal>, DurabilityError> {
+    let stage_mismatch = Ok(Err(QuestRefusal::StageMismatch));
     let (super::quest_state::QuestCause::Use(command)
     | super::quest_state::QuestCause::Step(command)) = request.cause
     else {
-        return Ok(false);
+        return stage_mismatch;
     };
     // The Quest writer returned any exact immutable receipt before this fresh
     // participant. Legacy repeated-seal counters cannot bypass distinct targets.
     if oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&callback.key) {
-        return Ok(false);
+        return stage_mismatch;
     }
     let crate::foundation::RuntimeScopeRefV1::Channel {
         world_id,
         channel_id,
     } = fence.runtime_scope
     else {
-        return Ok(false);
+        return stage_mismatch;
     };
     let exact = callback
         .item_on_target
         .as_ref()
         .is_some_and(|item| item.selected_instance);
     if exact != context.selected_tool.is_some() {
-        return Ok(false);
+        return stage_mismatch;
     }
     if !context_is_current(tx, permit, fence, context).await? {
-        return Ok(false);
+        return stage_mismatch;
     }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
-        return Ok(false);
+        return stage_mismatch;
     }
     if let Some(change) = &callback.world_change
         && !super::world_event::change_active(tx, world_id, change).await?
     {
-        return Ok(false);
+        return stage_mismatch;
     }
     if !super::world_event::changes::callbacks::require(
         tx,
@@ -485,14 +487,14 @@ pub(super) async fn consume(
     )
     .await?
     {
-        return Ok(false);
+        return stage_mismatch;
     }
     // M03: promotion is a permanent Character purchase, not a client vocation
     // name or copied quest storage. The outer writer holds the Character root.
     if callback.admission.as_ref().is_some_and(|a| a.promotion)
         && !super::character_promotion::read_durable_promotion(tx, fence.character_id).await?
     {
-        return Ok(false);
+        return stage_mismatch;
     }
     if let Some(minimum) = callback.minimum_level {
         let level: Option<i64> = sqlx::query_scalar(
@@ -503,7 +505,7 @@ pub(super) async fn consume(
         .fetch_optional(&mut **tx)
         .await?;
         if level.is_none_or(|level| level < i64::from(minimum)) {
-            return Ok(false);
+            return stage_mismatch;
         }
     }
     if !ground_stack::require(
@@ -516,13 +518,13 @@ pub(super) async fn consume(
     )
     .await?
     {
-        return Ok(false);
+        return stage_mismatch;
     }
     if let Some(admission) = &callback.admission {
         if admission.promotion
             && !super::character_promotion::read_durable_promotion(tx, fence.character_id).await?
         {
-            return Ok(false);
+            return stage_mismatch;
         }
         if admission.regular_blessings {
             let held: Vec<String> = sqlx::query_scalar(
@@ -535,7 +537,7 @@ pub(super) async fn consume(
                 .regular()
                 .all(|blessing| held.contains(&blessing.storage_key))
             {
-                return Ok(false);
+                return stage_mismatch;
             }
         }
     }
@@ -564,13 +566,13 @@ pub(super) async fn consume(
             )
             .await?
         {
-            return Ok(false);
+            return stage_mismatch;
         }
     }
     if let Some(requirements) = &callback.character_requirements
         && !character_requirements::satisfied(tx, fence.character_id, requirements).await?
     {
-        return Ok(false);
+        return stage_mismatch;
     }
     // The Character root and current session are already fenced. Lock the actual
     // carried instances before testing quantities; map objects never prove ownership.
@@ -583,7 +585,7 @@ pub(super) async fn consume(
         ).bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
             .bind(&evidence.item).fetch_all(&mut **tx).await?;
         if quantities.len() > 500 || quantities.iter().sum::<i64>() < i64::from(evidence.count) {
-            return Ok(false);
+            return stage_mismatch;
         }
     }
     // NPC travel locks the Character root but does not advance its revision.
@@ -602,7 +604,7 @@ pub(super) async fn consume(
         ).bind(fence.character_id.as_bytes().as_slice()).bind(&route.route)
             .bind(&route.after_transition).bind(&callback.quest).fetch_one(&mut **tx).await?;
         if !arrived {
-            return Ok(false);
+            return stage_mismatch;
         }
     }
     if let Some(offering) = &callback.effects.fluid_offering {
@@ -610,10 +612,10 @@ pub(super) async fn consume(
         let Some(key) =
             oteryn_world_bundle::bundle::placement_key(position.floor, position.x, position.y, 0)
         else {
-            return Ok(false);
+            return stage_mismatch;
         };
         let Some(map_digest) = context.map_revision.strip_prefix("sha256:") else {
-            return Ok(false);
+            return stage_mismatch;
         };
         // Splash placement is the 32-byte bundle digest followed by the
         // 8-byte placement key. The low byte is the selected base entry's
@@ -634,18 +636,25 @@ pub(super) async fn consume(
         .bind(&key.to_be_bytes()[..7])
         .execute(&mut **tx)
         .await?;
-        return Ok(consumed.rows_affected() == 1);
+        return if consumed.rows_affected() == 1 {
+            Ok(Ok(()))
+        } else if offering.missing_return_effect.is_some() {
+            Ok(Err(QuestRefusal::SourceOfferingMissing))
+        } else {
+            stage_mismatch
+        };
     }
     if callback.offerings.is_empty()
         && callback.item_on_target.is_none()
         && callback.effects.carried_inputs.is_empty()
     {
-        return Ok(true);
+        return Ok(Ok(()));
     }
     consume_inputs(
         tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
     )
     .await
+    .map(|consumed| consumed.then_some(()).ok_or(QuestRefusal::StageMismatch))
 }
 
 /// Shared current map/content/reset proof for source-qualified quest world actions.
