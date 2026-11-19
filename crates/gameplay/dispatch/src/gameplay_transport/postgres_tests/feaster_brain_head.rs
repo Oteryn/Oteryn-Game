@@ -62,7 +62,8 @@ pub(super) fn binding() -> TestResult<Callback> {
 }
 
 #[test]
-fn brain_head_step_admits_into_an_occupied_room_then_ejects_at_the_stage_deadline() -> TestResult {
+fn brain_head_admits_two_players_through_separate_portals_then_ejects_both_at_the_deadline()
+-> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -87,9 +88,8 @@ pub(super) async fn exercise(
     full: bool,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    // An occupied shared room can admit another player. The three source
-    // stages must not be projected as a solo occupancy gate.
-    let spectators = {
+    // A full zone refuses entry even if all occupants are spectators.
+    if full {
         let mut runtime = owner.runtime.lock().await;
         let cells = [
             ENTRY,
@@ -98,18 +98,15 @@ pub(super) async fn exercise(
             at(31962, 32325),
             at(31963, 32325),
         ];
-        let mut spectators = Vec::new();
-        for (index, cell) in cells.into_iter().take(if full { 5 } else { 1 }).enumerate() {
+        for (index, cell) in cells.into_iter().enumerate() {
             let session = GameSessionId::decode(&id(112 + u8::try_from(index)?)).map_err(debug)?;
             let lease = runtime.reserve_fresh_session(session).map_err(debug)?;
             let spectator = runtime.commit_fresh_session(lease).map_err(debug)?;
             runtime
                 .initialize_pinned_test_position(spectator, local(cell))
                 .map_err(debug)?;
-            spectators.push(spectator);
         }
-        spectators
-    };
+    }
     let result = wire(
         owner,
         admitted,
@@ -158,6 +155,40 @@ pub(super) async fn exercise(
     assert_eq!(live(owner, BOSS).await?.len(), 1);
     assert_eq!(live(owner, ADD).await?.len(), 8);
     assert!((35_990_000..=36_000_000).contains(&remaining.ok_or("booked cooldown")?));
+    // Crystal registers every approach tile for the same visit. A second
+    // independently fenced Character enters by the primary position.
+    let mut second = second_player(owner, admitted, harness).await?;
+    let second_actor = second.runtime_actor.ok_or("second player")?;
+    let reply = wire(
+        owner,
+        &mut second,
+        1,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(StepDirection::East),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
+    );
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(second_actor)
+            .map_err(debug)?
+            .position(),
+        local(ENTRY)
+    );
+    assert_eq!(live(owner, BOSS).await?.len(), 1);
+    assert_eq!(live(owner, ADD).await?.len(), 8);
+    let cooled_players: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key=$1")
+            .bind(BOSS)
+            .fetch_one(&harness.pool)
+            .await?;
+    assert_eq!(cooled_players, 2);
     let due = owner
         .states
         .quest_callbacks
@@ -168,7 +199,7 @@ pub(super) async fn exercise(
     owner.drain_quest_encounter_deadlines().await;
     {
         let runtime = owner.runtime.lock().await;
-        for player in spectators.into_iter().chain([actor]) {
+        for player in [actor, second_actor] {
             assert_eq!(
                 runtime
                     .read_actor_position(player)
@@ -181,4 +212,83 @@ pub(super) async fn exercise(
     assert!(live(owner, BOSS).await?.is_empty());
     assert!(live(owner, ADD).await?.is_empty());
     Ok(())
+}
+
+async fn second_player(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    first: &AdmittedSession,
+    harness: &Harness,
+) -> TestResult<AdmittedSession> {
+    use crate::world_party_runtime_postgres_cases::{
+        FreshPlayerOwners, committed_fresh_player_with_operation,
+    };
+
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&harness.pool)
+            .await?;
+    let (current, operation) = committed_fresh_player_with_operation(
+        &FreshPlayerOwners {
+            root: harness.root.clone(),
+            node: harness.node.clone(),
+            recovery: &harness.recovery,
+        },
+        61,
+        63,
+        71,
+        now,
+    )
+    .await?;
+    let first_actor = first.runtime_actor.ok_or("first actor")?;
+    let session = current.current_game_session_id();
+    let (actor, digest) = {
+        let mut runtime = owner.runtime.lock().await;
+        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
+        runtime
+            .bind_attacker_lease(actor, session, current.current_character_lease())
+            .map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                local(Position {
+                    x: DOOR.x - 1,
+                    ..DOOR
+                }),
+            )
+            .map_err(debug)?;
+        let mut states = owner.states.spell_states.lock().await;
+        let facts = states
+            .get(&runtime, first_actor, first.game_session_id)
+            .ok_or("first player's level-250 facts")?
+            .character_facts();
+        states
+            .initialize(&runtime, actor, session, facts, (0, 0), owner.owner_now())
+            .ok_or("second player's live facts")?;
+        (actor, runtime.content_pin().server_artifact_digest())
+    };
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "second player fence read")?
+        .ok_or("second player fence")?
+        .item_fence();
+    harness
+        .root
+        .initialize_admission_equipment(owner.character, owner.holder, &fence, digest, &operation)
+        .await
+        .map_err(debug)?;
+
+    let mut admitted = AdmittedSession {
+        game_session_id: session,
+        runtime_actor: Some(actor),
+        controller: None,
+        item_fence: Some(fence),
+        ..*first
+    };
+    admitted.continuity.connection_generation = current.current_connection_generation().get();
+    admitted.continuity.next_command_id = 1;
+    owner.admit_progression_session(&mut admitted).await;
+    owner.admit_quest_session(&admitted).await;
+    Ok(admitted)
 }
