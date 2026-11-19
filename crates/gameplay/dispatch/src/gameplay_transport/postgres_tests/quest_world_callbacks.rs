@@ -343,7 +343,7 @@ pub(super) fn world_with_cells(
         callback,
         trigger,
         callback.selector.appearance.unwrap_or(100),
-        1,
+        u8::try_from(callback.selector.ordinal.unwrap_or(1).max(1))?,
         &[],
         &[],
         None,

@@ -359,6 +359,7 @@ fn scenario_case(
     let vestibule = matches!(
         name,
         super::super::step_health_loss::BELOW_LEVEL
+            | super::super::step_health_loss::DONOR_ENTRANCE
             | super::super::step_health_loss::NAME
             | super::super::step_health_loss::HEALTH_FLOOR
             | super::super::step_health_loss::PAID
@@ -373,7 +374,7 @@ fn scenario_case(
     } else if reservoir {
         super::super::putrefactory_reservoir::callback()?
     } else if vestibule {
-        super::super::step_health_loss::callback()?
+        super::super::step_health_loss::callback(trigger)?
     } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {

@@ -1,5 +1,5 @@
 //! Crystal 201189f8, rotten_blood_quest/movements_blood_entrance.lua:7-44.
-//! The ingress pad is adjacent to the requested Putrefactory landing in this fixture.
+//! The donor entrance and the fixture ingress beside the Putrefactory landing are separate selectors.
 use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{local, scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
@@ -19,6 +19,7 @@ pub(super) const NAME: &str = "unpaid-vestibule-step-health-loss";
 pub(super) const HEALTH_FLOOR: &str = "unpaid-vestibule-health-floor";
 pub(super) const PAID: &str = "paid-vestibule-step-no-health-loss";
 pub(super) const BELOW_LEVEL: &str = "vestibule-step-below-level";
+pub(super) const DONOR_ENTRANCE: &str = "vestibule-donor-entrance";
 const QUEST: &str = "oteryn:quest.fixture.vestibule";
 const ACCESS: &str = "oteryn:quest-progress/fixture/vestibule-access";
 const LEVEL_REFUSAL: &str = "You need at least level 250 to enter.";
@@ -32,6 +33,12 @@ const INGRESS: Position = Position {
     x: 34102,
     ..LANDING
 };
+// Crystal movements_blood_entrance.lua:2,42-44 and
+// content/world/placements/region-z09-x128-y126.b3: item 25181 is the third top-level entry.
+const SOURCE_ENTRANCE: Position = Position { x: 32953, y: 32398, floor: -9 };
+const SOURCE_APPEARANCE: u16 = 25181;
+const SOURCE_ORDINAL: u8 = 2;
+
 const EJECT: Position = Position {
     x: 32955,
     y: 32398,
@@ -92,11 +99,29 @@ fn vestibule_returns_below_level_player_to_landing_before_penalty() -> TestResul
     })
 }
 
-pub(super) fn callback() -> TestResult<Callback> {
+#[test]
+fn unpaid_blood_entrance_uses_the_retained_donor_placement() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::kill_reward_e2e::scenario_thread::run(DONOR_ENTRANCE, || {
+        scenario(DONOR_ENTRANCE, SOURCE_ENTRANCE, false)
+    })
+}
+
+pub(super) fn callback(trigger: Position) -> TestResult<Callback> {
+    let selector = if trigger == SOURCE_ENTRANCE {
+        json!({"position":trigger,"ordinal":SOURCE_ORDINAL,"appearance":SOURCE_APPEARANCE})
+    } else {
+        json!({"position":trigger,"ordinal":0})
+    };
     Ok(serde_json::from_value(json!({
         "key":"oteryn:quest-callback/fixture/vestibule-ejection",
         "quest":QUEST, "trigger":"step_in", "actor_kind":"player",
-        "selector":{"position":INGRESS,"ordinal":0},
+        "selector":selector,
         "passages":[], "storage":[{"track":ACCESS,"minimum":0,"maximum":3,"set":0,"read_only":true}],
         "offerings":[], "return_on_failure":true, "reversible":false,
         "teleport":EJECT,
@@ -112,7 +137,9 @@ pub(super) async fn exercise(
     harness: &Harness,
     name: &str,
 ) -> TestResult {
-    let mut unpaid = serde_json::to_value(callback()?)?;
+    let trigger = if name == DONOR_ENTRANCE { SOURCE_ENTRANCE } else { INGRESS };
+    let origin = Position { x: trigger.x - 1, ..trigger };
+    let mut unpaid = serde_json::to_value(callback(trigger)?)?;
     let mut paid = unpaid.clone();
     paid["key"] = json!("oteryn:quest-callback/fixture/vestibule-admission");
     paid["storage"][0]["minimum"] = json!(4);
@@ -127,7 +154,7 @@ pub(super) async fn exercise(
         "quests":[{
             "quest":QUEST,
             "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
-            "sources":["Synthetic ingress pad; penalty and ejection from Crystal 201189f8"],
+            "sources":["Crystal 201189f8 movements_blood_entrance.lua:7-44"],
             "tracks":[{"key":ACCESS,"initial":if name == PAID { 4 } else { 0 },"minimum":0,"maximum":5}],
             "stages":[
                 {"key":"unpaid-ingress","completes":false,
@@ -180,7 +207,7 @@ pub(super) async fn exercise(
             .read_actor_position(actor)
             .map_err(debug)?
             .position(),
-        local(LANDING)
+        local(origin)
     );
     let before = health().await?;
     let expected = if name == HEALTH_FLOOR {
@@ -222,7 +249,7 @@ pub(super) async fn exercise(
             .position(),
         local(match name {
             PAID => DESTINATION,
-            BELOW_LEVEL => LANDING,
+            BELOW_LEVEL => origin,
             _ => EJECT,
         })
     );
