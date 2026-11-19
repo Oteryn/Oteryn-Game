@@ -36,6 +36,7 @@ CANONICAL_CONTROL_PATHS = {
     ".github/workflows/merge-group-gate.yml",
     ".github/workflows/rust.yml",
 }
+MERGE_AUTHORITY_AUDIT_PATH = ".github/workflows/merge-authority-audit.yml"
 # Explicit tool roles. New/unreviewed repository tools remain FULL until classified.
 REPOSITORY_CONTROL_TOOLS = frozenset({
     "tools/repository/" + name for name in (
@@ -658,6 +659,72 @@ def pr_file_records() -> tuple[list[dict], int, bool]:
     return files, len(files), True
 
 
+def exact_git_object(revision: str, kind: bytes) -> bytes:
+    response = subprocess.check_output(
+        ["git", "--no-replace-objects", "cat-file", "--batch"],
+        input=revision.encode("ascii") + b"\n",
+    )
+    header, _, payload = response.partition(b"\n")
+    _, actual_kind, size = header.split()
+    if actual_kind != kind or len(payload) != int(size) + 1 or not payload.endswith(b"\n"):
+        raise ValueError("invalid-git-object")
+    return payload[:-1]
+
+
+def audit_tree_entry(tree: str, name: bytes, mode: bytes) -> tuple[str, tuple[bytes, bytes]]:
+    """Return the unique entry's object ID and the tree bytes around that ID."""
+    raw = exact_git_object(tree, b"tree")
+    matches = []
+    offset = 0
+    while offset < len(raw):
+        separator = raw.index(b"\0", offset)
+        entry_mode, entry_name = raw[offset:separator].split(b" ", 1)
+        oid_start = separator + 1
+        offset = oid_start + 20  # Raw SHA-1 object IDs occupy exactly 20 bytes.
+        if offset > len(raw):
+            raise ValueError("incomplete-git-tree-entry")
+        if entry_name == name:
+            if entry_mode != mode:
+                raise ValueError("unexpected-audit-tree-mode")
+            matches.append(oid_start)
+    [oid_start] = matches
+    oid_end = oid_start + 20
+    return raw[oid_start:oid_end].hex(), (raw[:oid_start], raw[oid_end:])
+
+
+def merge_authority_audit_pin_only(head: str) -> bool:
+    """Prove the exact PR tree differs from the protected checkout only in the pin."""
+    try:
+        # The lane job verifies HEAD against the protected base SHA before running
+        # this entry point. Compare roots directly, including paths absent from a PR diff.
+        before, after = "HEAD^{tree}", f"{head}^{{tree}}"
+        components = MERGE_AUTHORITY_AUDIT_PATH.encode("ascii").split(b"/")
+        for name, mode in zip(components, (b"40000", b"40000", b"100644"), strict=True):
+            before, base_tree = audit_tree_entry(before, name, mode)
+            after, candidate_tree = audit_tree_entry(after, name, mode)
+            if base_tree != candidate_tree or before == after:
+                return False
+
+        base = exact_git_object(before, b"blob")
+        candidate = exact_git_object(after, b"blob")
+        name = b"EXPECTED_MERGE_GROUP_GATE_BLOB"
+        # Allow the existing Python environment lookup. Extra mentions can make
+        # the assignment ambiguous, so decline the exception in that case.
+        if base.replace(b"os.environ['" + name + b"']", b"", 1).count(name) != 1:
+            return False
+        assignment = re.search(rb'(?m)^      ' + name + rb': "([0-9a-f]{40})"$', base)
+        if assignment is None:
+            return False
+        start, end = assignment.span(1)
+        new_pin = candidate[start:end]
+        return (
+            new_pin != assignment[1]
+            and re.fullmatch(rb"[0-9a-f]{40}", new_pin) is not None
+            and candidate == base[:start] + new_pin + base[end:]
+        )
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
+
 
 def classify(
     files,
@@ -1016,6 +1083,18 @@ def main() -> int:
                 candidate_modes_verified=modes_verified,
                 candidate_sha=expected_head,
             )
+            # Only narrow the established FULL decision after its mode and
+            # enumeration checks and an independent proof over both Git trees.
+            if (
+                os.environ.get("GITHUB_EVENT_NAME") == "pull_request"
+                and result.get("reason") == "canonical-control-consumer-affected"
+                and files == [{"filename": MERGE_AUTHORITY_AUDIT_PATH, "status": "modified"}]
+                and merge_authority_audit_pin_only(expected_head)
+            ):
+                result = dict(
+                    rust=False, windows=False, surface="control-plane",
+                    reason="merge-authority-audit-pin-only",
+                )
             # Only the pull-request gate defers Content consumers; the Merge Queue
             # calls classify() directly and never passes defer_content_consumers.
             if (
