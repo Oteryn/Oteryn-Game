@@ -364,6 +364,8 @@ fn scenario_case(
         super::super::warzone_portal_cooldown::terminal_callback(name, trigger)?
     } else if monster_step {
         super::super::zamulosh_monster_step::callback(name)?
+    } else if name == super::super::zamulosh_monster_step::ACCESS {
+        super::super::zamulosh_monster_step::access_callback()?
     } else if super::super::zamulosh_monster_step::is_habitat(name) {
         super::super::zamulosh_monster_step::habitat_callback()?
     } else if super::super::warzone_portal_cooldown::is_entry(name) {
@@ -674,6 +676,8 @@ fn scenario_case(
         super::super::shulgrax_flower_pattern::cycle_world(&callback)?
     } else if name == super::super::shulgrax_flower_pattern::CASE {
         super::super::shulgrax_flower_pattern::world(&callback)?
+    } else if name == super::super::zamulosh_monster_step::ACCESS {
+        super::super::zamulosh_monster_step::access_world(&callback, trigger)?
     } else if super::super::zamulosh_monster_step::is_habitat(name) {
         super::super::zamulosh_monster_step::habitat_world(&callback, name)?
     } else if super::super::warzone_portal_cooldown::is_victory(name) {
@@ -1744,6 +1748,9 @@ fn scenario_case(
         if super::super::warzone_portal_cooldown::is_entry(name) {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::super::warzone_portal_cooldown::catalogue(&callback, name)?));
         }
+        if name == super::super::zamulosh_monster_step::ACCESS {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::zamulosh_monster_step::access_catalogue(&callback)?));
+        }
         if super::super::zamulosh_monster_step::is_habitat(name) {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::super::zamulosh_monster_step::habitat_catalogue(&callback)?));
         }
@@ -1933,6 +1940,8 @@ fn scenario_case(
             Box::pin(super::super::warzone_portal_cooldown::exercise_victory(&owner, &mut admitted, &h, callback.clone(), name, trigger)).await?;
         } else if monster_step {
             Box::pin(super::super::zamulosh_monster_step::exercise(&owner, &h, callback.clone())).await?;
+        } else if name == super::super::zamulosh_monster_step::ACCESS {
+            Box::pin(super::super::zamulosh_monster_step::exercise_access(&owner, &mut admitted, &h, callback.clone())).await?;
         } else if super::super::zamulosh_monster_step::is_habitat(name) {
             Box::pin(super::super::zamulosh_monster_step::exercise_habitat(&owner, &mut admitted, callback.clone(), name)).await?;
         } else if super::super::warzone_portal_cooldown::is_entry(name) {

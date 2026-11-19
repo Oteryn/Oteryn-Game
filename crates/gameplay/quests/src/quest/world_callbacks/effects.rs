@@ -113,14 +113,21 @@ pub struct CallbackEffects {
     /// Cue at the entered object after a refused STEP relocates its actor.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refusal_effect_on_source: Option<u16>,
-    /// One cardinal cell from the entered object on a refused STEP.
+    /// Cardinal displacement from the entered object on a refused STEP.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub refusal_step_from_source: Option<Facing>,
+    pub refusal_step_from_source: Option<RefusalStep>,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RefusalStep {
+    pub direction: Facing,
+    pub distance: u8,
 }
 
 /// Crystal 201189f8, ferumbras_ascension/movements_flower_puzzle.lua:114-151.
@@ -1411,11 +1418,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || callback.trigger != Trigger::StepIn
                 || !callback.return_on_failure
         })
-        || (effects.refusal_step_from_source.is_some()
-            && (callback.actor_kind != ActorKind::Player
+        || effects.refusal_step_from_source.is_some_and(|step| {
+            step.distance == 0
+                || callback.actor_kind != ActorKind::Player
                 || callback.trigger != Trigger::StepIn
                 || !callback.return_on_failure
-                || callback.failure_teleport.is_some()))
+                || callback.failure_teleport.is_some()
+        })
         || (callback.trigger == Trigger::StepOut && callback.return_on_failure)
     {
         return false;

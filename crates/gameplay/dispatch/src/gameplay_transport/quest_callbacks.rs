@@ -1638,10 +1638,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !callback.return_on_failure {
             return;
         }
-        let destination = if let Some(direction) = callback.effects.refusal_step_from_source {
+        let destination = if let Some(step) = callback.effects.refusal_step_from_source {
             use crate::movement::CardinalStep;
             use world_callbacks::Facing;
-            let (dx, dy) = match direction {
+            // Crystal 201189f8, movements_zamulosh_teleport.lua:15-19,30-34.
+            let (dx, dy) = match step.direction {
                 Facing::North => CardinalStep::North,
                 Facing::East => CardinalStep::East,
                 Facing::South => CardinalStep::South,
@@ -1649,7 +1650,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             .delta();
             let at = entered.position();
-            let (Some(x), Some(y)) = (at.x.checked_add(dx), at.y.checked_add(dy)) else {
+            let distance = i32::from(step.distance);
+            let (Some(x), Some(y)) = (
+                at.x.checked_add(dx * distance),
+                at.y.checked_add(dy * distance),
+            ) else {
                 return;
             };
             MovementLocalPosition { x, y, ..at }

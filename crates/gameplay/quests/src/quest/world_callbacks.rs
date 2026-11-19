@@ -87,7 +87,7 @@ pub use effects::{
     Encounter, EncounterMonster, EncounterPhase, EncounterPlayer, EncounterTiming, Facing,
     ItemCycle, ItemDisguiseRequirement, ItemLayoutCycle, ItemPresence, MagicEffect,
     MonsterStepEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair,
-    QuestCompletion, RewardDoor, TargetTransform, TerminalPortal, TerminalTransfer,
+    QuestCompletion, RefusalStep, RewardDoor, TargetTransform, TerminalPortal, TerminalTransfer,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,

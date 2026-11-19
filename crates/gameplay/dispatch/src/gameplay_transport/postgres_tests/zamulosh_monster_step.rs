@@ -1,11 +1,14 @@
 //! Crystal 201189f8, ferumbras_ascension/movements_lovely_monsters.lua:1-28.
-use super::{ComposedFreshAdmission, TestResult, fixture::Harness, fixture::debug};
+use super::{
+    AdmittedSession, ComposedFreshAdmission, TestResult, fixture::Harness, fixture::debug,
+};
 use crate::foundation::ExactActorRef;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 
+pub(super) const ACCESS: &str = "ferumbras-zamulosh-habitat-portal";
 pub(super) const CASE: &str = "ferumbras-zamulosh-lovely-monster-step";
 pub(super) const BLOSSOM: &str = "first-dragon-fertility-blossom-step";
 pub(super) const HABITAT: &str = "ferumbras-zamulosh-grass-habitat";
@@ -24,6 +27,16 @@ const GRASS: &str = "oteryn:quest-progress/quest/u10_90/ferumbras_ascension/habi
 const ALL_HABITATS: &str =
     "oteryn:quest-progress/quest/u10_90/ferumbras_ascension/habitats/all_habitats";
 const HABITAT_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_grass.lua:15-27,93,393-420,439-472";
+const ACCESS_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/movements_zamulosh_teleport.lua:23-44";
+const TELEPORTS: &str = "oteryn:quest-progress/quest/u10_90/ferumbras_ascension/zamulosh_teleports";
+const FEW_MATCHES: &str = "oteryn:quest-transition/ferumbras/zamulosh/fixture-four-matches";
+const SEVEN_HABITATS: &str = "oteryn:quest-transition/ferumbras/zamulosh/fixture-seven-habitats";
+const ACCESS_KEY: &str = "oteryn:quest-callback/ferumbras/zamulosh-habitat-portal";
+const ACCESS_LANDING: Position = Position {
+    x: 33618,
+    y: 32620,
+    floor: -10,
+};
 // Mount the source UID on a tile in the finale fixture. Crystal selects its
 // appearance and UID, while the map asset determines the coordinates.
 const FLOWER: Position = Position {
@@ -75,6 +88,210 @@ const HABITAT_TILES: [(Position, u16); 3] = [
 ];
 // The donor clears whatever terrain occupies these cells. The mounted World uses 417.
 const PREVIOUS_TERRAIN: u16 = 417;
+
+#[test]
+fn zamulosh_habitat_portal_grants_nine_matches_only_after_seven_habitats() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    // The fixture places AID 34314 on a separate test map at the portal approach.
+    super::kill_reward_e2e::scenario_thread::run(ACCESS, || {
+        super::quest_world_callbacks::scenario(ACCESS, PORTAL, false)
+    })
+}
+
+pub(super) fn access_callback() -> TestResult<Callback> {
+    let document = json!({"schema":1,"callbacks":[{
+        "key":ACCESS_KEY,"quest":FERUMBRAS,"trigger":"step_in",
+        "selector":{"action":34314},"reversible":false,"passages":[],"offerings":[],
+        "storage":[{"track":TELEPORTS,"minimum":4,"maximum":i64::MAX,"set":9},
+                   {"track":ALL_HABITATS,"minimum":7,"maximum":8,"set":7,"preserve":true}],
+        "teleport":ACCESS_LANDING,"return_on_failure":true,
+        "effects":{"teleport_effect":11,"refusal_step_from_source":{"direction":"west","distance":2}},
+        "success_message":"What was wrong is not necessarily right now. Nevertheless you nade it further.",
+        "failure_message":"You don't have access to this teleport yet.","sources":[ACCESS_SOURCE]
+    }]});
+    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
+        .try_into()
+        .map_err(|_| "one Zamulosh access callback")?;
+    Ok(callback)
+}
+
+pub(super) fn access_world(
+    callback: &Callback,
+    portal: Position,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    super::quest_world_callbacks::world_with_cells(
+        callback,
+        portal,
+        &[
+            Position {
+                x: portal.x - 2,
+                ..portal
+            },
+            Position {
+                y: portal.y - 1,
+                ..portal
+            },
+        ],
+    )
+}
+
+pub(super) fn access_catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> {
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestTrack, QuestTransition,
+    };
+    let document = json!({"schema":1,"quests":[{
+        "quest":FERUMBRAS,"recipe_sha256":format!("{:x}",Sha256::digest(ACCESS_SOURCE)),
+        "sources":[ACCESS_SOURCE],"tracks":[
+            {"key":TELEPORTS,"initial":-1,"minimum":-1,"maximum":i64::MAX},
+            {"key":ALL_HABITATS,"initial":-1,"minimum":-1,"maximum":8}
+        ],"stages":[{"key":"habitat-portal","completes":false,
+            "trigger":{"kind":"step_in","callback":callback}}]
+    }]});
+    let base = QuestStateCatalogue::new(
+        "content-1",
+        [(TELEPORTS, i64::MAX), (ALL_HABITATS, 8)]
+            .into_iter()
+            .map(|(key, max)| QuestTrack {
+                key: key.into(),
+                quest: FERUMBRAS.into(),
+                initial: -1,
+                min: -1,
+                max,
+            })
+            .collect(),
+        [
+            (FEW_MATCHES, TELEPORTS, 4),
+            (SEVEN_HABITATS, ALL_HABITATS, 7),
+        ]
+        .into_iter()
+        .map(|(key, track, value)| QuestTransition {
+            key: key.into(),
+            quest: FERUMBRAS.into(),
+            completes: false,
+            experience: None,
+            world_change: None,
+            effects: vec![QuestEffect {
+                track: track.into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Set(value),
+            }],
+        })
+        .collect(),
+    )
+    .map_err(debug)?;
+    Ok(Bindings::parse(&serde_json::to_vec(&document)?)?.attach(&base)?)
+}
+
+pub(super) async fn exercise_access(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    callback: Callback,
+) -> TestResult {
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::foundation::{CommandId, CommandRef};
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
+    owner
+        .states
+        .quest_callbacks
+        .fixture
+        .set(vec![callback])
+        .map_err(|_| "callback installed")?;
+    let primary = admitted.runtime_actor.ok_or("player")?;
+    let peer = super::ferumbras_crystal_reset::admit_peer(
+        owner,
+        h,
+        Position {
+            y: PORTAL.y - 1,
+            ..PORTAL
+        },
+    )
+    .await?;
+    let peer_session = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .into_iter()
+            .find_map(|(actor, _, session)| (actor == peer).then_some(session).flatten())
+            .ok_or("peer session")?
+    };
+    owner.refresh_quest_session(peer_session, true).await;
+    let primary_session = admitted.game_session_id;
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    for (session, id, key) in [
+        (primary_session, 1000, FEW_MATCHES),
+        (primary_session, 1001, SEVEN_HABITATS),
+        (peer_session, 1000, FEW_MATCHES),
+    ] {
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|()| "fixture fence")?
+            .ok_or("fixture fence")?;
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let seeded = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: key.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        session,
+                        CommandId::new(id).map_err(debug)?,
+                    )),
+                },
+                std::sync::Arc::clone(catalogue),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(seeded, QuestTransitionOutcome::Committed(_)));
+    }
+    super::questpc7_ferumbras::step(owner, admitted, StepDirection::East).await?;
+    let (reply, _) = owner
+        .ordinary_paced_step(peer, peer_session, StepDirection::South, None, None)
+        .await;
+    assert_eq!(reply.disposition, StepDisposition::Moved);
+    let runtime = owner.runtime.lock().await;
+    for (actor, at) in [
+        (primary, ACCESS_LANDING),
+        (
+            peer,
+            Position {
+                x: PORTAL.x - 2,
+                ..PORTAL
+            },
+        ),
+    ] {
+        assert_eq!(
+            runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            super::quest_world_callbacks::local(at)
+        );
+    }
+    drop(runtime);
+    for (session, value) in [(primary_session, 9), (peer_session, 4)] {
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|()| "stored fence")?
+            .ok_or("stored fence")?;
+        let stored = sqlx::query_scalar::<_, i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(TELEPORTS).fetch_one(&h.pool).await?;
+        assert_eq!(stored, value);
+    }
+    Ok(())
+}
 
 #[test]
 fn zamulosh_monster_step_retires_only_the_creature_paired_with_the_portal() -> TestResult {
