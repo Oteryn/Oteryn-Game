@@ -192,6 +192,25 @@ async fn write<C: ItemLoopContent>(
     write_with_skinning(tx, permit, fence, request, native, content, None).await
 }
 
+// Crystal lucky_charm.lua:8-16 and actions_corpse.lua share the active hunt gate.
+async fn rottin_charm_hunt_active(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+) -> Result<bool, DurabilityError> {
+    let active: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2
+           AND track_key IN ($3,$4) AND value=1)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(oteryn_gameplay_quests::quest::rottin_walls::QUEST)
+    .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01")
+    .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01")
+    .fetch_one(&mut ***tx)
+    .await?;
+    Ok(active)
+}
+
 #[allow(
     clippy::too_many_lines,
     reason = "existing craft writer retains its single atomic inventory and audit owner"
@@ -452,6 +471,11 @@ async fn write_with_skinning<C: ItemLoopContent>(
     let Some(conversion) = conversion else {
         return Ok(UseDisposition::NothingToUse);
     };
+    if conversion.recipe == "oteryn:quest-craft/rottin-wood/lucky-charm"
+        && !rottin_charm_hunt_active(tx, fence).await?
+    {
+        return Ok(UseDisposition::NothingToUse);
+    }
     if conversion.recipe == "oteryn:elemental_energy_soil.crystal"
         && !elemental_energy::has_room(
             tx,

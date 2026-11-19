@@ -1,9 +1,11 @@
 //! Exercise the authored reward owner through live Rottin TALK and PostgreSQL.
 use super::classic_quests_fixtures::{install, talk};
-use super::fixture::{Harness, id};
+use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::item_view::{ItemKey, SessionItemView, inventory_from_backpack};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 use serde_json::json;
 
 const TRACK: &str =
@@ -17,6 +19,7 @@ const RING: &str = "oteryn:item.tibia.i3053";
 const CHARM: &str = "oteryn:item.tibia.i12173";
 const HORN: &str = "oteryn:item.tibia.i12260";
 const RIBBON: &str = "oteryn:item.tibia.i12171";
+const FOOT: &str = "oteryn:item.tibia.i12172";
 pub(super) const QUESTLINE: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline";
 const MISSION: &str =
@@ -97,6 +100,103 @@ pub(super) async fn accept_lucky_charms(
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(stage, 1);
+    Ok(())
+}
+
+pub(super) async fn seed_rabbit_foot(h: &Harness) -> TestResult {
+    super::item_look_fixtures::seed_main_backpack(h, &[(FOOT, 1)]).await
+}
+
+pub(super) async fn craft_lucky_charm(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    open_lucky_loop(owner, admitted, h).await?;
+    let owner = &*owner;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?
+        .item_fence();
+    let inventory = owner
+        .root
+        .read_item_use_inventory(owner.character, owner.holder, fence)
+        .await
+        .map_err(debug)?;
+    let backpack = inventory.backpack.as_ref().ok_or("recipe backpack")?;
+    let native_index = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .ok_or("production item index")?;
+    let mut view = SessionItemView::resume(Default::default());
+    view.snapshot(
+        inventory_from_backpack(Some(backpack), |definition| {
+            native_index.definition_ref(
+                &definition.family,
+                &definition.production_key,
+                &definition.revision_ref,
+            )
+        })
+        .ok_or("recipe inventory")?,
+        None,
+    )
+    .map_err(debug)?;
+    let handle = |key| {
+        backpack
+            .entries
+            .iter()
+            .find(|entry| entry.item.definition.production_key == key)
+            .and_then(|entry| view.table().handle(&ItemKey::Instance(entry.item.item_instance_id)))
+            .ok_or("recipe operand handle")
+    };
+    let ribbon = handle(RIBBON)?;
+    let foot = handle(FOOT)?;
+    let actor = admitted.runtime_actor.ok_or("recipe actor")?;
+    let use_pair = |command_id, source, target| {
+        crate::gameplay_transport::mining::dispatch_map_use(
+            owner,
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence),
+            },
+            UseIntent {
+                target: UseTarget::Item(source),
+                use_with: None,
+                use_with_map_item: Some(MapUseTarget::Item(target)),
+                use_with_position: None,
+            },
+            Some(&view),
+        )
+    };
+    assert_eq!(
+        use_pair(1707, foot, ribbon).await.ok_or("reversed recipe")?.disposition,
+        UseDisposition::NothingToUse
+    );
+    assert_eq!(
+        use_pair(1708, ribbon, foot).await.ok_or("ribbon on foot")?.disposition,
+        UseDisposition::Committed
+    );
+
+    let quantities: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT definition_production_key, sum(quantity)::bigint
+         FROM game_item_instances JOIN game_item_container_entries USING(item_instance_id)
+         WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1
+           AND definition_production_key IN ($2,$3,$4)
+         GROUP BY definition_production_key
+         ORDER BY definition_production_key",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(RIBBON)
+    .bind(FOOT)
+    .bind(CHARM)
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(quantities, [(RIBBON.to_owned(), 6), (CHARM.to_owned(), 1)]);
     Ok(())
 }
 

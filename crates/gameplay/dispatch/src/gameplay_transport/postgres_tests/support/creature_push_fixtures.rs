@@ -264,9 +264,10 @@ pub(super) fn scenario(
         let repeat_reward = seed == "rottin_weighted_repeat";
         let short_reward = seed == "rottin_weighted_short";
         let lucky_charms = seed == "rottin_lucky_charms";
+        let craft_lucky_charm = seed == "rottin_lucky_charm_craft";
         let weighted_reward = seed == "rottin_weighted_reward" || repeat_reward || short_reward;
         let rottin = merchant_loot || merchant_wave || weighted_reward || repair
-            || lucky_charms || accept_bushwhacking;
+            || lucky_charms || craft_lucky_charm || accept_bushwhacking;
         let h = if rottin {
             Harness::create_quest_reward(admin, seed, false).await?
         } else {
@@ -278,6 +279,8 @@ pub(super) fn scenario(
             super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i12186", 1); 2]).await?;
         } else if repair {
             super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3460", 1)]).await?;
+        } else if craft_lucky_charm {
+            super::rottin_rewards_fixtures::seed_rabbit_foot(&h).await?;
         } else if merchant_loot || lucky_charms || accept_bushwhacking {
             super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         }
@@ -443,7 +446,7 @@ pub(super) fn scenario(
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
-            if weighted_reward {
+            if weighted_reward || craft_lucky_charm {
                 super::rottin_rewards_fixtures::seed_loop_prerequisites(&h, &owner, &admitted, repeat_reward).await?;
             } else if repair {
                 super::rottin_repairs_fixtures::seed_prerequisites(&h, &owner, &admitted, handyman).await?;
@@ -462,6 +465,8 @@ pub(super) fn scenario(
                 super::rottin_bushwhacking_fixtures::exercise_mission(&mut owner, admitted, &h).await?;
             } else if repair {
                 super::rottin_repairs_fixtures::exercise(&mut owner, admitted, &h, handyman).await?;
+            } else if craft_lucky_charm {
+                super::rottin_rewards_fixtures::craft_lucky_charm(&mut owner, &admitted, &h).await?;
             } else if lucky_charms {
                 super::rottin_rewards_fixtures::accept_lucky_charms(&mut owner, &admitted, &h).await?;
             } else if short_reward {
