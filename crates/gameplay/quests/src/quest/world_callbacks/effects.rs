@@ -453,6 +453,10 @@ pub struct SoloEncounterExpiry {
     pub exit: Position,
     pub time_limit_ms: u32,
     pub cooldown_seconds: u64,
+    /// Existing creatures block admission, and a live visit creature keeps the
+    /// room occupied until the deadline even after the player leaves.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub live_creatures_hold_room: bool,
     /// Crystal actions_portal_minis_feaster.lua:102-107 refreshes the room
     /// census and ejects the players present when the visit expires.
     #[serde(default, skip_serializing_if = "is_false")]
@@ -1314,6 +1318,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     Some(shared) => {
                         !callback.standalone_solo_room()
                             || callback.failure_teleport != Some(expiry.exit)
+                            || expiry.live_creatures_hold_room
                             || !(2..=16).contains(&shared.capacity)
                             || shared.join_window_ms == 0
                             || shared.join_window_ms >= expiry.time_limit_ms

@@ -248,7 +248,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && runtime
                             .read_actor_position(actor)
                             .is_ok_and(|snapshot| room_contains(&visit.room, snapshot.position()))
-                });
+                }) || (visit.room.solo_expiry.is_some_and(|rule| rule.live_creatures_hold_room)
+                    // Crystal movement_kroazur_room.lua:71 schedules clearBossRoom
+                    // even if the participant has already used the manual exit.
+                    && visit.creatures.iter().any(|&actor| {
+                        runtime.contains_live_creature(actor)
+                            && runtime.read_actor_position(actor).is_ok_and(|snapshot| {
+                                room_contains(&visit.room, snapshot.position())
+                            })
+                    }));
                 if !occupied {
                     super::personal_trial::cleanup(runtime, &mut visit.creatures);
                 } else if let (Some(forms), Some(boss)) =
@@ -559,8 +567,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         let personal_entry = callback.personal_room_entry().map(local);
+        // Crystal movement_kroazur_room.lua:53 passes onlyPlayers=false to
+        // roomIsOccupied (data/libs/functions/functions.lua:254-259).
+        let creatures_hold_room = encounter
+            .solo_expiry
+            .is_some_and(|rule| rule.live_creatures_hold_room);
         if census.iter().any(|(who, pos, occupant_session)| {
-            occupant_session.is_some()
+            (occupant_session.is_some() || creatures_hold_room)
                 && room_contains(encounter, pos.position())
                 && !(Some(pos.position()) == personal_entry
                     && *who == actor

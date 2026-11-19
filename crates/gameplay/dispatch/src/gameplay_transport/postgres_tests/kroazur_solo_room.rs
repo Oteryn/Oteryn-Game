@@ -70,7 +70,8 @@ pub(super) fn binding() -> TestResult<Callback> {
             "players":[{"from":TRIGGER,"to":LANDING}],
             "monsters":[{"position":at(33591,32305),"creature":KROAZUR}],
             "room_min":at(33571,32285),"room_max":at(33611,32325),
-            "solo_expiry":{"exit":EXIT,"time_limit_ms":600000,"cooldown_seconds":7200}
+            "solo_expiry":{"exit":EXIT,"time_limit_ms":600000,"cooldown_seconds":7200,
+                "live_creatures_hold_room":true}
         }},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_kroazur_room.lua:3-78"]
     }))?)
@@ -280,6 +281,21 @@ pub(super) async fn exercise(
     assert!(super::engworldchg_journals::live_creatures(owner, KROAZUR).await?.is_empty());
     move_player(owner, spectator, spectator_session, Position { x: EXIT.x + 1, ..EXIT }).await?;
 
+    // Crystal movement_kroazur_room.lua:53 and data/libs/functions/functions.lua:254-259
+    // count a live creature even with no player inside the room.
+    let blocker = {
+        let mut runtime = owner.runtime.lock().await;
+        let health = runtime.companion_policy(KROAZUR).map_err(debug)?.maximum_health;
+        let spawned = runtime.commit_quest_creature_spawn(&[(KROAZUR, health, local(at(33592, 32305)))])
+            .map_err(debug)?;
+        *spawned.first().ok_or("occupying creature")?
+    };
+    step(owner, admitted, 3, ORIGIN).await?;
+    assert_refusal_speech(&owner.states.chat.drain(admitted.game_session_id), actor, OCCUPIED_TEXT);
+    assert!(cooldown_value().await?.is_none());
+    assert_eq!(super::engworldchg_journals::live_creatures(owner, KROAZUR).await?, [blocker]);
+    owner.runtime.lock().await.remove_encounter_actor(blocker).map_err(debug)?;
+
     let measure = || {
         sqlx::query_scalar::<_, i64>(
             "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint",
@@ -289,7 +305,7 @@ pub(super) async fn exercise(
     let before = measure().await?;
     let map = owner.bundle_map().ok_or("Kroazur map")?;
     let effect_cursor = map.facts.movement_effects_since(0).last().map_or(0, |cue| cue.0);
-    step(owner, admitted, 3, LANDING).await?;
+    step(owner, admitted, 4, LANDING).await?;
     let effects = map.facts.movement_effects_since(effect_cursor);
     for position in [TRIGGER, LANDING] {
         assert_eq!(effects.iter().filter(|(_, at, effect)| {
@@ -304,7 +320,7 @@ pub(super) async fn exercise(
                 && text == ADMISSION_TEXT
                 && (position.x, position.y, position.floor) == (33591, 32315, 10))
     }).count(), 1);
-    step(owner, admitted, 3, LANDING).await?;
+    step(owner, admitted, 4, LANDING).await?;
     let messages = owner.states.chat.drain(admitted.game_session_id);
     assert!(!messages.iter().any(|line| {
         matches!(line, ChatLine::Local { text, .. } | ChatLine::Private { text, .. }
@@ -321,6 +337,12 @@ pub(super) async fn exercise(
 
     owner.drain_quest_encounter_deadlines().await;
     assert_location(owner, admitted, LANDING).await?;
+    // Crystal movement_kroazur_room.lua:30-35,71 leaves cleanup to the deadline
+    // when the original player exits early.
+    move_player(owner, actor, admitted.game_session_id, EXIT).await?;
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(super::engworldchg_journals::live_creatures(owner, KROAZUR).await?.len(), 1);
+    move_player(owner, actor, admitted.game_session_id, LANDING).await?;
     let now = owner.owner_now().get();
     let due = owner
         .states
@@ -343,7 +365,7 @@ pub(super) async fn exercise(
     move_player(owner, actor, admitted.game_session_id, ORIGIN).await?;
     move_player(owner, spectator, spectator_session, LANDING).await?;
     let effect_cursor = map.facts.movement_effects_since(0).last().map_or(0, |cue| cue.0);
-    step(owner, admitted, 4, ORIGIN).await?;
+    step(owner, admitted, 5, ORIGIN).await?;
     // Crystal movement_kroazur_room.lua:45-49 uses the same ordered pair
     // of teleport cues while the personal cooldown is active.
     assert_eq!(
