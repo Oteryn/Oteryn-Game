@@ -46,7 +46,7 @@ fn omrafir_attachment_case(
             // and its adjacent actual dirt-floor tile, never a fabricated fire.
             let origin=if exact_wall==Some(true) {MovementLocalPosition{x:32501,y:32002,floor:15}}
                 else {MovementLocalPosition{x:33587,y:32379,floor:12}};
-            let scene=super::srx3_soul_war_world_fixture::source_world(origin)?;
+            let scene=super::srx3_soul_war_world_fixture_fixtures::source_world(origin)?;
             let mut deps=scene.dependencies()?;
             let active=scene.controller.active().ok_or("actual World activation")?;
             let native=active.native_gameplay().ok_or("actual Omrafir native")?;

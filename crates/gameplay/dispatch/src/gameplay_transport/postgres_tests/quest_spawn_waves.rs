@@ -63,7 +63,7 @@ fn periodic_boss_waits_for_interval_and_cooldown_and_keeps_one_live_actor() -> T
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-periodic-boss", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-periodic-boss", move || {
         scenario(admin, Case::Periodic)
     })
 }
@@ -73,7 +73,7 @@ fn periodic_boss_forced_placement_keeps_an_occupied_center() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-periodic-forced-center", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-periodic-forced-center", move || {
         scenario(admin, Case::PeriodicOccupiedCenter)
     })
 }
@@ -83,7 +83,7 @@ fn periodic_boss_with_a_missing_center_uses_the_extended_neighborhood() -> TestR
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-periodic-extended-neighbor", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-periodic-extended-neighbor", move || {
         scenario(admin, Case::PeriodicMissingCenter)
     })
 }
@@ -93,7 +93,7 @@ fn quest_use_admits_two_staged_players_then_ejects_and_credits_both_survivors() 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-timed-waves", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-timed-waves", move || {
         scenario(admin, Case::Waves)
     })
 }
@@ -103,7 +103,7 @@ fn quest_use_refuses_wave_credit_bound_to_a_world_occurrence_before_relocation()
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-invalid-wave-credit", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-invalid-wave-credit", move || {
         scenario(admin, Case::WorldCredit)
     })
 }
@@ -113,7 +113,7 @@ fn quest_use_refuses_a_wave_room_with_an_unreachable_timeout_exit() -> TestResul
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-invalid-wave-exit", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-invalid-wave-exit", move || {
         scenario(admin, Case::UnreachableExit)
     })
 }
@@ -123,7 +123,7 @@ fn quest_use_refuses_an_unknown_victory_achievement_before_relocation() -> TestR
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-unknown-victory-achievement", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-unknown-victory-achievement", move || {
         scenario(admin, Case::UnknownAchievement)
     })
 }
@@ -133,7 +133,7 @@ fn quest_step_admits_guarded_survival_trial_and_credits_at_deadline() -> TestRes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-survival-step", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-survival-step", move || {
         scenario(admin, Case::SurvivalStep)
     })
 }
@@ -143,7 +143,7 @@ fn quest_station_step_starts_waves_without_relocating_staged_players() -> TestRe
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-station-step", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-station-step", move || {
         scenario(admin, Case::Stations)
     })
 }
@@ -153,7 +153,7 @@ fn quest_wave_victory_requires_the_terminal_spawn_and_uses_reward_egress() -> Te
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-victory-egress", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-victory-egress", move || {
         scenario(admin, Case::Victory)
     })
 }
@@ -163,7 +163,7 @@ fn quest_wave_victory_awards_both_survivors_even_without_quest_progress() -> Tes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-victory-achievement", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-victory-achievement", move || {
         scenario(admin, Case::VictoryWithoutProgress)
     })
 }
@@ -173,7 +173,7 @@ fn quest_wave_uses_an_in_time_terminal_death_observed_after_timeout() -> TestRes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-wave-in-time-death", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-wave-in-time-death", move || {
         scenario(admin, Case::VictoryBeforeTimeout)
     })
 }
@@ -183,7 +183,7 @@ fn quest_wave_uses_a_pre_cutoff_reflection_while_corpse_projection_is_pending() 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-wave-pending-reflection", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-wave-pending-reflection", move || {
         scenario(admin, Case::VictoryWithPendingReflection)
     })
 }
@@ -193,7 +193,7 @@ fn quest_wave_terminal_death_at_timeout_ejects_both_without_victory_credit() -> 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-wave-death-at-timeout", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-wave-death-at-timeout", move || {
         scenario(admin, Case::DeathAtTimeout)
     })
 }
@@ -203,7 +203,7 @@ fn quest_step_earth_hit_updates_current_vitals_once() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-earth-step", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-earth-step", move || {
         scenario(admin, Case::EarthStep)
     })
 }
@@ -213,7 +213,7 @@ fn quest_axe_use_spawns_last_retaliation_and_requires_clearance_for_final_cut() 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-retaliation", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-retaliation", move || {
         scenario(admin, Case::Retaliation)
     })
 }
@@ -223,7 +223,7 @@ fn quest_axe_use_advances_an_unset_weak_point_to_two() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-retaliation-first-blow", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-retaliation-first-blow", move || {
         scenario(admin, Case::RetaliationFirstBlow)
     })
 }
@@ -233,7 +233,7 @@ fn quest_axe_use_recovers_lost_ack_without_repeating_retaliation() -> TestResult
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("quest-retaliation-lost-ack", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-retaliation-lost-ack", move || {
         scenario(admin, Case::RetaliationLostAck)
     })
 }
@@ -281,7 +281,7 @@ impl Case {
 fn scenario(admin: String, case: Case) -> TestResult {
     run(async move |_| {
         let started = std::time::Instant::now();
-        let mut callback = super::authored_world_rewards::placeholder(TRIGGER)?;
+        let mut callback = super::authored_world_rewards_fixtures::placeholder(TRIGGER)?;
         callback.key = "oteryn:quest-callback/fixture/quest-spawn".into();
         let initial_storage = std::mem::take(&mut callback.storage);
         callback.requires_world_admission = false;
@@ -431,7 +431,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         }
         // Use the real typed callback decode in addition to the composed PG fixture.
         let callback: Callback = serde_json::from_value(serde_json::to_value(callback)?)?;
-        let world = super::quest_world_callbacks::world_with_cells(
+        let world = super::quest_world_callbacks_fixtures::world_with_cells(
             &callback,
             TRIGGER,
             &[FIRST, SECOND, EXIT, PEER_START, PEER_LANDING],
@@ -447,7 +447,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -468,7 +468,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 -i16::from(START.floor),
             ),
         );
-        super::boss_activity::issue_content_and_reset(&h, &pin).await?;
+        super::boss_activity_fixtures::issue_content_and_reset(&h, &pin).await?;
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
             deps.admitted.channel_id,
@@ -780,8 +780,8 @@ async fn retaliation_first_blow(
     use oteryn_protocol_oteryn::world_object::decode_use_result;
 
     let fence = admitted.item_fence.ok_or("axe item fence")?;
-    super::item_look::seed_main_backpack_for(h, fence.character_id.as_bytes(), 70, &[]).await?;
-    super::quest_world_callbacks::input_item(
+    super::item_look_fixtures::seed_main_backpack_for(h, fence.character_id.as_bytes(), 70, &[]).await?;
+    super::quest_world_callbacks_fixtures::input_item(
         owner,
         fence,
         &Offering { position: TRIGGER, item: OAK_TOOL.into(), count: 1 },
@@ -801,14 +801,14 @@ async fn retaliation_first_blow(
     let payload = use_room_payload(owner)?;
     if lose_ack {
         owner.states.quest_callbacks.interrupt_after_commit.store(true, std::sync::atomic::Ordering::Release);
-        assert!(super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.clone()).await.is_err());
+        assert!(super::quest_world_callbacks_fixtures::wire(owner, admitted, 1, 2, payload.clone()).await.is_err());
         assert!(owner.has_pending_quest_callback(session));
         assert_eq!(read_state().await?.tracks().get(CUT), Some(&2));
         assert_eq!(health().await?, before);
         assert!(creatures(owner).await?.is_empty());
     }
 
-    let reply = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.clone()).await?;
+    let reply = super::quest_world_callbacks_fixtures::wire(owner, admitted, 1, 2, payload.clone()).await?;
     assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
     assert!(!owner.has_pending_quest_callback(session));
     assert_eq!(position(owner, player).await?, local(START));
@@ -828,7 +828,7 @@ async fn retaliation_first_blow(
     assert_eq!(before - health().await?, 35);
     // Crystal actions_demon_oak.lua:115-126 applies one wave roll and one
     // self-hit per accepted blow. A repeated transport command is the same blow.
-    assert_eq!(super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?, reply);
+    assert_eq!(super::quest_world_callbacks_fixtures::wire(owner, admitted, 1, 2, payload).await?, reply);
     assert_eq!(read_state().await?, state);
     assert_eq!(creatures(owner).await?, spawned);
     assert_eq!(before - health().await?, 35);
@@ -842,8 +842,8 @@ async fn retaliation_scenario(
     player: ExactActorRef,
 ) -> TestResult {
     let fence = admitted.item_fence.ok_or("axe item fence")?;
-    super::item_look::seed_main_backpack_for(h, fence.character_id.as_bytes(), 70, &[]).await?;
-    super::quest_world_callbacks::input_item(
+    super::item_look_fixtures::seed_main_backpack_for(h, fence.character_id.as_bytes(), 70, &[]).await?;
+    super::quest_world_callbacks_fixtures::input_item(
         owner,
         fence,
         &Offering { position: TRIGGER, item: OAK_TOOL.into(), count: 1 },
@@ -895,8 +895,8 @@ async fn retaliation_scenario(
     let peer_actor = peer.runtime_actor.ok_or("peer actor")?;
     let peer_fence = peer.item_fence.ok_or("peer axe item fence")?;
     assert_ne!(peer_fence.character_id, fence.character_id);
-    super::item_look::seed_main_backpack_for(h, peer_fence.character_id.as_bytes(), 73, &[]).await?;
-    super::quest_world_callbacks::input_item(
+    super::item_look_fixtures::seed_main_backpack_for(h, peer_fence.character_id.as_bytes(), 73, &[]).await?;
+    super::quest_world_callbacks_fixtures::input_item(
         owner,
         peer_fence,
         &Offering { position: TRIGGER, item: OAK_TOOL.into(), count: 1 },
@@ -1294,7 +1294,7 @@ async fn earth_step_scenario(
             .health)
     };
     let before = health(admitted.game_session_id).await?;
-    let reply = super::quest_world_callbacks::wire(
+    let reply = super::quest_world_callbacks_fixtures::wire(
         owner,
         admitted,
         1,
@@ -1523,7 +1523,7 @@ async fn guarded_wave_step(
     });
     started.await?;
     tokio::time::pause();
-    let reply = super::quest_world_callbacks::wire(
+    let reply = super::quest_world_callbacks_fixtures::wire(
         owner,
         admitted,
         1,
@@ -1545,7 +1545,7 @@ async fn use_room(
     admitted: &mut AdmittedSession,
     id: u64,
 ) -> TestResult<UseDisposition> {
-    let reply = super::quest_world_callbacks::wire(owner, admitted, id, 2, use_room_payload(owner)?).await?;
+    let reply = super::quest_world_callbacks_fixtures::wire(owner, admitted, id, 2, use_room_payload(owner)?).await?;
     oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
 }
 

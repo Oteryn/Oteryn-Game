@@ -16,7 +16,7 @@ fn primal_hazard_postgres_kill_unlock_selection_replay_cap_and_fences() -> TestR
         eprintln!("PRIMAL_HAZARD POSTGRES_CASE_COMPLETED skipped_no_database");
         return Ok(());
     }
-    super::super::kill_reward_e2e::scenario_thread::run("primal-hazard", scenario)
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("primal-hazard", scenario)
 }
 
 fn scenario() -> TestResult {
@@ -27,7 +27,7 @@ fn scenario() -> TestResult {
         let deps = Dependencies::new()?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
-        let (controller, _) = super::super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, _) = super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id, "content-1",
         )?;
         let generation = controller.active().ok_or("active progression generation")?;

@@ -1,6 +1,6 @@
 //! A late busy read must retain progress within the same admission budget.
 use super::fixture::{Harness, debug};
-use super::kill_reward_e2e::scenario_thread::run_async as run;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId, MessageType};
 use crate::gameplay_transport::connection::{
@@ -27,7 +27,7 @@ fn seam_resume_busy_loss_read_preserves_progress_postgres() -> TestResult {
         let h =
             Harness::create_with_admission_seed(admin, "seam_resume_busy", false, false).await?;
         let result: TestResult = async {
-            let source = super::house_transfer::RecoverySource::start(&h).await?;
+            let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
             prepare_current_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
@@ -44,7 +44,7 @@ fn seam_resume_busy_loss_read_preserves_progress_postgres() -> TestResult {
             owner.states.command_ingress.admit(admitted.game_session_id);
             assert_eq!(owner.lose_control(admitted, Duration::ZERO, None).await,
                 ControlLossResult::Recorded);
-            let token = super::house_transfer::RecoverySource::token(93)?;
+            let token = super::house_transfer_fixtures::RecoverySource::token(93)?;
             let frame = oteryn_protocol_oteryn::recovery::encode_client_resume(
                 &oteryn_protocol_oteryn::recovery::ClientResumeValue {
                     game_session_id: admitted.game_session_id,

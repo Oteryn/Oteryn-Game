@@ -1,7 +1,7 @@
 //! A committed stance survives an unrelated CharacterRevision without paying twice.
-use super::death_ml_loss_composed::current_fence;
+use super::death_ml_loss_composed_fixtures::current_fence;
 use super::fixture::{Harness, debug, id};
-use super::kill_reward_e2e::scenario_thread::run_async;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async;
 use super::{Dependencies, TestResult, prepare_current_session, reset, track};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, BuildOccurrence,
@@ -63,7 +63,7 @@ fn scenario(case: Case) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         deps.spells = protector_book()?;
-        let (generation, _) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (generation, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
         )?;

@@ -1,6 +1,6 @@
 //! P12a: admitted cosmetic definitions + existing account grant receipts -> title command.
 //! The authored content below is a synthetic test artifact, never production content population.
-use super::cyclopedia::support::exchange;
+use super::cyclopedia_fixtures::support::exchange;
 use super::fixture::{Harness, id, run};
 use super::{Dependencies, TestResult, debug, prepare_current_session, reset};
 use crate::content::native_gameplay::test_support::cosmetics_fixture::{

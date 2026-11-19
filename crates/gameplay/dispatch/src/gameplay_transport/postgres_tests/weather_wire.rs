@@ -5,6 +5,7 @@
 //! 26 gets no weather frame. The session's actor stands on the owner's runtime cell.
 //!
 //! Nested under the monk-save PostgreSQL tests to reuse their fresh-admission fixture.
+use super::weather_wire_fixtures::{fixture_access};
 
 use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset, track};
@@ -156,6 +157,3 @@ fn composed_server_serves_weather() -> TestResult {
         harness.cleanup().await
     })
 }
-
-#[path = "../weather_wire_fixture.rs"]
-pub(super) mod fixture_access;

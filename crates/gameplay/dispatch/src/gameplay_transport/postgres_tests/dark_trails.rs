@@ -1,5 +1,5 @@
 //! QC-DT: actual NPC dispatch and the existing fenced QuestState writer.
-use super::classic_quests::{install, progress, talk};
+use super::classic_quests_fixtures::{install, progress, talk};
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
@@ -14,7 +14,7 @@ fn dark_trails_npc_flow_commits_once_and_fences_conversation_topics() -> TestRes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("dark-trails-npc", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("dark-trails-npc", scenario)
 }
 
 fn scenario() -> TestResult {
@@ -27,8 +27,8 @@ fn scenario() -> TestResult {
         .into_iter()
         .find(|callback| callback.key.ends_with("behemoth"))
         .ok_or("terrain fixture")?;
-    let world = super::quest_world_callbacks::world(&callback, trigger)?;
-    let local = super::quest_world_callbacks::local;
+    let world = super::quest_world_callbacks_fixtures::world(&callback, trigger)?;
+    let local = super::quest_world_callbacks_fixtures::local;
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
@@ -41,7 +41,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

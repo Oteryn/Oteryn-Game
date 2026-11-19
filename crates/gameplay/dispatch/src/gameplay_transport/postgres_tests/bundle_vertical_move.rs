@@ -12,7 +12,7 @@ fn bundle_vertical_move_postgres_dispatch_levitate_up_down_and_magic_rope() -> T
             super::fixture::run(async |admin| {
                 for case in [0, 1, 3] {
                     let began = std::time::Instant::now();
-                    super::vertical_move::scenario(admin.clone(), case, true).await?;
+                    super::vertical_move_fixtures::scenario(admin.clone(), case, true).await?;
                     eprintln!(
                         "GAP-SV8 PostgreSQL bundle case {case}: committed and replayed in {:?}",
                         began.elapsed()

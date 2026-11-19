@@ -27,7 +27,7 @@ fn dawnport_trial_tiles_switch_all_five_vocations_and_back_and_refuse_level_twen
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("dawnport-trial", scenario)?;
+    super::kill_reward_e2e_fixtures::scenario_thread::run("dawnport-trial", scenario)?;
     eprintln!(
         "S16C_PG_CASE_EXECUTED elapsed_ms={}",
         started.elapsed().as_millis()
@@ -182,7 +182,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = Dependencies::new()?.admitted.world_id;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let active = controller.active().ok_or("active generation")?;
         let channel = Dependencies::new()?.admitted.channel_id;
         let (bytes, pins) = trial_row()?;

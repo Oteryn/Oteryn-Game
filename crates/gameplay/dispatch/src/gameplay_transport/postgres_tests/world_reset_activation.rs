@@ -2,7 +2,7 @@
 use super::*;
 use crate::content::QualifiedNativeEntryRoom;
 use crate::foundation::{ChannelId, WorldId};
-use planned_world_reset::reset_fixture;
+use planned_world_reset_fixtures::reset_fixture;
 use reset_fixture::{publish_ready, set_runtime};
 
 #[test]
