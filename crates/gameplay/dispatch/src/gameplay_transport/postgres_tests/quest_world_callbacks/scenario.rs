@@ -394,6 +394,8 @@ fn scenario_case(
     let stone_offerings = matches!(name, dreamers_stone_offerings::PREFIX | dreamers_stone_offerings::FULL);
     use super::super::dreamers_stone_exit;
     let stone_exit = name == dreamers_stone_exit::NAME;
+    use super::super::dreamers_sacrifice_routes;
+    let sacrifice_route = matches!(name, dreamers_sacrifice_routes::BROTHERHOOD | dreamers_sacrifice_routes::NIGHTMARE);
     use super::super::zarganash_linked_boss;
     let zarganash = matches!(name, zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL);
     let mut callback = if zarganash {
@@ -426,6 +428,8 @@ fn scenario_case(
         dreamers_board_portal::binding()?
     } else if color_grid {
         dreamers_color_grid::binding(name)?
+    } else if sacrifice_route {
+        dreamers_sacrifice_routes::binding(name)?
     } else if stone_exit {
         dreamers_stone_exit::binding()?
     } else if name == myzzi_court_entry::NAME {
@@ -762,6 +766,8 @@ fn scenario_case(
         dreamers_board_portal::world(&callback, name == dreamers_board_portal::READY)?
     } else if color_grid {
         dreamers_color_grid::world(&callback, name)?
+    } else if sacrifice_route {
+        dreamers_sacrifice_routes::world(&callback, name)?
     } else if stone_exit {
         dreamers_stone_exit::world(&callback)?
     } else if kroazur {
@@ -1850,6 +1856,11 @@ fn scenario_case(
         if knightwatch {
             owner.quest_catalogue = Some(dreamers_knightwatch_toll::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback, name,
+            )?);
+        }
+        if sacrifice_route {
+            owner.quest_catalogue = Some(dreamers_sacrifice_routes::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, name,
             )?);
         }
         if brain_head || feaster_solo {
@@ -3117,6 +3128,8 @@ fn scenario_case(
             )).await?;
         } else if color_grid {
             Box::pin(dreamers_color_grid::exercise(&owner, &mut admitted, name)).await?;
+        } else if sacrifice_route {
+            Box::pin(dreamers_sacrifice_routes::exercise(&owner, &mut admitted, fence, name)).await?;
         } else if stone_exit {
             Box::pin(dreamers_stone_exit::exercise(&owner, &mut admitted)).await?;
         } else if kroazur {
