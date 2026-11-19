@@ -26,6 +26,25 @@ RUN git init \
 FROM scratch AS world-bundle
 COPY --from=world-bundle-build /world-bundle/ /
 
+# The node's pinned inputs (deploy/oracle/README.md, "Baked inputs"): the World bundle
+# pin-check just proved, the gameplay manifest closure (stage_gameplay.py) and the NPC
+# catalogue (stage_npc_data.py), each checked against its pin. INPUTS.sha256 lists every file.
+FROM build AS node-inputs
+COPY --from=world-bundle-build /world-bundle/ /world-bundle/
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 \
+    && rm -rf /var/lib/apt/lists/*
+RUN set -eu \
+    && set -- /world-bundle/*.otwb \
+    && [ "$#" -eq 1 ] && [ -f "$1" ] \
+    && mkdir -p /node-inputs \
+    && cp "$1" /node-inputs/world.otbundle \
+    && python3 deploy/synology-game/stage_gameplay.py content/spells.manifest.json . /node-inputs/gameplay \
+    && python3 deploy/synology-game/stage_npc_data.py deploy/synology-game/npc-data.pin.json . /node-inputs/npc-data \
+    && cd /node-inputs \
+    && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /INPUTS.sha256 \
+    && mv /INPUTS.sha256 INPUTS.sha256
+
 FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587 AS runtime
 ARG GAME_SOURCE_SHA=87f770c87ce17518ba69f5effdbd04725d8a7d06
 LABEL org.opencontainers.image.source="https://github.com/Oteryn/Oteryn-Game" \
@@ -36,6 +55,8 @@ RUN apt-get update \
 COPY --from=build /src/target/release/oteryn-game-server /usr/local/bin/oteryn-game-server
 COPY --from=build /src/target/release/oteryn-game-ops /usr/local/bin/oteryn-game-ops
 COPY --from=build /src/target/release/oteryn-game-migrate /usr/local/bin/oteryn-game-migrate
+COPY --from=node-inputs /node-inputs/ /opt/oteryn-game/
+ENV OTERYN_NATIVE_GAMEPLAY_MANIFEST=/opt/oteryn-game/gameplay/content/spells.manifest.json
 USER 1001:1001
 ENTRYPOINT ["/usr/local/bin/oteryn-game-server"]
 CMD ["serve", "--config", "/etc/oteryn/node.toml"]

@@ -47,6 +47,8 @@ ruleset_revision = "<RULESET_REVISION>"
 content_revision = "<CONTENT_REVISION>"
 map_revision = "<MAP_REVISION>"
 world_policy_revision = "<WORLD_POLICY_REVISION>"
+# ADMIT0: registered gameplay capability IDs this scope requires; required key, [] for none.
+required_gameplay_capabilities = []
 offer_revision = "<OFFER_REVISION>"
 [platform]
 source_authority = "platform"

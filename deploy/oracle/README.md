@@ -38,3 +38,19 @@ World/content, canonical IDs, trust, independent floors and fencing are preserve
 No content activation, authority bootstrap, floor reset or schema rollback is part
 of this workflow. Uncertain outcomes stay closed for explicit reconciliation.
 Real native gameplay admission is a separate acceptance result from readiness.
+
+## Baked inputs
+
+The runtime image carries the node's pinned inputs under `/opt/oteryn-game`
+(stage `node-inputs` of `game.Dockerfile`), built from the same source tree:
+
+- `world.otbundle`: the bundle `pin-check` built and verified against
+  `content/world/pins/oteryn.json`; `[world_bundle] path` in `node.toml`.
+- `gameplay/`: `stage_gameplay.py` output for `content/spells.manifest.json`;
+  the image sets `OTERYN_NATIVE_GAMEPLAY_MANIFEST` to its manifest.
+- `npc-data/`: `stage_npc_data.py` output for `deploy/synology-game/npc-data.pin.json`;
+  `serve` takes `--npc-data-project /opt/oteryn-game/npc-data/content/world
+  --npc-data-sha256 <npc-data/PROJECT_SHA256>`.
+- `INPUTS.sha256`: `sha256sum` of every file above, sorted by path.
+
+The image build fails when any input differs from its pin.
