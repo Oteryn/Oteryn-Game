@@ -209,7 +209,7 @@ pub(super) async fn exercise(
     let retaliation = name == RETALIATION_NAME;
     let cure = name == CURE_NAME;
     let mast = matches!(name, MAST_WITH_JUG | MAST_WITHOUT_JUG);
-    let native = callback.selector.native.ok_or("native placement")?;
+    let native = callback.selector.native.as_ref().ok_or("native placement")?;
     let (tool, wrong_tool, transformed) = if retaliation {
         (7289, 7243, 7289)
     } else if cure {
@@ -266,7 +266,7 @@ pub(super) async fn exercise(
         .and_then(|n| n.item_index())
         .ok_or("item index")?;
 
-    let item = |key| {
+    let item = |key: &str| {
         index
             .definition_ref("Item", key, "definition-r1")
             .ok_or("item reference")

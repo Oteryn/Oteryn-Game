@@ -946,7 +946,11 @@ fn scenario_case(
             &super::super::qcx62_buddel_fixtures::ARRIVAL_CELLS,
         )?
     } else if ice_tools {
-        let native = callback.selector.native.ok_or("carried-tool native placement")?;
+        let native = callback
+            .selector
+            .native
+            .as_ref()
+            .ok_or("carried-tool native placement")?;
         world_ordinal(&callback, trigger, native.appearance, native.ordinal)?
     } else {
         world(&callback, trigger)?
