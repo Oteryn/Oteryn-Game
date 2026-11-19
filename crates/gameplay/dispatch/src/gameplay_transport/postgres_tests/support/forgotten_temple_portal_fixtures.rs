@@ -61,8 +61,12 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
 }
 
 pub(super) fn catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> {
+    let digest: String = Sha256::digest(SOURCE)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let document = json!({"schema":1,"quests":[{
-        "quest":QUEST,"recipe_sha256":format!("{:x}",Sha256::digest(SOURCE)),
+        "quest":QUEST,"recipe_sha256":digest,
         "sources":[SOURCE],"tracks":[{"key":ACCESS,"initial":0,"minimum":0,"maximum":1}],
         "stages":[{"key":"temple-energy","completes":false,"trigger":{"kind":"step_in","callback":callback}}]
     }]});

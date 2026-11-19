@@ -111,8 +111,12 @@ pub(super) fn access_catalogue(callback: &Callback) -> TestResult<QuestStateCata
     use oteryn_gameplay_quests::quest::{
         QuestComparison, QuestEffect, QuestEffectKind, QuestTrack, QuestTransition,
     };
+    let digest: String = Sha256::digest(ACCESS_SOURCE)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let document = json!({"schema":1,"quests":[{
-        "quest":FERUMBRAS,"recipe_sha256":format!("{:x}",Sha256::digest(ACCESS_SOURCE)),
+        "quest":FERUMBRAS,"recipe_sha256":digest,
         "sources":[ACCESS_SOURCE],"tracks":[
             {"key":TELEPORTS,"initial":-1,"minimum":-1,"maximum":i64::MAX},
             {"key":ALL_HABITATS,"initial":-1,"minimum":-1,"maximum":8}
@@ -317,7 +321,10 @@ fn habitat_close_callback() -> TestResult<Callback> {
 }
 
 pub(super) fn habitat_catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> {
-    let digest = format!("{:x}", Sha256::digest(HABITAT_SOURCE));
+    let digest: String = Sha256::digest(HABITAT_SOURCE)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let document = json!({"schema":1,"quests":[{
         "quest":FERUMBRAS,"recipe_sha256":digest,"sources":[HABITAT_SOURCE],
         "tracks":[

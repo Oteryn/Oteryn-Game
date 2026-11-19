@@ -315,8 +315,12 @@ pub(super) fn reward_room_catalogue(
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
     use sha2::{Digest, Sha256};
 
+    let digest: String = Sha256::digest(callback.sources.join("\n"))
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let document = json!({"schema":1,"quests":[{
-        "quest":DRAGON_QUEST,"recipe_sha256":format!("{:x}", Sha256::digest(callback.sources.join("\n"))),
+        "quest":DRAGON_QUEST,"recipe_sha256":digest,
         "sources":callback.sources,"tracks":[{"key":FEATHERS,"initial":0,"minimum":0,"maximum":2}],
         "stages":[
             {"key":"finale","completes":false,"trigger":{"kind":"map_use","callback":callback}},

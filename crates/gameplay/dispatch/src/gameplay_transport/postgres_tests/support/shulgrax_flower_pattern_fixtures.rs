@@ -209,8 +209,12 @@ pub(super) fn portal_catalogue(
         QuestTransition, authored_bindings::Bindings,
     };
     use sha2::{Digest, Sha256};
+    let digest: String = Sha256::digest(PORTAL_SOURCE)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let document = json!({"schema":1,"quests":[{
-        "quest":QUEST,"recipe_sha256":format!("{:x}", Sha256::digest(PORTAL_SOURCE)),
+        "quest":QUEST,"recipe_sha256":digest,
         "sources":[PORTAL_SOURCE],"tracks":[{"key":WINDOW,"initial":0,"minimum":0,"maximum":i64::MAX}],
         "stages":[{"key":"flower-puzzle-portal","completes":false,
             "trigger":{"kind":"step_in","callback":callback}}]
