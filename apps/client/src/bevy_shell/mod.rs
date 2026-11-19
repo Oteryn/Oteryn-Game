@@ -236,14 +236,20 @@ fn poll_owner(
     mut owner: NonSendMut<HostOwner>,
     window: Query<&Window, With<PrimaryWindow>>,
     viewport: Res<game_ui::viewport::WorldViewport>,
+    mut exit: MessageWriter<AppExit>,
 ) {
-    if let Ok(window) = window.single() {
+    if owner.phase != owner::Phase::Closed
+        && let Ok(window) = window.single()
+    {
         let size = if viewport.size.x > 0 && viewport.size.y > 0 {
             viewport.size.to_array()
         } else {
             [window.physical_width(), window.physical_height()]
         };
         owner.poll(size);
+        if owner.phase == owner::Phase::Closed {
+            exit.write(AppExit::Success);
+        }
     }
 }
 fn project_window(

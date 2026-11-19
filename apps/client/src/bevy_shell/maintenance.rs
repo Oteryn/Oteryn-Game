@@ -1,5 +1,5 @@
 //! Updates and repair window the launcher opens once the client handed maintenance off
-//! (`--updates`): it checks the signed stable release, then updates, verifies or repairs the
+//! (`--updates`): it checks the signed channel release, then updates, verifies or repairs the
 //! installation on request. The window cannot close while an operation runs.
 use super::ui::EXTERNAL_FONT as FONT;
 use crate::updater::{Action, maintain};
@@ -31,13 +31,14 @@ enum Stage {
 }
 struct Maintenance {
     directory: PathBuf,
+    channel: String,
     stage: Stage,
     pending: Option<(Action, Receiver<Outcome>)>,
     report: String,
     /// The latest finished operation; the launcher reports it after the window closes.
     outcome: Arc<Mutex<Option<Outcome>>>,
     /// Starts one operation; the window uses [`start`], tests a deterministic operation.
-    start: fn(PathBuf, Action) -> Receiver<Outcome>,
+    start: fn(PathBuf, &str, Action) -> Receiver<Outcome>,
 }
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 enum Choice {
@@ -50,9 +51,47 @@ enum Choice {
 struct Report;
 
 /// Opens the window over `directory` and returns the last operation's result.
-pub fn run(directory: &Path, args: &[OsString]) -> Outcome {
-    let assets = ui_assets(directory, args);
+pub fn run(directory: &Path, args: &[OsString], channel: &str) -> Outcome {
     let outcome = Arc::new(Mutex::new(None));
+    run_window(
+        directory,
+        args,
+        Maintenance {
+            directory: directory.to_path_buf(),
+            channel: channel.to_owned(),
+            stage: Stage::Working,
+            pending: Some((Action::Check, start(directory.to_path_buf(), channel, Action::Check))),
+            report: format!("Checking the signed {channel} release…"),
+            outcome: outcome.clone(),
+            start,
+        },
+    );
+    outcome
+        .lock()
+        .ok()
+        .and_then(|mut outcome| outcome.take())
+        .unwrap_or(Err(UpdateError::Unavailable))
+}
+
+#[cfg(windows)]
+pub(crate) fn login_report(directory: &Path, report: String) {
+    run_window(
+        directory,
+        &[],
+        Maintenance {
+            directory: directory.to_path_buf(),
+            channel: String::new(),
+            stage: Stage::Done,
+            pending: None,
+            report,
+            outcome: Arc::new(Mutex::new(None)),
+            start,
+        },
+    );
+}
+
+fn run_window(directory: &Path, args: &[OsString], state: Maintenance) {
+    let assets = ui_assets(directory, args);
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins
@@ -67,7 +106,7 @@ pub fn run(directory: &Path, args: &[OsString]) -> Outcome {
             .set(WindowPlugin {
                 close_when_requested: false,
                 primary_window: Some(Window {
-                    title: "Oteryn updates and repair".into(),
+                    title: tr!("Oteryn updates and repair").into(),
                     resolution: (560, 320).into(),
                     ..default()
                 }),
@@ -78,23 +117,8 @@ pub fn run(directory: &Path, args: &[OsString]) -> Outcome {
     if assets.is_some() {
         app.insert_resource(MaintenanceFont);
     }
-    install(
-        &mut app,
-        Maintenance {
-            directory: directory.to_path_buf(),
-            stage: Stage::Working,
-            pending: Some((Action::Check, start(directory.to_path_buf(), Action::Check))),
-            report: "Checking the signed stable release…".into(),
-            outcome: outcome.clone(),
-            start,
-        },
-    );
+    install(&mut app, state);
     let _ = app.run();
-    outcome
-        .lock()
-        .ok()
-        .and_then(|mut outcome| outcome.take())
-        .unwrap_or(Err(UpdateError::Unavailable))
 }
 
 /// The UI-art root holding the font: `--ui-assets`, `OTERYN_UI_ASSETS`, the active release,
@@ -120,14 +144,15 @@ fn ui_assets(directory: &Path, args: &[OsString]) -> Option<PathBuf> {
 
 /// Runs one operation on its own thread; a failed spawn drops the sender, which the window
 /// reports as a stopped operation.
-fn start(directory: PathBuf, action: Action) -> Receiver<Outcome> {
+fn start(directory: PathBuf, channel: &str, action: Action) -> Receiver<Outcome> {
     let (tx, rx) = mpsc::channel();
+    let channel = channel.to_owned();
     let _ = std::thread::Builder::new()
         .name("launcher-maintenance".into())
         .spawn(move || {
             let result = tokio::runtime::Runtime::new()
                 .map_err(|_| UpdateError::Unavailable)
-                .and_then(|runtime| runtime.block_on(maintain(&directory, "stable", action)));
+                .and_then(|runtime| runtime.block_on(maintain(&directory, &channel, action)));
             let _ = tx.send(result);
         });
     rx
@@ -256,7 +281,10 @@ fn activate(
         _ => "Downloading and repairing from the signed release…",
     }
     .into();
-    state.pending = Some((action, (state.start)(state.directory.clone(), action)));
+    state.pending = Some((
+        action,
+        (state.start)(state.directory.clone(), &state.channel, action),
+    ));
 }
 
 /// Closing the window waits for a running operation to finish.

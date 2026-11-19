@@ -304,9 +304,15 @@ impl HostOwner {
             self.status.clone_from(&message);
             self.login.form.feedback(message);
         }
+        self.login
+            .form
+            .refresh_gate_message(std::time::Instant::now());
         if let Some(result) = self.entry.as_mut().and_then(Reentry::poll) {
             let bulletin = self.entry.as_mut().and_then(Reentry::take_bulletin);
             self.finish_admission(result, bulletin);
+            if self.phase == Phase::Closed {
+                return;
+            }
         }
         let mut end = None;
         let mut switch = None;
@@ -361,9 +367,19 @@ impl HostOwner {
         result: Result<(PlayView, PlayLink), crate::GameplayEntryError>,
         bulletin: Option<String>,
     ) {
+        if matches!(
+            &result,
+            Err(crate::GameplayEntryError::ClientUpdateRequired {
+                updater_started: true,
+                ..
+            })
+        ) {
+            self.close();
+            return;
+        }
         self.login
             .form
-            .finish(result.as_ref().map(|_| ()).map_err(|error| *error));
+            .finish(result.as_ref().map(|_| ()).map_err(Clone::clone));
         if result.is_ok() {
             self.login.visible = false;
         }
@@ -389,7 +405,7 @@ impl HostOwner {
                 }
             }
             Err(error) => {
-                self.leave(error_text(error));
+                self.leave(&error_text(error));
                 if !self.login.visible {
                     self.login.show();
                 }
@@ -398,10 +414,10 @@ impl HostOwner {
     }
     fn finish_play(&mut self, end: PlayEnd) {
         let message = match end {
-            PlayEnd::LoggedOut => "Logged out. Choose a character after signing in again.",
+            PlayEnd::LoggedOut => "Logged out. Choose a character after signing in again.".into(),
             PlayEnd::Ended(class) => error_text(crate::GameplayEntryError::Rejected(class)),
         };
-        self.leave(message);
+        self.leave(&message);
         if matches!(end, PlayEnd::LoggedOut)
             && self.entry.as_mut().is_some_and(|entry| {
                 entry.set_session_options(self.settings.preferences.miscellaneous);

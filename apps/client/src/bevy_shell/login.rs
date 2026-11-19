@@ -451,7 +451,7 @@ pub(super) fn project(
     }
     *shown = visible;
     let pending = owner.login.form.pending();
-    let progress = if visible && pending {
+    let progress = if visible && owner.login.form.show_status() {
         owner.login.form.message()
     } else {
         ""

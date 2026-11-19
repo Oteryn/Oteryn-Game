@@ -2,6 +2,25 @@ use super::*;
 use bevy::{asset::AssetPlugin, input_focus::InputFocus, prelude::*};
 
 #[test]
+fn a_started_login_updater_closes_the_existing_bevy_owner() -> Result<(), Box<dyn std::error::Error>>
+{
+    let mut owner = HostOwner::new(None)?;
+    owner.phase = Phase::Entering;
+    owner.login.show();
+    owner.finish_admission(
+        Err(crate::GameplayEntryError::ClientUpdateRequired {
+            manual_download_url: "https://oteryn.com/download".into(),
+            updater_started: true,
+        }),
+        None,
+    );
+    assert_eq!(owner.phase, Phase::Closed);
+    assert!(!owner.login.visible);
+    assert!(owner.entry.is_none());
+    Ok(())
+}
+
+#[test]
 fn hidden_reentry_refusal_projects_the_login_alert() -> Result<(), Box<dyn std::error::Error>> {
     use super::super::{login, ui};
 

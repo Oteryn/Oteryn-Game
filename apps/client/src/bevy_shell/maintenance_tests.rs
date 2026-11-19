@@ -3,10 +3,10 @@ use std::sync::mpsc::Sender;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 /// Every operation a test window started, in order; tests never reach the network.
-static STARTED: Mutex<Vec<(PathBuf, Action)>> = Mutex::new(Vec::new());
+static STARTED: Mutex<Vec<(PathBuf, String, Action)>> = Mutex::new(Vec::new());
 
 /// A deterministic operation: verification reports a mismatch, anything else succeeds.
-fn scripted(directory: PathBuf, action: Action) -> Receiver<Outcome> {
+fn scripted(directory: PathBuf, channel: &str, action: Action) -> Receiver<Outcome> {
     let (tx, rx) = mpsc::channel();
     let result = match action {
         Action::Verify => Err(UpdateError::Verification),
@@ -14,7 +14,7 @@ fn scripted(directory: PathBuf, action: Action) -> Receiver<Outcome> {
     };
     let _ = tx.send(result);
     if let Ok(mut started) = STARTED.lock() {
-        started.push((directory, action));
+        started.push((directory, channel.to_owned(), action));
     }
     rx
 }
@@ -30,9 +30,10 @@ fn app(directory: PathBuf) -> (App, Sender<Outcome>, Arc<Mutex<Option<Outcome>>>
         &mut app,
         Maintenance {
             directory,
+            channel: "beta".into(),
             stage: Stage::Working,
             pending: Some((Action::Check, rx)),
-            report: "Checking the signed stable release…".into(),
+            report: "Checking the signed beta release…".into(),
             outcome: outcome.clone(),
             start: scripted,
         },
@@ -105,7 +106,7 @@ fn maintenance_window_checks_then_verifies_offers_repair_and_closes() -> TestRes
     click(&mut app, Choice::Verify)?;
     assert_eq!(
         STARTED.lock().map_err(|_| "started")?.as_slice(),
-        [(directory.clone(), Action::Verify)]
+        [(directory.clone(), "beta".into(), Action::Verify)]
     );
     app.update();
     assert!(report(&mut app)?.starts_with("Verification failed"));

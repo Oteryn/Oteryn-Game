@@ -15,6 +15,7 @@ const WORLD_REF: &str = "w-alpha";
 const CHARACTER: &str = "01890a5d-ac96-774b-bcce-b302099a8058";
 const WORLD: &str = "01890a5d-ac96-774b-bcce-b302099a8059";
 pub(super) const CHANNEL: &str = "01890a5d-ac96-774b-bcce-b302099a805a";
+type LoginRefusal = Option<(u16, &'static str)>;
 const JWS: &str = "eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl";
 
 #[path = "test_support/admitted.rs"]
@@ -29,6 +30,7 @@ pub(crate) struct Stack {
     pub(super) servers: ClientRuntime,
     http_url: String,
     requests: Arc<Mutex<Vec<String>>>,
+    login_refusal: Arc<Mutex<LoginRefusal>>,
     pub(crate) admissions: Arc<AtomicUsize>,
     pub(super) root_path: PathBuf,
     _fixture: tempfile::TempDir,
@@ -138,6 +140,8 @@ impl Stack {
         let http_url = format!("http://127.0.0.1:{}/", http.local_addr()?.port());
         let requests = Arc::new(Mutex::new(Vec::new()));
         let log = Arc::clone(&requests);
+        let login_refusal = Arc::new(Mutex::new(None));
+        let refusal = Arc::clone(&login_refusal);
         let http_node = two_channels.then(|| Arc::clone(&node));
         servers.spawn(async move {
             let mut verifier = challenge.then(MockChallengeVerifier::default);
@@ -149,7 +153,7 @@ impl Stack {
                     empty,
                     hold_joined,
                     verifier.as_mut(),
-                    http_node.as_deref(),
+                    (http_node.as_deref(), &refusal),
                 )
                 .await;
             }
@@ -158,6 +162,7 @@ impl Stack {
             servers,
             http_url,
             requests,
+            login_refusal,
             admissions,
             root_path,
             _fixture: fixture,
@@ -194,6 +199,18 @@ impl Stack {
                 }
             }),
         }
+    }
+
+    pub(super) fn refuse_login(
+        &self,
+        status: u16,
+        body: &'static str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        *self
+            .login_refusal
+            .lock()
+            .map_err(|_| "login refusal lock poisoned")? = Some((status, body));
+        Ok(())
     }
 
     pub(super) fn requests(&self) -> Vec<String> {
@@ -262,8 +279,9 @@ async fn serve_http(
     empty: bool,
     training: bool,
     verifier: Option<&mut MockChallengeVerifier>,
-    node: Option<&channel_node::Node>,
+    gateway: (Option<&channel_node::Node>, &Mutex<LoginRefusal>),
 ) {
+    let (node, refusal) = gateway;
     let mut request = Vec::new();
     let mut chunk = [0_u8; 4096];
     let (head, body) = loop {
@@ -353,15 +371,17 @@ async fn serve_http(
     if let Ok(mut requests) = log.lock() {
         requests.push(format!("{target} {body}"));
     }
-    let status = if response.is_empty() {
-        "404 Not Found"
+    let refusal = if target == "POST /v1/login" {
+        refusal.lock().ok().and_then(|guard| *guard)
     } else {
-        "200 OK"
+        None
     };
+    let (status, response) =
+        refusal.unwrap_or_else(|| (if response.is_empty() { 404 } else { 200 }, &response));
     let _ = stream
         .write_all(
             format!(
-                "HTTP/1.1 {status}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{response}",
+                "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{response}",
                 response.len()
             )
             .as_bytes(),

@@ -1,4 +1,5 @@
-use oteryn_platform_client::updates::{UpdateClient, UpdateConfig};
+use oteryn_platform_client::native_login::ReleaseIdentity;
+use oteryn_platform_client::updates::{UpdateChannel, UpdateClient, UpdateConfig, UpdateError};
 #[test]
 fn update_origin_requires_a_build_pinned_root() {
     assert!(UpdateConfig::new("stable", b"", "windows", "x86_64").is_err());
@@ -62,6 +63,13 @@ fn signed_origin_checks_versions_downloads_and_refuses_corruption()
   let requests=Arc::new(std::sync::Mutex::new(Vec::new()));
   let client=UpdateClient::check_with_transport(UpdateConfig::new("stable",root,"windows","x86_64")?,&folder,Fixture{corrupted:false,requests:requests.clone()}).await?;
   assert_eq!(client.policy.current_release_id,"rel-a");assert_eq!(client.length,7);
+  assert_eq!(client.require_minimum(Some(2)), Err(oteryn_platform_client::updates::UpdateError::Unavailable));
+  assert_eq!(client.require_minimum(Some(1)), Ok(()));
+  let refused = ReleaseIdentity::new(UpdateChannel::Stable, "rel-a", 1).ok_or("refused release")?;
+  assert_eq!(client.require_login_update(None, refused), Err(UpdateError::Unavailable));
+  let revoked = ReleaseIdentity::new(UpdateChannel::Stable, "rel-revoked", 3).ok_or("revoked release")?;
+  assert_eq!(client.require_login_update(Some(2), revoked), Err(UpdateError::Unavailable));
+  assert_eq!(client.require_login_update(Some(1), revoked), Ok(()));
   let mut progress = Vec::new();
   client.download_with_progress(&folder.join("package.zip"), |received, total| progress.push((received, total))).await?;
   assert_eq!(progress.last(), Some(&(7, 7)));

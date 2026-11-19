@@ -66,7 +66,8 @@ impl Debug for NativeLoginConfig {
 
 impl NativeLoginConfig {
     /// Reads `OTERYN_PLATFORM_URL`, `OTERYN_GATEWAY_URL`, `OTERYN_OAUTH_CLIENT_ID`,
-    /// `OTERYN_WORLD`, `OTERYN_CHARACTER_ID` and `OTERYN_DEV_ROOT`. Native login is off
+    /// `OTERYN_WORLD`, `OTERYN_CHARACTER_ID` and `OTERYN_DEV_ROOT`. The root is required
+    /// for gameplay TLS after a grant. Native login is off
     /// (`Ok(None)`) while `OTERYN_PLATFORM_URL` is unset.
     pub fn from_env(
         lookup: impl Fn(&str) -> Option<String>,
@@ -94,7 +95,7 @@ impl NativeLoginConfig {
             oauth_client_id,
             world_ref: lookup("OTERYN_WORLD").unwrap_or_default(),
             character_id: lookup("OTERYN_CHARACTER_ID").unwrap_or_default(),
-            dev_root: PathBuf::from(setting("OTERYN_DEV_ROOT")?),
+            dev_root: PathBuf::from(lookup("OTERYN_DEV_ROOT").unwrap_or_default()),
             client_build: CLIENT_BUILD.to_owned(),
             preference_path: crate::play::PreferenceStore::path(),
             callback_timeout: DEFAULT_CALLBACK_TIMEOUT,

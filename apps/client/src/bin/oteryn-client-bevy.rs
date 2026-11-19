@@ -1,6 +1,10 @@
 //! The Bevy host for non-Windows development builds (`--features bevy-shell`); on Windows
 //! `oteryn-client` runs the same host.
 fn main() -> std::process::ExitCode {
+    #[cfg(windows)]
+    if let Some(result) = oteryn_client::updater::login_update_requested() {
+        return result;
+    }
     oteryn_client::crash_report::install_hook();
     #[cfg(windows)]
     let _instance = match oteryn_client::win_mutex::acquire_client_instance() {

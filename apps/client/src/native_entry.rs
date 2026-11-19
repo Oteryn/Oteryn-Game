@@ -56,7 +56,17 @@ fn retry_login<E>(_error: E) -> GameplayEntryError {
 }
 
 fn login_rejected(error: NativeLoginError) -> GameplayEntryError {
-    rejected(error.public_class())
+    match error {
+        NativeLoginError::UpdateRequired(update) => {
+            let updater_started = crate::updater::start_login_update(&update).is_ok();
+            GameplayEntryError::ClientUpdateRequired {
+                manual_download_url: update.manual_download_url,
+                updater_started,
+            }
+        }
+        NativeLoginError::Maintenance { retry_at } => GameplayEntryError::Maintenance { retry_at },
+        error => rejected(error.public_class()),
+    }
 }
 
 const fn admission_class(class: AdmissionPublicClass) -> PublicClass {
@@ -86,16 +96,14 @@ pub(crate) async fn enter_observed(
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
     let gateway = PlatformClientConfig::new(&config.gateway_url)
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
-    let root = load_root_certificate(&config.dev_root)
-        .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
-
     // OAuth code + PKCE, owner character selection, then the consuming ticket.
     let client = login_client(
         &platform,
         &gateway,
         &config.oauth_client_id,
         config.retry_unit,
-    )?;
+    )?
+    .with_release(crate::build_info::login_release(&config.gateway_url));
     let authorize::Authorized {
         ticket,
         character_id: selected_character,
@@ -122,6 +130,10 @@ pub(crate) async fn enter_observed(
         .gateway_login(&ticket, &login, cancellation.clone())
         .await
         .map_err(login_rejected)?;
+
+    // Gameplay TLS applies only after the Gateway has issued a grant.
+    let root = load_root_certificate(&config.dev_root)
+        .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
 
     let mut attempt = NativeAttempt {
         queue: None,
@@ -226,6 +238,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     }
 
     async fn reconcile(&mut self, cancellation: CancellationToken) -> Result<(), Self::Error> {
+        // An identical committed attempt can return its stored grant across a gate change.
         self.grant = self
             .client
             .gateway_login(&self.ticket, &self.login, cancellation)
