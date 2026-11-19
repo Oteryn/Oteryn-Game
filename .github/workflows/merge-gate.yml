@@ -765,7 +765,7 @@ jobs:
           PY
 
       # Plan all five ledger keys before scheduling the build, so a complete hit
-      # can still skip the archive. The archive and shards must match this runner identity.
+      # can still skip the archive. Only shards on this runner identity can reuse the hits.
       # Cache versions depend on the original restore path. Move each ledger aside
       # after restoring it so the next shard can restore to that same path.
       - name: Plan unit-test job-result keys
@@ -914,20 +914,10 @@ jobs:
       runner_image: ${{ steps.identity.outputs.image }}
       runner_platform: ${{ steps.identity.outputs.platform }}
     steps:
-      - name: Verify the archive runner matches the ledger plan
+      - name: Report archive runner identity
         id: identity
-        env:
-          PLAN_IMAGE: ${{ needs.runner_route.outputs.rust_test_image }}
-          PLAN_PLATFORM: ${{ needs.runner_route.outputs.rust_test_platform }}
         run: |
-          set -euo pipefail
-          image="${ImageVersion:?Hosted runner ImageVersion is required}"
-          platform="${RUNNER_OS:?}-${RUNNER_ARCH:?}"
-          if [[ "$image" != "$PLAN_IMAGE" || "$platform" != "$PLAN_PLATFORM" ]]; then
-            echo "::error::Archive runner $image/$platform differs from the ledger plan $PLAN_IMAGE/$PLAN_PLATFORM. Re-run all jobs."
-            exit 1
-          fi
-          printf 'image=%s\nplatform=%s\n' "$image" "$platform" >> "$GITHUB_OUTPUT"
+          printf 'image=%s\nplatform=%s\n' "${ImageVersion:-unknown}" "$RUNNER_OS-$RUNNER_ARCH" >> "$GITHUB_OUTPUT"
 
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1177,23 +1167,22 @@ jobs:
           KIND: ${{ matrix.kind }}
           BASE_SHA: ${{ needs.scope.outputs.base_sha }}
           PER_PACKAGE: ${{ matrix.kind == 'tests' && '--per-package' || '' }}
-          TEST_IMAGE: ${{ needs.rust_fast_build.result == 'skipped' && needs.runner_route.outputs.rust_test_image || needs.rust_fast_build.outputs.runner_image }}
-          TEST_PLATFORM: ${{ needs.rust_fast_build.result == 'skipped' && needs.runner_route.outputs.rust_test_platform || needs.rust_fast_build.outputs.runner_platform }}
+          PLAN_IMAGE: ${{ needs.runner_route.outputs.rust_test_image }}
+          PLAN_PLATFORM: ${{ needs.runner_route.outputs.rust_test_platform }}
+          ARCHIVE_RESULT: ${{ needs.rust_fast_build.result }}
         run: |
           set -euo pipefail
           image="${ImageVersion:-unknown}"
           platform="${RUNNER_OS:-}-${RUNNER_ARCH:-}"
-          if [[ "$KIND" == tests ]]; then
-            # Fail closed before accepting ledger hits or recording results on a different runner.
-            # With a complete hit there is no archive, so compare against the routing plan.
-            if [[ "${ImageVersion:-}" != "${TEST_IMAGE:?Missing unit-test image identity}" ||
-                  "$platform" != "${TEST_PLATFORM:?Missing unit-test platform identity}" ]]; then
-              echo "::error::Shard runner $image/$platform differs from the unit-test plan $TEST_IMAGE/$TEST_PLATFORM. Re-run all jobs."
+          if [[ "$KIND" == tests && ( "$image" != "$PLAN_IMAGE" || "$platform" != "$PLAN_PLATFORM" ) ]]; then
+            if [[ "$ARCHIVE_RESULT" == skipped ]]; then
+              echo "::error::complete ledger hit planned on image $PLAN_IMAGE/$PLAN_PLATFORM but shard runs on $image/$platform; re-run all jobs"
               exit 1
             fi
-            image="$TEST_IMAGE"
-            platform="$TEST_PLATFORM"
+            echo "::notice::Bypassing planned ledger hits because of runner image mismatch ($PLAN_IMAGE/$PLAN_PLATFORM vs $image/$platform)"
+            echo 'bypass=true' >> "$GITHUB_OUTPUT"
           fi
+          # A shard always records under the identity of the runner that executed the tests.
           python -I tools/repository/job_result_key.py plan --job "$JOB" --metadata "$RUNNER_TEMP/rust-fast-metadata.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --out "$RUNNER_TEMP/jr-plan.json" --extra "base=$BASE_SHA" --extra "image=$image" --extra "os=$platform" $PER_PACKAGE
 
       - name: Restore job-result ledger
@@ -1210,6 +1199,7 @@ jobs:
         env:
           KIND: ${{ matrix.kind }}
           TEST_SHARDS: ${{ needs.runner_route.outputs.rust_test_shards }}
+          BYPASS_LEDGER: ${{ steps.jr_plan.outputs.bypass }}
           SLUG: ${{ matrix.slug }}
         run: |
           if [[ "$KIND" == tests ]]; then
@@ -1218,15 +1208,18 @@ jobs:
           import os
           from pathlib import Path
 
-          pending = set(json.loads(os.environ['TEST_SHARDS'])[os.environ['SLUG']])
           temp = Path(os.environ['RUNNER_TEMP'])
           rows = (temp / 'rust-fast-packages.tsv').read_text().splitlines(keepends=True)
-          selected = [row for row in rows if row.split('\t', 1)[0] in pending]
-          if len(selected) != len(pending):
-              raise SystemExit('unit-test shard selection disagrees with checked-out packages')
+          if os.environ['BYPASS_LEDGER'] == 'true':
+              selected = [row for row in rows if row.split('\t', 1)[1].strip()]
+          else:
+              pending = set(json.loads(os.environ['TEST_SHARDS'])[os.environ['SLUG']])
+              selected = [row for row in rows if row.split('\t', 1)[0] in pending]
+              if len(selected) != len(pending):
+                  raise SystemExit('unit-test shard selection disagrees with checked-out packages')
           (temp / 'rust-fast-run.tsv').write_text(''.join(selected), encoding='utf-8')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              output.write(f'hit={str(not pending).lower()}\n')
+              output.write(f'hit={str(not selected).lower()}\n')
           PY
             exit 0
           fi

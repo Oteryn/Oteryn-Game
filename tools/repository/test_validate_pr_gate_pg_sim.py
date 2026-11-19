@@ -133,37 +133,69 @@ class QualificationPlacementTests(unittest.TestCase):
                 )
                 self.assertEqual(result.stdout.splitlines(), expected)
 
-    def test_unit_test_ledger_rejects_runner_identity_skew(self):
-        archive_step = self.archive_step("Verify the archive runner matches the ledger plan")
-        shard_step = self.rust_fast_step("Plan job-result keys")
-        for step, runner in ((archive_step, "Archive"), (shard_step, "Shard")):
-            script = textwrap.dedent(step.split("        run: |\n", 1)[1])
-            # Print the planner's arguments without touching any ledger cache files.
-            script = "python() { printf '%s\\n' \"$@\"; }\n" + script
-            for image, arch in (("20261118.1", "X64"), ("20261119.1", "X64"), ("20261118.1", "ARM64")):
-                with self.subTest(runner=runner, image=image, arch=arch), tempfile.TemporaryDirectory() as directory:
-                    output = Path(directory) / "output"
-                    env = dict(
-                        os.environ, KIND="tests", JOB="rust_fast-tests 1/5", BASE_SHA="base",
-                        PER_PACKAGE="--per-package", RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output),
-                        PLAN_IMAGE="20261118.1", PLAN_PLATFORM="Linux-X64",
-                        TEST_IMAGE="20261118.1", TEST_PLATFORM="Linux-X64",
-                        ImageVersion=image, RUNNER_OS="Linux", RUNNER_ARCH=arch,
+    def test_unit_test_ledger_handles_mixed_runner_images(self):
+        archive_step = self.archive_step("Report archive runner identity")
+        plan_step = self.rust_fast_step("Plan job-result keys")
+        select_step = self.rust_fast_step("Select crates without a passed result")
+        record_step = self.rust_fast_step("Record passed crates in the job-result ledger")
+        self.assertIn('record --plan "$RUNNER_TEMP/jr-plan.json"', record_step)
+        self.assertIn("BYPASS_LEDGER: ${{ steps.jr_plan.outputs.bypass }}", select_step)
+        self.assertIn("PLAN_IMAGE: ${{ needs.runner_route.outputs.rust_test_image }}", plan_step)
+        archive = textwrap.dedent(archive_step.split("        run: |\n", 1)[1])
+        plan = textwrap.dedent(plan_step.split("        run: |\n", 1)[1])
+        select = textwrap.dedent(select_step.split("        run: |\n", 1)[1].split("\n\n      #", 1)[0])
+        # Print planner arguments to verify the recording identity without writing cache files.
+        plan = "python() { printf '%s\\n' \"$@\"; }\n" + plan
+        planned_image = "20261111.370.1"
+        new_image = "20261116.376.1"
+        for image, arch, archive_result in (
+            (planned_image, "X64", "success"),
+            (new_image, "X64", "success"),
+            (planned_image, "ARM64", "success"),
+            (new_image, "X64", "skipped"),
+        ):
+            with self.subTest(image=image, arch=arch, archive=archive_result), tempfile.TemporaryDirectory() as directory:
+                temp = Path(directory)
+                output = temp / "output"
+                full = "cached\t--lib\npending\t--bins\n"
+                (temp / "rust-fast-packages.tsv").write_text(full + "no-unit-target\t\n")
+                env = dict(
+                    os.environ, KIND="tests", JOB="rust_fast-tests 1/5", BASE_SHA="base",
+                    PER_PACKAGE="--per-package", RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output),
+                    PLAN_IMAGE=planned_image, PLAN_PLATFORM="Linux-X64", ARCHIVE_RESULT=archive_result,
+                    ImageVersion=image, RUNNER_OS="Linux", RUNNER_ARCH=arch,
+                    SLUG="tests-1-5", TEST_SHARDS='{"tests-1-5": ["pending"]}',
+                )
+                if archive_result == "success":
+                    subprocess.run(["bash", "-c", archive], env=env, check=True)
+                    self.assertEqual(output.read_text(), f"image={image}\nplatform=Linux-{arch}\n")
+                    output.unlink()
+
+                result = subprocess.run(["bash", "-c", plan], env=env, capture_output=True, text=True)
+                if archive_result == "skipped":
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn(
+                        f"::error::complete ledger hit planned on image {planned_image}/Linux-X64 "
+                        f"but shard runs on {image}/Linux-{arch}; re-run all jobs", result.stdout,
                     )
-                    result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
-                    if image != "20261118.1" or arch != "X64":
-                        self.assertEqual(result.returncode, 1)
-                        self.assertIn(f"{runner} runner {image}/Linux-{arch} differs", result.stdout)
-                        self.assertIn("Re-run all jobs.", result.stdout)
-                        self.assertNotIn("job_result_key.py", result.stdout)
-                        self.assertFalse(output.exists())
-                    else:
-                        self.assertEqual(result.returncode, 0, result.stderr)
-                        if runner == "Archive":
-                            self.assertEqual(output.read_text(), "image=20261118.1\nplatform=Linux-X64\n")
-                        else:
-                            self.assertIn("image=20261118.1\n", result.stdout)
-                            self.assertIn("os=Linux-X64\n", result.stdout)
+                    self.assertNotIn("job_result_key.py", result.stdout)
+                    self.assertFalse(output.exists())
+                    continue
+
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(f"image={image}\n", result.stdout)
+                self.assertIn(f"os=Linux-{arch}\n", result.stdout)
+                mismatch = (image, arch) != (planned_image, "X64")
+                if mismatch:
+                    self.assertEqual(result.stdout.count("::notice::"), 1)
+                    self.assertEqual(output.read_text(), "bypass=true\n")
+                else:
+                    self.assertNotIn("::notice::", result.stdout)
+                    self.assertFalse(output.exists())
+                env["BYPASS_LEDGER"] = "true" if output.exists() else ""
+                subprocess.run(["bash", "-c", select], env=env, check=True)
+                self.assertTrue(output.read_text().endswith("hit=false\n"))
+                self.assertEqual((temp / "rust-fast-run.tsv").read_text(), full if mismatch else "pending\t--bins\n")
 
     def test_self_hosted_target_setup_and_stale_junit_cleanup(self):
         name = "Select persistent self-hosted Cargo target directory"
