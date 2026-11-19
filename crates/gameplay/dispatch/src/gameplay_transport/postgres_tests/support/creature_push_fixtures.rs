@@ -263,19 +263,6 @@ pub(super) fn scenario(
             super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         }
         prepare_current_session(&h).await?;
-        if (craft_lucky_charm && !craft_first_mission) || accept_bushwhacking {
-            use oteryn_gameplay_quests::quest::classic_talk::ROTTIN_STATE;
-            let questline = if craft_lucky_charm { 2 } else { 4 };
-            super::rottin_rewards_fixtures::seed_tracks(
-                &h, &[(&format!("{ROTTIN_STATE}questline"), questline)],
-            ).await?;
-        } else if weighted_reward {
-            super::rottin_rewards_fixtures::seed_loop(&h, repeat_reward).await?;
-        } else if repair {
-            super::rottin_repairs_fixtures::seed(&h, handyman).await?;
-        } else if merchant_loot || merchant_wave {
-            super::rottin_bushwhacking_fixtures::seed(&h, merchant_wave).await?;
-        }
         // The pushed player is a second durable session (character 101, session 110).
         h.seed_pvp_target().await?;
         observer::admit(&h).await?;
@@ -441,6 +428,19 @@ pub(super) fn scenario(
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
+            if (craft_lucky_charm && !craft_first_mission) || accept_bushwhacking {
+                use oteryn_gameplay_quests::quest::classic_talk::ROTTIN_STATE;
+                let questline = if craft_lucky_charm { 2 } else { 4 };
+                super::rottin_rewards_fixtures::seed_tracks(
+                    &h, &owner, &admitted, &[(&format!("{ROTTIN_STATE}questline"), questline)],
+                ).await?;
+            } else if weighted_reward {
+                super::rottin_rewards_fixtures::seed_loop(&h, &owner, &admitted, repeat_reward).await?;
+            } else if repair {
+                super::rottin_repairs_fixtures::seed(&h, &owner, &admitted, handyman).await?;
+            } else if merchant_loot || merchant_wave {
+                super::rottin_bushwhacking_fixtures::seed(&h, &owner, &admitted, merchant_wave).await?;
+            }
             if accept_bushwhacking {
                 use super::classic_quests_fixtures::{install, talk};
                 let [npc] = install(&mut owner, &admitted, ["oteryn:npc.rottin_wood"]).await?;

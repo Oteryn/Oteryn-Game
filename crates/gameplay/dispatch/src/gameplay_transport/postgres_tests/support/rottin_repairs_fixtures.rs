@@ -53,10 +53,17 @@ pub(super) fn wall_world(
     )
 }
 
-pub(super) async fn seed(h: &Harness, handyman: bool) -> TestResult {
+pub(super) async fn seed(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    handyman: bool,
+) -> TestResult {
     let (track, stage) = if handyman { ("task02", 4) } else { ("mission02", 3) };
     seed_tracks(
         h,
+        owner,
+        admitted,
         &[
             (&format!("{ROTTIN_STATE}{track}"), 1),
             (QUESTLINE, stage),
