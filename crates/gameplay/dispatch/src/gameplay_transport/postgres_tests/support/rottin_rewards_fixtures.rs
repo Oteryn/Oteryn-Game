@@ -230,6 +230,10 @@ pub(super) async fn craft_charms(
         use_pair(1602, ribbon, foot, &resumed_view).await.ok_or("recipe replay")?.disposition,
         UseDisposition::Committed
     );
+    assert_eq!(
+        use_pair(1602, foot, ribbon, &resumed_view).await.ok_or("changed recipe replay")?.disposition,
+        UseDisposition::Rejected
+    );
     let quantities: Vec<(String, i64)> = sqlx::query_as(
         "SELECT definition_production_key, sum(quantity)::bigint
          FROM game_item_instances JOIN game_item_container_entries USING(item_instance_id)
@@ -254,8 +258,14 @@ pub(super) async fn craft_charms(
            AND ingredient_consumed_quantity=1
            AND jsonb_array_length(outputs)=1
            AND outputs #>> '{0,key}'=$5
-           AND outputs #>> '{0,count}'='1')
-         FROM game_item_craft_records WHERE game_session_id=encode($1,'hex')::uuid",
+           AND outputs #>> '{0,count}'='1'
+           AND EXISTS (
+             SELECT 1 FROM game_item_instances AS minted
+             WHERE minted.item_instance_id=(craft.outputs #>> '{0,item}')::uuid
+               AND minted.minted_transaction_id=craft.transaction_id
+               AND minted.definition_production_key=$5
+               AND minted.quantity=1 AND minted.lifecycle=1))
+         FROM game_item_craft_records AS craft WHERE game_session_id=encode($1,'hex')::uuid",
     )
     .bind(admitted.game_session_id.as_bytes().as_slice())
     .bind("oteryn:quest-craft/rottin-wood/lucky-charm")
