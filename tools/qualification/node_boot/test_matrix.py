@@ -234,7 +234,11 @@ class WorkflowTests(unittest.TestCase):
             "        shard: ${{ fromJSON(needs.plan.outputs.shards) }}\n",
             "          ref: ${{ matrix.shard.platform_ref }}\n",
             "      - name: Upload redacted shard evidence\n        if: always()\n",
-            "          name: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard.name }}\n",
+            "          name: node-boot-${{ github.run_id }}-${{ matrix.shard.name }}\n",
+            "          overwrite: true\n",
+            "          pattern: node-boot-${{ github.run_id }}-*\n",
+            "          PREFIX: node-boot-${{ github.run_id }}-\n",
+            "          test \"$SHARD_RESULT\" = success\n",
             "python3 tools/qualification/node_boot/matrix.py summarize ",
         ):
             self.assertIn(fragment, text)

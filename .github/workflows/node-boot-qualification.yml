@@ -53,6 +53,7 @@ jobs:
     timeout-minutes: 10
     outputs:
       shards: ${{ steps.plan.outputs.shards }}
+      build_variants: ${{ steps.plan.outputs.build_variants }}
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -64,8 +65,14 @@ jobs:
           EXPECTED_SHA: ${{ github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      - name: Test the shard planner
-        run: python3 tools/qualification/node_boot/test_matrix.py
+      - name: Test shard planning and artifact reuse
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "7135b31f6acc0ebc2626b80823f0a67c7afed41ef509900ad3b14437dce1c373  .github/workflows/node-boot-build.yml" | sha256sum -c -
+          echo "56029b4b5706f4983c262d65982abcbe029eaff9c30c408bd583561639722ed7  tools/qualification/node_boot/prebuilt.py" | sha256sum -c -
+          python3 tools/qualification/node_boot/test_matrix.py
+          python3 tools/qualification/node_boot/test_prebuilt.py
 
       - name: Plan shards
         id: plan
@@ -82,12 +89,24 @@ jobs:
           python3 tools/qualification/node_boot/matrix.py plan --set "$SET" --groups "$SHARD_GROUPS" --rows "$ROWS" \
             --batch "$BATCH" --basic "$BASIC" --spells "$SPELLS" --game-platform "$GAME_PLATFORM" > "$RUNNER_TEMP/shards.json"
           printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
+          variants="$(python3 tools/qualification/node_boot/prebuilt.py plan "$RUNNER_TEMP/shards.json")"
+          printf 'build_variants=%s\n' "$variants" >> "$GITHUB_OUTPUT"
           python3 -c 'import json,sys; [print(s["name"], s["entry"], s["env"]) for s in json.load(open(sys.argv[1]))]' \
             "$RUNNER_TEMP/shards.json" | tee -a "$GITHUB_STEP_SUMMARY"
 
+  node_boot_build:
+    name: Node boot / shared qualification build
+    needs: plan
+    uses: ./.github/workflows/node-boot-build.yml
+    permissions:
+      contents: read
+    with:
+      revision: ${{ github.sha }}
+      variants: ${{ needs.plan.outputs.build_variants }}
+
   node-boot:
     name: Node boot / ${{ matrix.shard.name }}
-    needs: plan
+    needs: [plan, node_boot_build]
     runs-on: ubuntu-24.04
     # W20a's natural day and W20b's light decay run serially for almost two hours.
     # Include build, the basic seam, World setup and the remaining journeys.
@@ -121,11 +140,12 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = "$EXPECTED_PLATFORM"
 
       - name: Install pinned Rust toolchain
+        if: matrix.shard.entry == 'game_platform' || matrix.shard.env.NODE_BOOT_SPELLS == '1'
         run: rustup toolchain install 1.100.0 --profile minimal
 
-      # Protected-main artifacts make the game-server build incremental. A cache hit
-      # never substitutes for running the qualification.
+      # Only spell preflight and portal-specific builds still invoke Cargo here.
       - name: Restore trimmed Cargo cache from protected main
+        if: matrix.shard.entry == 'game_platform' || matrix.shard.env.NODE_BOOT_SPELLS == '1'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -136,8 +156,10 @@ jobs:
           key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
             rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-
 
       - name: Normalize source mtimes for the restored Cargo cache
+        if: matrix.shard.entry == 'game_platform' || matrix.shard.env.NODE_BOOT_SPELLS == '1'
         run: python3 tools/repository/normalize_cargo_mtimes.py
 
       - name: Validate harness
@@ -156,9 +178,57 @@ jobs:
           python3 tools/qualification/node_boot/matrix.py export-env "$SHARD_JSON" > "$RUNNER_TEMP/shard.env"
           cat "$RUNNER_TEMP/shard.env" | tee -a "$GITHUB_ENV"
 
+      - name: Select qualification build inputs
+        id: build_inputs
+        env:
+          SHARD_JSON: ${{ toJSON(matrix.shard) }}
+        run: python3 tools/qualification/node_boot/prebuilt.py select "$SHARD_JSON" >> "$GITHUB_OUTPUT"
+
+      - name: Download Game qualification binaries
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: node-boot-build-${{ steps.build_inputs.outputs.main_variant }}
+          path: ${{ runner.temp }}/node-boot-download/${{ steps.build_inputs.outputs.main_variant }}
+
+      - name: Download Game binaries for the basic pass
+        if: steps.build_inputs.outputs.needs_default == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: node-boot-build-default
+          path: ${{ runner.temp }}/node-boot-download/default
+
+      - name: Download the shared World compiler
+        if: steps.build_inputs.outputs.needs_world == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: node-boot-build-world-compiler
+          path: ${{ runner.temp }}/node-boot-download/world-compiler
+
+      - name: Verify and unpack exact-candidate inputs
+        env:
+          MAIN_VARIANT: ${{ steps.build_inputs.outputs.main_variant }}
+          NEEDS_DEFAULT: ${{ steps.build_inputs.outputs.needs_default }}
+          NEEDS_WORLD: ${{ steps.build_inputs.outputs.needs_world }}
+          MAIN_SHA256: ${{ needs.node_boot_build.outputs[steps.build_inputs.outputs.main_variant] }}
+          DEFAULT_SHA256: ${{ needs.node_boot_build.outputs.default }}
+          WORLD_SHA256: ${{ needs.node_boot_build.outputs.world-compiler }}
+        run: |
+          set -euo pipefail
+          unpack() {
+            local variant="$1" digest="$2"
+            local archive="$RUNNER_TEMP/node-boot-download/$variant/bundle.tar.gz"
+            [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
+            printf '%s  %s\n' "$digest" "$archive" | sha256sum -c -
+            python3 tools/qualification/node_boot/prebuilt.py unpack "$variant" "$archive" "$RUNNER_TEMP/node-boot-prebuilt"
+          }
+          unpack "$MAIN_VARIANT" "$MAIN_SHA256"
+          if [[ "$NEEDS_DEFAULT" == true ]]; then unpack default "$DEFAULT_SHA256"; fi
+          if [[ "$NEEDS_WORLD" == true ]]; then unpack world-compiler "$WORLD_SHA256"; fi
+
       - name: Run node boot shard
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+          NODE_BOOT_PREBUILT_DIR: ${{ runner.temp }}/node-boot-prebuilt
         run: |
           # A failing shard still writes result.json, so no errexit here.
           set +e
@@ -196,14 +266,16 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard.name }}
+          # A partial rerun keeps other shards' evidence for the same candidate.
+          name: node-boot-${{ github.run_id }}-${{ matrix.shard.name }}
           path: ${{ runner.temp }}/node-boot-shard
           if-no-files-found: error
+          overwrite: true
           retention-days: 7
 
   summary:
     name: Node boot / shard summary
-    needs: [plan, node-boot]
+    needs: [plan, node_boot_build, node-boot]
     if: always() && needs.plan.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -214,17 +286,22 @@ jobs:
           persist-credentials: false
 
       - name: Download shard evidence
+        if: needs.node_boot_build.result == 'success'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-*
+          pattern: node-boot-${{ github.run_id }}-*
           path: ${{ runner.temp }}/shards
 
       - name: Summarise shards
         env:
+          BUILD_RESULT: ${{ needs.node_boot_build.result }}
+          SHARD_RESULT: ${{ needs.node-boot.result }}
           SHARDS: ${{ needs.plan.outputs.shards }}
-          PREFIX: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-
+          PREFIX: node-boot-${{ github.run_id }}-
         run: |
           set -euo pipefail
+          test "$BUILD_RESULT" = success
           printf '%s' "$SHARDS" > "$RUNNER_TEMP/shards.json"
           python3 tools/qualification/node_boot/matrix.py summarize "$RUNNER_TEMP/shards.json" "$RUNNER_TEMP/shards" \
             --prefix "$PREFIX" | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$SHARD_RESULT" = success
