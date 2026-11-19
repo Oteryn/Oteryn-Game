@@ -118,26 +118,6 @@ pub(super) fn access_callback() -> TestResult<Callback> {
     Ok(callback)
 }
 
-pub(super) fn access_world(
-    callback: &Callback,
-    portal: Position,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    super::quest_world_callbacks::world_with_cells(
-        callback,
-        portal,
-        &[
-            Position {
-                x: portal.x - 2,
-                ..portal
-            },
-            Position {
-                y: portal.y - 1,
-                ..portal
-            },
-        ],
-    )
-}
-
 pub(super) fn access_catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> {
     use oteryn_gameplay_quests::quest::{
         QuestComparison, QuestEffect, QuestEffectKind, QuestTrack, QuestTransition,

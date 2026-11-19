@@ -374,6 +374,8 @@ fn scenario_case(
         super::super::encounter_death_replacements::callback(name, trigger)?
     } else if name == super::super::ferumbras_crystal_reset::CASE {
         super::super::ferumbras_crystal_reset::callback()?
+    } else if name == super::super::forgotten_temple_portal::CASE {
+        super::super::forgotten_temple_portal::callback()?
     } else if super::super::first_dragon_descendant::handles(name) {
         super::super::first_dragon_descendant::callback(name)?
     } else if m03_use {
@@ -676,8 +678,6 @@ fn scenario_case(
         super::super::shulgrax_flower_pattern::cycle_world(&callback)?
     } else if name == super::super::shulgrax_flower_pattern::CASE {
         super::super::shulgrax_flower_pattern::world(&callback)?
-    } else if name == super::super::zamulosh_monster_step::ACCESS {
-        super::super::zamulosh_monster_step::access_world(&callback, trigger)?
     } else if super::super::zamulosh_monster_step::is_habitat(name) {
         super::super::zamulosh_monster_step::habitat_world(&callback, name)?
     } else if super::super::warzone_portal_cooldown::is_victory(name) {
@@ -686,6 +686,8 @@ fn scenario_case(
         super::super::encounter_death_replacements::world(&callback, trigger, name)?
     } else if name == super::super::ferumbras_crystal_reset::CASE {
         super::super::ferumbras_crystal_reset::world(&callback)?
+    } else if name == super::super::forgotten_temple_portal::CASE {
+        super::super::forgotten_temple_portal::world(&callback)?
     } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
@@ -1762,6 +1764,9 @@ fn scenario_case(
                 super::super::first_dragon_descendant::catalogue(&callback)?,
             ));
         }
+        if name == super::super::forgotten_temple_portal::CASE {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::forgotten_temple_portal::catalogue(&callback)?));
+        }
         if m44_flower {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::m44_flower_lifecycle::catalogue(
@@ -1952,6 +1957,8 @@ fn scenario_case(
             Box::pin(super::super::ferumbras_crystal_reset::exercise(&mut owner, &mut admitted, &h, callback.clone())).await?;
         } else if super::super::first_dragon_descendant::handles(name) {
             Box::pin(super::super::first_dragon_descendant::exercise(&mut owner, &mut admitted, &h, name)).await?;
+        } else if name == super::super::forgotten_temple_portal::CASE {
+            Box::pin(super::super::forgotten_temple_portal::exercise(&owner, &mut admitted, &h, callback.clone())).await?;
         } else if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
                 &mut owner,

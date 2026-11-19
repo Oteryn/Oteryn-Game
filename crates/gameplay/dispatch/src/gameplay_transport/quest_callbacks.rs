@@ -1694,23 +1694,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
             self.punish_carrot_refusal(runtime, states, actor, session, entered, snapshot);
-            // Crystal 201189f8, movements_shulgrax_lever.lua:9-18. A refused
-            // participant sees the cue on the gate they just entered.
-            let (cue, position) = if let Some(effect) = callback.effects.refusal_effect_on_source {
-                (Some(effect), entered.position())
-            } else {
-                (
-                    callback.effects.teleport_effect.or_else(|| {
-                        oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
-                            .map(|gate| gate.effect)
-                    }),
-                    snapshot.position(),
-                )
-            };
-            if let Some(effect) = cue
-                && let Some(at) = native(position)
+            // Temple refusals cue the landing then the source (Crystal 201189f8,
+            // movements_entrance_teleport.lua:112-118). Shulgrax cues only the source.
+            let source = callback.effects.refusal_effect_on_source;
+            let landing = callback.effects.refusal_effect_on_landing.or_else(|| {
+                if source.is_some() {
+                    return None;
+                }
+                callback.effects.teleport_effect.or_else(|| {
+                    oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
+                        .map(|gate| gate.effect)
+                })
+            });
+            if let Some(effect) = landing
+                && let Some(at) = native(snapshot.position())
             {
-                let _ = map.facts.emit_movement_effect(at, effect);
+                map.facts.emit_movement_effect(at, effect);
+            }
+            if let Some(effect) = source
+                && let Some(at) = native(entered.position())
+            {
+                map.facts.emit_movement_effect(at, effect);
             }
         }
         if let Some(message) = &callback.failure_message {
