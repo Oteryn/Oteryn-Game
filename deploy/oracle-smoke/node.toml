@@ -1,0 +1,77 @@
+# NON-PRODUCTION smoke-test config for the Game node on Oracle (image 6aa81f41, 172.18.0.11).
+# Test CA only; no public route. Never reuse these certificates in production.
+[audit_collector]
+enabled = true
+directory = "/srv/oteryn/game/node/audit"
+batch_size = 32
+interval_ms = 1000
+rotation_bytes = 16777216
+rotation_count = 4
+[listener]
+address = "0.0.0.0:7172"
+entry_deadline_ms = 20000
+max_connections = 256
+max_handshake_units = 64
+certificate_chain_file = "/srv/oteryn/game/node/secrets/gameplay.crt"
+private_key_file = "/srv/oteryn/game/node/secrets/gameplay.key"
+[scope]
+world_id = "01a12cf7-c826-728d-8945-95bf96df3e26"
+channel_id = "01a12cf7-c832-72f0-bb82-109de367acda"
+assignment_wait_ms = 120000
+preproduction_actor_capacity = 131072
+[database]
+transport_ip = "<DB_IP>"
+port = 5432
+tls_server_name = "game-postgres"
+database = "oteryn_game"
+username = "oteryn_game_runtime_login"
+password_file = "/srv/oteryn/game/node/secrets/pg-password"
+root_ca_file = "/srv/oteryn/game/node/secrets/db-ca.pem"
+[boot]
+pass_deadline_ms = 15000
+[character]
+fence_directory = "/srv/oteryn/game/fence-parent/fence"
+authority_scope_id = "character-primary"
+issuer_identity = "game-ops"
+[control]
+socket_path = "/srv/oteryn/game/run/control.sock"
+[readiness]
+source_authority = "oteryn:runtime:oracle-preprod"
+route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
+runtime_observation_revision = "obs.1"
+ruleset_revision = "game.<GAME_COMMIT_12HEX>"
+content_revision = "game.<GAME_COMMIT_12HEX>"
+map_revision = "e4c60d49dc9d958aee43e063893694cf5fa23bc3bc3f04b0e9592e29bfe8c456"
+world_policy_revision = "wp.1"
+required_gameplay_capabilities = []
+offer_revision = "offer.1"
+[platform]
+source_authority = "platform"
+endpoint = "172.18.0.2:8543"
+peer_name = "platform-internal.preprod.oteryn.internal"
+trust_roots_file = "/srv/oteryn/game/node/secrets/platform-roots.pem"
+client_certificate_file = "/srv/oteryn/game/node/secrets/platform-client.crt"
+client_key_file = "/srv/oteryn/game/node/secrets/platform-client.key"
+descriptor_revision = 1
+installed_at = <UNIX_SECONDS_AT_SETUP>
+[platform.runtime_status]
+client_certificate_file = "/srv/oteryn/game/node/secrets/runtime-status.crt"
+client_key_file = "/srv/oteryn/game/node/secrets/runtime-status.key"
+assignment_epoch = 1
+[platform.world_event_outcomes]
+enabled = false
+
+[launch]
+authorization_file = "/srv/oteryn/game/state/launch-initial.json"
+s2_authorization_file = "/srv/oteryn/game/state/s2-fresh-store.json"
+
+[world_bundle]
+path = "/srv/oteryn/game/world/world.otbundle"
+digest = "e4c60d49dc9d958aee43e063893694cf5fa23bc3bc3f04b0e9592e29bfe8c456"
+project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
+world_schema_version = "reference-schema-v1"
+content_revision = "seasonal-cake-creature-20261107-r1"
+production = false
+start_x = 32534
+start_y = 32513
+start_floor = -7
