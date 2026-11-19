@@ -315,7 +315,7 @@ jobs:
               --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
           fi
 
-      # Keep swap and disable dispatch debug info for the sharded library build (owner decision
+      # Keep swap and disable dispatch debug info for the library build (owner decision
       # 2026-11-18). Other crates keep line tables so the cache restored from main stays valid.
       - name: Add swap for the library test build
         if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib'
@@ -331,36 +331,28 @@ jobs:
           free -h
 
       # Library tests that need PostgreSQL skip in the Rust Linux lib shards, which have no database;
-      # these archives hold the library tests the partition jobs run against the service.
+      # this archive holds the library tests the partition jobs run against the service.
       - name: Archive PostgreSQL-backed library tests
         if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib'
         env:
           LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
           CARGO_BUILD_JOBS: "1"
           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
+          # Dispatch rustc alone reached 15.87 GiB RSS (#3287). Serialize Cargo work on 16 GB runners.
+          CARGO_BUILD_JOBS: "1"
         run: |
           set -euo pipefail
           mapfile -t packages < <(python3 -c 'import json, os; print("\n".join(json.loads(os.environ["LIB_PACKAGES"])))')
+          test -n "${packages[0]:-}"
           args=()
-          dispatch=false
           for package in "${packages[@]}"; do
-            if [[ "$package" == oteryn-gameplay-dispatch ]]; then
-              dispatch=true
-            else
-              args+=(-p "$package")
-            fi
+            args+=(-p "$package")
           done
           mkdir -p "$RUNNER_TEMP/pg-archives"
-          if (( ${#args[@]} > 0 )); then
-            cargo +1.100.0 nextest archive --locked "${args[@]}" --lib \
-              --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
-          fi
-          if [[ "$dispatch" == true ]]; then
-            for shard in 1 2 3; do
-              OTERYN_DISPATCH_PG_SHARD="$shard/3" cargo +1.100.0 nextest archive --locked \
-                -p oteryn-gameplay-dispatch --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-$shard.tar.zst"
-            done
-          fi
+          # Build all dispatch tests together. The partition planner splits their nextest listing.
+          unset OTERYN_DISPATCH_PG_SHARD
+          cargo +1.100.0 nextest archive --locked "${args[@]}" --lib \
+            --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
 
       # Fail closed if mold did not link: every test binary relinked in this job must carry its tag.
       - name: Confirm mold linked the test binaries
@@ -379,7 +371,6 @@ jobs:
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           ARCHIVE: ${{ matrix.archive }}
-          LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
         run: |
           set -euo pipefail
           # The E2E leg has no archive when the scope leaves out oteryn-game-server; it then
@@ -389,16 +380,8 @@ jobs:
           shopt -s nullglob
           archives=(./*.tar.zst)
           if [[ "$ARCHIVE" == lib ]]; then
-            expected=()
-            if [[ "$LIB_PACKAGES" == *"oteryn-gameplay-dispatch"* ]]; then
-              expected+=(./pg-lib-1.tar.zst ./pg-lib-2.tar.zst ./pg-lib-3.tar.zst)
-            fi
-            if [[ "$LIB_PACKAGES" == *"oteryn-gameplay-durability"* || "$LIB_PACKAGES" == *"oteryn-game-server"* ]]; then
-              expected+=(./pg-lib.tar.zst)
-            fi
-            (( ${#expected[@]} > 0 ))
-            test "${#archives[@]}" = "${#expected[@]}"
-            for archive in "${expected[@]}"; do test -f "$archive"; done
+            test "${#archives[@]}" = 1
+            test -f ./pg-lib.tar.zst
           else
             for archive in "${archives[@]}"; do test "$archive" = "./pg-e2e.tar.zst"; done
           fi
@@ -646,25 +629,11 @@ jobs:
               sha256sum -c SHA256SUMS
               test "$(cat head-sha)" = "$EXPECTED_SHA"
             )
-            if [[ "$archive" == e2e ]]; then
-              names=(pg-e2e)
-            else
-              names=(pg-lib pg-lib-1 pg-lib-2 pg-lib-3)
+            if grep -qx "[0-9a-f]\{64\}  \./pg-$archive\.tar\.zst" "$dir/SHA256SUMS"; then
+              mv -- "$dir/pg-$archive.tar.zst" "$RUNNER_TEMP/pg-archives/pg-$archive.tar.zst"
             fi
-            for name in "${names[@]}"; do
-              if grep -qx "[0-9a-f]\{64\}  \./$name\.tar\.zst" "$dir/SHA256SUMS"; then
-                mv -- "$dir/$name.tar.zst" "$RUNNER_TEMP/pg-archives/$name.tar.zst"
-              fi
-            done
           done
-          if [[ -f "$RUNNER_TEMP/pg-archives/pg-lib-1.tar.zst" ]]; then
-            test -f "$RUNNER_TEMP/pg-archives/pg-lib-2.tar.zst"
-            test -f "$RUNNER_TEMP/pg-archives/pg-lib-3.tar.zst"
-          else
-            test -f "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
-            test ! -e "$RUNNER_TEMP/pg-archives/pg-lib-2.tar.zst"
-            test ! -e "$RUNNER_TEMP/pg-archives/pg-lib-3.tar.zst"
-          fi
+          test -f "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
           test "$(git -C "$PG_SOURCE" rev-parse HEAD)" = "$EXPECTED_SHA"
           test "$("$PG_RUN" git -C "$PG_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
@@ -688,7 +657,7 @@ jobs:
           test "$LABEL" = "$((JOB_INDEX + 1))"
           plan="$RUNNER_TEMP/pg-plan"
           mkdir -p "$plan"
-          for archive in pg-e2e pg-lib pg-lib-1 pg-lib-2 pg-lib-3; do
+          for archive in pg-e2e pg-lib; do
             [[ -f "$RUNNER_TEMP/pg-archives/$archive.tar.zst" ]] || continue
             "$PG_RUN" cargo-nextest nextest list --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" \
               --workspace-remap "$PG_WORKSPACE" --message-format json > "$plan/$archive.json"
@@ -714,7 +683,7 @@ jobs:
           # from one archive to the next.
           priorities, load = [], [0] * total
           seen = set()
-          for archive in ('pg-e2e', 'pg-lib', 'pg-lib-1', 'pg-lib-2', 'pg-lib-3'):
+          for archive in ('pg-e2e', 'pg-lib'):
               listing_path = plan / f'{archive}.json'
               if not listing_path.exists():
                   (plan / f'{archive}.filters').write_text('')
@@ -725,9 +694,6 @@ jobs:
                   for suite in listing['rust-suites'].values()
                   for name, case in suite['testcases'].items()
                   if case['filter-match']['status'] == 'matches'
-                  # Dispatch unit tests outside the mounted PostgreSQL suite belong to shard 1.
-                  if archive not in ('pg-lib-2', 'pg-lib-3')
-                  or name.startswith('gameplay_transport::monk_save::postgres_tests::')
               )
               if duplicates := seen.intersection(cases):
                   raise SystemExit(f'{archive}: tests occur in multiple archives: {sorted(duplicates)}')
@@ -771,15 +737,11 @@ jobs:
           set -euo pipefail
           # Copy the run output to a log so a failure step can list every failed test of this partition.
           exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
-          status=0
-          for archive in pg-lib pg-lib-1 pg-lib-2 pg-lib-3; do
-            mapfile -t filters < "$RUNNER_TEMP/pg-plan/$archive.filters"
-            if (( ${#filters[@]} == 0 )); then continue; fi
-            "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" \
-              --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
-              --no-fail-fast "${filters[@]}" || status=1
-          done
-          exit "$status"
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"
+          if (( ${#filters[@]} == 0 )); then exit 0; fi
+          "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
+            --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}"
 
       # --no-fail-fast runs every planned test; this lists each failed one with a filter that
       # reruns exactly it, so a fix can be checked without the whole partition.
