@@ -1,6 +1,6 @@
 # ADR-0024: Private production gameplay CA
 
-- Status: Proposed (needs architect and owner acceptance; owner question Q1 below is open)
+- Status: Proposed (needs architect acceptance; root key custody decided by the owner 2026-11-19)
 - Date: 2026-11-19
 - Decision owner: Oteryn project owner
 - Closes when accepted: the production half of D172 (production gameplay CA, topology U3/U15/U7 gameplay-trust part)
@@ -54,7 +54,7 @@ and sends no PROXY protocol header.
 
 1. **Two-tier private CA.**
    - *Root:* ECDSA P-256, self-signed, long-lived (10 years), generated and held **offline**
-     (Q1). It signs only intermediates.
+     by the owner (owner decision 2026-11-19). It signs only intermediates.
    - *Intermediate:* ECDSA P-256, `pathLenConstraint=0`, name constraint
      `permitted DNS: game.oteryn.com`, at most 2 years, held on the Oracle game host and used only
      by Game operations tooling. It signs only gameplay server leaves.
@@ -86,8 +86,8 @@ and sends no PROXY protocol header.
 - Implementation (PR2) follows acceptance: embedded bundle and dev-only override in the
   client, the issuance tooling under Game operations, and the production listener settings.
 
-## Owner question
+## Owner decision: root key custody
 
-- **Q1 — root key custody.** Who holds the offline root key? Recommendation: the owner, offline,
-  with one encrypted backup copy in a separate place; the intermediate is re-signed by the
-  owner at most every two years.
+- 2026-11-19: the owner holds the root key offline, with one encrypted backup copy. The online
+  intermediate lives on the Oracle game host and signs short-lived leaf certificates for
+  `game.oteryn.com`. The owner re-signs the intermediate at most every two years.

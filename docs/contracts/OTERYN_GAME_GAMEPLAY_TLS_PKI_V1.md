@@ -24,7 +24,7 @@ the preproduction development CA (D172 testing mode, unchanged).
 | Extended key usage | none | serverAuth | serverAuth only |
 | Name | CN `Oteryn Gameplay Root <generation>` | CN `Oteryn Gameplay Intermediate <yyyy>` | SAN `DNS:game.oteryn.com` only |
 | Name constraints | none | permitted DNS `game.oteryn.com` | n/a |
-| Custody | offline (ADR-0024 Q1) | Oracle game host, Game operations only, file mode 0600 | node secrets directory |
+| Custody | owner, offline, one encrypted backup (ADR-0024) | Oracle game host, Game operations only, file mode 0600 | node secrets directory |
 
 The node serves `leaf || intermediate` as `[listener] certificate_chain_file`; the root is
 never served.
