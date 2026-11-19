@@ -12,6 +12,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 use std::time::Duration;
 
 pub(super) const NAME: &str = "feaster-brain-head";
+pub(super) const FULL: &str = "feaster-brain-head-full";
 const BOSS: &str = "oteryn:creature.brain_head";
 const ADD: &str = "oteryn:creature.cerebellum";
 const DOOR: Position = at(31937, 32325);
@@ -47,6 +48,7 @@ pub(super) fn binding() -> TestResult<Callback> {
         "trigger":"step_in",
         "selector":{"position":DOOR,"position_aliases":[ALIAS],"ordinal":0},
         "requires_world_admission":true,"return_on_failure":true,"failure_teleport":EXIT,
+        "success_message":"You've entered the Brain Head's lair.",
         "reversible":false,"passages":[],"offerings":[],"storage":[],
         "effects":{"encounter":{
             "minimum_level":250,"players":[{"from":DOOR,"to":ENTRY}],
@@ -68,24 +70,45 @@ fn brain_head_step_admits_into_an_occupied_room_then_ejects_at_the_stage_deadlin
     super::kill_reward_e2e::scenario_thread::run(NAME, || scenario(NAME, ALIAS, false))
 }
 
+#[test]
+fn brain_head_full_room_refuses_step_without_booking_a_cooldown_or_spawning() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(FULL, || scenario(FULL, ALIAS, false))
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
     fence: CurrentCharacterGameplayFence,
+    full: bool,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("actor")?;
     // An occupied shared room can admit another player. The three source
     // stages must not be projected as a solo occupancy gate.
-    let spectator = {
+    let spectators = {
         let mut runtime = owner.runtime.lock().await;
-        let session = GameSessionId::decode(&id(112)).map_err(debug)?;
-        let lease = runtime.reserve_fresh_session(session).map_err(debug)?;
-        let spectator = runtime.commit_fresh_session(lease).map_err(debug)?;
-        runtime
-            .initialize_pinned_test_position(spectator, local(ENTRY))
-            .map_err(debug)?;
-        spectator
+        let cells = [
+            ENTRY,
+            at(31962, 32323),
+            at(31962, 32324),
+            at(31962, 32325),
+            at(31963, 32325),
+        ];
+        let mut spectators = Vec::new();
+        for (index, cell) in cells.into_iter().take(if full { 5 } else { 1 }).enumerate() {
+            let session = GameSessionId::decode(&id(112 + u8::try_from(index)?)).map_err(debug)?;
+            let lease = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let spectator = runtime.commit_fresh_session(lease).map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(spectator, local(cell))
+                .map_err(debug)?;
+            spectators.push(spectator);
+        }
+        spectators
     };
     let result = wire(
         owner,
@@ -107,21 +130,34 @@ pub(super) async fn exercise(
             .read_actor_position(actor)
             .map_err(debug)?
             .position(),
-        local(ENTRY),
+        local(if full { EXIT } else { ENTRY }),
     );
     let live = super::engworldchg_journals::live_creatures;
-    assert_eq!(live(owner, BOSS).await?.len(), 1);
-    assert_eq!(live(owner, ADD).await?.len(), 8);
-    let remaining: i64 = sqlx::query_scalar(
+    let remaining: Option<i64> = sqlx::query_scalar(
         "SELECT available_at - floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint
          FROM game_character_boss_cooldowns
          WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2",
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(BOSS)
-    .fetch_one(&harness.pool)
+    .fetch_optional(&harness.pool)
     .await?;
-    assert!((35_990_000..=36_000_000).contains(&remaining));
+    if full {
+        assert!(remaining.is_none());
+        assert!(live(owner, BOSS).await?.is_empty());
+        assert!(live(owner, ADD).await?.is_empty());
+        assert!(
+            owner
+                .states
+                .quest_callbacks
+                .next_encounter_due_us()
+                .is_none()
+        );
+        return Ok(());
+    }
+    assert_eq!(live(owner, BOSS).await?.len(), 1);
+    assert_eq!(live(owner, ADD).await?.len(), 8);
+    assert!((35_990_000..=36_000_000).contains(&remaining.ok_or("booked cooldown")?));
     let due = owner
         .states
         .quest_callbacks
@@ -132,7 +168,7 @@ pub(super) async fn exercise(
     owner.drain_quest_encounter_deadlines().await;
     {
         let runtime = owner.runtime.lock().await;
-        for player in [actor, spectator] {
+        for player in spectators.into_iter().chain([actor]) {
             assert_eq!(
                 runtime
                     .read_actor_position(player)

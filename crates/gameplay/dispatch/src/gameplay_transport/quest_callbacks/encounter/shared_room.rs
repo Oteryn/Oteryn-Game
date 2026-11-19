@@ -35,7 +35,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
             return UseDisposition::Rejected;
         };
-        let existing = visits.iter_mut().find(|visit| {
+        let existing = visits.iter().position(|visit| {
             visit.owner_scope == scope
                 && visit.join_until.is_some()
                 && visit.room.room_min == room.room_min
@@ -45,16 +45,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .as_ref()
                     .is_some_and(|stored| stored.bundle_digest == digest)
         });
-        if existing
-            .as_ref()
-            .is_some_and(|visit| visit.join_until.is_none_or(|deadline| now >= deadline))
-            || census
-                .iter()
-                .filter(|(who, position, owner)| {
-                    *who != actor && owner.is_some() && room_contains(room, position.position())
-                })
-                .count()
-                >= usize::from(admission.capacity)
+        let occupants = census
+            .iter()
+            .filter(|(who, position, owner)| {
+                *who != actor && owner.is_some() && room_contains(room, position.position())
+            })
+            .count();
+        if occupants >= usize::from(admission.capacity)
+            || (occupants > 0
+                && existing.is_some_and(|index| {
+                    visits[index]
+                        .join_until
+                        .is_none_or(|deadline| now >= deadline)
+                }))
         {
             return UseDisposition::Occupied;
         }
@@ -105,6 +108,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return UseDisposition::Exhausted;
         };
+        // The donor's startOnEnter resets when the last player leaves. The
+        // next ingress may arrive before the scheduled census sees that vacancy.
+        let (existing, retired) = if let Some(index) = existing
+            && occupants == 0
+        {
+            let previous = &visits[index];
+            for actor in previous.creatures.iter().copied() {
+                if runtime.contains_live_creature(actor)
+                    && runtime.remove_encounter_actor(actor).is_err()
+                {
+                    return UseDisposition::Occupied;
+                }
+            }
+            let previous = visits.swap_remove(index);
+            (None, previous.creatures)
+        } else {
+            (existing, Vec::new())
+        };
         let mut monsters = Vec::new();
         if existing.is_none() {
             if !map
@@ -125,10 +146,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     map.overlay.base(),
                     tile(monster.position),
                     false,
-                ) || census
-                    .iter()
-                    .any(|(_, occupant, _)| occupant.position() == position)
-                {
+                ) || census.iter().any(|(actor, occupant, _)| {
+                    occupant.position() == position && !retired.contains(actor)
+                }) {
                     return UseDisposition::Occupied;
                 }
                 let Ok(policy) = runtime.companion_policy(&monster.creature) else {
@@ -150,7 +170,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         }
         let mut new_visit = None;
-        let visit = if let Some(visit) = existing {
+        let visit = if let Some(index) = existing {
+            let visit = &mut visits[index];
             // Retire disconnected and departed roster entries before admitting replacements.
             visit.participants.retain(|(who, owner)| {
                 census.iter().any(|(current, position, session)| {
@@ -212,6 +233,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(visit) = new_visit {
             visits.push(visit);
             states.owner_wake.notify_one();
+            if let Some(message) = &callback.success_message {
+                self.states.chat.push_quest_feedback(session, message);
+            }
         }
         states.stage_special_movement_step(
             runtime,
