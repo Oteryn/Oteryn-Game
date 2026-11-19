@@ -736,7 +736,7 @@ fn scenario_case(
     } else if faceless_bane {
         faceless_bane_phase::world(&callback)?
     } else if brain_head {
-        super::world_with_cells(&callback, trigger, &[feaster_brain_head::EXIT])?
+        feaster_brain_head::world(&callback, trigger)?
     } else if feaster_solo {
         feaster_solo_rooms::world(&callback, name)?
     } else if haunted_tomb {

@@ -1,6 +1,6 @@
 //! Crystal 201189f data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:1-126.
 use super::fixture::{Harness, debug, id};
-use super::quest_world_callbacks::{local, scenario, wire};
+use super::quest_world_callbacks::{local, scenario, wire, world_with_cells};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::foundation::GameSessionId;
@@ -18,7 +18,43 @@ const ADMISSION_WINDOW_MS: u32 = 30_000;
 const BOSS: &str = "oteryn:creature.brain_head";
 const ADD: &str = "oteryn:creature.cerebellum";
 const DOOR: Position = at(31937, 32325);
-const ALIAS: Position = at(31937, 32326);
+const ALIAS: Position = at(31970, 32326);
+// Crystal actions_portal_brain_head.lua:9-42 and 121-126 use every approach
+// tile to enter the same zone and encounter.
+const ENTRANCES: [Position; 32] = [
+    at(31937, 32324),
+    DOOR,
+    at(31937, 32326),
+    at(31951, 32310),
+    at(31952, 32309),
+    at(31952, 32310),
+    at(31953, 32309),
+    at(31953, 32310),
+    at(31954, 32310),
+    at(31954, 32311),
+    at(31955, 32311),
+    at(31956, 32309),
+    at(31956, 32310),
+    at(31956, 32311),
+    at(31957, 32308),
+    at(31957, 32309),
+    at(31957, 32310),
+    at(31951, 32339),
+    at(31952, 32339),
+    at(31953, 32339),
+    at(31953, 32340),
+    at(31954, 32340),
+    at(31955, 32340),
+    at(31955, 32341),
+    at(31969, 32323),
+    at(31969, 32324),
+    at(31969, 32325),
+    at(31969, 32326),
+    at(31969, 32327),
+    at(31970, 32323),
+    at(31970, 32324),
+    ALIAS,
+];
 const ENTRY: Position = at(31963, 32324);
 pub(super) const EXIT: Position = at(31971, 32325);
 
@@ -27,6 +63,10 @@ const fn at(x: u16, y: u16) -> Position {
 }
 
 pub(super) fn binding() -> TestResult<Callback> {
+    let aliases: Vec<_> = ENTRANCES
+        .into_iter()
+        .filter(|&entry| entry != DOOR)
+        .collect();
     let monsters: Vec<_> = [(BOSS, at(31954, 32325))]
         .into_iter()
         .chain(
@@ -48,7 +88,7 @@ pub(super) fn binding() -> TestResult<Callback> {
         "key":"oteryn:quest-callback/solo-room/brain-head",
         "quest":"oteryn:quest.feaster_of_souls_quest",
         "trigger":"step_in",
-        "selector":{"position":DOOR,"position_aliases":[ALIAS],"ordinal":0},
+        "selector":{"position":DOOR,"position_aliases":aliases,"ordinal":0},
         "requires_world_admission":true,"return_on_failure":true,"failure_teleport":EXIT,
         "success_message":"You've entered the Brain Head's lair.",
         "reversible":false,"passages":[],"offerings":[],"storage":[],
@@ -61,6 +101,14 @@ pub(super) fn binding() -> TestResult<Callback> {
         }},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:1-126"]
     }))?)
+}
+
+pub(super) fn world(
+    callback: &Callback,
+    trigger: Position,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let extra: Vec<_> = ENTRANCES.into_iter().chain([EXIT]).collect();
+    world_with_cells(callback, trigger, &extra)
 }
 
 #[test]
