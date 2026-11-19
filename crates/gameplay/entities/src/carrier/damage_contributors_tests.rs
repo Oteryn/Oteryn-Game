@@ -166,6 +166,29 @@ fn creature_fixture(seed: u64) -> CombatDeathFixture {
 // --- White-box: `DamageContributors` boundary and tie-break, independent of the carrier ---
 
 #[test]
+fn timed_damage_does_not_borrow_a_clock_from_an_earlier_lease() {
+    let mut contributors = DamageContributors::default();
+    let character = character(1);
+    contributors.record(character, 8, 0, Some((1, session(1), 1, 0)), Some(10));
+    contributors.record(character, 2, 1, Some((2, session(2), 1, 0)), None);
+    assert_eq!(contributors.entries[0].current_session_total, 2);
+    assert_eq!(
+        contributors.entries[0].current_session_last_damage_at_ms,
+        None
+    );
+    assert_eq!(contributors.entries[0].last_damage_at_ms, Some(10));
+
+    contributors.record(character, 3, 2, Some((2, session(2), 2, 0)), Some(20));
+    contributors.record(character, 1, 3, None, Some(30));
+    assert_eq!(contributors.entries[0].current_session_total, 5);
+    assert_eq!(
+        contributors.entries[0].current_session_last_damage_at_ms,
+        Some(20)
+    );
+    assert_eq!(contributors.entries[0].last_damage_at_ms, Some(30));
+}
+
+#[test]
 fn sixteen_distinct_contributors_are_tracked_and_a_seventeenth_is_not() {
     let mut contributors = DamageContributors::default();
     for seed in 1..=16_u8 {
@@ -225,6 +248,7 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
         character: character(9),
         total: 7,
         current_session_total: 0,
+        current_session_last_damage_at_ms: None,
         last_update_ordinal: 4,
         high_water: None,
         last_damage_at_ms: None,
@@ -234,6 +258,7 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
         character: character(3),
         total: 7,
         current_session_total: 0,
+        current_session_last_damage_at_ms: None,
         last_update_ordinal: 4,
         high_water: None,
         last_damage_at_ms: None,
@@ -257,6 +282,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             character: character(4),
             total: 12,
             current_session_total: 0,
+            current_session_last_damage_at_ms: None,
             last_update_ordinal: 6,
             high_water: None,
             last_damage_at_ms: None,
@@ -266,6 +292,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             character: character(1),
             total: 20,
             current_session_total: 0,
+            current_session_last_damage_at_ms: None,
             last_update_ordinal: 2,
             high_water: None,
             last_damage_at_ms: None,
@@ -275,6 +302,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             character: character(8),
             total: 20,
             current_session_total: 0,
+            current_session_last_damage_at_ms: None,
             last_update_ordinal: 5,
             high_water: None,
             last_damage_at_ms: None,
@@ -284,6 +312,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             character: character(2),
             total: 3,
             current_session_total: 0,
+            current_session_last_damage_at_ms: None,
             last_update_ordinal: 0,
             high_water: None,
             last_damage_at_ms: None,

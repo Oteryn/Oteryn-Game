@@ -104,7 +104,7 @@ fn a_captured_damager_that_leaves_before_settlement_cannot_receive_credit() -> T
 }
 
 #[test]
-fn highest_damage_gets_credit_even_when_another_player_lands_the_lethal_hit() -> TestResult {
+fn ungreez_top_damage_advances_both_mission_tracks_even_when_another_player_lands_the_lethal_hit() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -387,6 +387,12 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             }
         }
         Case::Top => {
+            // Ungreez advances the mission and main questline in the same death.
+            counter["gate_value"] = json!(18);
+            counter["advance_gate_to"] = json!(19);
+            counter["maximum"] = json!(2);
+            counter["set_to_maximum"] = json!(true);
+            counter["damage_credit"]["summon_owner"] = json!(true);
             counter["damage_credit"]["recent_damage_ms"] = json!(60_000);
             "Crystal201189f the_inquisition_quest/creaturescripts_inquisition_ungreez.lua:2-10"
         }
@@ -509,6 +515,10 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         ],
         "stages":stages
     }]});
+    if case == Case::Top {
+        definition["quests"][0]["tracks"][0] =
+            json!({"key":PHASE,"initial":18,"minimum":0,"maximum":19});
+    }
     if case == Case::FirstDefeatOutfit {
         definition["quests"][0]["tracks"]
             .as_array_mut()
@@ -879,7 +889,7 @@ fn run(admin: String, case: Case) -> TestResult {
                 140,
             )
             .await?;
-            assert_tracks(&h.pool, [0, 1, 0]).await?;
+            assert_tracks(&h.pool, [0, 2, 0]).await?;
         }
         let before = crate::gameplay_transport::npc_trade_command::unix_ms_now() / 1_000;
         death(
@@ -893,7 +903,7 @@ fn run(admin: String, case: Case) -> TestResult {
         .await?;
         let expected = match case {
             Case::All | Case::Area | Case::PartyArea => [1, 1, 0],
-            Case::Top => [1, 1, 0],
+            Case::Top => [2, 2, 0],
             Case::Time | Case::Summon => [1, 2, 0],
             Case::Ordered => [3, 3, 0],
             Case::DefeatTime => {
@@ -917,6 +927,16 @@ fn run(admin: String, case: Case) -> TestResult {
             }
         };
         assert_tracks(&h.pool, expected).await?;
+        if case == Case::Top {
+            let advanced: Vec<sqlx::types::Uuid> = sqlx::query_scalar(
+                "SELECT character_id FROM game_character_quest_tracks
+                 WHERE track_key=$1 AND value=19 ORDER BY character_id",
+            )
+            .bind(PHASE)
+            .fetch_all(&h.pool)
+            .await?;
+            assert_eq!(advanced, [60, 61].map(|character| sqlx::types::Uuid::from_bytes(id(character))));
+        }
         if case == Case::DefeatTime {
             // Ferumbras creaturescripts_bosses_kill.lua:114-124 has second
             // granularity. Hold the fenced writer at the recorded second.

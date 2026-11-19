@@ -142,6 +142,9 @@ pub struct DamageContributor {
     /// AI targeting follows Crystal's actor-scoped damage map. Reward totals above survive
     /// reconnection, but this subtotal belongs only to the high-water lease and session.
     pub(super) current_session_total: u64,
+    /// Clock for the same lease and session as the subtotal. Crystal 201189f8
+    /// creature.cpp:538-552 checks recency for an exact attacker, not its successor.
+    pub(super) current_session_last_damage_at_ms: Option<u64>,
     pub(super) last_update_ordinal: u64,
     /// D141: this attacker's `(session, sequence, sub_ordinal)` high-water mark. A new current
     /// session replaces it outright; within one session it only ever rises.
@@ -201,17 +204,21 @@ impl DamageContributors {
             existing.total = existing.total.saturating_add(damage);
             existing.last_update_ordinal = ordinal;
             if let Some((lease, session, _, _)) = high_water {
-                existing.current_session_total =
-                    if existing
+                let same_session =
+                    existing
                         .high_water
                         .is_some_and(|(old_lease, old_session, _, _)| {
                             old_lease == lease && old_session == session
-                        })
-                    {
-                        existing.current_session_total.saturating_add(damage)
-                    } else {
-                        damage
-                    };
+                        });
+                if same_session {
+                    existing.current_session_total =
+                        existing.current_session_total.saturating_add(damage);
+                    existing.current_session_last_damage_at_ms =
+                        existing.current_session_last_damage_at_ms.max(at_ms);
+                } else {
+                    existing.current_session_total = damage;
+                    existing.current_session_last_damage_at_ms = at_ms;
+                }
                 existing.high_water = high_water;
             }
             existing.last_damage_at_ms = existing.last_damage_at_ms.max(at_ms);
@@ -225,6 +232,7 @@ impl DamageContributors {
             source_player: None,
             total: damage,
             current_session_total: if high_water.is_some() { damage } else { 0 },
+            current_session_last_damage_at_ms: high_water.and(at_ms),
             last_update_ordinal: ordinal,
             high_water,
             last_damage_at_ms: at_ms,
@@ -1636,7 +1644,7 @@ impl CurrentOwnerCombatDeath<'_> {
                         total: entry.current_session_total,
                         lease_generation: Some(lease),
                         session: Some(session),
-                        last_damage_at_ms: entry.last_damage_at_ms,
+                        last_damage_at_ms: entry.current_session_last_damage_at_ms,
                     })
                 })
                 .collect()),
