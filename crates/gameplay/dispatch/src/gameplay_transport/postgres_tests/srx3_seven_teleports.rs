@@ -1,5 +1,8 @@
 //! Actual native source proposal must transform and restore independently owned ground.
 use super::fixture::{Harness, debug, id, run};
+use super::srx3_native_source_cast_fixtures::{
+    next_native_melee_deadline, settle_monster_melee_at,
+};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -96,9 +99,10 @@ fn source_teleport_case(maxxen: bool) -> TestResult {
             let mut selected = false;
             let mut relocated=false;
             let map=crate::gameplay_transport::soul_war_scene::source_map(&room).ok_or("actualsourceMap")?;
+            let mut now = owner.owner_now().get();
             for _ in 0..128 {
                 let cursor=map.facts.movement_effects_since(0).last().map_or(0,|entry|entry.0);
-                owner.drain_monster_melee().await;
+                settle_monster_melee_at(&owner, now).await?;
                 let runtime=owner.runtime.lock().await;
                 let states=owner.states.spell_states.lock().await;
                 if let Some(report)=states.monster_melee.creature_ai.last_report_for_test(caster){
@@ -114,7 +118,7 @@ fn source_teleport_case(maxxen: bool) -> TestResult {
                     && cues.iter().any(|(_,position,effect)|*effect==11&&*position==wire);
                 drop(states);drop(runtime);
                 if selected{break;}
-                owner.clock_origin-=std::time::Duration::from_secs(2);
+                now = next_native_melee_deadline(&owner).await?;
             }
             assert!(selected,"actual native schedule must select {ability}");
             assert!(relocated,"selected {ability} must use source exact teleport owner and fixed qualified source frame");

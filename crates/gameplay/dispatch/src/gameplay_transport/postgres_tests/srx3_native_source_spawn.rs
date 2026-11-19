@@ -1,5 +1,8 @@
 //! Actual native proposals must reach the source spawn owner and physical carrier.
 use super::fixture::{Harness, debug, id, run};
+use super::srx3_native_source_cast_fixtures::{
+    next_native_melee_deadline, settle_monster_melee_at,
+};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -135,9 +138,10 @@ fn source_spawn_case_with_gaz_heal(
             } else {
             let mut selected = false;
             let mut created = false;
+            let mut now = owner.owner_now().get();
             // Content-seeded rolls can delay Maxxen's first generator proposal past 128 steps.
             for _ in 0..256 {
-                owner.drain_monster_melee().await;
+                settle_monster_melee_at(&owner, now).await?;
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
                 if let Some(report) = states.monster_melee.creature_ai.last_report_for_test(caster) {
@@ -163,7 +167,7 @@ fn source_spawn_case_with_gaz_heal(
                 drop(states);
                 drop(runtime);
                 if selected && created {break;}
-                owner.clock_origin -= std::time::Duration::from_secs(2);
+                now = next_native_melee_deadline(&owner).await?;
             }
             assert!(selected,"actual native scheduler must select {ability}");
             assert!(created,"selected {ability} must admit actual source child {child} through the production callback owner");
