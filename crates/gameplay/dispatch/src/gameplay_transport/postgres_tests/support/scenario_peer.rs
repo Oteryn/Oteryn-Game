@@ -2,7 +2,7 @@ use super::fixture::{Harness, debug, id};
 use super::{ComposedFreshAdmission, TestResult};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{CharacterLease, GameSessionId, MovementLocalPosition};
-use crate::gameplay_transport::connection::{AdmittedSession, FreshAdmissionAuthority, SessionContinuity};
+use crate::gameplay_transport::connection::{AdmittedSession, SessionContinuity};
 use crate::gameplay_transport::last_position::AdmissionPosition;
 
 /// A second historical Character root receives a genuine independently verified Fresh session.

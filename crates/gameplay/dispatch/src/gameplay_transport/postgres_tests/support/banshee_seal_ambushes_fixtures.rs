@@ -31,7 +31,7 @@ const GHOST: &str = "oteryn:creature.ghost";
 const SKELETON: &str = "oteryn:creature.demon_skeleton";
 const WARLOCK: &str = "oteryn:creature.warlock";
 
-pub(super) fn run_first_case() -> TestResult {
+pub(super) fn run_hidden_flame() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -39,7 +39,7 @@ pub(super) fn run_first_case() -> TestResult {
     run(FIRST)
 }
 
-pub(super) fn run_second_case() -> TestResult {
+pub(super) fn run_demonrage() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };

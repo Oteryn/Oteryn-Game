@@ -408,7 +408,9 @@ pub(super) fn world_cells(
         }
         effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
     }
-    effect_positions.extend(callback.effects.encounter_timeout.iter().map(|timeout| timeout.landing));
+    effect_positions.extend(
+        callback.effects.encounter_timeout.iter().map(|timeout| timeout.landing),
+    );
     for p in effect_positions {
         for x in p.x - 1..=p.x + 1 {
             for y in p.y - 1..=p.y + 1 {

@@ -56,7 +56,7 @@ const BLOOD_CUES: [Position; 4] = [
     Position { y: 31893, ..ALTAR },
 ];
 
-pub(super) fn run_first_case() -> TestResult {
+pub(super) fn run_plague() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -66,7 +66,7 @@ pub(super) fn run_first_case() -> TestResult {
     })
 }
 
-pub(super) fn run_second_case() -> TestResult {
+pub(super) fn run_sacrifice() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
