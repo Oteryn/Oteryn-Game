@@ -4,6 +4,7 @@ use super::BoundQuest;
 use crate::quest::reward_callbacks::OutfitReward;
 use crate::quest::{QuestComparison, QuestEffect, QuestEffectKind};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 pub const MAX_KILL_BINDINGS: usize = 128;
 
@@ -72,6 +73,9 @@ pub struct KillCounter {
     pub maximum: i64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub advance_gate_to: Option<i64>,
+    /// Secondary journal minimums applied by the same credited death.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub raise_tracks: BTreeMap<String, i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub death_area: Option<DeathArea>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -132,6 +136,14 @@ impl KillCounter {
                     || gate_min < self.minimum
                     || gate_max >= self.maximum)
             || self.minimum >= self.maximum
+            || self.raise_tracks.len() > crate::quest::QUESTSTATE0_RL_02 - 2
+            || self.raise_tracks.iter().any(|(key, value)| {
+                key == &self.track
+                    || key == &self.gate
+                    || !quest.tracks.iter().any(|track| {
+                        track.key == *key && (track.minimum..=track.maximum).contains(value)
+                    })
+            })
             || self.first_defeat_outfit.as_ref().is_some_and(|reward| {
                 self.track != self.gate
                     || !self.set_to_maximum
@@ -229,6 +241,18 @@ impl KillCounter {
     }
 
     pub(super) fn effects(&self) -> Vec<QuestEffect> {
+        let mut effects = self.counter_effects();
+        // Crystal 201189f8 arbaziloth_death.lua:29-37 raises the quest log
+        // and the Forgemaster door journal without regressing later progress.
+        effects.extend(self.raise_tracks.iter().map(|(track, &value)| QuestEffect {
+            track: track.clone(),
+            from: QuestComparison::Any,
+            effect: QuestEffectKind::RaiseTo(value),
+        }));
+        effects
+    }
+
+    fn counter_effects(&self) -> Vec<QuestEffect> {
         if self.track == self.gate {
             // Crystal201189f the_new_frontier/creaturescripts_shard_of_corruption_kill.lua:5-10,
             // an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua:3-8, and

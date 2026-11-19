@@ -22,6 +22,8 @@ const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const EXIT: &str = "oteryn:quest-progress/qcredit-fixture/exit";
 const SHIELD_FIRST_WIN_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/shield-first-win";
 const PREOWNED_OUTFIT_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/preowned-outfit";
+const FIRST_DEFEAT_LOG_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/first-defeat-log";
+const FORGEMASTER_DOOR_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/forgemaster-door";
 // Crystal 201189f8 arbaziloth_death.lua:38-41.
 const FIRST_DEFEAT_MESSAGE: &str =
     "You have defeated Arbaziloth for the first time. You have won the Fiend Slayer Outfit.";
@@ -374,6 +376,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             if case == Case::FirstDefeatOutfit {
                 counter["first_defeat_outfit"] = json!({"outfit":"oteryn:outfit.fiend_slayer","addons":0});
                 counter["first_defeat_outfit_message"] = json!(FIRST_DEFEAT_MESSAGE);
+                counter["raise_tracks"] = json!({(FIRST_DEFEAT_LOG_TRACK): 1, (FORGEMASTER_DOOR_TRACK): 1});
                 "Crystal 201189f8 arbaziloth_death.lua:29-41"
             } else {
                 "Crystal201189f the_new_frontier/creaturescripts_shard_of_corruption_kill.lua:5-10"
@@ -471,6 +474,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
                     "gate_value":0,
                     "maximum":1,
                     "set_to_maximum":true,
+                    "raise_tracks":{(FIRST_DEFEAT_LOG_TRACK):1,(FORGEMASTER_DOOR_TRACK):1},
                     "damage_credit":{"recipients":"all_damagers"},
                     "required_outcome":{"group":OUTCOME_GROUP,"mode":mode},
                     "first_defeat_outfit":{"outfit":"oteryn:outfit.fiend_slayer","addons":0},
@@ -510,6 +514,15 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             .as_array_mut()
             .ok_or("shield first-win track")?
             .push(json!({"key":SHIELD_FIRST_WIN_TRACK,"initial":0,"minimum":0,"maximum":1}));
+    }
+    if case == Case::FirstDefeatOutfit || case.has_shields() {
+        definition["quests"][0]["tracks"]
+            .as_array_mut()
+            .ok_or("first defeat journal tracks")?
+            .extend([
+                json!({"key":FIRST_DEFEAT_LOG_TRACK,"initial":0,"minimum":0,"maximum":1}),
+                json!({"key":FORGEMASTER_DOOR_TRACK,"initial":0,"minimum":0,"maximum":2}),
+            ]);
     }
     if case.has_reset() {
         let tracks = definition["quests"][0]["tracks"]
@@ -1482,6 +1495,7 @@ async fn exercise_first_defeat_outfit(
         .await?;
     assert!(reached, "the outfit was inserted before the injected track failure");
     assert_tracks(pool, [0, 0, 0]).await?;
+    assert_first_defeat_journal(pool, 0).await?;
     assert_first_defeat_messages(owner, players, [0, 0, 0]);
     let grants: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key=$1",
@@ -1531,6 +1545,7 @@ async fn exercise_first_defeat_outfit(
         .remove_arena_opponent(target)
         .map_err(debug)?;
     assert_tracks(pool, [1, 1, 0]).await?;
+    assert_first_defeat_journal(pool, 2).await?;
     assert_first_defeat_outfits(pool).await?;
     assert_first_defeat_messages(owner, players, [1 - first[0], 1 - first[1], 0]);
 
@@ -1547,8 +1562,24 @@ async fn exercise_first_defeat_outfit(
     .fetch_all(pool)
     .await?;
     assert_eq!(credited, [1, 1]);
+    assert_first_defeat_journal(pool, 2).await?;
     assert_first_defeat_messages(owner, players, [0, 0, 0]);
     assert_first_defeat_outfits(pool).await
+}
+
+async fn assert_first_defeat_journal(pool: &sqlx::PgPool, participants: usize) -> TestResult {
+    for track in [FIRST_DEFEAT_LOG_TRACK, FORGEMASTER_DOOR_TRACK] {
+        let credited: Vec<(sqlx::types::Uuid, i64)> = sqlx::query_as(
+            "SELECT character_id, value FROM game_character_quest_tracks
+             WHERE track_key=$1 ORDER BY character_id",
+        )
+        .bind(track)
+        .fetch_all(pool)
+        .await?;
+        let expected = [60, 61].map(|character| (sqlx::types::Uuid::from_bytes(id(character)), 1));
+        assert_eq!(credited, expected[..participants], "first defeat journal {track}");
+    }
+    Ok(())
 }
 
 fn assert_first_defeat_messages<const N: usize>(
