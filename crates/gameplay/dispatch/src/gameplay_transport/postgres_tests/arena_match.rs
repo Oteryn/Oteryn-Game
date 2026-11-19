@@ -1011,16 +1011,16 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
 
 
 // Positive setup uses the same fenced quest writer, never a raw state insert.
-async fn finish_barbarian_test(owner: &ComposedFreshAdmission<'_, '_, '_>, session: crate::foundation::GameSessionId) -> TestResult {
+pub(super) async fn finish_barbarian_test(owner: &ComposedFreshAdmission<'_, '_, '_>, session: crate::foundation::GameSessionId) -> TestResult {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack, QuestTransition, QuestEffect, QuestComparison, QuestEffectKind};
     use crate::durability::quest_state::{QuestCause, QuestTransitionRequest, QuestTransitionOutcome};
     let quest = "oteryn:quest.barbarian_test";
-    let track = "oteryn:quest-progress/fixture/barbarian-test";
+    let track = oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0];
     let key = "oteryn:quest-transition/fixture/barbarian-test";
     let catalogue = std::sync::Arc::new(QuestStateCatalogue::new("content-1", vec![QuestTrack {
-        key: track.into(), quest: quest.into(), initial: 0, min: 0, max: 1,
+        key: track.into(), quest: quest.into(), initial: -1, min: -1, max: 8,
     }], vec![QuestTransition { key: key.into(), quest: quest.into(), completes: true, experience: None, world_change: None,
-        effects: vec![QuestEffect { track: track.into(), from: QuestComparison::Eq(0), effect: QuestEffectKind::Set(1) }] }]).map_err(debug)?);
+        effects: vec![QuestEffect { track: track.into(), from: QuestComparison::Eq(-1), effect: QuestEffectKind::Set(8) }] }]).map_err(debug)?);
     let fence = owner.current_quest_fence(session).await.map_err(|_| "fence")?.ok_or("session")?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let cause = QuestCause::Command(crate::foundation::CommandRef::new(session, crate::foundation::CommandId::new(900051).map_err(debug)?));

@@ -362,7 +362,7 @@ async fn drink_mead(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(),
-                &[4, 6, 11, 15, 18],
+            &[4, 6, 11, 15, 18],
         )
         .ok_or("capabilities")?;
     let payload = encode_use_item_intent(std::num::NonZeroU64::MIN);

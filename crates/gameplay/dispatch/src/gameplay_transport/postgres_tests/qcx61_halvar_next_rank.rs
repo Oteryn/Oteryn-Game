@@ -22,6 +22,7 @@ pub(super) async fn after_greenhorn(
     h: &Harness,
     actor: ExactActorRef,
 ) -> TestResult {
+    super::arena_match::finish_barbarian_test(owner, admitted.game_session_id).await?;
     owner
         .states
         .quest_callbacks

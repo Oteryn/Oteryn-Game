@@ -22,6 +22,24 @@ pub struct HomeTownRelocation {
     pub arrival: Option<TravelOccurrence>,
 }
 
+/// Crystal 201189f8 npc/sven.lua:107-115 and citizen.lua:39-40.
+/// Preserve older imports whose only row still uses the storage alias.
+pub(super) async fn barbarian_test_passed(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+) -> Result<bool, DurabilityError> {
+    let progress: Option<i64> = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid \
+         AND track_key IN ($2,'oteryn:quest-progress/storage/41174') \
+         ORDER BY (track_key=$2) DESC LIMIT 1",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0])
+    .fetch_optional(&mut **tx)
+    .await?;
+    Ok(progress.is_some_and(|value| value >= 8))
+}
+
 impl DurabilityRoot {
     /// Initialize an absent town from the pinned World, or set citizenship. Every read/write
     /// proves the current session, lease, scope, node and root under the same transaction.
@@ -68,17 +86,8 @@ impl DurabilityRoot {
                 Ok(root) => root,
                 Err(error) => return Ok(Err(error)),
             };
-            // Crystal 201189f8 citizen.lua:39-40 and sven.lua:113 share the questline.
-            // Preserve imported characters whose only row still uses the storage alias.
-            let citizenship = if citizenship == Some(16) {
-                let progress: Option<i64> = sqlx::query_scalar(
-                    "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid \
-                     AND track_key IN ($2,'oteryn:quest-progress/storage/41174') \
-                     ORDER BY (track_key=$2) DESC LIMIT 1"
-                ).bind(fence.character_id.as_bytes().as_slice())
-                    .bind(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0])
-                    .fetch_optional(&mut *tx).await?;
-                citizenship.filter(|_| progress.is_some_and(|value| value >= 8))
+            let citizenship = if citizenship == Some(16) && !barbarian_test_passed(&mut tx, fence).await? {
+                None
             } else { citizenship };
             // assert_gameplay_fence already holds the Character root FOR UPDATE.
             // SELECT FOR UPDATE here would require the direct UPDATE grant we revoke.

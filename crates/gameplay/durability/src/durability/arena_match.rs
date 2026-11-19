@@ -382,6 +382,14 @@ impl DurabilityRoot {
             }
             let prior=load_state(&mut tx,fence).await?;
             if prior!=request.before {return Ok(Err(CharacterProgressionError::ConflictingOccurrence));}
+            // Crystal movements_arena_enter.lua:3-21 checks native entry custody.
+            // Sven's report (npc/sven.lua:107-115) is the separate Barbarian Test
+            // qualification for the arena. Check it under the same root lock
+            // before acquiring a pit lease or publishing the fight.
+            if matches!(&request.native_origin, Some(NativeArenaOrigin::Admission(proof)) if !proof.is_payment())
+                && !super::character_home_town::barbarian_test_passed(&mut tx, fence).await? {
+                return Ok(Err(CharacterProgressionError::AuthorityRejected));
+            }
             let now_ms=now(&mut tx).await?;
             // Crystal201189f svargrond_arena.lua:259-313: callbacks cannot
             // shorten the original timer; the deciding durable clock owns it.

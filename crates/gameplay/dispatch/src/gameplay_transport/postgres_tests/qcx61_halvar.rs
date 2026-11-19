@@ -1,4 +1,6 @@
 //! Crystal 201189f8 halvar.lua:70-115 and movements_arena_enter.lua:3-40.
+//! The Barbarian Test prerequisite is confirmed by npc/sven.lua:107-115 and
+//! the Svargrond Arena entry requirements in the Tibia Fandom archive.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, classic_quests};
 use crate::foundation::{ExactActorRef, MovementLocalPosition};
@@ -123,6 +125,28 @@ pub(super) async fn exercise(
         APPROACH
     );
 
+    if !pit_ground_reset {
+        owner.clock_origin -= std::time::Duration::from_secs(2);
+        let (unqualified, _) = owner
+            .ordinary_paced_step(
+                actor,
+                admitted.game_session_id,
+                StepDirection::North,
+                None,
+                None,
+            )
+            .await;
+        assert_eq!(
+            unqualified.moved_to.ok_or("unqualified paid step")?.actor_position,
+            APPROACH
+        );
+        let leases: i64 = sqlx::query_scalar("SELECT count(*) FROM game_svargrond_pit_leases")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(leases, 0);
+        assert_eq!(fees(h).await?, 1);
+    }
+    super::arena_match::finish_barbarian_test(owner, admitted.game_session_id).await?;
     owner.clock_origin -= std::time::Duration::from_secs(2);
     let (admitted_step, _) = owner
         .ordinary_paced_step(
