@@ -11,8 +11,8 @@ use crate::foundation::{
 };
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_domain::domain::soulpit::{
-    BossAbility, EncounterEffect, EncounterPhase, MONSTERS_PER_WAVE, SPAWN_DELAY_MICROS,
-    SoulpitStack, TIME_LIMIT_MICROS, wave_stacks,
+    ARENA_X, ARENA_Y, BossAbility, EncounterEffect, EncounterPhase, MONSTERS_PER_WAVE,
+    SPAWN_DELAY_MICROS, SoulpitStack, TIME_LIMIT_MICROS, wave_stacks,
 };
 use oteryn_gameplay_entities::carrier::soulpit::{
     SoulpitDeathFacts, SoulpitOppressorCast, SoulpitWaveActor, SoulpitWaveRequest,
@@ -207,8 +207,8 @@ fn retain_wave_plan(
     // Crystal zones.lua:12–35 filters ground before drawing preferred tiles.
     // Creation checks live occupancy and can place a monster on an adjacent tile.
     let mut eligible = Vec::new();
-    for y in 31132..=31153 {
-        for x in 32362..=32390 {
+    for y in ARENA_Y {
+        for x in ARENA_X {
             let at = MovementLocalPosition { x, y, floor };
             if kernel.scene.permits_spawn(at) {
                 eligible.push(at);
@@ -229,8 +229,22 @@ fn retain_wave_plan(
             // Preserve existing deterministic decisions when the full rectangle
             // is source-qualified; this is the same uniform distribution.
             Some(MovementLocalPosition {
-                x: draw(root, id, "soulpit_x", ordinal as u64, 32362, 32390)? as i32,
-                y: draw(root, id, "soulpit_y", ordinal as u64, 31132, 31153)? as i32,
+                x: draw(
+                    root,
+                    id,
+                    "soulpit_x",
+                    ordinal as u64,
+                    i64::from(*ARENA_X.start()),
+                    i64::from(*ARENA_X.end()),
+                )? as i32,
+                y: draw(
+                    root,
+                    id,
+                    "soulpit_y",
+                    ordinal as u64,
+                    i64::from(*ARENA_Y.start()),
+                    i64::from(*ARENA_Y.end()),
+                )? as i32,
                 floor,
             })
         } else if eligible.is_empty() {
@@ -245,6 +259,10 @@ fn retain_wave_plan(
                     .ok_or(SoulpitRuntimeError::InvalidState)?,
             )
         };
+    }
+    #[cfg(test)]
+    if wave == 4 && SOULPIT_TEST_COLLIDE_WAVE_SPAWNS.try_with(|()| ()).is_ok() {
+        positions[0] = positions[6];
     }
     let boss_ability =
         BossAbility::from_roll(draw(root, id, "soulpit_boss_ability", 6, 1, 3)? as u8)
@@ -488,10 +506,10 @@ async fn drive(
         let actors = owner.with_kernel(|mut kernel| {
             let mut plan = retain_wave_plan(&mut kernel, binding, &stored)?;
             plan.now_micros = now_micros;
-            Ok(kernel.carrier.spawn_soulpit_wave(
+            Ok(kernel.carrier.spawn_native_soulpit_wave(
                 kernel.continuity,
                 kernel.content,
-                kernel.native.policies(),
+                kernel.native,
                 plan,
                 |at| kernel.scene.permits_spawn(at),
             )?)
@@ -563,6 +581,12 @@ async fn drive(
         }
         next_soulpit_deadline(binding, &stored, &kernel)
     })
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    // Select a shared preferred tile in the real planner before retaining the wave.
+    pub(in crate::gameplay_transport) static SOULPIT_TEST_COLLIDE_WAVE_SPAWNS: ();
 }
 
 /// A restart never recreates the source's process-local timers or monsters. The shared

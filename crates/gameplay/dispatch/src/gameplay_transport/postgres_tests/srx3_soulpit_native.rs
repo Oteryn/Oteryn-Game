@@ -23,6 +23,12 @@ const BOSS_CELL: MovementLocalPosition = MovementLocalPosition {
     floor: 8,
 };
 
+#[derive(Clone, Copy)]
+enum BossTileOccupant {
+    Player,
+    OrdinaryMonster,
+}
+
 #[test]
 fn srx3_soulpit_native_use_scope_barrier_and_spawn_postgres() -> TestResult {
     native_soulpit_scenario(false, false, false)
@@ -30,7 +36,12 @@ fn srx3_soulpit_native_use_scope_barrier_and_spawn_postgres() -> TestResult {
 
 #[test]
 fn srx3_soulpit_occupied_boss_cell_still_spawns_and_awards_xp_postgres() -> TestResult {
-    run_native_soulpit_scenario(false, false, false, false, Some(BOSS_CELL))
+    run_native_soulpit_scenario(false, false, false, false, Some(BossTileOccupant::Player))
+}
+
+#[test]
+fn srx3_soulpit_ordinary_monster_boss_collision_awards_xp_postgres() -> TestResult {
+    run_native_soulpit_scenario(false, false, false, false, Some(BossTileOccupant::OrdinaryMonster))
 }
 
 #[test]
@@ -67,7 +78,7 @@ fn run_native_soulpit_scenario(
     retained_grace: bool,
     early_exit: bool,
     entry_cue_only: bool,
-    occupy_before_final_wave: Option<MovementLocalPosition>,
+    occupy_before_final_wave: Option<BossTileOccupant>,
 ) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -733,30 +744,35 @@ fn run_native_soulpit_scenario(
                 let saved = serde_json::to_value(checkpoint.encounter.checkpoint())?;
                 let receipt: [Option<u64>;oteryn_gameplay_domain::domain::soulpit::MONSTERS_PER_WAVE] =
                     serde_json::from_value(saved["spawned_waves"][wave.to_string()].clone())?;
-                if let Some(blocked) = occupy_before_final_wave.filter(|_| wave == 4) {
-                    let runtime = registered.runtime.lock().await;
-                    assert_eq!(
-                        runtime.read_actor_position(actor).map_err(debug)?.position(),
-                        blocked
-                    );
+                if let Some(occupant) = occupy_before_final_wave.filter(|_| wave == 4) {
+                    let mut runtime = registered.runtime.lock().await;
+                    let player_tile = runtime.read_actor_position(actor).map_err(debug)?.position();
+                    let census = runtime.positioned_actor_census().map_err(debug)?;
+                    let monster_tile = |id| census.iter().find(|(target, _, _)| {
+                        runtime.soulpit_variant(*target)
+                            .is_some_and(|tag| tag.monster_id == id && !tag.is_summon)
+                    }).map(|(_, position, _)| position.position());
+                    let ordinary_tile = monster_tile(22);
+                    let boss = monster_tile(28).ok_or("durable wave-4 boss has a physical actor")?;
+                    match occupant {
+                        BossTileOccupant::Player => assert_eq!(player_tile, BOSS_CELL),
+                        BossTileOccupant::OrdinaryMonster => {
+                            assert_ne!(player_tile, BOSS_CELL);
+                            assert_eq!(receipt[0], Some(22));
+                            assert_eq!(ordinary_tile, Some(BOSS_CELL));
+                            let (carrier, continuity, _) = runtime.soulpit_kernel_parts().map_err(debug)?;
+                            let plan = carrier.soulpit_wave_plan(continuity, bound.handoff_id, wave)
+                                .map_err(debug)?.ok_or("retained wave 4 plan")?;
+                            assert_eq!((plan.positions[0], plan.positions[6]), (Some(BOSS_CELL), Some(BOSS_CELL)));
+                        }
+                    }
                     assert_eq!(
                         receipt[6], Some(28),
                         "wave 4 must retain the boss when its source cell is occupied"
                     );
-                    let boss = runtime
-                        .positioned_actor_census()
-                        .map_err(debug)?
-                        .into_iter()
-                        .find(|(target, _, _)| {
-                            runtime.soulpit_variant(*target)
-                                .is_some_and(|tag| tag.monster_id == 28 && !tag.is_summon)
-                        })
-                        .ok_or("durable wave-4 boss has a physical actor")?
-                        .1
-                        .position();
-                    assert_eq!(boss.floor, blocked.floor);
+                    assert_eq!(boss.floor, BOSS_CELL.floor);
                     assert_eq!(
-                        boss.x.abs_diff(blocked.x).max(boss.y.abs_diff(blocked.y)),
+                        boss.x.abs_diff(BOSS_CELL.x).max(boss.y.abs_diff(BOSS_CELL.y)),
                         1,
                         "the boss must land on a neighbour of its occupied source cell"
                     );
@@ -892,14 +908,18 @@ fn run_native_soulpit_scenario(
                         },
                     ).await?);
                     native_capture.returned = Some(player);
-                } else {owner
-                    .drive_shared_soulpits(owner.owner_now().get(), true)
-                    .await
-                    .map_err(|_| "source wave clearance/terminal composition")?;}
+                } else {
+                    let advance = owner.drive_shared_soulpits(owner.owner_now().get(), true);
+                    if wave == 3 && matches!(occupy_before_final_wave, Some(BossTileOccupant::OrdinaryMonster)) {
+                        crate::gameplay_transport::soulpit::runtime::SOULPIT_TEST_COLLIDE_WAVE_SPAWNS.scope((), advance).await
+                    } else {
+                        advance.await
+                    }.map_err(|_| "source wave clearance/terminal composition")?;
+                }
                 if wave < 4 {
                     let mut preparation = owner.runtime_view(&registered);
-                    if let Some(blocked) = occupy_before_final_wave.filter(|_| wave == 3) {
-                        walk_source(&mut preparation, player, SourceWalkTarget::Cell(blocked)).await?;
+                    if wave == 3 && matches!(occupy_before_final_wave, Some(BossTileOccupant::Player)) {
+                        walk_source(&mut preparation, player, SourceWalkTarget::Cell(BOSS_CELL)).await?;
                     } else {
                         leave_blocked_creation_cell(&mut preparation, player, wave + 1).await?;
                     }
