@@ -18,10 +18,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: oracle-operations
-  cancel-in-progress: false
-
 jobs:
   build_image:
     if: github.ref == 'refs/heads/main' && inputs.action == 'deploy'
@@ -72,16 +68,19 @@ jobs:
           name: oteryn-game-image-${{ inputs.source_sha }}
           path: image.tar
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
           overwrite: true
 
   operate:
     needs: build_image
-    if: always() && github.ref == 'refs/heads/main' && (inputs.action == 'status' || (inputs.action == 'deploy' && needs.build_image.result == 'success'))
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && (inputs.action == 'status' || (inputs.action == 'deploy' && needs.build_image.result == 'success')) }}
     runs-on:
       group: game-runners
       labels: [oteryn-game, oteryn-oracle, ARM64]
     environment: preproduction
+    concurrency:
+      group: oracle-operations
+      cancel-in-progress: false
     permissions:
       actions: read
     timeout-minutes: 120

@@ -130,10 +130,13 @@ class ArtifactHandoff(unittest.TestCase):
         self.assertIn("    if: github.ref == 'refs/heads/main' && inputs.action == 'deploy'\n", build_job)
         self.assertIn('    needs: build_image\n', operate_job())
         self.assertIn(
-            "    if: always() && github.ref == 'refs/heads/main' && (inputs.action == 'status' || "
-            "(inputs.action == 'deploy' && needs.build_image.result == 'success'))\n",
+            "    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && (inputs.action == 'status' || "
+            "(inputs.action == 'deploy' && needs.build_image.result == 'success')) }}\n",
             operate_job(),
         )
+        self.assertIn('    concurrency:\n      group: oracle-operations\n      cancel-in-progress: false\n', operate_job())
+        self.assertNotIn('\nconcurrency:', workflow)
+        self.assertIn('          retention-days: 7\n', build_job)
         result = self.run_operation(OPERATION='status', SOURCE_SHA='', ARTIFACT_ID='')
         self.assertEqual(result.returncode, 0, result.stderr)
         ssh_args = (self.directory / 'ssh-args').read_text().splitlines()
