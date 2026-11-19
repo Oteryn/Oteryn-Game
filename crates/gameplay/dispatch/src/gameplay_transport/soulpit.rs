@@ -33,6 +33,11 @@ pub use handoff::{
     SoulpitSelection,
 };
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static SOULPIT_TEST_HANDOFF_ID: [u8; 16];
+}
+
 #[cfg_attr(test, track_caller)]
 fn outcome(disposition: UseDisposition) -> UseOutcome {
     #[cfg(test)]

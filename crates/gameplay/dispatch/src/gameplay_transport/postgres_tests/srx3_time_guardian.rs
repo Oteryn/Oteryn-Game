@@ -9,6 +9,7 @@ use super::srx3_native_source_cast_fixtures::{
 use super::{Dependencies, TestResult, reset};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::foundation::MovementLocalPosition;
+use crate::gameplay_transport::monster_profile_cycle::with_main_native_ai_seed;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 const ARENA: MovementLocalPosition = MovementLocalPosition {
@@ -112,7 +113,7 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
             // sequence. Honor source deadlines too: the alternate defence can
             // park the caster until its retained return callback moves it back.
             for _ in 0..128 {
-                settle_monster_melee_at(&owner, now).await?;
+                with_main_native_ai_seed(settle_monster_melee_at(&owner, now)).await?;
                 let runtime = owner.runtime.lock().await;
                 assert!(
                     runtime.contains_live_creature(base),
@@ -206,7 +207,8 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                 .ok_or("retained time guardian return deadline")?;
             tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
                 loop {
-                    drain_ready_monster_melee_at(&owner, return_due).await?;
+                    with_main_native_ai_seed(drain_ready_monster_melee_at(&owner, return_due))
+                        .await?;
                     if owner
                         .states
                         .spell_states

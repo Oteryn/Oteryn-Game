@@ -321,9 +321,17 @@ fn native_soulpit_scenario_with_entry_cue(
                         oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
                         build_payload,11,&mut entry_frames).await?
                 } else {
-                    super::guild_wire_fixtures::exchange_capture(&owner,&mut admitted,1,
+                    let capture = super::guild_wire_fixtures::exchange_capture(&owner,&mut admitted,1,
                         oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
-                        build_payload,true,&mut entry_frames).await?
+                        build_payload,true,&mut entry_frames);
+                    if early_exit || retained_grace {
+                        capture.await?
+                    } else {
+                        // Select a wave plan whose ordinary draws leave the boss cell free.
+                        crate::gameplay_transport::soulpit::SOULPIT_TEST_HANDOFF_ID
+                            .scope(id(199), capture)
+                            .await?
+                    }
                 };
                 actual_entry_command = actual_command;
                 assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
@@ -837,8 +845,12 @@ fn native_soulpit_scenario_with_entry_cue(
                                     if global { global_due = now.saturating_add(1_000_000); }
                                     let deadline = owner.drive_shared_soulpits(now,global).await
                                         .map_err(|_| "actual Source completion return")?;
-                                    if owner.activity_runtimes.current_connection(returning_player).game_session_id
-                                        != returning_player.game_session_id { break; }
+                                    let current = owner.activity_runtimes.current_connection(source_admission);
+                                    if current.game_session_id != source_admission.game_session_id
+                                        && current.game_session_id != returning_player.game_session_id
+                                    {
+                                        break;
+                                    }
                                     now = deadline.map_or(global_due, |due| due.min(global_due)).max(now);
                                     tokio::task::yield_now().await;
                                 }
