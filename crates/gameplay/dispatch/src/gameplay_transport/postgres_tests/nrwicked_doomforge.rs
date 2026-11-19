@@ -91,6 +91,10 @@ fn scenario(
             let h = Harness::create_with_admission_seed(admin, fixture_name, true, false).await?;
             prepare_current_session(&h).await?;
             if hard_win {
+                assert!(oteryn_gameplay_quests::quest::world_callbacks::load()?
+                    .iter()
+                    .any(|row| row.key == "oteryn:quest-callback/nrwicked/arbaziloth"),
+                    "production Arbaziloth lever callback missing");
                 h.seed_appearance_observer().await?;
                 super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&h).await?;
             }

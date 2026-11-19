@@ -255,6 +255,11 @@ fn scenario_case(
         } else {
             None
         };
+        if matches!(case, Case::ForgemasterChoices { policy: forgemaster::AccessPolicy::Verified }) {
+            assert!(crate::content::world_reward_claims::REWARD_CLAIM_SHARDS
+                .iter().any(|shard| shard.contains(forgemaster::CLAIM)),
+                "production Forgemaster shared claim missing");
+        }
         let mut deps = Dependencies::new()?;
         let owned_activation;
         let (controller, activated_pin) = if let Some(activation) = activation {
