@@ -42,9 +42,18 @@ pub(super) async fn accept(
 ) -> TestResult {
     use super::rottin_rewards_fixtures::source_reply;
 
+    let speaker = owner
+        .states
+        .chat
+        .speaker_name(admitted.game_session_id)
+        .ok_or("Bushwhacking customer name")?;
+    let offer: Vec<_> = source_reply("line-111")?
+        .iter()
+        .map(|line| line.replace("|PLAYERNAME|", &speaker))
+        .collect();
     assert_eq!(
         talk(owner, admitted, npc, 1609, "mission").await?,
-        source_reply("line-111")?
+        offer
     );
     assert_eq!(
         talk(owner, admitted, npc, 1610, "yes").await?,
@@ -313,11 +322,17 @@ pub(super) async fn exercise_wave(
     expected_merchants: usize,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("tool user")?;
-    owner.active_generation
+    let gameplay = owner.active_generation
         .and_then(|generation| generation.native_gameplay())
-        .ok_or("active creature policies")?
+        .ok_or("active creature policies")?;
+    gameplay
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(super::fixture::debug)?;
+    let trap = crate::map::boot::native_item_definition(Some(gameplay), "oteryn:item.tibia.i12187")
+        .ok_or("shipped merchant trap")?;
+    let captured =
+        crate::map::boot::native_item_definition(Some(gameplay), "oteryn:item.tibia.i12189")
+            .ok_or("shipped captured merchant")?;
     let map = owner.bundle_map().ok_or("map")?;
     let early = TilePos {
         x: 32659,
@@ -362,10 +377,10 @@ pub(super) async fn exercise_wave(
         UseDisposition::Committed
     );
     let map = owner.bundle_map().ok_or("map")?;
-    assert_eq!(
-        map.facts.movement_items(early)[0].facts.appearance_id,
-        12187
-    );
+    let early_traps = map.facts.movement_items(early);
+    assert_eq!(early_traps.len(), 1);
+    assert_eq!(early_traps[0].facts.appearance_id, 12187);
+    assert_eq!(early_traps[0].facts.definition, MapDefinition::Item(trap.reference));
     assert!(
         owner
             .states
@@ -382,7 +397,8 @@ pub(super) async fn exercise_wave(
         map.facts
             .movement_items(pos)
             .iter()
-            .any(|entry| entry.facts.appearance_id == 12187)
+            .any(|entry| entry.facts.appearance_id == 12187
+                && entry.facts.definition == MapDefinition::Item(trap.reference))
     );
     assert!(
         map.facts
@@ -454,7 +470,8 @@ pub(super) async fn exercise_wave(
         map.facts
             .movement_items(pos)
             .iter()
-            .any(|entry| entry.facts.appearance_id == 12189)
+            .any(|entry| entry.facts.appearance_id == 12189
+                && entry.facts.definition == MapDefinition::Item(captured.reference))
     );
     drain_next(owner).await?;
     let map = owner.bundle_map().ok_or("map")?;

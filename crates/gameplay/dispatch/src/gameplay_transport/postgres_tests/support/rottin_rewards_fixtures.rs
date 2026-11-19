@@ -12,7 +12,11 @@ const TRACK: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01";
 const COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/lucky-loop-task";
 const ACHIEVEMENT: &str = "oteryn:achievement/bunny_slipped";
+const CHARMS_PAYOUT: &str = "oteryn:quest-reward/rottin-wood/lucky-charms";
 const PAYOUT: &str = "oteryn:quest-reward/rottin-wood/lucky-loop";
+const START_CHARMS: &str = "oteryn:quest-reward/rottin-wood/start-lucky-charms";
+const START_LOOP: &str = "oteryn:quest-reward/rottin-wood/start-lucky-loop";
+const START_LOOP_REPEAT: &str = "oteryn:quest-reward/rottin-wood/start-lucky-loop-repeat";
 const ROTTIN: &str = "oteryn:npc.rottin_wood";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
 const RING: &str = "oteryn:item.tibia.i3053";
@@ -61,12 +65,15 @@ pub(super) async fn seed_loop(h: &Harness, repeat: bool) -> TestResult {
     ]).await
 }
 
-async fn ribbons(h: &Harness) -> TestResult<i64> {
+async fn minted_quantity(h: &Harness, transition: &str, item: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
-        "SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances
-         WHERE definition_production_key=$1 AND lifecycle=1",
+        "SELECT COALESCE(sum(item.quantity),0)::bigint
+         FROM game_quest_reward_sources AS reward
+         JOIN game_item_instances AS item ON item.minted_transaction_id=reward.mint_transaction_id
+         WHERE reward.transition_key=$1 AND item.definition_production_key=$2 AND item.lifecycle=1",
     )
-    .bind(RIBBON)
+    .bind(transition)
+    .bind(item)
     .fetch_one(&h.pool)
     .await?)
 }
@@ -75,13 +82,15 @@ async fn open_lucky_loop(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
+    repeat: bool,
 ) -> TestResult<oteryn_protocol_oteryn::world_spatial_entities::EntityRef> {
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
     for (command, text) in [(1700, "hi"), (1701, "task"), (1702, "lucky charms")] {
         talk(owner, admitted, npc, command, text).await?;
     }
     assert_eq!(talk(owner, admitted, npc, 1703, "yes").await?, source_reply("line-225")?);
-    assert_eq!(ribbons(h).await?, 7);
+    let start = if repeat { START_LOOP_REPEAT } else { START_LOOP };
+    assert_eq!(minted_quantity(h, start, RIBBON).await?, 7);
     let active: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
         .bind(TRACK).fetch_one(&h.pool).await?;
     assert_eq!(active, 1);
@@ -100,7 +109,7 @@ pub(super) async fn lucky_charms(
         talk(owner, admitted, npc, command, text).await?;
     }
     assert_eq!(talk(owner, admitted, npc, 1703, "yes").await?, source_reply("line-152")?);
-    assert_eq!(ribbons(h).await?, 7);
+    assert_eq!(minted_quantity(h, START_CHARMS, RIBBON).await?, 7);
     let mission = format!("{ROTTIN_STATE}mission01");
     let stage = || sqlx::query_scalar::<_, i64>(
         "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
@@ -111,6 +120,7 @@ pub(super) async fn lucky_charms(
     assert_eq!(talk(owner, admitted, npc, 1705, "yes").await?, source_reply("line-163")?);
     assert_eq!(stage().await?, 2);
     assert_eq!(experience(h).await?, before_xp + 100);
+    assert_eq!(minted_quantity(h, CHARMS_PAYOUT, PLATINUM).await?, 5);
     Ok(())
 }
 
@@ -130,7 +140,7 @@ pub(super) async fn refuse_short_hand_in(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    let npc = open_lucky_loop(owner, admitted, h).await?;
+    let npc = open_lucky_loop(owner, admitted, h, false).await?;
     let before_xp = experience(h).await?;
     owner.clock_origin = owner
         .clock_origin
@@ -188,7 +198,7 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    let npc = open_lucky_loop(owner, admitted, h).await?;
+    let npc = open_lucky_loop(owner, admitted, h, repeat).await?;
     let before_xp = experience(h).await?;
     let before_stamp = i64::from(repeat);
     assert_eq!(

@@ -1,6 +1,6 @@
 //! Drive a real retained hammer USE and the resulting Disrepair hand-in.
 use super::classic_quests_fixtures::{install, talk};
-use super::fixture::Harness;
+use super::fixture::{Harness, id};
 use super::rottin_bushwhacking_fixtures::use_quest_tool;
 use super::rottin_rewards_fixtures::{experience, seed_tracks, source_reply};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
@@ -9,6 +9,7 @@ use oteryn_gameplay_quests::quest::classic_talk::ROTTIN_STATE;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 const ROTTIN: &str = "oteryn:npc.rottin_wood";
+const HAMMER: &str = "oteryn:item.tibia.i3460";
 const WALLS: &str = oteryn_gameplay_quests::quest::classic_talk::ROTTIN_WALLCOUNT;
 const REPAIR: &str = "oteryn:quest-callback/rottin-repair-42501";
 const DISREPAIR: &str = "oteryn:quest-reward/rottin-wood/disrepair";
@@ -90,15 +91,21 @@ pub(super) async fn exercise(
         UseDisposition::Committed,
         "a wall can count again after the source reset"
     );
-    let (fixed, retained): (i64, i64) = sqlx::query_as(
+    let (fixed, retained, shipped_hammer): (i64, i64, i64) = sqlx::query_as(
         "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
-                (SELECT count(*) FROM game_quest_world_tool_reads WHERE transition_key=$2)",
+                (SELECT count(*) FROM game_quest_world_tool_reads WHERE transition_key=$2),
+                (SELECT count(*) FROM game_quest_world_tool_reads AS tool
+                 JOIN game_item_instances AS item USING (item_instance_id)
+                 WHERE tool.transition_key=$2 AND item.item_instance_id=encode($3,'hex')::uuid
+                   AND item.definition_production_key=$4 AND item.lifecycle=1)",
     )
     .bind(WALLS)
     .bind(REPAIR)
+    .bind(id(71).as_slice())
+    .bind(HAMMER)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!((fixed, retained), (6, 2));
+    assert_eq!((fixed, retained, shipped_hammer), (6, 2, 2));
     let [npc] = install(owner, &admitted, [ROTTIN]).await?;
     talk(owner, &admitted, npc, 1605, "hi").await?;
     if handyman {
