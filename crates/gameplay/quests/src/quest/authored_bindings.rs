@@ -129,7 +129,9 @@ impl BoundQuest {
                     && !callback.effects.completes_quest
                     && callback.effects.quest_completion.is_none()
                     && callback.selector.position_aliases.is_empty()
-                    && callback.selector.native.is_none()
+                    // Crystal startup/tables/item.lua:3070-3080 and startup/others/functions.lua:76-88
+                    // stamp the action after loading the map. A plain counterpart shares that reservoir's clock.
+                    && callback.selector.native.as_ref().is_none_or(|native| native.position == position)
                     && callback.selector.action == Some(putrefactory::RESERVOIR_ACTION)
                     && callback.effects.magic.as_ref().is_some_and(|effect| {
                         effect.position == position && effect.effect == putrefactory::RESERVOIR_EFFECT

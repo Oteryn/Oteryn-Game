@@ -10,7 +10,7 @@ use oteryn_gameplay_quests::quest::rotten_blood::putrefactory::{
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     authored_bindings::Bindings,
-    world_callbacks::{Callback, Position},
+    world_callbacks::{Callback, NativeSelector, Position},
 };
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
@@ -25,6 +25,7 @@ pub(super) const GATE_CALLBACK: &str = "rotten-putrefactory-full-counter";
 const GATE_POSITION: Position = Position { x: 34065, y: 31716, floor: -15 };
 pub(super) const LEGACY: &str = "putrefactory-reservoir-legacy";
 pub(super) const CAP: &str = "putrefactory-reservoir-cap";
+pub(super) const NATIVE: &str = "putrefactory-reservoir-native";
 pub(super) const PASSIVE: &str = "putrefactory-passive-charge";
 const QUEST: &str = "oteryn:quest/rotten-blood";
 pub(super) const CALLBACK_KEY: &str = "oteryn:quest-callback/fixture/putrefactory-reservoir-1";
@@ -39,6 +40,9 @@ const AT: Position = Position {
     y: 31704,
     floor: -14,
 };
+// Retained B3 region z14-x133-y123 has four top-level entries at AT.
+const RESERVOIR_ORDINAL: u8 = 3;
+const RESERVOIR_APPEARANCE: u16 = 43789;
 pub(super) const SECOND: Position = Position {
     x: 34013,
     y: 31744,
@@ -65,6 +69,17 @@ fn putrefactory_reservoir_caps_charge_without_restarting_clock_when_full() -> Te
         return Err("empty PostgreSQL admin URL".into());
     }
     super::kill_reward_e2e::scenario_thread::run(CAP, || scenario(CAP, AT, false))
+}
+
+#[test]
+fn putrefactory_native_reservoir_recharges_without_a_startup_action_id() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::kill_reward_e2e::scenario_thread::run(NATIVE, || scenario(NATIVE, AT, false))
 }
 
 #[test]
@@ -138,7 +153,7 @@ pub(super) async fn exercise_gate(
     tx.commit().await?;
     owner.refresh_quest_session(session, true).await;
 
-    let (key, _) = use_intent(owner, GATE_POSITION)?;
+    let (key, _) = use_intent(owner, GATE_POSITION, 1)?;
     for command in [2, 3] {
         let revision = owner.bundle_map().ok_or("gate map")?.facts.object_revision(key);
         assert_eq!(
@@ -154,8 +169,8 @@ pub(super) async fn exercise_gate(
     Ok(())
 }
 
-pub(super) fn callback() -> TestResult<Callback> {
-    Ok(serde_json::from_value(json!({
+pub(super) fn callback(name: &str) -> TestResult<Callback> {
+    let mut callback: Callback = serde_json::from_value(json!({
         "key":CALLBACK_KEY,
         "quest":QUEST,
         "trigger":"use",
@@ -168,7 +183,15 @@ pub(super) fn callback() -> TestResult<Callback> {
         "reversible":false,
         "requires_world_admission":true,
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:155-224"]
-    }))?)
+    }))?;
+    if name == NATIVE {
+        callback.selector.native = Some(NativeSelector {
+            position: AT,
+            ordinal: RESERVOIR_ORDINAL,
+            appearance: RESERVOIR_APPEARANCE,
+        });
+    }
+    Ok(callback)
 }
 
 pub(super) async fn exercise(
@@ -178,8 +201,8 @@ pub(super) async fn exercise(
     actor: ExactActorRef,
     name: &str,
 ) -> TestResult {
-    let cap = name == CAP;
-    let mut reservoir = serde_json::to_value(callback()?)?;
+    let cap = matches!(name, CAP | NATIVE);
+    let mut reservoir = serde_json::to_value(callback(name)?)?;
     reservoir["effects"]["magic"] = json!({"position":AT,"effect":RESERVOIR_EFFECT});
     reservoir["effects"]["recharge_cooldown_message"] = json!(EXHAUSTED);
     reservoir["state_operations"] = json!([
@@ -224,6 +247,12 @@ pub(super) async fn exercise(
                 .push(other["quests"][0][field][index].take());
         }
     }
+    if name == NATIVE {
+        let mut wrong_position = document.clone();
+        wrong_position["quests"][0]["stages"][0]["trigger"]["callback"]["selector"]["native"]["position"] =
+            json!(SECOND);
+        assert!(Bindings::parse(&serde_json::to_vec(&wrong_position)?).is_err());
+    }
     let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
     bindings.verify_embedded_recipe_evidence()?;
     let base = if name == PASSIVE {
@@ -250,7 +279,8 @@ pub(super) async fn exercise(
     let session = admitted.game_session_id;
     owner.refresh_quest_session(session, true).await;
     owner.states.chat.admit(session, "Reservoir fixture", owner.owner_now());
-    let (key, payload) = use_intent(owner, AT)?;
+    let ordinal = if name == NATIVE { RESERVOIR_ORDINAL } else { 1 };
+    let (key, payload) = use_intent(owner, AT, ordinal)?;
     let tracks = || async {
         sqlx::query_as::<_, (String, i64)>(
             "SELECT track_key,value FROM game_character_quest_tracks WHERE quest_key=$1 ORDER BY track_key",
@@ -269,7 +299,7 @@ pub(super) async fn exercise(
     let values = tracks().await?;
     assert_eq!(values.len(), 2);
     let first_charge = match name {
-        CAP => 100,
+        CAP | NATIVE => 100,
         PASSIVE => SAVED_CHARGE + 20,
         _ => 20,
     };
@@ -346,7 +376,7 @@ pub(super) async fn exercise(
     );
     let next_command = if name == LEGACY {
         position_at_reservoir(owner, admitted, actor, SECOND).await?;
-        let (_, second_payload) = use_intent(owner, SECOND)?;
+        let (_, second_payload) = use_intent(owner, SECOND, 1)?;
         let second_reply = wire(owner, admitted, 3, 2, second_payload).await?;
         assert_eq!(decode_use_result(&second_reply).map_err(debug)?, UseDisposition::Committed);
         assert_eq!(tracks().await?, vec![
@@ -381,8 +411,8 @@ async fn actor_position(
     Ok(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position())
 }
 
-fn use_intent(owner: &ComposedFreshAdmission<'_, '_, '_>, at: Position) -> TestResult<(u64, Vec<u8>)> {
-    let key = oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, 1)
+fn use_intent(owner: &ComposedFreshAdmission<'_, '_, '_>, at: Position, ordinal: u8) -> TestResult<(u64, Vec<u8>)> {
+    let key = oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, ordinal)
         .ok_or("reservoir placement")?;
     let mut placement = owner.bundle_map().ok_or("map")?.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());

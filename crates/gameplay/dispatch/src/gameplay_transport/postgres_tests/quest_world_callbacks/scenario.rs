@@ -368,6 +368,7 @@ fn scenario_case(
     let reservoir = matches!(name,
         super::super::putrefactory_reservoir::CAP |
         super::super::putrefactory_reservoir::LEGACY |
+        super::super::putrefactory_reservoir::NATIVE |
         super::super::putrefactory_reservoir::PASSIVE
     );
     let putrefactory_gate = name == super::super::putrefactory_reservoir::GATE;
@@ -376,7 +377,7 @@ fn scenario_case(
     } else if putrefactory_gate {
         callback(super::super::putrefactory_reservoir::GATE_CALLBACK)?
     } else if reservoir {
-        super::super::putrefactory_reservoir::callback()?
+        super::super::putrefactory_reservoir::callback(name)?
     } else if vestibule {
         super::super::step_health_loss::callback(trigger)?
     } else if m03_use {
@@ -679,6 +680,10 @@ fn scenario_case(
     }
     let world = if name == super::super::forgemaster_chest::NATIVE {
         super::world_with_cells(&callback, trigger, &[])?
+    } else if name == super::super::putrefactory_reservoir::NATIVE {
+        let mut physical = callback.clone();
+        physical.selector.action = None;
+        super::world_with_cells(&physical, trigger, &[])?
     } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {

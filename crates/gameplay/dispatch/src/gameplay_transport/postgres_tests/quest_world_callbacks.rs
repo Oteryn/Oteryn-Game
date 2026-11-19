@@ -675,7 +675,9 @@ fn world_cells(
                 ..Default::default()
             },
         });
-    if callback.key == super::putrefactory_reservoir::CALLBACK_KEY {
+    if callback.key == super::putrefactory_reservoir::CALLBACK_KEY
+        && callback.selector.native.is_none()
+    {
         let second = super::putrefactory_reservoir::SECOND;
         cells.entry((second.floor, second.x - 1, second.y)).or_default();
         cells.entry((second.floor, second.x, second.y)).or_default().push(sector::Item {
