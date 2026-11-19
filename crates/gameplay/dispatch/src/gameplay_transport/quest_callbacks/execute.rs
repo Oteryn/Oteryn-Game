@@ -1243,6 +1243,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         map,
                         pos,
                         &roll.failure_creature,
+                        command,
                     ) {
                         Ok(spawn) => spawn,
                         Err(result) => return result,

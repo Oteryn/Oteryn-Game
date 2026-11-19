@@ -1,7 +1,7 @@
 //! Crystal 201189f actions_sacrophagus_use.lua:31-44.
 use super::*;
-use crate::content::{CollisionClass, LogicalCell};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use sha2::{Digest, Sha256};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn prepare_roll_failure<'a>(
@@ -10,6 +10,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         position: TilePos,
         creature: &'a str,
+        command: CommandRef,
     ) -> Result<Option<(&'a str, i64, MovementLocalPosition)>, UseDisposition> {
         let native = self
             .active_generation
@@ -22,48 +23,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .companion_policy(creature)
             .map_err(|_| UseDisposition::Rejected)?
             .maximum_health;
-        let census = runtime
-            .positioned_melee_census()
-            .map_err(|_| UseDisposition::Rejected)?;
-        let candidates = [
-            (0, 0),
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1),
-            (-1, -1),
-            (-1, 1),
-            (1, -1),
-            (1, 1),
-        ];
-        let landing = candidates
-            .into_iter()
-            .map(|(dx, dy)| MovementLocalPosition {
-                x: i32::from(position.x) + dx,
-                y: i32::from(position.y) + dy,
+        let seed = Sha256::new()
+            .chain_update(b"oteryn:quest-roll-failure-placement:v1")
+            .chain_update(command.game_session_id().as_bytes())
+            .chain_update(command.command_id().get().to_be_bytes())
+            .finalize();
+        let landing = self.quest_creature_landing(
+            runtime,
+            map,
+            MovementLocalPosition {
+                x: i32::from(position.x),
+                y: i32::from(position.y),
                 floor: -i16::from(position.floor),
-            })
-            .find(|to| {
-                self.movement_cells().index().lookup(
-                    self.movement_cells().scope(),
-                    LogicalCell {
-                        x: to.x,
-                        y: to.y,
-                        z: i32::from(to.floor),
-                    },
-                ) == Ok(CollisionClass::Walkable)
-                    && !census.iter().any(|(_, at, _)| at.position() == *to)
-                    && native_position_open(map, *to)
-            });
+            },
+            &seed,
+        )?;
         Ok(landing.map(|to| (creature, health, to)))
     }
-}
-
-fn native_position_open(map: &BundleMap, to: MovementLocalPosition) -> bool {
-    native(to).is_some_and(|to| {
-        !map.facts.house_tile(to)
-            && !map
-                .facts
-                .quest_callback_blocked(map.overlay.base(), to, false)
-    })
 }

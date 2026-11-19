@@ -77,11 +77,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }),
             )
         };
-        let Ok(census) = runtime.positioned_melee_census() else {
-            return UseDisposition::Rejected;
+        let landing = match self.quest_creature_landing(runtime, map, at, &digest) {
+            Ok(landing) => landing,
+            Err(result) => return result,
         };
-        // Crystal src/map/map.cpp:234-306 tests the requested tile first, then
-        // shuffles normal adjacent offsets when it cannot place the creature there.
+        if let Some(landing) = landing {
+            if runtime
+                .commit_quest_creature_spawn_with_projection(
+                    &[(spawn.creature.as_str(), health, landing)],
+                    projection,
+                )
+                .is_err()
+            {
+                return UseDisposition::Rejected;
+            }
+        } else if !projection() {
+            return UseDisposition::Rejected;
+        }
+        states.owner_wake.notify_one();
+        UseDisposition::Committed
+    }
+
+    /// Crystal src/map/map.cpp:234-306 tries the requested tile first and then
+    /// shuffles normal adjacent offsets, skipping teleports in the fallback.
+    pub(super) fn quest_creature_landing(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        at: MovementLocalPosition,
+        seed: &[u8],
+    ) -> Result<Option<MovementLocalPosition>, UseDisposition> {
+        let census = runtime
+            .positioned_melee_census()
+            .map_err(|_| UseDisposition::Rejected)?;
         let mut neighbours = [
             (-1i8, -1i8),
             (0, -1),
@@ -94,11 +122,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ];
         neighbours.sort_by_cached_key(|(x, y)| {
             Sha256::new()
-                .chain_update(&digest)
+                .chain_update(seed)
                 .chain_update([x.to_ne_bytes()[0], y.to_ne_bytes()[0]])
                 .finalize()
         });
-        let landing = std::iter::once((0, 0))
+        Ok(std::iter::once((0, 0))
             .chain(neighbours)
             .map(|(dx, dy)| MovementLocalPosition {
                 x: at.x + i32::from(dx),
@@ -120,22 +148,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && !census
                         .iter()
                         .any(|(_, position, _)| position.position() == *landing)
-            });
-        if let Some(landing) = landing {
-            if runtime
-                .commit_quest_creature_spawn_with_projection(
-                    &[(spawn.creature.as_str(), health, landing)],
-                    projection,
-                )
-                .is_err()
-            {
-                return UseDisposition::Rejected;
-            }
-        } else if !projection() {
-            return UseDisposition::Rejected;
-        }
-        states.owner_wake.notify_one();
-        UseDisposition::Committed
+            }))
     }
 }
 
