@@ -12,11 +12,15 @@ pub(super) fn base_slot(
     map: &BundleMap,
     at: TilePos,
     accepted: &[u16],
-) -> Option<(u64, EntryFacts)> {
+) -> Result<Option<(u64, EntryFacts)>, UseDisposition> {
     if map.facts.house_tile(at) {
-        return None;
+        return Err(UseDisposition::Rejected);
     }
-    let base = map.overlay.base().tile(at.x, at.y, at.floor)?;
+    let base = map
+        .overlay
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .ok_or(UseDisposition::Rejected)?;
     let mut found = base
         .ids()
         .iter()
@@ -29,8 +33,11 @@ pub(super) fn base_slot(
             let facts = map.facts.base_entry(at, ordinal, *id)?;
             (!facts.pickupable && accepted.contains(&facts.appearance_id)).then_some((key, facts))
         });
-    let source = found.next()?;
-    found.next().is_none().then_some(source)
+    let source = found.next();
+    if found.next().is_some() {
+        return Err(UseDisposition::Rejected);
+    }
+    Ok(source)
 }
 
 pub(super) fn prepare(
@@ -38,6 +45,7 @@ pub(super) fn prepare(
     ground: &Ground,
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
+    source: u64,
     board: &BoardPortal,
     lever_appearance: u16,
 ) -> Result<QuestCallbackProjection, UseDisposition> {
@@ -55,8 +63,32 @@ pub(super) fn prepare(
                 .is_ok_and(|reserved| !reserved)
     };
     for position in &board.pillars {
-        let (key, facts) =
-            base_slot(map, tile(*position), &[board.pillar]).ok_or(UseDisposition::Rejected)?;
+        let at = tile(*position);
+        let Some((key, facts)) = base_slot(map, at, &[board.pillar])? else {
+            // Crystal actions_tic_tac_teleport.lua:17-24 creates a pillar
+            // independently on each tile that lacks one.
+            if let Some(entry) = map.facts.quest_scene_solid_at(source, at, board.pillar) {
+                mutations.push(QuestSceneMutation::RemoveCreatedSolid {
+                    position: at,
+                    entry,
+                });
+            } else {
+                if !can_restore(*position) {
+                    return Err(UseDisposition::Occupied);
+                }
+                let facts = map
+                    .facts
+                    .movement_item_facts(board.pillar)
+                    .filter(|facts| !facts.pickupable)
+                    .ok_or(UseDisposition::Rejected)?;
+                mutations.push(QuestSceneMutation::Create {
+                    position: at,
+                    facts,
+                    passable: false,
+                });
+            }
+            continue;
+        };
         let revision = map.facts.object_revision(key);
         mutations.push(if map.facts.base_hidden(key) {
             if !can_restore(*position) {
@@ -88,7 +120,7 @@ pub(super) fn prepare(
                 })
     });
     if solved {
-        let (key, current) = base_slot(map, tile(board.portal), &[board.sealed, board.opened])
+        let (key, current) = base_slot(map, tile(board.portal), &[board.sealed, board.opened])?
             .filter(|(key, _)| !map.facts.base_hidden(*key))
             .ok_or(UseDisposition::Rejected)?;
         let opened = lever_appearance == board.open_on;

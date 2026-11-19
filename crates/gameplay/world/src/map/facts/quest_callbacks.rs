@@ -165,7 +165,7 @@ pub(super) struct CallbackStates {
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
-    solid_items: BTreeSet<TilePos>,
+    solid_items: BTreeMap<TilePos, BTreeMap<EntryId, u64>>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
     naginata_picks: Vec<NaginataPick>,
@@ -520,7 +520,10 @@ impl CallbackStates {
                             source: view::EntrySource::Added(entry),
                             facts: *facts,
                         });
-                    self.solid_items.insert(*position);
+                    self.solid_items
+                        .entry(*position)
+                        .or_default()
+                        .insert(entry, owner);
                 }
             }
         }
@@ -538,7 +541,16 @@ impl CallbackStates {
         })
     }
     pub(super) fn phase_has_dynamic_blocker(&self, pos: TilePos) -> bool {
-        self.solid_items.contains(&pos) || self.batch_blockers.contains(&pos)
+        self.solid_items.contains_key(&pos) || self.batch_blockers.contains(&pos)
+    }
+
+    fn remove_solid_item(&mut self, pos: TilePos, entry: EntryId) {
+        if let Some(items) = self.solid_items.get_mut(&pos) {
+            items.remove(&entry);
+            if items.is_empty() {
+                self.solid_items.remove(&pos);
+            }
+        }
     }
 
     pub(super) fn clear_feroxa_scenery(&mut self, inside: impl Fn(TilePos) -> bool) {
@@ -551,7 +563,7 @@ impl CallbackStates {
             p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
         };
         self.movement_items.retain(|p, _| !cleared(p));
-        self.solid_items.retain(|p| !cleared(p));
+        self.solid_items.retain(|p, _| !cleared(p));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
         self.presences.retain(|_, (p, _)| !cleared(p));
@@ -948,6 +960,24 @@ impl BundleFacts {
         entries.next().is_none().then_some(facts)
     }
 
+    /// Locate the exact solid occurrence created by a reversible scene source.
+    pub fn quest_scene_solid_at(
+        &self,
+        owner: u64,
+        pos: TilePos,
+        appearance: u16,
+    ) -> Option<EntryId> {
+        let states = self.callbacks.lock().ok()?;
+        let solids = states.solid_items.get(&pos)?;
+        states.movement_items.get(&pos)?.iter().find_map(|item| {
+            let view::EntrySource::Added(entry) = item.source else {
+                return None;
+            };
+            (solids.get(&entry) == Some(&owner) && item.facts.appearance_id == appearance)
+                .then_some(entry)
+        })
+    }
+
     /// Transform the actual current source object and its action under the same
     /// callback owner commit. Other bound attributes, including destination,
     /// unique id and description, remain on the same physical placement.
@@ -1260,9 +1290,12 @@ impl BundleFacts {
         let Some(entries) = states.movement_items.get_mut(&pos) else {
             return false;
         };
-        entries.remove(index);
+        let removed = entries.remove(index);
         if entries.is_empty() {
             states.movement_items.remove(&pos);
+        }
+        if let view::EntrySource::Added(entry) = removed.source {
+            states.remove_solid_item(pos, entry);
         }
         states.changed.remove(&key);
         states.movement_decays.retain(|(_, entry), _| *entry != key);
@@ -1729,7 +1762,8 @@ impl BundleFacts {
                         QuestSceneMutation::Restore { key, .. }
                         | QuestSceneMutation::Remove { key, .. }
                         | QuestSceneMutation::Replace { key, .. } => states.key_reserved(*key),
-                        QuestSceneMutation::Create { position, .. } => {
+                        QuestSceneMutation::Create { position, .. }
+                        | QuestSceneMutation::RemoveCreatedSolid { position, .. } => {
                             states.position_reserved(*position)
                         }
                     })
@@ -1865,7 +1899,7 @@ impl BundleFacts {
             return false;
         };
         if !tile.walkable()
-            || states.solid_items.contains(&pos)
+            || states.solid_items.contains_key(&pos)
             || states.changed.contains_key(&key)
             || states.hidden.contains(&key)
             || states.passable.contains_key(&key)
@@ -1953,7 +1987,7 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos)
+        if states.solid_items.contains_key(&pos)
             || states.batch_blockers.contains(&pos)
             || states.arena_pillar_closed_at(pos)
         {
@@ -2049,6 +2083,10 @@ pub enum QuestSceneMutation {
         facts: EntryFacts,
         passable: bool,
     },
+    RemoveCreatedSolid {
+        position: TilePos,
+        entry: EntryId,
+    },
 }
 
 fn project_scene(
@@ -2131,8 +2169,39 @@ fn project_scene(
                         facts: *facts,
                     });
                 if !passable {
-                    states.solid_items.insert(*position);
+                    states
+                        .solid_items
+                        .entry(*position)
+                        .or_default()
+                        .insert(entry, owner);
                 }
+            }
+            QuestSceneMutation::RemoveCreatedSolid { position, entry } => {
+                if states
+                    .solid_items
+                    .get(position)
+                    .and_then(|items| items.get(entry))
+                    != Some(&owner)
+                {
+                    return false;
+                }
+                let Some(sequence) = states.movement_sequence.checked_add(1) else {
+                    return false;
+                };
+                let Some(items) = states.movement_items.get_mut(position) else {
+                    return false;
+                };
+                let Some(index) = items.iter().position(|item| {
+                    item.source == view::EntrySource::Added(*entry) && !item.facts.pickupable
+                }) else {
+                    return false;
+                };
+                items.remove(index);
+                if items.is_empty() {
+                    states.movement_items.remove(position);
+                }
+                states.remove_solid_item(*position, *entry);
+                states.movement_sequence = sequence;
             }
         }
     }

@@ -312,6 +312,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ground,
                 runtime,
                 actor,
+                key,
                 board,
                 after.appearance_id,
             ) {
