@@ -6,13 +6,15 @@
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::progression::ProgressionRevisionContext;
 use crate::domain::{CharacterId, CharacterRevision};
-use crate::durability::DurabilityRoot;
 use crate::durability::admission_authority_guards::GuardPublicationDisposition;
+use crate::durability::character_authority::CharacterAuthorityError;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::runtime_scope_assignment::{
-    AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
-    LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
+    AssignmentCommand, AssignmentError, AssignmentOutcome, AssignmentRequest, BootstrapSecret,
+    ControlActor, LaunchBinding, NodeIncarnationProof, OperationKey, RegistrationError,
+    RuntimeScopeAssignmentWriter,
 };
+use crate::durability::{DB_PASS_DEADLINE, DurabilityError, DurabilityRoot, ROOT_RECOVERY_WINDOW};
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -164,16 +166,76 @@ fn fence_parent(tag: &str) -> TestResult<std::path::PathBuf> {
     }
 }
 
+// Only use this for setup steps whose exact request can be replayed after a lost COMMIT.
+async fn replay_setup<T, E: std::fmt::Debug>(
+    root: &DurabilityRoot,
+    step: &str,
+    transient: impl Fn(&E) -> bool,
+    mut operation: impl AsyncFnMut() -> Result<T, E>,
+) -> TestResult<T> {
+    use tokio::time::{Instant, sleep, timeout_at};
+    let deadline = Instant::now() + ROOT_RECOVERY_WINDOW;
+    loop {
+        let error = match operation().await {
+            Ok(value) => return Ok(value),
+            Err(error) => error,
+        };
+        // Leave a full ordinary pass for an exact replay. Cancelling it could
+        // lose another COMMIT acknowledgment.
+        let retry_by = deadline - DB_PASS_DEADLINE;
+        if !transient(&error)
+            || timeout_at(retry_by, async {
+                let _ = root.await_ready().await;
+                sleep(std::time::Duration::from_millis(10)).await;
+            })
+            .await
+            .is_err()
+            || Instant::now() >= retry_by
+        {
+            return Err(format!("{step}: {error:?}").into());
+        }
+    }
+}
+
+fn setup_transient(error: &DurabilityError) -> bool {
+    matches!(
+        error,
+        DurabilityError::RootUnavailable
+            | DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::CommitOutcomeUnknown
+            | DurabilityError::Database(crate::durability::SqlxFailureClass::RetryableStatement)
+    )
+}
+
+fn registration_transient(error: &RegistrationError) -> bool {
+    matches!(error, RegistrationError::Unavailable(inner) if setup_transient(inner))
+}
+
+fn assignment_transient(error: &AssignmentError) -> bool {
+    matches!(error, AssignmentError::Unavailable(inner) if setup_transient(inner))
+}
+
 pub(crate) async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationProof> {
     let secret = BootstrapSecret::from_bytes([tag; 32]);
     let launch = LaunchBinding::new(&format!("bestiary-launch-{tag}")).map_err(debug)?;
     let node = crate::foundation::NodeId::decode(&id(tag)).map_err(debug)?;
-    root.issue_node_bootstrap_authorization(&secret, &launch, None)
-        .await
-        .map_err(debug)?;
-    root.register_node_incarnation(&secret, &launch, node)
-        .await
-        .map_err(|error| debug(error).into())
+    replay_setup(
+        root,
+        "bootstrap authorization",
+        registration_transient,
+        async || {
+            root.issue_node_bootstrap_authorization(&secret, &launch, None)
+                .await
+        },
+    )
+    .await?;
+    replay_setup(
+        root,
+        "node registration",
+        registration_transient,
+        async || root.register_node_incarnation(&secret, &launch, node).await,
+    )
+    .await
 }
 
 pub(crate) fn scope() -> TestResult<RuntimeScopeRefV1> {
@@ -273,9 +335,12 @@ impl Harness {
             .map_err(debug)?;
         {
             let fresh = recovery.authorize_fresh_store(id(10), 100).map_err(debug)?;
-            root.admit_fresh_character_recovery(&fresh)
-                .await
-                .map_err(debug)?;
+            replay_setup(
+                &root,
+                "fresh Character recovery",
+                |error| matches!(error, CharacterAuthorityError::Unavailable(inner) if setup_transient(inner)),
+                async || root.admit_fresh_character_recovery(&fresh).await,
+            ).await?;
         }
         let node = register(&root, 1).await?;
         seed_character(&pool, initialized, seed_session).await?;
@@ -289,9 +354,13 @@ impl Harness {
         .bind(id(CHANNEL).as_slice())
         .execute(&pool)
         .await?;
-        let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "bestiary-writer")
-            .await
-            .map_err(debug)?;
+        let writer = replay_setup(
+            &root,
+            "assignment writer",
+            assignment_transient,
+            async || RuntimeScopeAssignmentWriter::open(root.clone(), "bestiary-writer").await,
+        )
+        .await?;
         let outcome = writer
             .submit(&AssignmentRequest {
                 operation_key: OperationKey::from_bytes([7_u8; 32]),
@@ -471,11 +540,18 @@ pub(crate) async fn publish_readiness_for_scope(
         },
     };
     let publication = ground_native_readiness_enforcement::prepare(change, now)?;
-    let disposition = root
-        .publish_runtime_readiness(node, &publication)
-        .await
-        .map_err(debug)?;
-    if disposition != GuardPublicationDisposition::Applied {
+    let disposition = replay_setup(
+        root,
+        "runtime readiness",
+        assignment_transient,
+        async || root.publish_runtime_readiness(node, &publication).await,
+    )
+    .await?;
+    // Existing proves the identical publication already committed before its reply was lost.
+    if !matches!(
+        disposition,
+        GuardPublicationDisposition::Applied | GuardPublicationDisposition::Existing
+    ) {
         return Err(format!("unexpected readiness outcome: {disposition:?}").into());
     }
     Ok(())
