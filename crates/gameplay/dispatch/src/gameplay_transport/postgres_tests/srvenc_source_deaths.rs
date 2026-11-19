@@ -374,8 +374,9 @@ async fn exercise(
     owner.refresh_quest_session(session, false).await;
     let actor = deps.actor;
     let queue = owner.states.attack.lock().await.kills().clone();
-    // This second current native actor really deals damage. It remains an invalid
-    // Herald recipient even with the same admitted mission snapshot as the winner.
+    // Herald uses a lower-damage challenger. Outfit deliveries also inspect
+    // a nearby witness who did not deal damage.
+    let room_delivery = rule.delivery.is_some() && rule.room.is_some();
     let secondary = if rule.top_damage_only || rule.delivery.is_some() {
         let mut runtime = owner.runtime.lock().await;
         let session = crate::foundation::GameSessionId::decode(&id(77)).map_err(debug)?;
@@ -547,14 +548,14 @@ async fn exercise(
                 ];
                 let recipients =
                     quest_batch3_c::capture(&runtime, entry, true, snapshots.iter().cloned());
-                let eligible = if rule.delivery.is_some() { 2 } else { 1 };
+                let eligible = if room_delivery { 2 } else { 1 };
                 assert_eq!(recipients.len(), eligible);
                 assert_eq!(recipients[0].actor, actor);
                 assert_eq!(recipients[0].character, *lease.character_id().as_bytes());
-                if rule.delivery.is_some() {
+                if room_delivery {
                     assert_eq!(recipients[1].actor, other_actor);
                     assert!(!entry.damage_shares.iter().any(|share| share.character.as_bytes() == &other_character));
-                } else {
+                } else if rule.top_damage_only {
                     assert!(quest_batch3_c::capture(&runtime, entry, false, snapshots.into_iter()).is_empty());
                 }
                 drop(taken); // Leave the real original queue entry for durable settlement below.
@@ -578,7 +579,7 @@ async fn exercise(
             .map_or(effect.default, |(_, value)| *value);
         let before = prior.filter(|(track, _)| *track == effect.track).map_or(before, |(_, value)| value);
         let expected = match (effect.set, effect.increment_to) {
-            (_, _) if rule.delivery.is_some() && before != effect.default => before,
+            (_, _) if room_delivery && before != effect.default => before,
             (Some(value), _) => value,
             (None, Some(maximum)) => before.max((before + i64::try_from(kills)?).min(maximum)),
             (None, None) => before + effect.add.unwrap_or(0) * i64::try_from(kills)?,
