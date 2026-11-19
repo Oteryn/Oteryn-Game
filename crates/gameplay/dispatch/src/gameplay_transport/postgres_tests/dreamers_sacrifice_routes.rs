@@ -31,6 +31,8 @@ struct Route {
     source: Position,
     fallback: Position,
     qualified: Position,
+    via: Option<Position>,
+    qualified_cue: Option<Position>,
     track: &'static str,
     faction: &'static str,
 }
@@ -40,6 +42,8 @@ const BROTHERHOOD_ROUTE: Route = Route {
     source: at(32788, 32227),
     fallback: at(32790, 32227),
     qualified: at(32784, 32226),
+    via: Some(at(32844, 32228)),
+    qualified_cue: Some(at(32835, 32225)),
     track: "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
     faction: "oteryn:quest.brotherhood_outfits_quest",
 };
@@ -48,6 +52,8 @@ const NIGHTMARE_ROUTE: Route = Route {
     source: at(32840, 32226),
     fallback: at(32844, 32228),
     qualified: at(32835, 32225),
+    via: None,
+    qualified_cue: None,
     track: "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
     faction: "oteryn:quest.nightmare_outfits_quest",
 };
@@ -63,6 +69,15 @@ fn route(name: &str) -> Route {
 fn bindings(name: &str) -> TestResult<[Callback; 2]> {
     let route = route(name);
     let make = |phase, minimum, maximum, destination| {
+        let mut effects = serde_json::json!({"teleport_effect":3});
+        if let Some(via) = route.via {
+            effects["teleport_via"] = serde_json::json!(via);
+        }
+        if minimum == 2
+            && let Some(cue) = route.qualified_cue
+        {
+            effects["magic"] = serde_json::json!({"position":cue,"effect":3});
+        }
         // The rank belongs to the faction quest. The read-only world owner
         // checks the track under that quest's existing Character fence.
         serde_json::from_value(serde_json::json!({
@@ -73,7 +88,7 @@ fn bindings(name: &str) -> TestResult<[Callback; 2]> {
             "reversible":false,"passages":[],"offerings":[],
             "storage":[{"track":route.track,"minimum":minimum,"maximum":maximum,
                 "set":minimum,"read_only":true}],
-            "teleport":destination,"return_on_failure":true,"effects":{"teleport_effect":3},
+            "teleport":destination,"return_on_failure":true,"effects":effects,
             "sources":[
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_sacrifice_teleport.lua:8-29",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3243-3262"
@@ -93,7 +108,12 @@ pub(super) fn binding(name: &str) -> TestResult<Callback> {
 
 pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::boot::BundleWorld> {
     let route = route(name);
-    world_with_cells(callback, route.source, &[route.qualified])
+    let extra: Vec<_> = [route.qualified]
+        .into_iter()
+        .chain(route.via)
+        .chain(route.qualified_cue)
+        .collect();
+    world_with_cells(callback, route.source, &extra)
 }
 
 pub(super) fn catalogue(
@@ -153,6 +173,18 @@ pub(super) async fn exercise(
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let map = owner.bundle_map().ok_or("sacrifice map")?;
     for (command, destination) in [(1, route.fallback), (2, route.qualified)] {
+        let revision = owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .revision();
+        let cue_cursor = map
+            .facts
+            .movement_effects_since(0)
+            .last()
+            .map_or(0, |cue| cue.0);
         let reply = wire(
             owner,
             admitted,
@@ -172,6 +204,27 @@ pub(super) async fn exercise(
             .read_actor_position(actor)
             .map_err(debug)?;
         assert_eq!(observed.position(), local(destination));
+        assert_eq!(
+            observed.revision(),
+            revision + if route.via.is_some() { 3 } else { 2 }
+        );
+        // Crystal movement_sacrifice_teleport.lua:18 and :22 order the remote
+        // Brotherhood cue before the terminal arrival cue.
+        let actual_cues: Vec<_> = map
+            .facts
+            .movement_effects_since(cue_cursor)
+            .into_iter()
+            .filter(|(_, _, effect)| *effect == 3)
+            .map(|(_, at, _)| (at.x, at.y, at.floor))
+            .collect();
+        let expected_cues: Vec<_> = route
+            .qualified_cue
+            .filter(|_| command == 2)
+            .into_iter()
+            .chain([destination])
+            .map(|at| (at.x, at.y, at.floor))
+            .collect();
+        assert_eq!(actual_cues, expected_cues);
         if command == 1 {
             let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
             let outcome = slot
