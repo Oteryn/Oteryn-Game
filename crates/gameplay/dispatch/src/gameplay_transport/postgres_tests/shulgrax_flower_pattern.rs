@@ -217,7 +217,7 @@ pub(super) fn portal_callback() -> TestResult<Callback> {
         "key":PORTAL_KEY,"quest":QUEST,"trigger":"step_in",
         "selector":{"action":34301},
         "reversible":false,"passages":[],"offerings":[],
-        "storage":[{"track":WINDOW,"minimum":1,"maximum":1,"set":1,"read_only":true}],
+        "storage":[{"track":WINDOW,"minimum":1,"maximum":i64::MAX,"set":1,"read_only":true}],
         "teleport":LANDING,"return_on_failure":true,
         "failure_message":"You not proven your worth. There is no escape for you here.",
         "effects":{"teleport_effect":TELEPORT,"refusal_effect_on_source":TELEPORT,
@@ -240,7 +240,7 @@ pub(super) fn portal_catalogue(
     use sha2::{Digest, Sha256};
     let document = json!({"schema":1,"quests":[{
         "quest":QUEST,"recipe_sha256":format!("{:x}", Sha256::digest(PORTAL_SOURCE)),
-        "sources":[PORTAL_SOURCE],"tracks":[{"key":WINDOW,"initial":0,"minimum":0,"maximum":1}],
+        "sources":[PORTAL_SOURCE],"tracks":[{"key":WINDOW,"initial":0,"minimum":0,"maximum":i64::MAX}],
         "stages":[{"key":"flower-puzzle-portal","completes":false,
             "trigger":{"kind":"step_in","callback":callback}}]
     }]});
@@ -251,7 +251,7 @@ pub(super) fn portal_catalogue(
             quest: QUEST.into(),
             initial: 0,
             min: 0,
-            max: 1,
+            max: i64::MAX,
         }],
         vec![QuestTransition {
             key: ARM_FIXTURE.into(),
@@ -259,7 +259,7 @@ pub(super) fn portal_catalogue(
             effects: vec![QuestEffect {
                 track: WINDOW.into(),
                 from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(1),
+                effect: QuestEffectKind::Set(2),
             }],
             completes: false,
             experience: None,
@@ -301,7 +301,7 @@ pub(super) async fn exercise_portal(
         .map_err(|()| "fence")?
         .ok_or("fence")?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-    // Only the permission fixture is seeded. Admission and refusal use ordinary STEP.
+    // Seed a value above 1 to exercise Crystal's lower bound through ordinary STEP.
     let armed = slot
         .commit_quest_transition(
             owner.root,
