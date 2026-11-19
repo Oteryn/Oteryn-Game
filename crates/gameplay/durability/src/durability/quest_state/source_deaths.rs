@@ -113,16 +113,23 @@ pub(super) async fn apply_delivery(
     };
     use super::super::character_appearance::{QuestOutfitGrant, grant_quest_outfit};
     use oteryn_gameplay_quests::quest::source_deaths::DeathDelivery;
-    let Some(DeathDelivery::PoltergeistAndBeyonder) = rule.delivery else {
+    let Some(delivery) = rule.delivery else {
         return Ok(());
     };
     if !matches!(request.cause, QuestCause::CreatureDeath(_)) {
         return Err(DurabilityError::InvalidStoredState);
     }
-    // Both grants belong to the fenced boss death. The storage effect tracks
-    // the first base outfit and an older entitlement stays valid.
     let occurrence = serde_json::to_vec(&(request.cause.key(), &request.transition_key))
         .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if delivery == DeathDelivery::DreamWarrior {
+        // Crystal creaturescripts_dream_courts_death.lua:74-79 awards the base
+        // looks independently of whether Ward Stones can still advance.
+        grant_quest_outfit(tx, fence.character_id, &occurrence, QuestOutfitGrant::DreamWarrior)
+            .await?;
+        return Ok(());
+    }
+    // The Poltergeist storage effect tracks the first base outfit while every
+    // qualified witness receives Beyonder.
     if changes.iter().any(|change| change.before == -1 && change.after == 1) {
         grant_quest_outfit(tx, fence.character_id, &occurrence, QuestOutfitGrant::Poltergeist)
             .await?;

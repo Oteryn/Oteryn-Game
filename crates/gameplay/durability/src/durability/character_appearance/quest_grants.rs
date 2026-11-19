@@ -99,6 +99,8 @@ pub(crate) async fn grant_content_outfit(
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum QuestOutfitGrant {
+    /// Crystal creaturescripts_dream_courts_death.lua:74-79 grants both base looks.
+    DreamWarrior,
     /// Crystal 201189f data-global/npc/flickering_soul.lua:122-138.
     Revenant,
     /// PR2784 answer6547536027: base only; no unverified addon.
@@ -110,6 +112,7 @@ pub(crate) enum QuestOutfitGrant {
 impl QuestOutfitGrant {
     fn key(self) -> &'static str {
         match self {
+            Self::DreamWarrior => "oteryn:outfit.dream_warrior/quest-grant/0",
             Self::Revenant => "oteryn:appearance-grant/quest/soul-war/revenant-base",
             Self::DecayingDefender => {
                 "oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base"
@@ -120,6 +123,7 @@ impl QuestOutfitGrant {
 
     fn provenance(self) -> &'static str {
         match self {
+            Self::DreamWarrior => PROVENANCE,
             Self::Revenant => "crystal-201189f-soul-war-revenant-v1",
             Self::DecayingDefender => "owner-pr2784-decaying-defender-base-v1",
             Self::Poltergeist => "crystal-201189f-pale-worm-v1",

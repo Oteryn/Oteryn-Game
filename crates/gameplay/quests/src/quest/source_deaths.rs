@@ -10,6 +10,10 @@ use super::{
 use serde::Deserialize;
 use std::{collections::BTreeMap, sync::OnceLock};
 
+const NIGHTMARE_BEAST: &str = "oteryn:creature.the_nightmare_beast";
+const WARD_STONES: &str =
+    "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline";
+
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct Effect {
     pub track: String,
@@ -84,7 +88,7 @@ impl DeathCooldown {
         rule.room.is_none()
             && !rule.top_damage_only
             && rule.define_transition
-            && rule.delivery.is_none()
+            && rule.delivery != Some(DeathDelivery::PoltergeistAndBeyonder)
             && self.boss.starts_with("oteryn:creature.")
             && super::valid_quest_key(&self.boss)
             && (1..=30 * 24 * 60 * 60).contains(&self.seconds)
@@ -95,12 +99,32 @@ impl DeathCooldown {
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum DeathDelivery {
+    DreamWarrior,
     PoltergeistAndBeyonder,
 }
 
 impl DeathDelivery {
     fn valid(self, rule: &Rule) -> bool {
         match self {
+            // Crystal creaturescripts_dream_courts_death.lua:50-54,74-99 and
+            // data/libs/functions/functions.lua:1075-1082 use the damage map.
+            Self::DreamWarrior => {
+                rule.quest == "oteryn:quest.the_dream_courts_quest"
+                    && rule.creature == NIGHTMARE_BEAST
+                    && rule.room.is_none()
+                    && !rule.top_damage_only
+                    && rule.define_transition
+                    && rule.cooldown.as_ref().is_some_and(|cooldown| {
+                        cooldown.boss == NIGHTMARE_BEAST && cooldown.seconds == 20 * 60 * 60
+                    })
+                    && matches!(rule.effects.as_slice(), [effect]
+                        if effect.track == WARD_STONES
+                        && effect.default == 0
+                        && effect.from.kind == "any"
+                        && effect.set.is_none()
+                        && effect.add.is_none()
+                        && effect.increment_to == Some(3))
+            }
             Self::PoltergeistAndBeyonder => {
                 rule.quest == "oteryn:quest.poltergeist_outfits_quest"
                     && rule.creature == "oteryn:creature.the_pale_worm"

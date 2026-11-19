@@ -69,7 +69,9 @@ pub(super) fn capture(
         for rule in &snapshot.objectives {
             if rule.creature != entry.creature
                 || !rule.recipient(position, damaged)
-                || (rule.delivery.is_some() && !rule.recipient(death_position, false))
+                || (rule.delivery.is_some()
+                    && rule.room.is_some()
+                    && !rule.recipient(death_position, false))
                 || (rule.top_damage_only
                     && (!principal_present
                         || principal.actor != snapshot.actor
