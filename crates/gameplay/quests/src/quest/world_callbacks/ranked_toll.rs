@@ -23,7 +23,10 @@ impl RankedToll {
             && callback.actor_kind == ActorKind::Player
             && callback.requires_world_admission
             && callback.return_on_failure
-            && callback.selector.native.is_some()
+            // Crystal movement_tower.lua:21 and :38-40 select the retained UID.
+            // Native counterparts also support maps that strip startup IDs.
+            && (callback.selector.native.is_some()
+                || callback.selector.unique.is_some_and(|uid| uid != 0))
             && callback.teleport.is_some()
             && callback.remote_teleport.is_none()
             && !callback.has_personal_state()

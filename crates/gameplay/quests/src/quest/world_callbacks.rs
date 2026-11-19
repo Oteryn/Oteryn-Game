@@ -1424,7 +1424,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         (!callback.has_personal_state() && callback.effects.ranked_toll.is_none())
                             || callback.trigger != Trigger::StepIn
                             || !callback.requires_world_admission
-                            || callback.selector.native.is_none()
+                            || (callback.selector.native.is_none()
+                                && (callback.effects.ranked_toll.is_none()
+                                    || callback.selector.unique.is_none()))
                             || item.reusable
                             || item.replacement.is_some()
                             || item.target_replacement.is_some()
