@@ -1,5 +1,5 @@
 //! Crystal 201189f8 moviment_trap.lua: a real creature push delivers merchant StepIn.
-use super::autowalk_fixtures::at;
+use super::autowalk_fixtures::{at, place};
 use super::classic_quests_fixtures::{install, talk};
 use super::creature_push_fixtures::{prepare, reference, spawn};
 use super::fixture::{Harness, id};
@@ -29,6 +29,11 @@ const START: &str = "oteryn:quest-reward/rottin-wood/start-bushwhacking";
 const TURN_IN: &str = "oteryn:quest-reward/rottin-wood/bushwhacking";
 const MERRY_ADVENTURES: &str = "oteryn:achievement/merry_adventures";
 const LOOT: &str = "oteryn:quest-callback/rottin-wood/loot-merchant";
+const CAPTURE_TILE: TilePos = TilePos {
+    x: 4,
+    y: 2,
+    floor: -7,
+};
 
 const NETS: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count";
 const EARLY_NET: &str = "oteryn:quest-callback/rottin-wood/place-net";
@@ -110,12 +115,10 @@ pub(super) async fn exercise(
     let actor = admitted.runtime_actor.ok_or("pusher")?;
     let merchant = spawn(owner, "oteryn:creature.travelling_merchant", at(3, 2)).await?;
     let map = owner.bundle_map().ok_or("bundle")?;
-    let tile = TilePos {
-        x: 4,
-        y: 2,
-        floor: -7,
-    };
-    assert!(map.facts.create_movement_item(tile, 12187, 0, || true));
+    let tile = CAPTURE_TILE;
+    if loot.is_none() {
+        assert!(map.facts.create_movement_item(tile, 12187, 0, || true));
+    }
     let before = map.facts.movement_items(tile);
     assert_eq!(before.len(), 1);
     let gameplay = owner
@@ -147,7 +150,7 @@ pub(super) async fn exercise(
     assert_eq!(after[0].facts.appearance_id, 12189);
     assert_eq!(after[0].facts.definition, MapDefinition::Item(captured.reference));
     if let Some(h) = loot {
-        super::autowalk_fixtures::place(owner, admitted, at(3, 2)).await?;
+        place(owner, admitted, at(3, 2)).await?;
         let crate::map::view::EntrySource::Added(id) = after[0].source else {
             return Err("captured merchant exact handle".into());
         };
@@ -158,7 +161,7 @@ pub(super) async fn exercise(
             .ok_or("quest fence")?;
         let command = UseCommand {
             game_session_id: admitted.game_session_id,
-            command_id: 1,
+            command_id: 1704,
             item_fence: Some(fence.item_fence()),
         };
         let outcome = owner
@@ -232,13 +235,32 @@ pub(super) async fn exercise_mission(
         before_xp
     );
 
+    place(owner, admitted, at(3, 2)).await?;
+    assert_eq!(
+        use_quest_tool(owner, admitted, CAPTURE_TILE, 0, 1703, 71).await?,
+        UseDisposition::Committed
+    );
+    let (placed, remaining_nets): (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+                (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances
+                 WHERE definition_production_key='oteryn:item.tibia.i12186' AND lifecycle=1)",
+    )
+    .bind(NETS)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!((placed, remaining_nets), (1, 0));
+    place(owner, admitted, at(2, 2)).await?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("merchant loot clock")?;
     exercise(None, owner, admitted, Some(h)).await?;
 
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     assert_eq!(
-        talk(owner, &admitted, npc, 1703, "mission").await?,
+        talk(owner, &admitted, npc, 1705, "mission").await?,
         super::rottin_rewards_fixtures::source_reply("line-119")?
     );
     assert_eq!(

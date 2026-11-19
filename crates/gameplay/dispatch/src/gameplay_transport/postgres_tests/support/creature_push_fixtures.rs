@@ -130,7 +130,7 @@ fn bundle_for(trap: Option<u16>, wave: bool, blocked_spawn: bool) -> TestResult<
     for y in min_y..min_y + height {
         for x in min_x..min_x + width {
             let mut palettes = vec![if let Some(id) = trap_ground
-                && wave && matches!((x, y), (32659, 32182) | (32660, 32182))
+                && matches!((x, y), (4, 2) | (32659, 32182) | (32660, 32182))
             {
                 id
             } else if (x, y) == (3, 5) {
@@ -253,7 +253,7 @@ pub(super) fn scenario(
         } else if repair {
             super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3460", 1)]).await?;
         } else if merchant_loot {
-            super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
+            super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i12186", 1)]).await?;
         }
         prepare_current_session(&h).await?;
         if weighted_reward {
