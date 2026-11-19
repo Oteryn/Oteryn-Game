@@ -1,20 +1,22 @@
 //! Crystal 201189f8, chayenne_realm/actions_lever.lua:3-22 supplies the
-//! retained key and timed wall control. The fifth floor is a test fixture.
+//! retained key and timed wall control. The added clearance floor uses a
+//! Dragon from Crystal world-monster.xml:47455-47457.
 use super::fixture::debug;
 use super::m07_realm_trials::{BEGIN, CONTROL, phase, use_source};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, quest_world_callbacks};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
-use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     authored_bindings::Bindings,
-    world_callbacks::{Callback, Offering, load},
+    world_callbacks::{Callback, Offering, Position, load},
 };
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::sync::Arc;
 
 pub(super) const NAME: &str = "m07/realm-trial-five-floor";
+const FIFTH_FLOOR_DRAGON: Position = Position { x: 33076, y: 32582, floor: -7 };
+const DRAGON: &str = "oteryn:creature.dragon";
 
 #[test]
 fn realm_control_waits_for_guardian_on_fifth_floor() -> TestResult {
@@ -48,13 +50,17 @@ pub(super) async fn exercise(
     let mut control = control.clone();
     control.key = "oteryn:quest-callback/fixture/five-floor-control".into();
     let area = control.effects.clear_area.as_mut().ok_or("Realm area")?;
-    area.additional_floors.push(-7);
+    area.additional_floors.insert(0, FIFTH_FLOOR_DRAGON.floor);
+    assert!(area.contains(FIFTH_FLOOR_DRAGON));
     let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
         "schema":1,
         "quests":[{
             "quest":control.quest,
             "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
-            "sources":["Crystal 201189f8 chayenne_realm/actions_lever.lua:3-22; synthetic extra floor"],
+            "sources":[
+                "Crystal 201189f8 chayenne_realm/actions_lever.lua:3-22",
+                "Crystal 201189f8 world-monster.xml:47455-47457"
+            ],
             "tracks":[{"key":control.storage[0].track,"initial":-1,"minimum":-1,"maximum":2}],
             "stages":[
                 {"key":"begin","completes":false,"trigger":{"kind":"map_use","callback":begin}},
@@ -95,24 +101,19 @@ pub(super) async fn exercise(
             .ok_or("native policies")?
             .install_companion_policies(&mut runtime)
             .map_err(debug)?;
-        let species = "oteryn:creature.dragon";
         let health = runtime
-            .companion_policy(species)
+            .companion_policy(DRAGON)
             .map_err(debug)?
             .maximum_health;
         let guardian = runtime
             .admit_encounter_actor(
-                species,
+                DRAGON,
                 health,
-                MovementLocalPosition {
-                    x: 33088,
-                    y: 32583,
-                    floor: 7,
-                },
+                quest_world_callbacks::local(FIFTH_FLOOR_DRAGON),
             )
             .map_err(debug)?;
         runtime
-            .install_creature_policy(guardian, species)
+            .install_creature_policy(guardian, DRAGON)
             .map_err(debug)?;
         guardian
     };
@@ -121,9 +122,9 @@ pub(super) async fn exercise(
         UseDisposition::Rejected
     );
     assert_eq!(phase(owner, fence, &control).await?, Some(1));
-    assert!(owner.runtime.lock().await.kill_creature_for_test(guardian));
+    super::engenc2_cults::kill(owner, admitted, guardian, DRAGON, 3).await?;
     assert_eq!(
-        use_source(owner, admitted, 3, CONTROL, 1, 0).await?,
+        use_source(owner, admitted, 4, CONTROL, 1, 0).await?,
         UseDisposition::Committed
     );
     assert_eq!(phase(owner, fence, &control).await?, Some(2));
