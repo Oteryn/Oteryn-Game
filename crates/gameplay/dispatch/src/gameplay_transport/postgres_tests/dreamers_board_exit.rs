@@ -3,7 +3,10 @@ use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{input_item, local, scenario, wire, world_cells};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
-use crate::map::{overlay::TilePos, view::MapFacts};
+use crate::map::{
+    overlay::TilePos,
+    view::{MapFacts, placement_key},
+};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     world_callbacks::{self, Callback, Position},
@@ -133,6 +136,57 @@ pub(super) async fn exercise(
             appearance
         );
     }
+    // Crystal movement_tic_teleport.lua:2,27-33,48-50 transforms the traversed
+    // portal to a walkable crack. The immutable map still advertises 1949.
+    let portal = TilePos {
+        x: PORTAL.x,
+        y: PORTAL.y,
+        floor: PORTAL.floor,
+    };
+    let key = placement_key(portal, 1).ok_or("portal key")?;
+    let reset_revision = map.facts.object_revision(key);
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let proof = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime,
+            owner.movement_cells(),
+            actor,
+            admitted.game_session_id,
+            runtime.read_actor_position(actor).map_err(debug)?,
+            local(Position {
+                x: PORTAL.x - 1,
+                ..PORTAL
+            }),
+            false,
+            &crate::map::floor::BundleDoors(&map.facts),
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+    }
+    let response = wire(
+        owner,
+        admitted,
+        2,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(StepDirection::East),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&response).map_err(debug)?,
+        StepDisposition::Moved
+    );
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        local(PORTAL),
+    );
+    assert_eq!(map.facts.object_revision(key), reset_revision);
+
     let removed: Vec<(i32, i32)> = sqlx::query_as(
         "SELECT c.quantity, i.lifecycle::integer FROM game_quest_callback_consumptions c
          JOIN game_item_instances i USING(item_instance_id) WHERE c.transition_key=$1",
