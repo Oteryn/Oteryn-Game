@@ -6,8 +6,8 @@
 - Owner: Oteryn Game (gameplay transport trust)
 - Related: ADR-0024, ADR-0003, ADR-0014, ADR-0021, FND-02, `CLIENT-INSTALLER-0` §2.4, `OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md` §9, D172, Platform #1980 (edge relay)
 
-Platform #1982 merged the gate contract and design linked below. PR2 depends
-on the gate being deployed.
+Platform #1982 merged the gate proposal and design. Gate deployment and
+qualification are prerequisites to ADR-0024 acceptance and U3 closure.
 
 ## 1. Scope
 
@@ -37,7 +37,9 @@ preproduction development CA (D172 testing mode, unchanged).
 | Custody | owner, offline, one encrypted backup (ADR-0024) | §5.3 | node secrets directory |
 
 The issuing tool sets every field itself. It takes no CSR and copies no requested
-extension; it generates the leaf key on the game host (rcgen, current workspace features).
+extension. It generates the leaf key on the game host. Enable rcgen's
+`x509-parser` and `pem` features for the issuing tool to load the persisted
+issuer with `Issuer::from_ca_cert_der` and write certificates with `Certificate::pem`.
 The permitted DNS subtree also covers names below `game.oteryn.com`; the single-name
 boundary comes from this issuance policy and the client's name check (§3), not from the
 constraint alone.
@@ -57,8 +59,8 @@ During overlap the listener holds both pairs (§6.2).
    `dev-gameplay-trust`, not by the Cargo profile and not by runtime configuration.
    - Player-channel artefacts are built **without** the feature. They trust only the
      embedded bundle (item 2) and never read `OTERYN_DEV_ROOT`.
-   - Development and preproduction artefacts (the merge-group installer's dev channel
-     included) are built **with** it and keep today's D172 behaviour.
+   - Development and ordinary preproduction artefacts (including the merge-group
+     installer's dev channel) are built **with** it and keep D172 behaviour.
    - The build records the feature in its build information; the player-channel packaging
      step fails if the feature is present.
 2. The player build embeds a bundle of one or two root certificates in the binary
@@ -73,13 +75,15 @@ During overlap the listener holds both pairs (§6.2).
    route whose name is not `game.oteryn.com`.
 5. The player build has no root input in its launch path: `native_entry/config.rs` does not
    require `OTERYN_DEV_ROOT`, `native_entry.rs` does not load a root file before OAuth, and
-   the local login UI does not check a persisted certificate path.
+   the local login UI does not check a persisted certificate path. Keep decoding
+   the optional legacy `dev_root` in `native-login.json` and ignore its value in
+   player builds. Keep strict decoding for unrelated fields.
 6. TLS 1.3 only. The client sends the gameplay grant only after the handshake succeeds and
    ALPN `oteryn-game/1` was negotiated.
 
-**Verify in PR2.** rustls `ParsedCertificate` does not expose the leaf's EKU
-list. Verify that the existing X.509 parsing dependencies expose the full
-end-entity EKU extension and use it to enforce item 3.
+PR2 must parse the leaf's raw EKU DER sequence and require a single OID,
+`serverAuth`. rustls `ParsedCertificate` lacks the list and x509-parser 0.18.1
+deduplicates OIDs in its parsed summary.
 
 ## 4. Edge and node network
 
@@ -96,15 +100,25 @@ end-entity EKU extension and use it to enforce item 3.
 - The node sees the edge as the peer address. The gameplay admission path has no per-IP
   limit today; one added later would count the edge, not players, until PROXY v2 is decided.
 
+**Expiry withdrawal.** At boot every served leaf must have more than 24 hours
+left. At runtime, by the time any served leaf reaches 24 hours remaining,
+stop ready heartbeats and new local admissions. Commit and report a newer
+`ready = false` publication using the runtime-status producer §§4, 7–8.
+Platform must stop issuing fresh grants for the route when it accepts the
+withdrawal, or when the last ready report becomes stale, whichever comes
+first. Qualify the deployed freshness bound F and its clock uncertainty
+before rollout. Even if withdrawal cannot commit or reach Platform, fresh
+grants must stop within F of the threshold. [Platform login contract] §§7.2–7.4.
+
 ## 5. Issuance, activation and custody
 
 ### 5.1 Replacing the current certificate source
 
-The Oracle supervisor today installs Caddy's ACME certificate for the game listener at
-startup and on its daily refresh. PR2 replaces **both** paths with the private chain, in this
-order: the private chain is installed and served first; the supervisor's ACME installation
-for the game listener is removed second; the Caddy ACME site is removed last, and only once
-the supervisor no longer depends on it to start the node.
+Stage the private pair in its own versioned directory. Fence the supervisor's
+startup and daily `--refresh-certificate` ACME writers, including in-flight
+copies, before activating it. Switch both paths to private material as part
+of the cutover. Missing private material fails closed. Verify the private
+pair through both paths before removing the Caddy ACME site. [Platform supervisor]
 
 ### 5.2 Renewal and activation
 
@@ -115,11 +129,17 @@ the supervisor no longer depends on it to start the node.
   its active symlink with one atomic rename. At startup the node resolves the
   symlink once per pair, then opens both files from that directory. It checks
   that the private key matches the leaf SPKI and refuses to start on mismatch.
+- Mount the pair directory read-only in the node, without a writable alias.
+  Both files must satisfy `FileClass::Secret` (regular files, owner 1001 on
+  Oracle, mode 0600).
 - Activate by restarting through the existing supervisor path outside peak
   hours within 24 hours of issuance and at least 7 days before the old leaf
   expires. The daily timer checks both deadlines and alarms if either is
   missed, including when issuance has failed and the old leaf is still served
-  at the 7-day deadline.
+  at the 7-day deadline. At a missed deadline or an unsafe-chain incident,
+  activate a verified replacement immediately, including during peak hours.
+  If the current chain cannot safely remain in service, withdraw it and stop
+  serving until a safe pair is active (§4, §7.2).
 - After activation, probe TLS through the public route with ALPN
   `oteryn-game/1` and compare the served leaf's SHA-256 with the issued one.
   Repeat after the next supervisor start and daily refresh. During overlap,
@@ -131,8 +151,10 @@ the supervisor no longer depends on it to start the node.
 
 - The intermediate key is a file owned by root, mode 0600, outside every path mounted into
   the node, ops or any other container; the issuing tool runs on the host as root.
-- Loss or corruption of the intermediate key: the owner signs a new intermediate (fresh key)
-  with the offline root within 7 days, which is inside the remaining life of the served leaf.
+- On loss or corruption of the intermediate key, start replacement under
+  the offline root immediately. Use the actual remaining safe leaf lifetime
+  to decide when to withdraw. Apply the emergency path in §5.2 and treat a
+  suspected compromise under §7.2.
 
 ## 6. Rotation
 
@@ -158,9 +180,19 @@ channel. Follow [Platform gate contract] §7, planned rotation, in order.
    `ServerCertVerifier::root_hint_subjects()` supplies the extension. Select
    B when its root matches, including when both roots match. For absent or
    unmatched hints, default to A until step 6. [Platform gate design] §4, option 1.
+   Apply boot, readiness and key-separation checks to both pairs. Include both
+   loaded listener chains in the journal identity check. Runtime-status §16.2
+   is pending. Before it takes effect, extend listener-key registration and
+   the Game certificate set to cover both pairs.
+   Fence TLS resumption across trust-policy changes. Discard old session state
+   and tickets, or disable resumption, so the next connection verifies anew.
 3. Prove that `R(A+B)` completes a session with each chain (test 12).
-4. Set `enforcing` with minimum `s_AB` per update channel and
-   `unknown_release = refuse`. Supply `chain_evidence` referencing step 3.
+4. Record the share of recent logins below `s_AB` for each affected game
+   channel, split by update channel. [Platform gate design] §5.
+   Set `enforcing` with minimum `s_AB` per update channel and
+   `unknown_release = refuse` after verifying every release this admits
+   trusts B and preserves applicable denies (§7.2). Supply `chain_evidence`
+   referencing step 3.
 5. Wait for the grant lifetime plus clock skew. Drain nodes or use a staff
    kick so all sessions re-enter through admission. Fast reconnect bypasses
    the gate.
@@ -170,17 +202,25 @@ channel. Follow [Platform gate contract] §7, planned rotation, in order.
 
 ### 6.3 Client updates
 
-On `CLIENT_UPDATE_REQUIRED` with `update`, run the TUF updater for the
-indicated update channel and sign in again after installation. Use the
-channel's build-pinned TUF Root, Platform HTTPS metadata and Downloads
-packages. Install the verified policy's current release only if its
-sequence meets the required minimum. If update trust is unusable, show
-`manual_download_url` and stop. A legacy client without `offer.release`
-shows its generic update-required screen on `NATIVE_LOGIN_OFFER_UNSUPPORTED`.
-[Platform gate contract] §§5–6.
+Extend the strict Gateway error decoder to accept the exact §5
+`NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED` 409 body and carry its typed `update`
+through login and recovery. Preserve the existing body rules for other errors,
+including the legacy `NATIVE_LOGIN_OFFER_UNSUPPORTED` update screen.
 
-Player packaging fails if the build has empty TUF trust bytes
-(`build_support/update_trust.rs` without provisioning).
+Hand off the update channel, required minimum and validated manual URL to the
+installed `oteryn-launcher.exe`. Pass no credentials or grants. The client
+exits and releases its lifetime mutex before the launcher takes the existing
+maintenance lock. The launcher uses the indicated channel, including beta.
+It verifies the policy and package with its pinned channel TUF Root and
+installs only the policy's current release at or above the required minimum.
+On success, start a fresh sign-in with a fresh ticket and attempt. If update
+trust or the installed launcher is unusable, or the verified policy's current
+release is below the floor, show `manual_download_url` and stop.
+[Platform gate contract] §§5–6. [Platform gate design] §6.
+
+Player packaging validates the channel Root in the shipped launcher with the
+updater's verifier. Qualify from the previously installed launcher before
+enforcing a floor on builds that send `offer.release`.
 
 ## 7. Compromise
 
@@ -196,10 +236,21 @@ game-channel scopes into an effective rule for each game channel.
 `maintenance` takes precedence. The effective minimum is the highest
 applicable record or verified policy minimum for that update channel.
 Any applicable record can refuse unknown releases. The verified policy's
-`revoked_release_ids` also applies. The issuer checks maintenance after
-ticket authentication and before candidate qualification. It checks the
-build after candidate selection and before preparing or signing a grant,
-including recovery. [Platform gate contract] §§4.1–4.3.
+`revoked_release_ids` also applies. For login, the issuer checks maintenance
+after ticket authentication and before candidate qualification. Filter the
+qualified candidates by build before final selection, protocol 3 `channels`
+construction or grant preparation, in the issuance transaction. With no
+requested channel, select from the passing candidates. An explicitly requested
+candidate that fails the gate, or an empty set caused by the gate, gets the
+§5 refusal. [Platform gate contract] §§4.1–4.3.
+
+For a new recovery attempt, authenticate the handle and any required device
+proof. Check maintenance for the bound World after the character check.
+Resolve the locator or bound target channel and check its maintenance before
+testing target readiness. Apply the build rule to the qualified target
+before preparing or signing a recovery grant.
+Recovery keeps its resolved target. [Platform login contract] §19.4.
+[Platform gate contract] §4.3 and §8 test 8.
 
 A reported release below the floor or revoked receives HTTP 409
 `NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED` with `update`. In maintenance a client
@@ -219,16 +270,27 @@ Stopping issuance with `maintenance` requires neither policy nor evidence.
 
 ### 7.2 Responses
 
-**Leaf or host key alone.** Issue a leaf with a fresh key and activate it
-(§5.2). The old leaf expires within 30 days. The floor stays in place.
+**Leaf or host key alone.** Withdraw the unsafe pair immediately. Issue a
+leaf with a fresh key and activate it via §5.2. The old leaf expires within
+30 days. The floor stays in place.
 The client makes no OCSP or CRL fetch.
 
 **Root or intermediate A.** Follow [Platform gate contract] §7, compromise
 rollout, in order.
 
 1. Set affected scopes to `maintenance` at once to stop new grants, even
-   with no ready node. Account access and the updater remain available.
+   with no ready node. Before draining, confirm effective maintenance covers
+   explicit channel requests and implicit requests. Use World maintenance
+   (or a covering global record) where `channel_id = null` can reach an affected
+   channel. Account access and the updater remain available.
 2. Drain the affected nodes to end sessions and fast reconnect on A.
+   Keep them withdrawn. A committed attempt can replay its stored grant
+   through reconciliation ([Platform gate contract] §4.3).
+   Before declaring containment or reopening admission, allow every
+   pre-maintenance login and recovery grant to age out. Wait from confirmed
+   maintenance commit for the maximum grant lifetime plus accepted skew and
+   clock uncertainty (FND-04 fresh-entry §7 and recovery §10). Confirm no
+   compromised listener or session remains.
 3. Bring B into service as the only chain and prove it works. Publish
    a release that trusts B. If the roots differ, publish `R(A+B)` while both
    roots are still trusted, or `R(B)` when A's root must be removed. For a root
@@ -243,14 +305,23 @@ rollout, in order.
    For an intermediate compromise, the floor must require the denylist
    build or later. Older builds receive no new grant.
 
+Before enforcing, verify the embedded roots and denylist of every shipped
+release eligible under the effective per-channel rule. Each must trust B and
+carry all applicable intermediate denies. After root compromise, each must
+exclude the compromised root. Repeat the check on later publication, floor
+changes and rollbacks. The floor gates new grants by reported release.
+Clients can misreport it, and unupdated clients
+retain their old trust. Leaf lifetime does not cap a compromised CA's
+signing window. [Platform gate contract] §9.
+
 ## 8. Rollback
 
 The rollback unit is the certificate chain **and its key** together. Restore
-only an unexpired pair that the current minimum build trusts. A compromised
+only an unexpired pair compatible with every admissible release. A compromised
 pair, a denylisted intermediate or a retired root also forbids restoration.
 Keep the chains required by the current rollout step available. If no pair
 qualifies, issue a new one (§5.2). For a bad player build, keep the floor and
-serve a chain the current minimum build trusts while shipping a fixed build.
+serve a chain compatible with every admissible release while shipping a fixed build.
 
 Preproduction keeps the D172 development root; nothing here changes it.
 
@@ -260,36 +331,44 @@ Preproduction keeps the D172 development root; nothing here changes it.
 
 1. A player-feature verifier accepts a chain under the embedded root for `game.oteryn.com`.
 2. It rejects: another root; a wrong SAN; an expired leaf; a leaf without an EKU extension;
-   a leaf with only another EKU; a leaf with `serverAuth` plus another EKU; an intermediate
-   outside its name constraint (constraint varied while SNI and the leaf SAN stay valid); a
-   chain through a subordinate CA under a pathLen-0 intermediate.
+   a leaf with only another EKU; a leaf with `serverAuth` plus another EKU or two
+   `serverAuth` OIDs; an intermediate outside its name constraint (constraint varied while
+   SNI and the leaf SAN stay valid); a chain through a subordinate CA under a pathLen-0
+   intermediate.
 3. Denylist: a chain through a denylisted intermediate key is rejected, and a chain through
    its replacement under the same root is accepted.
 4. Rotation matrix: a current-only build against a current chain; an overlap build against
    both chains; a next-only build against a next chain and rejecting a current chain.
 5. A player-feature build ignores `OTERYN_DEV_ROOT`, and a clean installation with no
-   certificate file completes login.
+   certificate file completes login. A legacy `native-login.json` with an unreadable
+   `dev_root` also completes player login.
 6. A dev-feature build keeps today's D172 behaviour.
 7. A failed TLS handshake and a missing ALPN `oteryn-game/1` each send no gameplay grant.
-8. An install of the next player build from the previously shipped player build through the
-   TUF updater.
+8. Start on the previously installed Windows launcher and client. Pass a real Gateway
+   409 with `update` for beta. Confirm client exit, mutex release, beta installation
+   from the pinned Root and a fresh sign-in. With a verified current release below
+   the floor, show the download page without installing or retrying sign-in.
 
 ### 9.2 Node and route
 
-1. Readiness: the node does not report ready (boot) and stops reporting ready (runtime)
-   when its served leaf is expired or expires within 24 hours, so Platform issues no grant
-   for that route.
+1. Readiness: a leaf at or below 24 hours blocks boot readiness. Cross that
+   threshold at runtime on either chain. Verify committed withdrawal and Gateway
+   refusal. With commit or delivery blocked, verify heartbeat cessation, stale
+   report and no fresh grants past §4's bound.
 2. End-to-end on the preproduction topology: client → Platform login → Gateway route →
    edge relay → node, with the private chain, ALPN `oteryn-game/1`, and the published
-   `route_revision` equal to the node's.
+   `route_revision` equal to the node's. Repeat with a mismatched route revision
+   and verify the Gateway returns no grant for that route.
 3. Renewal: verify the daily trigger, immediate issuance-failure alarm and daily
    activation deadline check. Verify the public-route probe matches the issued leaf
-   after activation, the next supervisor start and the daily refresh.
+   after activation, the next supervisor start and the daily refresh. With a
+   missed deadline, verify immediate activation or withdrawal of the unsafe pair.
 4. Rollback: reject a chain without its key and a complete matching pair under a
    compromised or retired root before the node starts.
 5. Switch the active symlink between the chain and key reads during boot. The
    node loads both from the originally resolved directory. Supply a mismatched
    key in that directory and verify startup fails before reporting ready.
+6. Verify that the journal identity check rejects reusing the B listener key.
 
 ### 9.3 Issuance tool
 
@@ -299,7 +378,12 @@ Preproduction keeps the D172 development root; nothing here changes it.
 
 ### 9.4 Joint preproduction smoke
 
-Run tests 11–13 with Platform. [Platform gate contract] §8.
+PR2 must add the **Gameplay PKI joint preproduction smoke** qualification.
+Run tests 11–13 through the real Gateway, Registry route and preproduction
+edge in isolated qualification scopes. Build player-equivalent
+artefacts with embedded qualification roots and without `dev-gameplay-trust`.
+Resolve `game.oteryn.com:443` to the qualification edge in that environment.
+Ordinary preproduction retains D172 trust. [Platform gate contract] §8.
 
 11. With a fresh attempt after planned step 4, an `R(A)` build below `s_AB` receives
     `NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED` with `update` before any grant is
@@ -310,11 +394,27 @@ Run tests 11–13 with Platform. [Platform gate contract] §8.
     gameplay session on the same listener with A as default (suppress the
     extension in the test), then with B selected by
     `certificate_authorities`. Verify the served chain in each case and
-    verify that an unmatched hint also selects A.
-13. After planned step 6, a preproduction `R(B)` build completes a TLS
+    verify that an unmatched hint also selects A. Use full handshakes.
+    Confirm that a ticket from before the trust transition cannot resume.
+13. After planned step 6, a qualification `R(B)` build completes a full TLS
     handshake and gameplay session. No node serves A and no `R(A)`
     session remains.
 
+Also run §9.2 test 2 and these cases through the same Gateway:
+
+- With two eligible routes before the build filter, a sequence-42 offer
+  without `channel_id` skips the first route with minimum 43. It gets the
+  second and the protocol 3 list omits the first.
+- Recovery with an authenticated handle and device proof refuses a below-floor
+  offer on a ready target. With maintenance and no ready target, verify the
+  §5 refusal for both locator and bound-channel recovery. Test a fresh
+  `channel_id = null` login under World maintenance with no ready node.
+- Replay a committed attempt during maintenance and prove its grant is
+  unusable after the containment wait. Verify a higher release with a
+  regressed bundle or denylist cannot be promoted.
+
 [Platform gate contract]: https://raw.githubusercontent.com/Oteryn/Oteryn-Platform/d8b2d3774c23eb773d9f7c9ae51db18464c98032/docs/contracts/OTERYN_V2_MINIMUM_CLIENT_BUILD_GATE_CONTRACT_PROPOSAL.md
 [Platform gate design]: https://raw.githubusercontent.com/Oteryn/Oteryn-Platform/d8b2d3774c23eb773d9f7c9ae51db18464c98032/docs/architecture/MINIMUM_CLIENT_BUILD_GATE_DESIGN.md
+[Platform login contract]: https://raw.githubusercontent.com/Oteryn/Oteryn-Platform/d8b2d3774c23eb773d9f7c9ae51db18464c98032/docs/contracts/OTERYN_V2_NATIVE_GATEWAY_LOGIN_CONTRACT.md
+[Platform supervisor]: https://github.com/Oteryn/Oteryn-Platform/blob/d8b2d3774c23eb773d9f7c9ae51db18464c98032/deploy/oracle/game-supervisor.py#L216-L242
 [RFC 8446 §4.2.4]: https://www.rfc-editor.org/rfc/rfc8446.html#section-4.2.4

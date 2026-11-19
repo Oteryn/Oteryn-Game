@@ -94,7 +94,7 @@ Precedence, highest first: process environment, `%LOCALAPPDATA%\Oteryn\client.en
 
 ### 2.4 Trust roots
 
-The installer ships no trust root. `OTERYN_DEV_ROOT` stays a per-user, development-only setting that points at a locally generated root (`login_local`). Shipping a production gameplay trust root, or changing how the client validates the game endpoint, is a production-trust change that needs its owning contract (FND-02/ADR-0003 lineage) and is out of scope here. The proposed owner is ADR-0024 with `docs/contracts/OTERYN_GAME_GAMEPLAY_TLS_PKI_V2.md`: the root bundle is embedded in the client binary, not installed as a separate file, and `OTERYN_DEV_ROOT` is honoured only by artefacts built with the `dev-gameplay-trust` feature (dev and preproduction channels); player-channel artefacts ignore it.
+The installer places no standalone gameplay root file. Under proposed ADR-0024 and `docs/contracts/OTERYN_GAME_GAMEPLAY_TLS_PKI_V2.md`, the player binary embeds the gameplay root bundle. `OTERYN_DEV_ROOT` is a per-user setting for a locally generated root (`login_local`). Only builds with `dev-gameplay-trust` use it.
 
 ## 3. Installer technology
 

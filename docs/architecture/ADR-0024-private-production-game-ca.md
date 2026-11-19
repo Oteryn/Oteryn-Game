@@ -7,15 +7,18 @@
 - Related: ADR-0003, ADR-0014, ADR-0021 (D171/D172 release blockers), FND-02, `CLIENT-INSTALLER-0` §2.4, `OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md` §9, `OTERYN_GAME_ARCH_PLATFORM_PREPROD_TOPOLOGY_2026-10-06.md` (PKI row, U3/U15), owner decision batch D165-D173
 - Companion contract: `docs/contracts/OTERYN_GAME_GAMEPLAY_TLS_PKI_V2.md`
 
-The minimum-build gate dependency is Platform #1982. The links below pin its
-merged contract and design.
+Platform #1982 merged the gate proposal and design. Before accepting this ADR
+or closing U3, require the gate implementation to be deployed on the target
+topology and pass Platform acceptance tests 1–10, including Gateway, issuer and recovery.
+[Platform gate contract] status and §§3.3, 8.
 
 ## Context
 
 The native client reaches a game node over TLS 1.3 (rustls 0.23, aws-lc-rs provider, ALPN
 `oteryn-game/1`). The node loads its listener certificate chain and key from
-`[listener] certificate_chain_file` / `private_key_file` (`apps/game-server/src/config.rs`,
-`serve.rs`). The client validates the node against one root loaded from the per-user
+`[listener] certificate_chain_file` / `private_key_file` in
+`apps/game-server/src/node/config.rs:75` and `apps/game-server/src/node/serve.rs:550`.
+The client validates the node against one root loaded from the per-user
 `OTERYN_DEV_ROOT` path (`apps/client/src/native_entry/config.rs`), and takes the host, port
 and `tls_server_name` from the Platform login response (`crates/platform-client/src/native_login.rs`).
 
@@ -46,9 +49,9 @@ and sends no PROXY protocol header.
 
 - **A. Public WebPKI certificate (ACME) on the node.** The client would still need a change
   (it trusts one configured certificate and never consults system roots), the trust
-  decision moves to every public CA, the node host must answer ACME challenges for
-  `game.oteryn.com` that today terminate on the Platform edge, and the client would accept any
-  WebPKI-issued certificate for the name.
+  decision moves to every public CA, and the client would accept any WebPKI-issued
+  certificate for the name. The edge manages ACME today and the supervisor
+  copies the pair to the node. [Platform supervisor]
 - **B. Private Oteryn gameplay CA embedded in the client (chosen).** The client trusts only
   roots Oteryn ships; the edge stays a passthrough; issuance stays inside Game operations.
 - **C. Pin the node leaf key in the client.** Simplest, but every key rotation is a client
@@ -102,11 +105,10 @@ and sends no PROXY protocol header.
 ## Consequences
 
 - Release clients work without any hand-installed root; development stays unchanged.
-- PR2 depends on deployment of Platform's minimum-client-build gate and the edge relay
-  of Platform #1980.
+- PR2 also depends on the edge relay of Platform #1980.
 - Leaf renewal is an operations job on the game host, not a Platform job.
 - Implementation (PR2) follows acceptance and must meet the companion contract's §9.
-  Joint preproduction tests 11–13 verify refusal before grant issuance,
+  **Gameplay PKI joint preproduction smoke** tests 11–13 verify refusal before grant issuance,
   both chains on the overlap listener, and B-only service after retirement.
   [Platform gate contract] §8.
 
@@ -118,4 +120,5 @@ and sends no PROXY protocol header.
 
 [Platform gate contract]: https://raw.githubusercontent.com/Oteryn/Oteryn-Platform/d8b2d3774c23eb773d9f7c9ae51db18464c98032/docs/contracts/OTERYN_V2_MINIMUM_CLIENT_BUILD_GATE_CONTRACT_PROPOSAL.md
 [Platform gate design]: https://raw.githubusercontent.com/Oteryn/Oteryn-Platform/d8b2d3774c23eb773d9f7c9ae51db18464c98032/docs/architecture/MINIMUM_CLIENT_BUILD_GATE_DESIGN.md
+[Platform supervisor]: https://github.com/Oteryn/Oteryn-Platform/blob/d8b2d3774c23eb773d9f7c9ae51db18464c98032/deploy/oracle/game-supervisor.py#L84-L101
 [RFC 8446 §4.2.4]: https://www.rfc-editor.org/rfc/rfc8446.html#section-4.2.4
