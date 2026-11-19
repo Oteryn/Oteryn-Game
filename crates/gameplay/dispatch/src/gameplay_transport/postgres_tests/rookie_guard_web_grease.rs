@@ -18,10 +18,14 @@ const STONE: Position = Position {
     floor: -11,
 };
 const WEB: Position = Position {
-    x: 32014,
-    y: 32097,
-    floor: -11,
+    x: 32015,
+    y: 32096,
+    floor: -12,
 };
+const WEB_ACTION: u16 = 40010;
+// Crystal assigns the action without an appearance filter. The Fandom archive
+// Spider Web entry lists 182 as an intact web appearance.
+const WEB_APPEARANCE: u16 = 182;
 const NEST: Position = Position {
     x: 32013,
     y: 32087,
@@ -32,6 +36,7 @@ const QUEST: &str = "oteryn:quest.the_rookie_guard_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission05";
 const GREASE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission05_web_terror.lua:88-111";
 const SAMPLE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission05_web_terror.lua:147-161";
+const SAMPLE_PLACEMENT: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:2439-2460";
 
 const WRAP: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/spider_queen_wrap.lua:1-42";
 const ATTACK: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/bosses/spider_queen.lua:67-69";
@@ -67,11 +72,11 @@ fn document() -> serde_json::Value {
     regrease["effects"] = json!({"invisibility_ms":120000});
     regrease["sources"] = json!([GREASE]);
     let sample = json!({"key":"oteryn:quest-callback/rookie-guard-web-sample", "quest":QUEST, "trigger":"use",
-         "selector":{"position":WEB,"appearance":100},"requires_world_admission":true,
+         "selector":{"position":WEB,"action":WEB_ACTION},"requires_world_admission":true,
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
          "activation":{"track":TRACK,"minimum":2,"maximum":2},
          "storage":[{"track":TRACK,"minimum":2,"maximum":2,"set":3}],
-         "sources":[SAMPLE]});
+         "sources":[SAMPLE,SAMPLE_PLACEMENT]});
     let mut recovered_sample = sample.clone();
     recovered_sample["key"] = "oteryn:quest-callback/rookie-guard-web-sample-after-wrap".into();
     recovered_sample["activation"] = json!({"track":TRACK,"minimum":4,"maximum":4});
@@ -143,10 +148,13 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
         STONE,
         12727,
         1,
-        &[(WEB, 100)],
+        &[(WEB, WEB_APPEARANCE, oteryn_world_bundle::sector::Attrs {
+            action: Some(WEB_ACTION),
+            ..Default::default()
+        })],
         &[],
         None,
-        &[NEST],
+        &[NEST, WEB],
     )
 }
 
@@ -318,7 +326,7 @@ pub(super) async fn exercise(
     )
     .await?;
     {
-        let mut runtime = owner.runtime.lock().await;
+        let runtime = owner.runtime.lock().await;
         let current = runtime.read_actor_position(actor).map_err(debug)?;
         assert_eq!(
             current.position(),
@@ -327,37 +335,47 @@ pub(super) async fn exercise(
                 ..NEST
             })
         );
-        // The fixture crop omits the passage back to the sampling corridor.
-        let map = owner.bundle_map().ok_or("map")?;
-        let doors = crate::map::floor::BundleDoors(map.facts.doors());
-        let proof = crate::map::floor::prepare_quest_callback_teleport(
-            &runtime,
-            owner.movement_cells(),
-            actor,
-            session,
-            current,
-            origin,
-            false,
-            &doors,
-        )
-        .map_err(debug)?;
-        runtime.commit_source_step(proof).map_err(debug)?;
     }
+    // The fixture crop omits the passage from the nest to the sampling corridor.
+    relocate(owner, actor, session, local(Position { x: WEB.x - 1, ..WEB })).await?;
     rewind(owner, 2)?;
     assert_eq!(
         use_object(owner, admitted, WEB).await?,
         UseDisposition::Committed
     );
     assert_eq!(stage(h).await?, 3);
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(std::time::Duration::from_secs(2))
-        .ok_or("clock")?;
+    relocate(owner, actor, session, origin).await?;
+    rewind(owner, 2)?;
     assert_ne!(
         use_object(owner, admitted, STONE).await?,
         UseDisposition::Committed
     );
     assert_eq!(stage(h).await?, 3);
+    Ok(())
+}
+
+async fn relocate(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    destination: crate::foundation::MovementLocalPosition,
+) -> TestResult {
+    let mut runtime = owner.runtime.lock().await;
+    let current = runtime.read_actor_position(actor).map_err(debug)?;
+    let map = owner.bundle_map().ok_or("map")?;
+    let doors = crate::map::floor::BundleDoors(map.facts.doors());
+    let proof = crate::map::floor::prepare_quest_callback_teleport(
+        &runtime,
+        owner.movement_cells(),
+        actor,
+        session,
+        current,
+        destination,
+        false,
+        &doors,
+    )
+    .map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
     Ok(())
 }
 

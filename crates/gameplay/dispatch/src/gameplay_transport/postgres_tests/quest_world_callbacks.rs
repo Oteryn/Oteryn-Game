@@ -322,12 +322,16 @@ fn world_with_extra(
         &[(Position, u32)],
     )>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    let objects: Vec<_> = objects
+        .iter()
+        .map(|&(position, appearance)| (position, appearance, Default::default()))
+        .collect();
     world_cells(
         callback,
         trigger,
         appearance,
         ordinal,
-        objects,
+        &objects,
         appearances,
         native_items,
         &[],
@@ -360,7 +364,7 @@ pub(super) fn world_cells(
     trigger: Position,
     appearance: u16,
     ordinal: u8,
-    objects: &[(Position, u16)],
+    objects: &[(Position, u16, oteryn_world_bundle::sector::Attrs)],
     appearances: &[u16],
     native_items: Option<(
         &crate::content::native_gameplay::NativeGameplayState,
@@ -1015,7 +1019,7 @@ pub(super) fn world_cells(
     // Existing callers retain the original blocked-passage fixture behavior.
     for appearance in objects
         .iter()
-        .map(|(_, id)| *id)
+        .map(|(_, id, _)| *id)
         .chain(appearances.iter().copied())
     {
         let key = format!("oteryn:terrain.tibia.i{appearance}");
@@ -1034,7 +1038,7 @@ pub(super) fn world_cells(
             });
         }
     }
-    for (position, appearance) in objects {
+    for (position, appearance, attrs) in objects {
         let key = format!("oteryn:terrain.tibia.i{appearance}");
         let palette = u32::try_from(
             data.manifest
@@ -1050,7 +1054,7 @@ pub(super) fn world_cells(
             entries.push(sector::Item {
                 palette,
                 depth: 0,
-                attrs: Default::default(),
+                attrs: attrs.clone(),
             });
         }
     }

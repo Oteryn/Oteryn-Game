@@ -78,7 +78,16 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
         ENTRY,
         PORTAL,
         1,
-        &[(EXIT_TILE, PORTAL), (TREASURE_TILE, PORTAL)],
+        &[
+            (EXIT_TILE, PORTAL, oteryn_world_bundle::sector::Attrs {
+                unique: Some(40071),
+                ..Default::default()
+            }),
+            (TREASURE_TILE, PORTAL, oteryn_world_bundle::sector::Attrs {
+                unique: Some(40072),
+                ..Default::default()
+            }),
+        ],
         &[],
         None,
         &[TREASURE, TREASURE_APPROACH],
@@ -89,7 +98,7 @@ fn document() -> serde_json::Value {
     use serde_json::json;
     json!({"schema":1,"callbacks":[
         {"key":ENTER, "quest":QUEST, "trigger":"step_in",
-         "selector":{"position":ENTRY,"appearance":PORTAL},"requires_world_admission":true,
+         "selector":{"position":ENTRY,"appearance":PORTAL,"unique":40070},"requires_world_admission":true,
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":true,
          "storage":[{"track":TRACK,"minimum":11,"maximum":15,"set":12}],
          "success_message":"You're entering Kraknaknork's throne room. You have 5 minutes to kill him!",
@@ -105,13 +114,13 @@ fn document() -> serde_json::Value {
                  "message":"With his last energy, Kraknaknork pushes you out of his throne room. Hurry back and defeat him before he regains his power."}},
          "sources":[SOURCE,PORTALS_SOURCE]},
         {"key":"oteryn:quest-callback/rookie-guard-fortress-room-exit","quest":QUEST,
-         "trigger":"step_in","selector":{"position":EXIT_TILE,"appearance":PORTAL},
+         "trigger":"step_in","selector":{"position":EXIT_TILE,"appearance":PORTAL,"unique":40071},
          "storage":[],"passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
          "teleport":EXIT_LANDING,"success_message":"You backed out of the fight. You may try again at any time.",
          "effects":{"encounter_exit":ENTER,"magic":{"position":EXIT_TILE,"effect":11},"teleport_effect":11},
          "sources":[SOURCE,PORTALS_SOURCE]},
         {"key":"oteryn:quest-callback/rookie-guard-fortress-treasure","quest":QUEST,
-         "trigger":"step_in","selector":{"position":TREASURE_TILE,"appearance":PORTAL},
+         "trigger":"step_in","selector":{"position":TREASURE_TILE,"appearance":PORTAL,"unique":40072},
          "requires_world_admission":true, "storage":[{"track":TRACK,"minimum":12,"maximum":12,"set":13}],
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":true,
          "teleport":TREASURE,"failure_message":"You may not use this teleporter yet.",
