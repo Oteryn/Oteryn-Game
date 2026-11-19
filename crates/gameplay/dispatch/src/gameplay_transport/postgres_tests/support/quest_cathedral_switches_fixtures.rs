@@ -109,7 +109,7 @@ pub(super) async fn exercise(
     async fn position(
         owner: &ComposedFreshAdmission<'_, '_, '_>,
         actor: crate::foundation::ExactActorRef,
-    ) -> Result<crate::foundation::MovementLocalPosition, String> {
+    ) -> TestResult<crate::foundation::MovementLocalPosition> {
         Ok(owner
             .runtime
             .lock()
