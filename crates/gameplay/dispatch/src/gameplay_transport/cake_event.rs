@@ -6,7 +6,7 @@ use super::{
     ComposedFreshAdmission,
     connection::{UseCommand, UseOutcome},
 };
-use crate::durability::cake_event::{CakeBite, CakeMapSource};
+use crate::durability::cake_event::{CakeBite, CakeBiteOutcome, CakeMapSource};
 use crate::durability::item_decay_retire::CorpseDecayFence;
 use crate::durability::terrain_tool::{MapMutation, TerrainScope};
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, RuntimeScopeRefV1};
@@ -512,15 +512,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(outcome(UseDisposition::Exhausted));
             }
         }
-        let disposition = self
+        // Crystal actions_cake_bite.lua:6-19,28-40.
+        let feedback = match self
             .root
             .bite_world_cake(&permit, self.character, self.holder, fence, request)
             .await
-            .unwrap_or(UseDisposition::NotPossible);
-        if disposition == UseDisposition::Committed {
-            let _ = self.refresh_cake_world_map().await;
-        }
-        Some(outcome(disposition))
+        {
+            Ok(CakeBiteOutcome::Use(disposition)) => {
+                if disposition == UseDisposition::Committed {
+                    let _ = self.refresh_cake_world_map().await;
+                }
+                return Some(outcome(disposition));
+            }
+            Ok(CakeBiteOutcome::Cooldown { seconds_left }) => {
+                format!("You're too full! Wait {seconds_left} more second(s) before taking another bite.")
+            }
+            Ok(CakeBiteOutcome::Full) => {
+                "You can't eat any more cake this window - you've had your fill! Wait for the next one.".into()
+            }
+            Ok(CakeBiteOutcome::NotEating) => "The cake isn't ready to be eaten right now.".into(),
+            Ok(CakeBiteOutcome::WrongFloor) => {
+                "This part of the cake isn't the one being eaten right now.".into()
+            }
+            Err(_) => return Some(outcome(UseDisposition::NotPossible)),
+        };
+        self.states
+            .chat
+            .push_quest_feedback(command.game_session_id, &feedback);
+        Some(outcome(UseDisposition::NotPossible))
     }
 }
 

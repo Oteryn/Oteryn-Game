@@ -91,6 +91,15 @@ pub struct CakeBite {
     pub floor: u8,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CakeBiteOutcome {
+    Use(UseDisposition),
+    Cooldown { seconds_left: i32 },
+    Full,
+    NotEating,
+    WrongFloor,
+}
+
 async fn latest_year(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
@@ -110,7 +119,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         request: CakeBite,
-    ) -> Result<UseDisposition, DurabilityError> {
+    ) -> Result<CakeBiteOutcome, DurabilityError> {
         if request.command.game_session_id() != fence.game_session_id
             || request.intent.is_empty()
             || request.intent.len() > 529
@@ -119,7 +128,7 @@ impl DurabilityRoot {
             || !request.mutation.decay.is_empty()
             || request.mutation.placement.len() != 40
         {
-            return Ok(UseDisposition::Rejected);
+            return Ok(CakeBiteOutcome::Use(UseDisposition::Rejected));
         }
         permit.check_scope(fence.runtime_scope)?;
         let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -131,36 +140,58 @@ impl DurabilityRoot {
             let mut tx=begin_type2_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
             if assert_current_equipment_in_transaction(&mut tx,&recovery,&node,&fence,Some(request.command),request.scope.content_generation).await.is_err(){
-                return Ok(UseDisposition::StaleState)
+                return Ok(CakeBiteOutcome::Use(UseDisposition::StaleState))
             }
             let current:bool=sqlx::query_scalar("SELECT game_world_reset_map_epoch_current(encode($1,'hex')::uuid,$2::text::numeric) AND EXISTS(SELECT 1 FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid AND a.reset_epoch=$2::text::numeric AND e.target_digest=$3)")
                 .bind(world.as_bytes().as_slice()).bind(request.scope.reset_epoch.to_string()).bind(&request.mutation.placement[..32]).fetch_one(&mut **tx).await?;
-            if !current{return Ok(UseDisposition::StaleState)}
+            if !current{return Ok(CakeBiteOutcome::Use(UseDisposition::StaleState))}
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:cake-command:'||encode($1,'hex')||':'||$2,0))")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).execute(&mut **tx).await?;
             let year:Option<i32>=sqlx::query_scalar("SELECT event_year FROM game_cake_bite_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
             let year=match year {Some(year)=>Some(year),None=>latest_year(&mut tx,world).await?};
-            let Some(year)=year else{return Ok(UseDisposition::NotPossible)};
+            let Some(year)=year else{return Ok(CakeBiteOutcome::Use(UseDisposition::NotPossible))};
             let prepared:String=sqlx::query_scalar("SELECT game_cake_bite_prepare(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,$6,$7,$8,$9,$10)")
                 .bind(world.as_bytes().as_slice()).bind(year).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
                 .bind(fence.character_id.as_bytes().as_slice()).bind(&request.mutation.placement).bind(request.mutation.expected_revision)
                 .bind(i32::try_from(request.mutation.before).map_err(|_|DurabilityError::InvalidStoredState)?).bind(i16::from(request.floor)).bind(&request.intent)
                 .fetch_one(&mut **tx).await?;
-            if prepared=="replay" {tx.commit(deadline).await?;return Ok(UseDisposition::Committed)}
+            if prepared=="replay" {tx.commit(deadline).await?;return Ok(CakeBiteOutcome::Use(UseDisposition::Committed))}
             if prepared!="prepared" {
                 // Opening a window precedes donor eligibility checks and is
                 // intentionally retained even for an ineligible first bite.
+                let outcome = match prepared.as_str() {
+                    // Crystal actions_cake_bite.lua:28-40. Read the countdown
+                    // from the eater row still locked by the eligibility check.
+                    "cooldown" => {
+                        let seconds_left = sqlx::query_scalar(
+                            "SELECT greatest(1, least(90, 90 - extract(epoch FROM
+                                (date_trunc('second',clock_timestamp()) - last_bite_at))::integer))
+                             FROM game_cake_eaters WHERE world_id=encode($1,'hex')::uuid
+                             AND event_year=$2 AND character_id=encode($3,'hex')::uuid"
+                        )
+                        .bind(world.as_bytes().as_slice()).bind(year)
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .fetch_one(&mut **tx).await?;
+                        CakeBiteOutcome::Cooldown { seconds_left }
+                    }
+                    "full" => CakeBiteOutcome::Full,
+                    "not_eating" => CakeBiteOutcome::NotEating,
+                    "wrong_floor" => CakeBiteOutcome::WrongFloor,
+                    "stale" => CakeBiteOutcome::Use(UseDisposition::StaleState),
+                    "exhausted" => CakeBiteOutcome::Use(UseDisposition::Exhausted),
+                    _ => CakeBiteOutcome::Use(UseDisposition::NotPossible),
+                };
                 tx.commit(deadline).await?;
-                return Ok(match prepared.as_str(){"cooldown"=>UseDisposition::NotPossible,"stale"=>UseDisposition::StaleState,"exhausted"=>UseDisposition::Exhausted,_=>UseDisposition::NotPossible})
+                return Ok(outcome);
             }
             if !super::terrain_tool::apply_map_in_transaction(&mut tx,fence,request.command,&request.intent,&request.scope,&request.mutation).await?{
-                return Ok(UseDisposition::StaleState)
+                return Ok(CakeBiteOutcome::Use(UseDisposition::StaleState))
             }
             sqlx::query("UPDATE game_terrain_tool_transforms SET cake_event_year=$5,cake_source_item=$6 WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND placement=$3 AND reset_epoch=$4")
                 .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(request.mutation.placement).bind(request.scope.reset_epoch).bind(year)
                 .bind(i32::try_from(request.mutation.before).map_err(|_|DurabilityError::InvalidStoredState)?).execute(&mut **tx).await?;
-            tx.commit(deadline).await?;Ok(UseDisposition::Committed)
+            tx.commit(deadline).await?;Ok(CakeBiteOutcome::Use(UseDisposition::Committed))
         })).await
     }
 

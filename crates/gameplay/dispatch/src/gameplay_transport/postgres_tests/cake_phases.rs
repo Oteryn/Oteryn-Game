@@ -1,4 +1,5 @@
 //! Actual Channel USE of a source Cake tile, with durable world and native map proofs.
+//! Crystal 201189f8, a_piece_of_cake/actions_cake_bite.lua:28-55.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
@@ -8,8 +9,11 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[test]
 fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
     }
     std::thread::Builder::new().stack_size(256<<20).spawn(||{
         run(async|admin|{
@@ -38,6 +42,8 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 let mut owner=deps.owner(&h,&authority);owner.active_generation=Some(active);owner.movement_cells=crate::gameplay_transport::activity_runtime::SharedOwner::Borrowed(&cells);
                 owner.rooms=crate::gameplay_transport::SeamRooms::new(None,Some(&room));
                 deps.initialize(&owner).await;
+                let session = deps.admitted.game_session_id;
+                owner.states.chat.admit(session, "Cake Eater", owner.owner_now());
                 let current=crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).current_session_at(deps.admitted.game_session_id).await?.0;
                 let fence=crate::gameplay_transport::item_fence_of(current).ok_or("current item fence")?;
                 let equipment_before:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
@@ -77,6 +83,29 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 assert_eq!(owner.use_world_object(deps.actor,command,one).await.disposition,UseDisposition::Committed,"same command replays before resolving the now-hidden source");
                 tokio::time::sleep(std::time::Duration::from_millis(210)).await;
                 assert_eq!(owner.use_world_object(deps.actor,UseCommand{command_id:2,..command},two).await.disposition,UseDisposition::NotPossible,"90-second cooldown is world-owner time");
+                let feedback = owner.states.chat.drain(session);
+                let [oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. }] = feedback.as_slice() else {
+                    return Err("expected one private Cake cooldown message".into());
+                };
+                let seconds_left: u8 = text
+                    .strip_prefix("You're too full! Wait ")
+                    .and_then(|text| text.strip_suffix(" more second(s) before taking another bite."))
+                    .ok_or("Cake cooldown feedback")?
+                    .parse()?;
+                assert!((1..=90).contains(&seconds_left));
+                // A character at the donor window quota still cannot eat after cooldown.
+                sqlx::query("UPDATE game_cake_eaters SET bites=12,last_bite_at=date_trunc('second',clock_timestamp())-interval '90 seconds' WHERE world_id=encode($1,'hex')::uuid AND event_year=2026 AND character_id=encode($2,'hex')::uuid")
+                    .bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&h.pool).await?;
+                let action_delay = owner.states.world_gate.lock().map_err(|_| "Cake world action gate")?
+                    .equip_delay(deps.actor, 0, owner.clock_origin.elapsed());
+                if let Some(delay) = action_delay {
+                    tokio::time::sleep(delay).await;
+                }
+                assert_eq!(owner.use_world_object(deps.actor, UseCommand{command_id:3,..command},target(second)?).await.disposition, UseDisposition::NotPossible);
+                assert_eq!(owner.states.chat.drain(session), vec![oteryn_protocol_oteryn::chat::ChatLine::Private {
+                    speaker_name: "Game".into(),
+                    text: "You can't eat any more cake this window - you've had your fill! Wait for the next one.".into(),
+                }]);
                 let progress:i16=sqlx::query_scalar("SELECT layer_progress FROM game_cake_phases WHERE world_id=encode($1,'hex')::uuid AND event_year=2026").bind(id(42).as_slice()).fetch_one(&h.pool).await?;
                 let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_cake_bite_receipts WHERE world_id=encode($1,'hex')::uuid").bind(id(42).as_slice()).fetch_one(&h.pool).await?;
                 assert_eq!((progress,receipts),(1,1));

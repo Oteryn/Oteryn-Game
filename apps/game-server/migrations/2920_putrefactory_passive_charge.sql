@@ -40,3 +40,8 @@ BEGIN
         );
     END LOOP;
 END $migration$;
+
+-- Crystal 201189f8, actions_cake_bite.lua:28-34. The fenced Cake USE owner
+-- reads the cooldown from the existing eater row after eligibility locks it.
+GRANT SELECT (world_id, event_year, character_id, last_bite_at)
+ON game_cake_eaters TO oteryn_game_runtime;
