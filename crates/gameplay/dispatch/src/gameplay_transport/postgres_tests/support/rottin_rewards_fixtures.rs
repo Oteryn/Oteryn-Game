@@ -232,6 +232,21 @@ pub(super) async fn craft_charms(
     .fetch_all(&h.pool)
     .await?;
     assert_eq!(quantities, [(CHARM.to_owned(), count)]);
+
+    let receipts: (i64, i64) = sqlx::query_as(
+        "SELECT count(*), count(*) FILTER (WHERE recipe=$2 AND consume_source
+           AND source_item_instance_id=encode($3,'hex')::uuid
+           AND ingredient_item_instance_id=encode($4,'hex')::uuid
+           AND ingredient_consumed_quantity=1)
+         FROM game_item_craft_records WHERE game_session_id=encode($1,'hex')::uuid",
+    )
+    .bind(admitted.game_session_id.as_bytes().as_slice())
+    .bind("oteryn:quest-craft/rottin-wood/lucky-charm")
+    .bind(id(71).as_slice())
+    .bind(id(72).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, (count, count));
     Ok(())
 }
 
