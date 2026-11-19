@@ -1142,6 +1142,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/support/quest_world_callbacks/scenario.rs",
         2,
     ),
+    // Rottin wall 42501 uses the Outlaw Camp Bundle combat view and no qualified room.
+    ("gameplay_transport/postgres_tests/rottin_walls.rs", 2),
     // Rotten Blood progression supplies its source combat room; qualified room stays None.
     (
         "gameplay_transport/postgres_tests/rotten_blood_progression.rs",

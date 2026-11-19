@@ -7,7 +7,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         clippy::too_many_lines,
         reason = "one ordinary use action keeps replay, exact corpse resolution and runtime fencing together"
     )]
-    pub(super) async fn use_skinning(
+    pub(in crate::gameplay_transport) async fn use_skinning(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
@@ -23,6 +23,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(crate::content::ActiveGeneration::native_gameplay)
         else {
             return Ok(None);
+        };
+        let source_id = |key: &str| {
+            key.strip_prefix("oteryn:item.tibia.i")
+                .and_then(|id| id.parse::<u16>().ok())
+        };
+        let hotkey = if let UseTarget::ItemByDefinition(wanted) = intent.target {
+            let Some((key, revision)) = native
+                .item_index()
+                .and_then(|index| index.definition_at(wanted))
+            else {
+                return Ok(None);
+            };
+            if !source_id(key).is_some_and(oteryn_gameplay_items::fishing::rabbit_skinning_knife) {
+                return Ok(None);
+            }
+            Some((key, revision))
+        } else {
+            None
         };
         let permit = self.spell_lane_permit().await.ok_or(())?;
         let outcome = |disposition| {
@@ -66,14 +84,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
-            if result == UseDisposition::Committed {
+            if result.disposition == UseDisposition::Committed {
                 self.refresh_skinning_projection(fence).await;
             }
-            return Ok(outcome(result));
+            return Ok(outcome(result.disposition));
         }
-        let Some(ItemKey::Instance(tool)) = source else {
+        if hotkey.is_none() && !matches!(source, Some(ItemKey::Instance(_))) {
             return Ok(None);
-        };
+        }
         let inventory = self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
@@ -83,13 +101,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .backpack
             .iter()
             .flat_map(|bag| &bag.entries)
-            .find(|entry| entry.item.item_instance_id == tool);
-        if !entry.is_some_and(|entry| {
-            matches!(
-                entry.item.definition.production_key.as_str(),
-                "oteryn:item.tibia.i5908" | "oteryn:item.tibia.i5942"
-            )
-        }) {
+            .find(|entry| {
+                if let Some((key, revision)) = hotkey {
+                    entry.item.definition.family == "Item"
+                        && entry.item.definition.production_key == key
+                        && entry.item.definition.revision_ref == revision
+                        && self
+                            .states
+                            .player_trades
+                            .physical(command.game_session_id, Some(entry.item.item_instance_id))
+                } else {
+                    source == Some(ItemKey::Instance(entry.item.item_instance_id))
+                }
+            });
+        let Some(entry) = entry else {
+            return Ok(None);
+        };
+        let tool = entry.item.item_instance_id;
+        let Some(tool_id) = source_id(&entry.item.definition.production_key) else {
+            return Ok(None);
+        };
+        let rabbit_knife = oteryn_gameplay_items::fishing::rabbit_skinning_knife(tool_id);
+        if !rabbit_knife && tool_id != 5942 {
             return Ok(None);
         }
         let corpse = match target {
@@ -113,20 +146,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let source_id = |key: &str| {
-            key.strip_prefix("oteryn:item.tibia.i")
-                .and_then(|id| id.parse::<u16>().ok())
-        };
-        let tool_id = entry.and_then(|entry| source_id(&entry.item.definition.production_key));
-        if !tool_id
-            .zip(source_id(&ground.definition().production_key))
-            .and_then(|(tool, target)| oteryn_gameplay_items::fishing::gathering_rule(tool, target))
-            .is_some_and(|(target, _)| {
-                matches!(
-                    target,
-                    oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item: 1.. }
-                )
-            })
+        let corpse_id = source_id(&ground.definition().production_key);
+        if hotkey.is_some() && !matches!(corpse_id, Some(6017 | 4301)) {
+            return Ok(None);
+        }
+        let fresh_rabbit = rabbit_knife && corpse_id == Some(6017);
+        if !fresh_rabbit
+            && !corpse_id
+                .and_then(|target| {
+                    oteryn_gameplay_items::fishing::corpse_skinning_rule(tool_id, target)
+                })
+                .is_some_and(|(target, _)| {
+                    matches!(
+                        target,
+                        oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item: 1.. }
+                    )
+                })
         {
             return Ok(None);
         }
@@ -159,6 +194,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .position();
             request.actor_position = [position.x, position.y, i32::from(position.floor)];
         }
+        if fresh_rabbit {
+            let cell = ground.position();
+            if request.actor_position[0].abs_diff(cell.x) <= 1
+                && request.actor_position[1].abs_diff(cell.y) <= 1
+                && request.actor_position[2] == i32::from(cell.floor)
+            {
+                self.states.chat.push_quest_feedback(
+                    command.game_session_id,
+                    "You have to wait a bit before you can skin this animal.",
+                );
+            }
+            return Ok(outcome(UseDisposition::NothingToUse));
+        }
         request.craft.source = tool;
         request.corpse = corpse;
         let result = self
@@ -177,11 +225,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
             .ok_or(())?;
-        if result == UseDisposition::Committed {
+        if result.disposition == UseDisposition::Committed {
             self.refresh_skinning_projection(fence).await;
         }
         drop(permit);
-        Ok(outcome(result))
+        if let Some(feet) = result.rabbit_feet {
+            let message = match feet {
+                0 => {
+                    "Your attempt to skin the rabbit failed. None of the rabbit's feet are in an acceptable condition to create a lucky charm."
+                }
+                1 => "You successfully gathered a rabbit's foot in excellent condition.",
+                _ => "You successfully gathered two rabbit's feet in excellent condition.",
+            };
+            self.states
+                .chat
+                .push_quest_feedback(command.game_session_id, message);
+        }
+        Ok(outcome(result.disposition))
     }
 
     /// Refresh only existing corpse bindings from the complete durable owner snapshot.

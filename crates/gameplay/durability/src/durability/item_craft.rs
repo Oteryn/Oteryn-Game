@@ -32,7 +32,7 @@ mod skinning;
 pub mod soulpit;
 pub use enchanting::EnchantingCraft;
 pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
-pub use skinning::SkinningRequest;
+pub use skinning::{SkinningOutcome, SkinningRequest};
 
 #[derive(Debug, Clone)]
 pub struct ItemCraftRequest {
@@ -203,10 +203,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
     request: &ItemCraftRequest,
     native: &NativeGameplayState,
     content: &C,
-    skinning: Option<(
-        &SkinningRequest,
-        &oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue,
-    )>,
+    skinning: Option<&mut skinning::Attempt<'_>>,
 ) -> Result<UseDisposition, DurabilityError> {
     if request.enchanting.is_some() {
         return enchanting::write(tx, fence, request, native, content).await;
@@ -242,12 +239,20 @@ async fn write_with_skinning<C: ItemLoopContent>(
     {
         return Ok(UseDisposition::NothingToUse);
     }
-    let skinning = if let Some((operand, catalogue)) = skinning {
-        let Some(prepared) =
-            skinning::prepare(tx, fence, operand, &definition, native, catalogue).await?
+    let skinning = if let Some(attempt) = skinning {
+        let Some(prepared) = skinning::prepare(
+            tx,
+            fence,
+            attempt.request,
+            &definition,
+            native,
+            attempt.catalogue,
+        )
+        .await?
         else {
             return Ok(UseDisposition::NothingToUse);
         };
+        attempt.rabbit_feet = prepared.rabbit_feet;
         Some(prepared)
     } else {
         None

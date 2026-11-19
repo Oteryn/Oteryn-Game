@@ -267,6 +267,8 @@ pub(super) fn lower_embedded_quest_state(
         super::last_creep_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::elvenbane::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::classic_dialogue::extend_rottin(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::world_callbacks::extend(
         super::reward_callbacks::declare_tracks(lowered.catalogue).map_err(QuestLoadError::Json)?,
     )
@@ -375,6 +377,8 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
+    super::rottin_walls::retain_predecessor(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     restrict_runtime_scope(lowered, content_revision)
 }
 
@@ -800,6 +804,12 @@ mod tests {
             "rotten-blood/prepare-ichgahal",
             "rotten-blood/prepare-murcion",
             "rotten-blood/prepare-vemiath",
+            "rottin-repair-42501",
+            "rottin-repair-42502",
+            "rottin-repair-42503",
+            "rottin-repair-42504",
+            "rottin-repair-42505",
+            "rottin-repair-42506",
             "srv7-reliable-ram",
             "uneasy-alliance-crystal",
             "worldchg-m31/fire_from_the_earth/volcano",
@@ -816,7 +826,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 69);
+        assert_eq!(expected.len() - before_qmech_native, 75);
         assert_eq!(
             callbacks
                 .into_iter()
