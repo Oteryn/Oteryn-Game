@@ -20,12 +20,15 @@ use std::{
 
 const QUEST: &str = "oteryn:quest.fixture_yalahar_cannon";
 const CORE_SAFE: &str = "oteryn:quest-progress/fixture-yalahar/core-safe";
+const CLAIMED: &str = "oteryn:quest-progress/fixture-yalahar/core-claimed";
 const CANNON: (u16, u16, i8) = (32867, 31257, -11);
 const COLUMN: (u16, u16, i8) = (32867, 31253, -11);
-const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission02.lua:7-23,60-104";
+const DISPENSER: (u16, u16, i8) = (CANNON.0 - 1, CANNON.1 + 1, CANNON.2);
+const CORE: u16 = 9249;
+const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission02.lua:7-23,60-132";
 
 #[test]
-fn yalahar_world_cycle_changes_which_cannon_use_can_make_the_core_safe() -> TestResult {
+fn yalahar_cycled_column_unlocks_one_core_through_the_dispenser() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -34,7 +37,7 @@ fn yalahar_world_cycle_changes_which_cannon_use_can_make_the_core_safe() -> Test
 }
 
 fn catalogue() -> TestResult<QuestStateCatalogue> {
-    let stages: Vec<_> = [9133, 9137].into_iter().enumerate().map(|(index, required)| {
+    let mut stages: Vec<_> = [9133, 9137].into_iter().enumerate().map(|(index, required)| {
         let beam: Vec<_> = (1..=4).filter(|_| index == 0).map(|north| {
             json!({"position": {"x": CANNON.0, "y": CANNON.1 - north, "floor": CANNON.2}, "effect": 44})
         }).collect();
@@ -55,10 +58,31 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
             }}
         })
     }).collect();
+    // Crystal actions_mission02.lua:110-132 guards the existing item grant
+    // with the safety flag and a durable per-character claim.
+    stages.push(json!({
+        "key": "oteryn:quest-stage/fixture-yalahar/dispenser", "completes": false,
+        "trigger": {"kind": "map_use", "callback": {
+            "key": "oteryn:quest-callback/fixture-yalahar/dispenser",
+            "quest": QUEST, "trigger": "use", "reversible": false,
+            "selector": {"position": {"x": DISPENSER.0, "y": DISPENSER.1, "floor": DISPENSER.2},
+                         "ordinal": 1, "appearance": 9250},
+            "effects": {"item_reward": {"item": format!("oteryn:item.tibia.i{CORE}"), "count": 1}},
+            "storage": [
+                {"track": CORE_SAFE, "minimum": 1, "maximum": 1, "set": 1, "preserve": true},
+                {"track": CLAIMED, "minimum": 0, "maximum": 0, "set": 1}
+            ],
+            "requires_world_admission": true, "passages": [], "offerings": [],
+            "return_on_failure": false, "sources": [SOURCE]
+        }}
+    }));
     let data = json!({"schema": 1, "quests": [{
         "quest": QUEST, "recipe_sha256": Sha256::digest(SOURCE).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
         "sources": [SOURCE],
-        "tracks": [{"key": CORE_SAFE, "initial": -1, "minimum": -1, "maximum": 1}],
+        "tracks": [
+            {"key": CORE_SAFE, "initial": -1, "minimum": -1, "maximum": 1},
+            {"key": CLAIMED, "initial": 0, "minimum": 0, "maximum": 1}
+        ],
         "stages": stages
     }]});
     let base = QuestStateCatalogue::empty("content-1").ok_or("fixture catalogue")?;
@@ -88,6 +112,7 @@ async fn exercise(admin: &str) -> TestResult {
             (CANNON.0, CANNON.1, CANNON.2, 0, 9132),
             (COLUMN.0, COLUMN.1, COLUMN.2, 0, 9133),
             (COLUMN.0 + 1, COLUMN.1, COLUMN.2, 0, 9137),
+            (DISPENSER.0, DISPENSER.1, DISPENSER.2, 0, 9250),
         ],
     )?;
     let start = MovementLocalPosition {
@@ -146,16 +171,29 @@ async fn exercise(admin: &str) -> TestResult {
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let map = owner.bundle_map().ok_or("world scheduler map")?;
-    for (command, tick, expected) in [(1, 2_000_000, 0), (2, 10_000_000, 1)] {
+    let dispenser = crate::map::overlay::TilePos {
+        x: DISPENSER.0,
+        y: DISPENSER.1,
+        floor: DISPENSER.2,
+    };
+    let dispenser_key = crate::map::view::placement_key(dispenser, 1).ok_or("dispenser")?;
+    let mut dispenser_placement = world.base().digest().to_vec();
+    dispenser_placement.extend_from_slice(&dispenser_key.to_be_bytes());
+    let dispense = encode_use_intent(&WorldObjectTarget {
+        placement: dispenser_placement,
+        expected_revision: 0,
+    })
+    .map_err(debug)?;
+    for (command, tick, expected) in [(1, 2_000_000, 0), (3, 10_000_000, 1)] {
         owner
             .states
             .test_owner_time
             .store(tick + 1, Ordering::Relaxed);
-        if command == 2 {
+        if expected == 1 {
             // The Channel scheduler advances the bound column with no USE or movement in flight.
             wait_for_column_revision(&owner, guarded, 1).await?;
         }
-        assert_eq!(map.facts.object_revision(guarded), command - 1);
+        assert_eq!(map.facts.object_revision(guarded), expected as u64);
         assert_eq!(map.facts.object_revision(adjacent), 0);
         let intent = encode_use_intent(&WorldObjectTarget {
             placement: placement.clone(),
@@ -195,7 +233,34 @@ async fn exercise(admin: &str) -> TestResult {
                 })
                 .collect::<Vec<_>>()
         );
+        let reply = wire(
+            &owner,
+            &mut admitted,
+            command + 1,
+            COMMAND_TYPE_USE_INTENT,
+            dispense.clone(),
+        )
+        .await?;
+        assert_eq!(
+            decode_use_result(&reply).map_err(debug)?,
+            if expected == 1 {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            }
+        );
+        assert_eq!(super::qengine_voucher_stories::quantity(&h, CORE).await?, expected);
     }
+    let repeat = wire(
+        &owner,
+        &mut admitted,
+        5,
+        COMMAND_TYPE_USE_INTENT,
+        dispense,
+    )
+    .await?;
+    assert_eq!(decode_use_result(&repeat).map_err(debug)?, UseDisposition::Rejected);
+    assert_eq!(super::qengine_voucher_stories::quantity(&h, CORE).await?, 1);
     owner
         .states
         .test_owner_time
@@ -209,7 +274,7 @@ async fn exercise(admin: &str) -> TestResult {
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(
-        receipts, 2,
+        receipts, 3,
         "a scheduler turn never writes Character quest state"
     );
     drop(owner);
