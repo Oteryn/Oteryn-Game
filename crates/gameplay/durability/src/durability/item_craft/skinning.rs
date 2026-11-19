@@ -209,27 +209,13 @@ pub(super) async fn prepare(
     };
     let race: String = row.try_get("race_key")?;
     let rabbit = corpse_key == "oteryn:item.tibia.i4301";
-    if rabbit {
-        if !matches!(
+    if rabbit
+        && (!matches!(
             race.as_str(),
             "oteryn:creature.rabbit" | "oteryn:creature.killer_rabbit"
-        ) {
-            return Ok(None);
-        }
-        let active: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks
-             WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2
-               AND track_key IN ($3,$4) AND value=1)",
-        )
-        .bind(fence.character_id.as_bytes().as_slice())
-        .bind(oteryn_gameplay_quests::quest::rottin_walls::QUEST)
-        .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01")
-        .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01")
-        .fetch_one(&mut ***tx)
-        .await?;
-        if !active {
-            return Ok(None);
-        }
+        ) || !super::rottin_charm_hunt_active(tx, fence).await?)
+    {
+        return Ok(None);
     }
     let stage: Option<i16> = if rabbit {
         None
