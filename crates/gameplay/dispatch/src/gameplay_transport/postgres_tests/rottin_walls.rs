@@ -1,3 +1,4 @@
+use super::rottin_repairs_fixtures::{WALL_START, WALL_TARGET, wall_world};
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult,
     death_ml_loss_composed_fixtures::{current_fence, production_generation_with_pin},
@@ -15,7 +16,7 @@ use crate::gameplay_transport::{
 use crate::map::view::{MapFacts, placement_key};
 use oteryn_gameplay_quests::quest::{
     classic_talk::ROTTIN_WALLCOUNT,
-    world_callbacks::{Offering, Position},
+    world_callbacks::Offering,
 };
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
@@ -23,16 +24,6 @@ use oteryn_protocol_oteryn::world_object::{
 
 const HAMMER: &str = "oteryn:item.tibia.i3460";
 const KITCHEN_KNIFE: &str = "oteryn:item.tibia.i3469";
-const TARGET: Position = Position {
-    x: 32647,
-    y: 32216,
-    floor: -7,
-};
-pub(super) const START: Position = Position {
-    x: 32647,
-    y: 32217,
-    floor: -7,
-};
 
 #[test]
 fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
@@ -66,7 +57,7 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
             oteryn_gameplay_items::item_craft::output_definition(native, &definition).is_some()
         );
 
-        let world = world(native)?;
+        let world = wall_world(native)?;
         let entry = activated.qualified_room();
         let cells = world
             .movement_cells(entry.movement_cells())
@@ -74,9 +65,9 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
         let map_revision = world.map_revision_digest();
         let frame_binding = world.frame_binding_digest(deps.admitted.world_id);
         let start = crate::content::NativeEntryStart {
-            x: i32::from(START.x),
-            y: i32::from(START.y),
-            floor: -i16::from(START.floor),
+            x: i32::from(WALL_START.x),
+            y: i32::from(WALL_START.y),
+            floor: -i16::from(WALL_START.floor),
         };
         let room = entry
             .bundle_view(cells.clone(), frame_binding, map_revision, start)
@@ -197,30 +188,6 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
     result
 }
 
-pub(super) fn world(
-    native: &crate::content::native_gameplay::NativeGameplayState,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene_with_appearances};
-    native_scene_with_appearances(
-        native,
-        vec![NativeCrop {
-            bytes: include_bytes!(
-                "../../../../../../content/world/placements/region-z07-x127-y125.b3"
-            ),
-            region: (7, 127, 125),
-            bounds: (32646, 32216, 32648, 32218),
-            start: (START.x, START.y),
-            expected: vec![ExpectedTile {
-                position: (TARGET.x, TARGET.y),
-                ids: vec![11732, 4144, 12183],
-                counted_entry: None,
-            }],
-        }],
-        &[],
-        &[6474],
-    )
-}
-
 async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -234,9 +201,9 @@ async fn exercise(
         )
         .ok_or("capabilities")?;
     let position = crate::map::overlay::TilePos {
-        x: TARGET.x,
-        y: TARGET.y,
-        floor: TARGET.floor,
+        x: WALL_TARGET.x,
+        y: WALL_TARGET.y,
+        floor: WALL_TARGET.floor,
     };
     let key = placement_key(position, 2).ok_or("wall key")?;
     let source_id = *owner
@@ -268,7 +235,7 @@ async fn exercise(
             owner,
             fence.item_fence(),
             &Offering {
-                position: TARGET,
+                position: WALL_TARGET,
                 item: item.into(),
                 count: 1,
             },

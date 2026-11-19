@@ -3,6 +3,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::appearance_change_postgres_fixtures::observer_visibility_tests as observer;
 use super::autowalk_fixtures::{at, place, read, send};
 use super::fixture::{Harness, debug, id, join_two, run};
+use super::rottin_repairs_fixtures::{WALL_START, wall_world};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
@@ -293,7 +294,7 @@ pub(super) fn scenario(
         let active = controller.active().ok_or("active")?;
         deps.room = pin.qualified_room().clone();
         let start = if repair {
-            super::rottin_walls::START
+            WALL_START
         } else if merchant_wave {
             oteryn_gameplay_quests::quest::world_callbacks::Position { x: 32659, y: 32181, floor: -7 }
         } else {
@@ -301,7 +302,7 @@ pub(super) fn scenario(
         };
         let start_pos = at(i32::from(start.x), i32::from(start.y));
         let world = if repair {
-            super::rottin_walls::world(active.native_gameplay().ok_or("active hammer profile")?)?
+            wall_world(active.native_gameplay().ok_or("active hammer profile")?)?
         } else {
             let (bytes, pins) = bundle_for(trap, merchant_wave, blocked_merchant_spawn)?;
             let base = crate::map::load(&bytes, &pins).map_err(debug)?;
