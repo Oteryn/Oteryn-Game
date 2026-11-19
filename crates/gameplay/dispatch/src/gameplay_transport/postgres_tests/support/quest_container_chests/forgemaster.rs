@@ -290,6 +290,19 @@ pub(super) async fn ask_for_key(
 
     let [npc] = install(owner, admitted, [NPC]).await?;
     talk(owner, admitted, npc, 10, "hi").await?;
+    let refusal = talk(owner, admitted, npc, 11, "key").await?;
+    assert_eq!(
+        refusal,
+        ["You are not ready yet. Proove yourself worthy first."]
+    );
+    let rows = owner
+        .root
+        .read_character_quest_state(owner.character, character)
+        .await
+        .map_err(debug)?;
+    assert_ne!(rows.tracks().get(ACCESS), Some(&1));
+    assert_ne!(rows.tracks().get(DOOR_STAGE), Some(&3));
+
     for (track, value) in [(HARD_KILLS, 10_i64), (DOOR_STAGE, 2)] {
         let inserted = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
             .bind(character.as_bytes().as_slice()).bind(track).bind(QUEST).bind(value)
@@ -297,8 +310,11 @@ pub(super) async fn ask_for_key(
         assert_eq!(inserted.rows_affected(), 1);
     }
     owner.refresh_quest_session(admitted.game_session_id, true).await;
-    let lines = talk(owner, admitted, npc, 11, "key").await?;
-    assert!(lines.iter().any(|line| line.contains("chamber is now accessible")));
+    let lines = talk(owner, admitted, npc, 12, "key").await?;
+    assert_eq!(
+        lines,
+        ["You have proven yourself worthy. The door to the Forgemaster's chamber is now accessible."]
+    );
     let rows = owner.root.read_character_quest_state(owner.character, character).await.map_err(debug)?;
     assert_eq!(rows.tracks().get(ACCESS), Some(&1));
     assert_eq!(rows.tracks().get(DOOR_STAGE), Some(&3));

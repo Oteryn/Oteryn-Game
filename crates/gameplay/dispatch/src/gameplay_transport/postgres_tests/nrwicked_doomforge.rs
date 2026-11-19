@@ -181,7 +181,8 @@ fn scenario(
                     .ok_or("lever placement")?;
                 let mut lever_placement = map.base().digest().to_vec();
                 lever_placement.extend_from_slice(&lever_key.to_be_bytes());
-                two_player_exit(&h, &mut owner, deps.actor, session, lever_placement).await?;
+                two_player_exit(&h, &mut owner, deps.actor, session, lever_placement, map.facts())
+                    .await?;
                 drop(owner);
                 drop(authority);
                 drop(seal);
@@ -319,6 +320,7 @@ async fn two_player_exit(
     first: crate::foundation::ExactActorRef,
     session: crate::foundation::GameSessionId,
     lever_placement: Vec<u8>,
+    facts: &crate::map::facts::BundleFacts,
 ) -> TestResult {
     use super::fixture::id;
     use crate::foundation::{CommandId, CommandRef, GameSessionId, OwnerDamageCommand};
@@ -397,6 +399,14 @@ async fn two_player_exit(
         .map(|(actor, _, _)| actor)
         .find(|actor| runtime.matches_live_creature_identity(*actor, BOSS.as_bytes()))
         .ok_or("normal Arbaziloth spawned by lever")?;
+    let boss_home = runtime.read_actor_position(boss).map_err(debug)?.position();
+    let purple_fire = || {
+        facts
+            .movement_item_entries()
+            .into_iter()
+            .filter_map(|(at, entry)| (entry.facts.appearance_id == 49362).then_some(at))
+            .collect::<Vec<_>>()
+    };
     for phase in 0..4 {
         let health = runtime.companion_snapshot(boss).map_err(debug)?.health;
         let occurrence = format!("nrwicked-party-{phase}");
@@ -413,11 +423,36 @@ async fn two_player_exit(
                 },
             )
             .map_err(debug)?;
-        let shields = runtime
-            .arbaziloth_shields_mut(boss)
-            .ok_or("bound shields")?;
-        assert!(shields.step_on_fire());
-        assert!(shields.use_rod(100, 100));
+        encounter_phases::tick(&mut runtime, &states, 100);
+        let [fire]: [TilePos; 1] = purple_fire()
+            .try_into()
+            .map_err(|_| "expected exactly one production purple fire per shield")?;
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(
+                boss,
+                before,
+                MovementLocalPosition {
+                    x: i32::from(fire.x),
+                    y: i32::from(fire.y),
+                    floor: -i16::from(fire.floor),
+                },
+            )
+            .map_err(debug)?;
+        encounter_phases::tick(&mut runtime, &states, 100);
+        assert!(purple_fire().is_empty(), "boss crossing consumes purple fire");
+        assert!(
+            runtime
+                .arbaziloth_shields_mut(boss)
+                .ok_or("bound shields")?
+                .use_rod(100, 100)
+        );
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(boss, before, boss_home)
+            .map_err(debug)?;
     }
     encounter_phases::tick(&mut runtime, &states, 3100);
     let enraged = runtime
