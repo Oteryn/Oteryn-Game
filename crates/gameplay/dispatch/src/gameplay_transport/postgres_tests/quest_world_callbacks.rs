@@ -430,9 +430,11 @@ pub(super) fn world_cells(
 pub(super) fn world_cells_with_protected_source(
     callback: &Callback,
     trigger: Position,
+    appearance: u16,
+    ordinal: u8,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     // The retained sector protection-zone bit.
-    build_world_cells(callback, trigger, callback.selector.appearance.unwrap_or(100), 1, &[], &[], None, &[], 1)
+    build_world_cells(callback, trigger, appearance, ordinal, &[], &[], None, &[], 1)
 }
 
 #[allow(clippy::too_many_arguments)]

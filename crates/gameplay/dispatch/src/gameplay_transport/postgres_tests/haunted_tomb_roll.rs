@@ -1,6 +1,6 @@
 //! Crystal 201189f the_dream_courts/actions_sacrophagus_use.lua:16-62 and items.xml:55554-55559.
 use super::fixture::{Harness, debug};
-use super::quest_world_callbacks::{scenario, surround_with_portals, wire, world_cells};
+use super::quest_world_callbacks::{scenario, surround_with_portals, wire, world_cells, world_cells_with_protected_source};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::{
     character_progression::CurrentCharacterGameplayFence,
@@ -26,6 +26,7 @@ pub(super) const PRIZE: &str = "haunted-tomb-prize";
 pub(super) const MUMMY_CASE: &str = "haunted-tomb-mummy";
 pub(super) const NO_SLOT: &str = "haunted-tomb-no-slot";
 pub(super) const PORTALS: &str = "haunted-tomb-portals";
+pub(super) const PROTECTED: &str = "haunted-tomb-protected-source";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const STARTED: &str =
     "oteryn:quest-progress/crystalserver/quest/u12_00/the_dream_courts/haunted_house/questline";
@@ -63,8 +64,12 @@ pub(super) fn binding() -> TestResult<Callback> {
     }))?)
 }
 
-pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    world_cells(callback, SARCOPHAGUS, 29349, 2, &[], &[], None, &[])
+pub(super) fn world(callback: &Callback, case: &str) -> TestResult<crate::map::boot::BundleWorld> {
+    if case == PROTECTED {
+        world_cells_with_protected_source(callback, SARCOPHAGUS, 29349, 2)
+    } else {
+        world_cells(callback, SARCOPHAGUS, 29349, 2, &[], &[], None, &[])
+    }
 }
 
 pub(super) fn catalogue(
@@ -132,6 +137,15 @@ fn haunted_tomb_failed_roll_rearms_even_when_the_channel_has_no_free_creature_sl
     super::kill_reward_e2e::scenario_thread::run(NO_SLOT, || scenario(NO_SLOT, SARCOPHAGUS, false))
 }
 
+#[test]
+fn haunted_tomb_failed_roll_rearms_without_spawning_a_mummy_outside_protection() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(PROTECTED, || scenario(PROTECTED, SARCOPHAGUS, false))
+}
+
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -143,6 +157,12 @@ pub(super) async fn exercise(
     let won = case == PRIZE;
     let portals = case == PORTALS;
     let map = owner.bundle_map().ok_or("map")?;
+    if case == PROTECTED {
+        let base = map.overlay.base();
+        let p = SARCOPHAGUS;
+        assert!(base.tile(p.x, p.y, p.floor).is_some_and(|tile| tile.protection_zone()));
+        assert!(base.tile(p.x + 1, p.y, p.floor).is_some_and(|tile| tile.walkable() && !tile.protection_zone()));
+    }
     let source = placement_key(
         TilePos {
             x: SARCOPHAGUS.x,
@@ -269,7 +289,7 @@ pub(super) async fn exercise(
         super::engworldchg_journals::live_creatures(owner, MUMMY)
             .await?
             .len(),
-        usize::from(!won && !portals && case != NO_SLOT)
+        usize::from(!won && !portals && !matches!(case, NO_SLOT | PROTECTED))
     );
     let due = map
         .facts

@@ -373,7 +373,7 @@ fn scenario_case(
     use super::super::haunted_tomb_roll;
     let haunted_tomb = matches!(
         name,
-        haunted_tomb_roll::MUMMY_CASE | haunted_tomb_roll::NO_SLOT | haunted_tomb_roll::PORTALS | haunted_tomb_roll::PRIZE
+        haunted_tomb_roll::MUMMY_CASE | haunted_tomb_roll::NO_SLOT | haunted_tomb_roll::PORTALS | haunted_tomb_roll::PRIZE | haunted_tomb_roll::PROTECTED
     );
     use super::super::kroazur_solo_room;
     let kroazur = name == kroazur_solo_room::NAME;
@@ -748,7 +748,7 @@ fn scenario_case(
     } else if feaster_solo {
         feaster_solo_rooms::world(&callback, name)?
     } else if haunted_tomb {
-        haunted_tomb_roll::world(&callback)?
+        haunted_tomb_roll::world(&callback, name)?
     } else if ectoplasm {
         haunted_cellar_ectoplasm::world(&callback)?
     } else if haunted_cellar {
@@ -774,7 +774,7 @@ fn scenario_case(
     } else if kroazur {
         super::world_with_cells(&callback, trigger, &[kroazur_solo_room::EXIT])?
     } else if name == lucifuga_bait_spawn::PROTECTED {
-        super::world_cells_with_protected_source(&callback, trigger)?
+        super::world_cells_with_protected_source(&callback, trigger, 100, 1)?
     } else if dreamers_wall {
         dreamers_wall_portal::world(&callback, name)?
     } else if name == "authored-wrath-crystals" {
