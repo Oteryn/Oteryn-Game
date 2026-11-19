@@ -484,6 +484,8 @@ async fn exercise_world(
             assert_teleport_effect(&owner, start)?;
         }
         if keep_cave_monsters {
+            assert_teleport_effect(&owner, local(ENTRY))?;
+            assert_teleport_effect(&owner, local(EXIT))?;
             let awarded = sqlx::query_scalar::<_, bool>(
                 "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=10)",
             )
@@ -610,6 +612,12 @@ async fn exercise_world(
     };
     if boss.is_none() {
         assert_eq!(read_progress().await?, 10);
+        assert_eq!(
+            teleport_effect_count(&owner, local(ENTRY))?,
+            if keep_cave_monsters { 2 } else { 1 },
+            "Cave Spider emits one departure cue per committed teleport"
+        );
+        assert_teleport_effect(&owner, local(ROOM))?;
     }
     if cave == Some(CaveRoom::TwoAdmissions) {
         return two_cave_admissions(&owner, &deps, h, admitted, start, enter_at).await;
@@ -837,6 +845,14 @@ fn assert_teleport_effect(
     owner: &super::ComposedFreshAdmission<'_, '_, '_>,
     place: crate::foundation::MovementLocalPosition,
 ) -> TestResult {
+    assert_eq!(teleport_effect_count(owner, place)?, 1);
+    Ok(())
+}
+
+fn teleport_effect_count(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    place: crate::foundation::MovementLocalPosition,
+) -> TestResult<usize> {
     let map = owner.bundle_map().ok_or("room map")?;
     let effects = map.facts.movement_effects_since(0);
     let at = crate::map::overlay::TilePos {
@@ -844,8 +860,10 @@ fn assert_teleport_effect(
         y: u16::try_from(place.y)?,
         floor: -i8::try_from(place.floor)?,
     };
-    assert_eq!(effects.iter().filter(|(_, position, effect)| *position == at && *effect == 11).count(), 1);
-    Ok(())
+    Ok(effects
+        .iter()
+        .filter(|(_, position, effect)| *position == at && *effect == 11)
+        .count())
 }
 
 

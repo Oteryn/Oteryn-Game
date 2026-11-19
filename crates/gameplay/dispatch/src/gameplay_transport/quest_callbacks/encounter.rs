@@ -12,6 +12,12 @@ pub(in crate::gameplay_transport) fn room_contains(
         && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y)).contains(&at.y)
 }
 
+pub(super) fn personal_timed_room(
+    encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+) -> bool {
+    encounter.ejection.is_some() && encounter.boss_cooldown_seconds.is_none()
+}
+
 pub(super) struct EncounterVisit {
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
@@ -626,6 +632,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, expected.position()),
                 underwater(map, snapshot.position()),
             );
+            // Crystal movement-cave_spider_room.lua:54-56 shows both endpoints.
+            if personal_timed_room(encounter)
+                && let Some(pos) = native(expected.position())
+            {
+                map.facts.emit_movement_effect(pos, 11);
+            }
             if let Some(pos) = native(snapshot.position()) {
                 map.facts.emit_movement_effect(pos, 11);
             }

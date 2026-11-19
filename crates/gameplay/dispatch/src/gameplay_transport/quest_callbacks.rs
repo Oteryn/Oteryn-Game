@@ -1679,6 +1679,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
             self.punish_carrot_refusal(runtime, states, actor, session, entered, snapshot);
+            let personal_timed_room = callback
+                .effects
+                .encounter
+                .as_ref()
+                .is_some_and(encounter::personal_timed_room);
             if let Some(effect) = callback
                 .effects
                 .teleport_effect
@@ -1690,12 +1695,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .and_then(|room| room.boss_feedback.as_ref())
                         .map(|feedback| feedback.return_effect)
                 })
+                .or_else(|| personal_timed_room.then_some(11))
                 .or_else(|| {
                     oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
                         .map(|gate| gate.effect)
                 })
                 && let Some(at) = native(snapshot.position())
             {
+                // Crystal movement-cave_spider_room.lua:32-41 also shows departure.
+                if personal_timed_room && let Some(from) = native(entered.position()) {
+                    map.facts.emit_movement_effect(from, effect);
+                }
                 let _ = map.facts.emit_movement_effect(at, effect);
             }
             if occupied
