@@ -123,6 +123,28 @@ impl DeathDelivery {
 }
 
 impl Rule {
+    fn validate(&self) -> Result<(), String> {
+        if self.epoch_tracks.as_ref().is_some_and(|guards| {
+            guards.is_empty()
+                || guards
+                    .iter()
+                    .any(|key| !self.effects.iter().any(|effect| &effect.track == key))
+        }) {
+            return Err("invalid source death mission guards".into());
+        }
+        if self.effects.is_empty()
+            || self.delivery.is_some_and(|delivery| !delivery.valid(self))
+            || self
+                .cooldown
+                .as_ref()
+                .is_some_and(|cooldown| !cooldown.valid(self))
+        {
+            return Err("invalid source death rule".into());
+        }
+        self.transition()?;
+        Ok(())
+    }
+
     pub fn active(&self, tracks: &BTreeMap<String, i64>) -> bool {
         self.effects.iter().all(|e| {
             e.from
@@ -241,24 +263,9 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
                         continue;
                     }
                     rule.quest.clone_from(&doc.quest);
-                    if rule.epoch_tracks.as_ref().is_some_and(|guards| {
-                        guards.is_empty()
-                            || guards
-                                .iter()
-                                .any(|key| !rule.effects.iter().any(|e| &e.track == key))
-                    }) {
-                        return Err("invalid source death mission guards".into());
-                    }
-                    if rule.effects.is_empty()
-                        || rule.effects.iter().any(|e| e.from.comparison().is_err())
-                        || rule.delivery.is_some_and(|delivery| !delivery.valid(&rule))
-                        || rule
-                            .cooldown
-                            .as_ref()
-                            .is_some_and(|cooldown| !cooldown.valid(&rule))
-                        || rules.iter().any(|r: &Rule| r.transition == rule.transition)
-                    {
-                        return Err("invalid source death rule".into());
+                    rule.validate()?;
+                    if rules.iter().any(|r: &Rule| r.transition == rule.transition) {
+                        return Err("duplicate source death transition".into());
                     }
                     rules.push(rule);
                 }
@@ -318,20 +325,15 @@ pub fn with_fixture_rule(
 ) -> Result<QuestStateCatalogue, String> {
     let mut rule: Rule = serde_json::from_str(document).map_err(|error| error.to_string())?;
     rule.quest = quest.into();
-    if !(rule.delivery.is_some_and(|delivery| delivery.valid(&rule))
-        || rule
-            .cooldown
-            .as_ref()
-            .is_some_and(|cooldown| cooldown.valid(&rule)))
-        || self::rule(&rule.transition).is_some()
-    {
-        return Err("invalid fixture source death delivery".into());
+    rule.validate()?;
+    if !rule.define_transition || rule_for(catalogue, &rule.transition).is_some() {
+        return Err("invalid fixture source death transition".into());
     }
     let tracks = rule
         .effects
         .iter()
         .filter_map(|effect| {
-            let maximum = effect.increment_to?;
+            let maximum = effect.increment_to.or(effect.set)?;
             catalogue
                 .track(&effect.track)
                 .is_none()
@@ -339,8 +341,8 @@ pub fn with_fixture_rule(
                     key: effect.track.clone(),
                     quest: rule.quest.clone(),
                     initial: effect.default,
-                    min: effect.default,
-                    max: maximum,
+                    min: effect.default.min(maximum),
+                    max: effect.default.max(maximum),
                 })
         })
         .collect();

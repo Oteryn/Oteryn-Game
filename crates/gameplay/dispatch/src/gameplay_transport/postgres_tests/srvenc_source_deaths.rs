@@ -66,7 +66,7 @@ fn scenario(name: &'static str, creature: &'static str) -> TestResult {
 pub(super) async fn exercise_delivery(
     h: &Harness, transition: &str, quest: &str, rule: &str,
 ) -> TestResult {
-    exercise_delivery_with_prior(h, transition, quest, rule, None).await
+    exercise_delivery_with_prior(h, transition, quest, rule, None, None).await
 }
 
 pub(super) async fn exercise_delivery_with_prior(
@@ -75,9 +75,14 @@ pub(super) async fn exercise_delivery_with_prior(
     quest: &str,
     rule: &str,
     prior: Option<(&str, i64)>,
+    extra_rule: Option<(&str, &str)>,
 ) -> TestResult {
     let base = load_embedded_quest_state("content-1").map_err(debug)?;
     let catalogue = source_deaths::with_fixture_rule(base.catalogue(), quest, rule)?;
+    let catalogue = match extra_rule {
+        Some((quest, rule)) => source_deaths::with_fixture_rule(&catalogue, quest, rule)?,
+        None => catalogue,
+    };
     let rule = source_deaths::rule_for(&catalogue, transition).ok_or("fixture death rule")?;
     exercise(h, rule, Some(catalogue.clone()), prior).await
 }
