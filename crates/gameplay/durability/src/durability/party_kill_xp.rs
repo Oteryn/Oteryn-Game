@@ -38,6 +38,8 @@ pub struct PartyKillXpRequest<const N: usize> {
     pub base_xp: i64,
     pub death_at_ms: u64,
     pub death_at_us: u64,
+    /// Wall-clock time captured by the lethal publication, independent of the simulation clock.
+    pub died_at_unix_ms: u64,
     pub shared: bool,
     pub party_id: Option<[u8; 16]>,
     pub party_revision: Option<u64>,
@@ -295,12 +297,12 @@ pub async fn commit_in_transaction<const N: usize>(
     super::world_event_outcomes::capture_kill(tx, &input).await?;
     super::world_event::capture_kill(tx, &input).await?;
     let cake_bonus = input.members.iter().any(|member| member.premium)
-        && super::cake_event::active_world_bonus_in_transaction(
+        && super::cake_event::world_bonus_at_kill_in_transaction(
             tx,
             scope.runtime_scope().world_id(),
+            input.died_at_unix_ms,
         )
-        .await?
-        .is_some();
+        .await?;
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
         let bounty = super::task_board::read_talisman_in_transaction(tx, member.fence).await?;

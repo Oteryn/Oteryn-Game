@@ -74,6 +74,8 @@ pub(super) enum Case {
     CharmSecondary,
     CakeWorldBonus,
     CakeWorldBonusExpired,
+    CakeKillBeforeActivation,
+    CakeKillBeforeExpiry,
 }
 
 impl Case {
@@ -101,6 +103,8 @@ impl Case {
             Self::Shared
                 | Self::CakeWorldBonus
                 | Self::CakeWorldBonusExpired
+                | Self::CakeKillBeforeActivation
+                | Self::CakeKillBeforeExpiry
                 | Self::Modifiers
                 | Self::Replay
                 | Self::Rollback
@@ -167,7 +171,10 @@ async fn scenario(
     pin: &crate::content::NativeEntryContentPin,
 ) -> TestResult {
     let cake_world_bonus = matches!(case, Case::CakeWorldBonus | Case::CakeWorldBonusExpired);
-    let cake_bonus_active = matches!(case, Case::CakeWorldBonus);
+    let cake_kill_before_activation = matches!(case, Case::CakeKillBeforeActivation);
+    let cake_kill_before_expiry = matches!(case, Case::CakeKillBeforeExpiry);
+    let cake_xp_active = matches!(case, Case::CakeWorldBonus | Case::CakeKillBeforeExpiry);
+    let cake_case = cake_world_bonus || cake_kill_before_activation || cake_kill_before_expiry;
     let task_board_case = case;
     let t94_case = matches!(case, Case::T94);
     let case = match case {
@@ -267,7 +274,7 @@ async fn scenario(
         }
         let key = if matches!(case, Case::EngencHits) {
             "oteryn:creature.party_skeleton"
-        } else if cake_world_bonus {
+        } else if cake_case {
             "oteryn:creature.cave_rat"
         } else if matches!(task_board_case, Case::TaskBoardOrdered) {
             "oteryn:creature.rat"
@@ -685,7 +692,7 @@ async fn scenario(
     }
     let first_id = first.current_character_lease().character_id();
     let second_id = second.current_character_lease().character_id();
-    if cake_world_bonus {
+    if cake_case {
         sqlx::query(
             "INSERT INTO game_cake_world_progress(world_id,event_year)
              VALUES(encode($1,'hex')::uuid,2026)",
@@ -696,11 +703,13 @@ async fn scenario(
         sqlx::query(
             "INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until)
              SELECT encode($1,'hex')::uuid,2026,3,4,activated,activated+interval '604800 seconds'
-             FROM (SELECT statement_timestamp() - CASE WHEN $2 THEN interval '0 seconds'
-                 ELSE interval '604801 seconds' END AS activated) sample",
+             FROM (SELECT CASE WHEN $3 THEN NULL
+                 WHEN $2 THEN statement_timestamp() - interval '1 second'
+                 ELSE statement_timestamp() - interval '604801 seconds' END AS activated) sample",
         )
         .bind(world.as_bytes().as_slice())
-        .bind(cake_bonus_active)
+        .bind(cake_xp_active)
+        .bind(cake_kill_before_activation)
         .execute(&h.pool)
         .await?;
         let (actor, session) = players[0];
@@ -1141,6 +1150,52 @@ async fn scenario(
             .checked_sub(Duration::from_secs(3))
             .expect("clock");
     }
+    if cake_kill_before_activation || cake_kill_before_expiry {
+        let died_at_unix_ms = {
+            use crate::gameplay_transport::kill_reward::TakeOutcome;
+            let attack = owner.states.attack.lock().await;
+            let queue = attack.kills();
+            let session = players.iter()
+                .find_map(|(_, session)| queue.has_session(*session).then_some(*session))
+                .ok_or("queued Cake XP death")?;
+            let TakeOutcome::Taken(taken) = queue.take(session, 2) else {
+                return Err("could not read the queued Cake XP death".into());
+            };
+            i64::try_from(taken.entry().ok_or("Cake XP death")?.facts.died_at_unix_ms)?
+            // Dropping the read reservation requeues the same death for the real drain.
+        };
+        assert!(died_at_unix_ms > 0);
+        let initially_active: bool = sqlx::query_scalar(
+            "SELECT game_cake_bonus_at(encode($1,'hex')::uuid,
+                                       to_timestamp($2::bigint::double precision / 1000))",
+        )
+        .bind(world.as_bytes().as_slice())
+        .bind(died_at_unix_ms)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(initially_active, cake_xp_active, "window at the queued death");
+
+        // Move the durable window across the drain without waiting a week.
+        // Verify that the fixture straddled the actual queued death timestamp.
+        let (active_at_kill, active_at_drain): (bool, bool) = sqlx::query_as(
+            "UPDATE game_cake_phases p
+             SET bonus_activated_at = sample.activated,
+                 bonus_until = sample.activated + interval '604800 seconds'
+             FROM (SELECT statement_timestamp() - CASE WHEN $2 THEN interval '0 seconds'
+                    ELSE interval '604800 seconds' END AS activated) sample
+             WHERE p.world_id=encode($1,'hex')::uuid AND p.event_year=2026
+             RETURNING bonus_activated_at<=to_timestamp($3::bigint::double precision / 1000)
+                       AND to_timestamp($3::bigint::double precision / 1000)<bonus_until,
+                       bonus_activated_at<=statement_timestamp()
+                       AND statement_timestamp()<bonus_until",
+        )
+        .bind(world.as_bytes().as_slice())
+        .bind(cake_kill_before_activation)
+        .bind(died_at_unix_ms)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((active_at_kill, active_at_drain), (cake_xp_active, !cake_xp_active));
+    }
     if matches!(case, Case::Concurrent) {
         let first_principal = {
             let attack = owner.states.attack.lock().await;
@@ -1561,11 +1616,11 @@ async fn scenario(
             (first_award, second_award),
             if matches!(case, Case::Modifiers) {
                 (6, 4)
-            } else if cake_bonus_active {
+            } else if cake_xp_active {
                 // The Cave Rat's 10 base XP gives each member a share of 7.
                 // Cake rounds the Premium share to 10 before level and stamina.
                 (30, 14)
-            } else if cake_world_bonus {
+            } else if cake_case {
                 (21, 14)
             } else {
                 (8, 8)
@@ -1573,7 +1628,7 @@ async fn scenario(
         );
     }
     if cake_world_bonus {
-        super::cake_world_bonus_fixtures::assert_regeneration(&owner, &players, cake_bonus_active)
+        super::cake_world_bonus_fixtures::assert_regeneration(&owner, &players, cake_xp_active)
             .await?;
     }
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_kill_xp_receipts")

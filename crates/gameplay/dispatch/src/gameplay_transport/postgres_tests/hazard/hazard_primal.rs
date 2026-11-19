@@ -138,6 +138,7 @@ async fn settle(
     party_kill_xp::commit_in_transaction(&mut tx, &scope, owner.holder, PartyKillXpRequest {
         death_key: death.to_vec(), principal: fence.character_id, creature: "oteryn:creature.the_primal_menace".into(),
         base_xp: 10, death_at_ms: serial, death_at_us: serial*1000,
+        died_at_unix_ms: 0,
         shared: false, party_id: None, party_revision: None,
         members: vec![PartyKillXpMember { task_board_eligible: true,
             fence,

@@ -132,6 +132,7 @@ pub(super) async fn settle_captured_endgame_death<K: AsRef<[u8]>>(
                 base_xp: source.raw_xp,
                 death_at_ms: source.death_at_ms,
                 death_at_us: source.death_at_us,
+                died_at_unix_ms: 0,
                 shared: false,
                 party_id: None,
                 party_revision: None,

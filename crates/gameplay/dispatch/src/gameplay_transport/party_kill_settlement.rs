@@ -529,6 +529,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .activity_observed_at
                                 .ok_or(DurabilityError::InvalidStoredState)?
                                 .get(),
+                            died_at_unix_ms: entry.facts.died_at_unix_ms,
                             shared: current.shared,
                             party_id: current.source.party_id,
                             party_revision: current.source.revision,

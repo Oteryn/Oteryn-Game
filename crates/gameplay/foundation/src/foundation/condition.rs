@@ -14,7 +14,11 @@
 mod historical_source;
 pub use historical_source::ConditionHistoricalSource;
 
-type ConditionApplicationSource<'a, S> = dyn Fn(&ConditionProvenance<S>) -> bool + 'a;
+enum TickSelection<'a, S> {
+    All,
+    SourceApplication(&'a dyn Fn(&ConditionProvenance<S>) -> bool),
+    SpellRegeneration(&'a str),
+}
 
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -1549,7 +1553,7 @@ impl<S: Clone> ConditionStore<S> {
             now,
             facts,
             true,
-            None,
+            TickSelection::All,
             RegenerationPzRewards::default(),
             usize::MAX,
         )
@@ -1557,8 +1561,15 @@ impl<S: Clone> ConditionStore<S> {
     /// Consume one due tick under the same ordering and per-time budget as `take_due`.
     /// The caller can settle its effects before selecting the next occurrence.
     pub fn take_next_due(&mut self, now: u64, facts: TickFacts) -> Option<ConditionTick<S>> {
-        self.take_due_matching(now, facts, true, None, RegenerationPzRewards::default(), 1)
-            .pop()
+        self.take_due_matching(
+            now,
+            facts,
+            true,
+            TickSelection::All,
+            RegenerationPzRewards::default(),
+            1,
+        )
+        .pop()
     }
     /// Only a just-applied field's immediate tick; retained overdue conditions are untouched.
     pub fn take_due_source_application(
@@ -1576,7 +1587,7 @@ impl<S: Clone> ConditionStore<S> {
             now,
             facts,
             true,
-            Some(&matches),
+            TickSelection::SourceApplication(&matches),
             RegenerationPzRewards::default(),
             usize::MAX,
         )
@@ -1587,7 +1598,7 @@ impl<S: Clone> ConditionStore<S> {
             now,
             facts,
             false,
-            None,
+            TickSelection::All,
             RegenerationPzRewards::default(),
             usize::MAX,
         )
@@ -1598,7 +1609,7 @@ impl<S: Clone> ConditionStore<S> {
         facts: TickFacts,
         rewards: RegenerationPzRewards,
     ) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, true, None, rewards, usize::MAX)
+        self.take_due_matching(now, facts, true, TickSelection::All, rewards, usize::MAX)
     }
     pub fn take_due_non_damage_with_regeneration(
         &mut self,
@@ -1606,19 +1617,33 @@ impl<S: Clone> ConditionStore<S> {
         facts: TickFacts,
         rewards: RegenerationPzRewards,
     ) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, false, None, rewards, usize::MAX)
+        self.take_due_matching(now, facts, false, TickSelection::All, rewards, usize::MAX)
     }
+    /// Tick just the named regeneration condition for an owner without combat cadence.
+    pub fn take_due_spell_regeneration(&mut self, now: u64, key: &str) -> Vec<ConditionTick<S>> {
+        self.take_due_matching(
+            now,
+            TickFacts::default(),
+            false,
+            TickSelection::SpellRegeneration(key),
+            RegenerationPzRewards::default(),
+            usize::MAX,
+        )
+    }
+
     fn take_due_matching(
         &mut self,
         now: u64,
         facts: TickFacts,
         damage: bool,
-        application_source: Option<&ConditionApplicationSource<'_, S>>,
+        selection: TickSelection<'_, S>,
         regeneration_rewards: RegenerationPzRewards,
         limit: usize,
     ) -> Vec<ConditionTick<S>> {
-        self.cleanse_immunities
-            .retain(|immunity| immunity.until > now);
+        if !matches!(selection, TickSelection::SpellRegeneration(_)) {
+            self.cleanse_immunities
+                .retain(|immunity| immunity.until > now);
+        }
         if self.pass_at != now {
             self.pass_at = now;
             self.pass_ticks = 0;
@@ -1630,9 +1655,20 @@ impl<S: Clone> ConditionStore<S> {
                 .iter()
                 .enumerate()
                 .filter_map(|(index, instance)| {
-                    if application_source.is_some_and(|matches| {
-                        !matches(&instance.provenance) || instance.immediate_due != Some(now)
-                    }) {
+                    let selected = match selection {
+                        TickSelection::All => true,
+                        TickSelection::SourceApplication(matches) => {
+                            matches(&instance.provenance) && instance.immediate_due == Some(now)
+                        }
+                        TickSelection::SpellRegeneration(key) => {
+                            instance.definition.key() == key
+                                && matches!(
+                                    instance.definition.values,
+                                    ConditionValues::SpellRegeneration { .. }
+                                )
+                        }
+                    };
+                    if !selected {
                         return None;
                     }
                     if !damage
@@ -1933,9 +1969,20 @@ impl<S: Clone> ConditionStore<S> {
                 provenance: instance.provenance.clone(),
             });
         }
-        self.instances.retain(|instance| match instance.ends_at {
-            None => instance.remaining_total > 0,
-            Some(end) => end > now || instance.next_tick_at.is_some_and(|due| due <= end),
+        self.instances.retain(|instance| {
+            if let TickSelection::SpellRegeneration(key) = selection
+                && (instance.definition.key() != key
+                    || !matches!(
+                        instance.definition.values,
+                        ConditionValues::SpellRegeneration { .. }
+                    ))
+            {
+                return true;
+            }
+            match instance.ends_at {
+                None => instance.remaining_total > 0,
+                Some(end) => end > now || instance.next_tick_at.is_some_and(|due| due <= end),
+            }
         });
         ticks
     }
