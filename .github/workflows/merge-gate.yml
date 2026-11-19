@@ -662,7 +662,8 @@ jobs:
     outputs:
       rust_runner_mode: ${{ steps.route.outputs.mode }}
       rust_selection: ${{ steps.rust_selection.outputs.selection }}
-      rust_test_packages: ${{ steps.test_selection.outputs.packages }}
+      rust_test_image: ${{ steps.test_keys.outputs.image }}
+      rust_test_platform: ${{ steps.test_keys.outputs.platform }}
       rust_test_shards: ${{ steps.test_selection.outputs.shards }}
       rust_test_build_required: ${{ steps.test_selection.outputs.build_required }}
       rust_client_ui_required: ${{ steps.rust_selection.outputs.client_ui_required }}
@@ -763,8 +764,8 @@ jobs:
           print(f'Rust fast lane mode={mode} packages={len(selected)}/{len(packages)}')
           PY
 
-      # Resolve all five existing ledger keys before scheduling the build. The archive
-      # and the shards use the same selection even if a ledger is refreshed later.
+      # Plan all five ledger keys before scheduling the build, so a complete hit
+      # can still skip the archive. The archive and shards must match this runner identity.
       # Cache versions depend on the original restore path. Move each ledger aside
       # after restoring it so the next shard can restore to that same path.
       - name: Plan unit-test job-result keys
@@ -773,6 +774,9 @@ jobs:
           BASE_SHA: ${{ needs.scope.outputs.base_sha }}
         run: |
           set -euo pipefail
+          image="${ImageVersion:?Hosted runner ImageVersion is required}"
+          platform="${RUNNER_OS:?}-${RUNNER_ARCH:?}"
+          printf 'image=%s\nplatform=%s\n' "$image" "$platform" >> "$GITHUB_OUTPUT"
           packages="$RUNNER_TEMP/rust-fast-test-packages.tsv"
           for shard in {1..5}; do
             plan="$RUNNER_TEMP/rust-fast-test-plan-${shard}.json"
@@ -780,8 +784,7 @@ jobs:
             GITHUB_OUTPUT="$outputs" python -I tools/repository/job_result_key.py plan \
               --job "rust_fast-tests ${shard}/5" --metadata "$RUNNER_TEMP/rust-fast-metadata.json" \
               --packages "$packages" --out "$plan" --per-package \
-              --extra "base=$BASE_SHA" --extra "image=${ImageVersion:-unknown}" \
-              --extra "os=${RUNNER_OS:-}-${RUNNER_ARCH:-}"
+              --extra "base=$BASE_SHA" --extra "image=$image" --extra "os=$platform"
             printf 'shard_%s_%s\n' "$shard" "$(cat "$outputs")" >> "$GITHUB_OUTPUT"
           done
 
@@ -865,7 +868,7 @@ jobs:
             mv "$RUNNER_TEMP/jobresult" "$RUNNER_TEMP/jobresult-tests-5-5"
           fi
 
-      - name: Select test packages for each shard and the archive
+      - name: Select test packages for each shard
         id: test_selection
         run: |
           set -euo pipefail
@@ -893,11 +896,9 @@ jobs:
                   else:
                       print(f'NOT_APPLICABLE: {package} has no library or binary unit-test targets')
               shards[f'tests-{shard}-5'] = packages
-          union = sorted({package for packages in shards.values() for package in packages})
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write(f'shards={json.dumps(shards)}\n')
-              output.write(f'packages={json.dumps(union)}\n')
-              output.write(f'build_required={str(bool(union)).lower()}\n')
+              output.write(f'build_required={str(any(shards.values())).lower()}\n')
           PY
 
   rust_fast_build:
@@ -910,7 +911,24 @@ jobs:
       contents: read
     outputs:
       artifact_id: ${{ steps.upload.outputs.artifact-id }}
+      runner_image: ${{ steps.identity.outputs.image }}
+      runner_platform: ${{ steps.identity.outputs.platform }}
     steps:
+      - name: Verify the archive runner matches the ledger plan
+        id: identity
+        env:
+          PLAN_IMAGE: ${{ needs.runner_route.outputs.rust_test_image }}
+          PLAN_PLATFORM: ${{ needs.runner_route.outputs.rust_test_platform }}
+        run: |
+          set -euo pipefail
+          image="${ImageVersion:?Hosted runner ImageVersion is required}"
+          platform="${RUNNER_OS:?}-${RUNNER_ARCH:?}"
+          if [[ "$image" != "$PLAN_IMAGE" || "$platform" != "$PLAN_PLATFORM" ]]; then
+            echo "::error::Archive runner $image/$platform differs from the ledger plan $PLAN_IMAGE/$PLAN_PLATFORM. Re-run all jobs."
+            exit 1
+          fi
+          printf 'image=%s\nplatform=%s\n' "$image" "$platform" >> "$GITHUB_OUTPUT"
+
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -995,12 +1013,12 @@ jobs:
           echo "MOLD_PATH=$mold_dir/bin/mold" >> "$GITHUB_ENV"
           echo "MOLD_PRELOAD=$mold_dir/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
 
-      # Compile the union of packages that still need a result, once for all five shards.
+      # Compile the full Cargo selection once to preserve feature unification.
+      # Ledger hits affect only the package filters used to run each shard.
       - name: Archive changed-crate unit tests
         env:
-          TEST_PACKAGES: ${{ needs.runner_route.outputs.rust_test_packages }}
           RUST_SELECTION: ${{ needs.runner_route.outputs.rust_selection }}
-          CARGO_BUILD_JOBS: "1"
+          CARGO_BUILD_JOBS: "2"
           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
@@ -1009,16 +1027,15 @@ jobs:
           import json
           import os
 
-          packages = json.loads(os.environ['TEST_PACKAGES'])
-          if not packages:
-              raise SystemExit('unit-test archive requires a nonempty package selection')
           selection = json.loads(os.environ['RUST_SELECTION'])
-          if selection['mode'] == 'workspace' and packages == selection['packages']:
+          if selection['mode'] == 'workspace':
               print('--workspace')
-          else:
-              for package in packages:
+          elif selection['mode'] == 'packages' and selection['packages']:
+              for package in selection['packages']:
                   print('-p')
                   print(package)
+          else:
+              raise SystemExit('unit-test archive requires a nonempty package selection')
           PY
           mapfile -t package_args < "$package_args_file"
           artifact="$RUNNER_TEMP/rust-fast-archive"
@@ -1034,7 +1051,7 @@ jobs:
           name: rust-fast-unit-tests-${{ github.run_attempt }}
           path: ${{ runner.temp }}/rust-fast-archive/
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 30
           compression-level: 0
 
   # Strict Clippy and five hash-partitioned nextest shards share the same aggregate result.
@@ -1157,9 +1174,27 @@ jobs:
         id: jr_plan
         env:
           JOB: rust_fast-${{ matrix.leg }}
+          KIND: ${{ matrix.kind }}
           BASE_SHA: ${{ needs.scope.outputs.base_sha }}
           PER_PACKAGE: ${{ matrix.kind == 'tests' && '--per-package' || '' }}
-        run: python -I tools/repository/job_result_key.py plan --job "$JOB" --metadata "$RUNNER_TEMP/rust-fast-metadata.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --out "$RUNNER_TEMP/jr-plan.json" --extra "base=$BASE_SHA" --extra "image=${ImageVersion:-unknown}" --extra "os=${RUNNER_OS:-}-${RUNNER_ARCH:-}" $PER_PACKAGE
+          TEST_IMAGE: ${{ needs.rust_fast_build.result == 'skipped' && needs.runner_route.outputs.rust_test_image || needs.rust_fast_build.outputs.runner_image }}
+          TEST_PLATFORM: ${{ needs.rust_fast_build.result == 'skipped' && needs.runner_route.outputs.rust_test_platform || needs.rust_fast_build.outputs.runner_platform }}
+        run: |
+          set -euo pipefail
+          image="${ImageVersion:-unknown}"
+          platform="${RUNNER_OS:-}-${RUNNER_ARCH:-}"
+          if [[ "$KIND" == tests ]]; then
+            # Fail closed before accepting ledger hits or recording results on a different runner.
+            # With a complete hit there is no archive, so compare against the routing plan.
+            if [[ "${ImageVersion:-}" != "${TEST_IMAGE:?Missing unit-test image identity}" ||
+                  "$platform" != "${TEST_PLATFORM:?Missing unit-test platform identity}" ]]; then
+              echo "::error::Shard runner $image/$platform differs from the unit-test plan $TEST_IMAGE/$TEST_PLATFORM. Re-run all jobs."
+              exit 1
+            fi
+            image="$TEST_IMAGE"
+            platform="$TEST_PLATFORM"
+          fi
+          python -I tools/repository/job_result_key.py plan --job "$JOB" --metadata "$RUNNER_TEMP/rust-fast-metadata.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --out "$RUNNER_TEMP/jr-plan.json" --extra "base=$BASE_SHA" --extra "image=$image" --extra "os=$platform" $PER_PACKAGE
 
       - name: Restore job-result ledger
         if: steps.jr_plan.outputs.keyed == 'true'

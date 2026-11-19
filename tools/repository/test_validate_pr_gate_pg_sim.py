@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import textwrap
 import time
@@ -39,6 +40,10 @@ class QualificationPlacementTests(unittest.TestCase):
     def rust_fast_step(self, name):
         job = self.pr.split("  rust_fast:\n", 1)[1].split("\n  rust_supply_chain:\n", 1)[0]
         return job.split(f"      - name: {name}\n", 1)[1].split("\n      - name: ", 1)[0]
+
+    def archive_step(self, name):
+        build = self.pr.split("  rust_fast_build:\n", 1)[1].split("\n  rust_fast:\n", 1)[0]
+        return build.split(f"      - name: {name}\n", 1)[1].split("\n      - name: ", 1)[0]
 
     @staticmethod
     def route_script(text):
@@ -104,10 +109,61 @@ class QualificationPlacementTests(unittest.TestCase):
         self.assertIn('nextest run --archive-file "$artifact/unit-tests.tar.zst"', job)
         self.assertIn('--workspace-remap . --extract-to .', job)
         self.assertIn('--partition "hash:${SHARD}" --no-tests=pass --no-fail-fast', job)
+        self.assertIn("          retention-days: 30\n", self.archive_step("Upload unit-test archive"))
         for name in ("Add swap for the library test build", "Install pinned mold linker"):
             with self.subTest(step=name):
                 self.assertIn(f"      - name: {name}\n", build)
                 self.assertNotIn(f"      - name: {name}\n", job)
+
+    def test_unit_test_archive_uses_full_cargo_selection_on_partial_ledger_hit(self):
+        step = self.archive_step("Archive changed-crate unit tests")
+        source = textwrap.dedent(
+            step.split("          python - <<'PY' > \"$package_args_file\"\n", 1)[1]
+            .split("          PY\n", 1)[0]
+        )
+        for mode, expected in (
+            ("workspace", ["--workspace"]),
+            ("packages", ["-p", "first", "-p", "second"]),
+        ):
+            with self.subTest(mode=mode):
+                env = dict(os.environ, TEST_PACKAGES='["first"]',
+                           RUST_SELECTION=f'{{"mode": "{mode}", "packages": ["first", "second"]}}')
+                result = subprocess.run(
+                    [sys.executable, "-c", source], env=env, check=True, capture_output=True, text=True
+                )
+                self.assertEqual(result.stdout.splitlines(), expected)
+
+    def test_unit_test_ledger_rejects_runner_identity_skew(self):
+        archive_step = self.archive_step("Verify the archive runner matches the ledger plan")
+        shard_step = self.rust_fast_step("Plan job-result keys")
+        for step, runner in ((archive_step, "Archive"), (shard_step, "Shard")):
+            script = textwrap.dedent(step.split("        run: |\n", 1)[1])
+            # Print the planner's arguments without touching any ledger cache files.
+            script = "python() { printf '%s\\n' \"$@\"; }\n" + script
+            for image, arch in (("20261118.1", "X64"), ("20261119.1", "X64"), ("20261118.1", "ARM64")):
+                with self.subTest(runner=runner, image=image, arch=arch), tempfile.TemporaryDirectory() as directory:
+                    output = Path(directory) / "output"
+                    env = dict(
+                        os.environ, KIND="tests", JOB="rust_fast-tests 1/5", BASE_SHA="base",
+                        PER_PACKAGE="--per-package", RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output),
+                        PLAN_IMAGE="20261118.1", PLAN_PLATFORM="Linux-X64",
+                        TEST_IMAGE="20261118.1", TEST_PLATFORM="Linux-X64",
+                        ImageVersion=image, RUNNER_OS="Linux", RUNNER_ARCH=arch,
+                    )
+                    result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+                    if image != "20261118.1" or arch != "X64":
+                        self.assertEqual(result.returncode, 1)
+                        self.assertIn(f"{runner} runner {image}/Linux-{arch} differs", result.stdout)
+                        self.assertIn("Re-run all jobs.", result.stdout)
+                        self.assertNotIn("job_result_key.py", result.stdout)
+                        self.assertFalse(output.exists())
+                    else:
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        if runner == "Archive":
+                            self.assertEqual(output.read_text(), "image=20261118.1\nplatform=Linux-X64\n")
+                        else:
+                            self.assertIn("image=20261118.1\n", result.stdout)
+                            self.assertIn("os=Linux-X64\n", result.stdout)
 
     def test_self_hosted_target_setup_and_stale_junit_cleanup(self):
         name = "Select persistent self-hosted Cargo target directory"
