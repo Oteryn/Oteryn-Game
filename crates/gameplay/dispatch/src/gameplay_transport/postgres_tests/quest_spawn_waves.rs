@@ -228,6 +228,16 @@ fn quest_axe_use_advances_an_unset_weak_point_to_two() -> TestResult {
     })
 }
 
+#[test]
+fn quest_axe_use_recovers_lost_ack_without_repeating_retaliation() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-retaliation-lost-ack", move || {
+        scenario(admin, Case::RetaliationLostAck)
+    })
+}
+
 #[derive(Clone, Copy, Debug)]
 enum Case {
     Periodic,
@@ -244,6 +254,7 @@ enum Case {
     EarthStep,
     Retaliation,
     RetaliationFirstBlow,
+    RetaliationLostAck,
     UnreachableExit,
     UnknownAchievement,
     WorldCredit,
@@ -251,7 +262,7 @@ enum Case {
 
 impl Case {
     fn has_retaliation_binding(self) -> bool {
-        matches!(self, Self::Retaliation | Self::RetaliationFirstBlow)
+        matches!(self, Self::Retaliation | Self::RetaliationFirstBlow | Self::RetaliationLostAck)
     }
 
     fn has_victory_binding(self) -> bool {
@@ -416,7 +427,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
             });
         }
         if case.has_retaliation_binding() {
-            retaliation_binding(&mut callback, matches!(case, Case::RetaliationFirstBlow));
+            retaliation_binding(&mut callback, !matches!(case, Case::Retaliation));
         }
         // Use the real typed callback decode in addition to the composed PG fixture.
         let callback: Callback = serde_json::from_value(serde_json::to_value(callback)?)?;
@@ -583,7 +594,9 @@ fn scenario(admin: String, case: Case) -> TestResult {
             }
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
             Case::Retaliation => retaliation_scenario(&h, &owner, &mut admitted, deps.actor).await?,
-            Case::RetaliationFirstBlow => retaliation_first_blow(&h, &owner, &mut admitted, deps.actor).await?,
+            Case::RetaliationFirstBlow | Case::RetaliationLostAck => {
+                retaliation_first_blow(&h, &owner, &mut admitted, deps.actor, matches!(case, Case::RetaliationLostAck)).await?
+            }
             Case::UnreachableExit | Case::UnknownAchievement | Case::WorldCredit => {
                 let peer = stage_peer(&h, &owner, &admitted).await?;
                 let peer_actor = peer.runtime_actor.ok_or("staged peer")?;
@@ -762,7 +775,10 @@ async fn retaliation_first_blow(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     player: ExactActorRef,
+    lose_ack: bool,
 ) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::decode_use_result;
+
     let fence = admitted.item_fence.ok_or("axe item fence")?;
     super::item_look::seed_main_backpack_for(h, fence.character_id.as_bytes(), 70, &[]).await?;
     super::quest_world_callbacks::input_item(
@@ -772,21 +788,50 @@ async fn retaliation_first_blow(
         60,
         true,
     ).await?;
-    assert_eq!(use_room(owner, admitted, 1).await?, UseDisposition::Committed);
+    let session = admitted.game_session_id;
+    let health = async || -> TestResult<_> {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        Ok(states.get(&runtime, player, session).ok_or("axe player vitals")?.vitals().health)
+    };
+    let read_state = async || {
+        owner.root.read_character_quest_state(owner.character, fence.character_id).await.map_err(debug)
+    };
+    let before = health().await?;
+    let payload = use_room_payload(owner)?;
+    if lose_ack {
+        owner.states.quest_callbacks.interrupt_after_commit.store(true, std::sync::atomic::Ordering::Release);
+        assert!(super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.clone()).await.is_err());
+        assert!(owner.has_pending_quest_callback(session));
+        assert_eq!(read_state().await?.tracks().get(CUT), Some(&2));
+        assert_eq!(health().await?, before);
+        assert!(creatures(owner).await?.is_empty());
+    }
+
+    let reply = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.clone()).await?;
+    assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+    assert!(!owner.has_pending_quest_callback(session));
     assert_eq!(position(owner, player).await?, local(START));
     // Crystal actions_demon_oak.lua:94-95,115-124. The unset track counts
     // as one when striking; the durable result is two and the wave is ordinary.
-    let state = owner.root
-        .read_character_quest_state(owner.character, fence.character_id)
-        .await.map_err(debug)?;
+    let state = read_state().await?;
     assert_eq!(state.tracks().get(CUT), Some(&2));
     let spawned = creatures(owner).await?;
     let [(actor, at)] = spawned.as_slice() else {
         return Err("first blow should spawn the fixture's ordinary monster".into());
     };
     assert_eq!(*at, local(FIRST));
-    let runtime = owner.runtime.lock().await;
-    assert_eq!(runtime.companion_snapshot(*actor).map_err(debug)?.state.policy.definition_key, RAT);
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(runtime.companion_snapshot(*actor).map_err(debug)?.state.policy.definition_key, RAT);
+    }
+    assert_eq!(before - health().await?, 35);
+    // Crystal actions_demon_oak.lua:115-126 applies one wave roll and one
+    // self-hit per accepted blow. A repeated transport command is the same blow.
+    assert_eq!(super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?, reply);
+    assert_eq!(read_state().await?, state);
+    assert_eq!(creatures(owner).await?, spawned);
+    assert_eq!(before - health().await?, 35);
     Ok(())
 }
 
@@ -1467,19 +1512,22 @@ async fn use_room(
     admitted: &mut AdmittedSession,
     id: u64,
 ) -> TestResult<UseDisposition> {
-    use oteryn_protocol_oteryn::world_object::{decode_use_result, encode_use_intent};
+    let reply = super::quest_world_callbacks::wire(owner, admitted, id, 2, use_room_payload(owner)?).await?;
+    oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
+}
+
+fn use_room_payload(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<Vec<u8>> {
+    use oteryn_protocol_oteryn::world_object::encode_use_intent;
     let key = oteryn_world_bundle::bundle::placement_key(TRIGGER.floor, TRIGGER.x, TRIGGER.y, 1)
         .ok_or("fixture USE placement")?;
     let map = owner.bundle_map().ok_or("fixture map")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    let payload = encode_use_intent(&WorldObjectTarget {
+    Ok(encode_use_intent(&WorldObjectTarget {
         placement,
         expected_revision: map.facts.object_revision(key),
     })
-    .map_err(debug)?;
-    let reply = super::quest_world_callbacks::wire(owner, admitted, id, 2, payload).await?;
-    decode_use_result(&reply).map_err(debug)
+    .map_err(debug)?)
 }
 
 async fn advance(owner: &ComposedFreshAdmission<'_, '_, '_>, millis: u64) {
