@@ -6,16 +6,17 @@ use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, LivenessPolicy, serve_admitted,
 };
 use oteryn_protocol_oteryn as protocol;
-use protocol::browse_field::BrowseFieldIntent;
+use protocol::browse_field::{
+    BrowseFieldIntent, COMMAND_TYPE_BROWSE_FIELD_INTENT, encode_browse_field_intent,
+};
 use protocol::container_tree::{
     COMMAND_TYPE_CONTAINER_VIEW_INTENT, ContainerViewIntent, ContainerViewOutcome,
-    decode_container_view_result,
-    encode_container_view_intent,
+    decode_container_view_result, encode_container_view_intent,
 };
 use protocol::item_view::{
     CharacterInventory, ItemHandle, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
-    ItemMoveSelection, WorldTilePosition,
-    decode_item_move_result_with_equip_drop, encode_item_move_intent_for,
+    ItemMoveSelection, WorldTilePosition, decode_item_move_result_with_equip_drop,
+    encode_item_move_intent_for,
 };
 use protocol::world_spatial::{StepDirection, StepDisposition};
 use tokio::io::{AsyncWriteExt, DuplexStream};

@@ -3,7 +3,7 @@ use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
-    QuestTransition, reward_callbacks::RewardCallback, world_callbacks::Position,
+    QuestTransition, reward_callbacks::RewardCallback,
 };
 use serde_json::json;
 
