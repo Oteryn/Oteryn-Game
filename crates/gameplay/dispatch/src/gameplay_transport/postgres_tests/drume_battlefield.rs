@@ -36,6 +36,7 @@ pub(super) enum ExitCase {
     Timeout,
     Defeat,
     ObstructedDefeat,
+    ScheduledTimeout,
 }
 
 #[test]
@@ -80,6 +81,17 @@ fn drume_lever_replaces_vacated_battlefield_before_timeout() -> TestResult {
         return Err("empty PostgreSQL admin URL".into());
     }
     encounter_scenario(true, Some(ExitCase::Timeout))
+}
+
+#[test]
+fn drume_scheduled_clear_ejects_both_players_without_commander_deaths() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    encounter_scenario(false, Some(ExitCase::ScheduledTimeout))
 }
 
 pub(super) fn bind(callback: &mut Callback) -> TestResult {
@@ -176,6 +188,25 @@ pub(super) async fn exercise(
         owner, MovementLocalPosition { x: 102, y: 102, floor: 7 },
         MovementLocalPosition { x: 117, ..LANDING },
     ).await?;
+    if exit_case == ExitCase::ScheduledTimeout {
+        // Crystal action_drume.lua:23-34,119-122 schedules this clear at
+        // admission, independently of the commander-death callbacks.
+        assert_eq!(list(owner, LION).await?.len(), 3);
+        assert_eq!(list(owner, USURPER).await?.len(), 3);
+        let due = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(after_deadline);
+        Box::pin(owner.drain_monster_melee_at(due)).await;
+        assert_positions(owner, actors, super::quest_world_callbacks::local(EXIT)).await?;
+        for session in [leader.game_session_id, second_session] {
+            assert_feedback(owner, session, "Your time is over.");
+        }
+        for species in [LION, USURPER, DRUME, KESAR] {
+            assert!(list(owner, species).await?.is_empty());
+        }
+        let runtime = owner.runtime.lock().await;
+        assert!(!runtime.contains_live_creature(summoned));
+        assert!(runtime.contains_live_creature(master));
+        return Ok(());
+    }
     let spawn_boss = exit_case == ExitCase::Timeout;
     if spawn_boss {
         set_captain_tile_passable(owner, 0, false)?;

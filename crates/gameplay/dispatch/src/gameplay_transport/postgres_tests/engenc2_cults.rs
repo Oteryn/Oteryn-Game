@@ -94,6 +94,7 @@ pub(super) fn encounter_scenario(
                 Some(ExitCase::Timeout) => "drume_usurpers",
                 Some(ExitCase::Defeat) => "drume_lions",
                 Some(ExitCase::ObstructedDefeat) => "drume_blocked_defeat",
+                Some(ExitCase::ScheduledTimeout) => "drume_scheduled_timeout",
                 None => "engenc2_cults",
             };
             let h = Harness::create_with_admission_seed(admin, tag, true, false).await?;
