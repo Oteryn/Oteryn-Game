@@ -1,5 +1,5 @@
 //! Global dialogue and Fairy Treasure through the fenced NPC and world-object routes.
-use super::classic_quests::{install, progress, talk};
+use super::classic_quests_fixtures::{install, progress, talk};
 use super::fixture::{Harness, debug, id, run};
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
@@ -22,7 +22,7 @@ fn global_dialogue_and_fairy_treasure() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("qcx-threatened-dreams", scenario);
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("qcx-threatened-dreams", scenario);
     eprintln!(
         "PG qcx_threatened_dreams {:?}, passed={}",
         started.elapsed(),
@@ -42,8 +42,8 @@ fn scenario() -> TestResult {
     callback.selector.appearance = Some(25380);
     callback.selector.unique = None;
     callback.selector.action = None;
-    let world = super::quest_world_callbacks::world(&callback, trigger)?;
-    let local = super::quest_world_callbacks::local;
+    let world = super::quest_world_callbacks_fixtures::world(&callback, trigger)?;
+    let local = super::quest_world_callbacks_fixtures::local;
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
@@ -56,7 +56,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

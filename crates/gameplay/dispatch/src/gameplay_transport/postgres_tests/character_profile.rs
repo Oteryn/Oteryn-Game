@@ -26,7 +26,7 @@ fn character_profile_postgres_real_dispatch_and_privacy() -> TestResult {
     Ok(())
 }
 fn scenario() -> TestResult {
-    use super::cyclopedia::support::exchange;
+    use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         super::reset();
         let h =

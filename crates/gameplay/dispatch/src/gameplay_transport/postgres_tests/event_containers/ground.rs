@@ -107,7 +107,7 @@ fn scenario(case: Case) -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
-        let bundle_room = super::super::rust_lottery::bundle_action_room(
+        let bundle_room = super::super::rust_lottery_fixtures::bundle_action_room(
             pin.qualified_room(),
             &map,
             deps.admitted.world_id,
@@ -175,7 +175,7 @@ fn scenario(case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::super::item_look::seed_main_backpack(&harness, &[(key, 2)]).await?;
+        super::super::item_look_fixtures::seed_main_backpack(&harness, &[(key, 2)]).await?;
         let source = id(71);
         assert!(oteryn_gameplay_items::reward_bag::is_reward_bag(key));
         assert!(!oteryn_gameplay_items::event_items::is_event_reward(key));
@@ -250,7 +250,7 @@ fn scenario(case: Case) -> TestResult {
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
         let before_refusal = durable_state(&harness).await?;
-        let (next, refused, _) = super::super::rust_lottery::exchange(
+        let (next, refused, _) = super::super::rust_lottery_fixtures::exchange(
             &owner,
             admitted,
             1,
@@ -298,7 +298,7 @@ fn scenario(case: Case) -> TestResult {
             assert_eq!(ground_count(&harness).await?, 63);
         }
         let before = durable_state(&harness).await?;
-        let (next, outcome, actual) = super::super::rust_lottery::exchange(
+        let (next, outcome, actual) = super::super::rust_lottery_fixtures::exchange(
             &owner,
             admitted,
             2,
@@ -315,7 +315,7 @@ fn scenario(case: Case) -> TestResult {
         assert_eq!(retained, source_location);
         admitted = next;
         let (_, replayed, same) =
-            super::super::rust_lottery::exchange(&owner, admitted, 2, &actual, None, None).await?;
+            super::super::rust_lottery_fixtures::exchange(&owner, admitted, 2, &actual, None, None).await?;
         assert_eq!(replayed, UseDisposition::StaleState);
         assert_eq!(same, actual);
         assert_eq!(durable_state(&harness).await?, before);

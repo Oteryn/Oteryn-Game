@@ -1,7 +1,7 @@
 //! A4b: utility runes through the production USE owner and durable source transaction.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, run};
-use super::item_look::{large_stack, seed_main_backpack};
+use super::item_look_fixtures::{large_stack, seed_main_backpack};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,

@@ -21,7 +21,7 @@ fn endgame_entry_postgres_real_dispatch_cannot_allocate_or_reset_without_w02() -
         eprintln!("ENDGAME_ENTRY POSTGRES_CASE_SKIPPED");
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("endgame-entry", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("endgame-entry", scenario)
 }
 
 fn scenario() -> TestResult {
@@ -112,8 +112,8 @@ fn source_level_scenario(
         );
         let deps = scene.dependencies()?;
         let h = Harness::create_with_admission_seed(admin, seed, false, false).await?;
-        let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-        super::house_transfer::prepare_owned_session(&h).await?;
+        let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -130,7 +130,7 @@ fn source_level_scenario(
                 .overlay
                 .base(),
         );
-        super::boss_activity::issue_content_and_reset_with_runtime_pin(
+        super::boss_activity_fixtures::issue_content_and_reset_with_runtime_pin(
             &h,
             &activation_pin,
             &scene.pin,
@@ -191,7 +191,7 @@ fn source_level_scenario(
             .map_err(|_| "actual source template")?;
         // Allocate through the current scope owner before the route's readiness
         // gate; this does not reserve a participant or fabricate a ready runtime.
-        let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+        let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 88).await?;
         let before = counters(&h).await?;
         assert_eq!(before, (0, 0, 0));
         let canonical = if matches!(
@@ -206,7 +206,7 @@ fn source_level_scenario(
             let command = admitted.continuity.next_command_id;
             let payload = encode_boss_key(selected).map_err(debug)?;
             assert_eq!(
-                super::boss_encounter::exchange_kind(
+                super::boss_encounter_fixtures::exchange_kind(
                     &owner,
                     &mut admitted,
                     command,
@@ -300,7 +300,7 @@ fn terminal_request_scenario() -> TestResult {
         )
         .ok_or("boss capability missing")?;
         assert_eq!(
-            super::boss_encounter::exchange_kind(
+            super::boss_encounter_fixtures::exchange_kind(
                 &owner,
                 &mut admitted,
                 1,
@@ -322,7 +322,7 @@ fn terminal_request_scenario() -> TestResult {
             (3, COMMAND_TYPE_BOSS_TIMEOUT),
         ] {
             assert_eq!(
-                super::boss_encounter::exchange_kind(&owner, &mut admitted, id, kind, &payload)
+                super::boss_encounter_fixtures::exchange_kind(&owner, &mut admitted, id, kind, &payload)
                     .await?,
                 (CommandStatus::Rejected, encode_boss_activity_reply(&BossActivityReply::Refused(
                     BossActivityRefusal::ContentUnavailable,
@@ -363,7 +363,7 @@ fn qualified_activity_catalogue_postgres_equals_boot_qualified_set() -> TestResu
 }
 
 fn qualified_catalogue_scenario(require_primal: bool) -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("primal-production-room", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("primal-production-room", move || {
         run(async |admin| {
             reset();
             let h = Harness::create_with_admission_seed(admin, "primal_production_room", true, false).await?;

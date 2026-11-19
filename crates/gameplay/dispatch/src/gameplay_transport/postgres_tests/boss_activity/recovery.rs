@@ -23,7 +23,7 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 fn token(nonce: u8) -> TestResult<String> {
-    super::super::house_transfer::RecoverySource::token(nonce)
+    super::super::house_transfer_fixtures::RecoverySource::token(nonce)
 }
 fn transport(seed: u8) -> TestResult<AuthenticatedTransportRefV1> {
     AuthenticatedTransportRefV1::decode(&[seed; 16]).map_err(debug)

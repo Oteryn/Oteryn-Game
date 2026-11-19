@@ -124,7 +124,7 @@ fn character_info_postgres_real_dispatch() -> TestResult {
 }
 
 fn dispatch_scenario() -> TestResult {
-    use super::cyclopedia::support::exchange;
+    use super::cyclopedia_fixtures::support::exchange;
     use super::fixture::id;
     use super::{Dependencies, reset};
     use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -220,7 +220,7 @@ fn dispatch_scenario() -> TestResult {
             };
             fence.expected_character_revision = receipt.committed_character_revision;
         }
-        super::reaudit_title_predicates::seed_mastery(&h).await?;
+        super::reaudit_title_predicates_fixtures::seed_mastery(&h).await?;
         let (status, payload) = exchange(&owner, &mut admitted, 3, 113, &[2, 1]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(payload, [2, 1]);
@@ -393,7 +393,7 @@ fn character_titles_refresh_grants_and_revokes_from_native_facts() -> TestResult
             )
             .await
             .map_err(debug)?;
-        super::daily_reward::epoch(&h, 1).await?;
+        super::daily_reward_fixtures::epoch(&h, 1).await?;
         let mut tx = h.pool.begin().await?;
         sqlx::query("INSERT INTO game_character_daily_rewards(character_id,world_id,lane_day,streak,last_claim_epoch,last_claim_day) SELECT encode($1,'hex')::uuid,world_id,2,7,reset_epoch,reset_day FROM game_world_reset_history WHERE world_id=encode($2,'hex')::uuid AND reset_epoch=1")
             .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
