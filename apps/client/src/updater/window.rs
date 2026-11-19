@@ -16,10 +16,7 @@ fn dialog(text: &str, style: u32) -> i32 {
 pub(super) fn acquire_maintenance() -> Result<crate::win_mutex::NamedMutex, UpdateError> {
     let sid = crate::win_mutex::current_user_sid().map_err(|_| UpdateError::Unavailable)?;
     let name = crate::win_mutex::setup_mutex_name(&sid);
-    if crate::win_mutex::exists(&name).map_err(|_| UpdateError::Unavailable)? {
-        return Err(UpdateError::Unavailable);
-    }
-    let guard = crate::win_mutex::create(&name).map_err(|_| UpdateError::Unavailable)?;
+    let guard = crate::win_mutex::create_exclusive(&name).map_err(|_| UpdateError::Unavailable)?;
     if crate::win_mutex::exists(&crate::win_mutex::client_mutex_name(&sid))
         .map_err(|_| UpdateError::Unavailable)?
     {
@@ -27,6 +24,21 @@ pub(super) fn acquire_maintenance() -> Result<crate::win_mutex::NamedMutex, Upda
     }
     Ok(guard)
 }
+/// The installer transaction must run after every client process has closed.
+pub(super) fn wait_for_client_exit() -> Result<(), UpdateError> {
+    use std::time::{Duration, Instant};
+    let sid = crate::win_mutex::current_user_sid().map_err(|_| UpdateError::Unavailable)?;
+    let name = crate::win_mutex::client_mutex_name(&sid);
+    let deadline = Instant::now() + Duration::from_secs(300);
+    while crate::win_mutex::exists(&name).map_err(|_| UpdateError::Unavailable)? {
+        if Instant::now() >= deadline {
+            return Err(UpdateError::Unavailable);
+        }
+        std::thread::sleep(Duration::from_millis(250));
+    }
+    Ok(())
+}
+
 pub(super) fn show(directory: &Path) -> Result<String, UpdateError> {
     let runtime = tokio::runtime::Runtime::new().map_err(|_| UpdateError::Unavailable)?;
     let version = runtime.block_on(maintain(directory, "stable", Action::Check))?;

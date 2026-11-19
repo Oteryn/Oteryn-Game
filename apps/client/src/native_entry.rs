@@ -53,7 +53,17 @@ fn retry_login<E>(_error: E) -> GameplayEntryError {
 }
 
 fn login_rejected(error: NativeLoginError) -> GameplayEntryError {
-    rejected(error.public_class())
+    match error {
+        NativeLoginError::UpdateRequired(update) => {
+            let updater_started = crate::updater::start_login_update(&update).is_ok();
+            GameplayEntryError::ClientUpdateRequired {
+                manual_download_url: update.manual_download_url,
+                updater_started,
+            }
+        }
+        NativeLoginError::Maintenance { retry_at } => GameplayEntryError::Maintenance { retry_at },
+        error => rejected(error.public_class()),
+    }
 }
 
 const fn admission_class(class: AdmissionPublicClass) -> PublicClass {
@@ -92,7 +102,8 @@ pub(crate) async fn enter_observed(
         &gateway,
         &config.oauth_client_id,
         config.retry_unit,
-    )?;
+    )?
+    .with_release(crate::build_info::login_release(&config.gateway_url));
     let authorize::Authorized {
         ticket,
         character_id: selected_character,

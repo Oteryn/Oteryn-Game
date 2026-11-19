@@ -385,7 +385,7 @@ mod tests {
         assert!(entry.cancel_entry());
         let result = entry.poll().ok_or("queued result missing")?;
         assert_eq!(
-            result.as_ref().err().copied(),
+            result.as_ref().err().cloned(),
             Some(GameplayEntryError::Rejected(
                 PublicClass::SessionUnavailable
             ))

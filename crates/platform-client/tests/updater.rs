@@ -62,6 +62,8 @@ fn signed_origin_checks_versions_downloads_and_refuses_corruption()
   let requests=Arc::new(std::sync::Mutex::new(Vec::new()));
   let client=UpdateClient::check_with_transport(UpdateConfig::new("stable",root,"windows","x86_64")?,&folder,Fixture{corrupted:false,requests:requests.clone()}).await?;
   assert_eq!(client.policy.current_release_id,"rel-a");assert_eq!(client.length,7);
+  assert_eq!(client.require_minimum(Some(2)), Err(oteryn_platform_client::updates::UpdateError::Unavailable));
+  assert_eq!(client.require_minimum(Some(1)), Ok(()));
   client.download(&folder.join("package.zip")).await?;
   assert_eq!(std::fs::read(folder.join("package.zip"))?,b"package");
   let bad=UpdateClient::check_with_transport(UpdateConfig::new("stable",root,"windows","x86_64")?,&folder,Fixture{corrupted:true,requests}).await?;

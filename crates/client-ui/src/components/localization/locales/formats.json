@@ -1,4 +1,7 @@
 [
+ "Update required. Close all Oteryn clients to install the update, then start the launcher and sign in again. Manual download at {manual_download_url}",
+ "Update required. Download the current client at {manual_download_url}, then sign in again.",
+ "Oteryn is undergoing maintenance. Try signing in again in {seconds} s.",
  "Reshaping a gem's mods lets you randomly re-roll each mod of the gem. Reshape position {}: {} gold and {} {} fragments.",
  "Mod Reshaping unavailable: {}.",
  "Reshape mod {} of the selected gem?\nCost: {} gold and {} {} fragments. The server rerolls the mod.",

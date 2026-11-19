@@ -1,3 +1,63 @@
+use oteryn_platform_client::native_login::ReleaseIdentity;
+use oteryn_platform_client::updates::{MAX_RELEASE_SEQUENCE, UpdateChannel};
+
+// Downloads release IDs have a different grammar from the installer's diagnostic build ID.
+const UPDATE_RELEASE_INPUTS: (Option<&str>, Option<&str>, Option<&str>) = (
+    option_env!("OTERYN_CLIENT_UPDATE_CHANNEL"),
+    option_env!("OTERYN_CLIENT_UPDATE_RELEASE_ID"),
+    option_env!("OTERYN_CLIENT_UPDATE_RELEASE_SEQUENCE"),
+);
+const UPDATE_RELEASE: Option<ReleaseIdentity> = match UPDATE_RELEASE_INPUTS {
+    (Some(channel), Some(id), Some(sequence)) => match channel.as_bytes() {
+        b"stable" => ReleaseIdentity::new(UpdateChannel::Stable, id, release_sequence(sequence)),
+        b"beta" => ReleaseIdentity::new(UpdateChannel::Beta, id, release_sequence(sequence)),
+        _ => None,
+    },
+    _ => None,
+};
+const _: () = assert!(
+    matches!(UPDATE_RELEASE_INPUTS, (None, None, None)) || UPDATE_RELEASE.is_some(),
+    "Set a valid OTERYN_CLIENT_UPDATE_CHANNEL, OTERYN_CLIENT_UPDATE_RELEASE_ID and OTERYN_CLIENT_UPDATE_RELEASE_SEQUENCE"
+);
+
+// Setting this URL acknowledges that this Gateway and its issuer accept offer.release.
+const BUILD_GATE_GATEWAY: Option<&str> = option_env!("OTERYN_CLIENT_BUILD_GATE_GATEWAY_URL");
+const _: () = assert!(
+    BUILD_GATE_GATEWAY.is_none() || UPDATE_RELEASE.is_some(),
+    "A build gate Gateway requires a Downloads release identity"
+);
+
+const fn release_sequence(value: &str) -> u64 {
+    let bytes = value.as_bytes();
+    let mut sequence = 0;
+    let mut i = 0;
+    while i < bytes.len() {
+        assert!(
+            bytes[i].is_ascii_digit(),
+            "Release sequence must be decimal"
+        );
+        sequence = sequence * 10 + (bytes[i] - b'0') as u64;
+        assert!(
+            sequence <= MAX_RELEASE_SEQUENCE,
+            "Release sequence exceeds 2^53-1"
+        );
+        i += 1;
+    }
+    sequence
+}
+
+pub(crate) fn login_release(gateway: &str) -> Option<ReleaseIdentity> {
+    release_for_gateway(gateway, BUILD_GATE_GATEWAY, UPDATE_RELEASE)
+}
+
+fn release_for_gateway(
+    gateway: &str,
+    confirmed: Option<&str>,
+    release: Option<ReleaseIdentity>,
+) -> Option<ReleaseIdentity> {
+    release.filter(|_| confirmed == Some(gateway))
+}
+
 /// The release this executable belongs to (CLIENT-INSTALLER-0 §2):
 /// `<client_version>+<channel>.<route>.g<game_commit[0..12]>`, from `OTERYN_RELEASE_ID` at build
 /// time. A build without it is a local developer build, `<client_version>+dev.local.g000000000000`.
@@ -200,4 +260,22 @@ mod tests {
             assert!(!is_contract_release_id(invalid), "{invalid}");
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn native_login_only_offers_release_to_the_confirmed_gateway() {
+    let release = ReleaseIdentity::new(UpdateChannel::Stable, "rel-42", 42);
+    assert!(release.is_some());
+    let staging = "https://gateway.staging.example/";
+    let production = "https://gateway.example/";
+    assert_eq!(release_for_gateway(staging, None, release), None);
+    assert_eq!(
+        release_for_gateway(production, Some(staging), release),
+        None
+    );
+    assert_eq!(
+        release_for_gateway(staging, Some(staging), release),
+        release
+    );
 }

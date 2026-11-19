@@ -40,6 +40,10 @@ fn installation_check() -> Option<std::process::ExitCode> {
 /// install or uninstall holds the transaction mutex (CLIENT-INSTALLER-0 §2.1).
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
+    #[cfg(windows)]
+    if let Some(result) = oteryn_client::updater::login_update_requested() {
+        return result;
+    }
     oteryn_client::crash_report::install_hook();
     let _instance = match oteryn_client::win_mutex::acquire_client_instance() {
         Ok(instance) => instance,

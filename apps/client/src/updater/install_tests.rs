@@ -40,3 +40,11 @@ fn repair_installs_fresh_slot_and_verification_detects_changed_bytes()
     fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[test]
+fn login_updater_requires_channel_trust_before_starting() {
+    assert_eq!(
+        super::require_update_root(&[]),
+        Err(oteryn_platform_client::updates::UpdateError::Configuration),
+    );
+}

@@ -37,7 +37,7 @@ impl Application {
             if let Some(document) = self.entry.as_mut().and_then(Reentry::take_bulletin) {
                 login.bulletin(document);
             }
-            login.finish(result.as_ref().map(|_| ()).map_err(|error| *error));
+            login.finish(result.as_ref().map(|_| ()).map_err(Clone::clone));
         }
         match result {
             Ok((mut view, link)) => {
@@ -49,7 +49,7 @@ impl Application {
                     status: String::new(),
                 });
             }
-            Err(error) => self.leave_play(error_text(error)),
+            Err(error) => self.leave_play(&error_text(error)),
         }
     }
     /// Reauthenticate after the consumed ticket, then show account character selection.

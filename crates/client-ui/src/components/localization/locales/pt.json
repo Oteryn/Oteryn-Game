@@ -1,4 +1,7 @@
 {
+ "Update required. Close all Oteryn clients to install the update, then start the launcher and sign in again. Manual download at {manual_download_url}": "Atualização necessária. Feche todos os clientes do Oteryn para instalá-la. Depois, abra o inicializador e inicie sessão novamente. Download manual em {manual_download_url}",
+ "Update required. Download the current client at {manual_download_url}, then sign in again.": "Atualização necessária. Baixe o cliente atual em {manual_download_url} e inicie sessão novamente.",
+ "Oteryn is undergoing maintenance. Try signing in again in {seconds} s.": "O Oteryn está em manutenção. Tente iniciar sessão novamente em {seconds} s.",
  "Preparation": "Preparação",
  "lesser": "menores",
  "greater": "maiores",

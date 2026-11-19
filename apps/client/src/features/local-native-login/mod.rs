@@ -4,6 +4,7 @@ use oteryn_platform_client::PlatformClientConfig;
 use oteryn_platform_client::native_login::{PublicClass, parse_uuid_v7};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 #[cfg(windows)]
 mod native;
@@ -157,17 +158,23 @@ pub fn settings_path() -> Result<PathBuf, String> {
         .ok_or_else(|| tr!("Cannot locate the user configuration directory.").into())
 }
 
+enum SignInGate {
+    UpdateRequired,
+    Maintenance(Instant),
+}
+
 pub struct LoginForm {
     pub settings: LoginSettings,
     connected: bool,
     pending: bool,
     retry: bool,
+    gate: Option<SignInGate>,
     message: String,
 }
 
 impl LoginForm {
     pub fn new(settings: LoginSettings) -> Self {
-        Self { settings, connected: false, pending: false, retry: false, message: tr!("Enter connection settings, then choose Save and sign in. Sign-in opens your browser.").into() }
+        Self { settings, connected: false, pending: false, retry: false, gate: None, message: tr!("Enter connection settings, then choose Save and sign in. Sign-in opens your browser.").into() }
     }
     /// Action shown after a failed attempt starts a fresh browser admission.
     pub fn submit_caption(&self) -> &'static str {
@@ -178,7 +185,14 @@ impl LoginForm {
         }
     }
     pub fn can_submit(&self) -> bool {
-        !self.pending && !self.connected
+        !self.pending && !self.connected && !self.gate_blocks_sign_in()
+    }
+    fn gate_blocks_sign_in(&self) -> bool {
+        match self.gate {
+            Some(SignInGate::UpdateRequired) => true,
+            Some(SignInGate::Maintenance(retry_at)) => Instant::now() < retry_at,
+            None => false,
+        }
     }
     pub fn offline(&mut self) {
         self.connected = false;
@@ -190,7 +204,9 @@ impl LoginForm {
         &self.message
     }
     pub fn feedback(&mut self, message: String) {
-        self.message = message;
+        if !self.gate_blocks_sign_in() {
+            self.message = message;
+        }
     }
     pub fn submit(&mut self) -> Result<NativeLoginConfig, String> {
         if self.connected {
@@ -202,6 +218,10 @@ impl LoginForm {
             )
             .into());
         }
+        if self.gate_blocks_sign_in() {
+            return Err(self.message.clone());
+        }
+        self.gate = None;
         let config = self
             .settings
             .config()
@@ -214,14 +234,20 @@ impl LoginForm {
         self.pending = false;
         self.connected = result.is_ok();
         self.retry = result.is_err();
-        self.message = result.map_or_else(
-            |error| error_text(error).to_owned(),
-            |()| tr!("Connected.").into(),
-        );
+        self.gate = match &result {
+            Err(GameplayEntryError::ClientUpdateRequired { .. }) => {
+                Some(SignInGate::UpdateRequired)
+            }
+            Err(GameplayEntryError::Maintenance { retry_at }) => {
+                Some(SignInGate::Maintenance(*retry_at))
+            }
+            _ => None,
+        };
+        self.message = result.map_or_else(error_text, |()| tr!("Connected.").into());
     }
 }
 
-pub fn error_text(error: GameplayEntryError) -> &'static str {
+pub fn error_text(error: GameplayEntryError) -> String {
     match error {
         GameplayEntryError::NativeProtocolUnavailable => {
             tr!("Enter connection settings and choose Save and sign in.")
@@ -230,6 +256,18 @@ pub fn error_text(error: GameplayEntryError) -> &'static str {
             tr!(
                 "Check Platform and Gateway URLs, OAuth client ID, optional character preselect and the trust certificate path, then sign in again."
             )
+        }
+        GameplayEntryError::ClientUpdateRequired { manual_download_url, updater_started } => {
+            return if updater_started {
+                lfmt!("Update required. Close all Oteryn clients to install the update, then start the launcher and sign in again. Manual download at {manual_download_url}", manual_download_url = manual_download_url)
+            } else {
+                lfmt!("Update required. Download the current client at {manual_download_url}, then sign in again.", manual_download_url = manual_download_url)
+            };
+        }
+        GameplayEntryError::Maintenance { retry_at } => {
+            let remaining = retry_at.saturating_duration_since(Instant::now()).as_secs_f64();
+            let seconds = remaining.ceil() as u64;
+            return lfmt!("Oteryn is undergoing maintenance. Try signing in again in {seconds} s.", seconds = seconds);
         }
         GameplayEntryError::ChannelFull => tr!("This channel is full."),
         GameplayEntryError::WorldUnavailable => {
@@ -262,5 +300,42 @@ pub fn error_text(error: GameplayEntryError) -> &'static str {
                 "Character is already active. Log out its other session or wait for it to end, then sign in again."
             )
         }
+    }.into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn refuses_further_sign_in_and_displays_manual_download_without_update_trust() {
+        let mut form = LoginForm::new(LoginSettings::default());
+        let url = "https://oteryn.com/download";
+        form.finish(Err(GameplayEntryError::ClientUpdateRequired {
+            manual_download_url: url.to_owned(),
+            updater_started: false,
+        }));
+        assert!(form.message().contains(url));
+        assert!(!form.can_submit());
+        assert!(form.submit().is_err());
+        form.offline();
+        form.feedback("generic offline message".into());
+        assert!(form.message().contains(url));
+        assert!(!form.can_submit());
+    }
+
+    #[test]
+    fn maintenance_displays_state_and_only_allows_sign_in_after_deadline() {
+        let mut form = LoginForm::new(LoginSettings::default());
+        let future = Instant::now() + Duration::from_secs(30);
+        form.finish(Err(GameplayEntryError::Maintenance { retry_at: future }));
+        assert!(form.message().contains("maintenance"));
+        assert!(!form.can_submit());
+        assert!(form.submit().is_err());
+        form.finish(Err(GameplayEntryError::Maintenance {
+            retry_at: Instant::now(),
+        }));
+        assert!(form.can_submit());
     }
 }

@@ -187,8 +187,9 @@ fn run(
                     SetForegroundWindow(hwnd);
                 }
                 Ok(Update::Finish(result)) => {
+                    let connected = result.is_ok();
                     form.finish(result);
-                    ShowWindow(hwnd, if result.is_ok() { SW_HIDE } else { SW_SHOW });
+                    ShowWindow(hwnd, if connected { SW_HIDE } else { SW_SHOW });
                 }
                 Err(TryRecvError::Disconnected) => break,
                 Err(TryRecvError::Empty) => {}

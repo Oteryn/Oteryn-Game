@@ -292,7 +292,7 @@ fn login_form_drives_existing_browser_gateway_and_admission() -> TestResult {
                 let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
                 loop {
                     if let Some(result) = entry.poll() {
-                        form.finish(result.as_ref().map(|_| ()).map_err(|error| *error));
+                        form.finish(result.as_ref().map(|_| ()).map_err(Clone::clone));
                         assert!(result.is_ok());
                         break;
                     }
