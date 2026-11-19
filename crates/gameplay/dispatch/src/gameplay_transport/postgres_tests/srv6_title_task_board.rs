@@ -1,5 +1,5 @@
 //! SRV6: existing Task Board points qualify titles through command 113, never client proof.
-use super::cyclopedia::support::exchange;
+use super::cyclopedia_fixtures::support::exchange;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;

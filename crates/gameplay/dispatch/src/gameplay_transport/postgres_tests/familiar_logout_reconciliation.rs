@@ -57,7 +57,7 @@ enum Finish {
 
 fn scenario(committed: bool, finish: Finish) -> TestResult {
     // This helper owns a 64 MiB scenario thread and skips only route-less lanes.
-    kill_reward_e2e::scenario_thread::run_async(async move |admin| {
+    kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         let name = match (committed, finish) {
             (true, Finish::Logout) => "familiar_logout_known_retry",
             (false, Finish::Logout) => "familiar_logout_absent_retry",
@@ -77,7 +77,7 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
             .map_err(debug)?;
         let world = fence(1)?.runtime_scope.world_id();
         let (generation, pin) =
-            death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let active = generation.active().ok_or("active generation")?;
         let spells = active
             .native_gameplay()
@@ -118,7 +118,7 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
         // must carry the independently current session, lease and scope fence.
         let mut admitted = deps.admitted;
         admitted.item_fence = Some(
-            death_ml_loss_composed::current_fence(&owner, session)
+            death_ml_loss_composed_fixtures::current_fence(&owner, session)
                 .await?
                 .item_fence(),
         );

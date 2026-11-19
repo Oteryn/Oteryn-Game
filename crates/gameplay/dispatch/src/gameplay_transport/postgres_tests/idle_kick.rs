@@ -1,5 +1,5 @@
 //! IDLEKICK: real router, composed logout, generation fence and PostgreSQL final position.
-use super::autowalk::{at, place, read};
+use super::autowalk_fixtures::{at, place, read};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session, track};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -157,7 +157,7 @@ fn case(protected: bool, stale: bool) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
         )?;

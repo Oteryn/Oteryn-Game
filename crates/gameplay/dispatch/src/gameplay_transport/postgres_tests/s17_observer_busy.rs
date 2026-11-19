@@ -2,7 +2,7 @@
 use super::{
     TestResult,
     fixture::{Harness, run},
-    item_look::large_stack,
+    item_look_fixtures::large_stack,
 };
 use oteryn_gameplay_social::{
     cast::{
@@ -99,7 +99,7 @@ fn nbcast_busy_observer_retry_preserves_consent_lease_postgres() -> TestResult {
 
             let h = Harness::create(admin, "nbcast_consent_lease", true).await?;
             let (access, host) =
-                super::s17_client::settings_host::host(*h.node.fact().node_id().as_bytes()).await?;
+                super::s17_client_fixtures::settings_host::host(*h.node.fact().node_id().as_bytes()).await?;
             let upkeep_root = h.root.clone();
             let upkeep = tokio::spawn(async move {
                 let mut cadence = tokio::time::interval(Duration::from_millis(10));

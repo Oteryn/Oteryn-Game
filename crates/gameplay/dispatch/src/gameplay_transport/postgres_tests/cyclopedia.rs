@@ -1,5 +1,7 @@
 //! LOOP-MAP-1: admitted command bytes -> native fenced durable state -> result bytes.
-use super::fixture::{self as harness_fixture, Harness, debug, id, run};
+use super::cyclopedia_fixtures::{pool, support};
+
+use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -12,8 +14,6 @@ use oteryn_protocol_oteryn::CommandStatus;
 mod atlas;
 #[path = "cyclopedia/speed.rs"]
 mod speed;
-#[path = "cyclopedia/fixture.rs"]
-pub(super) mod support;
 
 fn request(operation: u8, amount: u32) -> Vec<u8> {
     let mut b = vec![operation];
@@ -27,9 +27,7 @@ fn count(bytes: &[u8]) -> u8 {
 fn revision(bytes: &[u8]) -> u64 {
     u64::from_le_bytes(bytes[1..9].try_into().expect("fixed result field"))
 }
-fn pool(bytes: &[u8]) -> u64 {
-    u64::from_le_bytes(bytes[12..20].try_into().expect("fixed result field"))
-}
+
 fn percentage(bytes: &[u8]) -> u8 {
     bytes[11]
 }
@@ -71,7 +69,7 @@ fn scenario(canonical: bool) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activation_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

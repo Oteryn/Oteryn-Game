@@ -7,8 +7,8 @@ fn questpc7_giant_smithhammer_asymmetric_lever_all_four_states() -> TestResult {
         return Ok(());
     }
     let start = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("questpc7-asymmetric", || {
-        super::quest_world_callbacks::scenario(
+    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc7-asymmetric", || {
+        super::quest_world_callbacks_fixtures::scenario(
             "giant-smithhammer",
             oteryn_gameplay_quests::quest::world_callbacks::Position {
                 x: 32779,

@@ -20,7 +20,7 @@ fn worldchg_yeo_native_repeatable_ten_shrimp_one_gloo_atomic_replay() -> TestRes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("worldchg-yeo", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("worldchg-yeo", scenario)
 }
 async fn snapshot(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1),(SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$2),(SELECT count(*) FROM game_npc_trades),(SELECT count(*) FROM game_item_audit_outbox)")
@@ -151,7 +151,7 @@ fn scenario() -> TestResult {
                 })
                 .ok_or("actual Yeo actor")?
         };
-        super::item_look::seed_main_backpack(&h, &[(SHRIMP, 25)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[(SHRIMP, 25)]).await?;
         let command = |n| UseCommand {
             game_session_id: session,
             command_id: n,

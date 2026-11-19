@@ -15,7 +15,7 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-cruelty-uncredited-corpse", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-cruelty-uncredited-corpse", || {
         run(async |admin| {
             super::reset();
             let kind = PinnedActivitySourceRoom::GoshnarsCruelty;
@@ -39,9 +39,9 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
             sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at,megalomania_completed,final_reward_claimed) VALUES(encode($1,'hex')::uuid,true,0,NULL,false,false)")
                 .bind(id(41).as_slice()).execute(&mut *historical).await?;
             historical.commit().await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
-            super::item_look::seed_main_backpack(&h, &[]).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+            super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -57,7 +57,7 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
                     .clone(),
             ));
             install_scene(&mut owner, &scene, kind)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -76,8 +76,8 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
             )
             .ok_or("actual boss capabilities")?;
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
-            let instance = super::activity_runtime::allocate_ready_instance(&h, 217).await?;
-            let (_, reply, barrier) = super::boss_activity::exchange_capture(
+            let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 217).await?;
+            let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 "oteryn:creature.goshnar_s_cruelty",
@@ -250,7 +250,7 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
                     Some("oteryn:item.tibia.i33891")
                 );
             }
-            super::srx3_native_source_cast::drain_source_death(&view, soul, owner.owner_now())
+            super::srx3_native_source_cast_fixtures::drain_source_death(&view, soul, owner.owner_now())
                 .await?;
             assert!(
                 !view.runtime.lock().await.corpse_projection_pinned(soul),
