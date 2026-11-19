@@ -318,6 +318,11 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             60_000,
         )
         .await?;
+        // Settle the first condition pass at the pinned time before comparing replay.
+        owner.root.await_ready().await?;
+        let _ = owner
+            .tick_spell_periodic_at(deps.actor, admitted.game_session_id, owner.owner_now())
+            .await;
         let after_conditions = {
             let runtime = deps.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
