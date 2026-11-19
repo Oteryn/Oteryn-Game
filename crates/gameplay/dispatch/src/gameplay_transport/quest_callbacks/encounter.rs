@@ -981,11 +981,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 map.facts.emit_movement_effect(pos, 11);
             }
         }
-        if encounter.solo_expiry.is_some()
-            && let Some(message) = &callback.success_message
-        {
-            self.states.chat.push_quest_feedback(session, message);
-        }
         UseDisposition::Committed
     }
 }
