@@ -8,25 +8,53 @@ use crate::gameplay_transport::connection::{ControlLossResult, FreshAdmissionAut
 
 #[test]
 fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
-    vocation_scenario(false, false, false)
+    vocation_scenario(Case::Ordinary)
 }
 
 #[test]
 fn tutorial_vocation_waits_for_main_backpack() -> TestResult {
-    vocation_scenario(true, false, false)
+    vocation_scenario(Case::MissingBag)
 }
 
 #[test]
 fn tutorial_vocation_resumes_retained_request() -> TestResult {
-    vocation_scenario(false, true, false)
+    vocation_scenario(Case::Retained)
 }
 
 #[test]
 fn tutorial_vocation_logout_keeps_refill_when_live_installation_is_pending() -> TestResult {
-    vocation_scenario(false, true, true)
+    vocation_scenario(Case::Uninstalled)
 }
 
-fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> TestResult {
+#[test]
+fn tutorial_vocation_rejects_a_kit_that_would_exceed_the_carried_tree() -> TestResult {
+    vocation_scenario(Case::Capacity)
+}
+
+#[test]
+fn tutorial_vocation_holds_position_capture_during_the_initial_vitals_write() -> TestResult {
+    vocation_scenario(Case::InitialVitalsHold)
+}
+
+#[test]
+fn tutorial_vocation_retains_movement_during_periodic_save_and_logout() -> TestResult {
+    vocation_scenario(Case::RetainedMovement)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Ordinary,
+    MissingBag,
+    Retained,
+    Uninstalled,
+    Capacity,
+    InitialVitalsHold,
+    RetainedMovement,
+}
+
+fn vocation_scenario(case: Case) -> TestResult {
+    let retained = matches!(case, Case::Retained | Case::Uninstalled | Case::RetainedMovement);
+    let post_commit = matches!(case, Case::Uninstalled | Case::RetainedMovement);
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -163,7 +191,7 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
                     .0,
                 CommandStatus::Rejected
             );
-            if missing_bag {
+            if case == Case::MissingBag {
                 move_fixture_bag(&h, 41, 98).await?;
                 assert!(
                     owner.tutorial_vocation_wire(admitted, &[4]).await.is_none(),
@@ -180,6 +208,13 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
                 assert_eq!(build.vocation(), crate::durability::character_build::NO_VOCATION);
                 fill_fixture_backpack(&h, false).await?;
 
+            }
+            if case == Case::Capacity {
+                fill_nested_fixture(&h, true).await?;
+                assert!(owner.tutorial_vocation_wire(admitted, &[4]).await.is_none());
+                let build = h.root.read_character_build_state(&authority, fence.character_id).await.map_err(debug)?;
+                assert_eq!(build.vocation(), crate::durability::character_build::NO_VOCATION);
+                fill_nested_fixture(&h, false).await?;
             }
             if retained {
                 use crate::durability::character_build::{BuildFormula, BuildOccurrence};
@@ -242,6 +277,31 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
                     // the refill has committed while the live actor still has 1 HP.
                     let refill = saved_vitals(&h).await?;
                     assert!(refill.0 > 1, "first vocation refilled the wounded actor");
+                    if case == Case::RetainedMovement {
+                        for (distance, logout) in [(1, false), (2, true)] {
+                            let x = landing.x + distance;
+                            {
+                                let mut runtime = deps.runtime.lock().await;
+                                let mut movement = runtime.borrow_movement_position();
+                                let at = movement.read(deps.actor).map_err(debug)?;
+                                movement.commit_cardinal(at, crate::foundation::MovementLocalPosition { x, ..at.position() }).map_err(debug)?;
+                            }
+                            if logout {
+                                let _ = owner.logout_session(admitted).await;
+                            } else {
+                                assert_eq!(owner.write_due_last_positions(true).await, 0);
+                            }
+                            let saved: i32 = sqlx::query_scalar("SELECT tile_x FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
+                                .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                            assert_eq!(saved, x);
+                            let (health, mana, _) = saved_vitals(&h).await?;
+                            assert_eq!((health, mana), (refill.0, refill.1));
+                        }
+                        drop(owner);
+                        drop(authority);
+                        drop(seal);
+                        return h.cleanup().await;
+                    }
                     assert!(owner.last_position_capture_is_held(session).await);
                     assert_eq!(owner.write_due_last_positions(true).await, 0);
                     assert_eq!(saved_vitals(&h).await?, refill);
@@ -272,6 +332,40 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
                 }).await.map_err(debug)?;
                 assert_eq!(admitted.game_session_id, prior.game_session_id);
                 assert_eq!(admitted.continuity.connection_generation, prior.continuity.connection_generation + 1);
+            }
+            if case == Case::InitialVitalsHold {
+                let session = admitted.game_session_id;
+                assert!(owner.track_restored(session, deps.actor,
+                    &crate::gameplay_transport::last_position::AdmissionPosition::FirstLogin, fence));
+                let mut blocker = h.pool.begin().await?;
+                sqlx::query("LOCK TABLE game_character_last_positions IN ACCESS EXCLUSIVE MODE")
+                    .execute(&mut *blocker).await?;
+                {
+                let choice = owner.tutorial_vocation_wire(admitted, &[4]);
+                tokio::pin!(choice);
+                let waiting = async {
+                    loop {
+                        let waiting: bool = sqlx::query_scalar(
+                            "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE relation='game_character_last_positions'::regclass AND NOT granted)",
+                        ).fetch_one(&h.pool).await?;
+                        if waiting {
+                            return Ok::<_, sqlx::Error>(());
+                        }
+                        tokio::task::yield_now().await;
+                    }
+                };
+                tokio::select! {
+                    result = tokio::time::timeout(std::time::Duration::from_secs(5), waiting) => result??,
+                    result = &mut choice => return Err(format!("choice finished before the vitals write: {result:?}").into()),
+                }
+                assert!(owner.last_position_capture_is_held(session).await);
+                blocker.rollback().await?;
+                assert!(choice.await.is_some());
+                }
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
             }
             let (status, selected) = super::cyclopedia_fixtures::support::exchange(
                 &owner,
@@ -379,4 +473,39 @@ async fn fill_fixture_backpack(h: &Harness, fill: bool) -> TestResult {
 async fn saved_vitals(h: &Harness) -> TestResult<(i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT health::bigint,mana::bigint,write_sequence::bigint FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
+}
+
+
+async fn fill_nested_fixture(h: &Harness, fill: bool) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    if fill {
+        let (character, bag, world): (String, String, String) = sqlx::query_as(
+            "SELECT character_id::text,item_instance_id::text,world_id::text FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid",
+        ).bind(id(41).as_slice()).fetch_one(&mut *tx).await?;
+        let (parent, minted): (String, String) = sqlx::query_as(
+            "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(game_character_uuid_v7(),$1::uuid,'Item','oteryn:item.tibia.i2854','definition-r1',1,1,game_character_uuid_v7()) RETURNING item_instance_id::text,minted_transaction_id::text",
+        ).bind(&world).fetch_one(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES($1::uuid,$2::uuid,$3::uuid,$4::uuid,1000,$5::uuid)")
+            .bind(character).bind(bag).bind(&parent).bind(&world).bind(minted).execute(&mut *tx).await?;
+        sqlx::query("WITH items AS (
+            INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+            SELECT game_character_uuid_v7(),$1::uuid,'Item','oteryn:item.tibia.i3031','definition-r1',1,1,game_character_uuid_v7()
+            FROM generate_series(1,489) RETURNING item_instance_id,world_id,minted_transaction_id
+        ) INSERT INTO game_item_nested_entries(parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id)
+        SELECT $2::uuid,item_instance_id,world_id,row_number() OVER (ORDER BY item_instance_id),minted_transaction_id FROM items")
+            .bind(world).bind(parent).execute(&mut *tx).await?;
+        let size: i64 = sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
+            .bind(id(41).as_slice()).fetch_one(&mut *tx).await?;
+        assert!((490..=500).contains(&size));
+    } else {
+        sqlx::query("WITH parent AS (
+            DELETE FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid AND placement_ordinal=1000 RETURNING item_instance_id
+        ), children AS (
+            DELETE FROM game_item_nested_entries WHERE parent_item_instance_id IN (SELECT item_instance_id FROM parent) RETURNING item_instance_id
+        ) DELETE FROM game_item_instances WHERE item_instance_id IN (SELECT item_instance_id FROM parent UNION ALL SELECT item_instance_id FROM children)")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(())
 }

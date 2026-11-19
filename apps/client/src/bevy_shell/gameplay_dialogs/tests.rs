@@ -277,3 +277,69 @@ fn gameplay_dialogs_use_the_bundled_font_in_installed_client() {
     app.update();
     assert_eq!(app.world().resource::<Skin>().font, Handle::default());
 }
+
+// Allow the worker to publish the next combat report exactly after menu validation.
+thread_local! {
+    static AFTER_ATTACK_VALIDATION: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = std::cell::RefCell::new(None);
+}
+
+pub(super) fn publish_after_attack_validation() {
+    if let Some(publish) = AFTER_ATTACK_VALIDATION.take() {
+        publish();
+    }
+}
+
+#[test]
+fn context_stop_refuses_an_opponent_published_after_validation() -> Result {
+    use oteryn_session::{
+        ActorCombatState, ActorPosition, EntityDetail, EntityKind, EntityRef, FightModes,
+        StepDirection, WorldSpatialEntity,
+    };
+    let mut host = HostOwner::new(None)?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.bevy_world_look_selected();
+    let tile = TileCoord::new(101, 100);
+    let creature = |tag, x| WorldSpatialEntity {
+        entity: EntityRef {
+            identity: [tag; 16],
+            generation: 1,
+        },
+        kind: EntityKind::Creature,
+        position: ActorPosition {
+            x,
+            y: tile.y,
+            floor: 7,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+        motion: None,
+        display_name: None,
+    };
+    let creatures = [creature(3, tile.x), creature(4, tile.x + 1)];
+    let combat = |target| {
+        Some(ActorCombatState {
+            target: Some(target),
+            modes: FightModes::DEFAULT,
+            in_fight: true,
+        })
+    };
+    outbox.battle_publish(combat(creatures[0].entity), Some(7), &creatures);
+    host.play = Some(super::super::owner::ActivePlay {
+        view: PlayView::new(TileCoord::new(100, 100), 7, &[])?.with_entities(creatures.to_vec())?,
+        link,
+    });
+    host.phase = Phase::Playing;
+    host.request_world_context(tile);
+    let id = host.dialogs.pending.as_ref().ok_or("attack menu")?.id;
+    AFTER_ATTACK_VALIDATION.set(Some(Box::new(move || {
+        outbox.battle_publish(combat(creatures[1].entity), Some(7), &creatures);
+    })));
+    let submitted = host.choose_dialog(id, Choice::Attack);
+    assert!(AFTER_ATTACK_VALIDATION.take().is_none());
+    assert!(!submitted);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

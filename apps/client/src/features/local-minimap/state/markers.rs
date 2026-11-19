@@ -87,6 +87,10 @@ impl Minimap {
         let index = self.markers.iter().position(at_position);
         let current = index.map(|index| &self.markers[index]);
         if (create_only && current.is_some()) || current == replacement.as_ref() {
+            #[cfg(bevy_shell)]
+            if self.background_save {
+                return Ok(false);
+            }
             self.save()?;
             return Ok(false);
         }
@@ -105,6 +109,17 @@ impl Minimap {
             (None, None) => return Ok(false),
         }
         if let Some(path) = path {
+            #[cfg(bevy_shell)]
+            if self.background_save {
+                if self.load_failed {
+                    return Err(io::Error::other(tr!("Invalid minimap file")));
+                }
+                self.markers = markers;
+                self.cells_dirty = true;
+                self.marker_save_queued = true;
+                self.start_marker_save();
+                return Ok(true);
+            }
             self.write_cache(&path, markers)?;
         } else {
             self.markers = markers;

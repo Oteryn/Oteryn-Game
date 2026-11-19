@@ -147,6 +147,8 @@ pub struct Minimap {
     #[cfg(bevy_shell)]
     background_save: bool,
     #[cfg(bevy_shell)]
+    marker_save_queued: bool,
+    #[cfg(bevy_shell)]
     save_task: Option<bevy_tasks::Task<io::Result<()>>>,
 }
 impl Default for Minimap {
@@ -178,6 +180,8 @@ impl Default for Minimap {
             retry_delay: Duration::from_secs(5),
             #[cfg(bevy_shell)]
             background_save: false,
+            #[cfg(bevy_shell)]
+            marker_save_queued: false,
             #[cfg(bevy_shell)]
             save_task: None,
         }
@@ -337,7 +341,9 @@ impl Minimap {
         }
         #[cfg(bevy_shell)]
         if self.background_save {
-            if self.save_task.is_none() && let Err(error) = self.start_save() {
+            if self.save_task.is_none()
+                && let Err(error) = self.start_save()
+            {
                 self.save_failed(error);
             }
             return;
@@ -352,62 +358,6 @@ impl Minimap {
         self.saved_at = Instant::now();
         self.retry_delay = (self.retry_delay * 2).min(Duration::from_secs(300));
         self.feedback = lfmt!("Could not save minimap: {error}", error = error);
-    }
-
-    #[cfg(bevy_shell)]
-    pub(in crate::play) fn enable_background_save(&mut self) {
-        self.background_save = true;
-    }
-
-    #[cfg(bevy_shell)]
-    fn start_save(&mut self) -> io::Result<()> {
-        let Some(path) = self.path() else {
-            return self.save();
-        };
-        if self.is_read_only() {
-            return self.save();
-        }
-        self.require_cache_owner(&path)?;
-        if self.load_failed {
-            return Err(io::Error::other(tr!("Invalid minimap file")));
-        }
-        let saved = self.snapshot(self.markers.clone());
-        self.save_task = Some(bevy_tasks::IoTaskPool::get().spawn(async move {
-            saved.validate()?;
-            saved.write_to(&path)
-        }));
-        self.cells_dirty = false;
-        Ok(())
-    }
-
-    #[cfg(bevy_shell)]
-    pub(in crate::play) fn poll_background_save(&mut self) {
-        if let Some(result) = self.save_task.as_mut().and_then(bevy_tasks::futures::check_ready) {
-            self.save_task = None;
-            self.finish_background_save(result);
-        }
-        if self.background_save {
-            self.save_if_due();
-        }
-    }
-
-    #[cfg(bevy_shell)]
-    fn finish_background_save(&mut self, result: io::Result<()>) {
-        match result {
-            Ok(()) => {
-                self.saved_at = Instant::now();
-                self.retry_delay = Duration::from_secs(5);
-            }
-            Err(error) => self.save_failed(error),
-        }
-    }
-
-    // Explicit saves, cache switches and shutdown serialize with the in-flight snapshot.
-    fn finish_pending_save(&mut self) {
-        #[cfg(bevy_shell)]
-        if let Some(task) = self.save_task.take() {
-            self.finish_background_save(bevy_tasks::block_on(task));
-        }
     }
 
     fn set_cell_colour(&mut self, key: CellPosition, colour: u8) {
@@ -455,7 +405,8 @@ impl Minimap {
             return Ok(());
         }
         match self.path() {
-            Some(path) if matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly(_))) => {}
+            Some(path)
+                if matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly(_))) => {}
             Some(path) => {
                 self.require_cache_owner(&path)?;
                 return self.write_cache(&path, self.markers.clone());
@@ -470,8 +421,9 @@ impl Minimap {
     }
 
     pub(in crate::play) fn is_read_only(&self) -> bool {
-        self.path()
-            .is_some_and(|path| matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly(_))))
+        self.path().is_some_and(|path| {
+            matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly(_)))
+        })
     }
 
     fn require_cache_owner(&self, path: &Path) -> io::Result<()> {
@@ -505,6 +457,10 @@ impl Minimap {
         saved.validate()?;
         saved.write_to(path)?;
         self.markers = saved.markers;
+        #[cfg(bevy_shell)]
+        {
+            self.marker_save_queued = false;
+        }
         self.cells_dirty = false;
         self.saved_at = Instant::now();
         self.retry_delay = Duration::from_secs(5);
@@ -595,3 +551,6 @@ mod quest_mark_tests;
 #[cfg(test)]
 #[path = "native.rs"]
 mod native_action_tests;
+
+#[path = "state/background_save.rs"]
+mod background_save;

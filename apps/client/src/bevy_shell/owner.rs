@@ -318,6 +318,7 @@ impl HostOwner {
         if self.phase == Phase::Closed {
             return;
         }
+        self.settings.poll_background_save();
         if self.entry.as_ref().is_some_and(Reentry::is_entering) {
             self.phase = Phase::Entering;
         }
@@ -409,7 +410,12 @@ impl HostOwner {
                     }
                 }
             }
-            Err(error) => self.leave(error_text(error)),
+            Err(error) => {
+                self.leave(error_text(error));
+                if !self.login.visible {
+                    self.login.show();
+                }
+            }
         }
     }
     fn finish_play(&mut self, end: PlayEnd) {
@@ -573,3 +579,6 @@ fn logout_reaches_the_picker_even_when_quick_login_has_a_valid_selection()
 #[cfg(test)]
 #[path = "owner/admission_tests.rs"]
 mod admission_tests;
+
+#[cfg(test)]
+mod reentry_tests;

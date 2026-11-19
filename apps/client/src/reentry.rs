@@ -47,6 +47,7 @@ pub struct Reentry {
     waiting: Option<(AdmissionWait, QueueWait)>,
     last_wait_text: Option<String>,
     pending: Option<Receiver<Result<AdmittedSession, GameplayEntryError>>>,
+    revocation: Option<tokio::task::JoinHandle<()>>,
     training_completion: Option<Box<dyn Fn() -> bool + Send>>,
 }
 
@@ -70,6 +71,7 @@ impl Reentry {
             last_wait_text: None,
             pending: None,
             training_completion: None,
+            revocation: None,
         }
     }
 
@@ -120,7 +122,11 @@ impl Reentry {
         self.waiting = None;
         self.last_wait_text = None;
         // Dropping the sender on a stopped runtime is handled as a public refusal by poll.
+        let revocation = self.revocation.take();
         let _task = self.client.runtime.spawn(async move {
+            if let Some(revocation) = revocation {
+                let _ = revocation.await;
+            }
             let work = async {
                 match config {
                     Some(config) => {
@@ -206,6 +212,13 @@ impl Reentry {
 
     /// Both initial admission and subsequent admissions start play through this same path.
     pub fn poll(&mut self) -> Option<Result<(PlayView, PlayLink), GameplayEntryError>> {
+        if self
+            .revocation
+            .as_ref()
+            .is_some_and(|task| !task.is_finished())
+        {
+            return None;
+        }
         let result = match self.pending.as_ref()?.try_recv() {
             Ok(result) => result,
             Err(TryRecvError::Empty) => return None,

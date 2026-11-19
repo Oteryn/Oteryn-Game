@@ -467,3 +467,66 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
         Ok(())
     })
 }
+
+#[test]
+fn commerce_uses_a_character_selected_in_the_same_frame_as_the_action() -> TestResult {
+    use crate::account_services::{Action, View};
+    use oteryn_platform_client::native_login::bazaar::{
+        AuctionView, BazaarPage, OwnedCharacter, TransferWorld,
+    };
+
+    for listing in [false, true] {
+        let (mut app, config) = commerce_app()?;
+        let mut view = View::default();
+        view.page = Some(BazaarPage {
+            version: 1,
+            view: AuctionView::Own,
+            auctions: vec![],
+            balance: 10,
+            owned_characters: ["Alice", "Bob"]
+                .map(|name| OwnedCharacter {
+                    id: name.into(),
+                    name: name.into(),
+                    world_id: "home".into(),
+                })
+                .into(),
+            worlds: vec![TransferWorld {
+                id: "other".into(),
+                name: "Other".into(),
+            }],
+            next_cursor: None,
+            recent_operations: vec![],
+        });
+        let worker =
+            thread::spawn(move || (config.account_services)(&view, CancellationToken::new()));
+        wait(&mut app, None)?;
+        click_named(&mut app, "account.character.Alice")?;
+        for name in [
+            "account.character.Bob",
+            if listing {
+                "account.sell"
+            } else {
+                "account.transfer.other"
+            },
+        ] {
+            let world = app.world_mut();
+            let entity = world
+                .query::<(Entity, &Name)>()
+                .iter(world)
+                .find_map(|(entity, label)| (label.as_str() == name).then_some(entity))
+                .ok_or("commerce control")?;
+            world.trigger(Activate { entity });
+        }
+        app.update();
+        if listing {
+            click_named(&mut app, "commerce.confirm")?;
+        }
+        let action = worker.join().map_err(|_| "commerce presenter")?;
+        if listing {
+            assert!(matches!(action, Action::Sell { character_id, .. } if character_id == "Bob"));
+        } else {
+            assert!(matches!(action, Action::Quote { character_id, .. } if character_id == "Bob"));
+        }
+    }
+    Ok(())
+}

@@ -23,12 +23,18 @@ pub(super) fn capture_on_key(
     mut owner: NonSendMut<HostOwner>,
     viewport: Res<super::game_ui::viewport::WorldViewport>,
     mut automatic: Local<super::screenshots::AutomaticState>,
+    mut manual_pending: Local<bool>,
     captures: Query<Entity, With<bevy::render::view::screenshot::Screenshot>>,
     clock: Res<Time<Real>>,
     mut writes: NonSendMut<super::screenshots::Writes>,
 ) {
     writes.poll(&mut owner);
-    let manual = keys.just_pressed(KeyCode::F12);
+    let occupied = !captures.is_empty();
+    *manual_pending |= keys.just_pressed(KeyCode::F12);
+    let manual = *manual_pending && !occupied;
+    if manual {
+        *manual_pending = false;
+    }
     let manual_batch = manual
         && output.path.is_none()
         && owner.play.is_some()
@@ -44,7 +50,7 @@ pub(super) fn capture_on_key(
         &mut owner,
         *viewport,
         &mut automatic,
-        &captures,
+        occupied,
         &clock,
         &writes,
         manual_batch,

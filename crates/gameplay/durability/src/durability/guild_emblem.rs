@@ -44,7 +44,7 @@ impl DurabilityRoot {
                     let world = fence.runtime_scope.world_id();
                     let viewed: Vec<Vec<u8>> = viewed.iter().map(|id| id.to_vec()).collect();
                     // Bounded by the Channel's positioned players passed in `viewed`.
-                    let rows = sqlx::query(
+                    let rows = sqlx::query(concat!(
                         "WITH observer AS ( \
                            SELECT m.guild_id FROM game_guild_members m \
                              JOIN game_guilds g USING (guild_id) \
@@ -54,17 +54,17 @@ impl DurabilityRoot {
                          SELECT uuid_send(m.character_id) AS character, \
                                 COALESCE(m.guild_id = (SELECT guild_id FROM observer), false) AS own, \
                                 EXISTS (SELECT 1 FROM game_guild_wars w \
-                                         WHERE w.world_id = g.world_id AND w.state = 2 \
+                                         WHERE w.world_id = g.world_id AND ", super::guild_war::active_war_predicate!(), " \
                                            AND m.guild_id IN (w.declaring_guild, w.opposing_guild)) AS in_war, \
                                 EXISTS (SELECT 1 FROM game_guild_wars w, observer o \
-                                         WHERE w.world_id = g.world_id AND w.state = 2 \
+                                         WHERE w.world_id = g.world_id AND ", super::guild_war::active_war_predicate!(), " \
                                            AND ((w.declaring_guild = m.guild_id AND w.opposing_guild = o.guild_id) \
                                              OR (w.opposing_guild = m.guild_id AND w.declaring_guild = o.guild_id))) AS enemy \
                            FROM game_guild_members m JOIN game_guilds g USING (guild_id) \
                           WHERE m.character_id IN (SELECT encode(v,'hex')::uuid FROM unnest($2::bytea[]) AS v) \
                             AND g.state < 4 AND g.world_id = encode($3,'hex')::uuid \
                           ORDER BY m.character_id",
-                    )
+                    ))
                     .bind(fence.character_id.as_bytes().as_slice())
                     .bind(&viewed)
                     .bind(world.as_bytes().as_slice())

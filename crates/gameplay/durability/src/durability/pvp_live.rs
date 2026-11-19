@@ -190,9 +190,7 @@ async fn war_between_in_transaction(
     attacker: &[u8; 16],
     target: &[u8; 16],
 ) -> std::result::Result<bool, sqlx::Error> {
-    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b ON b.character_id=encode($2,'hex')::uuid JOIN game_guild_wars w ON w.state=2 \
-        AND w.ends_at>floor(extract(epoch FROM transaction_timestamp())*1000)::bigint \
-        AND w.declaring_frags<w.frag_limit AND w.opposing_frags<w.frag_limit AND ((w.declaring_guild=a.guild_id AND w.opposing_guild=b.guild_id) OR (w.opposing_guild=a.guild_id AND w.declaring_guild=b.guild_id)) JOIN game_character_roots r ON r.character_id=a.character_id AND r.world_id=w.world_id WHERE a.character_id=encode($1,'hex')::uuid)")
+    sqlx::query_scalar(concat!("SELECT EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b ON b.character_id=encode($2,'hex')::uuid JOIN game_guild_wars w ON ", super::guild_war::active_war_predicate!(), " AND ((w.declaring_guild=a.guild_id AND w.opposing_guild=b.guild_id) OR (w.opposing_guild=a.guild_id AND w.declaring_guild=b.guild_id)) JOIN game_character_roots r ON r.character_id=a.character_id AND r.world_id=w.world_id WHERE a.character_id=encode($1,'hex')::uuid)"))
         .bind(attacker.as_slice()).bind(target.as_slice()).fetch_one(&mut **tx).await
 }
 

@@ -1,8 +1,6 @@
 //! One command, one fenced decision, with immutable operation binding and transactional outbox.
 use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-};
+use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::super::{DurabilityError, DurabilityRoot};
 use super::enforcement_wire::*;
@@ -202,9 +200,7 @@ impl DurabilityRoot {
    if rejection.is_none() {
     // Validate the subject before creating portfolio state. Then take the
     // admission relations before the portfolio row and revalidate under lock.
-    lock_admission_relations(&mut tx).await?;
-    sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES($1::uuid) ON CONFLICT DO NOTHING").bind(&c.account_id).execute(&mut *tx).await?;
-    sqlx::query("SELECT 1 FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE").bind(&c.account_id).fetch_one(&mut *tx).await?;
+    super::super::fresh_admission::lock_admission_portfolios(&mut tx, &[&c.account_id], true, false).await?;
     let root=sqlx::query("SELECT account_id::text,lifecycle FROM game_character_roots WHERE character_id=$1::uuid FOR UPDATE").bind(&c.character_id).fetch_optional(&mut *tx).await?;
     now=sqlx::query_scalar("SELECT game_platform_enforcement_now_ms()").fetch_one(&mut *tx).await?;
     if now<=0 {return Err(DurabilityError::Unavailable);}

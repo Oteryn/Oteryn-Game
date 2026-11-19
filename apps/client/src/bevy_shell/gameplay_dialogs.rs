@@ -315,13 +315,9 @@ impl HostOwner {
                 {
                     return false;
                 }
-                use crate::combat_input::CombatCommand;
-                play.link.request_combat(if attacking {
-                    CombatCommand::Stop
-                } else {
-                    CombatCommand::Attack(target)
-                });
-                true
+                #[cfg(test)]
+                tests::publish_after_attack_validation();
+                play.link.request_context_combat(target, attacking)
             }),
             (
                 Content::Context {

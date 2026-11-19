@@ -92,33 +92,122 @@ async fn authority(
     Ok((permit, authority))
 }
 
+async fn seed_war(tx: &mut Transaction<'_, Postgres>) -> TestResult {
+    target(tx).await?;
+    sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,revision,created_at)
+        VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,'Declaring Guild',2,9999999999999,1,1),
+              (encode($2,'hex')::uuid,encode($3,'hex')::uuid,'Opposing Guild',2,9999999999999,1,1)")
+        .bind(id(71).as_slice()).bind(id(72).as_slice()).bind(id(WORLD).as_slice()).execute(&mut **tx).await?;
+    sqlx::query(
+        "INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at)
+        VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,3,1),
+              (encode($2,'hex')::uuid,encode($4,'hex')::uuid,3,1)",
+    )
+    .bind(id(CHARACTER).as_slice())
+    .bind(id(61).as_slice())
+    .bind(id(71).as_slice())
+    .bind(id(72).as_slice())
+    .execute(&mut **tx)
+    .await?;
+    sqlx::query("INSERT INTO game_guild_wars(war_id,world_id,declaring_guild,opposing_guild,state,frag_limit,duration_days,declared_at,started_at,ends_at)
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,10,7,1,1,9999999999999)")
+        .bind(id(73).as_slice()).bind(id(WORLD).as_slice()).bind(id(71).as_slice()).bind(id(72).as_slice()).execute(&mut **tx).await?;
+    Ok(())
+}
+
+#[test]
+fn expired_or_frag_complete_war_cannot_award_a_frag_or_bypass_exiva_privacy() -> TestResult {
+    use super::super::spell_privacy::{
+        ExivaDecision, ExivaPreferences, read_exiva_decision_in_transaction,
+    };
+    run("pvp_war_expired", async |h| {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        seed_war(&mut tx).await?;
+        let (_permit, authority) = authority(&mut tx, h, 903).await?;
+        let facts = facts();
+        record_live_pvp_harm_in_transaction(&mut tx, &authority, &facts, 0, [6; 32], 10)
+            .await
+            .map_err(debug)?;
+        sqlx::query("INSERT INTO game_character_spell_access(character_id,staff_access,source_policy,source_policy_digest) VALUES(encode($1,'hex')::uuid,false,'fixture',$2)")
+            .bind(facts.target.as_slice()).bind([7_u8; 32].as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_spell_privacy(character_id,revision,preferences,last_receipt) VALUES(encode($1,'hex')::uuid,1,$2,game_character_uuid_v7())")
+            .bind(facts.target.as_slice()).bind(serde_json::to_value(ExivaPreferences::source_initial_preferences())?)
+            .execute(&mut *tx).await?;
+        assert_eq!(
+            read_exiva_decision_in_transaction(&mut tx, &authority, facts.target)
+                .await
+                .map_err(debug)?,
+            ExivaDecision::Allowed
+        );
+        let victim = crate::domain::CharacterId::from_bytes(facts.target).map_err(debug)?;
+        let world = crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?;
+        for (i, (ends_at, score)) in [(2_i64, 0_i32), (9_999_999_999_999, 10)]
+            .into_iter()
+            .enumerate()
+        {
+            sqlx::query("UPDATE game_guild_wars SET ends_at=$1,declaring_frags=$2")
+                .bind(ends_at)
+                .bind(score)
+                .execute(&mut *tx)
+                .await?;
+            let contributors = death_contributors_in_transaction(&mut tx, victim)
+                .await
+                .map_err(debug)?;
+            assert!(contributors[0].unjustified);
+            super::super::guild_war::attribute_guild_war_frag_in_transaction(
+                &mut tx,
+                victim,
+                world,
+                &id(91 + i as u8),
+                &contributors,
+            )
+            .await?;
+            let frags: i64 = sqlx::query_scalar("SELECT count(*) FROM game_guild_war_frags")
+                .fetch_one(&mut *tx)
+                .await?;
+            assert_eq!(frags, 0);
+            assert_eq!(
+                read_exiva_decision_in_transaction(&mut tx, &authority, facts.target)
+                    .await
+                    .map_err(debug)?,
+                ExivaDecision::Denied
+            );
+        }
+        tx.rollback().await?;
+        Ok(())
+    })
+}
+
 #[test]
 fn active_war_lookup_excludes_expired_and_frag_complete_wars() -> TestResult {
     run("pvp_war_terms", async |h| {
         let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-        target(&mut tx).await?;
-        sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,revision,created_at)
-            VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,'Declaring Guild',2,9999999999999,1,1),
-                  (encode($2,'hex')::uuid,encode($3,'hex')::uuid,'Opposing Guild',2,9999999999999,1,1)")
-            .bind(id(71).as_slice()).bind(id(72).as_slice()).bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at)
-            VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,3,1),
-                  (encode($2,'hex')::uuid,encode($4,'hex')::uuid,3,1)")
-            .bind(id(CHARACTER).as_slice()).bind(id(61).as_slice()).bind(id(71).as_slice()).bind(id(72).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_guild_wars(war_id,world_id,declaring_guild,opposing_guild,state,frag_limit,duration_days,declared_at,started_at,ends_at)
-            VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,10,7,1,1,9999999999999)")
-            .bind(id(73).as_slice()).bind(id(WORLD).as_slice()).bind(id(71).as_slice()).bind(id(72).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        seed_war(&mut tx).await?;
         for (ends_at, declaring, opposing, active) in [
             (9_999_999_999_999_i64, 0, 0, true),
             (2, 0, 0, false),
             (9_999_999_999_999, 10, 0, false),
             (9_999_999_999_999, 0, 10, false),
         ] {
-            sqlx::query("UPDATE game_guild_wars SET ends_at=$1,declaring_frags=$2,opposing_frags=$3")
-                .bind(ends_at).bind(declaring).bind(opposing).execute(&mut *tx).await?;
-            assert_eq!(war_between_in_transaction(&mut tx, &id(CHARACTER), &id(61)).await?, active,
-                "war terms: ends_at={ends_at}, frags={declaring}:{opposing}");
+            sqlx::query(
+                "UPDATE game_guild_wars SET ends_at=$1,declaring_frags=$2,opposing_frags=$3",
+            )
+            .bind(ends_at)
+            .bind(declaring)
+            .bind(opposing)
+            .execute(&mut *tx)
+            .await?;
+            assert_eq!(
+                war_between_in_transaction(&mut tx, &id(CHARACTER), &id(61)).await?,
+                active,
+                "war terms: ends_at={ends_at}, frags={declaring}:{opposing}"
+            );
         }
         tx.rollback().await?;
         Ok(())

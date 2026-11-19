@@ -124,6 +124,10 @@ impl SettingsState {
     }
 
     pub fn restore_backup(&mut self) -> io::Result<()> {
+        #[cfg(bevy_shell)]
+        if let Some(store) = &mut self.store {
+            store.finish_background_save();
+        }
         let path = self
             .store
             .as_ref()
@@ -132,7 +136,10 @@ impl SettingsState {
         self.import_from(&path)
     }
 
-    pub(super) fn replace_saved(&mut self, mut preferences: ReferencePreferences) -> io::Result<()> {
+    pub(super) fn replace_saved(
+        &mut self,
+        mut preferences: ReferencePreferences,
+    ) -> io::Result<()> {
         preferences.miscellaneous = self.preferences.miscellaneous;
         let store = self
             .store
@@ -205,7 +212,12 @@ impl SettingsState {
                 preferences.reconcile_controls(None);
                 preferences.miscellaneous = base_path
                     .as_ref()
-                    .and_then(|path| super::super::MiscellaneousPreferences::read(&path.with_extension("session-options.json")).ok())
+                    .and_then(|path| {
+                        super::super::MiscellaneousPreferences::read(
+                            &path.with_extension("session-options.json"),
+                        )
+                        .ok()
+                    })
                     .unwrap_or_default();
                 preferences
             },
@@ -379,7 +391,9 @@ impl SettingsState {
         if self.preferences.minimap != preferences.minimap {
             self.minimap_edit = crate::play::feature_0017_attack::view::next_edit();
         }
-        if self.preferences.hud_layout != preferences.hud_layout || self.preferences.hud_bounds != preferences.hud_bounds {
+        if self.preferences.hud_layout != preferences.hud_layout
+            || self.preferences.hud_bounds != preferences.hud_bounds
+        {
             self.hud_edit = crate::play::feature_0017_attack::view::next_edit();
         }
         if self.preferences.skills_layout != preferences.skills_layout {
@@ -402,6 +416,35 @@ impl SettingsState {
                 error = error
             ),
         };
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn apply_minimap_marks_in_background(&mut self, preferences: ReferencePreferences) {
+        self.preferences.minimap = preferences.minimap;
+        self.minimap_edit = crate::play::feature_0017_attack::view::next_edit();
+        self.feedback = if let Some(store) = &mut self.store {
+            store.apply_in_background(self.preferences.clone());
+            String::new()
+        } else {
+            tr!("Preference storage is unavailable").into()
+        };
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn poll_background_save(&mut self) {
+        if let Some(result) = self
+            .store
+            .as_mut()
+            .and_then(PreferenceStore::poll_background_save)
+        {
+            self.feedback = match result {
+                Ok(()) => tr!("Applied and saved").into(),
+                Err(error) => lfmt!(
+                    "Applied for this session; could not save: {error}",
+                    error = error
+                ),
+            };
+        }
     }
 
     fn capture_hud_layout(&mut self, view: &PlayView) {

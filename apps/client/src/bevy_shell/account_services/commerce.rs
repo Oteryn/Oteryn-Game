@@ -45,7 +45,7 @@ struct Button {
 }
 
 #[derive(Resource, Default)]
-struct Pending(Option<Entity>);
+struct Pending(std::collections::VecDeque<Entity>);
 
 pub(super) fn install(app: &mut App) {
     app.init_resource::<Pending>()
@@ -309,7 +309,7 @@ fn column() -> Node {
 
 fn queue(event: On<Activate>, guard: ModalGuard, mut pending: ResMut<Pending>) {
     if guard.allows(event.entity) {
-        pending.0 = Some(event.entity);
+        pending.0.push_back(event.entity);
     }
 }
 
@@ -328,159 +328,158 @@ fn finish(
     fields: Query<(&Field, &EditableText)>,
     mut statuses: Query<&mut Text>,
 ) {
-    let Some(entity) = pending.0.take() else {
-        return;
-    };
-    let Ok(button) = buttons.get(entity) else {
-        return;
-    };
-    if !guard.allows(entity)
-        || !owner
-            .services
-            .pending()
-            .is_some_and(|r| r.id == button.request)
-    {
-        return;
-    }
-    let Ok((mut form, scroll)) = forms.get_mut(button.form) else {
-        return;
-    };
-    if form.confirming && !matches!(button.action, Action::Confirm(_) | Action::Cancel) {
-        return;
-    }
-    if fields.iter().any(|(field, text)| {
-        field.0 == button.form
-            && (text.pending_paste.is_some()
-                || text
-                    .pending_edits
-                    .iter()
-                    .any(bevy::text::TextEdit::is_destructive))
-    }) {
-        pending.0 = Some(entity);
-        return;
-    }
-    let value = |kind| {
-        fields
-            .iter()
-            .find(|(field, _)| field.0 == button.form && field.1 == kind)
-            .map(|(_, text)| text.value().to_string().trim().to_owned())
-    };
-    let status_entity = form.status;
-    let mut status = |message: String| {
-        if let Ok(mut text) = statuses.get_mut(status_entity) {
-            text.0 = message;
-        }
-    };
-    let (caption, reply) = match &button.action {
-        Action::Send(reply) | Action::Confirm(reply) => {
-            owner.services.reply(button.request, reply.clone());
-            return;
-        }
-        Action::ChooseCharacter(id, name) => {
-            status(format!("Selected character: {name}"));
-            form.character = Some(id.clone());
-            return;
-        }
-        Action::Quote(world_id) => {
-            let Some(character_id) = &form.character else {
-                status("Select a character first".into());
-                return;
-            };
-            owner.services.reply(
-                button.request,
-                Reply::Account(Account::Quote {
-                    character_id: character_id.clone(),
-                    world_id: world_id.clone(),
-                }),
-            );
-            return;
-        }
-        Action::Bid(id, name, minimum) => {
-            let Some(coins) = value(FieldKind::Bid)
-                .and_then(|text| {
-                    if text.is_empty() {
-                        Some(*minimum)
-                    } else {
-                        text.parse::<u64>().ok()
-                    }
-                })
-                .filter(|coins| coins >= minimum)
-            else {
-                status(format!("Enter a bid of at least {minimum} coins"));
-                return;
-            };
-            (
-                format!(
-                    "Bid {coins} Oteryn coins for {name}? The service reserves funds; settlement requires the Game ownership receipt."
-                ),
-                Reply::Account(Account::Bid {
-                    auction_id: id.clone(),
-                    coins,
-                    confirmed: true,
-                }),
-            )
-        }
-        Action::Sell => {
-            let minimum = value(FieldKind::MinimumBid)
-                .and_then(|text| text.parse::<u64>().ok())
-                .filter(|n| *n > 0);
-            let hours = value(FieldKind::Duration)
-                .and_then(|text| text.parse::<u32>().ok())
-                .filter(|n| (1..=168).contains(n));
-            let (Some(character_id), Some(minimum_bid), Some(duration_hours)) =
-                (&form.character, minimum, hours)
-            else {
-                status(
-                    "Select a character and enter a minimum bid and a duration of 1–168 hours"
-                        .into(),
-                );
-                return;
-            };
-            let name = owner
+    while let Some(entity) = pending.0.pop_front() {
+        let Ok(button) = buttons.get(entity) else {
+            continue;
+        };
+        if !guard.allows(entity)
+            || !owner
                 .services
                 .pending()
-                .and_then(|request| {
-                    let Screen::Account(view) = &request.screen else {
-                        return None;
-                    };
-                    view.page
-                        .as_ref()?
-                        .owned_characters
+                .is_some_and(|r| r.id == button.request)
+        {
+            continue;
+        }
+        let Ok((mut form, scroll)) = forms.get_mut(button.form) else {
+            continue;
+        };
+        if form.confirming && !matches!(button.action, Action::Confirm(_) | Action::Cancel) {
+            continue;
+        }
+        if fields.iter().any(|(field, text)| {
+            field.0 == button.form
+                && (text.pending_paste.is_some()
+                    || text
+                        .pending_edits
                         .iter()
-                        .find(|row| &row.id == character_id)
-                })
-                .map_or(character_id.as_str(), |row| row.name.as_str());
-            (
-                format!(
-                    "List {name} for {duration_hours} hours with a minimum bid of {minimum_bid} coins? The offline character will be locked. Items and gold remain with it."
-                ),
-                Reply::Account(Account::Sell {
-                    character_id: character_id.clone(),
-                    minimum_bid,
-                    duration_hours,
-                    confirmed: true,
-                }),
-            )
+                        .any(bevy::text::TextEdit::is_destructive))
+        }) {
+            pending.0.push_front(entity);
+            break;
         }
-        Action::Prepare(caption, reply) => (caption.clone(), reply.clone()),
-        Action::Cancel => {
-            commands.entity(form.confirmation).despawn_children();
-            form.confirming = false;
-            return;
-        }
-    };
-    form.confirming = true;
-    commands
-        .entity(scroll.parent())
-        .insert(ScrollPosition::default());
-    let mut ui = Builder {
-        commands: &mut commands,
-        skin: &skin,
-        request: button.request,
-        form: button.form,
-        parent: form.confirmation,
-    };
-    ui.text(&caption);
-    ui.button("commerce.confirm", "Confirm", Action::Confirm(reply));
-    ui.button("commerce.cancel", "Cancel", Action::Cancel);
+        let value = |kind| {
+            fields
+                .iter()
+                .find(|(field, _)| field.0 == button.form && field.1 == kind)
+                .map(|(_, text)| text.value().to_string().trim().to_owned())
+        };
+        let status_entity = form.status;
+        let mut status = |message: String| {
+            if let Ok(mut text) = statuses.get_mut(status_entity) {
+                text.0 = message;
+            }
+        };
+        let (caption, reply) = match &button.action {
+            Action::Send(reply) | Action::Confirm(reply) => {
+                owner.services.reply(button.request, reply.clone());
+                continue;
+            }
+            Action::ChooseCharacter(id, name) => {
+                status(format!("Selected character: {name}"));
+                form.character = Some(id.clone());
+                continue;
+            }
+            Action::Quote(world_id) => {
+                let Some(character_id) = &form.character else {
+                    status("Select a character first".into());
+                    continue;
+                };
+                owner.services.reply(
+                    button.request,
+                    Reply::Account(Account::Quote {
+                        character_id: character_id.clone(),
+                        world_id: world_id.clone(),
+                    }),
+                );
+                continue;
+            }
+            Action::Bid(id, name, minimum) => {
+                let Some(coins) = value(FieldKind::Bid)
+                    .and_then(|text| {
+                        if text.is_empty() {
+                            Some(*minimum)
+                        } else {
+                            text.parse::<u64>().ok()
+                        }
+                    })
+                    .filter(|coins| coins >= minimum)
+                else {
+                    status(format!("Enter a bid of at least {minimum} coins"));
+                    continue;
+                };
+                (
+                    format!(
+                        "Bid {coins} Oteryn coins for {name}? The service reserves funds; settlement requires the Game ownership receipt."
+                    ),
+                    Reply::Account(Account::Bid {
+                        auction_id: id.clone(),
+                        coins,
+                        confirmed: true,
+                    }),
+                )
+            }
+            Action::Sell => {
+                let minimum = value(FieldKind::MinimumBid)
+                    .and_then(|text| text.parse::<u64>().ok())
+                    .filter(|n| *n > 0);
+                let hours = value(FieldKind::Duration)
+                    .and_then(|text| text.parse::<u32>().ok())
+                    .filter(|n| (1..=168).contains(n));
+                let (Some(character_id), Some(minimum_bid), Some(duration_hours)) =
+                    (&form.character, minimum, hours)
+                else {
+                    status(
+                        "Select a character and enter a minimum bid and a duration of 1–168 hours"
+                            .into(),
+                    );
+                    continue;
+                };
+                let name = owner
+                    .services
+                    .pending()
+                    .and_then(|request| {
+                        let Screen::Account(view) = &request.screen else {
+                            return None;
+                        };
+                        view.page
+                            .as_ref()?
+                            .owned_characters
+                            .iter()
+                            .find(|row| &row.id == character_id)
+                    })
+                    .map_or(character_id.as_str(), |row| row.name.as_str());
+                (
+                    format!(
+                        "List {name} for {duration_hours} hours with a minimum bid of {minimum_bid} coins? The offline character will be locked. Items and gold remain with it."
+                    ),
+                    Reply::Account(Account::Sell {
+                        character_id: character_id.clone(),
+                        minimum_bid,
+                        duration_hours,
+                        confirmed: true,
+                    }),
+                )
+            }
+            Action::Prepare(caption, reply) => (caption.clone(), reply.clone()),
+            Action::Cancel => {
+                commands.entity(form.confirmation).despawn_children();
+                form.confirming = false;
+                continue;
+            }
+        };
+        form.confirming = true;
+        commands
+            .entity(scroll.parent())
+            .insert(ScrollPosition::default());
+        let mut ui = Builder {
+            commands: &mut commands,
+            skin: &skin,
+            request: button.request,
+            form: button.form,
+            parent: form.confirmation,
+        };
+        ui.text(&caption);
+        ui.button("commerce.confirm", "Confirm", Action::Confirm(reply));
+        ui.button("commerce.cancel", "Cancel", Action::Cancel);
+    }
 }

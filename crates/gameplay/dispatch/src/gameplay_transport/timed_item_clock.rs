@@ -46,6 +46,55 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         settled
     }
 
+    /// Both activity lanes are already held. Settle elapsed time and resolve any
+    /// pending receipts under the source session fence before that fence is retired.
+    pub(super) async fn settle_activity_equipment(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let tracked_items = self
+            .states
+            .timed_items
+            .sessions
+            .lock()
+            .await
+            .get(&session)
+            .is_some_and(|clock| !clock.items.is_empty());
+        let tracked_imbuements = self
+            .states
+            .timed_items
+            .imbuements
+            .lock()
+            .await
+            .contains_key(&session);
+        if tracked_items || tracked_imbuements {
+            self.checkpoint_timed_equipment(actor, session, true).await
+        } else {
+            true
+        }
+    }
+
+    pub(super) async fn transfer_activity_equipment_clocks(
+        &self,
+        destination: &Self,
+        old: GameSessionId,
+        new: GameSessionId,
+    ) {
+        let mut source_items = self.states.timed_items.sessions.lock().await;
+        let mut destination_items = destination.states.timed_items.sessions.lock().await;
+        if let Some(clock) = source_items.remove(&old) {
+            destination_items.insert(new, clock);
+        }
+        drop(destination_items);
+        drop(source_items);
+        let mut source_imbuements = self.states.timed_items.imbuements.lock().await;
+        let mut destination_imbuements = destination.states.timed_items.imbuements.lock().await;
+        if let Some(clock) = source_imbuements.remove(&old) {
+            destination_imbuements.insert(new, clock);
+        }
+    }
+
     pub(super) async fn tick_timed_items(&self) {
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
         use std::sync::atomic::Ordering;
@@ -117,11 +166,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         };
                         if (index - 2).is_multiple_of(2) {
                             let checkpoint = self.checkpoint_timed_equipment(actor, session, false);
-                            if house {
-                                self.root.with_periodic_lock_budget(checkpoint).await;
-                            } else {
-                                checkpoint.await;
-                            }
+                            self.root.with_periodic_lock_budget(checkpoint).await;
                         } else {
                             self.drain_quest_timers(actor, session).await;
                         }

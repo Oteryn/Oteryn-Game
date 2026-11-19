@@ -51,6 +51,7 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
+        link.pump_store_inbox_refresh();
         link.cyclopedia_atlas_pump();
         self.present_cyclopedia_discovery(link);
         self.project_arena_hazards(link, std::time::Instant::now())

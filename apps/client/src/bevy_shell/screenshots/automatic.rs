@@ -64,7 +64,7 @@ pub(in crate::bevy_shell) fn observe(
     owner: &mut HostOwner,
     viewport: WorldViewport,
     state: &mut State,
-    captures: &Query<Entity, With<Screenshot>>,
+    occupied: bool,
     clock: &Time<Real>,
     writes: &Writes,
     manual: bool,
@@ -74,9 +74,8 @@ pub(in crate::bevy_shell) fn observe(
         owner.settings.reset_screenshot_session();
         state.generation = generation;
     }
-    let existing = captures.iter().next();
     let Some(generation) = generation else {
-        return existing;
+        return None;
     };
     if manual {
         owner.settings.request_screenshot();
@@ -84,12 +83,8 @@ pub(in crate::bevy_shell) fn observe(
     }
     let at = clock.last_update().unwrap_or(clock.startup());
     let action = prepare(owner, at);
-    if matches!(action, CaptureAction::Idle)
-        || writes.automatic
-        || writes.is_full()
-        || existing.is_some()
-    {
-        return existing;
+    if matches!(action, CaptureAction::Idle) || writes.automatic || writes.is_full() || occupied {
+        return None;
     }
     let game_only = owner.settings.preferences.screenshots.effective().game_only;
     let entity = commands
@@ -103,7 +98,7 @@ pub(in crate::bevy_shell) fn observe(
                     return;
                 }
                 let at = clock.last_update().unwrap_or(clock.startup());
-                let batch = match prepare(&mut owner, at) {
+                let batch = match action {
                     CaptureAction::Idle => return,
                     CaptureAction::Buffer => None,
                     CaptureAction::Save => Some(owner.settings.submit_screenshot(at)),

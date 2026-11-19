@@ -207,6 +207,7 @@ pub(super) struct Mailbox {
     pub(super) boss_difficulty: oteryn_client_ui::boss_difficulty::BossDifficultyPanel,
     pub(super) browse_field: oteryn_client_ui::browse_field::BrowseFieldPanel,
     pub(super) chat_party_room: oteryn_client_ui::chat_party_room::ChatPartyRoomPanel,
+    pub(super) store_inbox_refresh_pending: bool,
     pub(super) cyclopedia_character:
         oteryn_client_ui::cyclopedia_character::CyclopediaCharacterPanel,
     pub(super) cyclopedia_character_shutdown: bool,

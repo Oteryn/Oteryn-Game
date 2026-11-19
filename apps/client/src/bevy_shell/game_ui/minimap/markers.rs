@@ -216,27 +216,21 @@ fn activate(
             if play.view.gameplay_input_blocked(&play.link) {
                 return;
             }
-            let world_mark = play.view.satellite_map(|_, marks| {
-                marks.iter().any(|mark| (mark.x, mark.y, mark.floor) == at)
-            });
-            if world_mark {
+            if has_world_mark(&play.view, at) {
                 if play.view.remove_minimap_marker(at).is_err() {
                     return;
                 }
-            } else if let Some(mark) = play.view.remembered_minimap_mark(at) {
+            } else if let Some(index) = remembered_index(&play.view, &owner.settings, at) {
                 let mut preferences = owner.settings.preferences.clone();
-                if preferences.minimap.binding == play.view.preferences().minimap.binding
-                    && let Some(index) = preferences
-                        .minimap
-                        .marks
-                        .iter()
-                        .position(|saved| saved == mark)
+                preferences.minimap.remove_mark(index);
+                owner
+                    .settings
+                    .apply_minimap_marks_in_background(preferences);
+                if let Err(error) = play
+                    .view
+                    .set_preferences(owner.settings.preferences.clone())
                 {
-                    preferences.minimap.remove_mark(index);
-                    owner.settings.apply(preferences);
-                    if let Err(error) = owner.settings.capture(&mut play.view) {
-                        owner.status = error.to_string();
-                    }
+                    owner.status = error.to_string();
                 }
             }
             editor.at = None;
@@ -270,17 +264,60 @@ fn finish(
         return;
     }
     editor.pending = None;
+    let owner = &mut *owner;
     let Some(play) = &mut owner.play else {
         return;
     };
     if play.view.gameplay_input_blocked(&play.link) {
         return;
     }
-    if play
+    let label = text.value().to_string();
+    if !has_world_mark(&play.view, at)
+        && let Some(index) = remembered_index(&play.view, &owner.settings, at)
+    {
+        let mut preferences = owner.settings.preferences.clone();
+        preferences.minimap.marks[index].label = label;
+        if !preferences.minimap.valid() {
+            owner.status = "Invalid marker: use a label of 1–64 bytes and a valid floor".into();
+            return;
+        }
+        owner
+            .settings
+            .apply_minimap_marks_in_background(preferences);
+        match play
+            .view
+            .set_preferences(owner.settings.preferences.clone())
+        {
+            Ok(()) => editor.at = None,
+            Err(error) => owner.status = error.to_string(),
+        }
+    } else if play
         .view
-        .edit_minimap_marker(at, text.value().to_string(), editor.color)
+        .edit_minimap_marker(at, label, editor.color)
         .is_ok()
     {
         editor.at = None;
     }
+}
+
+fn has_world_mark(view: &crate::play::PlayView, at: (i32, i32, i16)) -> bool {
+    view.satellite_map(|_, marks| marks.iter().any(|mark| (mark.x, mark.y, mark.floor) == at))
+}
+
+fn remembered_index(
+    view: &crate::play::PlayView,
+    settings: &crate::play::SettingsState,
+    at: (i32, i32, i16),
+) -> Option<usize> {
+    let mark = view.remembered_minimap_mark(at)?;
+    (settings.preferences.minimap.binding == view.preferences().minimap.binding)
+        .then(|| {
+            settings
+                .preferences
+                .minimap
+                .marks
+                .iter()
+                .position(|saved| saved == mark)
+        })
+        .flatten()
 }

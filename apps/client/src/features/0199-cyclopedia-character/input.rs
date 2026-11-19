@@ -6,6 +6,14 @@ impl PlayLink {
     /// True when a command was sent; false when the builder refused (for example, while pending).
     pub fn cyclopedia_character_request(&self, intent: Intent) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        self.cyclopedia_character_request_locked(&mut mailbox, intent)
+    }
+
+    fn cyclopedia_character_request_locked(
+        &self,
+        mailbox: &mut crate::play::mailbox::Mailbox,
+        intent: Intent,
+    ) -> bool {
         let panel = &mut mailbox.cyclopedia_character;
         let command = if intent == Intent::Next
             && panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Achievements
@@ -38,19 +46,31 @@ impl PlayLink {
     }
     /// The accepted custody summary is remote, read-only, and combines Store and mail deliveries.
     pub fn store_inbox_set_open(&self, open: bool) {
-        {
-            let mut mailbox = lock(&self.mailbox);
-            let panel = &mut mailbox.cyclopedia_character;
-            panel.items.open = open;
-            if !open {
-                return;
-            }
-            // Never present a previous character/profile's holdings as this inbox.
-            panel.items.page = None;
-            panel.items.location = None;
-            panel.items.search.clear();
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.cyclopedia_character;
+        panel.items.open = open;
+        if !open {
+            mailbox.store_inbox_refresh_pending = false;
+            return;
         }
-        self.cyclopedia_character_request(Intent::Items);
+        panel.items.page = None;
+        panel.items.location = None;
+        panel.items.search.clear();
+        if panel.pending || panel.blessings.pending {
+            mailbox.store_inbox_refresh_pending = true;
+        } else {
+            mailbox.store_inbox_refresh_pending = false;
+            self.cyclopedia_character_request_locked(&mut mailbox, Intent::Items);
+        }
+    }
+
+    pub(in crate::play) fn pump_store_inbox_refresh(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mailbox.cyclopedia_character;
+        if mailbox.store_inbox_refresh_pending && !panel.pending && !panel.blessings.pending {
+            mailbox.store_inbox_refresh_pending = false;
+            self.cyclopedia_character_request_locked(&mut mailbox, Intent::Items);
+        }
     }
 }
 

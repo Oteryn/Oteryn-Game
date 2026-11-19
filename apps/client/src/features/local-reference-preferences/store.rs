@@ -8,6 +8,8 @@ use std::{
 pub struct PreferenceStore {
     path: PathBuf,
     preferences: ReferencePreferences,
+    #[cfg(bevy_shell)]
+    save_task: Option<bevy_tasks::Task<io::Result<()>>>,
 }
 
 impl PreferenceStore {
@@ -27,8 +29,8 @@ impl PreferenceStore {
         if bytes.len() > 1 << 20 {
             return Err(io::Error::other(tr!("Settings file exceeds 1 MiB")));
         }
-        let mut document: serde_json::Value =
-            serde_json::from_slice(&bytes).map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+        let mut document: serde_json::Value = serde_json::from_slice(&bytes)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         if let Some(fields) = document.as_object_mut()
             && fields.get("hotkey_profiles").is_some_and(|value| {
                 value
@@ -43,7 +45,10 @@ impl PreferenceStore {
             })
         {
             if fields.contains_key("hotkey_contexts") {
-                return Err(io::Error::new(io::ErrorKind::InvalidData, "Conflicting hotkey context formats"));
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Conflicting hotkey context formats",
+                ));
             }
             if let Some(contexts) = fields.remove("hotkey_profiles") {
                 fields.insert("hotkey_contexts".into(), contexts);
@@ -55,15 +60,17 @@ impl PreferenceStore {
         if legacy {
             document["custom_hotkeys"] = serde_json::json!({});
         }
-        let mut preferences: ReferencePreferences =
-            serde_json::from_value(document).map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+        let mut preferences: ReferencePreferences = serde_json::from_value(document)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         if legacy {
             for (chord, action) in super::custom_actions::default_custom_hotkeys() {
                 let _ = preferences.assign_custom_hotkey(&chord, action);
             }
         }
         preferences.upgrade_schema();
-        preferences.validate().map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+        preferences
+            .validate()
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         preferences.reconcile_controls(None);
         Ok(preferences)
     }
@@ -101,6 +108,8 @@ impl PreferenceStore {
         preferences: ReferencePreferences,
         previous: &ReferencePreferences,
     ) -> io::Result<()> {
+        #[cfg(bevy_shell)]
+        self.finish_background_save();
         let bytes = Self::serialized(&preferences)?;
         let previous = Self::serialized(previous)?;
         let keep_backup = match Self::read_transfer(&self.path) {
@@ -120,6 +129,8 @@ impl PreferenceStore {
         Self {
             path,
             preferences: ReferencePreferences::default(),
+            #[cfg(bevy_shell)]
+            save_task: None,
         }
     }
 
@@ -131,7 +142,12 @@ impl PreferenceStore {
             }
             Err(error) => return Err(error),
         };
-        Ok(Self { path, preferences })
+        Ok(Self {
+            path,
+            preferences,
+            #[cfg(bevy_shell)]
+            save_task: None,
+        })
     }
 
     pub fn preferences(&self) -> &ReferencePreferences {
@@ -139,11 +155,45 @@ impl PreferenceStore {
     }
 
     pub fn apply(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
-        let bytes = Self::serialized(&preferences)?;
-        if self.path.try_exists()? {
-            Self::read_transfer(&self.path)?;
+        #[cfg(bevy_shell)]
+        self.finish_background_save();
+        Self::write_existing(&self.path, &preferences)?;
+        self.preferences = preferences;
+        Ok(())
+    }
+
+    fn write_existing(path: &Path, preferences: &ReferencePreferences) -> io::Result<()> {
+        let bytes = Self::serialized(preferences)?;
+        if path.try_exists()? {
+            Self::read_transfer(path)?;
         }
-        self.write(preferences, &bytes)
+        crate::atomic_file::replace(path, &bytes, true)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(super) fn apply_in_background(&mut self, preferences: ReferencePreferences) {
+        let path = self.path.clone();
+        let previous = self.save_task.take();
+        self.save_task = Some(bevy_tasks::IoTaskPool::get().spawn(async move {
+            if let Some(previous) = previous {
+                let _ = previous.await;
+            }
+            Self::write_existing(&path, &preferences)
+        }));
+    }
+
+    #[cfg(bevy_shell)]
+    pub(super) fn poll_background_save(&mut self) -> Option<io::Result<()>> {
+        let result = bevy_tasks::futures::check_ready(self.save_task.as_mut()?)?;
+        self.save_task = None;
+        Some(result)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(super) fn finish_background_save(&mut self) {
+        if let Some(task) = self.save_task.take() {
+            let _ = bevy_tasks::block_on(task);
+        }
     }
 
     fn write(&mut self, preferences: ReferencePreferences, bytes: &[u8]) -> io::Result<()> {
@@ -174,6 +224,13 @@ impl PreferenceStore {
                 path.try_exists().unwrap_or(true)
             },
         )
+    }
+}
+
+#[cfg(bevy_shell)]
+impl Drop for PreferenceStore {
+    fn drop(&mut self) {
+        self.finish_background_save();
     }
 }
 
@@ -365,7 +422,11 @@ mod legacy_chords {
                 "Paladin {chord}"
             );
         }
-        assert_eq!(paladin.custom_hotkeys.len(), 5, "Ctrl+K stays the profile's");
+        assert_eq!(
+            paladin.custom_hotkeys.len(),
+            5,
+            "Ctrl+K stays the profile's"
+        );
         // The upgrade runs once: a chord the player removes afterwards stays removed.
         let mut edited = upgraded;
         edited.custom_hotkeys.remove("CTRL+P");
@@ -463,79 +524,4 @@ mod native_configuration_path_tests {
     }
 }
 
-#[cfg(test)]
-mod size_limit_tests {
-    use super::*;
-    #[test]
-    fn oversized_writes_preserve_existing_stores() -> Result<(), Box<dyn std::error::Error>> {
-        let fixture = crate::play::screenshot::TestDir::new()?;
-        let root = fixture.path().to_path_buf();
-        let path = root.join("settings.json");
-        let mut store = PreferenceStore::defaults(path.clone());
-        store.apply(ReferencePreferences::default())?;
-        let original = std::fs::read(&path)?;
-        let mut oversized = ReferencePreferences::default();
-        oversized.custom_hotkeys.clear();
-        for modifier in ["SUPER+", "CTRL+SUPER+", "ALT+SUPER+"] {
-            for key in 'A'..='Z' {
-                if oversized.custom_hotkeys.len() == 64 {
-                    break;
-                }
-                let chord = format!("{modifier}{key}");
-                let _ = oversized.assign_custom_hotkey(
-                    &chord,
-                    super::super::CustomAction::Text {
-                        text: "x".repeat(1020),
-                        send: true,
-                    },
-                );
-            }
-        }
-        for index in 0..16 {
-            oversized.save_hotkey_profile(&format!("Snapshot {index}"))?;
-        }
-        oversized.validate()?;
-        assert!(serde_json::to_vec_pretty(&oversized)?.len() > 1 << 20);
-        assert!(store.apply(oversized.clone()).is_err());
-        assert_eq!(std::fs::read(&path)?, original);
-        assert_eq!(store.preferences(), &ReferencePreferences::default());
-        let export = root.join("export.json");
-        assert!(PreferenceStore::export_to(&oversized, &export).is_err());
-        assert!(!export.exists());
-        std::fs::write(store.backup_path(), b"previous backup")?;
-        assert!(
-            store
-                .replace_with_backup(oversized.clone(), &ReferencePreferences::default())
-                .is_err()
-        );
-        assert_eq!(std::fs::read(store.backup_path())?, b"previous backup");
-        assert!(
-            store
-                .replace_with_backup(ReferencePreferences::default(), &oversized)
-                .is_err()
-        );
-        assert_eq!(std::fs::read(&path)?, original);
-        std::fs::write(&path, vec![b' '; (1 << 20) + 1])?;
-        let rejected = std::fs::read(&path)?;
-        let mut recovered = super::super::SettingsState::new(Some(path.clone()));
-        recovered.apply(ReferencePreferences::default());
-        assert_eq!(std::fs::read(&path)?, rejected);
-        let backup_preferences = ReferencePreferences {
-            ui_scale: 130,
-            ..Default::default()
-        };
-        let backup_bytes = serde_json::to_vec_pretty(&backup_preferences)?;
-        std::fs::write(store.backup_path(), &backup_bytes)?;
-        assert!(
-            store
-                .replace_with_backup(
-                    ReferencePreferences::default(),
-                    &ReferencePreferences::default()
-                )
-                .is_err()
-        );
-        assert_eq!(std::fs::read(store.backup_path())?, backup_bytes);
-        assert_eq!(std::fs::read(&path)?, rejected);
-        Ok(())
-    }
-}
+include!("store/size_limit_tests.rs");

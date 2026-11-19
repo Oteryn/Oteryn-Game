@@ -18,6 +18,10 @@ impl SettingsState {
         if character == self.character {
             return;
         }
+        #[cfg(bevy_shell)]
+        if let Some(store) = &mut self.store {
+            store.finish_background_save();
+        }
         let Some(base) = self.base_path.as_ref() else {
             return;
         };

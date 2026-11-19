@@ -41,11 +41,19 @@ impl Reentry {
         self.forget_native_session();
     }
     /// Explicit native sign-out; normal game logout keeps a remembered login available.
-    pub fn forget_native_session(&self) {
+    pub fn forget_native_session(&mut self) {
         if let Some(config) = self.client.native_login.clone() {
-            let _ = self.client.runtime.spawn(async move {
-                config.forget_devices().await;
-            });
+            let previous = self.revocation.take();
+            self.revocation = self
+                .client
+                .runtime
+                .spawn(async move {
+                    if let Some(previous) = previous {
+                        let _ = previous.await;
+                    }
+                    config.forget_devices().await;
+                })
+                .ok();
         }
     }
 }
@@ -95,4 +103,40 @@ mod tests {
         entry.shutdown();
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn cancelled_admission_cannot_be_retried_until_device_revocation_finishes()
+-> Result<(), Box<dyn std::error::Error>> {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let config = crate::NativeLoginConfig::from_env(|name| {
+        Some(match name {
+            "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" => "https://localhost:1".into(),
+            "OTERYN_OAUTH_CLIENT_ID" => "019a5f4a-1000-7000-8000-000000000001".into(),
+            "OTERYN_DEV_ROOT" => "/tmp/reentry-unused-root".into(),
+            _ => String::new(),
+        })
+    })?
+    .ok_or("native login config")?;
+    let device = config.device_sessions.clone();
+    let held_session = runtime.block_on(device.hold_session_for_reentry_test());
+    let mut entry = Reentry::new(ClientBootstrap::new()?);
+    assert!(entry.configure(config));
+    let (sender, receiver) = mpsc::channel();
+    entry.pending = Some(receiver);
+    entry.state = EntryState::Entering;
+    entry.attempt_cancellation = Some(CancellationToken::new());
+    assert!(entry.cancel_entry());
+    entry.forget_native_session();
+    sender.send(Err(GameplayEntryError::Rejected(
+        PublicClass::SessionUnavailable,
+    )))?;
+    assert!(entry.poll().is_none());
+    assert!(!entry.request());
+    drop(held_session);
+    entry.shutdown();
+    Ok(())
 }

@@ -103,3 +103,97 @@ fn audit_f12_shares_a_readback_with_the_due_backlog_sample() -> TestResult {
     assert_eq!(std::fs::read_dir(fixture.path())?.count(), 3);
     Ok(())
 }
+
+#[test]
+fn f12_waits_for_a_fresh_readback_after_an_older_capture() -> TestResult {
+    for (audit, backlog, already_delivered) in [
+        (false, false, false),
+        (true, false, true),
+        (false, true, false),
+    ] {
+        let fixture = TestDir::new()?;
+        let mut app = if backlog {
+            backlog_app(fixture.path())?
+        } else {
+            app(fixture.path(), false)?
+        };
+        let audit_path = fixture.path().join("audit.json");
+        if audit {
+            app.insert_resource(super::super::audit::AuditOutput::new(Some(
+                audit_path.clone(),
+            )));
+        }
+        let old = if backlog {
+            app.update();
+            app.world_mut()
+                .query_filtered::<Entity, With<Screenshot>>()
+                .single(app.world())?
+        } else {
+            app.world_mut().spawn(Screenshot::primary_window()).id()
+        };
+        if already_delivered {
+            app.world_mut().trigger(ScreenshotCaptured {
+                entity: old,
+                image: frame(),
+            });
+        }
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::F12);
+        app.update();
+        if !already_delivered {
+            app.world_mut().trigger(ScreenshotCaptured {
+                entity: old,
+                image: frame(),
+            });
+        }
+        assert!(
+            app.world().non_send::<Writes>().queued.is_empty() || backlog,
+            "F12 attached to an older readback"
+        );
+        app.world_mut().despawn(old);
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .reset_all();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        let fresh = loop {
+            app.update();
+            if let Ok(entity) = app
+                .world_mut()
+                .query_filtered::<Entity, With<Screenshot>>()
+                .single(app.world())
+            {
+                break entity;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "F12 did not request a fresh readback"
+            );
+            std::thread::yield_now();
+        };
+        assert_ne!(old, fresh);
+        assert_eq!(std::fs::read_dir(fixture.path())?.count(), 0);
+        app.world_mut().trigger(ScreenshotCaptured {
+            entity: fresh,
+            image: super::tests::colored_frame([1, 2, 3, 255]),
+        });
+        app.world_mut().despawn(fresh);
+        wait_for_writes(&mut app)?;
+        if audit {
+            assert!(audit_path.with_extension("png").is_file());
+        } else {
+            let mut colors = std::fs::read_dir(fixture.path())?
+                .map(|file| -> Result<Vec<u8>, std::io::Error> {
+                    Ok(std::fs::read(file?.path())?[54..57].to_vec())
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            colors.sort();
+            let mut expected = vec![vec![3, 2, 1]];
+            if backlog {
+                expected.push(vec![60, 40, 20]);
+            }
+            assert_eq!(colors, expected);
+        }
+    }
+    Ok(())
+}

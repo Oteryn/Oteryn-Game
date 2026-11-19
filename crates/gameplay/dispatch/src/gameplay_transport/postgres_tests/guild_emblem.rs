@@ -225,6 +225,9 @@ fn scenario() -> TestResult {
         stale.continuity.connection_generation += 1;
         assert_eq!(owner.observe_guild_emblems(stale).await, None);
         // An ended war returns to Member.
+        sqlx::query("UPDATE game_guild_wars SET ends_at=2 WHERE war_id=encode($1,'hex')::uuid")
+            .bind(guild_fixture::sid(1, 40).as_slice()).execute(&h.pool).await?;
+        assert!(read().await?.contains(&(rival, Emblem::Other)), "expired war must not display Enemy");
         sqlx::query("UPDATE game_guild_wars SET state=3,ended_reason=1 WHERE war_id=encode($1,'hex')::uuid")
             .bind(guild_fixture::sid(1, 40).as_slice())
             .execute(&h.pool)

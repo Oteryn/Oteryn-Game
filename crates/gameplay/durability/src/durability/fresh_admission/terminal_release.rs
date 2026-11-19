@@ -75,7 +75,7 @@ impl FreshAdmissionStore {
             } else { None };
             if let Some(training) = &store.training_logout { training.prepare(&mut tx).await?; }
             if let Some(final_position) = store.final_position {
-                write_final_position(&mut tx, &current, &final_position, store.final_house.as_ref()).await?;
+                write_final_position(&mut tx, &current, &final_position, store.final_house.as_ref(), store.preserve_final_vitals).await?;
             }
             Box::pin(super::super::journal::capture::capture(&mut tx, current, store.journal_catalogue.as_deref(), decided_at)).await?;
             let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3, current_transport_ref = NULL, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND current_generation = $2::text::numeric(20,0) AND character_lease_generation = $3::text::numeric(20,0) AND scope_ownership_generation = $4::text::numeric(20,0)")

@@ -25,8 +25,20 @@ impl Outbox {
         lock(&self.0).cyclopedia_character.holdings_selected = selected;
     }
     pub(in crate::play) fn cyclopedia_character_result(&self, result: &GatedCommandResult) {
+        let mut mailbox = lock(&self.0);
+        if mailbox.store_inbox_refresh_pending
+            && mailbox
+                .cyclopedia_character
+                .items
+                .pending_offset
+                .take()
+                .is_some()
+        {
+            mailbox.cyclopedia_character.pending = false;
+            return;
+        }
         oteryn_client_ui::cyclopedia_character::apply_result(
-            &mut lock(&self.0).cyclopedia_character,
+            &mut mailbox.cyclopedia_character,
             result,
         );
     }

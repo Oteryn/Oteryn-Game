@@ -16,7 +16,8 @@ impl crate::play::PlayView {
     /// whether it is the current attack target.
     #[must_use]
     pub fn attack_context(&self, tile: TileCoord, link: &PlayLink) -> Option<bool> {
-        self.attack_target(tile, link).map(|(_, attacking)| attacking)
+        self.attack_target(tile, link)
+            .map(|(_, attacking)| attacking)
     }
     pub(crate) fn attack_target(
         &self,
@@ -55,15 +56,34 @@ impl crate::play::PlayView {
         let Some((target, attacking)) = self.attack_target(tile, link) else {
             return false;
         };
-        link.request_combat(if attacking {
-            crate::combat_input::CombatCommand::Stop
-        } else {
-            crate::combat_input::CombatCommand::Attack(target)
-        });
-        true
+        link.request_context_combat(target, attacking)
     }
 }
 impl PlayLink {
+    pub(crate) fn request_context_combat(
+        &self,
+        target: oteryn_session::EntityRef,
+        attacking: bool,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.world_input_blocked()
+            || mailbox
+                .battle
+                .combat
+                .is_some_and(|state| state.target == Some(target))
+                != attacking
+        {
+            return false;
+        }
+        let command = if attacking {
+            CombatCommand::Stop
+        } else {
+            CombatCommand::Attack(target)
+        };
+        mailbox.cancel_walk_for_combat(command);
+        self.commands.send(PlayCommand::Combat(command)).is_ok()
+    }
+
     pub fn battle_request(&self, action: Action) {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.properties.pvp_expert.pending {
@@ -113,19 +133,63 @@ mod review_regressions {
             let mut mailbox = lock(&link.mailbox);
             mailbox.properties.pvp_expert.selected = true;
             mailbox.properties.pvp_expert.fields = ["1", "1", "0", "0"].map(str::to_owned);
-            mailbox.battle.combat = Some(oteryn_session::ActorCombatState { target: None, modes: oteryn_session::FightModes::DEFAULT, in_fight: false });
+            mailbox.battle.combat = Some(oteryn_session::ActorCombatState {
+                target: None,
+                modes: oteryn_session::FightModes::DEFAULT,
+                in_fight: false,
+            });
         }
         link.pvp_expert_request(oteryn_client_ui::pvp_expert::Intent::Apply);
         assert!(matches!(commands.try_recv(), Ok(PlayCommand::Feature(_))));
-        link.battle_request(Action::Fight(oteryn_client_runtime::attack::FightMode::Defensive));
+        link.battle_request(Action::Fight(
+            oteryn_client_runtime::attack::FightMode::Defensive,
+        ));
         assert!(commands.try_recv().is_err());
         {
             let mut mailbox = lock(&link.mailbox);
             mailbox.properties.pvp_expert.pending = false;
         }
-        link.battle_request(Action::Chase(oteryn_client_runtime::attack::ChaseMode::Chase));
+        link.battle_request(Action::Chase(
+            oteryn_client_runtime::attack::ChaseMode::Chase,
+        ));
         assert!(matches!(commands.try_recv(), Ok(PlayCommand::Battle(_))));
         link.pvp_expert_request(oteryn_client_ui::pvp_expert::Intent::Apply);
         assert!(commands.try_recv().is_err());
     }
+}
+
+#[cfg(test)]
+#[test]
+fn target_change_between_context_check_and_submission_refuses_stop() {
+    use oteryn_session::{ActorCombatState, EntityRef, FightModes};
+    let (link, mut commands, _) = crate::play::play_channel();
+    let first = EntityRef {
+        identity: [1; 16],
+        generation: 1,
+    };
+    let second = EntityRef {
+        identity: [2; 16],
+        generation: 1,
+    };
+    let combat = |target| {
+        Some(ActorCombatState {
+            target: Some(target),
+            modes: FightModes::DEFAULT,
+            in_fight: true,
+        })
+    };
+    lock(&link.mailbox).battle.combat = combat(first);
+    let was_attacking = lock(&link.mailbox)
+        .battle
+        .combat
+        .is_some_and(|state| state.target == Some(first));
+    assert!(was_attacking);
+    lock(&link.mailbox).battle.combat = combat(second);
+    assert!(!link.request_context_combat(first, was_attacking));
+    assert!(commands.try_recv().is_err());
+    assert!(link.request_context_combat(second, true));
+    assert!(matches!(
+        commands.try_recv(),
+        Ok(PlayCommand::Combat(CombatCommand::Stop))
+    ));
 }

@@ -1,14 +1,29 @@
 //! Newhaven's first vocation choice, using the existing Character build receipt owner.
 use super::vocation_choice::{
-    RetainedNpcVocation, commit_retained_npc_vocation, same_authority, vocation_choice_request,
+    RetainedNpcVocation, same_authority, vocation_choice_request,
 };
 use super::{ComposedFreshAdmission, SecureIdentifiers, connection::AdmittedSession};
 use crate::durability::character_build::{BuildFormula, BuildOccurrence, NO_VOCATION};
+use crate::durability::character_progression::CharacterProgressionError;
 use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_gameplay_quests::tutorial::TutorialStep;
 use oteryn_protocol_oteryn::tutorial_vocation as wire;
 
 use crate::durability::starter_grant::NewhavenStarterOutcome;
+
+struct InitialVitalsHold<'a> {
+    sessions: &'a super::tutorial_session::TutorialSessions,
+    session: GameSessionId,
+    occurrence: Option<BuildOccurrence>,
+}
+
+impl Drop for InitialVitalsHold<'_> {
+    fn drop(&mut self) {
+        if let Some(occurrence) = self.occurrence {
+            self.sessions.clear_vocation(self.session, occurrence);
+        }
+    }
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     async fn tutorial_vocation_current(
@@ -152,6 +167,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !same_authority(&initial, &fence) {
             return None;
         }
+        let _permit = self.spell_lane_permit().await?;
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let retained = if let Some(mut retained) = retained {
             // A same-session resume can retry the original occurrence and expected
@@ -202,12 +218,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None,
             )
             .ok()?;
-            if !self
-                .save_first_vocation_vitals(actor, session, fence, &request.before)
-                .await
-            {
-                return None;
-            }
             let retained = RetainedNpcVocation {
                 fence,
                 request,
@@ -220,23 +230,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
+            let mut hold = InitialVitalsHold {
+                sessions: &self.states.tutorial_sessions,
+                session,
+                occurrence: Some(occurrence),
+            };
+            if !self.save_first_vocation_vitals(actor, session, fence, &retained.request.before).await {
+                return None;
+            }
+            hold.occurrence = None;
             retained
         };
-        if let Err(error) = commit_retained_npc_vocation(
-            &mut slot,
-            self.root,
-            self.character,
-            self.holder,
-            &retained,
-            formula,
-        )
-        .await
-        {
-            if matches!(error, crate::durability::character_progression::CharacterProgressionError::CharacterRevisionMismatch) {
-                self.states.tutorial_sessions.clear_vocation(session, retained.request.occurrence);
-            }
+        if retained.formula_digest != formula.digest() {
             return None;
         }
+        let native = self.active_generation?.native_gameplay()?;
+        let vocation = retained.request.after.vocation();
+        let definitions = newhaven_kit_definitions(native, vocation)?;
+        let result = slot.commit_newhaven_build(
+            self.root, self.character, self.holder, retained.fence, retained.request.clone(),
+            formula, &super::item_ref_admission::NativeItemWeights(native), &definitions,
+        ).await;
+        match result {
+            Ok(_) => {}
+            Err(CharacterProgressionError::Unavailable(_)) => {
+                let receipt = self.root.reconcile_character_build(self.character, retained.request.occurrence)
+                    .await.ok()??;
+                // A newly retained occurrence can only commit through the atomic kit writer.
+                if receipt.character_id != retained.fence.character_id
+                    || receipt.original_character_revision != retained.fence.expected_character_revision
+                    || receipt.cause != retained.request.cause
+                    || receipt.before != retained.request.before
+                    || receipt.after != retained.request.after
+                    || receipt.pruned_stance != retained.request.pruned_stance
+                {
+                    return None;
+                }
+            }
+            Err(error) => {
+                if matches!(error, CharacterProgressionError::CharacterRevisionMismatch | CharacterProgressionError::InvalidInput) {
+                    self.states.tutorial_sessions.clear_vocation(session, retained.request.occurrence);
+                }
+                return None;
+            }
+        }
+        self.states.tutorial_sessions.inventory_changed(session);
         use super::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
         let CastFactsLoad::Ready {
             facts,
@@ -294,14 +332,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.states
             .tutorial_sessions
             .clear_vocation(session, retained.request.occurrence);
-        if self
-            .grant_newhaven_starter(current.item_fence())
-            .await
-            .ok()?
-            == NewhavenStarterOutcome::NotAdmitted
-        {
-            return None;
-        }
         let chosen = wire::VOCATIONS
             .iter()
             .position(|key| *key == build.vocation())? as u8
@@ -313,6 +343,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .encode()
     }
 }
+pub(super) fn newhaven_kit_definitions(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    vocation: &str,
+) -> Option<Vec<crate::durability::item_mint::TypedDefinitionRef>> {
+    let index = native.item_index()?;
+    oteryn_gameplay_items::starter_grant::newhaven_starter_items(vocation)?
+        .iter()
+        .map(|item| {
+            let key = format!("oteryn:item.tibia.i{}", item.tibia_id);
+            Some(crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                revision_ref: index.revision(&key)?.to_owned(),
+                production_key: key,
+            })
+        })
+        .collect()
+}
+
 macro_rules! authority_methods {
     () => {
         fn tutorial_vocation_command(
