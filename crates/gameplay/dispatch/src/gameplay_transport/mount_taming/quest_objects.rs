@@ -14,7 +14,7 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
 }
 
 /// Crystal hammer.lua:64–101 uses the selected reusable hammer on a broken wall.
-pub(in crate::gameplay_transport) fn rottin_wall_repair(callback: &Callback) -> Option<u16> {
+pub(crate) fn rottin_wall_repair(callback: &Callback) -> Option<u16> {
     let source = callback
         .selector
         .native
