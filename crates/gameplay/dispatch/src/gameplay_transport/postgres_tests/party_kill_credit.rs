@@ -902,6 +902,9 @@ fn run(admin: String, case: Case) -> TestResult {
                 assert!((before..=after).contains(&actual));
                 [actual, actual, 0]
             }
+            Case::Departed | Case::PartyCounter => {
+                return Err("specialized death-credit fixture did not run".into());
+            }
             Case::FirstDefeatOutfit
             | Case::Window
             | Case::WindowStateless
