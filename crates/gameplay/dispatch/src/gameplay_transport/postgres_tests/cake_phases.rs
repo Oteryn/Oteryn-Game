@@ -68,14 +68,29 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,$3,$4,$5,$6,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2026-02-21 05:00:00+00','2026-02')")
                     .bind(id(42).as_slice()).bind(bundle.as_slice()).bind(world.map_revision()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(room.frame_binding().digest().as_slice()).execute(&mut *tx).await?;
                 sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)").bind(id(42).as_slice()).execute(&mut *tx).await?;
-                sqlx::query("INSERT INTO game_cake_world_progress VALUES(encode($1,'hex')::uuid,2026,200,200)").bind(id(42).as_slice()).execute(&mut *tx).await?;
-                sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer) VALUES(encode($1,'hex')::uuid,2026,2,1)").bind(id(42).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
-                owner.refresh_terrain_tools().await;
                 let target=|position:MovementLocalPosition|->TestResult<WorldObjectTarget>{
                     let key=crate::map::view::placement_key(crate::map::overlay::TilePos{x:u16::try_from(position.x)?,y:u16::try_from(position.y)?,floor:i8::try_from(-position.floor)?},1).ok_or("cake placement")?;
                     Ok(WorldObjectTarget{placement:bundle.into_iter().chain(key.to_be_bytes()).collect(),expected_revision:map.facts.object_revision(key)})
                 };
+                let inactive = UseCommand { game_session_id: session, command_id: 901, item_fence: Some(fence) };
+                assert_eq!(owner.use_world_object(deps.actor, inactive, target(first)?).await.disposition, UseDisposition::NotPossible);
+                assert_eq!(owner.states.chat.drain(session), vec![oteryn_protocol_oteryn::chat::ChatLine::Private {
+                    speaker_name: "Game".into(),
+                    text: "The cake isn't ready to be eaten right now.".into(),
+                }]);
+
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_cake_world_progress VALUES(encode($1,'hex')::uuid,2026,200,200)").bind(id(42).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer) VALUES(encode($1,'hex')::uuid,2026,2,1)").bind(id(42).as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+                owner.refresh_terrain_tools().await;
+                let action_delay = owner.states.world_gate.lock().map_err(|_| "Cake world action gate")?
+                    .equip_delay(deps.actor, 0, owner.clock_origin.elapsed());
+                if let Some(delay) = action_delay {
+                    tokio::time::sleep(delay).await;
+                }
                 let one=target(first)?;let two=target(second)?;
                 let command=UseCommand{game_session_id:deps.admitted.game_session_id,command_id:1,item_fence:Some(fence)};
                 assert!(!world.enterable(crate::map::overlay::TilePos{x:33303,y:32070,floor:-7}));
