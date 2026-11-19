@@ -4,9 +4,10 @@ use super::arena_match_fixtures::{NativeScenario, scenario, scenario_path, scena
 
 #[test]
 fn arena_match_real_connection_status_and_full_match() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
@@ -21,9 +22,10 @@ fn arena_match_real_connection_status_and_full_match() -> TestResult {
 
 #[test]
 fn arena_match_credited_portal_timeout_restores_pillar() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -39,9 +41,10 @@ fn arena_match_credited_portal_timeout_restores_pillar() -> TestResult {
 
 #[test]
 fn m51_postgres_native_portals_complete_all_ten_pits_and_reward() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -58,9 +61,10 @@ fn m51_postgres_native_portals_complete_all_ten_pits_and_reward() -> TestResult 
 
 #[test]
 fn m51_postgres_native_recreated_pillars_complete_all_ten_pits_and_reward() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -79,9 +83,10 @@ fn m51_postgres_native_recreated_pillars_complete_all_ten_pits_and_reward() -> T
 
 #[test]
 fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -98,9 +103,10 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
 
 #[test]
 fn m51_postgres_native_timeout_kicks_and_persists_without_a_status_command() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -117,9 +123,10 @@ fn m51_postgres_native_timeout_kicks_and_persists_without_a_status_command() -> 
 
 #[test]
 fn m51_postgres_native_entry_resets_only_monsters_inside_source_box() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)

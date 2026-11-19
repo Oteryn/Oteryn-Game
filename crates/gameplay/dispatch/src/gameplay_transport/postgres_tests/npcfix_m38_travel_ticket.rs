@@ -13,9 +13,10 @@ use oteryn_gameplay_quests::quest::{
 
 #[test]
 fn npcfix_m38_travel_ticket_requires_an_unexpired_server_purchase_postgres() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run("npcfix-m38-ticket", || {
         run(async |admin| {
