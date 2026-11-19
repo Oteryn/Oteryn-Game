@@ -1,0 +1,42 @@
+{
+  "contract": "client-channel-probe-v1",
+  "source": "Oteryn-Platform docs/contracts/fixtures/client-channel-probe-v1 at d2e54f2ebe2d8be5ac592bba355c4ba2d13b5c57 (PR #1939)",
+  "response_headers": {
+    "cache-control": "no-store, private",
+    "pragma": "no-cache",
+    "content-type": "application/json",
+    "vary": "authorization"
+  },
+  "files": [
+    {
+      "file": "probes-ok.json",
+      "bytes": 244,
+      "sha256": "8c7bebaa2565b411d78a5e89da9a00af9c27dbe9adfc7f62af81e73d555fc9a5",
+      "expect": "accept"
+    },
+    {
+      "file": "probes-rejected-route-key.json",
+      "bytes": 288,
+      "sha256": "6412e6aef920f2892310c7e6c681482ceabbea24d002450663de769c4d3093fc",
+      "expect": "reject:ForbiddenGameplayField"
+    },
+    {
+      "file": "probes-rejected-http-url.json",
+      "bytes": 243,
+      "sha256": "b7783824b9da5284fa049cfb0a8766b5dd1322731de891909031c65eef0ba0eb",
+      "expect": "reject:InvalidPayload"
+    },
+    {
+      "file": "probes-rejected-query.json",
+      "bytes": 257,
+      "sha256": "9550d26784256733ef31481efcd26617d4cf98a92bcbec2fc090edec1a566b2e",
+      "expect": "reject:InvalidPayload"
+    },
+    {
+      "file": "probe-target-204.body",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expect": "accept"
+    }
+  ]
+}

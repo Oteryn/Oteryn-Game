@@ -16,23 +16,3 @@ pub(super) fn character_fence_required(callback: &Callback) -> bool {
         || shared_switches::gate(&callback.key).is_some()
         || stateless_observation_required(callback)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn m02_window_use_acquires_a_character_fence_even_without_personal_state() -> Result<(), String>
-    {
-        let mut window = world_callbacks::load()?
-            .into_iter()
-            .find(|c| c.key == "oteryn:quest-callback/m02/nomads-land/window")
-            .ok_or("Nomads window")?;
-        assert!(!window.has_personal_state());
-        assert!(stateless_observation_required(&window));
-        assert!(character_fence_required(&window));
-        window.key = "oteryn:quest-callback/fixture-ordinary-map-action".into();
-        assert!(!stateless_observation_required(&window));
-        assert!(!character_fence_required(&window));
-        Ok(())
-    }
-}

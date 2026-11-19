@@ -7,7 +7,9 @@ pub const TRACKS: [&str; 3] = [
     "oteryn:quest-progress/rotten-blood/area-icons/last-upper-left-update",
     "oteryn:quest-progress/rotten-blood/area-icons/last-lower-left-update",
 ];
-pub const SECONDS: [i64; 3] = [8, 30, 1];
+// Rotten Blood Quest/Spoiler, curid 102953, oldid 1107075, Rotten Charges.
+pub const AREA_STEP_SECONDS: u64 = 20;
+pub const SECONDS: [i64; 3] = [8, AREA_STEP_SECONDS as i64, 1];
 
 pub const MINIONS: [&str; 15] = [
     "oteryn:creature.bloated_man_maggot",

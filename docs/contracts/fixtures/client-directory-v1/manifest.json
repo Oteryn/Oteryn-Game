@@ -1,0 +1,104 @@
+{
+  "contract_id": "client-directory-v1",
+  "base_commit": "5510ab0a840a009eecdab01fd988823a258d1f30",
+  "game_consumer": {
+    "repository": "Oteryn/Oteryn-Game",
+    "commit": "e2152d050038cecdb3728c222af2ac184e1cac5a",
+    "path": "crates/platform-client/src/lib.rs"
+  },
+  "synthetic_access_token": "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+  "files": [
+    {
+      "file": "directory-anonymous.json",
+      "bytes": 326,
+      "sha256": "f566ff46c65ba1759846fcc926ab48e54ed2c8351b9796b8173c008617c79268"
+    },
+    {
+      "file": "directory-owner.json",
+      "bytes": 449,
+      "sha256": "5b840fbb59ee5ee20eda50da81151e1405199faa22ed0c998dbc99658f21196d"
+    },
+    {
+      "file": "directory-rejected-route-key.json",
+      "bytes": 260,
+      "sha256": "f8de9973248b897b260d452d923b335be53737b20a2945166e9e0fe62aa6c2c1"
+    },
+    {
+      "file": "directory-unknown-pvp-type.json",
+      "bytes": 221,
+      "sha256": "499ee5b3add993a1a80d44162d7e7c7265940e0804de716cf08ba1e138a00111"
+    }
+  ],
+  "cases": [
+    {
+      "case": "directory-anonymous",
+      "setup": "no Authorization header; one world with two channels",
+      "method": "GET",
+      "path": "/v1/client/directory",
+      "headers": {},
+      "request": null,
+      "status": 200,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json",
+        "vary": "authorization"
+      },
+      "response": "directory-anonymous.json",
+      "client_outcome": "accept"
+    },
+    {
+      "case": "directory-owner",
+      "setup": "valid bearer of the account that owns Aldric and Brenna on world Aurora",
+      "method": "GET",
+      "path": "/v1/client/directory",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A"
+      },
+      "request": null,
+      "status": 200,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json",
+        "vary": "authorization"
+      },
+      "response": "directory-owner.json",
+      "client_outcome": "accept"
+    },
+    {
+      "case": "directory-rejected-route-key",
+      "setup": "non-conforming producer: a channel carries the forbidden key endpoint",
+      "method": "GET",
+      "path": "/v1/client/directory",
+      "headers": {},
+      "request": null,
+      "status": 200,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json",
+        "vary": "authorization"
+      },
+      "response": "directory-rejected-route-key.json",
+      "client_outcome": "reject:ForbiddenGameplayField"
+    },
+    {
+      "case": "directory-unknown-pvp-type",
+      "setup": "non-conforming producer: a channel carries pvp_type HARDCORE_PVP",
+      "method": "GET",
+      "path": "/v1/client/directory",
+      "headers": {},
+      "request": null,
+      "status": 200,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json",
+        "vary": "authorization"
+      },
+      "response": "directory-unknown-pvp-type.json",
+      "client_outcome": "reject:InvalidPayload"
+    }
+  ]
+}

@@ -42,6 +42,7 @@ pub mod bulletin;
 pub mod capability_tables;
 pub mod cast;
 pub mod channel_list;
+pub mod channel_switch;
 pub mod character_info;
 pub mod charm;
 pub mod charm_progression;

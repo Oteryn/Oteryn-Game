@@ -3018,7 +3018,7 @@ mod continuation_tests {
     fn party_roster_compares_members_without_cross_session_handles() {
         let mut a = parties::PartyResult::refused(parties::PartyDisposition::Ok);
         a.members = vec![
-            parties::PartyEntry {
+            parties::PartyEntry { channel: None,
                 list: Vec::new(),
                 handle: 1,
                 name: "Caster".into(),
@@ -3026,7 +3026,7 @@ mod continuation_tests {
                 expires_at: 0,
                 party_spell_remaining_ms: None,
             },
-            parties::PartyEntry {
+            parties::PartyEntry { channel: None,
                 list: Vec::new(),
                 handle: 2,
                 name: "Peer".into(),

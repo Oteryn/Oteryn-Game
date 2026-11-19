@@ -45,3 +45,13 @@ fn gap_world_channel_list() -> Result<(), oteryn_renderer::BatchError> {
     assert_eq!(view.served_channel_text(), None);
     Ok(())
 }
+
+#[test]
+fn social_party_uses_admitted_channel_without_channel_list_snapshot() {
+    let (link, _commands, outbox) = play_channel();
+    let current = "01900000-0000-7000-8000-000000000001";
+    link.world_channels("", current, &[]);
+    outbox.channel_list_initialize(None);
+    assert_eq!(link.social_channels().0, oteryn_platform_client::native_login::parse_uuid_v7(current));
+    assert!(link.social_channels().0.is_some());
+}

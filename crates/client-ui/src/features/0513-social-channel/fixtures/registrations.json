@@ -1,0 +1,32 @@
+[
+  {
+    "mechanic": "0513-social-channel",
+    "kind": "panels",
+    "id": "0513-social-channel-panel",
+    "status": "supported",
+    "entry": "view.rs::party_member_text"
+  },
+  {
+    "mechanic": "0513-social-channel",
+    "kind": "handlers",
+    "id": "0513-social-channel-rows",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 513,
+    "entry": "protocol.rs::presence_notices",
+    "push_messages": [
+      "VipPresence"
+    ],
+    "reducer": "protocol.rs::presence_notices",
+    "test": "tests.rs::c0513_rows_show_the_channel_and_notices_name_it",
+    "shared_commands": [
+      46
+    ],
+    "not_applicable": {
+      "settings": "The Channel of a social row is server-owned; there is no client setting.",
+      "state": "Uses the existing Party, VIP and Guild panel states; the negotiated field rides on their entries.",
+      "input": "Shown in the existing Party, VIP and Guild windows; no separate input binding."
+    }
+  }
+]

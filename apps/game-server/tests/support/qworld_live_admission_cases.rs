@@ -24,7 +24,7 @@ impl GrizzlyPremiumGate for Premium {
 
 #[test]
 fn qm03_world_admission_live_blessings_promotion_premium_fences_and_replay() -> f::TestResult {
-    let Some(admin) = f::configured_admin() else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     std::thread::Builder::new()
@@ -439,18 +439,21 @@ mod native_binding {
 
     #[test]
     fn qm03_world_admission_live_blessings_promotion_premium_fences_and_replay() -> f::TestResult {
-        run_admission(false)
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        run_admission(admin, false)
     }
 
     #[test]
     fn m03_time_machine_production_binding_admission_postgres() -> f::TestResult {
-        run_admission(true)
-    }
-
-    fn run_admission(production: bool) -> f::TestResult {
-        let Some(admin) = f::configured_admin() else {
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
             return Ok(());
         };
+        run_admission(admin, true)
+    }
+
+    fn run_admission(admin: String, production: bool) -> f::TestResult {
         std::thread::Builder::new()
             .stack_size(64 << 20)
             .spawn(move || -> Result<(), String> {

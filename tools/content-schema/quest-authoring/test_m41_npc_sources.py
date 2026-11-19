@@ -15,7 +15,11 @@ class M41NpcSourceTests(unittest.TestCase):
         offer, finale = packet['rules']
         self.assertEqual(offer['effects'], [{'kind': 'set_topic', 'value': 13}])
         self.assertEqual(finale['topics'], [13])
-        self.assertEqual(finale['guards'], [{'kind': 'storage', 'track': tool.FAFNAR, 'op': 'eq', 'value': 301}])
+        self.assertEqual(finale['guards'], [
+            {'kind': 'storage', 'track': tool.FAFNAR, 'op': 'eq', 'value': 301},
+            {'kind': 'storage', 'track': tool.LYRE, 'op': 'eq', 'value': 4},
+            {'kind': 'storage', 'track': tool.TORTOISE, 'op': 'eq', 'value': 3},
+        ])
         self.assertEqual(finale['effects'], [
             {'kind': 'achievement', 'name': 'Sculptor Apprentice'},
             {'kind': 'give_item', 'item': 'oteryn:item.tibia.i31574', 'count': 1},

@@ -114,7 +114,7 @@ async fn answer(
                 return Err(GuildError::InvalidInput);
             }
             let rows = sqlx::query(
-                "SELECT m.character_id::text,r.name,m.rank_level,m.title FROM game_guild_members m JOIN game_character_roots r USING(character_id) WHERE m.guild_id=encode($1,'hex')::uuid AND (m.rank_level,m.character_id)>($2,encode($3,'hex')::uuid) ORDER BY m.rank_level,m.character_id LIMIT 101",
+                "SELECT m.character_id::text,r.name,m.rank_level,m.title,(SELECT COALESCE(p.runtime_scope_channel_id,p.origin_channel_id)::text FROM game_durability_reconnect_sessions p WHERE p.character_id=m.character_id AND p.session_state IN(1,2) ORDER BY p.game_session_id LIMIT 1) AS channel_id FROM game_guild_members m JOIN game_character_roots r USING(character_id) WHERE m.guild_id=encode($1,'hex')::uuid AND (m.rank_level,m.character_id)>($2,encode($3,'hex')::uuid) ORDER BY m.rank_level,m.character_id LIMIT 101",
             )
             .bind(guild.as_slice())
             .bind(after.map_or(0_i16, |c| i16::from(c.level)))
@@ -132,6 +132,13 @@ async fn answer(
                         level: u8::try_from(r.try_get::<i16, _>("rank_level")?)
                             .map_err(|_| invalid())?,
                         title: r.try_get("title")?,
+                        // chsw: the member's current Channel of the World (capability 513;
+                        // dispatch omits it for peers without the capability).
+                        channel: r
+                            .try_get::<Option<String>, _>("channel_id")?
+                            .as_deref()
+                            .map(uuid_text)
+                            .transpose()?,
                     })
                 })
                 .collect::<Result<Vec<_>>>()?;

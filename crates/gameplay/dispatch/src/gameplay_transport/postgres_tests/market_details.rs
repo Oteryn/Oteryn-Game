@@ -7,7 +7,7 @@ fn t124_market_completed_prices_and_catalogue_through_real_dispatch() -> TestRes
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| super::market::scenario(false, false).map_err(|e| e.to_string()))?
+        .spawn(|| super::market_fixtures::scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "T124 market case thread")??;
     Ok(())
@@ -20,7 +20,7 @@ fn t124_market_buy_sell_tables_have_independent_pages_and_bounded_books() -> Tes
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| super::market::scenario(true, false).map_err(|e| e.to_string()))?
+        .spawn(|| super::market_fixtures::scenario(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "T124 dual book case thread")??;
     Ok(())

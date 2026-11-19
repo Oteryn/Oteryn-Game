@@ -24,8 +24,8 @@ fn seam_resume_survives_a_clock_step_back_after_the_loss_decision() -> TestResul
                     false,
                 )
                 .await?;
-                let recovery = super::house_transfer::RecoverySource::start(&h).await?;
-                super::house_transfer::prepare_owned_session(&h).await?;
+                let recovery = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+                super::house_transfer_fixtures::prepare_owned_session(&h).await?;
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h
                     .root
@@ -74,7 +74,7 @@ fn seam_resume_survives_a_clock_step_back_after_the_loss_decision() -> TestResul
                 .rows_affected();
                 tx.commit().await?;
                 assert_eq!(shifted, 1);
-                let token = super::house_transfer::RecoverySource::token(2)?;
+                let token = super::house_transfer_fixtures::RecoverySource::token(2)?;
                 let resumed = owner
                     .resume(ResumeAttempt {
                         game_session_id: admitted.game_session_id,

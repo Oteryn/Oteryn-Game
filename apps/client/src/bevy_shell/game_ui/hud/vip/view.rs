@@ -125,6 +125,7 @@ pub(super) fn project(
         .map(|value| value.entries.as_slice())
         .unwrap_or(&[]);
     let presence = play.link.vip_presence_panel();
+    let (_, channel_names) = play.link.social_channels();
     let message = if !panel.selected {
         "VIP unavailable in this session".to_owned()
     } else if let Some(feedback) = &panel.feedback {
@@ -201,15 +202,20 @@ pub(super) fn project(
         let Some(entry) = entries.iter().find(|entry| entry.entry == label.entry) else {
             continue;
         };
-        if text.0 != entry.name {
-            text.0.clone_from(&entry.name);
-        }
-        let status = presence
+        let live = presence
             .presence
             .entries
             .iter()
-            .find(|value| value.entry == entry.entry)
-            .map(|value| value.status);
+            .find(|value| value.entry == entry.entry);
+        // chsw (capability 513): an Online row names the Channel ("Online — Aurelia-3").
+        let shown = live.filter(|value| value.channel.is_some()).map_or_else(
+            || entry.name.clone(),
+            |value| oteryn_client_ui::social_channel::vip_entry_text(&channel_names, value),
+        );
+        if text.0 != shown {
+            text.0 = shown;
+        }
+        let status = live.map(|value| value.status);
         // TibiaStyle VipOnline/VipOffline/VipPending; no inferred online status.
         color.0 = match status {
             Some(VipPresenceStatus::Online) => Color::srgb_u8(96, 248, 96),

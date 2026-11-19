@@ -238,14 +238,15 @@ fn reply(
 }
 
 /// A receipt remains successful when its original conversation has ended. Only
-/// the current conversation may receive the retained reply; reconciliation must
-/// not reopen an older generation or publish into another NPC's conversation.
+/// the current conversation may receive dialogue, including a refusal line.
+/// Reconciliation must not reopen an older generation or publish into another
+/// NPC's conversation.
 fn publish_committed_reply(
     current: Option<Context>,
     expected: &Context,
     rendered: NpcTalkOutcome,
 ) -> NpcTalkOutcome {
-    if current.as_ref() == Some(expected) && rendered.disposition == NpcIntentDisposition::Ok {
+    if current.as_ref() == Some(expected) && rendered.conversation.is_some() {
         rendered
     } else {
         NpcTalkOutcome::only(NpcIntentDisposition::Ok)
@@ -530,16 +531,15 @@ pub(super) async fn apply(
             if step.failure_reply.is_empty() {
                 return rejected();
             }
-            let mut rendered = reply(
+            let rendered = reply(
                 &admission.states.chat,
                 command.game_session_id,
                 &step.context,
                 &intent,
                 step.failure_reply,
             );
-            rendered.disposition = NpcIntentDisposition::Rejected;
             let runtime = admission.runtime.lock().await;
-            publish_committed_reply(
+            let mut outcome = publish_committed_reply(
                 admission.states.npc_conversations.current_npc(
                     &admission.states.chat,
                     &runtime,
@@ -549,7 +549,9 @@ pub(super) async fn apply(
                 ),
                 &step.context,
                 rendered,
-            )
+            );
+            outcome.disposition = NpcIntentDisposition::Rejected;
+            outcome
         }
     }
 }

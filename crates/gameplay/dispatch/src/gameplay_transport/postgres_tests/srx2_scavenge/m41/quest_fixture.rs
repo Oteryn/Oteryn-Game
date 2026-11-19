@@ -61,19 +61,42 @@ pub(super) fn catalogue() -> TestResult<Arc<QuestStateCatalogue>> {
             world_change: None,
         });
     }
-    for (key, quest, track, value) in [
-        (STAG_START, STAG, crate::durability::stag_beaks::STAGE, 5),
-        (STAG_READY, STAG, crate::durability::stag_beaks::STAGE, 12),
-        (KILMARESH_READY, KILMARESH, FAFNAR, 301),
+    let kilmaresh_hand_ins = [
+        // Global spoiler 88780/1199254 requires the three hand-ins.
+        (FAFNAR, 301),
+        (
+            "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/lyre",
+            4,
+        ),
+        (
+            "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/presente",
+            3,
+        ),
+    ];
+    for (key, quest, stages) in [
+        (
+            STAG_START,
+            STAG,
+            &[(crate::durability::stag_beaks::STAGE, 5)][..],
+        ),
+        (
+            STAG_READY,
+            STAG,
+            &[(crate::durability::stag_beaks::STAGE, 12)][..],
+        ),
+        (KILMARESH_READY, KILMARESH, &kilmaresh_hand_ins[..]),
     ] {
         transitions.push(QuestTransition {
             key: key.into(),
             quest: quest.into(),
-            effects: vec![QuestEffect {
-                track: track.into(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(value),
-            }],
+            effects: stages
+                .iter()
+                .map(|&(track, value)| QuestEffect {
+                    track: track.into(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Set(value),
+                })
+                .collect(),
             completes: false,
             experience: None,
             world_change: None,
@@ -103,9 +126,13 @@ pub(super) async fn npc(
     // This transport fixture publishes session 50 and lease generation 2.
     // Resolve live authority independently; only the semantic cursor may be retained for replay.
     let session = crate::foundation::GameSessionId::decode(&id(50)).map_err(debug)?;
-    let mut fence = owner.current_quest_fence(session).await
-        .map_err(|_| "M41 current quest fence")?.ok_or("M41 active quest session")?;
-    fence.expected_character_revision = crate::domain::CharacterRevision::new(revision).map_err(debug)?;
+    let mut fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "M41 current quest fence")?
+        .ok_or("M41 active quest session")?;
+    fence.expected_character_revision =
+        crate::domain::CharacterRevision::new(revision).map_err(debug)?;
     owner
         .root
         .commit_character_npc_program(
@@ -142,9 +169,13 @@ pub(super) async fn ready(
     // This transport fixture publishes session 50 and lease generation 2.
     // Resolve live authority independently; only the semantic cursor may be retained for replay.
     let session = crate::foundation::GameSessionId::decode(&id(50)).map_err(debug)?;
-    let mut fence = owner.current_quest_fence(session).await
-        .map_err(|_| "M41 current quest fence")?.ok_or("M41 active quest session")?;
-    fence.expected_character_revision = crate::domain::CharacterRevision::new(revision).map_err(debug)?;
+    let mut fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "M41 current quest fence")?
+        .ok_or("M41 active quest session")?;
+    fence.expected_character_revision =
+        crate::domain::CharacterRevision::new(revision).map_err(debug)?;
     let outcome = owner
         .root
         .commit_character_quest_transition(

@@ -65,7 +65,7 @@ fn banshee_hidden_flame_step_credits_and_spawns_once_with_an_occupied_room_postg
 }
 
 fn bindings() -> TestResult<Bindings> {
-    use super::banshee_circuit::position;
+    use super::banshee_circuit_fixtures::position;
     let callback = serde_json::json!({
         "key":"oteryn:quest-callback/banshee/hidden-flame",
         "quest":QUEST,
@@ -109,8 +109,8 @@ fn bindings() -> TestResult<Bindings> {
 }
 
 fn scenario() -> TestResult {
-    use super::appearance_change_postgres::observer_visibility_tests as observer;
-    use super::banshee_circuit::{local, scene_world};
+    use super::appearance_change_postgres_fixtures::observer_visibility_tests as observer;
+    use super::banshee_circuit_fixtures::{local, scene_world};
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "banshee_hidden_flame", true, false).await?;
@@ -141,7 +141,7 @@ fn scenario() -> TestResult {
         )?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

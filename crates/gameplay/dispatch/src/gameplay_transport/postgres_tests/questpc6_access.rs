@@ -6,7 +6,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Position, Trigger};
 #[test]
 fn questpc6_reward_caches_fibula_demon_devil_draconia() -> TestResult {
     let started = std::time::Instant::now();
-    super::quest_catalogue_chests::phase_a_cohort(&[
+    super::quest_catalogue_chests_fixtures::phase_a_cohort(&[
         "deeper_fibula_quest",
         "demon_helmet_quest",
         "devil_helmet_quest",
@@ -26,7 +26,7 @@ fn questpc6_draconia_both_levers_open_and_restore_their_passages() -> TestResult
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("questpc6-draconia-levers", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc6-draconia-levers", || {
         for (key, position) in [
             (
                 "draconia-lever-30006",
@@ -46,7 +46,7 @@ fn questpc6_draconia_both_levers_open_and_restore_their_passages() -> TestResult
             ),
         ] {
             let started = std::time::Instant::now();
-            super::quest_world_callbacks::scenario(key, position, false)?;
+            super::quest_world_callbacks_fixtures::scenario(key, position, false)?;
             println!(
                 "POSTGRES_CASE_COMPLETED {key} duration={:?}",
                 started.elapsed()
@@ -63,7 +63,7 @@ fn questpc6_deeper_fibula_well_literal_use_preserves_quest_state() -> TestResult
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("questpc6-fibula-well", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc6-fibula-well", || {
         for x in [32171, 32172] {
             stateless_callback(
                 "deeper-fibula-well",
@@ -85,7 +85,7 @@ fn questpc6_deeper_fibula_well_literal_use_preserves_quest_state() -> TestResult
 
 fn stateless_callback(name: &str, trigger: Position, destination: Position) -> TestResult {
     use super::fixture::{Harness, debug, id, run};
-    use super::quest_world_callbacks::{local, wire, world};
+    use super::quest_world_callbacks_fixtures::{local, wire, world};
     use super::{Dependencies, prepare_current_session};
     use crate::content::channel_content_pin::ChannelContentPin;
     use crate::foundation::ChannelRuntimeV1;
@@ -125,7 +125,7 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -352,7 +352,7 @@ fn questpc6_cults_orc_passages_preserve_progress_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("questpc6-cults-passages", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc6-cults-passages", || {
         for (name, origin, destination) in [
             (
                 "cults_of_tibia/orc_entry",
@@ -376,7 +376,7 @@ fn questpc6_dreamers_challenge_exit_and_maze_passages_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("questpc6-dreamers-passages", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc6-dreamers-passages", || {
         for (name, unique, destination) in [
             (
                 "dreamers_challenge_quest/hugo_exit",
@@ -497,7 +497,7 @@ fn questpc6_source_deeper_fibula_well_and_complete_reward_inventory() -> TestRes
     }
     let started = std::time::Instant::now();
     questpc6_deeper_fibula_well_literal_use_preserves_quest_state()?;
-    super::quest_catalogue_chests::phase_a_cohort(&["deeper_fibula_quest"])?;
+    super::quest_catalogue_chests_fixtures::phase_a_cohort(&["deeper_fibula_quest"])?;
     println!(
         "POSTGRES_CASE_COMPLETED questpc6_source_deeper_fibula_well_and_complete_reward_inventory duration={:?}",
         started.elapsed()
@@ -508,7 +508,7 @@ fn questpc6_source_deeper_fibula_well_and_complete_reward_inventory() -> TestRes
 #[test]
 fn questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid() -> TestResult {
     let started = std::time::Instant::now();
-    super::quest_catalogue_chests::phase_a_cohort(&[
+    super::quest_catalogue_chests_fixtures::phase_a_cohort(&[
         "children_of_the_revolution_quest",
         "cults_of_tibia_quest",
         "dark_trails_quest",

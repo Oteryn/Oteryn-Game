@@ -11,6 +11,7 @@ pub mod boss_difficulty;
 pub mod boss_encounter;
 pub mod boss_pity;
 pub mod cake_event;
+pub mod channel_switch;
 pub mod character_condition_snapshot;
 pub mod character_hazard;
 pub mod character_home_town;

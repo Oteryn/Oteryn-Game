@@ -176,6 +176,7 @@ pub struct TradeBook(Mutex<Book>, tokio::sync::Notify);
 struct Book {
     #[cfg(test)]
     completed: Option<PlayerTradeRequest>,
+    switching: std::collections::HashSet<GameSessionId>,
     live: HashMap<GameSessionId, Live>,
     index: HashMap<GameSessionId, GameSessionId>,
     records: HashMap<GameSessionId, Record>,
@@ -185,6 +186,13 @@ impl Book {
         self.records.get(self.index.get(&session)?).cloned()
     }
     fn publish(&mut self, record: &Record) -> Option<()> {
+        if record
+            .sessions
+            .iter()
+            .any(|session| self.switching.contains(session))
+        {
+            return None;
+        }
         for side in 0..2 {
             let partner = self.live.get(&record.sessions[1 - side])?;
             let message = if record.projections[side].is_none() {
@@ -226,9 +234,13 @@ impl Book {
     fn close(&mut self, record: &Record, result: ResultCode) -> Option<()> {
         // A disconnect may close a copied record while its observation awaits I/O.
         // The first closure wins; an old snapshot also cannot close a successor trade.
-        if !self.records.get(&record.sessions[0]).is_some_and(|current| {
-            current.sessions == record.sessions && current.commands[0] == record.commands[0]
-        }) {
+        if !self
+            .records
+            .get(&record.sessions[0])
+            .is_some_and(|current| {
+                current.sessions == record.sessions && current.commands[0] == record.commands[0]
+            })
+        {
             return Some(());
         }
         #[cfg(test)]
@@ -262,7 +274,35 @@ impl Book {
         Some(())
     }
 }
+pub(super) struct SwitchTradeHold<'a>(&'a TradeBook, GameSessionId);
+
+impl Drop for SwitchTradeHold<'_> {
+    fn drop(&mut self) {
+        if let Ok(mut book) = self.0.0.lock() {
+            book.switching.remove(&self.1);
+        }
+    }
+}
 impl TradeBook {
+    pub(super) fn hold_for_switch(
+        &self,
+        session: GameSessionId,
+    ) -> Result<SwitchTradeHold<'_>, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
+        use oteryn_protocol_oteryn::channel_switch::SwitchLock;
+        let mut book = self.0.lock().map_err(|_| SwitchLock::Checkpoint)?;
+        if let Some(record) = book.record(session) {
+            return Err(if record.request.is_some() {
+                SwitchLock::ValueTransaction
+            } else {
+                SwitchLock::Trade
+            });
+        }
+        if !book.switching.insert(session) {
+            return Err(SwitchLock::Transition);
+        }
+        Ok(SwitchTradeHold(self, session))
+    }
+
     async fn wait_staged(
         &self,
         session: GameSessionId,
@@ -315,6 +355,12 @@ impl TradeBook {
             let _ = book.close(&record, ResultCode::Stale);
         }
         false
+    }
+    /// chsw §8: an open direct trade of `session` (a poisoned book counts as open).
+    pub(super) fn open(&self, session: GameSessionId) -> bool {
+        self.0
+            .lock()
+            .map_or(true, |book| book.record(session).is_some())
     }
     pub(super) fn transitioning(&self, session: GameSessionId) -> bool {
         self.0.lock().map_or(true, |book| {

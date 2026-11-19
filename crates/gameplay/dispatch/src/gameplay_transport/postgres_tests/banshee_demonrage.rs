@@ -165,7 +165,7 @@ fn banshee_demonrage_use_sequence_resets_and_step_spawns_warlocks_once_postgres(
 }
 
 fn bindings() -> TestResult<Bindings> {
-    use super::banshee_circuit::position;
+    use super::banshee_circuit_fixtures::position;
     let mut stages = Vec::new();
     for (index, at) in SWITCHES.into_iter().enumerate() {
         let requirements: Vec<_> = SWITCHES
@@ -271,7 +271,7 @@ fn bindings() -> TestResult<Bindings> {
 }
 
 fn scenario() -> TestResult {
-    use super::banshee_circuit::{local, scene_world};
+    use super::banshee_circuit_fixtures::{local, scene_world};
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "banshee_demonrage", false, false).await?;
@@ -322,7 +322,7 @@ fn scenario() -> TestResult {
         )?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

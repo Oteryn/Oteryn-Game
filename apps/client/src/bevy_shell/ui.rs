@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    ChangeChannel,
     Options,
     Panel(&'static str),
     Analysers,
@@ -70,6 +71,7 @@ impl Control {
         match self {
             Self::Panel(id) => id,
             Self::Analysers => "shell.analysers",
+            Self::ChangeChannel => "shell.change_channel",
             Self::Inspection => "shell.inspection",
             Self::Loot => "shell.loot",
             Self::Notices => "shell.notices",
@@ -386,6 +388,7 @@ fn activate(
             && matches!(
                 control,
                 Control::Options
+                    | Control::ChangeChannel
                     | Control::Market
                     | Control::Party
                     | Control::Quests

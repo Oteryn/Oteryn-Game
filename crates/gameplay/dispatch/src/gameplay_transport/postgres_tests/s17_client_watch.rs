@@ -103,7 +103,7 @@ fn scenario(case: u8) -> TestResult {
                 use crate::map::boot::tests::{DOOR_AT,door_world};
                 let world_id=crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
                 let world=door_world()?;
-                let (controller,activated)=super::death_ml_loss_composed::production_generation_with_pin(world_id,"content-1")?;
+                let (controller,activated)=super::death_ml_loss_composed_fixtures::production_generation_with_pin(world_id,"content-1")?;
                 let generation=controller.active().ok_or("active generation")?;
                 let pin=crate::foundation::ChannelContentPin::from_activation(world_id,1,generation.identity().server_artifact_digest(),generation.identity().client_artifact_digest(),activated.frame_binding().digest(),world.map_revision_digest(),(i32::from(DOOR_AT.x)-1,i32::from(DOOR_AT.y),-i16::from(DOOR_AT.floor)));
                 let deps=Dependencies::with_content(pin,crate::content::qualify_native_entry_room(world_id).map_err(debug)?,crate::spell::cast::v1_spell_book().map_err(debug)?)?;
@@ -128,7 +128,7 @@ fn scenario(case: u8) -> TestResult {
                 {let mut runtime=deps.runtime.lock().await;runtime.bind_attacker_lease(deps.actor,admitted.game_session_id,crate::foundation::CharacterLease::new(crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,fence.character_lease_generation).map_err(debug)?).map_err(debug)?;runtime.initialize_first_entry_position(deps.actor).map_err(debug)?;}
                 let before=owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position();
                 let delay=if case==3{300}else{0};
-                let (access,host)=super::s17_client::settings_host::host_with_policy(*h.node.fact().node_id().as_bytes(),delay,case==3).await?;
+                let (access,host)=super::s17_client_fixtures::settings_host::host_with_policy(*h.node.fact().node_id().as_bytes(),delay,case==3).await?;
                 let service=CastService::spawn(h.root.clone(),h.node.clone(),50,Arc::clone(&access))?;
                 let node=CastNode{service:service.clone(),access};
                 owner.states.casts.set(node.clone()).map_err(|_|"cast set")?;

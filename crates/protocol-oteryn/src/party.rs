@@ -51,6 +51,9 @@ pub struct PartyEntry {
     /// Remaining milliseconds: Train, Protect, Enchant, Heal and Enlighten Party.
     /// None means the extension was not selected or the member is outside this runtime.
     pub party_spell_remaining_ms: Option<[u32; 5]>,
+    /// The member's current Channel of this World (SOCIAL_CHANNEL_V1, capability 513); None
+    /// for invitations, hidden or offline members, and peers without the capability.
+    pub channel: Option<[u8; 16]>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PartyResult {
@@ -156,6 +159,7 @@ pub fn encode_party_result(result: &PartyResult) -> Result<Vec<u8>> {
                     && (entry.expires_at == 0
                         || entry.leader
                         || entry.party_spell_remaining_ms.is_some()
+                        || entry.channel.is_some()
                         || !entry.list.is_empty()))
             {
                 return bad();
@@ -184,6 +188,9 @@ pub fn encode_party_result(result: &PartyResult) -> Result<Vec<u8>> {
                     return bad();
                 }
                 push_message_field(&mut inner, 6, &entity.encode()?);
+            }
+            if let Some(channel) = &entry.channel {
+                push_message_field(&mut inner, 7, channel);
             }
             push_message_field(&mut out, field, &inner);
         }
@@ -275,6 +282,7 @@ fn decode_entry(input: &[u8]) -> Result<PartyEntry> {
     let (mut handle, mut name, mut leader, mut expires) = (None, None, None, None);
     let mut remaining = None;
     let mut list = Vec::new();
+    let mut channel = None;
     let mut cursor = 0;
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
@@ -304,6 +312,11 @@ fn decode_entry(input: &[u8]) -> Result<PartyEntry> {
                 }
                 list.push(PartyListEntity::decode(read_bytes(input, &mut cursor)?)?);
             }
+            58 => set_once(
+                &mut channel,
+                <[u8; 16]>::try_from(read_bytes(input, &mut cursor)?)
+                    .map_err(|_| PartyWireError::Malformed)?,
+            )?,
             _ => return bad(),
         }
     }
@@ -314,6 +327,7 @@ fn decode_entry(input: &[u8]) -> Result<PartyEntry> {
         leader: leader.ok_or(PartyWireError::Malformed)?,
         expires_at: expires.ok_or(PartyWireError::Malformed)?,
         party_spell_remaining_ms: remaining,
+        channel,
     })
 }
 #[cfg(test)]

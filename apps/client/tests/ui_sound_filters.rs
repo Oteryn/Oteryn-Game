@@ -27,6 +27,7 @@ fn confirmed_ui_events_reach_filtered_native_audio_queue() -> Result<(), Box<dyn
             SessionEvent::OpenContainer(delta(Default::default())),
             SessionEvent::VipPresence(delta(oteryn_protocol_oteryn::vip_presence::PresenceBatch {
                 entries: vec![oteryn_protocol_oteryn::vip_presence::PresenceEntry {
+                    channel: None,
                     entry: 1,
                     name: "Friend".into(),
                     status: oteryn_protocol_oteryn::vip_presence::Status::Online,

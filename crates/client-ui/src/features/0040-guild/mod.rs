@@ -27,6 +27,8 @@ pub struct GuildPanel {
     pub invitations: Vec<guild::GuildInvitation>,
     pub roster: Vec<guild::GuildMember>,
     pub next: Option<guild::GuildRosterCursor>,
+    /// chsw (capability 513): names of the World's Channels for the roster's Channel column.
+    pub channel_names: crate::social_channel::ChannelNames,
 }
 
 pub fn request(panel: &mut GuildPanel, intent: Intent) -> Option<GuildCommand> {
@@ -139,12 +141,16 @@ pub fn panel_text(panel: &GuildPanel) -> String {
         },
     )];
     lines.push(lfmt!("Roster ({}):", panel.roster.len()));
-    lines.extend(
-        panel
-            .roster
-            .iter()
-            .map(|m| lfmt!("{} — {} (rank {})", m.name, m.title, m.level)),
-    );
+    lines.extend(panel.roster.iter().map(|m| {
+        let row = lfmt!("{} — {} (rank {})", m.name, m.title, m.level);
+        match m.channel {
+            Some(_) => format!(
+                "{row} — {}",
+                crate::social_channel::channel_text(&panel.channel_names, m.channel)
+            ),
+            None => row,
+        }
+    }));
     lines.push(lfmt!("Invitations ({}):", panel.invitations.len()));
     lines.extend(panel.invitations.iter().map(|i| i.name.clone()));
     if let Some(feedback) = &panel.feedback {

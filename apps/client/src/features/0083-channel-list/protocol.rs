@@ -18,5 +18,6 @@ impl Outbox {
             mailbox.served_channel = channel;
             mailbox.pushed.served_channel = Some(channel);
         }
+        mailbox.party.own_channel = channel.map(|channel| channel.channel_id).or(mailbox.channel_switch.current);
     }
 }

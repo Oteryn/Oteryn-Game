@@ -1,4 +1,6 @@
 //! W18 explicit730 protocol -> selected capability -> composed owner -> PostgreSQL.
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
 use super::*;
 use oteryn_protocol_oteryn::house_rotation as rotation;
 
@@ -140,7 +142,7 @@ async fn exchange(
     let generation = admitted.continuity.connection_generation;
     let client_task = async {
         loop {
-            let bytes = super::super::item_look::read_frame(&mut client).await?;
+            let bytes = super::super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
             if envelope.message_type() == MessageType::SnapshotCommit {
                 break;

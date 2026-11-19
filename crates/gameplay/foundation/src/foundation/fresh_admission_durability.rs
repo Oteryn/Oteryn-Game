@@ -309,6 +309,7 @@ pub enum FreshAdmissionCollisionV1 {
 pub enum FreshAdmissionDurableOutcomeV1 {
     Committed(FreshAdmissionCommitReceiptV1),
     ExistingCommitted(FreshAdmissionCommitReceiptV1),
+    RejectedChannelSwitch(oteryn_protocol_oteryn::channel_switch::SwitchStatus),
     RejectedReplayConflict,
     RejectedIncumbent,
     RejectedStaleAuthority,

@@ -218,8 +218,13 @@ pub(super) fn select(
                     wide(tr!("Automatic")).as_ptr() as LPARAM,
                 );
                 if let Some(row) = row {
-                    for (_, name) in &row.channels {
-                        SendMessageW(channels, CB_ADDSTRING, 0, wide(name).as_ptr() as LPARAM);
+                    for channel in &row.channels {
+                        SendMessageW(
+                            channels,
+                            CB_ADDSTRING,
+                            0,
+                            wide(&channel.label()).as_ptr() as LPARAM,
+                        );
                     }
                 }
                 SendMessageW(channels, CB_SETCURSEL, 0, 0);
@@ -259,7 +264,7 @@ pub(super) fn select(
                             .ok()
                             .and_then(|index| index.checked_sub(1))
                             .and_then(|index| row.channels.get(index))
-                            .map(|channel| channel.0.clone());
+                            .map(|channel| channel.id.clone());
                         let character_id = row.character.character_id.clone();
                         break SelectionAction::Play {
                             character_id,

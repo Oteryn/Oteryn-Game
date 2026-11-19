@@ -81,7 +81,7 @@ fn cults_scenario(reenter: bool) -> TestResult {
         return Ok(());
     }
     let began = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("engenc2-cults", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("engenc2-cults", move || {
         run(async |admin| {
             reset();
             let h =
@@ -93,10 +93,10 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 y: 100,
                 floor: -7,
             };
-            let world = super::quest_world_callbacks::world(&callback, trigger)?;
+            let world = super::quest_world_callbacks_fixtures::world(&callback, trigger)?;
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
-                super::death_ml_loss_composed::production_generation_with_pin(
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                     deps.admitted.world_id,
                     "content-1",
                 )?;
@@ -320,6 +320,29 @@ fn cults_scenario(reenter: bool) -> TestResult {
                     .len(),
                 1
             );
+            {
+                use crate::gameplay_transport::capabilities::{
+                    BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+                };
+                use crate::gameplay_transport::channel_switch::ChannelSwitchOutcome;
+                use oteryn_protocol_oteryn::channel_switch as wire;
+                let mut picker = admitted;
+                picker.continuity.selected_capabilities = SelectedCapabilities::select(
+                    BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                    &[wire::CAPABILITY_CHANNEL_SWITCH_V1],
+                )
+                .ok_or("switch capability")?;
+                let Some(ChannelSwitchOutcome::Refused(payload)) = owner
+                    .channel_switch_request_wire(picker, 2, &wire::encode_request(id(44)))
+                    .await
+                else {
+                    return Err("active encounter allowed switch".into());
+                };
+                assert_eq!(
+                    wire::decode_status(&payload).map(|s| s.lock),
+                    Some(wire::SwitchLock::Event)
+                );
+            }
             let plan = oteryn_gameplay_encounters::bosses::phase_controller::cults::plan();
             let mut command = 100;
             for i in (0..5).flat_map(|i| [i, i + 5]).chain([10]) {

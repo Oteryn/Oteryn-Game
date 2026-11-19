@@ -75,8 +75,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .query_guild(self.character, self.holder, fence, query)
                 .await
             {
-                Ok(result) => wire::encode_guild_query_result(&result)
-                    .map_or(GuildReply::Unavailable, GuildReply::Payload),
+                Ok(mut result) => {
+                    // chsw: the member Channel is negotiated by capability 513.
+                    if !admitted.continuity.selected_capabilities.contains(
+                        oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
+                    ) && let wire::GuildQueryResult::Roster { members, .. } = &mut result
+                    {
+                        for member in members {
+                            member.channel = None;
+                        }
+                    }
+                    wire::encode_guild_query_result(&result)
+                        .map_or(GuildReply::Unavailable, GuildReply::Payload)
+                }
                 Err(error) => failure(error),
             };
         }

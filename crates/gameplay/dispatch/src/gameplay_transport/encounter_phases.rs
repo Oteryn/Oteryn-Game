@@ -14,6 +14,8 @@ const MAX_ENCOUNTERS: usize = 64;
 pub(super) struct ActivePhase {
     key: u64,
     fight: CultsEncounter,
+    room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    participants: Vec<(ExactActorRef, GameSessionId)>,
     credits: Vec<grizzly_kills::EncounterCredit>,
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
@@ -25,6 +27,26 @@ pub(super) struct Registry {
 }
 
 impl Registry {
+    pub(super) fn blocks_channel_switch(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        position: MovementLocalPosition,
+    ) -> bool {
+        self.active.lock().map_or(true, |phases| {
+            phases.iter().any(|phase| {
+                phase.participants.contains(&(actor, session))
+                    && super::quest_callbacks::room_contains(&phase.room, position)
+                    && phase.fight.is_current(runtime)
+                    && phase
+                        .fight
+                        .victors(runtime)
+                        .is_ok_and(|victors| victors.is_none())
+            })
+        })
+    }
+
     pub(super) fn reserve<'a>(
         &'a self,
         runtime: &mut ChannelRuntimeV1,
@@ -189,6 +211,8 @@ pub(super) fn bind(
     Ok(ActivePhase {
         key,
         fight: CultsEncounter::bind(runtime, players, pillars, stops, centre)?,
+        room: encounter.clone(),
+        participants: players.to_vec(),
         credits,
         frozen: None,
         cells,

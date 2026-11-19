@@ -66,7 +66,7 @@ fn banshee_plague_step_consumes_one_of_each_pearl_without_seal_progress_postgres
 }
 
 fn bindings() -> TestResult<Bindings> {
-    use super::banshee_circuit::position;
+    use super::banshee_circuit_fixtures::position;
     let callback = serde_json::json!({
         "key":"oteryn:quest-callback/banshee/plague-entrance",
         "quest":QUEST, "trigger":"step_in",
@@ -103,7 +103,7 @@ fn bindings() -> TestResult<Bindings> {
 }
 
 fn scenario() -> TestResult {
-    use super::banshee_circuit::{local, scene_world};
+    use super::banshee_circuit_fixtures::{local, scene_world};
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "banshee_plague_pearls", false, false)
             .await?;
@@ -136,7 +136,7 @@ fn scenario() -> TestResult {
         )?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

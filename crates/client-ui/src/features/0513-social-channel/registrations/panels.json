@@ -1,0 +1,7 @@
+{
+  "mechanic": "0513-social-channel",
+  "kind": "panels",
+  "id": "0513-social-channel-panel",
+  "status": "supported",
+  "entry": "view.rs::party_member_text"
+}

@@ -8,7 +8,7 @@ use oteryn_gameplay_entities as foundation;
 #[path = "../../../../apps/game-server/tests/support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
 #[allow(dead_code)]
-#[path = "../../../../apps/game-server/tests/support/authority_cases/engitem_reward_text.rs"]
+#[path = "../../../../apps/game-server/tests/support/engitem_reward_fixture.rs"]
 mod reward_fixture;
 use bestiary_postgres_harness as f;
 use durability::item_loop_move::ItemLoopContent;

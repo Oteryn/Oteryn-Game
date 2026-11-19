@@ -76,7 +76,7 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/quest_world_callback.rs", "apply_input_in_scope"),
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_read.rs", "matches"),
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "matches"),
-    ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "matches_requirements"),
+    ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "read_requirements"),
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "require"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_field_chains_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_items_in_transaction"),
