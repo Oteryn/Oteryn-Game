@@ -2,10 +2,12 @@
 //! production template constructor, native Instance owner and death settlement.
 //! Crystal 201189f data-global/scripts/quests/candia_bosses/sugar_daddy_lever.lua:1-23;
 //! Canary 47dfd51f data-otservbr-global/monster/bosses/sugar_daddy.lua:21-25,76-132.
+use super::srvenc_source_boss_fixtures::{source_bundle};
+
 use super::fixture::{self, Harness, debug, run};
 use super::{Dependencies, TestResult, reset};
-use crate::content::native_gameplay::NativeGameplayState;
-use crate::content::{NativeEntryStart, ReferenceItemField, ReferenceItemType};
+
+use crate::content::NativeEntryStart;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::runtime_actor_spell_types::{
     OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
@@ -22,7 +24,6 @@ use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_batc
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::activity_scope::ActivityScope;
 use oteryn_protocol_oteryn::boss_encounter::{self as wire, BossActivityReply};
-use oteryn_world_bundle_compiler::{bundle, compile, source};
 
 const BOSS: &str = "oteryn:boss.sugar_daddy";
 type PublishedRoom = (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, String, String, i64);
@@ -44,115 +45,6 @@ const EXIT: MovementLocalPosition = MovementLocalPosition {
     floor: 9,
 };
 
-/// Boot exact current Item definition references and policy flags, as
-/// node/serve.rs::boot_bundle_items does; no test-wide walkability override.
-pub(super) fn source_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-    native: &NativeGameplayState,
-    candidate: &crate::content::bosses::activity_template::BossLeverCandidate,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let anchor = candidate.boss_position.ok_or("source boss position")?;
-    let region = (u16::try_from(anchor[0] / 256)?, u16::try_from(anchor[1] / 256)?);
-    let project = source::project_regions(&root, &[region])?;
-    let (registry, palette) = source::registry(&root, &project)?;
-    let identity: bundle::Identity = serde_json::from_slice(&source::read(
-        &root.join("content/world/pins/oteryn.identity.json"),
-    )?)?;
-    let input = compile::Input {
-        regions: &project.regions,
-        palette: &palette,
-        identity: identity.clone(),
-        world: source::world_extent(&root)?,
-        build_class: bundle::BuildClass::NonProduction,
-        draft_areas: vec![],
-        families: &project.families,
-    };
-    let compiled = compile::compile(&input, &registry)?;
-    let low = candidate.zone_from.ok_or("source room lower bound")?;
-    let high = candidate.zone_to.ok_or("source room upper bound")?;
-    let held: std::collections::BTreeSet<_> = compiled
-        .diagnostics
-        .iter()
-        .filter(|diagnostic| {
-            let at = [
-                i32::from(diagnostic.x),
-                i32::from(diagnostic.y),
-                -i32::from(diagnostic.floor),
-            ];
-            let in_room = (low[0]..=high[0]).contains(&at[0])
-                && (low[1]..=high[1]).contains(&at[1])
-                && (low[2]..=high[2]).contains(&at[2]);
-            in_room
-                || candidate
-                    .lever_positions
-                    .iter()
-                    .chain(&candidate.entry_positions)
-                    .chain(candidate.boss_position.iter())
-                    .chain(candidate.exit_position.iter())
-                    .any(|anchor| *anchor == at)
-        })
-        .map(|diagnostic| diagnostic.key.as_str())
-        .collect();
-    assert!(
-        held.is_empty(),
-        "a real source boss room cannot silently omit provisional geometry: {held:?}"
-    );
-    let parity = compile::equivalence(&input, &registry, &compiled.bytes)?;
-    assert!(parity.tiles > 0 && parity.entries > 0);
-    let start = candidate.lever_positions.first().ok_or("source staging start")?;
-    let pins = crate::map::boot::BootPins {
-        bundle: crate::map::BundlePins {
-            digest: compiled.digest,
-            project_format_version: identity.project_format_version,
-            world_schema_version: identity.world_schema_version,
-            content_revision: identity.content_revision,
-            production: false,
-        },
-        map_revision: crate::map::overlay::internal_map_revision(
-            &compiled
-                .digest
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>(),
-        ),
-        start: crate::map::overlay::TilePos {
-            x: u16::try_from(start[0])?,
-            y: u16::try_from(start[1])?,
-            floor: i8::try_from(-start[2])?,
-        },
-    };
-    let index = native.item_index().ok_or("active native Item index")?;
-    crate::map::boot::boot(&compiled.bytes, &pins, world, channel, |key| {
-        let revision = index.revision(key)?;
-        let reference = index.definition_ref("Item", key, revision)?;
-        let profile = native
-            .item_policy(key, revision)
-            .map(|policy| policy.record());
-        let pickupable = profile.is_some_and(|profile| {
-            matches!(
-                &profile.semantics.physical, ReferenceItemField::Known(physical)
-                    if physical.pickupable == ReferenceItemField::Known(true)
-            )
-        });
-        let door = profile.is_some_and(|profile| matches!(
-            &profile.semantics.classification, ReferenceItemField::Known(classification)
-                if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
-        ));
-        Some(crate::map::facts::ItemDefinition {
-            reference,
-            solid: profile.and_then(|profile| profile.attributes.blocks_movement),
-            blocks_projectile: profile
-                .and_then(|profile| profile.attributes.blocks_projectile)
-                .unwrap_or(true),
-            pickupable,
-            door,
-        })
-    })
-    .map_err(debug)
-}
-
 #[test]
 fn srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewards_postgres()
 -> TestResult {
@@ -172,8 +64,8 @@ fn scenario() -> TestResult {
         reset();
         let h =
             Harness::create_with_admission_seed(admin, "srvenc_source_sugar", true, false).await?;
-        let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-        super::house_transfer::prepare_owned_session(&h).await?;
+        let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
         let expected = fixture::fence(1)?;
         let RuntimeScopeRefV1::Channel {
             world_id,
@@ -291,7 +183,7 @@ fn scenario() -> TestResult {
         )
         .ok_or("boss capability")?;
         let fence = admitted.item_fence.ok_or("current source item fence")?;
-        super::item_look::seed_main_backpack(&h, &[]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING")
             .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
         {
@@ -332,7 +224,7 @@ fn scenario() -> TestResult {
             .activity_runtimes
             .register_template(&template)
             .map_err(|_| "register source template")?;
-        super::boss_activity::issue_content_and_reset_with_runtime_pin(
+        super::boss_activity_fixtures::issue_content_and_reset_with_runtime_pin(
             &h,
             &activation_pin,
             &pin,
@@ -369,7 +261,7 @@ fn scenario() -> TestResult {
             published.6, 1,
             "replaying the sealed source publication is idempotent"
         );
-        let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+        let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 88).await?;
         let assignment = h
             .root
             .read_runtime_scope_assignment(instance)
@@ -385,7 +277,7 @@ fn scenario() -> TestResult {
         );
         let old = admitted;
         let (_, reply, barrier) =
-            super::boss_activity::exchange(&owner, &mut admitted, BOSS, true).await?;
+            super::boss_activity_fixtures::exchange(&owner, &mut admitted, BOSS, true).await?;
         let BossActivityReply::Accepted {
             handoff,
             deadline_unix_ms: Some(_),
@@ -476,7 +368,7 @@ fn scenario() -> TestResult {
             )?))
             .await;
         }
-        let (_, returned, barrier) = super::boss_activity::exchange_command(
+        let (_, returned, barrier) = super::boss_activity_fixtures::exchange_command(
             &owner,
             &mut admitted,
             BOSS,

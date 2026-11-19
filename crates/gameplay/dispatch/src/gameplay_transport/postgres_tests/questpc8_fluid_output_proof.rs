@@ -8,7 +8,7 @@ fn questpc8_fluid_outputs_preserve_exact_subtype_and_legacy_plan_postgres() -> T
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run(
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(
         "questpc8-fluid-output-proof",
         || {
             run(async |admin| {

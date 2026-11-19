@@ -9,7 +9,7 @@ fn s10_rashid_wandering_postgres_shop_payment_and_replay() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| super::npc_shop::run_shop_scenario(true).map_err(|error| error.to_string()))?
+        .spawn(|| super::npc_shop_fixtures::run_shop_scenario(true).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "S10 Rashid PostgreSQL thread panicked")??;
     eprintln!(
@@ -87,7 +87,7 @@ fn s10_weekday_rollover_moves_live_rashid_on_postgres() -> TestResult {
                     NpcVoiceCycle::new(&runtime, &NpcTalkBook::default())
                 };
                 let npc = owner.runtime.lock().await.visible_entities().npcs[0];
-                super::npc_paid_travel::talk(
+                super::npc_paid_travel_fixtures::talk(
                     &owner,
                     &deps,
                     oteryn_protocol_oteryn::world_spatial_entities::EntityRef {

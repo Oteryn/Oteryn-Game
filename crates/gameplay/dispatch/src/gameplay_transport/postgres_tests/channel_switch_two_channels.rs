@@ -345,11 +345,11 @@ fn configured_channel_full_refuses_before_the_runtime_admission_queue() -> TestR
         AdmissionRefusal, FreshAdmissionAttempt, FreshAdmissionAuthority,
     };
 
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "channel_admission_full", true, false)
             .await?;
         let result: TestResult = async {
-            let source = super::house_transfer::RecoverySource::start(&h).await?;
+            let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
             let entrant = id(world::RECIPIENT);
             let entrant_account = id(world::RECIPIENT_ACCOUNT);
             crate::durability::guild_chat_fixture::historical_character(
@@ -376,7 +376,7 @@ fn configured_channel_full_refuses_before_the_runtime_admission_queue() -> TestR
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &source.evidence;
             let character_id = CharacterId::decode(&id(41)).map_err(debug)?;
-            let first_token = super::house_transfer::RecoverySource::fresh_token(91)?;
+            let first_token = super::house_transfer_fixtures::RecoverySource::fresh_token(91)?;
             let first = Box::pin(owner.admit(FreshAdmissionAttempt {
                 character_id,
                 admission_material: first_token.as_bytes(),
@@ -391,7 +391,7 @@ fn configured_channel_full_refuses_before_the_runtime_admission_queue() -> TestR
                 owner.runtime.lock().await.reserve_fresh_session(session),
                 Err(CarrierError::CapacityExceeded)
             ));
-            let token = super::house_transfer::RecoverySource::fresh_token_for(92, entrant_account, entrant)?;
+            let token = super::house_transfer_fixtures::RecoverySource::fresh_token_for(92, entrant_account, entrant)?;
             let verdict = Box::pin(owner.admit(FreshAdmissionAttempt {
                 character_id: CharacterId::decode(&entrant).map_err(debug)?,
                 admission_material: token.as_bytes(),
@@ -410,29 +410,4 @@ fn configured_channel_full_refuses_before_the_runtime_admission_queue() -> TestR
         result?;
         cleanup
     })
-}
-
-pub(super) async fn assert_encounter_switch_lock(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    mut admitted: AdmittedSession,
-    active: bool,
-) -> TestResult {
-    use crate::gameplay_transport::channel_switch::ChannelSwitchOutcome;
-    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        BUNDLE_WORLD_OFFERED_CAPABILITIES, &[CAPABILITY_CHANNEL_SWITCH_V1],
-    ).ok_or("switch capability")?;
-    let Some(ChannelSwitchOutcome::Status(status)) = owner.channel_switch_status_wire(admitted, 2, &[]).await else {
-        return Err("missing switch status".into());
-    };
-    let status = wire::decode_status(&status).ok_or("invalid switch status")?;
-    assert_eq!(status.lock == SwitchLock::Event, active);
-    if active {
-        let Some(ChannelSwitchOutcome::Refused(status)) = owner.channel_switch_request_wire(
-            admitted, 3, &wire::encode_request(id(44)),
-        ).await else {
-            return Err("active encounter must refuse the switch".into());
-        };
-        assert_eq!(wire::decode_status(&status).map(|status| status.lock), Some(SwitchLock::Event));
-    }
-    Ok(())
 }

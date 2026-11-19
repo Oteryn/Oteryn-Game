@@ -30,7 +30,7 @@ fn srx3_hatred_instance_sorrow_survives_later_source_channel_activation_postgres
 }
 
 fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("srx3-hatred-entry", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-hatred-entry", move || {
         run(async move |admin| {
             super::reset();
             let source = PinnedActivitySourceRoom::GoshnarsHatred;
@@ -61,9 +61,9 @@ fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
             let deps = scene.dependencies()?;
             let h = Harness::create_with_admission_seed(admin, "srx3_hatred_entry", false, false)
                 .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
-            super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i33793", 1)]).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+            super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i33793", 1)]).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -73,7 +73,7 @@ fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, source)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -139,8 +139,8 @@ fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
                 .activity_runtimes
                 .register_template(&template)
                 .map_err(|_| "source template")?;
-            let destination = super::activity_runtime::allocate_ready_instance(&h, 232).await?;
-            let (_, reply, barrier) = super::boss_activity::exchange_capture(
+            let destination = super::activity_runtime_fixtures::allocate_ready_instance(&h, 232).await?;
+            let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 template.boss_key(),

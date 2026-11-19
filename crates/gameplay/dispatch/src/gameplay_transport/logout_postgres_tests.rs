@@ -6,7 +6,7 @@
 //! Nested under the monk-save PostgreSQL tests to reuse their fresh-admission fixture.
 
 use super::fixture::{Harness, debug, id};
-use super::kill_reward_e2e::scenario_thread::run_async as run;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session, reset, revision, track};
 use crate::durability::fresh_admission::{ExpiredLossReleaseV1, FreshAdmissionStore};
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionState};
@@ -193,10 +193,11 @@ fn nbeof_lifecycle_reads_keep_holder_preference_postgres() -> TestResult {
             .await
             .map_err(debug)?;
         let dependencies = Dependencies::new()?;
-        let (generation, _) = super::death_ml_loss_composed::production_generation_with_pin(
-            dependencies.admitted.world_id,
-            "content-1",
-        )?;
+        let (generation, _) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                dependencies.admitted.world_id,
+                "content-1",
+            )?;
         let active = generation.active().ok_or("activated generation")?;
         assert!(
             active
@@ -335,10 +336,11 @@ fn nbeof_training_readback_waits_without_replaying_write_postgres() -> TestResul
             .await
             .map_err(debug)?;
         let dependencies = Dependencies::new()?;
-        let (generation, _) = super::death_ml_loss_composed::production_generation_with_pin(
-            dependencies.admitted.world_id,
-            "content-1",
-        )?;
+        let (generation, _) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                dependencies.admitted.world_id,
+                "content-1",
+            )?;
         let active = generation.active().ok_or("activated generation")?;
         let formula = active
             .native_gameplay()
@@ -549,7 +551,7 @@ fn nbeof_logout_wire_postgres() -> TestResult {
                 client.write_u32(u32::try_from(command.len())?).await?;
                 client.write_all(&command).await?;
                 loop {
-                    let frame = super::item_look::read_frame(&mut client).await?;
+                    let frame = super::item_look_fixtures::read_frame(&mut client).await?;
                     let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                     if envelope.message_type() == MessageType::CommandResult {
                         let result =
@@ -844,7 +846,8 @@ fn a_retained_familiar_logout_save_neither_blocks_a_later_logout_nor_the_loss() 
             let session = dependencies.admitted.game_session_id;
             let controller = dependencies.admitted.controller.ok_or("controller")?;
             // The genuine writer of this session, as the logout attempt fenced its save.
-            let fence = super::death_ml_loss_composed::current_fence(owner, session).await?;
+            let fence =
+                super::death_ml_loss_composed_fixtures::current_fence(owner, session).await?;
             let runtime = owner.runtime.lock().await;
             let digest = runtime.content_pin().server_artifact_digest();
             let mut states = owner.states.spell_states.lock().await;

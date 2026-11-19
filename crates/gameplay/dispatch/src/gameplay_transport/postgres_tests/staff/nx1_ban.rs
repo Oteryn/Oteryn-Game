@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain::AccountId;
 use crate::foundation::GameSessionId;
-use crate::gameplay_transport::monk_save::postgres_tests::appearance_change_postgres::observer_visibility_tests as observer;
+use crate::gameplay_transport::monk_save::postgres_tests::appearance_change_postgres_fixtures::observer_visibility_tests as observer;
 
 fn clock() -> Option<(u64, u64)> {
     let now = u64::try_from(

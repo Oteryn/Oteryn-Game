@@ -23,7 +23,7 @@ fn scenario() -> TestResult {
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let active = controller.active().ok_or("active generation")?;
         let room = pin.qualified_room().clone();
         let channel_pin = ChannelContentPin::from_activation(

@@ -1,8 +1,8 @@
 //! Actual activity session loss and inherited offline return through the same owners.
 use super::TestResult;
-use super::activity_runtime::prepare_activity_fixture;
+use super::activity_runtime_fixtures::prepare_activity_fixture;
 use super::fixture::{Harness, debug, id};
-use super::house_transfer::RecoverySource;
+use super::house_transfer_fixtures::RecoverySource;
 use crate::durability::activity_handoff::{
     ActivityEnterOutcome, ActivityHandoffOwner, ActivityReturnOutcome, ActivityReturnReason,
     ActivityReturnRequest, ActivityTransferRecovery,
