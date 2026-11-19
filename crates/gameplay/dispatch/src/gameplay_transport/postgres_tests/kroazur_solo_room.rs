@@ -140,15 +140,15 @@ pub(super) async fn exercise(
             .last()
             .map_or(0, |cue| cue.0);
         step(owner, admitted, 1, ORIGIN).await?;
-        // Crystal movement_kroazur_room.lua:37-41 sends teleport feedback
-        // at the safe return square even when the access track is unset.
-        assert!(
+        // Crystal movement_kroazur_room.lua:37-41 flashes the portal first
+        // and the safe return square second when the access track is unset.
+        assert_eq!(
             map.facts
                 .movement_effects_since(before)
-                .iter()
-                .any(|(_, at, effect)| {
-                    (at.x, at.y, at.floor, *effect) == (ORIGIN.x, ORIGIN.y, ORIGIN.floor, 11)
-                })
+                .into_iter()
+                .map(|(_, at, effect)| (at.x, at.y, at.floor, effect))
+                .collect::<Vec<_>>(),
+            [TRIGGER, ORIGIN].map(|p| (p.x, p.y, p.floor, 11))
         );
     }
     assert!(
@@ -246,7 +246,18 @@ pub(super) async fn exercise(
         .map_err(debug)?;
         runtime.commit_source_step(proof).map_err(debug)?;
     }
+    let effect_cursor = map.facts.movement_effects_since(0).last().map_or(0, |cue| cue.0);
     step(owner, admitted, 3, ORIGIN).await?;
+    // Crystal movement_kroazur_room.lua:45-49 uses the same ordered pair
+    // of teleport cues while the personal cooldown is active.
+    assert_eq!(
+        map.facts
+            .movement_effects_since(effect_cursor)
+            .into_iter()
+            .map(|(_, at, effect)| (at.x, at.y, at.floor, effect))
+            .collect::<Vec<_>>(),
+        [TRIGGER, ORIGIN].map(|p| (p.x, p.y, p.floor, 11))
+    );
     assert!(!owner.states.chat.drain(admitted.game_session_id).iter().any(|line| {
         matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == ADMISSION_TEXT)
     }));

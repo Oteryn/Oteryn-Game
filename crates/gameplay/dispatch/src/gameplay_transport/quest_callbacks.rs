@@ -1696,6 +1696,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .encounter
             .as_ref()
             .is_some_and(|room| room.solo_expiry.is_some());
+        // Crystal movement_kroazur_room.lua:37-57 flashes the portal before
+        // the forced return. Other timed rooms can omit the source cue.
+        if timed_room
+            && let Some(magic) = &callback.effects.magic
+            && native(entered.position()) == Some(tile(magic.position))
+        {
+            map.facts
+                .emit_movement_effect(tile(magic.position), magic.effect);
+        }
         let relocated = if timed_room {
             // Crystal movement_kroazur_room.lua:37-57 and
             // actions_portal_brain_head.lua:102-125 force the return teleport.
