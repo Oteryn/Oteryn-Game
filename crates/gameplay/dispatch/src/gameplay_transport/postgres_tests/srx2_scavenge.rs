@@ -1385,6 +1385,18 @@ async fn exercise_rabbit(
             if text == "You successfully gathered a rabbit's foot in excellent condition."
     ));
     assert_eq!(feet_count().await?, feet + 1);
+    let (retained_knives, nested_receipts): (i64, i64) = sqlx::query_as(
+        "SELECT
+         (SELECT count(*) FROM game_item_nested_entries n JOIN game_item_instances i USING(item_instance_id)
+          WHERE n.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1),
+         (SELECT count(*) FROM game_item_craft_records
+          WHERE recipe='oteryn:skinning.crystal' AND NOT consume_source
+            AND event_source_location->>'parent_item_instance_id'=encode($1,'hex')::uuid::text)",
+    )
+    .bind(id(74).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!((retained_knives, nested_receipts), (2, 3));
     Ok(())
 }
 
