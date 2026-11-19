@@ -373,11 +373,16 @@ fn scenario_case(
         super::super::putrefactory_reservoir::NATIVE |
         super::super::putrefactory_reservoir::PASSIVE
     );
-    let putrefactory_gate = name == super::super::putrefactory_reservoir::GATE;
+    let native_putrefactory_gate = name == super::super::putrefactory_reservoir::NATIVE_GATE;
+    let putrefactory_gate = name == super::super::putrefactory_reservoir::GATE || native_putrefactory_gate;
     let mut callback = if forgemaster {
         super::super::forgemaster_chest::callback(name)?
     } else if putrefactory_gate {
-        callback(super::super::putrefactory_reservoir::GATE_CALLBACK)?
+        let mut gate = callback(super::super::putrefactory_reservoir::GATE_CALLBACK)?;
+        if native_putrefactory_gate {
+            gate.selector.native = Some(super::super::putrefactory_reservoir::GATE_NATIVE_SELECTOR);
+        }
+        gate
     } else if reservoir {
         super::super::putrefactory_reservoir::callback(name)?
     } else if vestibule {
@@ -686,7 +691,7 @@ fn scenario_case(
             &callback, trigger, native.appearance, native.ordinal,
             &super::super::forgemaster_chest::SECOND_CHEST_ENTRIES, &[], None,
         )?
-    } else if name == super::super::putrefactory_reservoir::NATIVE {
+    } else if native_putrefactory_gate || name == super::super::putrefactory_reservoir::NATIVE {
         let mut physical = callback.clone();
         physical.selector.action = None;
         super::world_with_cells(&physical, trigger, &[])?
@@ -1804,6 +1809,7 @@ fn scenario_case(
             || lever_fixture
             || target_swap
             || failure_landing
+            || native_putrefactory_gate
             || name.ends_with("-expiry")
             || name == "triangle-tower-lever"
         {

@@ -23,6 +23,13 @@ pub(super) const GATE: &str = "putrefactory-full-counter-gate";
 pub(super) const GATE_CALLBACK: &str = "rotten-putrefactory-full-counter";
 // Crystal startup/tables/item.lua:2294-2299 registers action 34065 on this placement.
 const GATE_POSITION: Position = Position { x: 34065, y: 31716, floor: -15 };
+pub(super) const NATIVE_GATE: &str = "putrefactory-full-counter-native-gate";
+// The retained B3 object at the Crystal startup registration point has no action ID.
+pub(super) const GATE_NATIVE_SELECTOR: NativeSelector = NativeSelector {
+    position: GATE_POSITION,
+    ordinal: 1,
+    appearance: 33017,
+};
 pub(super) const LEGACY: &str = "putrefactory-reservoir-legacy";
 pub(super) const CAP: &str = "putrefactory-reservoir-cap";
 pub(super) const NATIVE: &str = "putrefactory-reservoir-native";
@@ -104,6 +111,19 @@ fn putrefactory_entrance_requires_full_charge_and_keeps_it_for_reentry() -> Test
     super::kill_reward_e2e::scenario_thread::run(GATE, || scenario(GATE, GATE_POSITION, false))
 }
 
+#[test]
+fn putrefactory_untagged_entrance_requires_full_charge_and_keeps_it_for_reentry() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::kill_reward_e2e::scenario_thread::run(NATIVE_GATE, || {
+        scenario(NATIVE_GATE, GATE_POSITION, false)
+    })
+}
+
 pub(super) async fn exercise_gate(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -133,6 +153,11 @@ pub(super) async fn exercise_gate(
         .bind(super::fixture::id(41).as_slice()).bind(CHARGE).fetch_one(&h.pool).await
     };
     let origin = actor_position(owner, actor).await?;
+    let (key, _) = use_intent(owner, GATE_POSITION, 1)?;
+    if callback.selector.native.is_some() {
+        let map = owner.bundle_map().ok_or("gate map")?;
+        assert!(!map.facts.quest_callback_matches(key, None, callback.selector.action, None));
+    }
     assert_eq!(use_source(owner, admitted, 1, GATE_POSITION, 1, 0).await?, UseDisposition::Rejected);
     assert_eq!(actor_position(owner, actor).await?, origin);
     assert_eq!(charge().await?, 99);
@@ -153,7 +178,6 @@ pub(super) async fn exercise_gate(
     tx.commit().await?;
     owner.refresh_quest_session(session, true).await;
 
-    let (key, _) = use_intent(owner, GATE_POSITION, 1)?;
     for command in [2, 3] {
         let revision = owner.bundle_map().ok_or("gate map")?.facts.object_revision(key);
         assert_eq!(
