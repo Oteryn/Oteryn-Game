@@ -202,6 +202,7 @@ pub(super) async fn exercise(
         true,
     )
     .await?;
+    let full = carried_bucket(harness, fence, FULL_FIXTURE).await?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let outcome = slot
         .commit_quest_transition(
@@ -233,7 +234,9 @@ pub(super) async fn exercise(
 
     let actor = admitted.runtime_actor.ok_or("actor")?;
     if name == TIMER {
-        return apply_self_outfit(owner, admitted, actor, Some(harness)).await;
+        apply_self_outfit(owner, admitted, actor, Some(harness)).await?;
+        assert_eq!(carried_bucket(harness, fence, FIXTURE_CONTAINER).await?, full);
+        return Ok(());
     }
     for (direction, expected) in [
         (StepDirection::East, TRIGGER),
@@ -248,6 +251,9 @@ pub(super) async fn exercise(
     ] {
         if expected == EXIT {
             apply_self_outfit(owner, admitted, actor, None).await?;
+            // Crystal actions_strange_bucket.lua:66 transforms the selected
+            // bucket. Keep its item identity and exact backpack placement.
+            assert_eq!(carried_bucket(harness, fence, FIXTURE_CONTAINER).await?, full);
         }
         let ordinal = admitted.continuity.next_command_id;
         let reply = wire(
@@ -292,6 +298,24 @@ pub(super) async fn exercise(
         (1, 1, if finishes { 2 } else { 1 })
     );
     Ok(())
+}
+
+async fn carried_bucket(
+    harness: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    definition: &str,
+) -> TestResult<(String, serde_json::Value)> {
+    Ok(sqlx::query_as(
+        "SELECT i.item_instance_id::text,c.location
+         FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+         JOIN game_item_instances i ON i.item_instance_id=c.item
+         WHERE i.definition_production_key=$3 AND i.lifecycle=1 AND i.quantity=1",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+    .bind(definition)
+    .fetch_one(&harness.pool)
+    .await?)
 }
 
 async fn apply_self_outfit(
