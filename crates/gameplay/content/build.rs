@@ -1,10 +1,10 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Shared promotion adapters need this harness's private artifact types in their tests.
-    println!("cargo::rustc-check-cfg=cfg(oteryn_gameplay_content_unit_tests)");
-    println!("cargo::rustc-cfg=oteryn_gameplay_content_unit_tests");
+    emit_cargo_directive("rustc-check-cfg", "cfg(oteryn_gameplay_content_unit_tests)");
+    emit_cargo_directive("rustc-cfg", "oteryn_gameplay_content_unit_tests");
     let quests = Path::new("../../../content/quests");
-    println!("cargo::rerun-if-changed={}", quests.display());
-    println!("cargo::rerun-if-changed=build.rs");
+    emit_cargo_directive("rerun-if-changed", quests.display());
+    emit_cargo_directive("rerun-if-changed", "build.rs");
     let mut keys = BTreeSet::new();
     collect_quest_items(quests, &mut keys)?;
     let destination = Path::new(&std::env::var("OUT_DIR")?).join("quest-loot-items.txt");
@@ -14,6 +14,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 use std::collections::BTreeSet;
 use std::path::Path;
+
+fn emit_cargo_directive(key: &str, value: impl std::fmt::Display) {
+    println!("cargo::{key}={value}");
+}
 
 fn collect_item_keys(value: &serde_json::Value, keys: &mut BTreeSet<String>) {
     match value {
