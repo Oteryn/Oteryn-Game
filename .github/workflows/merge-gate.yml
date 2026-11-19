@@ -766,6 +766,7 @@ jobs:
 
       # Plan all five ledger keys before scheduling the build, so a complete hit
       # can still skip the archive. Only shards on this runner identity can reuse the hits.
+      # Lookup requires binaries built and tested on this identity.
       # Cache versions depend on the original restore path. Move each ledger aside
       # after restoring it so the next shard can restore to that same path.
       - name: Plan unit-test job-result keys
@@ -784,7 +785,8 @@ jobs:
             GITHUB_OUTPUT="$outputs" python -I tools/repository/job_result_key.py plan \
               --job "rust_fast-tests ${shard}/5" --metadata "$RUNNER_TEMP/rust-fast-metadata.json" \
               --packages "$packages" --out "$plan" --per-package \
-              --extra "base=$BASE_SHA" --extra "image=$image" --extra "os=$platform"
+              --extra "base=$BASE_SHA" --extra "image=$image" --extra "os=$platform" \
+              --extra "archive-image=$image" --extra "archive-os=$platform"
             printf 'shard_%s_%s\n' "$shard" "$(cat "$outputs")" >> "$GITHUB_OUTPUT"
           done
 
@@ -1061,6 +1063,9 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+    env:
+      ARCHIVE_IMAGE: ${{ needs.rust_fast_build.outputs.runner_image }}
+      ARCHIVE_PLATFORM: ${{ needs.rust_fast_build.outputs.runner_platform }}
     strategy:
       fail-fast: false
       matrix:
@@ -1182,8 +1187,11 @@ jobs:
             echo "::notice::Bypassing planned ledger hits because of runner image mismatch ($PLAN_IMAGE/$PLAN_PLATFORM vs $image/$platform)"
             echo 'bypass=true' >> "$GITHUB_OUTPUT"
           fi
-          # A shard always records under the identity of the runner that executed the tests.
-          python -I tools/repository/job_result_key.py plan --job "$JOB" --metadata "$RUNNER_TEMP/rust-fast-metadata.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --out "$RUNNER_TEMP/jr-plan.json" --extra "base=$BASE_SHA" --extra "image=$image" --extra "os=$platform" $PER_PACKAGE
+          archive_key=()
+          if [[ "$KIND" == tests ]]; then
+            archive_key=(--extra "archive-image=$ARCHIVE_IMAGE" --extra "archive-os=$ARCHIVE_PLATFORM")
+          fi
+          python -I tools/repository/job_result_key.py plan --job "$JOB" --metadata "$RUNNER_TEMP/rust-fast-metadata.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --out "$RUNNER_TEMP/jr-plan.json" --extra "base=$BASE_SHA" --extra "image=$image" --extra "os=$platform" "${archive_key[@]}" $PER_PACKAGE
 
       - name: Restore job-result ledger
         if: steps.jr_plan.outputs.keyed == 'true'
@@ -1341,6 +1349,13 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$KIND" == 'tests' ]]; then
+            image="${ImageVersion:-}"
+            platform="${RUNNER_OS:-}-${RUNNER_ARCH:-}"
+            # Only a pass from binaries built and run on the same image can seed a ledger hit.
+            if [[ -z "$image" || "$image" != "$ARCHIVE_IMAGE" || "$platform" != "$ARCHIVE_PLATFORM" ]]; then
+              echo "::notice::Skipping unit-test ledger recording: archive builder $ARCHIVE_IMAGE/$ARCHIVE_PLATFORM and shard $image/$platform have different runner identities"
+              exit 0
+            fi
             junit="${CARGO_TARGET_DIR:-target}/nextest/rust-fast/junit.xml"
             if [[ ! -s "$junit" ]]; then
               echo '::notice::No current JUnit report; no test results will be cached'

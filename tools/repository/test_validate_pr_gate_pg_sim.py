@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
@@ -163,6 +164,7 @@ class QualificationPlacementTests(unittest.TestCase):
                     os.environ, KIND="tests", JOB="rust_fast-tests 1/5", BASE_SHA="base",
                     PER_PACKAGE="--per-package", RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output),
                     PLAN_IMAGE=planned_image, PLAN_PLATFORM="Linux-X64", ARCHIVE_RESULT=archive_result,
+                    ARCHIVE_IMAGE=image, ARCHIVE_PLATFORM=f"Linux-{arch}",
                     ImageVersion=image, RUNNER_OS="Linux", RUNNER_ARCH=arch,
                     SLUG="tests-1-5", TEST_SHARDS='{"tests-1-5": ["pending"]}',
                 )
@@ -196,6 +198,69 @@ class QualificationPlacementTests(unittest.TestCase):
                 subprocess.run(["bash", "-c", select], env=env, check=True)
                 self.assertTrue(output.read_text().endswith("hit=false\n"))
                 self.assertEqual((temp / "rust-fast-run.tsv").read_text(), full if mismatch else "pending\t--bins\n")
+
+    def test_unit_test_ledger_requires_matching_archive_builder(self):
+        route = self.pr.split("      - name: Plan unit-test job-result keys\n", 1)[1]
+        route = textwrap.dedent(route.split("        run: |\n", 1)[1].split("\n      - name: ", 1)[0])
+        plan = self.rust_fast_step("Plan job-result keys").split("        run: |\n", 1)[1]
+        record = self.rust_fast_step("Record passed crates in the job-result ledger").split("        run: |\n", 1)[1]
+        name = "oteryn-simulation-determinism"
+        image = "20261111.370.1"
+        platform = "Linux-X64"
+        rows = f"{name}\t--lib\n"
+        for builder_image, builder_platform in (
+            (image, platform), ("20261116.376.1", platform), (image, "Linux-ARM64"),
+        ):
+            with self.subTest(builder_image=builder_image, builder_platform=builder_platform), \
+                 tempfile.TemporaryDirectory() as directory:
+                temp = Path(directory)
+                packages = temp / "rust-fast-packages.tsv"
+                packages.write_text(rows)
+                (temp / "rust-fast-test-packages.tsv").write_text(rows)
+                (temp / "rust-fast-run.tsv").write_text(rows)
+                (temp / "rust-fast-metadata.json").write_text(json.dumps({
+                    "workspace_root": str(ROOT), "workspace_members": [name],
+                    "packages": [{
+                        "id": name, "name": name,
+                        "manifest_path": str(ROOT / "crates/simulation-determinism/Cargo.toml"),
+                    }],
+                }))
+                junit = temp / "nextest/rust-fast/junit.xml"
+                junit.parent.mkdir(parents=True)
+                junit.write_text(f'<testsuite name="{name}" tests="1"><testcase name="ok"/></testsuite>')
+                output = temp / "output"
+                env = dict(
+                    os.environ, KIND="tests", JOB="rust_fast-tests 1/5", BASE_SHA="base",
+                    PER_PACKAGE="--per-package", RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output),
+                    GITHUB_STEP_SUMMARY=str(temp / "summary"), CARGO_TARGET_DIR=directory,
+                    PLAN_IMAGE=image, PLAN_PLATFORM=platform, ARCHIVE_RESULT="success",
+                    ARCHIVE_IMAGE=builder_image, ARCHIVE_PLATFORM=builder_platform,
+                    ImageVersion=image, RUNNER_OS="Linux", RUNNER_ARCH="X64",
+                )
+                subprocess.run(["bash", "-c", textwrap.dedent(plan)], cwd=ROOT, env=env,
+                               check=True, capture_output=True)
+                recorded = subprocess.run(["bash", "-c", textwrap.dedent(record)], cwd=ROOT, env=env,
+                                          check=True, capture_output=True, text=True)
+                subprocess.run(["bash", "-c", route], cwd=ROOT, env=env, check=True, capture_output=True)
+                remaining = temp / "remaining.tsv"
+                later_plan = temp / "rust-fast-test-plan-1.json"
+                subprocess.run(
+                    [sys.executable, "-I", str(ROOT / "tools/repository/job_result_key.py"), "select",
+                     "--plan", str(later_plan), "--packages", str(packages),
+                     "--dir", str(temp / "jobresult"), "--out", str(remaining)],
+                    cwd=ROOT, env=env, check=True, capture_output=True,
+                )
+                matched = (builder_image, builder_platform) == (image, platform)
+                self.assertEqual(remaining.read_text(), "" if matched else rows)
+                self.assertEqual((temp / "jobresult/ledger.json").exists(), matched)
+                self.assertEqual("recorded=true\n" in output.read_text(), matched)
+                self.assertEqual(recorded.stdout.count("::notice::"), int(not matched))
+                recorded_key = json.loads((temp / "jr-plan.json").read_text())["units"][name]
+                lookup_key = json.loads(later_plan.read_text())["units"][name]
+                self.assertTrue(recorded_key and lookup_key)
+                self.assertEqual(recorded_key == lookup_key, matched)
+        self.assertIn("ARCHIVE_IMAGE: ${{ needs.rust_fast_build.outputs.runner_image }}", self.pr)
+        self.assertIn("ARCHIVE_PLATFORM: ${{ needs.rust_fast_build.outputs.runner_platform }}", self.pr)
 
     def test_self_hosted_target_setup_and_stale_junit_cleanup(self):
         name = "Select persistent self-hosted Cargo target directory"
