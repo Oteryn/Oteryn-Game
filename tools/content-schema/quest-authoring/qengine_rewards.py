@@ -1095,6 +1095,19 @@ def build():
     callbacks = [c for c in callbacks if c not in programme_callbacks]
     l13_callbacks.sort(key=lambda c:c['key'])
     programme_callbacks.sort(key=lambda c:c['key'])
+    # Amber and Lubo teach the same account addon. Character storage retains
+    # the donor's separate routes and timer, while payment reserves one grant.
+    backpack = 'oteryn:quest-reservation/citizen-backpack'
+    for callback in callbacks:
+        name = callback['key'].split('/')[-1]
+        if name in ('l6-citizen-rook-backpack-materials', 'qb-citizen-backpack-materials'):
+            pending = callback['storage'][0]
+            callback['account_reservation'] = {
+                'action': 'start', 'key': backpack, 'track': pending['track'],
+                'pending_value': pending['set'],
+            }
+        elif name in ('l6-citizen-rook-backpack', 'qb-citizen-backpack'):
+            callback['account_reservation'] = {'action': 'finish', 'key': backpack}
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)

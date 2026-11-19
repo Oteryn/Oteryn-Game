@@ -106,6 +106,28 @@ pub struct OutfitReward {
     pub sex: Option<CreationSex>,
 }
 
+/// Account exclusivity for a paid start and the matching deferred addon grant.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
+pub enum AccountReservation {
+    Start {
+        key: String,
+        track: String,
+        pending_value: i64,
+    },
+    Finish {
+        key: String,
+    },
+}
+
+impl AccountReservation {
+    pub fn key(&self) -> &str {
+        match self {
+            Self::Start { key, .. } | Self::Finish { key } => key,
+        }
+    }
+}
+
 /// Exact source price; only the durable fee owner may consume the funds.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -296,6 +318,8 @@ pub struct RewardCallback {
     pub requires_actor_conditions: Vec<ActorConditionRequirement>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub forbids_addons: Vec<OutfitReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub account_reservation: Option<AccountReservation>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires: Vec<TrackRequirement>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -927,6 +951,27 @@ fn validate_document_with_capacity(
                 .collect::<BTreeSet<_>>()
                 .len()
                 != c.requires_actor_conditions.len()
+            || c.account_reservation.as_ref().is_some_and(|reservation| {
+                !slug(reservation.key(), "oteryn:quest-reservation/", b"-", 128)
+                    || match reservation {
+                        AccountReservation::Start {
+                            track,
+                            pending_value,
+                            ..
+                        } => {
+                            c.take.is_empty()
+                                || c.forbids_addons.is_empty()
+                                || c.cosmetic_targets().next().is_some()
+                                || !c
+                                    .storage
+                                    .iter()
+                                    .any(|step| &step.track == track && step.set == *pending_value)
+                        }
+                        AccountReservation::Finish { .. } => {
+                            !c.cosmetic_targets().any(|outfit| outfit.addons > 0)
+                        }
+                    }
+            })
             || c.forbids_addons.len() > 8
             || c.forbids_addons
                 .iter()
