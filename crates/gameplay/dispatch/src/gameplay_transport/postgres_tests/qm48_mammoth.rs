@@ -3,8 +3,12 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::map::view::MapFacts;
-use oteryn_gameplay_quests::quest::{barbarian_mead, world_callbacks::Position};
+use oteryn_gameplay_quests::quest::{
+    QuestStateCatalogue, authored_bindings::Bindings, barbarian_mead,
+    world_callbacks::{Callback, Position},
+};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use serde_json::json;
 
 const AT: Position = Position {
     x: 32154,
@@ -12,8 +16,10 @@ const AT: Position = Position {
     floor: -5,
 };
 const MISSION: &str = "oteryn:quest-progress/quest/u8_0/barbarian_test/mission03";
-const KEY: &str = "oteryn:quest-callback/qm48/mammoth";
-const VIAL: &str = "oteryn:item.tibia.i2874";
+pub(super) const NAME: &str = "qm48/mammoth";
+const KEY: &str = "oteryn:quest-callback/test/mammoth-live-drunk";
+const MUG: &str = "oteryn:item.tibia.i2880";
+const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:34-46";
 
 #[test]
 fn qm48_mammoth_live_drunk_refusal_expiry_cleanse_commit_replay() -> TestResult {
@@ -23,7 +29,7 @@ fn qm48_mammoth_live_drunk_refusal_expiry_cleanse_commit_replay() -> TestResult 
     drop(admin);
     let started = std::time::Instant::now();
     let result = super::kill_reward_e2e::scenario_thread::run("qm48-mammoth", || {
-        super::quest_world_callbacks::scenario("qm48/mammoth", AT, false)
+        super::quest_world_callbacks::scenario(NAME, AT, false)
     });
     eprintln!(
         "POSTGRES_CASE_COMPLETED qm48_mammoth duration={:?} success={}",
@@ -56,6 +62,26 @@ pub(super) fn world(
         &[],
         &[7177],
     )
+}
+
+pub(super) fn callback() -> TestResult<Callback> {
+    Ok(serde_json::from_value(json!({
+        "key": KEY,
+        "quest": barbarian_mead::QUEST,
+        "trigger": "use",
+        "requires_world_admission": true,
+        "selector": {"native": {"position": AT, "ordinal": 1, "appearance": 7176}},
+        "reversible": false,
+        "passages": [],
+        "storage": [
+            {"track": barbarian_mead::TRACKS[0], "minimum": 6, "maximum": 6, "set": 7},
+            {"track": MISSION, "minimum": 1, "maximum": 1, "set": 2}
+        ],
+        "effects": {"requires_live_drunk": true, "transform": 7177, "reset_after_ms": 5000},
+        "offerings": [],
+        "return_on_failure": false,
+        "sources": [SOURCE]
+    }))?)
 }
 
 pub(super) async fn exercise(
@@ -245,18 +271,18 @@ async fn buy_mead(
         .offers()
         .iter()
         .find(|offer| {
-            offer.item.key == VIAL
+            offer.item.key == MUG
                 && offer.sub_type == Some(16)
                 && offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
         })
-        .ok_or("Dankwart's vial of mead")?;
+        .ok_or("Dankwart's mug of mead")?;
     assert_eq!((offer.count, offer.unit_price), (Some(1), 5));
-    let vial_ref = owner
+    let mug_ref = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .and_then(|native| native.item_index())
-        .and_then(|index| index.definition_ref("Item", VIAL, &offer.item.revision))
-        .ok_or("vial definition")?;
+        .and_then(|index| index.definition_ref("Item", MUG, &offer.item.revision))
+        .ok_or("mug definition")?;
     classic_quests::talk(owner, admitted, npc, 20501, "hi").await?;
     let actor = admitted.runtime_actor.ok_or("buyer")?;
     let command = |command_id| UseCommand {
@@ -279,12 +305,18 @@ async fn buy_mead(
         .offers
         .iter()
         .position(|shown| {
-            shown.item_definition_ref == vial_ref.get()
+            shown.item_definition_ref == mug_ref.get()
                 && shown.side == NpcTradeSide::Buy
                 && shown.count == 1
                 && shown.unit_price == 5
         })
-        .ok_or("vial in the trade window")?;
+        .ok_or("mead in the trade window")?;
+    assert!(window.offers.iter().any(|shown| {
+        shown.item_definition_ref == mug_ref.get()
+            && shown.side == NpcTradeSide::Buy
+            && shown.count == 1
+            && shown.unit_price == 3
+    }));
     let purchase = owner
         .npc_trade(
             actor,
@@ -305,7 +337,7 @@ async fn buy_mead(
          JOIN game_item_fluid_states s USING(item_instance_id)
          WHERE i.definition_production_key=$1 AND i.lifecycle=1",
     )
-    .bind(VIAL)
+    .bind(MUG)
     .fetch_all(&h.pool)
     .await?;
     assert_eq!(fluids, [(1, 16)]);
@@ -325,12 +357,12 @@ async fn drink_mead(
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .and_then(|native| native.item_index())
-        .and_then(|index| index.definition_ref("Item", VIAL, "definition-r1"))
-        .ok_or("vial definition")?;
+        .and_then(|index| index.definition_ref("Item", MUG, "definition-r1"))
+        .ok_or("mug definition")?;
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(),
-            &[4, 6, 11, 15, 18],
+                &[4, 6, 11, 15, 18],
         )
         .ok_or("capabilities")?;
     let payload = encode_use_item_intent(std::num::NonZeroU64::MIN);
@@ -355,42 +387,24 @@ async fn drink_mead(
     Ok(())
 }
 
-/// Only external NPC progress is arranged: the production callback and its bound
-/// transition remain byte-for-byte unchanged, including the live actor admission.
-pub(super) fn catalogue(
-    original: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
-    callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
-) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
-    use oteryn_gameplay_quests::quest::*;
-    let mut tracks = callback
-        .storage
-        .iter()
-        .zip([6, 1])
-        .map(|(state, accepted)| {
-            let mut track = original
-                .track(&state.track)
-                .cloned()
-                .ok_or("mammoth track")?;
-            track.initial = accepted;
-            Ok(track)
-        })
-        .collect::<Result<Vec<_>, &str>>()?;
-    tracks.push(QuestTrack {
-        key: barbarian_mead::TRACKS[2].into(),
-        quest: callback.quest.clone(),
-        initial: 9,
-        min: 0,
-        max: 9,
-    });
-    QuestStateCatalogue::new(
-        original.content_revision(),
-        tracks,
-        vec![
-            original
-                .transition(&callback.key)
-                .ok_or("mammoth transition")?
-                .clone(),
-        ],
-    )
-    .map_err(debug)
+pub(super) fn catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> {
+    let bindings = Bindings::parse(&serde_json::to_vec(&json!({
+        "schema": 1,
+        "quests": [{
+            "quest": barbarian_mead::QUEST,
+            "recipe_sha256": "ee5a983a8eec21cb3332f908b8baf0e66311797615eae25e103518e1583a197f",
+            "tracks": [
+                {"key": barbarian_mead::TRACKS[0], "initial": 6, "minimum": -1, "maximum": 8},
+                {"key": MISSION, "initial": 1, "minimum": -1, "maximum": 2},
+                {"key": barbarian_mead::TRACKS[2], "initial": 9, "minimum": 0, "maximum": 9}
+            ],
+            "stages": [{
+                "key": "test-mammoth",
+                "completes": false,
+                "trigger": {"kind": "map_use", "callback": callback}
+            }],
+            "sources": [SOURCE]
+        }]
+    }))?)?;
+    Ok(bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("quest catalogue")?)?)
 }

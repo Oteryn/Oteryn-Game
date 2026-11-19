@@ -58,6 +58,9 @@ pub struct CallbackEffects {
     /// Current native occupants must be absent before a previously started stage commits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clear_area: Option<ClearArea>,
+    /// Crystal 201189f8 action_horn.lua:34-46: the USE requires active drunkenness.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub requires_live_drunk: bool,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
@@ -450,6 +453,13 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.requires_live_drunk
+        && (callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission)
+    {
+        return false;
+    }
     if effects
         .use_spawn
         .as_ref()

@@ -713,7 +713,9 @@ pub(super) async fn npc_bank_talk(
     };
     let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let source_inventory = catalogue::inventory(admission, actor, command, &intent).await;
-    let Ok(source_achievements) = catalogue::greeting_achievements(admission, actor, command, &intent).await else {
+    let Ok(source_achievements) =
+        catalogue::greeting_achievements(admission, actor, command, &intent).await
+    else {
         return rejected();
     };
     let mut runtime = admission.runtime.lock().await;

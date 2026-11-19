@@ -661,10 +661,10 @@ impl Callback {
         .then_some(member.from)
     }
 
-    /// Canary action_horn.lua:38-50: mammoth progress requires a currently active
-    /// Drunk condition, never the historical mead counters or a cached quest flag.
+    /// Crystal 201189f8 action_horn.lua:34-46: require the current Drunk condition.
+    /// Retain the existing mammoth binding and its serialized receipt identity.
     pub fn requires_live_drunk(&self) -> bool {
-        self.key == "oteryn:quest-callback/qm48/mammoth"
+        self.effects.requires_live_drunk || self.key == "oteryn:quest-callback/qm48/mammoth"
     }
 }
 

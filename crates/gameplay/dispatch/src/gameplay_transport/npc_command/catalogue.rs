@@ -7,7 +7,9 @@ use crate::durability::quest_state::{
     npc_program::{self, NpcProgramRequest},
 };
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleGuard, NpcRuleTrigger};
+use oteryn_gameplay_quests::quest::npc_rules::{
+    NpcRuleCatalog, NpcRuleEffect, NpcRuleGuard, NpcRuleTrigger,
+};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -89,7 +91,11 @@ pub(super) struct CommitStep {
 fn greeting_word(message: &str) -> bool {
     message
         .split(|c: char| !c.is_ascii_alphabetic())
-        .any(|word| ["hi", "hello", "hail"].iter().any(|g| word.eq_ignore_ascii_case(g)))
+        .any(|word| {
+            ["hi", "hello", "hail"]
+                .iter()
+                .any(|g| word.eq_ignore_ascii_case(g))
+        })
 }
 
 pub(super) async fn greeting_achievements(
@@ -115,7 +121,9 @@ pub(super) async fn greeting_achievements(
         else {
             return Ok(None);
         };
-        source.programs().iter()
+        source
+            .programs()
+            .iter()
             .flat_map(|program| &program.document.rules)
             .filter(|rule| rule.npc == npc.key && rule.trigger == NpcRuleTrigger::Greet)
             .flat_map(|rule| &rule.guards)
@@ -128,13 +136,24 @@ pub(super) async fn greeting_achievements(
     if keys.is_empty() {
         return Ok(None);
     }
-    let fence = admission.current_quest_fence(command.game_session_id).await?.ok_or(())?;
+    let fence = admission
+        .current_quest_fence(command.game_session_id)
+        .await?
+        .ok_or(())?;
     if command.item_fence != Some(fence.item_fence()) {
         return Err(());
     }
-    admission.root.read_npc_greeting_achievements(
-        admission.character, admission.holder, fence, keys.into_iter().collect(),
-    ).await.map(Some).map_err(|_| ())
+    admission
+        .root
+        .read_npc_greeting_achievements(
+            admission.character,
+            admission.holder,
+            fence,
+            keys.into_iter().collect(),
+        )
+        .await
+        .map(Some)
+        .map_err(|_| ())
 }
 
 pub(super) async fn inventory(
@@ -459,7 +478,13 @@ pub(super) fn prepare(
         .unwrap_or_else(|| {
             if let Some(earned) = greeting_achievements.filter(|_| greeting) {
                 npc_program::preview_achievement_greeting(
-                    &request, &tracks, &source, catalogue, now, &eligibility, earned,
+                    &request,
+                    &tracks,
+                    &source,
+                    catalogue,
+                    now,
+                    &eligibility,
+                    earned,
                 )
             } else if let Some(inventory) = inventory {
                 npc_program::preview_with_inventory(

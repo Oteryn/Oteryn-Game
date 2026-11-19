@@ -11,6 +11,9 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
+    if name == super::qm48_mammoth::NAME {
+        return super::qm48_mammoth::callback();
+    }
     if name == super::qcx60_chakoya::NAME {
         return super::qcx60_chakoya::callback();
     }

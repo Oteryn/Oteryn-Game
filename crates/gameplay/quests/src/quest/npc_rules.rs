@@ -658,11 +658,18 @@ impl NpcRuleCatalog {
         earned: &std::collections::BTreeSet<String>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         if input.trigger != NpcRuleTrigger::Greet {
-            return Err(NpcRuleError::Invalid("achievement guard requires greeting".into()));
+            return Err(NpcRuleError::Invalid(
+                "achievement guard requires greeting".into(),
+            ));
         }
         let plan = evaluate::plan_greeting(self, input, earned)?;
-        if plan.as_ref().is_some_and(|plan| plan.completes || !plan.effects.is_empty()) {
-            return Err(NpcRuleError::Invalid("achievement greeting must be read-only".into()));
+        if plan
+            .as_ref()
+            .is_some_and(|plan| plan.completes || !plan.effects.is_empty())
+        {
+            return Err(NpcRuleError::Invalid(
+                "achievement greeting must be read-only".into(),
+            ));
         }
         Ok(plan)
     }

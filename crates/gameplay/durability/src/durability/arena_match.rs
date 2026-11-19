@@ -229,7 +229,9 @@ impl DurabilityRoot {
                     }
                     let state = load_state(&mut tx, fence).await?;
                     let permitted = match door {
-                        donor::ArenaDoor::Pit => state.phase == 0 && (1..=3).contains(&state.paid_rank),
+                        donor::ArenaDoor::Pit => {
+                            state.phase == 0 && (1..=3).contains(&state.paid_rank)
+                        }
                         donor::ArenaDoor::Reward(rank) => rank > 0 && state.completed >= rank,
                     };
                     commit_semantic_transaction(tx, deadline).await?;

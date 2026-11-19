@@ -187,10 +187,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.owner_fence().is_err()
                     || runtime.binding().runtime_scope() != fence.runtime_scope
                     || runtime.binding().scope_generation() != fence.scope_ownership_generation
-                    || !runtime.bound_attacker_lease(actor, session).is_ok_and(|lease| {
-                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
-                            && lease.generation() == fence.character_lease_generation
-                    })
+                    || !runtime
+                        .bound_attacker_lease(actor, session)
+                        .is_ok_and(|lease| {
+                            lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                                && lease.generation() == fence.character_lease_generation
+                        })
             })
         {
             return UseOutcome::rejected();
@@ -464,9 +466,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(outcome) = self.use_bundle_chest(actor, command, map, &target).await {
                 return outcome;
             }
-            return self
-                .use_bundle_door(actor, command, map, &target)
-                .await;
+            return self.use_bundle_door(actor, command, map, &target).await;
         }
         if let Some(chest) = Self::chest_target(self.chest, &target.placement) {
             return self.use_chest(actor, command, chest).await;

@@ -49,7 +49,7 @@ fn scenario_case(
     let m44_children = name == "qn1-children-lever-1/ordinary";
     let m44 =
         name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
-    let qm48 = name == "qm48/mammoth";
+    let qm48 = name == super::super::qm48_mammoth::NAME;
     let m03_use = name == super::super::qengine_m03_use::NAME;
     let qd_world = name.starts_with(super::super::qd_world::PREFIX);
     let elemental_pin = name.starts_with("qn1-elemental-");
@@ -1788,10 +1788,7 @@ fn scenario_case(
         }
         if qm48 {
             owner.quest_catalogue =
-                Some(std::sync::Arc::new(super::super::qm48_mammoth::catalogue(
-                    owner.quest_catalogue.as_ref().ok_or("mammoth catalogue")?,
-                    &callback,
-                )?));
+                Some(std::sync::Arc::new(super::super::qm48_mammoth::catalogue(&callback)?));
         }
         if mead {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::super::l6_mead::catalogue(
@@ -1808,6 +1805,7 @@ fn scenario_case(
         }
         if name.starts_with("qengine-rewards-questpc4-admission-")
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
+            || qm48
             || lever_fixture
             || target_swap
             || failure_landing
