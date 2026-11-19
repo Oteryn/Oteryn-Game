@@ -108,6 +108,9 @@ pub(super) fn native_owner_turn(
     }
 }
 
+// Keep SQL-backed actor work bounded even when a whole channel wakes together.
+const PROFILE_ACTORS_PER_PASS: usize = 128;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn drive_monster_profiles(
@@ -245,6 +248,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // The coalesced monster scheduler must not retake the returned holder
         // ahead of a waiting foreground owner (notably logout during world boot).
+        // A completed slice wakes another scheduler turn after returning this pass.
         let pass = self
             .root
             .try_issue_background_semantic_pass()
@@ -255,6 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?;
         #[cfg(test)]
         native_owner_turn(room, "profile_checkout", "acquired");
+        let mut continue_batch = false;
         let (next_due, proposals, native_actors, ran_profile) = {
             let mut context = (
                 self,
@@ -269,10 +274,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 primal_pending.as_ref(),
                 native_pending.as_ref(),
                 native_health_names,
+                &mut continue_batch,
             );
             pass.run_with_context(&mut context, move |holder, deadline, context| {
             Box::pin(async move {
-                let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
+                let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names, continue_batch) =
                     context;
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await.inspect_err(|_| {
                     #[cfg(test)]
@@ -577,7 +583,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.finish_source(primal_due, rotten_due);
                 }
                 let table = &mut states.monster_melee.creature_ai;
-                if !pending.ai_known() { for occurrence in batch.occurrences() {
+                let run_thinks = !pending.ai_known();
+                let think_start = pending.think_cursor();
+                let think_end = (think_start + PROFILE_ACTORS_PER_PASS).min(batch.occurrences().len());
+                if run_thinks { for occurrence in &batch.occurrences()[think_start..think_end] {
                     if runtime.contains_live_creature(occurrence.actor) {
                         table.refresh_current_native_creature(runtime, native, occurrence.actor)
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
@@ -591,58 +600,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                     player_waiting_now,
                 );
-                // Native spell proposals carry the source closure's actual formula revision.
-                let formula_revisions = native
-                    .creature_profiles()
-                    .records
-                    .iter()
-                    .filter_map(|record| record.attack_definitions.as_ref())
-                    .flat_map(|definitions| &definitions.profiles)
-                    .filter(|profile| {
-                        matches!(
-                            profile.data,
-                            crate::content::ProjectV2AuthoringProfileData::Formula(_)
-                        )
-                    })
-                    .map(|profile| profile.target.revision.as_str())
-                    .collect::<std::collections::BTreeSet<_>>();
-                let formula_revision = if formula_revisions.len() == 1 {
-                    formula_revisions
+                if run_thinks {
+                    // Native spell proposals carry the source closure's actual formula revision.
+                    let formula_revisions = native
+                        .creature_profiles()
+                        .records
                         .iter()
-                        .next()
-                        .copied()
-                        .unwrap_or(revisions.formula())
-                } else {
-                    revisions.formula()
-                };
-                let schedule_revisions = crate::ability::RevisionSet::new(
-                    revisions.ruleset(),
-                    revisions.content(),
-                    revisions.world_policy(),
-                    formula_revision,
-                    revisions.simulation(),
-                )
-                .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                let source_attack_abilities = native
-                    .creature_profiles()
-                    .records
-                    .iter()
-                    .filter_map(|record| record.attack_definitions.as_ref())
-                    .flat_map(|definitions| &definitions.profiles)
-                    .filter(|profile| {
-                        matches!(
-                            profile.data,
-                            crate::content::ProjectV2AuthoringProfileData::Ability(_)
-                        )
-                    })
-                    .map(|profile| &profile.target)
-                    .collect::<std::collections::BTreeSet<_>>();
-                let summons = &mut states.monster_summons;
-                let waves = &mut states.rotten_waves;
-                if !pending.ai_known() { table
-                    .run_reserved_current_thinks_borrowed(
+                        .filter_map(|record| record.attack_definitions.as_ref())
+                        .flat_map(|definitions| &definitions.profiles)
+                        .filter(|profile| {
+                            matches!(
+                                profile.data,
+                                crate::content::ProjectV2AuthoringProfileData::Formula(_)
+                            )
+                        })
+                        .map(|profile| profile.target.revision.as_str())
+                        .collect::<std::collections::BTreeSet<_>>();
+                    let formula_revision = if formula_revisions.len() == 1 {
+                        formula_revisions
+                            .iter()
+                            .next()
+                            .copied()
+                            .unwrap_or(revisions.formula())
+                    } else {
+                        revisions.formula()
+                    };
+                    let schedule_revisions = crate::ability::RevisionSet::new(
+                        revisions.ruleset(),
+                        revisions.content(),
+                        revisions.world_policy(),
+                        formula_revision,
+                        revisions.simulation(),
+                    )
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    let source_attack_abilities = native
+                        .creature_profiles()
+                        .records
+                        .iter()
+                        .filter_map(|record| record.attack_definitions.as_ref())
+                        .flat_map(|definitions| &definitions.profiles)
+                        .filter(|profile| {
+                            matches!(
+                                profile.data,
+                                crate::content::ProjectV2AuthoringProfileData::Ability(_)
+                            )
+                        })
+                        .map(|profile| &profile.target)
+                        .collect::<std::collections::BTreeSet<_>>();
+                    let summons = &mut states.monster_summons;
+                    let waves = &mut states.rotten_waves;
+                    table
+                    .run_reserved_current_think_slice(
                         runtime,
                         batch,
+                        think_start..think_end,
                         &root,
                         &schedule_revisions,
                         candidates,
@@ -669,9 +680,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             }
                         },
                     )
-                    .await; }
+                    .await;
+                    // An invalid Map read leaves this slice eligible to retry.
+                    // The reservation's sequence fence skips already committed thinks.
+                    if !reader.map.validate_transaction(runtime).await {
+                        return Err(crate::durability::DurabilityError::Unavailable);
+                    }
+                }
                 if !batch.current_for(runtime) {
                     return Err(crate::durability::DurabilityError::Unavailable);
+                }
+                if run_thinks && think_end < batch.occurrences().len() {
+                    drop(reader);
+                    tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    pending.advance_thinks(think_end);
+                    **continue_batch = true;
+                    return Ok((Some(now), Vec::new(), Vec::new(), false));
                 }
                 pending.finish_ai().map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                 let (proposals,native_actors)=if let Some(primal)=primal_pending.as_ref() {
@@ -713,10 +737,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     pending.finish_heals();
                 }
                 if !pending.fields_known() {
-                owner
-                    .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
-                    .await?;
-                pending.finish_fields();
+                    let (actors, range) = pending.field_batch(runtime);
+                    // Field ticks read current condition stores, which can advance
+                    // between slices. The retained AI reservation still uses now.
+                    owner.tick_creature_fields(
+                        &mut map, runtime, states, native, &actors[range.clone()], execution_now, native_health_names,
+                    ).await?;
+                    pending.advance_fields(range.end, actors.len());
+                    if range.end < actors.len() {
+                        drop(map);
+                        tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        **continue_batch = true;
+                        return Ok((Some(now), Vec::new(), Vec::new(), false));
+                    }
                 }
                 if !map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
@@ -747,7 +780,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Preserve the native scheduler's proposal order across ordinary
                 // attacks and source callbacks. Delayed work also runs on idle turns.
                 let callback_result: Result<(), ()> = async {
-                    while !pending.items_ready() {
+                    for _ in 0..PROFILE_ACTORS_PER_PASS {
+                        if pending.items_ready() {
+                            break;
+                        }
                         if !retained::resume_one_due(owner,runtime,states,attack,room,native,
                             &mut map,&parties,now,execution_now,native_health_names).await? {
                             return Err(());
@@ -758,6 +794,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 callback_result.map_err(|()| crate::durability::DurabilityError::Unavailable)?;
 
                 drop(map);
+                if !pending.items_ready() {
+                    tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    **continue_batch = true;
+                    return Ok((Some(now), Vec::new(), Vec::new(), false));
+                }
                 let next_due = next_due.into_iter()
                     .chain(pending.source_due())
                     .chain(states.rotten_blood_callbacks.next_due_time())
@@ -781,6 +822,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .map_err(|_| ())?
         };
+        if continue_batch {
+            states.owner_wake.notify_one();
+        }
         // A due-only turn can finish while an older cancelled pass already owns
         // its Item suffix. Do not acknowledge that suffix with empty results.
         if !ran_profile {

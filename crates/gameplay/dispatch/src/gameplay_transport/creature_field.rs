@@ -9,12 +9,14 @@ use oteryn_gameplay_foundation::foundation::condition::{
 use sha2::{Digest, Sha256};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(clippy::too_many_arguments)]
     pub(super) async fn tick_creature_fields(
         &self,
         map: &mut crate::movement::monster_map::CurrentMonsterMap<'_, '_>,
         runtime: &mut ChannelRuntimeV1,
         states: &ChannelSpellStates,
         native: &crate::content::native_gameplay::NativeGameplayState,
+        actors: &[crate::foundation::ExactActorRef],
         now: u64,
         native_health_names: &super::source_names::NativeHealthNamesData,
     ) -> Result<(), DurabilityError> {
@@ -24,25 +26,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut plans = Vec::new();
         let mut source_players = Vec::new();
 
-        let creatures = runtime.visible_entities().creatures;
+        let creatures = actors
+            .iter()
+            .filter_map(|&actor| {
+                let position = runtime.read_actor_position(actor).ok()?;
+                (runtime.contains_live_creature(actor)
+                    && position.context() == runtime.pinned_movement_context())
+                .then_some((actor, position.position(), position.revision()))
+            })
+            .collect::<Vec<_>>();
         // Passive source creatures are outside the AI table, but still own field conditions.
         let positions = creatures
             .iter()
-            .map(|visible| visible.position)
+            .map(|&(_, position, _)| position)
             .collect::<Vec<_>>();
         map.prefetch_empty_tiles(runtime, &positions)
             .await
             .map_err(|_| DurabilityError::Unavailable)?;
-        for visible in creatures {
-            let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
+        for (actor, position, revision) in creatures {
+            let Ok(snapshot) = runtime.companion_snapshot(actor) else {
                 continue;
             };
             let read = map
-                .read_items(runtime, visible.position)
+                .read_items(runtime, position)
                 .await
                 .map_err(|_| DurabilityError::Unavailable)?;
             let protection_zone = map
-                .protection_zone(runtime, visible.position)
+                .protection_zone(runtime, position)
                 .ok_or(DurabilityError::Unavailable)?;
             let mut entry = None;
             let mut standing = None;
@@ -98,8 +108,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 source_creation_command: origin.creation_command_id,
                             });
                     let digest = Sha256::new()
-                        .chain_update(visible.actor.placement_identity())
-                        .chain_update(visible.revision.to_be_bytes())
+                        .chain_update(actor.placement_identity())
+                        .chain_update(revision.to_be_bytes())
                         .chain_update(item.item_instance_id)
                         .finalize();
                     let mut occurrence = [0; 16];
@@ -146,7 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     source_players.push(source);
                 }
             }
-            plans.push((visible.actor, entry, facts));
+            plans.push((actor, entry, facts));
         }
         if let Some(active) = self.active_generation {
             let room = map.room();

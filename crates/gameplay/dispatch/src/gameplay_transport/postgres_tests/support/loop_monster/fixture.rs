@@ -8,6 +8,13 @@ use crate::content::channel_content_pin::ChannelContentPin;
 pub(in super::super) fn run_case(
     body: impl AsyncFnOnce(&Harness) -> TestResult + Send + 'static,
 ) -> TestResult {
+    run_case_with_progression(false, body)
+}
+
+pub(super) fn run_case_with_progression(
+    initialized: bool,
+    body: impl AsyncFnOnce(&Harness) -> TestResult + Send + 'static,
+) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         eprintln!(
             "SKIP LOOP-MONSTER-PG: PostgreSQL is not configured; no PostgreSQL pass is claimed"
@@ -23,7 +30,7 @@ pub(in super::super) fn run_case(
                 .block_on(Harness::create_with_admission_seed(
                     admin,
                     "loop_monster",
-                    false,
+                    initialized,
                     false,
                 ))
                 .map_err(|error| format!("{error:?}"))?;
