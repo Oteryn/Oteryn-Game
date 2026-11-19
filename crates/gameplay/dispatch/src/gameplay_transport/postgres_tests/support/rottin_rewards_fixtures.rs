@@ -149,13 +149,22 @@ pub(super) async fn craft_charms(
         None,
     )
     .map_err(debug)?;
-    let operand = |seed| {
-        view.table()
-            .handle(&ItemKey::Instance(id(seed)))
-            .ok_or("recipe operand handle")
+    let backpack = inventory.backpack.as_ref().ok_or("recipe backpack")?;
+    let operand = |key: &str| -> TestResult<_> {
+        let item = backpack
+            .entries
+            .iter()
+            .find(|entry| entry.item.definition.production_key == key)
+            .ok_or("recipe operand")?;
+        let instance = item.item.item_instance_id;
+        let handle = view
+            .table()
+            .handle(&ItemKey::Instance(instance))
+            .ok_or("recipe operand handle")?;
+        Ok((instance, handle))
     };
-    let ribbon = operand(71)?;
-    let foot = operand(72)?;
+    let (ribbon_id, ribbon) = operand(RIBBON)?;
+    let (foot_id, foot) = operand(FOOT)?;
     let actor = admitted.runtime_actor.ok_or("recipe actor")?;
     let use_pair = async |command_id, source, target, view: &SessionItemView| {
         crate::gameplay_transport::mining::dispatch_map_use(
@@ -245,8 +254,8 @@ pub(super) async fn craft_charms(
     )
     .bind(admitted.game_session_id.as_bytes().as_slice())
     .bind("oteryn:quest-craft/rottin-wood/lucky-charm")
-    .bind(id(71).as_slice())
-    .bind(id(72).as_slice())
+    .bind(ribbon_id.as_slice())
+    .bind(foot_id.as_slice())
     .bind(CHARM)
     .fetch_one(&h.pool)
     .await?;
