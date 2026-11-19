@@ -21,7 +21,7 @@ pub(crate) fn accepts(callback: &Callback, bindings: Option<&Bindings>) -> bool 
                 && bindings.is_some_and(|bindings| bindings.world_callbacks().any(|native| native == callback))))
 }
 
-pub(in crate::gameplay_transport) fn accepts_source(
+pub(in super::super) fn accepts_source(
     input: &ItemOnTarget,
     definition: &str,
 ) -> bool {
