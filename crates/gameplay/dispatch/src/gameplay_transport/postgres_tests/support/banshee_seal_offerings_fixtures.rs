@@ -57,20 +57,12 @@ const BLOOD_CUES: [Position; 4] = [
 ];
 
 pub(super) fn run_plague() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(PLAGUE, || {
         super::quest_world_callbacks_fixtures::scenario(PLAGUE, PLAGUE_ENTRY, false)
     })
 }
 
 pub(super) fn run_sacrifice() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(SACRIFICE, || {
         super::quest_world_callbacks_fixtures::scenario(SACRIFICE, ENTRY, false)
     })

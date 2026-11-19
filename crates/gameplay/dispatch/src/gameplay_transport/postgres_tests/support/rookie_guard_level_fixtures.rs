@@ -19,10 +19,6 @@ const CONTINUE: &str =
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vascalir.lua:903-912";
 
 pub(super) fn run_case() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, || {
         super::quest_world_callbacks_fixtures::scenario(
             NAME,
