@@ -264,6 +264,8 @@ jobs:
           durability_result_expression = '$' + '{{ needs.durability_postgres.result }}'
           world_bundle_result_expression = '$' + '{{ needs.world_bundle.result }}'
           world_bundle_required_expression = '$' + '{{ needs.candidate.outputs.world_bundle }}'
+          archive_matrix_expression = '$' + '{{ matrix.archive }}'
+          affinity_archive_expression = '$' + '{{ steps.affinity.outputs.archive }}'
           required = (
               '  merge_group:\n    types: [checks_requested]\n  push:\n    branches: [main]\n',
               '    name: game-gate\n',
@@ -302,9 +304,9 @@ jobs:
               '          sha256sum head-sha workspace "pg-$ARCHIVE.tar.zst" "pg-$ARCHIVE.json" > SHA256SUMS\n',
               '          cargo-nextest nextest list --cargo-metadata "$meta/target/nextest/cargo-metadata.json" \\\n',
               '          test "$SHARD_RESULT" = success\n',
-              '          name: mq-postgres-test-inventory-${{ matrix.archive }}\n',
+              f'          name: mq-postgres-test-inventory-{archive_matrix_expression}\n',
               '          pattern: mq-postgres-test-inventory-*\n',
-              '          name: mq-postgres-test-archives-${{ steps.affinity.outputs.archive }}\n',
+              f'          name: mq-postgres-test-archives-{affinity_archive_expression}\n',
               "          echo 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a  tools/ci/pg_archive_affinity.py' | sha256sum -c -\n",
               '          python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"\n',
               '          python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq \\\n',
