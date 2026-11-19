@@ -1,7 +1,7 @@
 //! Actual native proposals must reach the source spawn owner and physical carrier.
 use super::fixture::{Harness, debug, id, run};
 use super::srx3_native_source_cast_fixtures::{
-    next_native_melee_deadline, settle_monster_melee_at,
+    next_native_melee_deadline, settle_monster_melee_at_until,
 };
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
@@ -138,9 +138,16 @@ fn source_spawn_case_with_gaz_heal(
             } else {
             let mut selected = false;
             let mut created = false;
+            let child_key = format!("oteryn:creature.{child}");
             let mut now = owner.owner_now().get();
             for _ in 0..128 {
-                settle_monster_melee_at(&owner, now).await?;
+                // The Energy Pulse can spawn and retire in separate drains at the same instant.
+                created = settle_monster_melee_at_until(&owner, now, async || {
+                    let runtime = owner.runtime.lock().await;
+                    runtime.visible_entities().creatures.iter().any(|entity|
+                        runtime.current_live_creature_identity(entity.actor).ok()
+                            == Some(child_key.as_bytes()))
+                }).await?;
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
                 if let Some(report) = states.monster_melee.creature_ai.last_report_for_test(caster) {
@@ -159,10 +166,6 @@ fn source_spawn_case_with_gaz_heal(
                     }
                     selected |= report.proposals.iter().any(|proposal| proposal.ability.key == ability);
                 }
-                let child_key = format!("oteryn:creature.{child}");
-                created = runtime.visible_entities().creatures.iter().any(|entity|
-                    runtime.current_live_creature_identity(entity.actor).ok()
-                        == Some(child_key.as_bytes()));
                 drop(states);
                 drop(runtime);
                 if selected && created {break;}
