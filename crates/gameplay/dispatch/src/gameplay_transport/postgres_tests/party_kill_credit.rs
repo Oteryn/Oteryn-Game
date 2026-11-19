@@ -1,5 +1,8 @@
 //! Authored qcredit bindings through the real lethal projector and quest-state writer.
+use super::death_ml_loss_composed_fixtures::production_generation_with_pin;
 use super::fixture::{debug, id};
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async;
+use super::quest_world_callbacks_fixtures as callback_fixtures;
 use super::{ComposedFreshAdmission, Dependencies, TestResult};
 use crate::foundation::{
     AttackerCommand, ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId,
@@ -579,15 +582,13 @@ struct Player {
 }
 
 fn run(admin: String, case: Case) -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
+    run_async(async move |_| {
         let h =
             crate::bestiary_postgres_harness::Harness::create(admin, "party_kill_credit", false)
                 .await?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
-            deps.admitted.world_id,
-            "content-1",
-        )?;
+        let (controller, pin) =
+            production_generation_with_pin(deps.admitted.world_id, "content-1")?;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation
             .native_gameplay()
@@ -601,7 +602,7 @@ fn run(admin: String, case: Case) -> TestResult {
         let world = if case.has_shields() {
             let lever = shield_handoff::lever(at, case)?;
             let exit = mode_exit(at)?;
-            Some(super::quest_world_callbacks_fixtures::world_with_objects(
+            Some(callback_fixtures::world_with_objects(
                 &lever, lever.selector.position.ok_or("shield lever")?,
                 &[(exit.selector.position.ok_or("exit")?, 37000)],
                 &[shield_handoff::FIRE],
@@ -610,7 +611,7 @@ fn run(admin: String, case: Case) -> TestResult {
             let easy = mode_lever(at, false)?;
             let hard = mode_lever(at, true)?;
             let exit = mode_exit(at)?;
-            Some(super::quest_world_callbacks_fixtures::world_with_objects(
+            Some(callback_fixtures::world_with_objects(
                 &easy,
                 easy.selector.position.ok_or("easy lever")?,
                 &[
@@ -623,7 +624,7 @@ fn run(admin: String, case: Case) -> TestResult {
             let callback = window_callback(at, case)?;
             let position = callback.selector.position.ok_or("exit tile")?;
             Some(if case == Case::WindowVisual {
-                super::quest_world_callbacks_fixtures::world_with_objects(
+                callback_fixtures::world_with_objects(
                     &callback,
                     position,
                     &[],
@@ -644,14 +645,14 @@ fn run(admin: String, case: Case) -> TestResult {
                 if case == Case::WindowResetAmbiguous {
                     objects.push((*reset.positions.get(1).ok_or("second crystal")?, reset.to));
                 }
-                super::quest_world_callbacks_fixtures::world_with_objects(
+                callback_fixtures::world_with_objects(
                     &callback,
                     position,
                     &objects,
                     &[reset.to],
                 )?
             } else {
-                super::quest_world_callbacks_fixtures::world(&callback, position)?
+                callback_fixtures::world(&callback, position)?
             })
         } else {
             None
