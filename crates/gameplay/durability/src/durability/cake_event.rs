@@ -218,7 +218,33 @@ impl DurabilityRoot {
 pub struct CakeWorldBonus {
     pub remaining_ms: u64,
 }
-pub(super) async fn active_world_bonus_in_transaction(
+pub(super) async fn world_bonus_at_kill_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    died_at_unix_ms: u64,
+) -> Result<bool, DurabilityError> {
+    let Ok(death_ms) = i64::try_from(died_at_unix_ms) else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    // Zero means the source could not capture wall time.
+    if death_ms == 0 {
+        return Ok(false);
+    }
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS (
+             SELECT 1 FROM game_cake_phases
+             WHERE world_id=encode($1,'hex')::uuid
+               AND bonus_activated_at<=to_timestamp($2::bigint::double precision / 1000)
+               AND to_timestamp($2::bigint::double precision / 1000)<bonus_until
+         )",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(death_ms)
+    .fetch_one(&mut **tx)
+    .await?)
+}
+
+async fn active_world_bonus_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
 ) -> Result<Option<CakeWorldBonus>, DurabilityError> {

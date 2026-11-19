@@ -14,18 +14,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .house_actor_state(actor, game_session_id)
             .is_ok()
         {
-            let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
-                .current_session_at(game_session_id)
-                .await
-                .ok()?;
-            let fence = item_fence_of(current)?;
-            let runtime = self.runtime.lock().await;
-            return self.states.spell_states.lock().await.house_vitals(
-                &runtime,
-                actor,
-                game_session_id,
-                fence,
-            );
+            return self.house_actor_vitals(actor, game_session_id, false).await;
         }
         self.refresh_wheel_vitals(actor, game_session_id).await;
         let restored = pvp_live::tracked(
@@ -39,6 +28,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
+    }
+
+    async fn house_actor_vitals(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        tick_cake: bool,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
+            .current_session_at(session)
+            .await
+            .ok()?;
+        let fence = item_fence_of(current)?;
+        let tick_cake = tick_cake
+            && current.session_state() == GameSessionState::Active
+            && self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .is_some();
+        let deadline = if tick_cake {
+            self.cake_regeneration_deadline().await
+        } else {
+            None
+        };
+        // Take the spell lane before runtime guards, as the Channel cadence does.
+        let permit = if tick_cake {
+            self.spell_lane.acquire().await.ok()
+        } else {
+            None
+        };
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if permit.is_some()
+            && !states.has_pending_spell_commit(actor, session)
+            && runtime.house_player_writes_fenced(actor, session) == Ok(false)
+            && let Some(state) = states.house_state_mut(&runtime, actor, session, fence)
+        {
+            super::super::cake_event::tick_house_regeneration(
+                state,
+                deadline,
+                self.owner_now().get(),
+                runtime.content_pin().server_artifact_digest(),
+                session,
+            );
+        }
+        states.house_vitals(&runtime, actor, session, fence)
     }
 
     pub(in crate::gameplay_transport) async fn tick_actor_vitals(
@@ -66,7 +101,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .house_actor_state(actor, game_session_id)
             .is_ok()
         {
-            return self.observe_actor_vitals(actor, game_session_id).await;
+            self.load_wheel_gift(actor, game_session_id).await;
+            return self.house_actor_vitals(actor, game_session_id, true).await;
         }
         if !self.ensure_source_map_initialized().await {
             return None;

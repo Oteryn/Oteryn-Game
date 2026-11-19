@@ -513,6 +513,52 @@ pub fn tick(
 ) -> Result<Vec<ConditionTick<String>>, SpellCastDisposition> {
     tick_inner(state, now_ms, facts, true)
 }
+/// Run just this regeneration's ticks and expiry, leaving the other actor clocks alone.
+pub fn tick_spell_regeneration(
+    state: &mut PlayerSpellState,
+    now: u64,
+    key: &str,
+) -> Result<(), SpellCastDisposition> {
+    let now = now_us(now / 1_000)?;
+    if state.health == 0 || !state.conditions.accepts_time(now) {
+        return Ok(());
+    }
+    let mut staged = state.clone();
+    for tick in staged.conditions.take_due_spell_regeneration(now, key) {
+        if let TickKind::SpellRegeneration {
+            health_gain,
+            mana_gain,
+            suppressed: false,
+        } = tick.kind
+        {
+            apply_spell_regeneration_pulse(&mut staged, health_gain, mana_gain);
+        }
+    }
+    if staged.conditions.instances() != state.conditions.instances()
+        || staged.vitals() != state.vitals()
+    {
+        staged.revision = state
+            .revision
+            .checked_add(1)
+            .ok_or(SpellCastDisposition::Rejected)?;
+        *state = staged;
+    }
+    Ok(())
+}
+
+fn apply_spell_regeneration_pulse(state: &mut PlayerSpellState, health_gain: u32, mana_gain: u32) {
+    if state.health > 0 {
+        state.health = state
+            .health
+            .saturating_add(health_gain)
+            .min(state.facts.max_health);
+        state.mana = state
+            .mana
+            .saturating_add(mana_gain)
+            .min(state.facts.max_mana);
+    }
+}
+
 fn tick_inner(
     state: &mut PlayerSpellState,
     now_ms: u64,
@@ -541,15 +587,8 @@ fn tick_inner(
                 mana_gain,
                 suppressed,
             } => {
-                if !suppressed && staged.health > 0 {
-                    staged.health = staged
-                        .health
-                        .saturating_add(health_gain)
-                        .min(staged.facts.max_health);
-                    staged.mana = staged
-                        .mana
-                        .saturating_add(mana_gain)
-                        .min(staged.facts.max_mana);
+                if !suppressed {
+                    apply_spell_regeneration_pulse(&mut staged, health_gain, mana_gain);
                 }
             }
             TickKind::Regeneration {

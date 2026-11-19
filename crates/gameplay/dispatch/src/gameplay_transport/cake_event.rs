@@ -72,6 +72,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+pub(super) fn tick_house_regeneration(
+    state: &mut crate::spell::cast::PlayerSpellState,
+    deadline: Option<std::time::Instant>,
+    now_us: u64,
+    content_digest: [u8; 32],
+    session: crate::foundation::GameSessionId,
+) {
+    if let Some(deadline) = deadline {
+        let _ = apply_world_cake_regeneration(state, deadline, now_us, content_digest, session);
+    }
+    use oteryn_gameplay_domain::domain::condition::ConflictKey;
+    if state
+        .owned_conditions()
+        .get(ConflictKey::Recovery)
+        .is_some_and(|effect| effect.definition().key() == CAKE_REGENERATION_KEY)
+    {
+        let _ = crate::spell::actor_conditions::tick_spell_regeneration(
+            state,
+            now_us,
+            CAKE_REGENERATION_KEY,
+        );
+    }
+}
+
 pub(super) fn apply_world_cake_regeneration(
     state: &mut crate::spell::cast::PlayerSpellState,
     deadline: std::time::Instant,
