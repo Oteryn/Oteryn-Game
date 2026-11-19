@@ -1286,6 +1286,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("W02 Sugar corpse identity collision"));
         }
+        // Crystal 201189f8 appearances.dat and arbaziloth_fight.lua bind the
+        // purple-fire projection to this exact Ground-only item identity.
+        let arbaziloth_fire = serde_json::from_value(serde_json::json!({
+            "source_key": "oteryn:source.crystalserver",
+            "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "identity_namespace": "ots/item_server_id", "external_id": "49362",
+            "target": {"family": "Item", "key": "oteryn:item.tibia.i49362", "revision": "definition-r1"},
+            "disposition": "EXACT"
+        })).map_err(|_| invalid("Arbaziloth fire exact identity"))?;
+        if admitted
+            .insert("49362".to_owned(), arbaziloth_fire)
+            .is_some()
+        {
+            return Err(invalid("Arbaziloth fire identity collision"));
+        }
         let cradle_profiles = qready1_cradle::profiles()?;
         for (id, record) in &cradle_profiles {
             if admitted
@@ -1384,6 +1399,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             {
                 if record != expected {
                     return Err(invalid("native boss reward complete source Item policy"));
+                }
+            } else if binding.external_id == "49362" {
+                use super::ReferenceItemField as F;
+                if !record.admission.materializable
+                    || record.admission.stack_class != NativeItemStackClass::NonStackable
+                    || record.admission.legal_destinations != [NativeItemDestination::Ground]
+                    || !matches!(&record.semantics.physical, F::Known(value)
+                        if value.weight == F::Known(0)
+                            && value.movable == F::Known(false)
+                            && value.pickupable == F::Known(false))
+                    || record.attributes.blocks_movement != Some(false)
+                    || record.attributes.blocks_projectile != Some(false)
+                    || record.production_binding_qualification.is_some()
+                {
+                    return Err(invalid("Arbaziloth fire Ground policy"));
                 }
             } else if binding.external_id == "48416" {
                 use super::{ReferenceItemField as F, ReferenceItemType as Type};

@@ -1,0 +1,129 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/nrwicked/arbaziloth",
+      "quest": "oteryn:quest.no_rest_for_the_wicked_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 34058,
+          "y": 32394,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 8911,
+        "ordinal": 2
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "encounter": {
+          "minimum_level": 0,
+          "players": [
+            {
+              "from": {
+                "x": 34058,
+                "y": 32395,
+                "floor": -14
+              },
+              "to": {
+                "x": 34034,
+                "y": 32340,
+                "floor": -14
+              }
+            },
+            {
+              "from": {
+                "x": 34058,
+                "y": 32396,
+                "floor": -14
+              },
+              "to": {
+                "x": 34034,
+                "y": 32340,
+                "floor": -14
+              }
+            },
+            {
+              "from": {
+                "x": 34058,
+                "y": 32397,
+                "floor": -14
+              },
+              "to": {
+                "x": 34034,
+                "y": 32340,
+                "floor": -14
+              }
+            },
+            {
+              "from": {
+                "x": 34058,
+                "y": 32398,
+                "floor": -14
+              },
+              "to": {
+                "x": 34034,
+                "y": 32340,
+                "floor": -14
+              }
+            },
+            {
+              "from": {
+                "x": 34058,
+                "y": 32399,
+                "floor": -14
+              },
+              "to": {
+                "x": 34034,
+                "y": 32340,
+                "floor": -14
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "creature": "oteryn:creature.arbaziloth",
+              "position": {
+                "x": 34034,
+                "y": 32330,
+                "floor": -14
+              }
+            },
+            {
+              "creature": "oteryn:creature.the_forgemaster",
+              "position": {
+                "x": 34033,
+                "y": 32330,
+                "floor": -14
+              }
+            }
+          ],
+          "room_min": {
+            "x": 34025,
+            "y": 32322,
+            "floor": -14
+          },
+          "room_max": {
+            "x": 34043,
+            "y": 32341,
+            "floor": -14
+          },
+          "phase": "arbaziloth"
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_lever.lua:1-31",
+        "docs/reference/content-prep/nrwicked/sources.md"
+      ]
+    }
+  ]
+}

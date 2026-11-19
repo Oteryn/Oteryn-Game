@@ -1,0 +1,280 @@
+{
+  "enraged_arbaziloth": {
+    "armor": 100,
+    "attacks": [
+      {
+        "chance": 100,
+        "damage_type": "",
+        "interval": 2000,
+        "kind": "melee",
+        "maxDamage": -1027,
+        "minDamage": 650,
+        "purpose": "attacks"
+      },
+      {
+        "chance": 20,
+        "damage_type": "death",
+        "interval": 2000,
+        "kind": "combat",
+        "maxDamage": -975,
+        "minDamage": -520,
+        "purpose": "attacks",
+        "radius": 7
+      },
+      {
+        "chance": 20,
+        "damage_type": "death",
+        "interval": 2000,
+        "kind": "combat",
+        "maxDamage": -1495,
+        "minDamage": -520,
+        "purpose": "attacks",
+        "radius": 3
+      },
+      {
+        "chance": 10,
+        "damage_type": "death",
+        "interval": 2000,
+        "kind": "combat",
+        "length": 5,
+        "maxDamage": -975,
+        "minDamage": -520,
+        "purpose": "attacks",
+        "spread": 3
+      },
+      {
+        "chance": 20,
+        "damage_type": "death",
+        "interval": 2000,
+        "kind": "combat",
+        "maxDamage": -1885,
+        "minDamage": -650,
+        "purpose": "attacks",
+        "radius": 3
+      },
+      {
+        "chance": 20,
+        "damage_type": "energy",
+        "interval": 2000,
+        "kind": "combat",
+        "maxDamage": -1950,
+        "minDamage": -1300,
+        "purpose": "attacks",
+        "radius": 4
+      },
+      {
+        "chance": 20,
+        "damage_type": "energy",
+        "interval": 2000,
+        "kind": "combat",
+        "maxDamage": -1950,
+        "minDamage": -910,
+        "purpose": "attacks",
+        "radius": 1
+      },
+      {
+        "chance": 10,
+        "damage_type": "life_drain",
+        "interval": 2000,
+        "kind": "combat",
+        "length": 6,
+        "maxDamage": -1937,
+        "minDamage": -1690,
+        "purpose": "attacks",
+        "spread": 0
+      },
+      {
+        "chance": 10,
+        "damage_type": "healing",
+        "interval": 1000,
+        "kind": "combat",
+        "maxDamage": 2000,
+        "minDamage": 1100,
+        "purpose": "defenses"
+      }
+    ],
+    "change_target": [
+      4000,
+      10
+    ],
+    "corpse": 50029,
+    "defense": 100,
+    "experience": 500000,
+    "health": 360000,
+    "look_type": 1802,
+    "mitigation": 218,
+    "resistances": [
+      [
+        "death",
+        20
+      ],
+      [
+        "fire",
+        15
+      ],
+      [
+        "ice",
+        20
+      ],
+      [
+        "physical",
+        30
+      ]
+    ],
+    "sha256": "353ce5df5ac1dab1ea8f08c1ccba9740e6bb70421b6c9256c088698ac83c3296",
+    "speed": 160,
+    "static_attack_chance": 90,
+    "targeting": {
+      "damage": 10,
+      "health": 10,
+      "nearest": 80
+    }
+  },
+  "fire": {
+    "appearance": 49362,
+    "appearances_sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+    "blocks_projectile": false,
+    "callback_sha256": "5e3862e179b9db414a3382f62c7602e1d444e4dfdd1cb734f72de4b1854f4fd9",
+    "movable": false,
+    "pickupable": false,
+    "solid": false
+  },
+  "the_forgemaster": {
+    "armor": 30,
+    "attacks": [
+      {
+        "chance": 100,
+        "damage_type": "",
+        "interval": 1500,
+        "kind": "melee",
+        "maxDamage": -539,
+        "minDamage": -100,
+        "purpose": "attacks"
+      },
+      {
+        "chance": 25,
+        "damage_type": "physical",
+        "interval": 2000,
+        "kind": "combat",
+        "maxDamage": -550,
+        "minDamage": -350,
+        "purpose": "attacks",
+        "range": 5
+      },
+      {
+        "chance": 20,
+        "damage_type": "physical",
+        "interval": 2000,
+        "kind": "combat",
+        "maxDamage": -480,
+        "minDamage": -320,
+        "purpose": "attacks",
+        "range": 5
+      },
+      {
+        "chance": 25,
+        "damage_type": "death",
+        "interval": 2000,
+        "kind": "combat",
+        "maxDamage": -580,
+        "minDamage": -420,
+        "purpose": "attacks",
+        "range": 5
+      },
+      {
+        "chance": 20,
+        "damage_type": "physical",
+        "interval": 2000,
+        "kind": "combat",
+        "length": 6,
+        "maxDamage": -970,
+        "minDamage": -830,
+        "purpose": "attacks",
+        "spread": 4
+      },
+      {
+        "chance": 20,
+        "damage_type": "physical",
+        "interval": 4000,
+        "kind": "combat",
+        "maxDamage": -140,
+        "minDamage": -60,
+        "purpose": "attacks",
+        "radius": 5
+      },
+      {
+        "chance": 25,
+        "damage_type": "energy",
+        "interval": 4000,
+        "kind": "combat",
+        "maxDamage": -160,
+        "minDamage": -80,
+        "purpose": "attacks",
+        "radius": 5
+      },
+      {
+        "chance": 10,
+        "damage_type": "healing",
+        "interval": 2000,
+        "kind": "combat",
+        "maxDamage": 280,
+        "minDamage": 200,
+        "purpose": "defenses"
+      },
+      {
+        "chance": 15,
+        "damage_type": "",
+        "duration": 5000,
+        "interval": 2000,
+        "kind": "speed",
+        "purpose": "defenses",
+        "speedChange": 440
+      }
+    ],
+    "change_target": [
+      4000,
+      10
+    ],
+    "corpse": 0,
+    "defense": 40,
+    "experience": 0,
+    "health": 10500,
+    "look_type": 247,
+    "mitigation": 132,
+    "resistances": [
+      [
+        "death",
+        20
+      ],
+      [
+        "earth",
+        20
+      ],
+      [
+        "energy",
+        23
+      ],
+      [
+        "fire",
+        35
+      ],
+      [
+        "ice",
+        35
+      ],
+      [
+        "physical",
+        10
+      ]
+    ],
+    "sha256": "2a66fbafc1b4f63ef76d0dac4074c9636cd0e4d1706096710bc720761f5e61b5",
+    "speed": 160,
+    "static_attack_chance": 70,
+    "targeting": {
+      "damage": 10,
+      "health": 10,
+      "nearest": 70,
+      "random": 10
+    }
+  }
+}

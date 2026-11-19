@@ -204,6 +204,28 @@ def known(value):
 def model_input(root, profiles=None):
     config = authoring(root)
     profiles = read(root, PROFILES) if profiles is None else profiles
+    # These two encounter-only bodies have no Prey eligibility or spawn points.
+    # Qualify their source bodies before keeping the existing model input stable.
+    from nrwicked_profiles import ROLES, inventory_extension
+    phase_keys = {f"oteryn:creature.{name}" for name in ROLES}
+    if any(row["profile"]["target"]["key"] in phase_keys for row in profiles["records"]):
+        inventory_extension(root, profiles["records"])
+        profiles = {**profiles, "records": [row for row in profiles["records"]
+                                          if row["profile"]["target"]["key"] not in phase_keys]}
+    loot_bytes = (root / LOOT).read_bytes()
+    loot = json.loads(loot_bytes)
+    isolated_loot = [row for row in loot["creature_loot"] if row["creature"]["key"] in phase_keys]
+    if isolated_loot:
+        if (len(isolated_loot) != len(phase_keys)
+                or {row["creature"]["key"] for row in isolated_loot} != phase_keys
+                or any(row["loot"] is not None for row in isolated_loot)):
+            raise ValueError("Arbaziloth phase loot affects the Prey model input")
+        # These empty bindings are required by the native loot catalogue;
+        # neither creature participates in the Prey model.
+        from import_spell_families import canonical_bytes
+        loot["creature_loot"] = [row for row in loot["creature_loot"]
+                                 if row["creature"]["key"] not in phase_keys]
+        loot_bytes = canonical_bytes(loot)
     tiers = classify(profiles, config)
     points, bosses = source_points(root)
     by_key = {row["profile"]["target"]["key"]: row for row in profiles["records"]}
@@ -292,7 +314,7 @@ def model_input(root, profiles=None):
               "models": models,
               "authoring_sha256": digest({"experience_thresholds": config["experience_thresholds"], "model": config["model"]}),
               "creature_source_sha256": digest({key: value for key, value in profiles.items() if key != "prey_rules"}),
-              "loot_admission_sha256": hashlib.sha256((root / LOOT).read_bytes()).hexdigest(),
+              "loot_admission_sha256": hashlib.sha256(loot_bytes).hexdigest(),
               "combat_sources": {path: hashlib.sha256((root / path).read_bytes()).hexdigest() for path in (
                   "crates/gameplay/dispatch/examples/prey_time_sim.rs",
                   "crates/gameplay/combat-rules/src/attack/formulas.rs",
