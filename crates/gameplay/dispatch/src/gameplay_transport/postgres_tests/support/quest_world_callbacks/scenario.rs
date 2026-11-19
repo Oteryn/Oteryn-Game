@@ -125,6 +125,8 @@ fn scenario_case(
             y: 32167,
             floor: -8,
         }
+    } else if super::super::qh_authored_cases_fixtures::is_dig(name) {
+        super::super::qh_authored_cases_fixtures::dig_start()
     } else if qd_world {
         super::super::qd_world_fixtures::start(name)?
     } else if engenc_asura {
@@ -370,6 +372,8 @@ fn scenario_case(
         super::super::qm03_world_admission_fixtures::callback(name)?
     } else if draconia_escape {
         super::super::draconia_escape_fixtures::authored_callback()?
+    } else if super::super::qh_authored_cases_fixtures::is_case(name) {
+        super::super::qh_authored_cases_fixtures::callback(name)?
     } else if elvenbane {
         callback("elvenbane-basement-entry")?
     } else if native_signs || diprath_room {
@@ -1241,6 +1245,11 @@ fn scenario_case(
             super::super::l6_mead_fixtures::world(
                 generation.native_gameplay().ok_or("native Mead policies")?,
             )?
+        } else if super::super::qh_authored_cases_fixtures::is_case(name) {
+            super::super::qh_authored_cases_fixtures::world(
+                name,
+                generation.native_gameplay().ok_or("qh native policies")?,
+            )?
         } else {
             world
         };
@@ -1532,6 +1541,9 @@ fn scenario_case(
                 5
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
+            } else if super::super::qh_authored_cases_fixtures::is_city(name) {
+                // One player plus Iriana and Jimmy for Top of the City.
+                3
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
@@ -2806,6 +2818,14 @@ fn scenario_case(
         } else if let Some(route) = super::super::questpc8_retrieval_routes_fixtures::route(name) {
             Box::pin(super::super::questpc8_retrieval_routes_fixtures::exercise(
                 route,
+                &mut owner,
+                &mut admitted,
+                &h,
+            ))
+            .await?;
+        } else if super::super::qh_authored_cases_fixtures::is_case(name) {
+            Box::pin(super::super::qh_authored_cases_fixtures::exercise(
+                name,
                 &mut owner,
                 &mut admitted,
                 &h,
