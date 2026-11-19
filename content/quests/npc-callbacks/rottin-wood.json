@@ -253,7 +253,7 @@
       ],
       "inventory": [
         {
-          "track": "oteryn:item.tibia.i12173",
+          "item": "oteryn:item.tibia.i12173",
           "minimum": 7,
           "maximum": 4294967295
         }
@@ -342,7 +342,7 @@
       "experience": 100,
       "inventory": [
         {
-          "track": "oteryn:item.tibia.i12173",
+          "item": "oteryn:item.tibia.i12173",
           "minimum": 7,
           "maximum": 4294967295
         }
@@ -432,7 +432,7 @@
       "experience": 100,
       "inventory": [
         {
-          "track": "oteryn:item.tibia.i12173",
+          "item": "oteryn:item.tibia.i12173",
           "minimum": 7,
           "maximum": 4294967295
         }
