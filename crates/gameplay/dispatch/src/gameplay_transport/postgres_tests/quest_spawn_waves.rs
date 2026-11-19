@@ -1459,18 +1459,31 @@ async fn stations_scenario(
         // in the cleanup event. The unleased arrival keeps this cleanup active
         // while the previously staged peer enters after the deadline.
         let closed = crate::map::floor::BundleDoors(&map.facts);
-        let expected = runtime.read_actor_position(peer_actor).map_err(debug)?;
-        let step = crate::map::floor::prepare_quest_encounter_ejection(
-            &runtime, owner.movement_cells(), peer_actor, peer.game_session_id,
-            expected, local(LANDING), &closed,
-        ).map_err(debug)?;
-        runtime.commit_quest_relocation(vec![step], || true).map_err(debug)?;
         runtime.remove_test_actor(arriving).map_err(debug)?;
+        let mut steps = Vec::new();
+        for (actor, session, destination) in [
+            (peer_actor, peer.game_session_id, LANDING),
+            (player, admitted.game_session_id, PEER_LANDING),
+        ] {
+            let expected = runtime.read_actor_position(actor).map_err(debug)?;
+            steps.push(crate::map::floor::prepare_quest_encounter_ejection(
+                &runtime,
+                owner.movement_cells(),
+                actor,
+                session,
+                expected,
+                local(destination),
+                &closed,
+            ).map_err(debug)?);
+        }
+        runtime.commit_quest_relocation(steps, || true).map_err(debug)?;
     }
     owner.drain_quest_encounter_deadlines().await;
     assert!(creatures(owner).await?.is_empty());
     assert_eq!(position(owner, peer_actor).await?, local(EXIT));
+    assert_eq!(position(owner, player).await?, local(EXIT));
     assert!(!owner.has_pending_wave_credit(peer.game_session_id));
+    assert!(!owner.has_pending_wave_credit(admitted.game_session_id));
     owner.drain_quest_encounter_deadlines().await;
     let late_peer = owner.root.read_character_quest_state(
         owner.character, peer.item_fence.ok_or("peer item fence")?.character_id,
