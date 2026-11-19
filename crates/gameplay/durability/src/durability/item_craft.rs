@@ -209,7 +209,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
         return enchanting::write(tx, fence, request, native, content).await;
     }
     let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
-    // Root serialization precedes all item locks. Basic cooking accepts main-backpack leaves.
+    // Root serialization precedes all item locks. Only opted-in actions accept nested leaves.
     let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent,e.placement_ordinal::text AS ordinal,NULL::jsonb AS nested_source FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND e.world_id=i.world_id AND b.world_id=i.world_id FOR UPDATE OF i")
         .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     let source = match source {
@@ -232,6 +232,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
         revision_ref: source.try_get("definition_revision_ref")?,
     };
     if nested_source.is_some()
+        && skinning.is_none()
         && oteryn_gameplay_items::reward_bag::event_containers::event_container_rule(
             &definition.production_key,
         )
@@ -252,6 +253,9 @@ async fn write_with_skinning<C: ItemLoopContent>(
         else {
             return Ok(UseDisposition::NothingToUse);
         };
+        if nested_source.is_some() && prepared.rabbit_feet.is_none() {
+            return Ok(UseDisposition::NothingToUse);
+        }
         attempt.rabbit_feet = prepared.rabbit_feet;
         Some(prepared)
     } else {

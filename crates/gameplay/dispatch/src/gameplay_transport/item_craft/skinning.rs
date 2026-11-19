@@ -101,6 +101,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .backpack
             .iter()
             .flat_map(|bag| &bag.entries)
+            .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| {
                 if let Some((key, revision)) = hotkey {
                     entry.item.definition.family == "Item"

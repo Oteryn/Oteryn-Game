@@ -143,8 +143,32 @@ BEGIN
   RAISE EXCEPTION 'unexpected craft skinning tool predicate';
  END IF;
  EXECUTE replace(body,carried_tool,$guard$(
-  (s.before_item->>'definition_production_key'<>'oteryn:item.tibia.i4301' AND $guard$||carried_tool||$guard$)
+  (s.before_item->>'definition_production_key'<>'oteryn:item.tibia.i4301'
+      AND NEW.event_source_location IS NULL AND $guard$||carried_tool||$guard$)
   OR (s.before_item->>'definition_production_key'='oteryn:item.tibia.i4301'
       AND NEW.before_item->>'definition_production_key' IN ('oteryn:item.tibia.i3469','oteryn:item.tibia.i5908','oteryn:item.tibia.i9594','oteryn:item.tibia.i9598'))
  )$guard$);
+END $migration$;
+
+-- The existing craft trigger already checks the exact unchanged nested leaf
+-- and its carried root. Admit that location only for a retained rabbit knife.
+DO $migration$
+DECLARE previous TEXT;
+BEGIN
+ SELECT pg_get_expr(conbin,conrelid) INTO STRICT previous FROM pg_constraint
+ WHERE conrelid='game_item_craft_records'::regclass
+   AND conname='game_item_craft_event_source_location_check';
+ ALTER TABLE game_item_craft_records DROP CONSTRAINT game_item_craft_event_source_location_check;
+ EXECUTE format($constraint$
+  ALTER TABLE game_item_craft_records ADD CONSTRAINT game_item_craft_event_source_location_check
+  CHECK ((%s) OR (
+   recipe='oteryn:skinning.crystal' AND NOT consume_source
+   AND before_item->>'definition_production_key' IN
+       ('oteryn:item.tibia.i3469','oteryn:item.tibia.i5908','oteryn:item.tibia.i9594','oteryn:item.tibia.i9598')
+   AND jsonb_typeof(event_source_location)='object'
+   AND octet_length(event_source_location::text) BETWEEN 2 AND 4096
+   AND event_source_location ?& ARRAY['item_instance_id','parent_item_instance_id',
+       'world_id','placement_ordinal','placed_transaction_id']
+  ))
+ $constraint$,previous);
 END $migration$;
