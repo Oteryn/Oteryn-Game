@@ -3,7 +3,6 @@ use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{local, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{ExactActorRef, GameSessionId};
-use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
 use oteryn_protocol_oteryn::attack::{
