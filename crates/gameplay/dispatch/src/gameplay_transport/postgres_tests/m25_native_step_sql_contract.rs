@@ -9,7 +9,7 @@ fn m25_native_step_exit_sql_contract_postgres() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("m25-native-step-sql-contract", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("m25-native-step-sql-contract", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "m25_native_step_sql", false, false)
                 .await?;

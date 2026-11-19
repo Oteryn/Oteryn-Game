@@ -106,7 +106,7 @@ fn scenario() -> TestResult {
                 *state = state.after_food(180, now / 1_000).ok_or("food")?;
             }
             let command_id = admitted.continuity.next_command_id;
-            let (command_status, bytes) = super::cyclopedia::support::exchange(
+            let (command_status, bytes) = super::cyclopedia_fixtures::support::exchange(
                 &owner,
                 &mut admitted,
                 command_id,

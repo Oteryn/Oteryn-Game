@@ -61,8 +61,8 @@ fn worldchg_fury_and_nightmare_real_map_returns_reach_the_selected_city() -> Tes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("worldchg-real-returns", move || {
-        super::daily_world_gates::scenario(
+    super::kill_reward_e2e_fixtures::scenario_thread::run("worldchg-real-returns", move || {
+        super::daily_world_gates_fixtures::scenario(
             fury.0,
             fury.1,
             "fury_gates/thais",
@@ -74,7 +74,7 @@ fn worldchg_fury_and_nightmare_real_map_returns_reach_the_selected_city() -> Tes
             },
             false,
         )?;
-        super::daily_world_gates::scenario(
+        super::daily_world_gates_fixtures::scenario(
             nightmare.0,
             nightmare.1,
             "nightmare_isle/darashia-north",

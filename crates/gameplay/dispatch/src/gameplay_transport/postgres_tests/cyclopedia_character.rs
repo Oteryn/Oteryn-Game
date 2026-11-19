@@ -25,7 +25,7 @@ fn cyclopedia_badges_postgres_real_dispatch() -> TestResult {
 }
 
 fn badges_scenario() -> TestResult {
-    use super::cyclopedia::support::exchange;
+    use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "cyclopedia_badges", true, false)
@@ -196,7 +196,7 @@ fn history(reply: &[u8], status: bool) -> TestResult<Vec<(u8, String)>> {
 }
 
 fn tabs_scenario() -> TestResult {
-    use super::cyclopedia::support::exchange;
+    use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "cyclopedia_tabs", true, false).await?;

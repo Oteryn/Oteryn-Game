@@ -13,7 +13,7 @@ fn m26_bakragore_postgres_fenced_catalogue_preserves_source_cooldown() -> TestRe
         return Ok(());
     }
     let start = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("m26-bakragore-policy", scenario);
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("m26-bakragore-policy", scenario);
     eprintln!(
         "M26_BAKRAGORE_POLICY POSTGRES_CASE_COMPLETED duration={:?} success={}",
         start.elapsed(),
@@ -99,7 +99,7 @@ fn scenario() -> TestResult {
             encode_boss_activity_reply, encode_boss_key,
         };
         assert_eq!(
-            super::boss_encounter::exchange_kind(
+            super::boss_encounter_fixtures::exchange_kind(
                 &owner,
                 &mut admitted,
                 1,

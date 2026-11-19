@@ -11,7 +11,7 @@ fn primal_menace_postgres_native_cadence_spawns_and_retires_actual_beasts() -> T
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("primal-native-cadence", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("primal-native-cadence", || {
         run(async |admin| {
             reset();
             let h =

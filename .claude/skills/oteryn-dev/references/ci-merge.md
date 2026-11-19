@@ -200,3 +200,5 @@ A red or cancelled run costs a full gate cycle (about 12 minutes) and, with
   PR that conflicts gets no CI.
 - Every red or conflicted PR you own gets either a pushed fix or one comment
   naming the failing check and what blocks it.
+
+New shared dispatch PostgreSQL fixtures go into `postgres_tests/support/`, never into a test entry.

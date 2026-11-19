@@ -86,7 +86,8 @@ the coordinator reviews its diff before committing. This is ordinary code-writin
 Codex use under the 2026-11-11 effort decision, not a further review.
 
 Owner decision 2026-11-18 (lens runs): one review of one exact head may run as
-the parallel read-only lens tasks of `.claude/skills/oteryn-review/references/batch-review.md`
+the parallel read-only lens tasks of `.claude/skills/oteryn-review/references/batch-review.md`,
+including its holistic whole-diff runs for a package or chunked diff
 (same model and effort, one dispatch by the single review-dispatch owner). Those
 tasks together are the one covered invocation for that head; they never add a
 review to the per-PR count.

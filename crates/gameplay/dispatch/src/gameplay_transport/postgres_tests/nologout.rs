@@ -1,5 +1,5 @@
 //! ZONES-NOLOGOUT-1: retained bundle flags through the composed logout owner and real router.
-use super::autowalk::{at, place, read, send};
+use super::autowalk_fixtures::{at, place, read, send};
 use super::fixture::{Harness, debug, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session, track};
 use crate::content::channel_content_pin::ChannelContentPin;
