@@ -929,12 +929,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .find(|splash| splash.placement == placement)
             .map(|splash| splash.splash_item_id)
-            .or(base_target_item)?;
+            .or(base_target_item);
+        let fill_subtype = target_item.and_then(fluid_source_subtype);
         let before = inventory.fluids.get(&source).copied().unwrap_or(0);
         let (after, splash) = if before == 0 {
-            (fluid_source_subtype(target_item)?, None)
+            (fill_subtype?, None)
         } else {
-            if fluid_source_subtype(target_item).is_some() {
+            if fill_subtype.is_some() {
                 return Some(UseOutcome {
                     disposition: UseDisposition::NothingToUse,
                     ..UseOutcome::rejected()

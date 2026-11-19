@@ -44,6 +44,52 @@ pub(super) enum Step {
     Held,
 }
 
+/// Hand the Queen's final confirmation to the storage-and-teleport owner.
+pub(super) fn queen_kiss_confirmation(
+    pending: Option<&Pending>,
+    context: &Context,
+    actor: ExactActorRef,
+    intent: &NpcTalkIntent,
+) -> bool {
+    matches!(pending, Some(Pending::Topic(conversation))
+        if &conversation.context == context
+            && conversation.actor == actor
+            && conversation.npc == intent.npc_actor
+            && classic_talk::queen_kiss_confirmation(&intent.text, conversation.topic))
+}
+
+pub(super) fn refuse_queen_kiss_in_combat(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> Option<Step> {
+    let session = command.game_session_id;
+    let context = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        session,
+        intent,
+    )?;
+    if context.2 != classic_talk::QUEEN {
+        return None;
+    }
+    let states = admission.states.spell_states.try_lock().ok()?;
+    if !super::super::pvp_live::pz_blocked(&states, actor, session, admission.owner_now()) {
+        return None;
+    }
+    let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
+    let state = sessions.get_mut(&session)?;
+    if !queen_kiss_confirmation(state.classic.as_ref(), &context, actor, intent) {
+        return None;
+    }
+    let reply = classic_dialogue::reply(&context.2, "line-147")?.to_vec();
+    state.classic = None;
+    Some(Step::Reply(reply))
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -100,7 +146,15 @@ pub(super) fn prepare(
         &tracks,
     )?;
     if choice.deferred {
-        return Some(Step::Refused);
+        return Some(if context.2 == classic_talk::QUEEN {
+            Step::Reply(vec![
+                oteryn_protocol_oteryn::refusal_detail::RefusalDetail::NotPossible
+                    .reference_message()
+                    .to_owned(),
+            ])
+        } else {
+            Step::Refused
+        });
     }
     let reply = choice
         .branches

@@ -245,14 +245,26 @@ pub(super) fn prepare(
     if previous.is_none() {
         state.catalogue = None;
     }
-    let greeting = intent
-        .text
-        .split(|c: char| !c.is_ascii_alphabetic())
-        .any(|word| {
-            ["hi", "hello", "hail"]
-                .iter()
-                .any(|g| word.eq_ignore_ascii_case(g))
-        })
+    let queen_kiss = context.2 == oteryn_gameplay_quests::quest::classic_talk::QUEEN;
+    if queen_kiss
+        && !super::classic_quests::queen_kiss_confirmation(
+            state.classic.as_ref(),
+            &context,
+            actor,
+            intent,
+        )
+    {
+        return None;
+    }
+    let greeting = !queen_kiss
+        && intent
+            .text
+            .split(|c: char| !c.is_ascii_alphabetic())
+            .any(|word| {
+                ["hi", "hello", "hail"]
+                    .iter()
+                    .any(|g| word.eq_ignore_ascii_case(g))
+            })
         && !source
             .matches_player_name_message(
                 &context.2,
@@ -273,7 +285,9 @@ pub(super) fn prepare(
             NpcRuleTrigger::Say
         },
         message: intent.text.clone(),
-        topic: if greeting {
+        topic: if queen_kiss {
+            8
+        } else if greeting {
             0
         } else {
             previous.as_ref().map_or(0, |p| p.topic)
@@ -350,7 +364,9 @@ pub(super) fn prepare(
     if teleport.as_ref().is_some_and(|p| {
         !matches!(
             p.source.quest.as_str(),
-            "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
+            "oteryn:quest.in_service_of_yalahar_quest"
+                | "oteryn:quest.the_paradox_tower_quest"
+                | "oteryn:quest.the_queen_of_the_banshees_quest"
         )
     }) {
         return Some(Step::Refused);
@@ -391,6 +407,9 @@ pub(super) fn prepare(
         }
         Err(_) => return Some(Step::Refused),
     };
+    if queen_kiss {
+        state.classic = None;
+    }
     let next = Conversation {
         context: context.clone(),
         actor,

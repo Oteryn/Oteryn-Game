@@ -1,7 +1,7 @@
 //! Dedicated Crystal 201189f NPC branch selection for batch-2 classics.
 //! Sources: data-global/npc/{mr_morris,woblin,jerom,rottin_wood,the_queen_of_the_banshees}.lua;
 //! every reply key is its npcHandler:say line in the pinned source.
-//! Shared item exchanges and the final Queen teleport are explicitly deferred by ANSWER6589521017.
+//! Shared item exchanges and the Queen's kiss hand off to their respective owners.
 use std::collections::BTreeMap;
 
 pub const MORRIS: &str = "oteryn:npc.mr_morris";
@@ -392,6 +392,23 @@ fn jerom(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Op
     })
 }
 
+#[must_use]
+pub fn queen_kiss_confirmation(text: &str, topic: Topic) -> bool {
+    topic == Topic::Queen(8)
+        && contains(text, "yes")
+        && !static_keyword_intercepts(QUEEN, text)
+        && !super::quests_2_focus::intercepts(text)
+        && ![
+            "seventh seal",
+            "spectral dress",
+            "addon",
+            "orchid",
+            "holy orchid",
+        ]
+        .iter()
+        .any(|keyword| contains(text, keyword))
+}
+
 fn queen(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Option<Choice> {
     // the_queen_of_the_banshees.lua:62-72,89-136. Six independent confirmations;
     // "seventh seal" is an offer, never evidence that the six flags are set.
@@ -408,7 +425,7 @@ fn queen(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Op
     let Some(Topic::Queen(number)) = topic else {
         return None;
     };
-    if contains(text, "yes") && number == 8 {
+    if queen_kiss_confirmation(text, Topic::Queen(number)) {
         return Some(deferred(topic));
     }
     if contains(text, "yes") && (1..=6).contains(&number) {

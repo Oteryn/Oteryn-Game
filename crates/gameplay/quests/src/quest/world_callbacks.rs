@@ -139,6 +139,7 @@ pub struct Passage {
     pub position: Position,
     pub appearance: u16,
     /// Literal source lookup: skip an absent object, never an ambiguous one.
+    /// For a reversible replacement, look for the object in its expected direction.
     #[serde(default, skip_serializing_if = "is_false")]
     pub if_present: bool,
     #[serde(default)]
@@ -1082,7 +1083,17 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback
                 .passages
                 .iter()
-                .any(|p| p.if_present && callback.effects.passages_reset_after_ms.is_none())
+                .any(|p| {
+                    p.if_present
+                        && callback.effects.passages_reset_after_ms.is_none()
+                        && !(callback.reversible
+                            && callback.lever.is_some()
+                            && !callback.has_state()
+                            && callback.effects.is_empty()
+                            && p.replacement.is_some_and(|id| id != 0 && id != p.appearance)
+                            && p.create_on_close.is_none()
+                            && p.replacement_passable.is_none())
+                })
             || unique_storage.len() != callback.storage.len()
             || callback.storage.iter().filter(|s| s.add.is_some()).count() > 1
             || callback.storage.iter().any(|s| {
@@ -2305,6 +2316,35 @@ mod tests {
                 "invalid effect case {case}"
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn logic_lever_admits_optional_reversible_campfire_replacement() -> Result<(), String> {
+        let mut fixture = serde_json::json!({
+            "schema": 1,
+            "callbacks": [{
+                "key": "oteryn:quest-callback/banshees-logic-lever-30018",
+                "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+                "trigger": "use",
+                "selector": { "unique": 30018 },
+                "lever": [2772, 2773],
+                "reversible": true,
+                "storage": [],
+                "offerings": [],
+                "passages": [{
+                    "position": { "x": 32309, "y": 31975, "floor": -13 },
+                    "appearance": 1998,
+                    "replacement": 1996,
+                    "if_present": true
+                }],
+                "return_on_failure": false,
+                "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3"]
+            }]
+        });
+        parse(&fixture.to_string())?;
+        fixture["callbacks"][0]["reversible"] = false.into();
+        assert!(parse(&fixture.to_string()).is_err());
         Ok(())
     }
 

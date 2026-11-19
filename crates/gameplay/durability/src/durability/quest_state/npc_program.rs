@@ -202,7 +202,10 @@ pub fn preview_with_appearance(
 
 /// Classify against a real fenced snapshot. Unlike an optimistic route preview,
 /// this never substitutes synthetic counts when the actual branch is absent.
-#[allow(clippy::too_many_arguments, reason = "the actual snapshot shares the existing source preview facts")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the actual snapshot shares the existing source preview facts"
+)]
 pub fn preview_with_inventory(
     request: &NpcProgramRequest,
     tracks: &BTreeMap<String, i64>,
@@ -212,12 +215,24 @@ pub fn preview_with_inventory(
     player_name: Option<&str>,
     appearance: (&BTreeMap<u16, u8>, u8),
     inventory: &NpcInventorySnapshot,
-) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
+{
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    evaluate_source(&source, request, tracks, catalogue, now,
-        NpcEvaluationFacts { eligibility, player_name, appearance }, Some(inventory))
+    evaluate_source(
+        &source,
+        request,
+        tracks,
+        catalogue,
+        now,
+        NpcEvaluationFacts {
+            eligibility,
+            player_name,
+            appearance,
+        },
+        Some(inventory),
+    )
 }
 
 #[derive(Clone, Copy)]
@@ -524,6 +539,20 @@ impl DurabilityRoot {
                 }
             } else { None };
             if let (Some(admission), Some(plan)) = (teleport, &teleport_plan) {
+                if request.npc == oteryn_gameplay_quests::quest::classic_talk::QUEEN {
+                    // The PvP owner takes this lock before writing a deadline, including
+                    // for Characters without a row. Keep it through the arrival commit.
+                    if !super::super::party_pz_fact::try_lock_in_transaction(&mut tx, character.as_bytes()).await? {
+                        return Ok(Ok(refused(QuestRefusal::StageMismatch)));
+                    }
+                    let blocked = super::super::pvp_state::load_pvp_state(&mut tx, character)
+                        .await?.is_some_and(|state| {
+                            state.pz_block_remaining_ms.is_some() || state.kill_block_remaining_ms.is_some()
+                        });
+                    if blocked {
+                        return Ok(Ok(refused(QuestRefusal::StageMismatch)));
+                    }
+                }
                 if !admission.matches(fence, plan) { return Ok(Err(CharacterProgressionError::InvalidInput)); }
                 let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid)").bind(id).fetch_one(&mut **tx).await?;
                 if pending { return Ok(Ok(refused(QuestRefusal::StageMismatch))); }
