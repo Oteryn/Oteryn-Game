@@ -262,6 +262,7 @@ assert [row["identity"]["key"] for row in expected_items[len(legacy_items) :]] =
         40601,
         40603,
         48227,
+        49362,
     )
 ], "only the exact source-qualified reference extensions are admitted"
 # Replaying an extension with a changed semantic fact must refuse, not normalize it.
