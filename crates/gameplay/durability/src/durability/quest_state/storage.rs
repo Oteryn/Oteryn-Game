@@ -617,6 +617,7 @@ pub(super) fn decode_receipt(
         _ => return Err(DurabilityError::InvalidStoredState),
     };
     Ok(CommittedQuestTransition {
+        source_death_feedback: None,
         character_id: CharacterId::from_bytes(uuid_text(row.try_get("character_id")?)?)
             .map_err(invalid)?,
         cause: QuestCause::stored(

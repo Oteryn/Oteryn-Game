@@ -4,6 +4,7 @@ use crate::durability::{
     character_progression::{CharacterProgressionError, ExperienceRewardOccurrence},
     quest_state::{QuestCause, QuestTransitionOutcome},
 };
+use oteryn_gameplay_quests::quest::source_deaths::DeathDelivery;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -94,14 +95,21 @@ pub(super) async fn settle(
                 QuestTransitionOutcome::Committed(receipt)
                 | QuestTransitionOutcome::AlreadyCommitted(receipt),
             ) => {
-                if fresh && receipt.changes.iter().any(|change| change.before == -1 && change.after == 1)
-                    && oteryn_gameplay_quests::quest::source_deaths::rule_for(catalogue, &recipient.death.transition)
-                        .is_some_and(|rule| rule.delivery == Some(oteryn_gameplay_quests::quest::source_deaths::DeathDelivery::PoltergeistAndBeyonder))
-                {
-                    owner.states.chat.push_quest_feedback(
-                        recipient.session,
-                        "Congratulations you received the Poltergeist Outfit.",
-                    );
+                if fresh && let Some(feedback) = receipt.source_death_feedback {
+                    let text = match feedback {
+                        // Crystal creaturescripts_dream_courts_death.lua:74-79.
+                        DeathDelivery::DreamWarrior => {
+                            "Congratulations! You have won a Dream Warrior Outfit."
+                        }
+                        // Crystal creaturescripts_pale_worm_death.lua:13-17.
+                        DeathDelivery::PoltergeistAndBeyonder => {
+                            "Congratulations you received the Poltergeist Outfit."
+                        }
+                    };
+                    owner
+                        .states
+                        .chat
+                        .push_quest_feedback(recipient.session, text);
                 }
                 if receipt.completes {
                     let mut runtime = owner.runtime.lock().await;

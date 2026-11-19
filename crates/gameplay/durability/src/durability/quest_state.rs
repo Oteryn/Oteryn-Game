@@ -240,6 +240,8 @@ pub struct CommittedQuestTransition {
     pub definition_hash: [u8; 32],
     pub completes: bool,
     pub changes: Vec<QuestTrackChange>,
+    /// Feedback earned by this commit. Historical receipt reads leave it empty.
+    pub source_death_feedback: Option<oteryn_gameplay_quests::quest::source_deaths::DeathDelivery>,
     /// The quest XP obligation the transition wrote and that is still pending; `None` without
     /// `experience` or, on a replay, once the award consumed it.
     pub experience: Option<QuestXpObligation>,

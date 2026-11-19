@@ -861,6 +861,7 @@ mod knowledge_gate_tests {
         let id = [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
         let mut copy = QuestStateCopy::default();
         let receipt = CommittedQuestTransition {
+            source_death_feedback: None,
             character_id: CharacterId::from_bytes(id).map_err(|e| format!("{e:?}"))?,
             cause: QuestCause::Command(CommandRef::new(
                 GameSessionId::decode(&id).map_err(|e| format!("{e:?}"))?,

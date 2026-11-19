@@ -68,6 +68,7 @@ mod tests {
         let character_id =
             CharacterId::from_bytes(*session.as_bytes()).map_err(|e| format!("{e:?}"))?;
         let receipt = CommittedQuestTransition {
+            source_death_feedback: None,
             character_id,
             cause: QuestCause::Use(CommandRef::new(
                 session,

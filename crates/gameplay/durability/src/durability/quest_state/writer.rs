@@ -1891,8 +1891,8 @@ impl DurabilityRoot {
                     if native.is_some() && !keep_source_progress {
                         changes.retain(|change| change.before != change.after);
                     }
-                    if let Some(rule) = source_death.as_ref() {
-                        super::source_deaths::apply_delivery(&mut tx, fence, &request, rule, &changes).await?;
+                    let source_death_feedback = if let Some(rule) = source_death.as_ref() {
+                        let feedback = super::source_deaths::apply_delivery(&mut tx, fence, &request, rule, &changes).await?;
                         if let Some(cooldown) = &rule.cooldown {
                             use super::{native_kills::NativeDeathSource, native_observation::NativeQuestObservation};
                             let Some(NativeQuestObservation::Death(death)) = native.as_ref() else {
@@ -1908,7 +1908,10 @@ impl DurabilityRoot {
                                 &mut tx, fence, &cooldown.boss, cooldown.seconds, request.cause.key().0, observed_ms,
                             ).await?;
                         }
-                    }
+                        feedback
+                    } else {
+                        None
+                    };
                     if !super::rotten_blood_access::validate_access_changes(
                         &request.transition_key,&changes,state.try_get("level")?,
                     )? {
@@ -2411,6 +2414,7 @@ impl DurabilityRoot {
                         definition_hash: hash,
                         completes,
                         changes,
+                        source_death_feedback,
                         experience,
                     };
                     commit_semantic_transaction(tx, deadline).await?;
