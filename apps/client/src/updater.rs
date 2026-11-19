@@ -2,10 +2,10 @@
 mod install;
 mod launcher;
 mod login;
+pub use install::verify_archive;
 #[cfg(windows)]
 pub use login::login_update_requested;
 pub(crate) use login::start_login_update;
-pub use install::verify_archive;
 use oteryn_platform_client::native_login::ReleaseIdentity;
 use oteryn_platform_client::updates::{UpdateClient, UpdateConfig, UpdateError};
 use std::path::Path;
@@ -181,7 +181,9 @@ pub fn requested(
     } else {
         #[cfg(bevy_shell)]
         if args.iter().any(|a| a == "--updates") {
-            return Some(crate::bevy_shell::maintenance::run(directory, args, channel));
+            return Some(crate::bevy_shell::maintenance::run(
+                directory, args, channel,
+            ));
         }
         return None;
     };

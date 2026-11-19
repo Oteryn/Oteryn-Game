@@ -60,7 +60,10 @@ pub fn run(directory: &Path, args: &[OsString], channel: &str) -> Outcome {
             directory: directory.to_path_buf(),
             channel: channel.to_owned(),
             stage: Stage::Working,
-            pending: Some((Action::Check, start(directory.to_path_buf(), channel, Action::Check))),
+            pending: Some((
+                Action::Check,
+                start(directory.to_path_buf(), channel, Action::Check),
+            )),
             report: format!("Checking the signed {channel} release…"),
             outcome: outcome.clone(),
             start,
