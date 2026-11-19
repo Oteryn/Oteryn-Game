@@ -202,10 +202,28 @@ channel. Follow [Platform gate contract] §7, planned rotation, in order.
 
 ### 6.3 Client updates
 
-Extend the strict Gateway error decoder to accept the exact §5
-`NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED` 409 body and carry its typed `update`
-through login and recovery. Preserve the existing body rules for other errors,
-including the legacy `NATIVE_LOGIN_OFFER_UNSUPPORTED` update screen.
+For login and recovery, extend the strict Gateway error decoder to accept
+the exact §5 `NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED` 409 body and carry its
+typed `update`. Also accept HTTP 503 `NATIVE_LOGIN_MAINTENANCE` with
+`Retry-After`. Platform §5 specifies the “exact §11.1 body, with
+`Retry-After`” and “a fresh sign-in after `Retry-After`”.
+[Platform gate contract] §5. [Platform login contract] §11.1.
+
+The 503 body has exactly three members. Use the request's protocol version
+(3 in this example) and its canonical attempt reference when echoed, or
+JSON `null` as shown here.
+
+```json
+{
+  "protocol_version": 3,
+  "error": { "code": "NATIVE_LOGIN_MAINTENANCE", "public_class": "TEMPORARILY_UNAVAILABLE" },
+  "attempt_ref": null
+}
+```
+
+On this 503, end the login or recovery attempt and honor the response's
+`Retry-After` header before any fresh sign-in. Then use a fresh ticket
+and attempt. Preserve the legacy `NATIVE_LOGIN_OFFER_UNSUPPORTED` screen.
 
 Hand off the update channel, required minimum and validated manual URL to the
 installed `oteryn-launcher.exe`. Pass no credentials or grants. The client
@@ -219,16 +237,26 @@ release is below the floor, show `manual_download_url` and stop.
 [Platform gate contract] §§5–6. [Platform gate design] §6.
 
 Player packaging validates the channel Root in the shipped launcher with the
-updater's verifier. Qualify from the previously installed launcher before
-enforcing a floor on builds that send `offer.release`.
+updater's verifier. Today `apps/client/src/updater/install.rs:159` checks for
+`oteryn-client.exe`, verifies the staged release and points `current.txt`
+at it. It leaves the installed launcher in place.
+`apps/client/src/updater.rs:110` handles explicit maintenance commands with
+no forced-update handoff.
+
+Enable `offer.release` for an installation only after installing a
+handoff-capable launcher or verifying that the installed launcher supports
+the handoff. If capability is absent or unverified, omit `offer.release`
+and show the configured manual download URL. Qualify this check from the
+previously installed launcher before enforcing a floor.
 
 ## 7. Compromise
 
 ### 7.1 Minimum client build (dependency on Platform)
 
 The client sends its compiled `(update_channel, release_id, release_sequence)`
-in `offer.release` after the Gateway and issuer support it. The issuer
-compares integer `release_sequence` values within the same update channel.
+in `offer.release` after the Gateway and issuer support it and the installation
+meets the launcher prerequisite in §6.3. The issuer compares integer
+`release_sequence` values within the same update channel.
 `client_build` is diagnostic. [Platform gate contract] §§2–3.
 
 Platform combines enforcing and maintenance records at global, World and
@@ -348,6 +376,15 @@ Preproduction keeps the D172 development root; nothing here changes it.
    409 with `update` for beta. Confirm client exit, mutex release, beta installation
    from the pinned Root and a fresh sign-in. With a verified current release below
    the floor, show the download page without installing or retrying sign-in.
+9. Update the client in place while retaining a launcher without handoff
+   support. Verify the client omits `offer.release` and shows the manual
+   download URL. Install or verify a capable launcher and confirm the
+   client can send the member.
+10. For Gateway login (protocols 2 and 3) and recovery (protocol 3), accept
+    the exact three-member 503 body with `Retry-After`. Reject a 503 body
+    with an added `update` member. Verify no updater starts and no fresh
+    sign-in begins before the delay expires. After it expires, verify the
+    next sign-in uses a fresh ticket and attempt.
 
 ### 9.2 Node and route
 
