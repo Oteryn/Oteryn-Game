@@ -143,16 +143,30 @@ pub(super) async fn admit_peer(
     h: &Harness,
     at: Position,
 ) -> TestResult<crate::foundation::ExactActorRef> {
+    admit_peer_with_index(owner, h, at, 0).await
+}
+
+pub(super) async fn admit_peer_with_index(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    at: Position,
+    index: u8,
+) -> TestResult<crate::foundation::ExactActorRef> {
     use crate::foundation::{CharacterId, CharacterLease};
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
     let evidence = super::house_transfer::RecoverySource::start(h).await?;
     super::maintain_ready(&h.root).await?;
     let character =
-        super::desert_party_rite::create_peer(h, owner.character, &evidence.evidence, 0).await?;
-    let session =
-        super::activity_deadline_paging::admit_created_member(h, &evidence.evidence, 0, character)
+        super::desert_party_rite::create_peer(h, owner.character, &evidence.evidence, index)
             .await?;
+    let session = super::activity_deadline_paging::admit_created_member(
+        h,
+        &evidence.evidence,
+        index,
+        character,
+    )
+    .await?;
     let fence = owner
         .current_quest_fence(session)
         .await

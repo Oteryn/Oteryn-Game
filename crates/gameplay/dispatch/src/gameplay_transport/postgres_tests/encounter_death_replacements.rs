@@ -35,6 +35,7 @@ const DRAGON_ESSENCE: &str = "oteryn:creature.dragon_essence";
 const ESSENCE_AREA_MIN: Position = at(33603, 31009);
 const ESSENCE_AREA_MAX: Position = at(33631, 31037);
 const DRAGON_SPAWN: Position = at(33617, 31023);
+const OUTSIDE_REWARD_AREA: Position = at(33632, 31023);
 const ESSENCE_ANNOUNCEMENT: &str = "BEWARE! THE FIRST DRAGON APROACHES!";
 const ESSENCE_WAVE: [Position; 6] = [
     at(33624, 31028),
@@ -531,7 +532,12 @@ pub(super) fn world(
             .into_iter()
             .chain([ASTRAL_PEER, ASTRAL_PEER_AFTER_STEP])
             .collect(),
-        VICTORY => vec![at(33617, 31023), at(33622, 31023), REWARD_ROOM],
+        VICTORY => vec![
+            at(33617, 31023),
+            at(33622, 31023),
+            OUTSIDE_REWARD_AREA,
+            REWARD_ROOM,
+        ],
         _ => Vec::new(),
     };
     if name == FALLEN {
@@ -1374,16 +1380,28 @@ pub(super) async fn exercise(
         if name == VICTORY {
             let peer =
                 super::ferumbras_crystal_reset::admit_peer(owner, h, at(33622, 31023)).await?;
-            let peer_session = {
+            let outsider = super::ferumbras_crystal_reset::admit_peer_with_index(
+                owner,
+                h,
+                OUTSIDE_REWARD_AREA,
+                1,
+            )
+            .await?;
+            let [peer_session, outsider_session] = {
                 let runtime = owner.runtime.lock().await;
-                runtime
-                    .positioned_melee_census()
-                    .map_err(debug)?
-                    .into_iter()
-                    .find_map(|(actor, _, session)| (actor == peer).then_some(session).flatten())
-                    .ok_or("spectator session")?
+                let census = runtime.positioned_melee_census().map_err(debug)?;
+                let session_of = |expected| {
+                    census
+                        .iter()
+                        .find_map(|(actor, _, session)| {
+                            (*actor == expected).then_some(*session).flatten()
+                        })
+                        .ok_or("spectator session")
+                };
+                [session_of(peer)?, session_of(outsider)?]
             };
             owner.refresh_quest_session(peer_session, true).await;
+            owner.refresh_quest_session(outsider_session, true).await;
             let player = admitted.runtime_actor.ok_or("player")?;
             let [dragon] = live(owner, DRAGON)
                 .await?
@@ -1396,17 +1414,25 @@ pub(super) async fn exercise(
                 DrainOutcome::Drained
             );
             let runtime = owner.runtime.lock().await;
-            for actor in [player, peer] {
+            for (actor, destination) in [
+                (player, REWARD_ROOM),
+                (peer, REWARD_ROOM),
+                (outsider, OUTSIDE_REWARD_AREA),
+            ] {
                 assert_eq!(
                     runtime
                         .read_actor_position(actor)
                         .map_err(debug)?
                         .position(),
-                    super::quest_world_callbacks::local(REWARD_ROOM)
+                    super::quest_world_callbacks::local(destination)
                 );
             }
             drop(runtime);
-            for session in [admitted.game_session_id, peer_session] {
+            for (session, credit) in [
+                (admitted.game_session_id, Some(1)),
+                (peer_session, Some(1)),
+                (outsider_session, None),
+            ] {
                 let fence = owner
                     .current_quest_fence(session)
                     .await
@@ -1415,8 +1441,8 @@ pub(super) async fn exercise(
                 let stored = sqlx::query_scalar::<_, i64>(
                     "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2"
                 ).bind(fence.character_id.as_bytes().as_slice()).bind(FEATHERS)
-                    .fetch_one(&h.pool).await?;
-                assert_eq!(stored, 1);
+                    .fetch_optional(&h.pool).await?;
+                assert_eq!(stored, credit);
             }
             let receipts = sqlx::query_scalar::<_, i64>(
                 "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
