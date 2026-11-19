@@ -22,7 +22,7 @@ fn scenario(name: &'static str, _creature: &'static str) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
         run(async |admin| {
             let counter = oteryn_gameplay_quests::quest::native_kills::counter(
                 "oteryn:quest-transition/native-kills/fugue",
@@ -63,7 +63,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, activated) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, activated) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
@@ -185,7 +185,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     deps.initialize(&owner).await;
     let session = admitted.game_session_id;
     if !seeds.is_empty() {
-        super::qengine_outfit_stories::seed_quest_prerequisites(h, &owner, &admitted, &seeds, 91)
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(h, &owner, &admitted, &seeds, 91)
             .await?;
     }
     // A client-style command cannot substitute for the captured native death.

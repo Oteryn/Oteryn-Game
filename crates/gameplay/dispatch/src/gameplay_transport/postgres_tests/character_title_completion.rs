@@ -1,6 +1,6 @@
 //! Q2=B: a title requires every canonical member to reach its native final threshold.
-use super::character_title_sources::{seed_completed, source_limits};
-use super::cyclopedia::support::exchange;
+use super::character_title_sources_fixtures::{seed_completed, source_limits};
+use super::cyclopedia_fixtures::support::exchange;
 use super::fixture::{Harness, id, run};
 use super::{Dependencies, TestResult, debug, prepare_current_session, reset};
 use crate::domain::bosstiary::{BosstiaryBoss, kill_thresholds, progress};

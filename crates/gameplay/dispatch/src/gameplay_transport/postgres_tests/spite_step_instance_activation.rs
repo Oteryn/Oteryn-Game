@@ -20,7 +20,7 @@ fn spite_step_instance_survives_channel_activation_advance() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("spite-step-instance-activation", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("spite-step-instance-activation", || {
         run(async |admin| {
             use oteryn_gameplay_quests::quest::soul_war::source_items as rule;
             reset();
@@ -66,8 +66,8 @@ fn spite_step_instance_survives_channel_activation_advance() -> TestResult {
                 false,
             )
             .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -77,7 +77,7 @@ fn spite_step_instance_survives_channel_activation_advance() -> TestResult {
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, source)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -132,9 +132,9 @@ fn spite_step_instance_survives_channel_activation_advance() -> TestResult {
                 .activity_runtimes
                 .register_template(&template)
                 .map_err(|_| "source template")?;
-            let destination = super::activity_runtime::allocate_ready_instance(&h, 233).await?;
+            let destination = super::activity_runtime_fixtures::allocate_ready_instance(&h, 233).await?;
             assert!(matches!(destination, RuntimeScopeRefV1::Instance { .. }));
-            let (_, reply, barrier) = super::boss_activity::exchange_capture(
+            let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 template.boss_key(),
