@@ -6,9 +6,10 @@ use super::TestResult;
 
 #[test]
 fn qm48_mammoth_live_drunk_refusal_expiry_cleanse_commit_replay() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     let result = super::kill_reward_e2e_fixtures::scenario_thread::run("qm48-mammoth", || {
         super::quest_world_callbacks_fixtures::scenario(NAME, AT, false)
