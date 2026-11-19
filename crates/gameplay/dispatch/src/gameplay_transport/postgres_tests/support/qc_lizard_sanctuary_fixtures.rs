@@ -12,7 +12,7 @@ use oteryn_protocol_oteryn::world_object::{
     decode_use_result, encode_item_use_intent, encode_use_intent,
 };
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
-use std::num::{NonZeroU32, NonZeroU64};
+use std::num::NonZeroU64;
 
 const EGG: Position = Position { x: 32144, y: 31912, floor: -8 };
 pub(super) const START: Position = Position { x: 32143, ..EGG };
@@ -58,6 +58,12 @@ pub(super) async fn exercise(
     callback: &Callback,
     altar: Position,
 ) -> TestResult {
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[4, 6, 11, 15, 18],
+        )
+        .ok_or("capabilities")?;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let fence = owner.current_quest_fence(admitted.game_session_id).await
         .map_err(|()| "fence")?.ok_or("fence")?;
@@ -105,8 +111,14 @@ pub(super) async fn exercise(
     }).map_err(debug)?;
     owner.clock_origin -= std::time::Duration::from_secs(2);
     let command = admitted.continuity.next_command_id;
+    let egg_definition = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i21469", "definition-r1"))
+        .ok_or("sacred snake egg definition")?;
     let (next, result, actual) = super::rust_lottery_fixtures::exchange(
-        owner, *admitted, command, &selected, NonZeroU32::new(21469), None,
+        owner, *admitted, command, &selected, Some(egg_definition), None,
     ).await?;
     *admitted = next;
     assert_eq!(result, UseDisposition::Committed);

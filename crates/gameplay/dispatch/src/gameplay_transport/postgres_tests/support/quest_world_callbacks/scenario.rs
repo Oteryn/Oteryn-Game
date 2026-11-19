@@ -1564,6 +1564,8 @@ fn scenario_case(
             } else if name == "questpc7-friends" {
                 // Thirteen selected vendors/priests and one player; charge every actor slot.
                 14
+            } else if koshei_spawn {
+                3 // Player, Koshei and the activation owner's reserved player slot.
             } else if name == "qc-obsidian-knife" {
                 2 // One player and the Sweaty Cyclops.
             } else if native_story
@@ -3831,9 +3833,16 @@ fn scenario_case(
         drop(seal);
         if let Some((login, root)) = runtime_login {
             drop(root);
-            sqlx::query(sqlx::AssertSqlSafe(format!("DROP ROLE {login}")))
-                .execute(&h.pool)
-                .await?;
+            let options = h.pool.connect_options();
+            let database = options.get_database().ok_or("test database name")?;
+            for statement in [
+                format!("REVOKE CONNECT ON DATABASE {database} FROM {login}"),
+                format!("DROP ROLE {login}"),
+            ] {
+                sqlx::query(sqlx::AssertSqlSafe(statement))
+                    .execute(&h.pool)
+                    .await?;
+            }
         }
         h.cleanup().await
     })

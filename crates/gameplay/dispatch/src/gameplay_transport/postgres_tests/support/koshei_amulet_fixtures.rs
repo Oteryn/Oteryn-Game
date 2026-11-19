@@ -161,15 +161,18 @@ pub(super) async fn runtime_login(
         .duration_since(std::time::UNIX_EPOCH)?
         .as_nanos();
     let login = format!("koshei_source_{suffix}");
-    sqlx::query(sqlx::AssertSqlSafe(format!(
-        "CREATE ROLE {login} LOGIN PASSWORD '{login}' IN ROLE oteryn_game_runtime"
-    )))
-    .execute(&h.pool)
-    .await?;
     let options = h.pool.connect_options();
     let host = options.get_host();
     let port = options.get_port();
     let database = options.get_database().ok_or("test database name")?;
+    for statement in [
+        format!("CREATE ROLE {login} LOGIN PASSWORD '{login}' IN ROLE oteryn_game_runtime"),
+        format!("GRANT CONNECT ON DATABASE {database} TO {login}"),
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(statement))
+            .execute(&h.pool)
+            .await?;
+    }
     let url = format!(
         "postgresql://{login}:{login}@{host}:{port}/{database}?options=-c%20role%3Doteryn_game_runtime"
     );

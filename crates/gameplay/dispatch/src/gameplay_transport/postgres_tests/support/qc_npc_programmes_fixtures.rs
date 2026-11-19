@@ -171,7 +171,9 @@ async fn obsidian_knife(
     ).await?;
     assert_eq!(result, NpcIntentDisposition::Ok);
     let skirts = callback(callbacks, "questpc7-friends-skirts")?;
-    mint(owner, admitted, 3560, 3, 7090).await?;
+    for nonce in 7090..7093 {
+        mint(owner, admitted, 3560, 1, nonce).await?;
+    }
     let (result, _, _) = super::qengine_rewards_fixtures::wire_conversation(
         owner, admitted, cyclops, skirts, false, vec!["hi", "deliver skirts"],
     ).await?;
@@ -249,6 +251,7 @@ async fn sinatuki(
         91,
     )
     .await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
     let (result, _, _) = super::qengine_rewards_fixtures::wire_conversation(
         owner,
         admitted,

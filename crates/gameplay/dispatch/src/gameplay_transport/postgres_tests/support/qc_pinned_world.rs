@@ -67,7 +67,7 @@ pub(super) fn world(
         start: crate::map::overlay::TilePos {
             x: u16::try_from(entry["x"].as_u64().ok_or("entry x")?)?,
             y: u16::try_from(entry["y"].as_u64().ok_or("entry y")?)?,
-            floor: i8::try_from(entry["floor"].as_i64().ok_or("entry floor")?)?,
+            floor: -i8::try_from(entry["floor"].as_u64().filter(|&z| z <= 15).ok_or("entry floor")?)?,
         },
     };
     crate::map::boot::boot(

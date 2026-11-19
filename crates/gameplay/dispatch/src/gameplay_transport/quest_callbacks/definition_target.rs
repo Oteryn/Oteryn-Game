@@ -58,40 +58,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Unrelated Ground actions retain their own historical receipt probe.
             return Ok(None);
         };
-        let Some(item) = inventory
-            .backpack
-            .iter()
-            .flat_map(|bag| &bag.entries)
-            .chain(inventory.nested.iter().map(|(_, entry)| entry))
-            .find(|entry| entry.item.item_instance_id == source)
-        else {
+        let entries = || {
+            inventory
+                .backpack
+                .iter()
+                .flat_map(|bag| &bag.entries)
+                .chain(inventory.nested.iter().map(|(_, entry)| entry))
+        };
+        let Some(item) = entries().find(|entry| entry.item.item_instance_id == source) else {
             return Ok(None);
         };
-        if !self.callback_content().iter().any(|callback| {
+        let owns_tool = self.callback_content().iter().any(|callback| {
             callback.selector.target_definition.is_some()
                 && callback
                     .item_on_target
                     .as_ref()
                     .is_some_and(|tool| tool.item == item.item.definition.production_key)
-        }) {
+        });
+        if !owns_tool && entries().any(|entry| entry.item.item_instance_id == target) {
             return Ok(None);
         }
-        let Some(ground) = self
+        let ground = self
             .root
             .read_item_loop_ground_for_scope(fence.runtime_scope)
-            .await
-            .map_err(|_| ())?
+            .await;
+        let ground = match ground {
+            Ok(ground) => ground,
+            Err(_) if !owns_tool => return Ok(None),
+            Err(_) => return Err(()),
+        };
+        let Some(ground) = ground
             .into_iter()
             .find(|entry| entry.item.item_instance_id == target)
         else {
-            return Ok(Some(UseOutcome::rejected()));
+            return Ok(owns_tool.then(UseOutcome::rejected));
         };
         let mut candidates = self.callback_content().iter().filter(|callback| {
             callback.selector.target_definition.as_deref()
                 == Some(ground.item.definition.production_key.as_str())
         });
         let Some(callback) = candidates.next() else {
-            return Ok(Some(UseOutcome::rejected()));
+            return Ok(owns_tool.then(UseOutcome::rejected));
         };
         if candidates.next().is_some()
             || !callback

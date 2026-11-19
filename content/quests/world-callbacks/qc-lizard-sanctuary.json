@@ -100,13 +100,15 @@
       "quest": "oteryn:quest.sanctuary_of_the_lizard_god",
       "trigger": "step_in",
       "selector": {
-        "position": {
-          "x": 32112,
-          "y": 31936,
-          "floor": -8
+        "native": {
+          "position": {
+            "x": 32112,
+            "y": 31936,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 1949
         },
-        "unique": null,
-        "action": null,
         "appearance": 1949
       },
       "lever": null,
@@ -128,6 +130,9 @@
       ],
       "offerings": [],
       "item_on_target": null,
+      "effects": {
+        "scripted_teleport": true
+      },
       "return_on_failure": true,
       "failure_message": "Offer the lives of the yet unborn to the lizard god if you want to enter the sanctuary.",
       "sources": [

@@ -12,6 +12,15 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
         && (callback.selector.target_definition.is_some()
             || callback.key == targuna_ram::KEY
             || callback.key == TOP_OF_THE_CITY_DIG
+            || (callback
+                .item_on_target
+                .as_ref()
+                .is_some_and(|tool| tool.selected_instance)
+                && matches!(
+                    callback.key.as_str(),
+                    "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
+                        | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
+                ))
             || matches!(
                 callback.native_rule,
                 Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })

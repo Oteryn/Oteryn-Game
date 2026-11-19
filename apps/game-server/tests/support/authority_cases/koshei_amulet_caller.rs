@@ -85,11 +85,16 @@ async fn runtime_login(h: &fixture::Harness) -> TestResult<(String, String)> {
         .as_nanos();
     let login = format!("koshei_runtime_{suffix}");
     let password = format!("{login}_test");
-    sqlx::query(sqlx::AssertSqlSafe(format!(
-        "CREATE ROLE {login} LOGIN PASSWORD '{password}' IN ROLE oteryn_game_runtime"
-    )))
-    .execute(&h.pool)
-    .await?;
+    let options = h.pool.connect_options();
+    let database = options.get_database().ok_or("test database name")?;
+    for statement in [
+        format!("CREATE ROLE {login} LOGIN PASSWORD '{password}' IN ROLE oteryn_game_runtime"),
+        format!("GRANT CONNECT ON DATABASE {database} TO {login}"),
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(statement))
+            .execute(&h.pool)
+            .await?;
+    }
     let (_, address) = h.database.url.split_once('@').ok_or("test database address")?;
     Ok((
         login.clone(),
