@@ -116,7 +116,6 @@ fn choose(npc: &str, text: &str, topic: Option<Topic>) -> Option<(Option<Topic>,
     }
     match npc {
         "oteryn:npc.bloodshade_rotten" => match text {
-            "quest" => Some((None, Action::Commit(Mutation::RottenAcknowledge))),
             "taints" | "cleanse" | "purify" => Some((
                 Some(Topic::RottenCleanse),
                 Action::Reply(topic_line(Topic::RottenCleanse)),
@@ -136,6 +135,10 @@ fn choose(npc: &str, text: &str, topic: Option<Topic>) -> Option<(Option<Topic>,
                 }
                 _ => None,
             },
+            // Crystal npc/bloodshade_rotten.lua:136 uses MsgContains("quest").
+            _ if oteryn_gameplay_quests::quest::dark_trails::message_contains(text, "quest") => {
+                Some((None, Action::Commit(Mutation::RottenAcknowledge)))
+            }
             _ => None,
         },
         "oteryn:npc.torkada" => match text {

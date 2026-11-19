@@ -21,8 +21,11 @@ use std::time::Duration;
 
 #[test]
 fn rotten_blood_postgres_native_chain_final_reward_replay_and_cleanse() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
     }
     super::kill_reward_e2e::scenario_thread::run("rotten-blood-progression", scenario)
 }
@@ -238,7 +241,9 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             "oteryn:npc.bloodshade_rotten",
         )
         .await?;
-        for (number, text) in [(80, "hi"), (81, "quest"), (82, "quest")] {
+        // Crystal npc/bloodshade_rotten.lua:129-142 accepts the keyword
+        // in a sentence. The next request must not write another receipt.
+        for (number, text) in [(80, "hi"), (81, "I am here for the quest."), (82, "quest")] {
             advance_npc_turn(&mut owner)?;
             talk(
                 &owner,
@@ -249,6 +254,15 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                 text,
             )
             .await?;
+            if number == 81 {
+                assert_eq!(
+                    read(&owner, &h, &authority, admitted.game_session_id)
+                        .await?
+                        .access_stage(),
+                    5,
+                    "the sentence must acknowledge the chain before the repeat request",
+                );
+            }
         }
         assert_eq!(
             read(&owner, &h, &authority, admitted.game_session_id)
