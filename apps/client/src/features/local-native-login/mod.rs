@@ -11,6 +11,11 @@ mod native;
 #[cfg(windows)]
 pub use native::LoginWindow;
 
+mod refusal;
+pub use refusal::error_text;
+#[cfg(test)]
+mod tests;
+
 pub const FIELDS: [(&str, &str); 6] = [
     ("Platform URL", "OTERYN_PLATFORM_URL"),
     ("Gateway URL", "OTERYN_GATEWAY_URL"),
@@ -74,7 +79,8 @@ impl LoginSettings {
     }
 
     pub fn validate(&self) -> Result<(), String> {
-        for (index, value) in self.values().iter().enumerate() {
+        // Gameplay trust is validated after the Gateway grant.
+        for (index, value) in self.values().iter().take(5).enumerate() {
             if (value.trim().is_empty() && ![3, 4].contains(&index))
                 || value.contains('\0')
                 || value.len() > 4096
@@ -103,9 +109,6 @@ impl LoginSettings {
         if !self.character_id.is_empty() && parse_uuid_v7(&self.character_id).is_none() {
             return Err(tr!("Character: enter a canonical lowercase UUIDv7.").into());
         }
-        oteryn_session_tcp::load_root_certificate(Path::new(&self.dev_root)).map_err(|_| {
-            tr!("Certificate: choose a readable PEM or DER trust certificate.").to_owned()
-        })?;
         Ok(())
     }
 
@@ -197,6 +200,14 @@ impl LoginForm {
     pub fn offline(&mut self) {
         self.connected = false;
     }
+    pub fn refresh_gate_message(&mut self, now: Instant) {
+        if let Some(SignInGate::Maintenance(retry_at)) = self.gate {
+            self.message = refusal::maintenance_text(retry_at, now);
+            if now >= retry_at {
+                self.gate = None;
+            }
+        }
+    }
     pub fn pending(&self) -> bool {
         self.pending
     }
@@ -209,6 +220,7 @@ impl LoginForm {
         }
     }
     pub fn submit(&mut self) -> Result<NativeLoginConfig, String> {
+        self.refresh_gate_message(Instant::now());
         if self.connected {
             return Err("Already connected. Log out before signing in again.".into());
         }
@@ -235,107 +247,16 @@ impl LoginForm {
         self.connected = result.is_ok();
         self.retry = result.is_err();
         self.gate = match &result {
-            Err(GameplayEntryError::ClientUpdateRequired { .. }) => {
-                Some(SignInGate::UpdateRequired)
-            }
+            Err(
+                GameplayEntryError::ClientUpdateRequired { .. }
+                | GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired),
+            ) => Some(SignInGate::UpdateRequired),
             Err(GameplayEntryError::Maintenance { retry_at }) => {
                 Some(SignInGate::Maintenance(*retry_at))
             }
             _ => None,
         };
         self.message = result.map_or_else(error_text, |()| tr!("Connected.").into());
-    }
-}
-
-pub fn error_text(error: GameplayEntryError) -> String {
-    match error {
-        GameplayEntryError::NativeProtocolUnavailable => {
-            tr!("Enter connection settings and choose Save and sign in.")
-        }
-        GameplayEntryError::InvalidConfiguration => {
-            tr!(
-                "Check Platform and Gateway URLs, OAuth client ID, optional character preselect and the trust certificate path, then sign in again."
-            )
-        }
-        GameplayEntryError::ClientUpdateRequired { manual_download_url, updater_started } => {
-            return if updater_started {
-                lfmt!("Update required. Close all Oteryn clients to install the update, then start the launcher and sign in again. Manual download at {manual_download_url}", manual_download_url = manual_download_url)
-            } else {
-                lfmt!("Update required. Download the current client at {manual_download_url}, then sign in again.", manual_download_url = manual_download_url)
-            };
-        }
-        GameplayEntryError::Maintenance { retry_at } => {
-            let remaining = retry_at.saturating_duration_since(Instant::now()).as_secs_f64();
-            let seconds = remaining.ceil() as u64;
-            return lfmt!("Oteryn is undergoing maintenance. Try signing in again in {seconds} s.", seconds = seconds);
-        }
-        GameplayEntryError::ChannelFull => tr!("This channel is full."),
-        GameplayEntryError::WorldUnavailable => {
-            tr!(
-                "World is absent from the Platform directory. Check the World reference and Platform URL, then sign in again."
-            )
-        }
-        GameplayEntryError::Rejected(
-            PublicClass::RetryLogin | PublicClass::AuthenticationRequired,
-        ) => {
-            tr!(
-                "Browser sign-in failed or expired. Check the OAuth client ID and complete a fresh browser sign-in within five minutes."
-            )
-        }
-        GameplayEntryError::Rejected(PublicClass::TemporarilyUnavailable) => {
-            tr!(
-                "Connection unavailable. Check your network and the Platform/Gateway URLs; if correct, try again later."
-            )
-        }
-        GameplayEntryError::Rejected(PublicClass::SessionUnavailable) => {
-            tr!(
-                "Game connection ended or could not be established. Check your network and trust certificate; sign in again. Contact the operator if this repeats."
-            )
-        }
-        GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired) => {
-            tr!("Install the current Oteryn client, then sign in again.")
-        }
-        GameplayEntryError::Rejected(PublicClass::CharacterAlreadyActive) => {
-            tr!(
-                "Character is already active. Log out its other session or wait for it to end, then sign in again."
-            )
-        }
-    }.into()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::time::Duration;
-
-    #[test]
-    fn refuses_further_sign_in_and_displays_manual_download_without_update_trust() {
-        let mut form = LoginForm::new(LoginSettings::default());
-        let url = "https://oteryn.com/download";
-        form.finish(Err(GameplayEntryError::ClientUpdateRequired {
-            manual_download_url: url.to_owned(),
-            updater_started: false,
-        }));
-        assert!(form.message().contains(url));
-        assert!(!form.can_submit());
-        assert!(form.submit().is_err());
-        form.offline();
-        form.feedback("generic offline message".into());
-        assert!(form.message().contains(url));
-        assert!(!form.can_submit());
-    }
-
-    #[test]
-    fn maintenance_displays_state_and_only_allows_sign_in_after_deadline() {
-        let mut form = LoginForm::new(LoginSettings::default());
-        let future = Instant::now() + Duration::from_secs(30);
-        form.finish(Err(GameplayEntryError::Maintenance { retry_at: future }));
-        assert!(form.message().contains("maintenance"));
-        assert!(!form.can_submit());
-        assert!(form.submit().is_err());
-        form.finish(Err(GameplayEntryError::Maintenance {
-            retry_at: Instant::now(),
-        }));
-        assert!(form.can_submit());
+        self.refresh_gate_message(Instant::now());
     }
 }

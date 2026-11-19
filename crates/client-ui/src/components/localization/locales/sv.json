@@ -1,5 +1,11 @@
 {
- "Update required. Close all Oteryn clients to install the update, then start the launcher and sign in again. Manual download at {manual_download_url}": "En uppdatering krävs. Stäng alla Oteryn-klienter för att installera den. Öppna sedan startprogrammet och logga in igen. Hämta manuellt på {manual_download_url}",
+ "Update required. Oteryn will restart after the update. Manual download at {manual_download_url}": "En uppdatering krävs. Oteryn startas om efter uppdateringen. Manuell hämtning finns på {manual_download_url}",
+ "Sign-in was paused for maintenance.": "Inloggningen pausades för underhåll.",
+ "The maintenance wait has ended. You can sign in again.": "Väntetiden för underhållet är över. Du kan logga in igen.",
+ "Automatic update could not finish. Download Oteryn at {url}": "Den automatiska uppdateringen kunde inte slutföras. Ladda ner Oteryn på {url}",
+ "Installed verified release {installed}. Oteryn will restart when you close this message.": "Den verifierade versionen {installed} har installerats. Oteryn startas om när du stänger det här meddelandet.",
+ "Installed verified release {installed}. Start the launcher to play.": "Den verifierade versionen {installed} har installerats. Öppna startprogrammet för att spela.",
+ "Oteryn updates and repair": "Uppdateringar och reparation för Oteryn",
  "Update required. Download the current client at {manual_download_url}, then sign in again.": "En uppdatering krävs. Hämta den aktuella klienten på {manual_download_url} och logga in igen.",
  "Oteryn is undergoing maintenance. Try signing in again in {seconds} s.": "Oteryn genomgår underhåll. Försök logga in igen om {seconds} s.",
  "Preparation": "Förberedelse",

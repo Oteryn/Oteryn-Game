@@ -396,3 +396,22 @@ fn selection_cannot_enter_an_unowned_character_or_channel() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn missing_gameplay_root_does_not_preempt_gateway_refusal() -> TestResult {
+    let stack = Stack::start(vec![])?;
+    let config = stack.config();
+    std::fs::remove_file(&config.dev_root)?;
+    // An old build gets the existing refusal code when the gate is enforcing.
+    stack.refuse_login(409, r#"{"protocol_version":2,"attempt_ref":null,"error":{"code":"NATIVE_LOGIN_OFFER_UNSUPPORTED","public_class":"CLIENT_UPDATE_REQUIRED"}}"#)?;
+    let result = stack.entry(config)?;
+    let requests = stack.requests();
+    assert_eq!(test_support::count(&requests, "POST /v1/login"), 1);
+    assert_eq!(stack.admissions.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        result,
+        GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired)
+    );
+    stack.finish();
+    Ok(())
+}

@@ -1,5 +1,11 @@
 {
- "Update required. Close all Oteryn clients to install the update, then start the launcher and sign in again. Manual download at {manual_download_url}": "Atualização necessária. Feche todos os clientes do Oteryn para instalá-la. Depois, abra o inicializador e inicie sessão novamente. Download manual em {manual_download_url}",
+ "Update required. Oteryn will restart after the update. Manual download at {manual_download_url}": "É necessário atualizar. O Oteryn será reiniciado após a atualização. Baixe manualmente em {manual_download_url}",
+ "Sign-in was paused for maintenance.": "O login foi pausado para manutenção.",
+ "The maintenance wait has ended. You can sign in again.": "A espera pela manutenção terminou. Você já pode entrar novamente.",
+ "Automatic update could not finish. Download Oteryn at {url}": "Não foi possível concluir a atualização automática. Baixe o Oteryn em {url}",
+ "Installed verified release {installed}. Oteryn will restart when you close this message.": "A versão verificada {installed} foi instalada. O Oteryn será reiniciado quando você fechar esta mensagem.",
+ "Installed verified release {installed}. Start the launcher to play.": "A versão verificada {installed} foi instalada. Abra o inicializador para jogar.",
+ "Oteryn updates and repair": "Atualizações e reparo do Oteryn",
  "Update required. Download the current client at {manual_download_url}, then sign in again.": "Atualização necessária. Baixe o cliente atual em {manual_download_url} e inicie sessão novamente.",
  "Oteryn is undergoing maintenance. Try signing in again in {seconds} s.": "O Oteryn está em manutenção. Tente iniciar sessão novamente em {seconds} s.",
  "Preparation": "Preparação",

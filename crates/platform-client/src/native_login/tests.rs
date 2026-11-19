@@ -867,15 +867,61 @@ fn client_build_gate_maintenance_retry_after_supports_both_forms_and_bounds() {
         (Some("9"), 9),
         (Some(date.as_str()), 9),
         (Some(past.as_str()), 1),
-        (Some("99999999999999999999999"), 30),
+        (Some("99999999999999999999999"), u64::MAX),
         (Some("0"), 1),
         (Some("-1"), 1),
         (Some("invalid"), 1),
         (None, 1),
     ] {
         assert_eq!(
-            maintenance_delay(header, now, MAX_RETRY_AFTER),
+            maintenance_delay(header, now),
             Duration::from_secs(expected)
         );
     }
+}
+
+#[test]
+fn client_build_gate_maintenance_keeps_long_retry_after() {
+    let now = UNIX_EPOCH + Duration::from_secs(1_770_000_000);
+    let wait = Duration::from_secs(120);
+    let date = httpdate::fmt_http_date(now + wait);
+    for header in ["120", date.as_str()] {
+        assert_eq!(maintenance_delay(Some(header), now), wait);
+    }
+}
+
+#[test]
+fn maintenance_deadline_saturates_without_a_short_retry_or_overflow() {
+    let received = Instant::now();
+    let deadline =
+        maintenance_deadline(received, Some("99999999999999999999999"), SystemTime::now());
+    assert!(deadline > received + Duration::from_secs(120));
+    let remaining = deadline.duration_since(received).as_secs();
+    assert!(
+        remaining == u64::MAX
+            || received
+                .checked_add(Duration::from_secs(remaining + 1))
+                .is_none()
+    );
+}
+
+#[test]
+fn client_build_gate_refusal_requires_objects_in_all_positions() {
+    for body in [
+        r#"[2,{"code":"NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED","public_class":"CLIENT_UPDATE_REQUIRED"},null,{"update_channel":"stable","minimum_release_sequence":null,"current_release_sequence":null,"manual_download_url":"https://oteryn.com/download"}]"#,
+        r#"{"protocol_version":2,"error":["NATIVE_LOGIN_MAINTENANCE","TEMPORARILY_UNAVAILABLE"],"attempt_ref":null}"#,
+        &update_refusal(r#""update":["stable",null,null,"https://oteryn.com/download"]"#),
+    ] {
+        for status in [409, 503] {
+            assert!(
+                parse_login_error(status, body.as_bytes(), &attempt()).is_err(),
+                "{body}"
+            );
+        }
+    }
+    let valid = update_refusal(UPDATE_POINTER);
+    assert!(matches!(
+        parse_gateway_refusal(2, 409, valid.as_bytes(), &attempt()),
+        Ok(GatewayRefusal::UpdateRequired(_))
+    ));
 }

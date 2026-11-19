@@ -250,6 +250,7 @@ fn run(
                 EnableWindow(*edit, i32::from(form.can_submit()));
             }
             SetWindowTextW(button, wide(form.submit_caption()).as_ptr());
+            form.refresh_gate_message(std::time::Instant::now());
             SetWindowTextW(status, wide(form.message()).as_ptr());
             std::thread::sleep(Duration::from_millis(30));
         }

@@ -10,11 +10,19 @@ mod account_services;
 pub mod bazaar;
 mod challenge;
 pub mod coin_purchase;
+mod gateway_refusal;
 mod gateway_request;
 pub use challenge::{ChallengeProof, LoginChallenge, TokenExchange};
 mod owner_characters;
 pub mod premium;
 mod ticket;
+use gateway_refusal::maintenance_deadline;
+#[cfg(test)]
+use gateway_refusal::{GATEWAY_ERROR_ROWS, maintenance_delay};
+pub use gateway_refusal::{
+    GatewayErrorCode, GatewayRefusal, Progression, PublicClass, UpdatePointer,
+    parse_gateway_refusal, parse_login_error,
+};
 pub use owner_characters::{CharacterAvailability, GatewayLogin, OwnerCharacter};
 
 use crate::updates::{UpdateChannel, valid_release_sequence};
@@ -23,7 +31,7 @@ use gateway_request::GatewayOffer;
 use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
 use reqwest::header::{CONTENT_TYPE, RETRY_AFTER};
 use reqwest::{Client, Response, StatusCode, Url, redirect::Policy};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::net::IpAddr;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -33,6 +41,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 pub const NATIVE_LOGIN_SCOPE: &str = "game:ticket";
 /// The Gateway native branch version (N4-P §3.1).
 pub const GATEWAY_PROTOCOL_VERSION: u64 = 2;
+pub(crate) const GATEWAY_LOGIN_PATH: &str = "v1/login";
 /// The only transport offered and accepted in v1 (N4-P §3.1).
 pub const GAME_ALPN: &str = "oteryn-game/1";
 pub const GRANT_PROFILE: &str = "oteryn-pre-admission-v1";
@@ -83,6 +92,16 @@ impl ReleaseIdentity {
             release_sequence,
         })
     }
+
+    #[must_use]
+    pub const fn update_channel(self) -> UpdateChannel {
+        self.update_channel
+    }
+
+    /// A signed current target must differ from the identity that was refused.
+    pub(crate) fn matches_target(self, release_id: &str, sequence: u64) -> bool {
+        self.release_sequence == sequence || self.release_id == release_id
+    }
 }
 
 /// A signed device proof for §19.4 recovery. It serializes only in the request body.
@@ -112,194 +131,6 @@ impl Debug for SecretText {
 impl Display for SecretText {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter.write_str("[REDACTED]")
-    }
-}
-
-/// FND-04A public class: what the player is told, and the only thing the client acts on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PublicClass {
-    RetryLogin,
-    AuthenticationRequired,
-    TemporarilyUnavailable,
-    SessionUnavailable,
-    ClientUpdateRequired,
-    CharacterAlreadyActive,
-}
-
-impl PublicClass {
-    fn parse(value: &str) -> Option<Self> {
-        Some(match value {
-            "RETRY_LOGIN" => Self::RetryLogin,
-            "AUTHENTICATION_REQUIRED" => Self::AuthenticationRequired,
-            "TEMPORARILY_UNAVAILABLE" => Self::TemporarilyUnavailable,
-            "SESSION_UNAVAILABLE" => Self::SessionUnavailable,
-            "CLIENT_UPDATE_REQUIRED" => Self::ClientUpdateRequired,
-            "CHARACTER_ALREADY_ACTIVE" => Self::CharacterAlreadyActive,
-            _ => return None,
-        })
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Progression {
-    Retryable,
-    Terminal,
-    SecurityTerminal,
-}
-
-/// The public Gateway codes of N4-P §11.2. `SECURITY_TERMINAL` rows reach the client only as
-/// [`GatewayErrorCode::AuthenticationRequired`] (§11.1).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GatewayErrorCode {
-    RequestMalformed,
-    UnsupportedVersion,
-    OfferUnsupported,
-    ClientUpdateRequired,
-    Maintenance,
-    AuthenticationRequired,
-    AttemptConflict,
-    CharacterConflict,
-    RouteUnavailable,
-    RateLimited,
-    AttemptReconciliationRequired,
-    GrantExpired,
-    Unavailable,
-}
-
-/// (wire code, code, HTTP status, progression, public class), one row per N4-P §11.2 public code.
-const GATEWAY_ERROR_ROWS: [(&str, GatewayErrorCode, u16, Progression, PublicClass); 13] = {
-    use GatewayErrorCode as C;
-    use Progression::{Retryable, SecurityTerminal, Terminal};
-    use PublicClass::{
-        AuthenticationRequired, ClientUpdateRequired, RetryLogin, SessionUnavailable,
-        TemporarilyUnavailable,
-    };
-    [
-        (
-            "NATIVE_LOGIN_REQUEST_MALFORMED",
-            C::RequestMalformed,
-            400,
-            Terminal,
-            RetryLogin,
-        ),
-        (
-            "NATIVE_LOGIN_UNSUPPORTED_VERSION",
-            C::UnsupportedVersion,
-            400,
-            Terminal,
-            ClientUpdateRequired,
-        ),
-        (
-            "NATIVE_LOGIN_OFFER_UNSUPPORTED",
-            C::OfferUnsupported,
-            409,
-            Terminal,
-            ClientUpdateRequired,
-        ),
-        (
-            "NATIVE_LOGIN_CLIENT_UPDATE_REQUIRED",
-            C::ClientUpdateRequired,
-            409,
-            Terminal,
-            ClientUpdateRequired,
-        ),
-        (
-            "NATIVE_LOGIN_MAINTENANCE",
-            C::Maintenance,
-            503,
-            Retryable,
-            TemporarilyUnavailable,
-        ),
-        (
-            "NATIVE_LOGIN_AUTHENTICATION_REQUIRED",
-            C::AuthenticationRequired,
-            401,
-            SecurityTerminal,
-            AuthenticationRequired,
-        ),
-        (
-            "NATIVE_LOGIN_ATTEMPT_CONFLICT",
-            C::AttemptConflict,
-            409,
-            Terminal,
-            RetryLogin,
-        ),
-        (
-            "NATIVE_LOGIN_CHARACTER_CONFLICT",
-            C::CharacterConflict,
-            409,
-            Terminal,
-            SessionUnavailable,
-        ),
-        (
-            "NATIVE_LOGIN_ROUTE_UNAVAILABLE",
-            C::RouteUnavailable,
-            503,
-            Retryable,
-            TemporarilyUnavailable,
-        ),
-        (
-            "NATIVE_LOGIN_RATE_LIMITED",
-            C::RateLimited,
-            429,
-            Retryable,
-            TemporarilyUnavailable,
-        ),
-        (
-            "ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED",
-            C::AttemptReconciliationRequired,
-            503,
-            Retryable,
-            TemporarilyUnavailable,
-        ),
-        (
-            "NATIVE_LOGIN_GRANT_EXPIRED",
-            C::GrantExpired,
-            409,
-            Terminal,
-            RetryLogin,
-        ),
-        (
-            "NATIVE_LOGIN_UNAVAILABLE",
-            C::Unavailable,
-            503,
-            Retryable,
-            TemporarilyUnavailable,
-        ),
-    ]
-};
-
-impl GatewayErrorCode {
-    fn row(self) -> (&'static str, u16, Progression, PublicClass) {
-        GATEWAY_ERROR_ROWS.iter().find(|row| row.1 == self).map_or(
-            (
-                "",
-                0,
-                Progression::Terminal,
-                PublicClass::TemporarilyUnavailable,
-            ),
-            |&(wire, _, status, progression, class)| (wire, status, progression, class),
-        )
-    }
-
-    #[must_use]
-    pub fn wire_code(self) -> &'static str {
-        self.row().0
-    }
-
-    #[must_use]
-    pub fn http_status(self) -> u16 {
-        self.row().1
-    }
-
-    #[must_use]
-    pub fn progression(self) -> Progression {
-        self.row().2
-    }
-
-    #[must_use]
-    pub fn public_class(self) -> PublicClass {
-        self.row().3
     }
 }
 
@@ -346,17 +177,6 @@ impl DeviceRefusal {
         };
         Ok(Self { status, error })
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct UpdatePointer {
-    pub update_channel: UpdateChannel,
-    #[serde(deserialize_with = "required_nullable")]
-    pub minimum_release_sequence: Option<u64>,
-    #[serde(deserialize_with = "required_nullable")]
-    pub current_release_sequence: Option<u64>,
-    pub manual_download_url: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -733,7 +553,7 @@ impl NativeLoginClient {
     ) -> Result<NativeLoginGrant, NativeLoginError> {
         let endpoint = self
             .gateway
-            .join("v1/login")
+            .join(GATEWAY_LOGIN_PATH)
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
         let body = self.login_request(ticket, login, GATEWAY_PROTOCOL_VERSION)?;
         let mut span = oteryn_error_codes::Span::start(
@@ -774,7 +594,10 @@ impl NativeLoginClient {
                 let backoff = retry_after
                     .unwrap_or_else(|| self.pacing.unit.saturating_mul(1 << (request_number - 1)));
                 if backoff > self.pacing.max_retry_after
-                    || Instant::now() + backoff >= ticket.usable_until
+                    || backoff
+                        >= ticket
+                            .usable_until
+                            .saturating_duration_since(Instant::now())
                 {
                     return Err(error);
                 }
@@ -848,11 +671,11 @@ impl NativeLoginClient {
             .send()
             .await
             .map_err(|_error| (PlatformClientError::Request.into(), None))?;
+        let received_wall = SystemTime::now();
         let received = Instant::now();
         let status = response.status();
         let retry_after = response.headers().get(RETRY_AFTER).cloned();
         let retry_after = retry_after.as_ref().and_then(|value| value.to_str().ok());
-        let received_wall = SystemTime::now();
         let body = read_bounded(response, MAX_LOGIN_RESPONSE_BYTES)
             .await
             .map_err(|error| (error.into(), None))?;
@@ -873,16 +696,12 @@ impl NativeLoginClient {
             {
                 Err((NativeLoginError::UpdateRequired(update), None))
             }
-            (GatewayRefusal::Code(GatewayErrorCode::Maintenance), Some(_)) => {
-                let delay =
-                    maintenance_delay(retry_after, received_wall, self.pacing.max_retry_after);
-                Err((
-                    NativeLoginError::Maintenance {
-                        retry_at: received + delay,
-                    },
-                    None,
-                ))
-            }
+            (GatewayRefusal::Code(GatewayErrorCode::Maintenance), Some(_)) => Err((
+                NativeLoginError::Maintenance {
+                    retry_at: maintenance_deadline(received, retry_after, received_wall),
+                },
+                None,
+            )),
             (
                 GatewayRefusal::UpdateRequired(_)
                 | GatewayRefusal::Code(GatewayErrorCode::Maintenance),
@@ -896,23 +715,6 @@ impl NativeLoginClient {
             )),
         }
     }
-}
-
-fn maintenance_delay(header: Option<&str>, now: SystemTime, max_delay: Duration) -> Duration {
-    let delay = header.map(str::trim).and_then(|value| {
-        if !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()) {
-            let seconds = value.parse::<u64>().unwrap_or(u64::MAX);
-            Some(Duration::from_secs(seconds))
-        } else {
-            httpdate::parse_http_date(value)
-                .ok()
-                .map(|date| date.duration_since(now).unwrap_or_default())
-        }
-    });
-    delay.unwrap_or(Duration::from_secs(1)).clamp(
-        Duration::from_secs(1),
-        max_delay.clamp(Duration::from_secs(1), MAX_RETRY_AFTER),
-    )
 }
 
 async fn run<T, F>(cancellation: CancellationToken, future: F) -> Result<T, NativeLoginError>
@@ -1025,118 +827,6 @@ pub fn parse_login_success(
         grant: SecretText(grant.token),
         usable_until: received + Duration::from_secs(grant.valid_for_seconds.min(3600)),
     })
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct LoginErrorBody {
-    protocol_version: u64,
-    error: LoginErrorDetail,
-    #[serde(deserialize_with = "required_nullable")]
-    attempt_ref: Option<String>,
-    #[serde(default, deserialize_with = "present_update")]
-    update: Option<UpdatePointer>,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct LoginErrorDetail {
-    code: String,
-    public_class: String,
-}
-
-/// A present member that may be `null` (a missing one still fails: no `default`).
-fn required_nullable<'de, T: Deserialize<'de>, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Option<T>, D::Error> {
-    Option::<T>::deserialize(deserializer)
-}
-
-fn present_update<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Option<UpdatePointer>, D::Error> {
-    UpdatePointer::deserialize(deserializer).map(Some)
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum GatewayRefusal {
-    Code(GatewayErrorCode),
-    UpdateRequired(UpdatePointer),
-}
-
-impl GatewayRefusal {
-    pub const fn code(&self) -> GatewayErrorCode {
-        match self {
-            Self::Code(code) => *code,
-            Self::UpdateRequired(_) => GatewayErrorCode::ClientUpdateRequired,
-        }
-    }
-}
-
-/// Decodes a protocol 2 refusal, including validation of any required update pointer.
-pub fn parse_login_error(
-    status: u16,
-    body: &[u8],
-    attempt_ref: &AttemptRef,
-) -> Result<GatewayErrorCode, PlatformClientError> {
-    parse_gateway_refusal(GATEWAY_PROTOCOL_VERSION, status, body, attempt_ref)
-        .map(|refusal| refusal.code())
-}
-
-/// Decodes a login or recovery refusal covered by §11.1 and minimum build gate §5.
-/// The status, code, class, protocol version, echo and exact member set must agree.
-pub fn parse_gateway_refusal(
-    protocol_version: u64,
-    status: u16,
-    body: &[u8],
-    attempt_ref: &AttemptRef,
-) -> Result<GatewayRefusal, PlatformClientError> {
-    let invalid = PlatformClientError::InvalidPayload;
-    let error: LoginErrorBody = serde_json::from_slice(body).map_err(|_| invalid)?;
-    if !matches!(protocol_version, 2 | 3)
-        || error.protocol_version != protocol_version
-        || error
-            .attempt_ref
-            .is_some_and(|echo| echo != attempt_ref.as_str())
-    {
-        return Err(invalid);
-    }
-    let class = PublicClass::parse(&error.error.public_class).ok_or(invalid)?;
-    let code = GATEWAY_ERROR_ROWS
-        .iter()
-        .find(|row| row.0 == error.error.code && row.2 == status && row.4 == class)
-        .map(|row| row.1)
-        .ok_or(invalid)?;
-
-    match (code, error.update) {
-        (GatewayErrorCode::ClientUpdateRequired, Some(update)) if valid_update(&update) => {
-            Ok(GatewayRefusal::UpdateRequired(update))
-        }
-        (GatewayErrorCode::ClientUpdateRequired, _) | (_, Some(_)) => Err(invalid),
-        (code, None) => Ok(GatewayRefusal::Code(code)),
-    }
-}
-
-fn valid_update(update: &UpdatePointer) -> bool {
-    let url = &update.manual_download_url;
-    update
-        .minimum_release_sequence
-        .is_none_or(valid_release_sequence)
-        && update
-            .current_release_sequence
-            .is_none_or(valid_release_sequence)
-        && url
-            .get(..8)
-            .is_some_and(|prefix| prefix.eq_ignore_ascii_case("https://"))
-        && !url
-            .chars()
-            .any(|ch| ch == '\\' || ch.is_control() || ch.is_whitespace())
-        && url
-            .get(8..)
-            .is_some_and(|authority| !authority.starts_with('/'))
-        && Url::parse(url).is_ok_and(|url| {
-            url.host().is_some() && url.username().is_empty() && url.password().is_none()
-        })
 }
 
 fn is_visible_ascii(value: &str, max_bytes: usize) -> bool {

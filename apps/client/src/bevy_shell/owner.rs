@@ -289,7 +289,20 @@ impl HostOwner {
             self.status.clone_from(&message);
             self.login.form.feedback(message);
         }
+        self.login
+            .form
+            .refresh_gate_message(std::time::Instant::now());
         if let Some(result) = self.entry.as_mut().and_then(Reentry::poll) {
+            if matches!(
+                &result,
+                Err(crate::GameplayEntryError::ClientUpdateRequired {
+                    updater_started: true,
+                    ..
+                })
+            ) {
+                self.close();
+                return;
+            }
             self.login
                 .form
                 .finish(result.as_ref().map(|_| ()).map_err(Clone::clone));
@@ -307,6 +320,9 @@ impl HostOwner {
                         error,
                         crate::GameplayEntryError::ClientUpdateRequired { .. }
                             | crate::GameplayEntryError::Maintenance { .. }
+                            | crate::GameplayEntryError::Rejected(
+                                oteryn_platform_client::native_login::PublicClass::ClientUpdateRequired,
+                            )
                     ) {
                         self.login.visible = true;
                     }

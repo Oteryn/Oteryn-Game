@@ -93,9 +93,6 @@ pub(crate) async fn enter_observed(
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
     let gateway = PlatformClientConfig::new(&config.gateway_url)
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
-    let root = load_root_certificate(&config.dev_root)
-        .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
-
     // OAuth code + PKCE, owner character selection, then the consuming ticket.
     let client = login_client(
         &platform,
@@ -130,6 +127,10 @@ pub(crate) async fn enter_observed(
         .gateway_login(&ticket, &login, cancellation.clone())
         .await
         .map_err(login_rejected)?;
+
+    // Gameplay TLS applies only after the Gateway has issued a grant.
+    let root = load_root_certificate(&config.dev_root)
+        .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
 
     let mut attempt = NativeAttempt {
         queue: None,
@@ -230,6 +231,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     }
 
     async fn reconcile(&mut self, cancellation: CancellationToken) -> Result<(), Self::Error> {
+        // An identical committed attempt can return its stored grant across a gate change.
         self.grant = self
             .client
             .gateway_login(&self.ticket, &self.login, cancellation)

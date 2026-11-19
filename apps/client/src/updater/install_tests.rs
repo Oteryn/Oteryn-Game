@@ -44,7 +44,28 @@ fn repair_installs_fresh_slot_and_verification_detects_changed_bytes()
 #[test]
 fn login_updater_requires_channel_trust_before_starting() {
     assert_eq!(
-        super::require_update_root(&[]),
+        super::login::require_update_root(&[]),
         Err(oteryn_platform_client::updates::UpdateError::Configuration),
     );
+}
+
+#[test]
+fn activation_preserves_the_manual_installers_slot_format() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_platform_client::updates::UpdateError;
+    let root = std::env::temp_dir().join(format!("oteryn-updater-slot-{}", std::process::id()));
+    fs::create_dir_all(&root)?;
+    let zip = root.join("release.zip");
+    package(&zip, "oteryn-client.exe", b"signed executable")?;
+    let max = "a".repeat(64);
+    assert_eq!(install(&zip, &root, &max)?, max);
+    for release in [&max, &"b".repeat(65), ".rel", "rel..a"] {
+        assert_eq!(
+            install(&zip, &root, release),
+            Err(UpdateError::Verification)
+        );
+        assert_eq!(fs::read_to_string(root.join("current.txt"))?.trim(), max);
+    }
+    fs::remove_dir_all(root)?;
+    Ok(())
 }

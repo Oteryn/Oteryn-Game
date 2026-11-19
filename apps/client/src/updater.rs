@@ -1,9 +1,13 @@
 //! T005 maintenance caller. Only a build-pinned TUF target may install bytes.
 mod install;
+mod login;
+#[cfg(windows)]
+pub use login::login_update_requested;
+pub(crate) use login::start_login_update;
 #[cfg(windows)]
 mod window;
 pub use install::verify_archive;
-use oteryn_platform_client::native_login::UpdatePointer;
+use oteryn_platform_client::native_login::ReleaseIdentity;
 use oteryn_platform_client::updates::{UpdateClient, UpdateConfig, UpdateError};
 use std::path::Path;
 
@@ -53,107 +57,20 @@ fn compiled_arch() -> &'static str {
         "x86_64"
     }
 }
-/// Use the running build's pinned root even when its launcher predates this gate.
-pub(crate) fn start_login_update(update: &UpdatePointer) -> Result<(), UpdateError> {
-    let channel = update.update_channel.as_str();
-    require_update_root(pinned_root(channel))?;
-    #[cfg(windows)]
-    {
-        let exe = std::env::current_exe().map_err(|_| UpdateError::Configuration)?;
-        login_install_directory(&exe).ok_or(UpdateError::Configuration)?;
-        std::process::Command::new(exe)
-            .arg("--login-update")
-            .arg(channel)
-            .arg(
-                update
-                    .minimum_release_sequence
-                    .map_or_else(String::new, |minimum| minimum.to_string()),
-            )
-            .arg(&update.manual_download_url)
-            .spawn()
-            .map_err(|_| UpdateError::Unavailable)?;
-        Ok(())
-    }
-    #[cfg(not(windows))]
-    Err(UpdateError::Unavailable)
-}
-
-fn require_update_root(root: &[u8]) -> Result<(), UpdateError> {
-    if root.is_empty() {
-        return Err(UpdateError::Configuration);
-    }
-    Ok(())
-}
-
-#[cfg(windows)]
-fn login_install_directory(exe: &Path) -> Option<&Path> {
-    let slot = exe.parent()?;
-    let releases = slot.parent()?;
-    let directory = releases.parent()?;
-    (release_directory(slot.file_name()?.to_str()?)
-        && releases.file_name()? == "releases"
-        && directory.join("current.txt").is_file()
-        && directory.join("oteryn-launcher.exe").is_file())
-    .then_some(directory)
-}
-
-/// Handle a gate-triggered updater subprocess before acquiring the client-instance mutex.
-#[cfg(windows)]
-pub fn login_update_requested() -> Option<std::process::ExitCode> {
-    let mut args = std::env::args_os().skip(1);
-    if args.next()?.as_os_str() != "--login-update" {
-        return None;
-    }
-    let mut run = || {
-        let [channel, minimum, url] = [args.next()?, args.next()?, args.next()?];
-        if args.next().is_some() {
-            return None;
-        }
-        let (channel, minimum, url) = (channel.to_str()?, minimum.to_str()?, url.to_str()?);
-        let minimum = if minimum.is_empty() {
-            None
-        } else {
-            Some(minimum.parse().ok()?)
-        };
-        let result = (|| {
-            let exe = std::env::current_exe().map_err(|_| UpdateError::Configuration)?;
-            let directory = login_install_directory(&exe).ok_or(UpdateError::Configuration)?;
-            window::wait_for_client_exit()?;
-            let runtime = tokio::runtime::Runtime::new().map_err(|_| UpdateError::Unavailable)?;
-            runtime.block_on(maintain_with_minimum(
-                directory,
-                channel,
-                Action::Update,
-                minimum,
-            ))
-        })();
-        if let Ok(message) = result {
-            crate::win_mutex::show_error(&message);
-            Some(std::process::ExitCode::SUCCESS)
-        } else {
-            crate::win_mutex::show_error(&format!(
-                "Automatic update could not finish. Download Oteryn at {url}"
-            ));
-            Some(std::process::ExitCode::FAILURE)
-        }
-    };
-    Some(run().unwrap_or(std::process::ExitCode::FAILURE))
-}
-
 /// Shared CLI/native-window caller; operations serialize across processes in this installation.
 pub async fn maintain(
     directory: &Path,
     channel: &str,
     action: Action,
 ) -> Result<String, UpdateError> {
-    maintain_with_minimum(directory, channel, action, None).await
+    maintain_release(directory, channel, action, None).await
 }
 
-async fn maintain_with_minimum(
+async fn maintain_release(
     directory: &Path,
     channel: &str,
     action: Action,
-    minimum_release_sequence: Option<u64>,
+    gate: Option<(ReleaseIdentity, Option<u64>)>,
 ) -> Result<String, UpdateError> {
     let config = UpdateConfig::new(
         channel,
@@ -172,7 +89,9 @@ async fn maintain_with_minimum(
     #[cfg(windows)]
     let _maintenance = window::acquire_maintenance()?;
     let update = UpdateClient::check(config, &directory.join(".updates")).await?;
-    update.require_minimum(minimum_release_sequence)?;
+    if let Some((refused, minimum)) = gate {
+        update.require_login_update(minimum, refused)?;
+    }
     let current = std::fs::read_to_string(directory.join("current.txt")).unwrap_or_default();
     if action == Action::Check {
         return Ok(format!(
@@ -200,8 +119,15 @@ async fn maintain_with_minimum(
         return Ok("Verified installed release against the current signed package.".into());
     }
     let installed = install::install(&package, directory, &update.policy.current_release_id)?;
-    Ok(format!(
-        "Installed verified release {installed}. Start the launcher to play."
+    if gate.is_some() {
+        return Ok(lfmt!(
+            "Installed verified release {installed}. Oteryn will restart when you close this message.",
+            installed = installed
+        ));
+    }
+    Ok(lfmt!(
+        "Installed verified release {installed}. Start the launcher to play.",
+        installed = installed
     ))
 }
 /// Returns true when a maintenance command was consumed, without starting gameplay.
@@ -209,6 +135,11 @@ pub fn requested(
     directory: &Path,
     args: &[std::ffi::OsString],
 ) -> Option<Result<String, UpdateError>> {
+    let channel = if args.iter().any(|a| a == "--beta") {
+        "beta"
+    } else {
+        "stable"
+    };
     let action = if args.iter().any(|a| a == "--check-updates") {
         Action::Check
     } else if args.iter().any(|a| a == "--verify-release") {
@@ -220,14 +151,9 @@ pub fn requested(
     } else {
         #[cfg(windows)]
         if args.iter().any(|a| a == "--updates") {
-            return Some(window::show(directory));
+            return Some(window::show(directory, channel));
         }
         return None;
-    };
-    let channel = if args.iter().any(|a| a == "--beta") {
-        "beta"
-    } else {
-        "stable"
     };
     Some(
         tokio::runtime::Runtime::new()

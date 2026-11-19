@@ -102,7 +102,14 @@ pub(super) fn install(
     directory: &Path,
     release: &str,
 ) -> Result<String, UpdateError> {
-    if !super::release_directory(release) || release.contains('~') {
+    const MAX_SLOT_LENGTH: usize = 64;
+    // Match the manual installer's ReadPointer checks for every new slot.
+    if !super::release_directory(release)
+        || release.contains('~')
+        || release.starts_with('.')
+        || release.contains("..")
+        || release.len() > MAX_SLOT_LENGTH
+    {
         return Err(UpdateError::Verification);
     }
     let releases = directory.join("releases");
@@ -113,6 +120,9 @@ pub(super) fn install(
             break;
         }
         slot = format!("{release}~{n}");
+    }
+    if slot.len() > MAX_SLOT_LENGTH {
+        return Err(UpdateError::Verification);
     }
     let stage = releases.join(format!(".stage-{}", std::process::id()));
     fs::create_dir(&stage).map_err(|_| UpdateError::Storage)?;
