@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the actual heavy-gate script and PostgreSQL runner expressions."""
+from collections import Counter
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,64 @@ from validate_repository_policy_core import indented_yaml_mapping_block
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github/workflows/pr-postgres-harness.yml"
+
+
+class PostgresLibraryArchiveTests(unittest.TestCase):
+    def step(self, name):
+        return WORKFLOW.read_text().split(f"      - name: {name}\n", 1)[1].split("\n      - name:", 1)[0]
+
+    def test_library_build_archives_the_selected_packages_once(self):
+        step = self.step("Archive PostgreSQL-backed library tests")
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1])
+        # Simulate archive creation while recording the Cargo arguments and shard environment.
+        cargo = 'cargo() { printf "%s\\n" "${OTERYN_DISPATCH_PG_SHARD-unset}" "$@"; }\n'
+        for packages in (["oteryn-gameplay-dispatch"], ["oteryn-gameplay-durability"],
+                         ["oteryn-game-server", "oteryn-gameplay-dispatch", "oteryn-gameplay-durability"]):
+            with self.subTest(packages=packages), tempfile.TemporaryDirectory() as directory:
+                env = dict(os.environ, RUNNER_TEMP=directory, LIB_PACKAGES=json.dumps(packages),
+                           OTERYN_DISPATCH_PG_SHARD="2/3")
+                result = subprocess.check_output(["bash", "-c", cargo + script], env=env, text=True)
+                package_args = [arg for package in packages for arg in ("-p", package)]
+                self.assertEqual(result.splitlines(), [
+                    "unset", "+1.100.0", "nextest", "archive", "--locked", *package_args, "--lib",
+                    "--archive-file", f"{directory}/pg-archives/pg-lib.tar.zst",
+                ])
+        self.assertIn('          CARGO_BUILD_JOBS: "1"\n', step)
+
+    def test_every_library_test_is_planned_once_from_the_combined_archive(self):
+        partition = indented_yaml_mapping_block(WORKFLOW.read_text(), "durability_postgres", 2)
+        total = len(re.search(r"^        partition: \[(.+)\]$", partition, re.M)[1].split(","))
+        script = textwrap.dedent(self.step("Plan partition").split("        run: |\n", 1)[1])
+        dispatch = "oteryn-gameplay-dispatch"
+        suites = {
+            dispatch: ["unit::smoke", "gameplay_transport::monk_save::postgres_tests::explicit"]
+            + [f"gameplay_transport::monk_save::postgres_tests::mounted::case_{i}" for i in range(total)],
+            "oteryn-gameplay-durability": ["postgres::durability"],
+            "oteryn-game-server": ["postgres::server"],
+        }
+        listing = {"rust-suites": {
+            binary: {"binary-id": binary, "testcases": {
+                name: {"filter-match": {"status": "matches"}} for name in names
+            }} for binary, names in suites.items()
+        }}
+        expected = Counter(f"--filterset=binary_id(={binary}) & test(={name})"
+                           for binary, names in suites.items() for name in names)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archives = root / "pg-archives"
+            archives.mkdir()
+            (archives / "pg-lib.tar.zst").write_text(json.dumps(listing))
+            pg_run = root / "pg-run"
+            pg_run.write_text('#!/bin/bash\nset -eu\ntest "$3" = list\ncat "$5"\n')
+            pg_run.chmod(0o755)
+            actual = Counter()
+            for index in range(total):
+                env = dict(os.environ, RUNNER_TEMP=directory, GITHUB_WORKSPACE=str(ROOT),
+                           PG_RUN=str(pg_run), PG_WORKSPACE=directory, LABEL=str(index + 1),
+                           JOB_INDEX=str(index), JOB_TOTAL=str(total))
+                subprocess.run(["bash", "-c", script], env=env, check=True, capture_output=True, text=True)
+                actual.update((root / "pg-plan/pg-lib.filters").read_text().splitlines())
+        self.assertEqual(actual, expected)
 
 
 class HeavyGateTests(unittest.TestCase):
