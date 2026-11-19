@@ -350,14 +350,14 @@ pub(super) fn surround_with_portals(
         y: trigger.y,
         floor: trigger.floor,
     };
-    for dx in -1..=1 {
-        for dy in -1..=1 {
-            if (dx, dy) == (0, 0) {
+    for x in (trigger.x - 1)..=(trigger.x + 1) {
+        for y in (trigger.y - 1)..=(trigger.y + 1) {
+            if (x, y) == (trigger.x, trigger.y) {
                 continue;
             }
             let position = TilePos {
-                x: trigger.x + dx,
-                y: trigger.y + dy,
+                x,
+                y,
                 floor: trigger.floor,
             };
             let tile = map
