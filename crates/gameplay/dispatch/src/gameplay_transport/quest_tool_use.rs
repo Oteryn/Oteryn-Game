@@ -267,7 +267,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|_| callback.capture_creature)
             .and_then(|proof| proof.target_actor());
         let capture_key = callback.creature_target.clone();
-        let costume = if let Some(spec) = callback.temporary_outfit {
+        let costume = callback.temporary_outfit;
+        if let Some(spec) = costume {
             if !native
                 .policies()
                 .policies()
@@ -278,20 +279,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
             let states = self.states.spell_states.lock().await;
-            let Some(current) = states.get(runtime, actor, command.game_session_id) else {
+            if states.get(runtime, actor, command.game_session_id).is_none()
+                || states.is_dead(actor)
+                || !states.spell_idle(runtime, actor, command.game_session_id)
+            {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
-            };
-            let disguise = crate::spell::actor_conditions::stage_item_costume(
-                current,
-                u32::from(spec.look_type),
-                spec.duration_ms,
-                self.owner_now().get() / 1_000,
-            )
-            .map_err(|_| ())?;
-            Some(disguise)
-        } else {
-            None
-        };
+            }
+        }
         let costume_cues = callback
             .temporary_outfit
             .map(|_| (callback.reply.clone(), callback.magic_effects.clone()));
@@ -326,9 +320,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?;
         if let Some(turn) = &mut creature_runtime {
             if matches!(result, QuestTransitionOutcome::Committed(_))
-                && let Some(costume) = costume
+                && let Some(spec) = costume
             {
                 let mut states = self.states.spell_states.lock().await;
+                let current = states
+                    .get(&turn.runtime, actor, command.game_session_id)
+                    .ok_or(())?;
+                // Crystal actions_strange_bucket.lua:66-67 applies the two-minute
+                // outfit after transforming the bucket. Storage latency must not
+                // use up the player's time to reach the cellar entrance.
+                let costume = crate::spell::actor_conditions::stage_item_costume(
+                    current,
+                    u32::from(spec.look_type),
+                    spec.duration_ms,
+                    self.owner_now().get() / 1_000,
+                )
+                .map_err(|_| ())?;
                 if !states.commit(&turn.runtime, actor, command.game_session_id, costume) {
                     return Err(());
                 }
