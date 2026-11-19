@@ -950,6 +950,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return disposition;
         }
+        if encounter.solo_expiry.is_some()
+            && let Some(magic) = &callback.effects.magic
+        {
+            // Crystal movement_kroazur_room.lua:66-69 plays an entrance cue
+            // as well as the normal effect at the committed landing.
+            map.facts
+                .emit_movement_effect(tile(magic.position), magic.effect);
+        }
         for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {
             states.stage_special_movement_step(
                 runtime,
@@ -972,6 +980,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(pos) = native(snapshot.position()) {
                 map.facts.emit_movement_effect(pos, 11);
             }
+        }
+        if encounter.solo_expiry.is_some()
+            && let Some(message) = &callback.success_message
+        {
+            self.states.chat.push_quest_feedback(session, message);
         }
         UseDisposition::Committed
     }

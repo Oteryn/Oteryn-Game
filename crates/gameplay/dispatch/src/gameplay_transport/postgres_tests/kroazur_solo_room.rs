@@ -23,6 +23,8 @@ const QUEST: &str = "oteryn:quest.threatened_dreams_quest";
 const ACCESS: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_access";
 const KROAZUR: &str = "oteryn:creature.kroazur";
+// Crystal movement_kroazur_room.lua:69.
+const ADMISSION_TEXT: &str = "You have ten minutes to kill and loot this boss, else you will lose that chance and will be kicked out.";
 // Crystal data-global/startup/tables/tile.lua:993-999 maps AID 25029 here.
 const TRIGGER: Position = Position {
     x: 33619,
@@ -51,8 +53,9 @@ pub(super) fn binding() -> TestResult<Callback> {
             "native":{"position":TRIGGER,"ordinal":1,"appearance":10840}},
         "requires_world_admission":true,
         "return_on_failure":true,"reversible":false,"passages":[],"offerings":[],
+        "success_message":ADMISSION_TEXT,
         "storage":[{"track":ACCESS,"minimum":1,"maximum":1,"set":1}],
-        "effects":{"encounter":{
+        "effects":{"magic":{"position":TRIGGER,"effect":11},"encounter":{
             "minimum_level":0,
             "players":[{"from":TRIGGER,"to":LANDING}],
             "monsters":[{"position":at(33591,32305),"creature":KROAZUR}],
@@ -182,7 +185,19 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
     };
     let before = measure().await?;
+    let map = owner.bundle_map().ok_or("Kroazur map")?;
+    let effect_cursor = map.facts.movement_effects_since(0).last().map_or(0, |cue| cue.0);
     step(owner, admitted, 2, LANDING).await?;
+    let effects = map.facts.movement_effects_since(effect_cursor);
+    for position in [TRIGGER, LANDING] {
+        assert_eq!(effects.iter().filter(|(_, at, effect)| {
+            (at.x, at.y, at.floor, *effect) == (position.x, position.y, position.floor, 11)
+        }).count(), 1);
+    }
+    let messages = owner.states.chat.drain(admitted.game_session_id);
+    assert_eq!(messages.iter().filter(|line| {
+        matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == ADMISSION_TEXT)
+    }).count(), 1);
     assert_eq!(
         super::engworldchg_journals::live_creatures(owner, KROAZUR)
             .await?
@@ -232,6 +247,9 @@ pub(super) async fn exercise(
         runtime.commit_source_step(proof).map_err(debug)?;
     }
     step(owner, admitted, 3, ORIGIN).await?;
+    assert!(!owner.states.chat.drain(admitted.game_session_id).iter().any(|line| {
+        matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == ADMISSION_TEXT)
+    }));
     assert!(
         super::engworldchg_journals::live_creatures(owner, KROAZUR)
             .await?
