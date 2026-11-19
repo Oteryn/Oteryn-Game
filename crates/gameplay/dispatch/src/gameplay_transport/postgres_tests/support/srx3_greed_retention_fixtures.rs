@@ -1,5 +1,5 @@
 use super::srx3_native_source_cast_fixtures::{
-    NATIVE_TURN_TIMEOUT, drain_ready_monster_melee_at, native_melee_work_due,
+    NATIVE_TURN_TIMEOUT, drain_ready_monster_melee_at, next_native_melee_deadline,
     settle_monster_melee_at as settle,
 };
 use super::{TestResult, fixture::debug};
@@ -198,8 +198,8 @@ pub(super) async fn exercise(
         .pause_greed_after_spawn_for_test(model::STRONG_SOUL)
         .map_err(debug)?;
     let mut transformed_at = None;
-    for tick in 1..=12 {
-        let now = lethal_at + tick * 1_000_000;
+    for _ in 0..12 {
+        let now = next_think_due(owner, weak).await?;
         heal(owner, admitted).await?;
         if drive_to_boundary(owner, &signal, now).await? {
             transformed_at = Some(now);
@@ -336,29 +336,33 @@ async fn late_soulsnatcher_health(
         .greed_observed_for_test(soul)
         .and_then(|(_, _, last)| last);
     let mut thinks = usize::from(last.is_some());
-    let mut seventh = None;
-    for tick in 0..12 {
-        let now = start + tick * 1_000_000;
+    while thinks < 7 {
         heal(owner, admitted).await?;
-        settle(owner, now).await?;
-        let actual = owner
-            .states
-            .spell_states
-            .lock()
-            .await
-            .soul_war_callbacks
-            .greed_observed_for_test(soul)
-            .and_then(|(_, _, last)| last);
-        if actual.is_some() && actual != last {
-            thinks += 1;
-            last = actual;
-        }
-        if thinks == 7 {
-            seventh = Some(now);
-            break;
-        }
+        last = tokio::time::timeout(NATIVE_TURN_TIMEOUT, async {
+            let mut now = next_think_due(owner, soul).await?;
+            loop {
+                settle(owner, now).await?;
+                let actual = owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .soul_war_callbacks
+                    .greed_observed_for_test(soul)
+                    .and_then(|(_, _, last)| last);
+                if actual.is_some() && actual != last {
+                    return Ok::<_, Box<dyn std::error::Error>>(actual);
+                }
+                // Movement-only AI passes do not count as a source Think.
+                next_think_due(owner, soul).await?;
+                now = next_native_melee_deadline(owner).await?;
+            }
+        })
+        .await
+        .map_err(|_| "seven genuine native Soulsnatcher Thinks")??;
+        thinks += 1;
     }
-    let original = seventh.ok_or("seven genuine native Soulsnatcher Thinks")? + 1_000_000;
+    let original = next_think_due(owner, soul).await?;
     let before = owner
         .states
         .spell_states
@@ -537,10 +541,8 @@ async fn reach_boundary(
     signal: &Arc<tokio::sync::Notify>,
     now: u64,
 ) -> TestResult {
-    if drive_to_boundary(owner, signal, now).await? {
-        return Ok(());
-    }
-    Err("actual source callback did not reach its observed boundary".into())
+    drive_boundary(owner, signal, now, false).await?;
+    Ok(())
 }
 
 async fn drive_to_boundary(
@@ -548,10 +550,34 @@ async fn drive_to_boundary(
     signal: &Arc<tokio::sync::Notify>,
     now: u64,
 ) -> TestResult<bool> {
+    drive_boundary(owner, signal, now, true).await
+}
+
+async fn next_think_due(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+) -> TestResult<u64> {
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .monster_melee
+        .creature_ai
+        .due(actor)
+        .ok_or_else(|| "actual next Greed creature Think".into())
+}
+
+async fn drive_boundary(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    signal: &tokio::sync::Notify,
+    now: u64,
+    allow_settled: bool,
+) -> TestResult<bool> {
     let drive = async {
         loop {
             drain_ready_monster_melee_at(owner, now).await?;
-            if !native_melee_work_due(owner, now).await? {
+            if allow_settled && next_native_melee_deadline(owner).await? > now {
                 return Ok(false);
             }
             tokio::task::yield_now().await;

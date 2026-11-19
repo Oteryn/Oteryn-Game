@@ -3,7 +3,8 @@
 use super::fixture::{Harness, debug, run};
 use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_player};
 use super::srx3_native_source_cast_fixtures::{
-    NATIVE_TURN_TIMEOUT, drain_ready_monster_melee_at, settle_monster_melee_at,
+    NATIVE_TURN_TIMEOUT, drain_ready_monster_melee_at, next_native_melee_deadline,
+    settle_monster_melee_at,
 };
 use super::{Dependencies, TestResult, reset};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
@@ -107,8 +108,9 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
             };
             let mut selected = false;
             let mut now = owner.owner_now().get();
-            // Drive the actual Think deadlines. The native defense interval is
-            // counted in committed Thinks and each chance draw uses their sequence.
+            // The 10% defence draw is keyed to the actor and committed Think
+            // sequence. Honor source deadlines too: the alternate defence can
+            // park the caster until its retained return callback moves it back.
             for _ in 0..128 {
                 settle_monster_melee_at(&owner, now).await?;
                 let runtime = owner.runtime.lock().await;
@@ -129,7 +131,19 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                 if selected {
                     break;
                 }
-                now = states.next_monster_ai_pass_us;
+                let parked = runtime.read_actor_position(base).map_err(debug)?.position().floor
+                    != ARENA.floor;
+                if parked {
+                    now = states
+                        .native_callbacks
+                        .next_source_due_time()
+                        .map_err(debug)?
+                        .ok_or("alternate guardian defence retained its return deadline")?;
+                    continue;
+                }
+                drop(states);
+                drop(runtime);
+                now = next_native_melee_deadline(&owner).await?;
             }
             assert!(
                 selected,
