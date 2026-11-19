@@ -8,6 +8,12 @@ use crate::durability::{
 };
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::{AdmittedSession, ComposedFreshAdmission};
+use crate::map::{
+    boot::BundleMap,
+    facts::QuestCallbackProjection,
+    overlay::TilePos,
+    view::{MapFacts, placement_key},
+};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     world_callbacks::{self, Callback, Position},
@@ -19,6 +25,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 use std::sync::Arc;
 
 pub(super) const NAME: &str = "lucifuga-bait-spawn";
+pub(super) const PORTALS: &str = "lucifuga-bait-portals";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const BAIT: &str =
     "oteryn:quest-progress/crystalserver/quest/u12_00/the_dream_courts/unsafe_release/has_bait";
@@ -60,6 +67,61 @@ fn lucifuga_requires_bait_and_rearms_its_exact_tile_after_the_donor_window() -> 
     super::kill_reward_e2e::scenario_thread::run(NAME, || scenario(NAME, TRIGGER, false))
 }
 
+#[test]
+fn lucifuga_skips_adjacent_portals_and_rearms_when_no_spawn_tile_is_available() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(PORTALS, || scenario(PORTALS, TRIGGER, false))
+}
+
+fn surround_with_portals(map: &BundleMap, due: u64) -> TestResult {
+    let destination = TilePos {
+        x: TRIGGER.x + 4,
+        y: TRIGGER.y,
+        floor: TRIGGER.floor,
+    };
+    for dx in -1..=1 {
+        for dy in -1..=1 {
+            if (dx, dy) == (0, 0) {
+                continue;
+            }
+            let position = TilePos {
+                x: TRIGGER.x + dx,
+                y: TRIGGER.y + dy,
+                floor: TRIGGER.floor,
+            };
+            let tile = map
+                .overlay
+                .base()
+                .tile(position.x, position.y, position.floor)
+                .ok_or("portal fixture tile")?;
+            let id = *tile.ids().first().ok_or("portal fixture ground")?;
+            let entry = map
+                .facts
+                .base_entry(position, 0, id)
+                .ok_or("ground facts")?;
+            let key = placement_key(position, 0).ok_or("portal fixture placement")?;
+            let portal = QuestCallbackProjection::TimedEntrance {
+                due,
+                restore: entry,
+                position,
+                destination,
+            };
+            assert!(
+                map.facts
+                    .apply_quest_callback(key, 0, entry, &[], &[], false, Some(&portal))
+            );
+            assert_eq!(
+                map.facts.quest_portal_destination(position, due - 1),
+                Some(destination)
+            );
+        }
+    }
+    Ok(())
+}
+
 async fn step(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -85,10 +147,11 @@ pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     fence: CurrentCharacterGameplayFence,
+    portals: bool,
 ) -> TestResult {
     let map = owner.bundle_map().ok_or("map")?;
-    let key = crate::map::view::placement_key(
-        crate::map::overlay::TilePos {
+    let key = placement_key(
+        TilePos {
             x: TRIGGER.x,
             y: TRIGGER.y,
             floor: TRIGGER.floor,
@@ -128,11 +191,10 @@ pub(super) async fn exercise(
     drop(slot);
 
     let before = owner.owner_now().get();
+    if portals {
+        surround_with_portals(map, before + 900_000_000)?;
+    }
     step(owner, admitted, 3, StepDirection::East).await?;
-    let [spider] = creatures(owner, SPIDER)
-        .await?
-        .try_into()
-        .map_err(|_| "exactly one spider")?;
     assert_eq!(map.facts.action_at(key), None);
     let due = map
         .facts
@@ -140,6 +202,16 @@ pub(super) async fn exercise(
         .ok_or("rearm deadline")?;
     assert!(due >= before + 60_000_000);
     assert!(due <= owner.owner_now().get() + 600_000_000);
+    let spiders = creatures(owner, SPIDER).await?;
+    if portals {
+        // Crystal src/map/map.cpp:293-295 skips all of these valid adjacent tiles.
+        assert!(spiders.is_empty());
+        assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+        assert_eq!(map.facts.expire_movement_items(due), 1);
+        assert_eq!(map.facts.action_at(key), Some(23120));
+        return Ok(());
+    }
+    let [spider] = spiders.try_into().map_err(|_| "exactly one spider")?;
     owner
         .runtime
         .lock()

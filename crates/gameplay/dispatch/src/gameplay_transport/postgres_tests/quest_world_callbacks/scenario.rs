@@ -358,7 +358,7 @@ fn scenario_case(
     use super::super::dreamers_wall_portal;
     let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR);
     use super::super::lucifuga_bait_spawn;
-    let lucifuga = name == lucifuga_bait_spawn::NAME;
+    let lucifuga = matches!(name, lucifuga_bait_spawn::NAME | lucifuga_bait_spawn::PORTALS);
     use super::super::faceless_bane_phase;
     let faceless_bane = name == faceless_bane_phase::NAME;
     use super::super::feaster_brain_head;
@@ -3116,7 +3116,9 @@ fn scenario_case(
         } else if kroazur {
             Box::pin(kroazur_solo_room::exercise(&mut owner, &mut admitted, &h, fence)).await?;
         } else if lucifuga {
-            Box::pin(lucifuga_bait_spawn::exercise(&owner, &mut admitted, fence)).await?;
+            Box::pin(lucifuga_bait_spawn::exercise(
+                &owner, &mut admitted, fence, name == lucifuga_bait_spawn::PORTALS,
+            )).await?;
         } else if outfit_world
             || callback.effects != Default::default() && !dreamers_wall
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
