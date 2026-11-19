@@ -322,10 +322,7 @@ impl<S: SessionStream> Session<S> {
                     chat::DELTA_TYPE_CHAT_LINE_V1 => {
                         match chat_extended::decode_line(delta.payload, &self.selected_capabilities)?
                         {
-                            chat_extended::Decoded::Line { mut line, extra } => {
-                                if crate::presentation::native_basis(self) {
-                                    crate::presentation::project_legacy_chat(&mut line)?;
-                                }
+                            chat_extended::Decoded::Line { line, extra } => {
                                 line_extra = Some(extra);
                                 SessionEvent::ChatLine(applied(
                                     server_sequence,

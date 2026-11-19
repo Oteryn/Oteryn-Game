@@ -8,18 +8,18 @@ fn review_live_map_skips_unrepresentable_projected_tiles() -> Result<(), BatchEr
     let origin = ActorPosition {
         x: i32::MAX,
         y: i32::MAX,
-        floor: -6,
+        floor: 6,
     };
     for position in [
         ActorPosition {
             x: origin.x,
             y: origin.y - 1,
-            floor: -7,
+            floor: 7,
         },
         ActorPosition {
             x: origin.x - 1,
             y: origin.y,
-            floor: -7,
+            floor: 7,
         },
     ] {
         let snapshot = WorldMapViewSnapshot {
@@ -28,7 +28,7 @@ fn review_live_map_skips_unrepresentable_projected_tiles() -> Result<(), BatchEr
                 content_generation: [0; 32],
                 bundle_digest: [0; 32],
                 reset_epoch: 1,
-                first_visible_floor: -6,
+                first_visible_floor: 6,
             },
             tiles: vec![MapTile {
                 position,
@@ -53,7 +53,7 @@ fn review_live_map_skips_unrepresentable_projected_tiles() -> Result<(), BatchEr
         )?;
         view.set_live_map(&snapshot)?;
         let mut world = World::from_live_map(&snapshot)?;
-        assert!(world.floor_tile(-7, i32::MIN, i32::MIN).is_none());
+        assert!(world.floor_tile(7, i32::MIN, i32::MIN).is_none());
         world.animations = std::sync::Arc::from([TileAnimation {
             position,
             elevation: 0,
@@ -82,7 +82,7 @@ fn animation_durations_preserve_stack_order_and_transparent_phases() {
         position: ActorPosition {
             x: 100,
             y: 200,
-            floor: -7,
+            floor: 7,
         },
         elevation: 24,
         items: vec![
@@ -119,9 +119,9 @@ fn dense_visible_floors_keep_deepest_draws_within_one_batch() -> Result<(), Batc
     use oteryn_renderer::{MAX_BATCH_QUADS, TileCoord};
     use std::sync::Arc;
     let mut world = World::builtin()?;
-    world.center = (100, 200, -8);
-    for floor in -10..=-8 {
-        let shift = i32::from(floor + 8);
+    world.center = (100, 200, 8);
+    for floor in 8..=10 {
+        let shift = i32::from(8 - floor);
         for y in 195..=205 {
             for x in 93..=107 {
                 world.insert_floor_tile(
@@ -133,7 +133,7 @@ fn dense_visible_floors_keep_deepest_draws_within_one_batch() -> Result<(), Batc
                     crate::map::MapTile {
                         under: vec![
                             Draw {
-                                cell: if floor == -10 {
+                                cell: if floor == 10 {
                                     MARKER_CELL
                                 } else {
                                     TARGET_CELL
@@ -176,7 +176,7 @@ fn live_appearance_uses_native_floor_and_server_placements_only() -> Result<(), 
     let position = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     let mut map = WorldMapViewSnapshot {
         header: MapViewHeader {
@@ -204,7 +204,7 @@ fn live_appearance_uses_native_floor_and_server_placements_only() -> Result<(), 
     };
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let world = World::resolve_live_map(&root, &map)?;
-    assert_eq!(world.center(), (100, 200, -7));
+    assert_eq!(world.center(), (100, 200, 7));
     assert_eq!(world.tile_count(), 1);
     let tile = world.tile(100, 200).ok_or("live tile missing")?;
     assert!(
@@ -217,13 +217,13 @@ fn live_appearance_uses_native_floor_and_server_placements_only() -> Result<(), 
     upper.position = ActorPosition {
         x: 101,
         y: 201,
-        floor: -6,
+        floor: 6,
     };
     map.tiles.push(upper);
     let layered = World::resolve_live_map(&root, &map)?;
     assert_eq!(layered.tile_count(), 2);
     let upper = layered
-        .floor_tile(-6, 100, 200)
+        .floor_tile(6, 100, 200)
         .ok_or("upper floor missing")?;
     assert!(
         upper

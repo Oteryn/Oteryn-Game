@@ -22,7 +22,7 @@ fn replacement_minimap_reloads_after_the_outgoing_writer_releases_ownership()
     let pending = map.snapshot(vec![Marker {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
         label: "Outgoing".into(),
         color: 1,
     }]);
@@ -69,11 +69,11 @@ fn background_import_keeps_the_old_map_when_the_new_cache_cannot_be_written()
     map.bind_world("11111111-1111-4111-8111-111111111111");
     map.observe(&joined_window(100, 200));
     let active = map.path().ok_or("cache path")?;
-    assert!(map.create_mark_at((100, 200, -7))?);
-    map.edit_marker(100, 200, -7, "Imported".into(), 1)?;
+    assert!(map.create_mark_at((100, 200, 7))?);
+    map.edit_marker(100, 200, 7, "Imported".into(), 1)?;
     let source = root.path().join("source.json");
     map.export_to(&source)?;
-    map.edit_marker(100, 200, -7, "On disk".into(), 1)?;
+    map.edit_marker(100, 200, 7, "On disk".into(), 1)?;
     let previous = std::fs::read(&active)?;
     std::fs::create_dir(active.with_extension("tmp"))?;
     map.enable_background_save();

@@ -206,6 +206,9 @@ pub fn lit_kind(kind: EntityKind) -> bool {
 }
 
 fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError> {
+    if !(0..=15).contains(&entity.position.floor) {
+        return Err(WorldSpatialError::Malformed);
+    }
     match entity.detail {
         EntityDetail::Actor {
             health_percent,
@@ -711,6 +714,9 @@ pub fn validate_snapshot(snapshot: &WorldSpatialEntitiesSnapshot) -> Result<(), 
 }
 
 pub fn validate_delta(delta: &WorldSpatialEntitiesDelta) -> Result<(), WorldSpatialError> {
+    if !(0..=15).contains(&delta.actor_position.floor) {
+        return Err(WorldSpatialError::Malformed);
+    }
     if delta.enter.len() + delta.update.len() + delta.leave.len() > MAX_DELTA_ENTRIES {
         return Err(WorldSpatialError::LimitExceeded);
     }

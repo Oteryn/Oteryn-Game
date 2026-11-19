@@ -525,7 +525,7 @@ mod movement_effect_tests {
         let observer = oteryn_protocol_oteryn::world_spatial::ActorPosition {
             x: 100,
             y: 100,
-            floor: -7,
+            floor: 7,
         };
         let at = |x, y, floor| crate::map::overlay::TilePos { x, y, floor };
         assert!(movement_effect_visible(observer, at(108, 106, -7)));

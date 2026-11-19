@@ -17,7 +17,7 @@ fn position() -> WorldTilePosition {
     WorldTilePosition {
         x: 300,
         y: 300,
-        floor: -7,
+        floor: 7,
     }
 }
 
@@ -25,7 +25,7 @@ fn field_key() -> ItemKey {
     ItemKey::BrowseField {
         x: 300,
         y: 300,
-        floor: -7,
+        floor: 7,
     }
 }
 

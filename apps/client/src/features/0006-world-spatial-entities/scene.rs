@@ -147,11 +147,11 @@ impl Scene {
                 {
                     continue;
                 }
-                let shift = i32::from(entity.position.floor) - i32::from(floor);
+                let shift = i32::from(floor) - i32::from(entity.position.floor);
                 let draw_floor = if shift == 0 {
                     i32::from(floor)
                 } else {
-                    i32::from(self.world.center().2) + shift
+                    i32::from(self.world.center().2) - shift
                 };
                 if let (Ok(draw_floor), Some(x), Some(y)) = (
                     i16::try_from(draw_floor),
@@ -193,7 +193,7 @@ impl Scene {
             let tile = if is_own {
                 self.own
             } else {
-                let shift = i32::from(entity.position.floor) - i32::from(floor);
+                let shift = i32::from(floor) - i32::from(entity.position.floor);
                 TileCoord::new(
                     entity.position.x.saturating_sub(shift),
                     entity.position.y.saturating_sub(shift),

@@ -15,7 +15,7 @@ fn unselected_target_walk_is_refused_without_consuming_a_command() -> Result<(),
                         .target_walk(ActorPosition {
                             x: -10,
                             y: 200,
-                            floor: -3
+                            floor: 3
                         })
                         .await,
                     Err(SessionError::CapabilityNotSelected { capability: 64 })

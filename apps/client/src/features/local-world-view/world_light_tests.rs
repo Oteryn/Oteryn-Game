@@ -5,12 +5,12 @@ fn server_item_appearance_emits_light_in_real_scene() -> Result<(), Box<dyn std:
     let position = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     let snapshot = WorldMapViewSnapshot {
         header: MapViewHeader {
             origin: position,
-            first_visible_floor: -7,
+            first_visible_floor: 7,
             content_generation: [1; 32],
             bundle_digest: [2; 32],
             reset_epoch: 1,
@@ -33,7 +33,7 @@ fn server_item_appearance_emits_light_in_real_scene() -> Result<(), Box<dyn std:
     };
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let world = World::resolve_live_map(&root, &snapshot)?;
-    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
     view.set_world(std::sync::Arc::new(world))?;
     assert_eq!(view.scene().sprites().lighting.sources.len(), 1);
     let light = &view.scene().sprites().lighting.sources[0];

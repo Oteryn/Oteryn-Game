@@ -12,7 +12,7 @@ fn corpse() -> Result<WorldSpatialEntity, WorldSpatialError> {
         position: ActorPosition {
             x: 33562,
             y: 32760,
-            floor: -15,
+            floor: 15,
         },
         detail: EntityDetail::ObjectWithAppearance {
             item_definition_ref: 24388,

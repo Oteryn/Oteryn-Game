@@ -13,17 +13,17 @@ fn source_map(stage: u8) -> Result<wire::world_map::WorldMapViewSnapshot, ScopeE
         1 => ActorPosition {
             x: 32375,
             y: 31158,
-            floor: -8,
+            floor: 8,
         },
         2 => ActorPosition {
             x: 32373,
             y: 31151,
-            floor: -8,
+            floor: 8,
         },
         _ => ActorPosition {
             x: 32373,
             y: 31158,
-            floor: -8,
+            floor: 8,
         },
     };
     let mut tiles = Vec::new();

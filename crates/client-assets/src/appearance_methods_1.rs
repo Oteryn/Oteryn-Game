@@ -99,8 +99,7 @@ impl AppearanceIndex {
     }
 
     /// The cells to draw for one entry, chosen as the Tibia client does. `floor` is the native
-    /// floor `-15..=0`; the depth pattern is selected from `z = -floor`, never from a negative
-    /// index.
+    /// floor `0..=15` selects the depth pattern directly.
     pub fn resolve(
         &self,
         sheets: &SpriteSheets,
@@ -134,7 +133,7 @@ impl AppearanceIndex {
         if !(1..=MAX_APPEARANCE_ID).contains(&appearance_id) {
             return Err(AssetError::InvalidAppearanceId { id: appearance_id });
         }
-        if !(-15..=0).contains(&placement.floor) {
+        if !(0..=15).contains(&placement.floor) {
             return Err(AssetError::InvalidFloor {
                 floor: placement.floor,
             });

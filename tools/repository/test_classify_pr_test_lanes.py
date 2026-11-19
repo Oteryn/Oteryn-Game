@@ -469,6 +469,158 @@ def test_candidate_modes(module):
     print("Candidate mode PASS: regular trees accepted, special modes fail closed")
 
 
+def test_pr_audit_blob_rotation():
+    audit_path = ".github/workflows/merge-authority-audit.yml"
+    pin = b"EXPECTED_MERGE_GROUP_GATE_BLOB"
+    old, new = b"a" * 40, b"b" * 40
+    audit = (
+        b'    env:\n      ' + pin + b': "' + old + b'"\n'
+        b'      EXPECTED_MERGE_GATE_BLOB: "' + b"c" * 40 + b'"\n'
+        b"    run: |\n      pin = os.environ['" + pin + b"']\n"
+    )
+    rotated = audit.replace(old, new)
+    audit_record = {"filename": audit_path, "status": "modified"}
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        git(root, "init", "-q")
+        git(root, "config", "user.email", "ci@example.invalid")
+        git(root, "config", "user.name", "CI")
+        path = root / audit_path
+        path.parent.mkdir(parents=True)
+        path.with_name("merge-gate.yml").write_text(f"run: test -f {audit_path}\n", encoding="utf-8")
+        path.write_bytes(audit)
+        git(root, "add", ".github")
+        git(root, "commit", "-qm", "protected base")
+        base = git(root, "rev-parse", "HEAD")
+        metadata = root / "metadata.json"
+        output = root / "output"
+        metadata.write_text(json.dumps(fixture()), encoding="utf-8")
+
+        def candidate(content, *, before=base, mode="100644", other_path=None):
+            git(root, "checkout", "-q", "--detach", before)
+            if content is None:
+                git(root, "rm", "-q", audit_path)
+            else:
+                blob = subprocess.check_output(
+                    ["git", "-C", str(root), "hash-object", "-w", "--stdin"], input=content
+                ).decode().strip()
+                target = other_path or audit_path
+                git(root, "update-index", "--add", "--cacheinfo", mode, blob, target)
+                git(root, "checkout-index", "-f", "--", target)
+                if other_path is not None:
+                    git(root, "rm", "-q", audit_path)
+            git(root, "commit", "-qm", "candidate")
+            return git(root, "rev-parse", "HEAD")
+
+        def route(head, *, before=base, post_merge=False, **overrides):
+            git(root, "checkout", "-q", "--detach", head if post_merge else before)
+            output.write_text("", encoding="utf-8")
+            env = dict(
+                os.environ, GITHUB_EVENT_NAME="pull_request", GITHUB_OUTPUT=str(output),
+                EXPECTED_HEAD=head, ENUMERATION_COMPLETE="true", CHANGED_FILE_COUNT="1",
+                CHANGED_FILE_RECORDS=json.dumps([audit_record]),
+            )
+            flags = []
+            if post_merge:
+                event = root / "push.json"
+                event.write_text(json.dumps(dict(
+                    before=before, after=head, ref="refs/heads/main",
+                    repository={"full_name": "Oteryn/Oteryn-Game"},
+                    forced=False, created=False, deleted=False,
+                )), encoding="utf-8")
+                env.update(
+                    GITHUB_EVENT_NAME="push", GITHUB_EVENT_PATH=str(event), GITHUB_SHA=head,
+                    GITHUB_REF="refs/heads/main", GITHUB_REF_PROTECTED="true",
+                    GITHUB_REPOSITORY="Oteryn/Oteryn-Game",
+                )
+                flags.append("--post-merge")
+            result = subprocess.check_output(
+                [sys.executable, "-I", "-B", str(MODULE.resolve()), *flags, str(metadata)],
+                cwd=root, env=env | overrides,
+            )
+            wire = dict(line.split("=", 1) for line in output.read_text(encoding="utf-8").splitlines())
+            return json.loads(result), wire
+
+        def assert_full(head, **kwargs):
+            result, _ = route(head, **kwargs)
+            assert result["rust"] is True and result["windows"] is True, (kwargs, result)
+            return result
+
+        exact = candidate(rotated)
+        for transport in ("true", "false"):
+            result, wire = route(exact, ENUMERATION_COMPLETE=transport)
+            assert result == dict(
+                rust=False, windows=False, surface="control-plane",
+                reason="merge-authority-audit-pin-only", routing_health="modelled",
+            ), result
+            assert wire == dict(
+                rust="false", windows="false", atlas_fullworld="false",
+                server_qualification="false", world_bundle="false", surface=result["surface"],
+                reason=result["reason"], routing_health="modelled",
+            ), wire
+
+        for content in (
+            rotated.replace(b"c" * 40, b"d" * 40),
+            rotated.replace(b': "', b':  "', 1),
+            rotated + b"\n",
+            rotated.replace(new, b"G" * 40),
+            rotated.replace(new, new[:-1]),
+            audit.replace(b"c" * 40, b"d" * 40),
+        ):
+            assert_full(candidate(content))
+        for invalid_base, base_pin in (
+            (audit.replace(old, b"G" * 40), b"G" * 40),
+            (audit + b'      "' + pin + b'" : "' + old + b'"\n', old),
+        ):
+            before = candidate(invalid_base)
+            head = candidate(invalid_base.replace(base_pin, new, 1), before=before)
+            assert_full(head, before=before)
+        assert_full(candidate(rotated, mode="100755"))
+        executable_base = candidate(audit, mode="100755")
+        assert_full(candidate(rotated, before=executable_base), before=executable_base)
+        assert_full(candidate(b"merge-gate.yml", mode="120000"))
+        assert_full(candidate(None))
+        assert_full(candidate(rotated, other_path=audit_path + ".renamed"))
+
+        git(root, "checkout", "-q", "--detach", exact)
+        (root / "unknown.bin").write_bytes(b"extra")
+        git(root, "add", "unknown.bin")
+        git(root, "commit", "-qm", "mixed")
+        mixed = git(root, "rev-parse", "HEAD")
+        assert_full(mixed)  # Even when the transported enumeration claims the one allowed path.
+        assert_full(mixed, ENUMERATION_COMPLETE="false")
+
+        empty_tree = subprocess.check_output(
+            ["git", "-C", str(root), "mktree"], input="", text=True,
+        ).strip()
+        tree = subprocess.check_output(
+            ["git", "-C", str(root), "mktree"],
+            input=git(root, "ls-tree", exact) + f"\n040000 tree {empty_tree}\tempty\n",
+            text=True,
+        ).strip()
+        tree_only_extra = git(root, "commit-tree", tree, "-p", base, "-m", "extra empty tree")
+        assert git(root, "diff", "--name-only", base, tree_only_extra) == audit_path
+        assert_full(tree_only_extra, ENUMERATION_COMPLETE="false")
+
+        git(root, "checkout", "-q", "--detach", base)
+        (root / "base-only.bin").write_bytes(b"base moved")
+        git(root, "add", "base-only.bin")
+        git(root, "commit", "-qm", "advanced protected base")
+        assert_full(exact, before=git(root, "rev-parse", "HEAD"))
+
+        assert_full(exact, CHANGED_FILE_COUNT="2")
+        assert_full(exact, ENUMERATION_COMPLETE="unknown")
+        assert_full(exact, CHANGED_FILE_RECORDS=json.dumps([dict(audit_record, previous_filename=audit_path)]))
+        assert_full(exact, GITHUB_EVENT_NAME="merge_group")
+        assert_full(base)
+        assert_full("0" * 40)
+        assert assert_full(exact, post_merge=True)["reason"] == "canonical-control-consumer-affected"
+        metadata.write_text("{}", encoding="utf-8")
+        assert_full(exact)
+    print("Audit rotation PASS: exact PR pin replacement only, full routing for all other cases")
+
+
 def test_large_pr_fallback(module):
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
@@ -1210,6 +1362,7 @@ def main() -> int:
     test_directory_reference_left_boundary(module)
     test_documentation_fast_path(module)
     test_candidate_modes(module)
+    test_pr_audit_blob_rotation()
     test_large_pr_fallback(module)
     test_scope_file_count_drift(module)
     test_scope_count_drift(module)

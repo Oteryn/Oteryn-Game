@@ -42,7 +42,7 @@ fn replacement_snapshot_idle_and_during_command_continues_sequence() -> Result<(
                             read_frame(&mut server).await?;
                         }
                         let replacement =
-                            encode_world_map_snapshot(&map(-8, 2)).map_err(|e| format!("{e:?}"))?;
+                            encode_world_map_snapshot(&map(8, 2)).map_err(|e| format!("{e:?}"))?;
                         let vitals = actor_spell::encode_actor_vitals(&vitals(77, 55))
                             .map_err(|e| format!("{e:?}"))?;
                         for frame in encode_single_chunk_snapshot(
@@ -81,14 +81,14 @@ fn replacement_snapshot_idle_and_during_command_continues_sequence() -> Result<(
                         )
                         .await?;
                         let changed = encode_world_map_delta(
-                            &map(-8, 2).header,
+                            &map(8, 2).header,
                             &WorldMapViewDelta {
                                 header: MapViewHeader {
                                     origin: ActorPosition {
                                         x: 101,
-                                        ..map(-8, 2).header.origin
+                                        ..map(8, 2).header.origin
                                     },
-                                    ..map(-8, 2).header
+                                    ..map(8, 2).header
                                 },
                                 tiles: vec![],
                                 cleared: vec![],
@@ -109,7 +109,7 @@ fn replacement_snapshot_idle_and_during_command_continues_sequence() -> Result<(
                         session.wait_for_events(DEADLINE).await?;
                     }
                     session.step(StepDirection::North).await?;
-                    assert_eq!(session.world_map_snapshot(), Some(map(-8, 2)));
+                    assert_eq!(session.world_map_snapshot(), Some(map(8, 2)));
                     assert_eq!(session.actor_vitals(), Some(&vitals(77, 55)));
                     let events = session.wait_for_events(DEADLINE).await?;
                     // Already queued replacement events may return before the following delta.
@@ -153,7 +153,7 @@ fn replacement_snapshot_is_atomic_and_poisoned_on_invalid_transfer_or_domain()
                         )
                         .await?;
                         let replacement =
-                            encode_world_map_snapshot(&map(-8, 2)).map_err(|e| format!("{e:?}"))?;
+                            encode_world_map_snapshot(&map(8, 2)).map_err(|e| format!("{e:?}"))?;
                         let domains = [
                             DomainSnapshot {
                                 domain_id: 17,
@@ -304,10 +304,10 @@ fn replacement_snapshot_between_result_and_claimed_delta_rebases_spatial_state()
                     )
                     .await?;
                     let replacement =
-                        encode_world_map_snapshot(&map(-8, 2)).map_err(|e| format!("{e:?}"))?;
+                        encode_world_map_snapshot(&map(8, 2)).map_err(|e| format!("{e:?}"))?;
                     let observation = encode_world_spatial(&WireSpatialObservation {
                         content_generation: CONTENT_GENERATION,
-                        actor_position: map(-8, 2).header.origin,
+                        actor_position: map(8, 2).header.origin,
                     });
                     for frame in encode_single_chunk_snapshot(
                         1,
@@ -343,8 +343,8 @@ fn replacement_snapshot_between_result_and_claimed_delta_rebases_spatial_state()
                 let outcome = session.step(StepDirection::North).await?;
                 let delta = outcome.world_spatial_delta.ok_or("missing claimed delta")?;
                 assert_eq!((delta.base_revision, delta.new_revision), (11, 12));
-                assert_eq!(delta.value.actor_position, map(-8, 2).header.origin);
-                assert_eq!(session.world_map_snapshot(), Some(map(-8, 2)));
+                assert_eq!(delta.value.actor_position, map(8, 2).header.origin);
+                assert_eq!(session.world_map_snapshot(), Some(map(8, 2)));
                 assert_eq!(session.last_server_sequence, 43);
                 drop(session);
                 peer.await??;
@@ -448,7 +448,7 @@ fn negotiated_names_survive_a_floor_replacement_and_following_delta() -> Result<
                 let initial =
                     encode_world_spatial_entities_snapshot_with_fields(&snapshot, fields, &lights)
                         .map_err(|e| format!("{e:?}"))?;
-                player.position.floor = -8;
+                player.position.floor = 8;
                 player.display_name =
                     Some(EntityDisplayName::new("Downstairs").map_err(|e| format!("{e:?}"))?);
                 snapshot.actor_position = player.position;

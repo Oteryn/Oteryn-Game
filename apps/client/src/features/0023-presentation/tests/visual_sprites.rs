@@ -240,10 +240,10 @@ fn luminous_server_effects_and_missiles_feed_the_live_light_pass()
 fn received_lower_floor_effect_is_projected_before_foreground_terrain()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_session::world_map::*;
-    let mut view = PlayView::new(TileCoord::new(100,200), -6, &[])?;
-    let own = ActorPosition { x: 100, y: 200, floor: -6 };
-    let map = WorldMapViewSnapshot { header: MapViewHeader { origin: own, content_generation: [1;32], bundle_digest: [2;32], reset_epoch: 1, first_visible_floor: -6 },
-        tiles: [-7,-6].into_iter().map(|floor| MapTile { position: ActorPosition { floor, ..own }, items: vec![], ground_speed: 150, more: false }).collect() };
+    let mut view = PlayView::new(TileCoord::new(100,200), 6, &[])?;
+    let own = ActorPosition { x: 100, y: 200, floor: 6 };
+    let map = WorldMapViewSnapshot { header: MapViewHeader { origin: own, content_generation: [1;32], bundle_digest: [2;32], reset_epoch: 1, first_visible_floor: 6 },
+        tiles: [7,6].into_iter().map(|floor| MapTile { position: ActorPosition { floor, ..own }, items: vec![], ground_speed: 150, more: false }).collect() };
     view.scene.prime_visual_assets(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
     view.set_live_map(&map)?;
     let (link, _, outbox) = play_channel();
@@ -257,8 +257,8 @@ fn received_lower_floor_effect_is_projected_before_foreground_terrain()
     #[cfg(bevy_shell)]
     {
         let ranges = view.scene().floor_quad_ranges();
-        let lower = ranges.iter().find(|(_,floor)| *floor == -7).ok_or("lower floor")?;
-        let foreground = ranges.iter().find(|(_,floor)| *floor == -6).ok_or("foreground")?;
+        let lower = ranges.iter().find(|(_,floor)| *floor == 7).ok_or("lower floor")?;
+        let foreground = ranges.iter().find(|(_,floor)| *floor == 6).ok_or("foreground")?;
         // Pinned effect 1 has one cell; the floor also contains one terrain cell.
         assert_eq!(lower.0.len(), 2);
         assert!(lower.0.end <= foreground.0.start);
@@ -272,16 +272,16 @@ fn received_lower_floor_effect_is_projected_before_foreground_terrain()
 fn received_lower_floor_actor_is_painted_in_its_floor_and_removed_with_observation()
 -> Result<(),Box<dyn std::error::Error>> {
     use oteryn_session::world_map::*;
-    let mut view = PlayView::new(TileCoord::new(100,200),-6,&[])?;
-    let own = ActorPosition {x:100,y:200,floor:-6};
-    let map = WorldMapViewSnapshot {header:MapViewHeader {origin:own,content_generation:[1;32],bundle_digest:[2;32],reset_epoch:1,first_visible_floor:-6},
-        tiles:[-7,-6].into_iter().map(|floor|MapTile {position:ActorPosition {floor,..own},items:vec![],ground_speed:150,more:false}).collect()};
+    let mut view = PlayView::new(TileCoord::new(100,200),6,&[])?;
+    let own = ActorPosition {x:100,y:200,floor:6};
+    let map = WorldMapViewSnapshot {header:MapViewHeader {origin:own,content_generation:[1;32],bundle_digest:[2;32],reset_epoch:1,first_visible_floor:6},
+        tiles:[7,6].into_iter().map(|floor|MapTile {position:ActorPosition {floor,..own},items:vec![],ground_speed:150,more:false}).collect()};
     view.set_live_map(&map)?;
     let before = view.scene().sprites().len();
     let (link,_,outbox) = play_channel();
     let mut actor = oteryn_session::VisibleAppearance {
         entity:oteryn_session::WorldSpatialEntity {motion: None, entity:oteryn_session::EntityRef {identity:[4;16],generation:1},kind:oteryn_session::EntityKind::Creature,
-            position:ActorPosition {floor:-7,..own},display_name:None,
+            position:ActorPosition {floor:7,..own},display_name:None,
             detail:oteryn_session::EntityDetail::Actor {direction:oteryn_session::StepDirection::South,appearance_ref:1,health_percent:100}},
         look:None,light:None,forge_stacks:None,
     };
@@ -289,8 +289,8 @@ fn received_lower_floor_actor_is_painted_in_its_floor_and_removed_with_observati
     view.tick(&link).map_err(|e|format!("{e:?}"))?;
     assert_eq!(view.scene().sprites().len(),before+1);
     #[cfg(bevy_shell)]
-    assert_eq!(view.scene().floor_quad_ranges().iter().find(|(_,floor)| *floor == -7).ok_or("lower floor")?.0.len(),2);
-    actor.entity.position.floor = -5; // No terrain observation for this floor: do not fabricate it.
+    assert_eq!(view.scene().floor_quad_ranges().iter().find(|(_,floor)| *floor == 7).ok_or("lower floor")?.0.len(),2);
+    actor.entity.position.floor = 5; // No terrain observation for this floor: do not fabricate it.
     outbox.appearances(vec![actor]);
     view.tick(&link).map_err(|e|format!("{e:?}"))?;
     assert_eq!(view.scene().sprites().len(),before);
@@ -307,18 +307,18 @@ fn hiding_other_spells_removes_lower_floor_sprites_and_current_floor_lights()
     let own = ActorPosition {
         x: 100,
         y: 200,
-        floor: -6,
+        floor: 6,
     };
     let mut view = PlayView::new(TileCoord::new(own.x, own.y), own.floor, &[])?;
     let map = WorldMapViewSnapshot {
         header: MapViewHeader {
             origin: own,
-            first_visible_floor: -6,
+            first_visible_floor: 6,
             content_generation: [1; 32],
             bundle_digest: [2; 32],
             reset_epoch: 1,
         },
-        tiles: [-7, -6]
+        tiles: [7, 6]
             .into_iter()
             .map(|floor| MapTile {
                 position: ActorPosition { floor, ..own },
@@ -379,18 +379,18 @@ fn visible_corpse_sprite_is_painted_only_on_its_own_floor() -> Result<(), Box<dy
     let own = ActorPosition {
         x: 100,
         y: 200,
-        floor: -6,
+        floor: 6,
     };
     let mut view = PlayView::new(TileCoord::new(own.x, own.y), own.floor, &[])?;
     let map = WorldMapViewSnapshot {
         header: MapViewHeader {
             origin: own,
-            first_visible_floor: -6,
+            first_visible_floor: 6,
             content_generation: [1; 32],
             bundle_digest: [2; 32],
             reset_epoch: 1,
         },
-        tiles: [-7, -6]
+        tiles: [7, 6]
             .into_iter()
             .map(|floor| MapTile {
                 position: ActorPosition { floor, ..own },
@@ -409,7 +409,7 @@ fn visible_corpse_sprite_is_painted_only_on_its_own_floor() -> Result<(), Box<dy
         .scene()
         .floor_quad_ranges()
         .iter()
-        .find(|(_, z)| *z == -6)
+        .find(|(_, z)| *z == 6)
         .ok_or("the corpse floor")?
         .0
         .len();
@@ -446,7 +446,7 @@ fn visible_corpse_sprite_is_painted_only_on_its_own_floor() -> Result<(), Box<dy
             .scene()
             .floor_quad_ranges()
             .iter()
-            .find(|(_, z)| *z == -6)
+            .find(|(_, z)| *z == 6)
             .ok_or("the corpse floor")?;
         assert!(range.len() > corpse_floor_baseline);
         assert_eq!(sprite_count, range.len() - corpse_floor_baseline);

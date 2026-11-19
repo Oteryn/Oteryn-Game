@@ -225,14 +225,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.active_generation,
         ))
         .chain(self.source_volatile_entities(&runtime))
-        .map(|mut entry| {
-            entry.position = frame.project(crate::foundation::MovementLocalPosition {
-                x: entry.position.x,
-                y: entry.position.y,
-                floor: entry.position.floor,
-            })?;
-            Some(entry)
-        })
+        .map(|entry| frame.project_entity(entry))
         .collect::<Option<Vec<_>>>()?;
         if let Some(own_session) = own_session
             && let Some(own) = entities

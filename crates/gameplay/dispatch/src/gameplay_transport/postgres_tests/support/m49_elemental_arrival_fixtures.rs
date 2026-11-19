@@ -415,7 +415,7 @@ pub(super) async fn exercise(
     };
     use crate::gameplay_transport::item_view::{ItemViewContinuity, SessionItemView};
     use oteryn_protocol_oteryn::item_view::{
-        ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
+        ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection, WorldTilePosition,
         encode_item_move_intent_for,
     };
     let mut view = SessionItemView::resume(ItemViewContinuity::default())
@@ -440,7 +440,10 @@ pub(super) async fn exercise(
     let payload = encode_item_move_intent_for(
         &ItemMoveIntent {
             source: handle,
-            destination: ItemMoveDestination::Ground(to),
+            destination: ItemMoveDestination::Ground(WorldTilePosition {
+                floor: -to.floor,
+                ..to
+            }),
         },
         selection,
     )

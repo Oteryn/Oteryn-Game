@@ -11,10 +11,10 @@ fn minimap_settings_transfer_is_bound_validated_and_persistent()
     map.bind_world("11111111-1111-4111-8111-111111111111");
     map.binding = Some(([1; 32], [2; 32], 1));
     map.load()?;
-    map.set_cell_colour((-7, 500, 500), 55);
-    map.edit_marker(500, 500, -7, "Home".into(), 1)?;
+    map.set_cell_colour((7, 500, 500), 55);
+    map.edit_marker(500, 500, 7, "Home".into(), 1)?;
     let active = map.path().ok_or("active map")?;
-    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
     view.minimap = std::sync::Arc::new(std::sync::Mutex::new(map));
     let mut settings = SettingsState::new(Some(root.join("settings.json")));
     let export = root.join("portable.json");
@@ -22,7 +22,7 @@ fn minimap_settings_transfer_is_bound_validated_and_persistent()
     assert!(settings.apply_minimap_transfer(&mut view)?);
     settings.request_minimap_transfer(false, export.clone());
     assert!(settings.apply_minimap_transfer(&mut view).is_err());
-    lock(&view.minimap).edit_marker(500, 500, -7, "Changed".into(), 2)?;
+    lock(&view.minimap).edit_marker(500, 500, 7, "Changed".into(), 2)?;
     settings.request_minimap_transfer(true, export.clone());
     assert!(settings.apply_minimap_transfer(&mut view)?);
     assert_eq!(lock(&view.minimap).markers[0].label, "Home");
@@ -57,7 +57,7 @@ fn minimap_settings_transfer_is_bound_validated_and_persistent()
     reopened.binding = Some(([1; 32], [2; 32], 1));
     reopened.load()?;
     assert_eq!(reopened.markers[0].label, "Home");
-    assert!(reopened.cells.contains_key(&(-7, 500, 500)));
+    assert!(reopened.cells.contains_key(&(7, 500, 500)));
     drop(view);
     drop(reopened);
     Ok(())

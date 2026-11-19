@@ -1108,6 +1108,10 @@ const TILE: WorldTilePosition = WorldTilePosition {
     y: 10,
     floor: 7,
 };
+const BUNDLE_TILE: WorldTilePosition = WorldTilePosition {
+    floor: -TILE.floor,
+    ..TILE
+};
 
 fn onto_ground(source: ItemHandle, selection: ItemMoveSelection) -> Vec<u8> {
     encode_item_move_intent_for(
@@ -1176,7 +1180,7 @@ fn a_ground_drop_goes_to_the_loop_owner_and_an_equipped_item_is_not_supported() 
                 LoopMove {
                     item: instance(2),
                     count: None,
-                    target: LoopTarget::Ground(TILE),
+                    target: LoopTarget::Ground(BUNDLE_TILE),
                     slot: None,
                 }
             )]
@@ -1899,7 +1903,7 @@ fn capabilities_12_and_14_nest_drop_and_refuse_by_command_9() -> TestResult {
                         LoopTarget::Container(instance(2)),
                     )
                 } else {
-                    (onto_ground(source, TREE), LoopTarget::Ground(TILE))
+                    (onto_ground(source, TREE), LoopTarget::Ground(BUNDLE_TILE))
                 };
                 let delta = match &after {
                     Some(after) => mirror.inventory_committed(after.clone()).map_err(fault)?,
@@ -2105,12 +2109,12 @@ fn map_base_and_map_added_pickup_route_to_the_real_loop_owner() -> TestResult {
             (source, LoopTarget::Container(instance(2)), true),
             // Native map-base dragging reaches the same owner as pickup; its refusal
             // must stay NoRoom rather than becoming a transport NotSupported result.
-            (source, LoopTarget::Ground(TILE), true),
+            (source, LoopTarget::Ground(BUNDLE_TILE), true),
             // Crystal data/scripts/movements/trap.lua:39-42 creates caught wolf 12369;
             // data/scripts/movements/thornfire_wolf.lua leaves that created item movable.
             (ItemKey::MapAdded(1), LoopTarget::MainBackpack, true),
             // The map-base route does not widen created map items to ground dragging.
-            (ItemKey::MapAdded(1), LoopTarget::Ground(TILE), false),
+            (ItemKey::MapAdded(1), LoopTarget::Ground(BUNDLE_TILE), false),
         ] {
             let shown = inventory(&[2]);
             let mut view = wearing(shown.clone()).with_map_view();

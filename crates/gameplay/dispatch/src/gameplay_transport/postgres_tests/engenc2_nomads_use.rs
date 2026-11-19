@@ -295,7 +295,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     .find(|tile| {
                         tile.position.x == 33218
                             && tile.position.y == 32853
-                            && tile.position.floor == -9
+                            && tile.position.floor == 9
                     })
                     .ok_or("native amphora source tile")?;
                 assert!(source_tile.items.iter().any(|entry| {
@@ -315,7 +315,7 @@ fn scenario(mode: Scenario) -> TestResult {
                         destination: ItemMoveDestination::Ground(WorldTilePosition {
                             x: 33216,
                             y: 32854,
-                            floor: -9,
+                            floor: 9,
                         }),
                     },
                     selection,
@@ -510,7 +510,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     .find(|tile| {
                         tile.position.x == 33218
                             && tile.position.y == 32853
-                            && tile.position.floor == -9
+                            && tile.position.floor == 9
                     })
                     .ok_or("retired amphora source delta")?;
                 assert!(

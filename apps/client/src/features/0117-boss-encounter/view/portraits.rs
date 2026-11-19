@@ -39,7 +39,7 @@ impl Portraits {
             }
             let image = self.source.as_mut().and_then(|(index, sheets)| {
                 let entry = if object {
-                    index.resolve(sheets, look, Placement::at(0, 0, -7)).ok()?
+                    index.resolve(sheets, look, Placement::at(0, 0, 7)).ok()?
                 } else {
                     index.resolve_outfit(sheets, look, 2).ok()?
                 };

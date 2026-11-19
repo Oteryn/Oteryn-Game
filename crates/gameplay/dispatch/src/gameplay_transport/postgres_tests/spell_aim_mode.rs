@@ -286,7 +286,7 @@ async fn scenario(admin: String, tag: &str, negotiated: bool) -> TestResult {
     let cursor = actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
         x: caster.x + 5,
         y: caster.y,
-        floor: caster.floor,
+        floor: caster.floor.abs(),
     });
     let payload = if negotiated {
         actor_spell::encode_aimed_spell_cast_intent(&actor_spell::AimedSpellCastIntent {

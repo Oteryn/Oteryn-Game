@@ -90,7 +90,7 @@ const MAX_MARKERS: usize = 512;
 const MAX_BYTES: u64 = 64 << 20;
 
 fn cache_position(floor: i32, x: i32, y: i32) -> bool {
-    (-15..=0).contains(&floor) && u16::try_from(x).is_ok() && u16::try_from(y).is_ok()
+    (0..=15).contains(&floor) && u16::try_from(x).is_ok() && u16::try_from(y).is_ok()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -167,13 +167,13 @@ impl Default for Minimap {
             quest_markers: Vec::new(),
             x: 0,
             y: 0,
-            floor: -7,
+            floor: 7,
             zoom: 1,
             tracking: true,
             editor_open: false,
             pending_edit: None,
             editor: None,
-            own: (0, 0, -7),
+            own: (0, 0, 7),
             feedback: String::new(),
             root: std::env::var_os("LOCALAPPDATA")
                 .map(|path| PathBuf::from(path).join("Oteryn/minimap"))
@@ -328,19 +328,48 @@ impl Minimap {
                 self.feedback = lfmt!("Could not load minimap: {error}", error = error);
             }
         }
-        // Only visible ground contributes to exploration. Unseen and empty
-        // positions leave remembered terrain intact.
-        use oteryn_session::world_map::in_window;
-        for tile in &map.tiles {
-            let position = tile.position;
-            let key = (position.floor, position.x, position.y);
-            if tile.ground_speed == 0
-                || !cache_position(i32::from(position.floor), position.x, position.y)
-                || position.floor > map.header.first_visible_floor
-                || !in_window(map.header.origin, position)
-            {
-                continue;
+        // The snapshot is authoritative only within its visible window. Retain distant
+        // exploration, but remove cleared cells and item-only tiles from remembered ground.
+        use std::collections::BTreeSet;
+        use oteryn_session::world_map::{
+            VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH, floors_in_view, in_window,
+        };
+        let origin = map.header.origin;
+        let observed: BTreeSet<_> = map
+            .tiles
+            .iter()
+            .filter(|tile| {
+                cache_position(i32::from(tile.position.floor), tile.position.x, tile.position.y)
+                    && tile.ground_speed > 0
+                    && tile.position.floor >= map.header.first_visible_floor
+                    && in_window(origin, tile.position)
+            })
+            .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
+            .collect();
+        if let Some(floors) = floors_in_view(origin.floor) {
+            for floor in floors.filter(|f| *f >= map.header.first_visible_floor) {
+                let shift = i64::from(origin.floor) - i64::from(floor);
+                for y in 0..VIEW_HEIGHT {
+                    for x in 0..VIEW_WIDTH {
+                        let (Ok(x), Ok(y)) = (
+                            i32::try_from(
+                                i64::from(origin.x) - i64::from(VIEW_LEFT) + shift + i64::from(x),
+                            ),
+                            i32::try_from(
+                                i64::from(origin.y) - i64::from(VIEW_TOP) + shift + i64::from(y),
+                            ),
+                        ) else {
+                            continue;
+                        };
+                        let key = (floor, x, y);
+                        if !observed.contains(&key) && self.cells.remove(&key).is_some() {
+                            self.cells_dirty = true;
+                        }
+                    }
+                }
             }
+        }
+        for key in observed {
             if self.cells.len() >= MAX_CELLS && !self.cells.contains_key(&key) {
                 self.feedback =
                     tr!("Local exploration limit reached; existing exploration is retained").into();
@@ -546,7 +575,8 @@ impl Saved {
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
             Err(error) => return Err(error),
         };
-        let saved: Saved = transfer::read_json(file)?;
+        let mut saved: Saved = transfer::read_json(file)?;
+        saved.normalize_floor_sign();
         saved.validate()?;
         Ok(Some(saved))
     }

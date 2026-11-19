@@ -1578,7 +1578,7 @@ mod soulpit_icon_projection_tests {
             position: ActorPosition {
                 x: 32373,
                 y: 31151,
-                floor: -8,
+                floor: 8,
             },
             revision: 1,
         };

@@ -180,7 +180,7 @@ impl World {
             + self
                 .layers
                 .iter()
-                .filter(|(floor, _)| **floor <= self.first_visible_floor)
+                .filter(|(floor, _)| **floor >= self.first_visible_floor)
                 .map(|(_, tiles)| tiles.len())
                 .sum::<usize>()
     }

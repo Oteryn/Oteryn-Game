@@ -237,6 +237,10 @@ fn unzigzag(value: u64) -> i64 {
 
 /// Encodes a table. The caller has validated it.
 pub fn encode(table: &Table) -> Vec<u8> {
+    encode_with_floors(table, crate::bundle::FloorEncoding::Signed)
+}
+
+pub(crate) fn encode_with_floors(table: &Table, floors: crate::bundle::FloorEncoding) -> Vec<u8> {
     let mut out = Vec::new();
     put(&mut out, table.creatures.len() as u64);
     for creature in &table.creatures {
@@ -246,7 +250,7 @@ pub fn encode(table: &Table) -> Vec<u8> {
     put(&mut out, table.sources.len() as u64);
     for source in &table.sources {
         put_text(&mut out, &source.key);
-        out.push(source.floor as u8);
+        out.push(floors.encode(source.floor));
         put(&mut out, source.x.into());
         put(&mut out, source.y.into());
         put(&mut out, source.points.len() as u64);
@@ -277,6 +281,14 @@ pub fn encode(table: &Table) -> Vec<u8> {
 /// Decodes and validates a payload. Every count is checked against the bytes left before
 /// anything is reserved for it, since each element needs at least one byte.
 pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
+    decode_with_floors(raw, world, crate::bundle::FloorEncoding::Signed)
+}
+
+pub(crate) fn decode_with_floors(
+    raw: &[u8],
+    world: &Extent,
+    floors: crate::bundle::FloorEncoding,
+) -> Result<Table, Error> {
     let mut r = Reader { buf: raw, pos: 0 };
     let left = |r: &Reader<'_>| r.buf.len() - r.pos;
     let count = |r: &mut Reader<'_>, max: usize, what: &str| -> Result<usize, Error> {
@@ -298,7 +310,7 @@ pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
     let mut points = 0usize;
     for _ in 0..source_count {
         let key = r.text(KEY_LIMITS)?;
-        let floor = r.byte()? as i8;
+        let floor = floors.decode(r.byte()?)?;
         let (x, y) = (r.u16("spawn centre x")?, r.u16("spawn centre y")?);
         let n = count(&mut r, MAX_POINTS_PER_SOURCE, "spawn points per source")?;
         points += n;

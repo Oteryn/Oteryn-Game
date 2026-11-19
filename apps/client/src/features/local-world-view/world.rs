@@ -337,7 +337,7 @@ fn in_draw_window(map: &WorldMapViewSnapshot, position: oteryn_session::ActorPos
 
 impl World {
     fn project_floor_tile(&self, position: oteryn_session::ActorPosition) -> Option<(i32, i32)> {
-        let shift = i32::from(position.floor) - i32::from(self.center.2);
+        let shift = i32::from(self.center.2) - i32::from(position.floor);
         Some((
             position.x.checked_sub(shift)?,
             position.y.checked_sub(shift)?,
@@ -362,13 +362,13 @@ impl World {
     pub(crate) fn draw_floors(&self) -> Vec<i16> {
         self.all_draw_floors()
             .into_iter()
-            .filter(|floor| *floor <= self.first_visible_floor)
+            .filter(|floor| *floor >= self.first_visible_floor)
             .collect()
     }
 
     pub(crate) fn all_draw_floors(&self) -> Vec<i16> {
         let mut floors: Vec<_> = self.layers.keys().copied().chain([self.center.2]).collect();
-        floors.sort_unstable();
+        floors.sort_unstable_by(|a, b| b.cmp(a));
         floors
     }
 

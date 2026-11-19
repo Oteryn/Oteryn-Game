@@ -73,7 +73,7 @@ fn hireling_controls_use_real_codec_requests_and_apply_replies() -> Result<(), E
         ready(&link).await;
         link.hireling_request(Intent::Refresh);
         ready(&link).await;
-        link.hireling_target(7, 9, -1);
+        link.hireling_target(7, 9, 1);
         link.hireling_request(Intent::Summon);
         ready(&link).await;
         assert!(panel_text(&link.hireling_panel()).contains("summoned"));
@@ -86,7 +86,7 @@ fn hireling_controls_use_real_codec_requests_and_apply_replies() -> Result<(), E
                 hireling::Request::Summon {
                     x: 7,
                     y: 9,
-                    floor: -1
+                    floor: 1
                 },
                 hireling::Request::Dismiss
             ]

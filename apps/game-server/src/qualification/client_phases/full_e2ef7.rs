@@ -3265,12 +3265,12 @@ mod raw_observer_tests {
 
     #[tokio::test]
     async fn raw_observer_decodes_initial_map_delta_and_floor_replacement() -> TestResult {
-        let initial = snapshot(7, 1, 0, 5, header(-7))?;
+        let initial = snapshot(7, 1, 0, 5, header(7))?;
         let (begin, body) = raw_snapshot(&mut tail(&initial).as_slice(), 7, &initial[0]).await?;
         assert_eq!(begin.target_server_sequence, 0);
         let domains = native::decode_snapshot_body(&body)?;
         let joined = raw_map_snapshot(&domains, [0x11; 32])?;
-        assert_eq!(joined, header(-7));
+        assert_eq!(joined, header(7));
         assert!(raw_map_snapshot(&domains, [0x33; 32]).is_err());
         let mut moved = joined;
         moved.origin.x += 1;
@@ -3291,7 +3291,7 @@ mod raw_observer_tests {
 
         // Split a real encoded body inside a field to exercise the same bounded
         // multi-chunk transfer used when a replacement outgrows one wire frame.
-        let frames = snapshot(7, 11, 11, 6, header(-8))?;
+        let frames = snapshot(7, 11, 11, 6, header(8))?;
         let mut begin =
             native::decode_snapshot_begin(native::decode_wire_envelope(&frames[0])?.payload())?;
         let chunk = native::decode_wire_envelope(&frames[1])?;
@@ -3303,7 +3303,7 @@ mod raw_observer_tests {
             chunk_frame(11, 1, &body[7..]),
             frames[2].clone(),
         ];
-        assert_eq!(replacement(&split).await?, (11, 6, header(-8)));
+        assert_eq!(replacement(&split).await?, (11, 6, header(8)));
         let mut reversed = split;
         reversed.swap(1, 2);
         assert!(replacement(&reversed).await.is_err());
@@ -3312,13 +3312,13 @@ mod raw_observer_tests {
 
     #[tokio::test]
     async fn raw_observer_rejects_unfenced_or_malformed_map_replacements() -> TestResult {
-        let valid = snapshot(7, 11, 11, 6, header(-8))?;
-        assert_eq!(replacement(&valid).await?, (11, 6, header(-8)));
+        let valid = snapshot(7, 11, 11, 6, header(8))?;
+        assert_eq!(replacement(&valid).await?, (11, 6, header(8)));
         for frames in [
-            snapshot(8, 11, 11, 6, header(-8))?,
-            snapshot(7, 11, 10, 6, header(-8))?,
-            snapshot(7, 11, 12, 6, header(-8))?,
-            snapshot(7, 11, 11, 5, header(-8))?,
+            snapshot(8, 11, 11, 6, header(8))?,
+            snapshot(7, 11, 10, 6, header(8))?,
+            snapshot(7, 11, 12, 6, header(8))?,
+            snapshot(7, 11, 11, 5, header(8))?,
             snapshot(
                 7,
                 11,
@@ -3326,7 +3326,7 @@ mod raw_observer_tests {
                 6,
                 MapViewHeader {
                     content_generation: [0x33; 32],
-                    ..header(-8)
+                    ..header(8)
                 },
             )?,
         ] {
@@ -3334,8 +3334,8 @@ mod raw_observer_tests {
         }
         for index in [1, 2] {
             for foreign in [
-                snapshot(8, 11, 11, 6, header(-8))?,
-                snapshot(7, 12, 11, 6, header(-8))?,
+                snapshot(8, 11, 11, 6, header(8))?,
+                snapshot(7, 12, 11, 6, header(8))?,
             ] {
                 let mut frames = valid.clone();
                 frames[index] = foreign[index].clone();

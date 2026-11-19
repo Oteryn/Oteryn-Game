@@ -183,10 +183,10 @@ fn soulpit_lethal_callback_scenario() -> TestResult {
         let kernel = runtime.borrow_soulpit_kernel().map_err(debug)?;
         kernel
             .carrier
-            .spawn_soulpit_wave(
+            .spawn_native_soulpit_wave(
                 kernel.continuity,
                 kernel.content,
-                native.policies(),
+                native,
                 SoulpitWaveRequest {
                     handoff_id: id(34),
                     wave: 4,

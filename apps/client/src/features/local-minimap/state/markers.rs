@@ -13,14 +13,14 @@ impl Minimap {
     ) -> io::Result<()> {
         if !(0..=65_535).contains(&x)
             || !(0..=65_535).contains(&y)
-            || !(-15..=0).contains(&floor)
+            || !(0..=15).contains(&floor)
             || color > 3
             || label.trim().is_empty()
             || label.len() > 128
             || label.chars().any(char::is_control)
         {
             return Err(io::Error::other(tr!(
-                "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
+                "Use map coordinates 0-65535, floor 0 to 15 and a label of 1-128 bytes"
             )));
         }
         self.change_marker(
@@ -42,7 +42,7 @@ impl Minimap {
         let (x, y, floor) = own;
         if !cache_position(i32::from(floor), x, y) {
             return Err(io::Error::other(tr!(
-                "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
+                "Use map coordinates 0-65535, floor 0 to 15 and a label of 1-128 bytes"
             )));
         }
         self.change_marker(

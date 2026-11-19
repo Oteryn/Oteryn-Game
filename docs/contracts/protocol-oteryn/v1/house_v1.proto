@@ -13,7 +13,7 @@ message HouseAclV1 {
   optional uint64 expected_revision = 2;
   repeated bytes character_ids = 3;
 }
-message HouseDoorPositionV1 { optional uint32 x = 1; optional uint32 y = 2; optional sint32 floor = 3; } // x/y <=65535, floor -15..0
+message HouseDoorPositionV1 { optional uint32 x = 1; optional uint32 y = 2; optional sint32 floor = 3; } // x/y <=65535, Global z 0..15
 message HouseDoorV1 { HouseDoorPositionV1 position = 1; optional uint64 expected_revision = 2; repeated bytes character_ids = 3; }
 message HouseKickV1 { bytes character_id = 1; }
 message HouseIntentV1 {
@@ -42,7 +42,7 @@ message HouseSummaryV1 {
   optional uint32 beds = 14; // <=65535
   optional uint32 entrance_x = 15; // <=65535
   optional uint32 entrance_y = 16; // <=65535
-  optional sint32 entrance_floor = 17; // -15..0, north-up map coordinates
+  optional sint32 entrance_floor = 17; // Global z 0..15, north-up map coordinates
   uint32 kind = 11; // present only with selected capability 99: 1 private house, 2 shop, 3 Guildhall
   uint32 state = 2; // native property state 1..6
   uint64 rent_gold = 3;

@@ -5,7 +5,7 @@ fn treasure() -> PersonalMapMarks {
         key: "sterling".into(),
         x: 31948,
         y: 31924,
-        floor: -7,
+        floor: 7,
         text: "Treasure".into(),
     }])
 }
@@ -24,7 +24,7 @@ fn personal_quest_marks_are_not_editable_or_saved_in_world_only_cache()
         map.replace_quest_markers(&[oteryn_session::quest_log::QuestMapMark {
             x: 31948,
             y: 31924,
-            floor: -7,
+            floor: 7,
             text: "Treasure".into(),
         }])
     );
@@ -38,11 +38,11 @@ fn personal_quest_marks_are_not_editable_or_saved_in_world_only_cache()
         "a new admission to the same World clears Character facts"
     );
     assert!(map.replace_quest_marks(treasure()));
-    map.edit_marker(31948, 31924, -7, "Local label".into(), 0)?;
+    map.edit_marker(31948, 31924, 7, "Local label".into(), 0)?;
     assert_eq!(map.quest_marks, treasure());
-    map.remove_marker(31948, 31924, -7)?;
+    map.remove_marker(31948, 31924, 7)?;
     assert_eq!(map.quest_marks, treasure());
-    map.edit_marker(10, 20, -7, "Home".into(), 1)?;
+    map.edit_marker(10, 20, 7, "Home".into(), 1)?;
     let path = map.path().ok_or("path")?;
     let encoded = std::fs::read_to_string(path)?;
     assert!(!encoded.contains("Treasure"));

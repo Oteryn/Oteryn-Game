@@ -15,7 +15,7 @@ fn live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_bin
         let position = ActorPosition {
             x,
             y: 200,
-            floor: -7,
+            floor: 7,
         };
         WorldMapViewSnapshot {
             header: MapViewHeader {
@@ -23,7 +23,7 @@ fn live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_bin
                 bundle_digest: [2; 32],
                 reset_epoch: 1,
                 origin: position,
-                first_visible_floor: -7,
+                first_visible_floor: 7,
             },
             tiles: vec![MapTile {
                 position,
@@ -35,41 +35,41 @@ fn live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_bin
     };
     let world = "11111111-1111-4111-8111-111111111111";
     {
-        let mut play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+        let mut play = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
         lock(&play.minimap).root = Some(root.clone());
         play.bind_minimap_world(world);
         play.set_live_map(&snapshot(100))?;
-        lock(&play.minimap).edit_marker(100, 200, -7, "Home".into(), 1)?;
+        lock(&play.minimap).edit_marker(100, 200, 7, "Home".into(), 1)?;
         play.set_live_map(&snapshot(1000))?;
         lock(&play.minimap).save()?;
     }
-    let mut play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    let mut play = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
     lock(&play.minimap).root = Some(root.clone());
     play.bind_minimap_world(world);
     play.set_live_map(&snapshot(1000))?;
     {
         let mut map = lock(&play.minimap);
-        assert!(map.cells.contains_key(&(-7, 100, 200)));
+        assert!(map.cells.contains_key(&(7, 100, 200)));
         assert_eq!(map.markers[0].label, "Home");
-        map.edit_marker(100, 200, -7, "Return".into(), 2)?;
+        map.edit_marker(100, 200, 7, "Return".into(), 2)?;
         assert_eq!(map.markers.len(), 1);
         map.pan(5, 0);
         map.zoom = 4;
-        map.floor = -6;
+        map.floor = 6;
     }
     assert!(play.minimap_click(66.0, 50.0));
     assert!(
         play.inputs.is_empty(),
         "browsing floors cannot move the actor"
     );
-    lock(&play.minimap).floor = -7;
+    lock(&play.minimap).floor = 7;
     assert!(play.minimap_click(66.0, 50.0));
     assert_eq!(
         play.inputs.pop_front(),
         Some(Input::TargetWalk(ActorPosition {
             x: 109,
             y: 200,
-            floor: -7
+            floor: 7
         }))
     );
     // A failed atomic write must also preserve edits and removals of existing marks.
@@ -81,13 +81,13 @@ fn live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_bin
     {
         let mut map = lock(&play.minimap);
         let original = map.markers.clone();
-        assert!(map.edit_marker(100, 200, -7, "Lost".into(), 0).is_err());
+        assert!(map.edit_marker(100, 200, 7, "Lost".into(), 0).is_err());
         assert_eq!(map.markers, original);
-        assert!(map.remove_marker(100, 200, -7).is_err());
+        assert!(map.remove_marker(100, 200, 7).is_err());
         assert_eq!(map.markers, original);
     }
     std::fs::remove_dir(temporary)?;
-    lock(&play.minimap).remove_marker(100, 200, -7)?;
+    lock(&play.minimap).remove_marker(100, 200, 7)?;
     assert!(lock(&play.minimap).markers.is_empty());
     let cache = lock(&play.minimap).path().ok_or("active cache")?;
     play.bind_minimap_world("invalid world");
@@ -103,7 +103,7 @@ fn live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_bin
         let mut map = lock(&play.minimap);
         assert!(map.save().is_err());
         for _ in 0..2 {
-            assert!(map.create_mark_at((100, 200, -7)).is_err());
+            assert!(map.create_mark_at((100, 200, 7)).is_err());
             assert!(map.markers.is_empty());
         }
         assert_eq!(std::fs::read(cache)?, b"malformed");
@@ -118,7 +118,7 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
     let fixture = tempfile::tempdir()?;
     let root = fixture.path().join("minimap-editor-session");
     let world = "11111111-1111-4111-8111-111111111111";
-    let mut play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    let mut play = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
     {
         let mut map = lock(&play.minimap);
         map.root = Some(root.clone());
@@ -136,7 +136,7 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
             std::thread::park();
         }
         let mut map = lock(&old_map);
-        let result = map.edit_marker(100, 200, -7, "Old session final save".into(), 0);
+        let result = map.edit_marker(100, 200, 7, "Old session final save".into(), 0);
         map.editor_open = false;
         let _ = finished.send(result);
     });
@@ -150,7 +150,7 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
     finished_before_replacement??;
 
     drop(shared);
-    play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    play = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
     {
         let mut map = lock(&play.minimap);
         map.root = Some(root.clone());
@@ -158,7 +158,7 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
         map.binding = Some(([1; 32], [2; 32], 1));
         map.load()?;
         assert_eq!(map.markers[0].label, "Old session final save");
-        map.edit_marker(101, 200, -7, "New session".into(), 1)?;
+        map.edit_marker(101, 200, 7, "New session".into(), 1)?;
     }
     drop(play);
     let mut restored = Minimap::default();
@@ -180,7 +180,7 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
 #[test]
 fn minimap_editor_survives_temporary_play_view_replacement()
 -> Result<(), Box<dyn std::error::Error>> {
-    let mut play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    let mut play = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
     let shared = play.minimap.clone();
     let (done, finished) = std::sync::mpsc::channel();
     open_editor(&shared, move |stopped| {
@@ -198,7 +198,7 @@ fn minimap_editor_survives_temporary_play_view_replacement()
     let position = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     play.set_live_map(&WorldMapViewSnapshot {
         header: MapViewHeader {
@@ -206,7 +206,7 @@ fn minimap_editor_survives_temporary_play_view_replacement()
             bundle_digest: [2; 32],
             reset_epoch: 1,
             origin: position,
-            first_visible_floor: -7,
+            first_visible_floor: 7,
         },
         tiles: vec![MapTile {
             position,
@@ -239,12 +239,12 @@ fn review_successive_minimap_owners_preserve_each_others_markers()
     let position = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     let snapshot = WorldMapViewSnapshot {
         header: MapViewHeader {
             origin: position,
-            first_visible_floor: -7,
+            first_visible_floor: 7,
             content_generation: [1; 32],
             bundle_digest: [2; 32],
             reset_epoch: 1,
@@ -257,7 +257,7 @@ fn review_successive_minimap_owners_preserve_each_others_markers()
         }],
     };
     let open = || -> Result<PlayView, oteryn_renderer::BatchError> {
-        let mut play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+        let mut play = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
         lock(&play.minimap).root = Some(root.clone());
         play.bind_minimap_world("11111111-1111-4111-8111-111111111111");
         play.set_live_map(&snapshot)?;
@@ -269,13 +269,13 @@ fn review_successive_minimap_owners_preserve_each_others_markers()
     distant.tiles[0].position.x = 1000;
     first.set_live_map(&distant)?;
     lock(&first.minimap).save()?;
-    assert!(lock(&first.minimap).create_mark_at((100, 200, -7))?);
+    assert!(lock(&first.minimap).create_mark_at((100, 200, 7))?);
     drop(first);
     let second = open()?;
-    assert!(lock(&second.minimap).create_mark_at((101, 200, -7))?);
+    assert!(lock(&second.minimap).create_mark_at((101, 200, 7))?);
     drop(second);
     let mut reopened = open()?;
-    assert!(lock(&reopened.minimap).cells.contains_key(&(-7, 1000, 200)));
+    assert!(lock(&reopened.minimap).cells.contains_key(&(7, 1000, 200)));
     assert_eq!(
         lock(&reopened.minimap)
             .markers
@@ -284,15 +284,15 @@ fn review_successive_minimap_owners_preserve_each_others_markers()
             .collect::<Vec<_>>(),
         [100, 101]
     );
-    lock(&reopened.minimap).remove_marker(100, 200, -7)?;
+    lock(&reopened.minimap).remove_marker(100, 200, 7)?;
     distant.tiles.clear();
     reopened.set_live_map(&distant)?;
     lock(&reopened.minimap).save()?;
-    lock(&reopened.minimap).edit_marker(101, 200, -7, "Gate".into(), 2)?;
+    lock(&reopened.minimap).edit_marker(101, 200, 7, "Gate".into(), 2)?;
     drop(reopened);
     let final_view = open()?;
     let map = lock(&final_view.minimap);
-    assert!(map.cells.contains_key(&(-7, 1000, 200)));
+    assert!(map.cells.contains_key(&(7, 1000, 200)));
     assert_eq!(map.markers.len(), 1);
     assert_eq!(map.markers[0].label, "Gate");
     drop(map);
@@ -361,9 +361,9 @@ fn check_live_map_palette(
     let position = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
-    let floor = if hidden_floor { -6 } else { -7 };
+    let floor = if hidden_floor { 6 } else { 7 };
     let visible = ActorPosition {
         x: position.x + i32::from(floor - position.floor),
         y: position.y + i32::from(floor - position.floor),
@@ -386,7 +386,7 @@ fn check_live_map_palette(
         }],
     };
     let open = || -> Result<PlayView, oteryn_renderer::BatchError> {
-        let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+        let mut view = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
         lock(&view.minimap).root = Some(root.clone());
         view.bind_minimap_world("11111111-1111-4111-8111-111111111111");
         Ok(view)
@@ -397,7 +397,7 @@ fn check_live_map_palette(
     assert_eq!(lock(&view.minimap).cells.get(&key), Some(&86));
     lock(&view.minimap).save()?;
     if hidden_floor {
-        snapshot.header.first_visible_floor = -7;
+        snapshot.header.first_visible_floor = 7;
         snapshot.tiles[0].items = vec![item(ground)];
         lock(&view.minimap).saved_at -= Duration::from_secs(5);
         view.set_live_map(&snapshot)?;
@@ -420,7 +420,7 @@ fn check_live_map_palette(
         let mut rejoined = open()?;
         rejoined.set_live_map(&snapshot)?;
         assert_eq!(
-            lock(&rejoined.minimap).cells.get(&(-7, 100, 200)),
+            lock(&rejoined.minimap).cells.get(&(7, 100, 200)),
             Some(&86)
         );
     }
@@ -436,7 +436,7 @@ fn review_busy_cache_returns_from_live_map_and_marker_creation()
     let position = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     let snapshot = WorldMapViewSnapshot {
         header: MapViewHeader {
@@ -444,7 +444,7 @@ fn review_busy_cache_returns_from_live_map_and_marker_creation()
             bundle_digest: [2; 32],
             reset_epoch: 1,
             origin: position,
-            first_visible_floor: -7,
+            first_visible_floor: 7,
         },
         tiles: vec![MapTile {
             position,
@@ -453,7 +453,7 @@ fn review_busy_cache_returns_from_live_map_and_marker_creation()
             items: vec![],
         }],
     };
-    let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    let mut view = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
     lock(&view.minimap).root = Some(root.clone());
     view.bind_minimap_world(world);
     let owner = review_view(&root)?;
@@ -462,8 +462,8 @@ fn review_busy_cache_returns_from_live_map_and_marker_creation()
         move || -> Result<_, Box<dyn std::error::Error + Send + Sync>> {
             lock(&view.minimap).saved_at -= Duration::from_secs(5);
             view.set_live_map(&snapshot)?;
-            let visible = lock(&view.minimap).cells.contains_key(&(-7, 100, 200));
-            let mark = lock(&view.minimap).create_mark_at((100, 200, -7));
+            let visible = lock(&view.minimap).cells.contains_key(&(7, 100, 200));
+            let mark = lock(&view.minimap).create_mark_at((100, 200, 7));
             send.send((visible, mark))?;
             Ok((view, snapshot))
         },
@@ -480,11 +480,11 @@ fn review_busy_cache_returns_from_live_map_and_marker_creation()
     let (mut view, snapshot) = worker_result.map_err(|error| error.to_string())?;
     view.set_live_map(&snapshot)?;
     assert!(!lock(&view.minimap).cells_dirty);
-    let refused = lock(&view.minimap).create_mark_at((100, 200, -7));
+    let refused = lock(&view.minimap).create_mark_at((100, 200, 7));
     assert_eq!(refused.err().map(|e| e.kind()), Some(io::ErrorKind::WouldBlock));
     drop(view);
     let later = review_view(&root)?;
-    assert!(lock(&later.minimap).create_mark_at((100, 200, -7))?);
+    assert!(lock(&later.minimap).create_mark_at((100, 200, 7))?);
     drop(later);
     std::fs::remove_dir_all(root)?;
     Ok(())
@@ -494,12 +494,12 @@ fn review_snapshot(x: i32, ground: bool) -> WorldMapViewSnapshot {
     let position = ActorPosition {
         x,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     WorldMapViewSnapshot {
         header: MapViewHeader {
             origin: position,
-            first_visible_floor: -7,
+            first_visible_floor: 7,
             content_generation: [1; 32],
             bundle_digest: [2; 32],
             reset_epoch: 1,
@@ -517,7 +517,7 @@ fn review_snapshot(x: i32, ground: bool) -> WorldMapViewSnapshot {
 }
 
 fn review_view(root: &std::path::Path) -> Result<PlayView, oteryn_renderer::BatchError> {
-    let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    let mut view = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
     lock(&view.minimap).root = Some(root.to_path_buf());
     view.bind_minimap_world("11111111-1111-4111-8111-111111111111");
     view.set_live_map(&review_snapshot(900, false))?;
@@ -554,7 +554,7 @@ fn review_owner_teardown_preserves_old_binding() -> Result<(), Box<dyn std::erro
         closed?;
         let reopened = review_view(&root)?;
         assert!(
-            lock(&reopened.minimap).cells.contains_key(&(-7, 100, 200)),
+            lock(&reopened.minimap).cells.contains_key(&(7, 100, 200)),
             "binding switch: {switch_binding}"
         );
         drop(reopened);
@@ -577,12 +577,12 @@ fn review_stale_clear_preserves_newer_restoration() -> Result<(), Box<dyn std::e
     lock(&first.minimap).save()?;
     first.set_live_map(&review_snapshot(100, true))?;
     lock(&first.minimap).save()?;
-    assert!(lock(&first.minimap).create_mark_at((200, 200, -7))?);
+    assert!(lock(&first.minimap).create_mark_at((200, 200, 7))?);
     drop(first);
     let reopened = review_view(&root)?;
     let map = lock(&reopened.minimap);
-    assert_eq!(map.cells.get(&(-7, 100, 200)), Some(&55));
-    assert_eq!(map.cells.get(&(-7, 200, 200)), Some(&55));
+    assert_eq!(map.cells.get(&(7, 100, 200)), Some(&55));
+    assert_eq!(map.cells.get(&(7, 200, 200)), Some(&55));
     drop(map);
     drop((second, reopened));
     std::fs::remove_dir_all(root)?;
@@ -599,10 +599,10 @@ fn review_empty_window_preserves_older_unseen_cache_cell() -> Result<(), Box<dyn
     drop(first);
     let mut second = review_view(&root)?;
     second.set_live_map(&review_snapshot(100, false))?;
-    assert!(lock(&second.minimap).create_mark_at((100, 200, -7))?);
-    assert_eq!(lock(&second.minimap).cells.get(&(-7, 100, 200)), Some(&55));
+    assert!(lock(&second.minimap).create_mark_at((100, 200, 7))?);
+    assert_eq!(lock(&second.minimap).cells.get(&(7, 100, 200)), Some(&55));
     let reopened = review_view(&root)?;
-    assert_eq!(lock(&reopened.minimap).cells.get(&(-7, 100, 200)), Some(&55));
+    assert_eq!(lock(&reopened.minimap).cells.get(&(7, 100, 200)), Some(&55));
     drop((second, reopened));
     std::fs::remove_dir_all(root)?;
     Ok(())
@@ -617,7 +617,7 @@ fn review_concurrent_exploration_limit_allows_marker_writes()
         .path()
         .ok_or("missing cache path")?;
     let cells = (0..i32::try_from(MAX_CELLS - 1)?)
-        .map(|index| [-15, index / 65536, index % 65536, 55])
+        .map(|index| [15, index / 65536, index % 65536, 55])
         .collect();
     drop(bootstrap);
     Saved {
@@ -631,17 +631,17 @@ fn review_concurrent_exploration_limit_allows_marker_writes()
     lock(&second.minimap).saved_at = Instant::now();
     second.set_live_map(&review_snapshot(200, true))?;
     lock(&first.minimap).save()?;
-    assert!(lock(&first.minimap).create_mark_at((200, 200, -7))?);
-    lock(&first.minimap).edit_marker(200, 200, -7, "Gate".into(), 1)?;
-    assert!(lock(&second.minimap).cells.contains_key(&(-7, 200, 200)));
+    assert!(lock(&first.minimap).create_mark_at((200, 200, 7))?);
+    lock(&first.minimap).edit_marker(200, 200, 7, "Gate".into(), 1)?;
+    assert!(lock(&second.minimap).cells.contains_key(&(7, 200, 200)));
     lock(&second.minimap).save()?;
     drop(first);
     let reopened = review_view(&root)?;
     let map = lock(&reopened.minimap);
     assert_eq!(map.cells.len(), MAX_CELLS);
-    assert!(map.cells.contains_key(&(-7, 100, 200)));
+    assert!(map.cells.contains_key(&(7, 100, 200)));
     assert_eq!(map.markers[0].label, "Gate");
-    assert!(!map.cells.contains_key(&(-7, 200, 200)));
+    assert!(!map.cells.contains_key(&(7, 200, 200)));
     drop(map);
     drop((second, reopened));
     std::fs::remove_dir_all(root)?;
@@ -662,10 +662,10 @@ fn monotonic_empty_view_cannot_erase_an_identical_confirmation()
     first.set_live_map(&review_snapshot(200, true))?;
     first.set_live_map(&ground)?;
     lock(&first.minimap).save()?;
-    assert!(lock(&first.minimap).create_mark_at((200, 200, -7))?);
+    assert!(lock(&first.minimap).create_mark_at((200, 200, 7))?);
     drop(first);
     let reopened = review_view(&root)?;
-    assert_eq!(lock(&reopened.minimap).cells.get(&(-7, 100, 200)), Some(&55));
+    assert_eq!(lock(&reopened.minimap).cells.get(&(7, 100, 200)), Some(&55));
     drop((second, reopened));
     std::fs::remove_dir_all(root)?;
     Ok(())
@@ -690,9 +690,9 @@ fn monotonic_discovery_survives_clock_rollback() -> Result<(), Box<dyn std::erro
     std::fs::write(&cache, serde_json::to_vec(&saved)?)?;
     let mut view = review_view(&root)?;
     view.set_live_map(&review_snapshot(100, true))?;
-    assert!(lock(&view.minimap).create_mark_at((100, 200, -7))?);
+    assert!(lock(&view.minimap).create_mark_at((100, 200, 7))?);
     let reopened = review_view(&root)?;
-    assert_eq!(lock(&reopened.minimap).cells.get(&(-7, 100, 200)), Some(&55));
+    assert_eq!(lock(&reopened.minimap).cells.get(&(7, 100, 200)), Some(&55));
     drop((view, reopened));
     std::fs::remove_dir_all(root)?;
     Ok(())
@@ -708,9 +708,9 @@ fn monotonic_older_discovery_survives_empty_save() -> Result<(), Box<dyn std::er
     second.set_live_map(&review_snapshot(100, false))?;
     assert!(!lock(&second.minimap).cells_dirty);
     lock(&second.minimap).save()?;
-    assert!(lock(&first.minimap).create_mark_at((200, 200, -7))?);
+    assert!(lock(&first.minimap).create_mark_at((200, 200, 7))?);
     let reopened = review_view(&root)?;
-    assert_eq!(lock(&reopened.minimap).cells.get(&(-7, 100, 200)), Some(&55));
+    assert_eq!(lock(&reopened.minimap).cells.get(&(7, 100, 200)), Some(&55));
     drop((first, second, reopened));
     std::fs::remove_dir_all(root)?;
     Ok(())
@@ -753,12 +753,12 @@ fn monotonic_resolved_colour_wins_over_later_fallback() -> Result<(), Box<dyn st
             owner.set_live_map(&fallback)?;
             lock(&owner.minimap).save()?;
             owner.set_live_map(&resolved)?;
-            assert!(lock(&owner.minimap).create_mark_at((100, 200, -7))?);
+            assert!(lock(&owner.minimap).create_mark_at((100, 200, 7))?);
         }
-        assert_eq!(lock(&owner.minimap).cells.get(&(-7, 100, 200)), Some(&86));
+        assert_eq!(lock(&owner.minimap).cells.get(&(7, 100, 200)), Some(&86));
         drop(owner);
         let reopened = review_view(&root)?;
-        assert_eq!(lock(&reopened.minimap).cells.get(&(-7, 100, 200)), Some(&86));
+        assert_eq!(lock(&reopened.minimap).cells.get(&(7, 100, 200)), Some(&86));
     }
     std::fs::remove_dir_all(root)?;
     Ok(())
@@ -780,7 +780,7 @@ fn monotonic_teardown_saves_only_discoveries_without_a_journal() -> Result<(), B
     assert!(!path.with_extension("pending").exists());
     assert_eq!(Saved::read_from(&path)?.ok_or("missing cache")?.cells.len(), 1);
     let reopened = review_view(&root)?;
-    assert_eq!(lock(&reopened.minimap).cells.get(&(-7, 100, 200)), Some(&55));
+    assert_eq!(lock(&reopened.minimap).cells.get(&(7, 100, 200)), Some(&55));
     drop(reopened);
     std::fs::remove_dir_all(root)?;
     Ok(())
@@ -795,7 +795,7 @@ fn monotonic_identical_snapshots_and_marker_noops_skip_cache_reads()
     view.set_live_map(&ground)?;
     {
         let mut map = lock(&view.minimap);
-        map.edit_marker(100, 200, -7, "Home".into(), 1)?;
+        map.edit_marker(100, 200, 7, "Home".into(), 1)?;
         // Any attempted cache read will fail.
         let path = map.path().ok_or("cache path")?;
         std::fs::write(&path, b"unreadable cache")?;
@@ -806,9 +806,9 @@ fn monotonic_identical_snapshots_and_marker_noops_skip_cache_reads()
         let mut map = lock(&view.minimap);
         assert!(!map.cells_dirty);
         assert!(map.feedback.is_empty());
-        assert!(!map.create_mark_at((100, 200, -7))?);
-        map.edit_marker(100, 200, -7, "Home".into(), 1)?;
-        map.remove_marker(101, 200, -7)?;
+        assert!(!map.create_mark_at((100, 200, 7))?);
+        map.edit_marker(100, 200, 7, "Home".into(), 1)?;
+        map.remove_marker(101, 200, 7)?;
     }
     drop(view);
     std::fs::remove_dir_all(root)?;
@@ -835,8 +835,8 @@ fn monotonic_legacy_journal_cannot_override_the_cache()
     )?;
     let reopened = review_view(&root)?;
     let map = lock(&reopened.minimap);
-    assert_eq!(map.cells.get(&(-7, 100, 200)), Some(&55));
-    assert!(!map.cells.contains_key(&(-7, 200, 200)));
+    assert_eq!(map.cells.get(&(7, 100, 200)), Some(&55));
+    assert!(!map.cells.contains_key(&(7, 200, 200)));
     assert!(pending.join("legacy.json").exists());
     drop(map);
     drop(reopened);

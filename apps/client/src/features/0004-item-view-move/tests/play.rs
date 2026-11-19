@@ -74,7 +74,7 @@ fn ground_item_projection_keeps_stack_origin_and_floor() {
     );
     map.tiles[0].items[0].definition = MapDefinition::Terrain(NonZeroU32::MIN);
     assert_eq!(map_targets(&map).len(), 1);
-    map.tiles[0].position.floor = -1;
+    map.tiles[0].position.floor = 1;
     assert!(map_targets(&map).is_empty());
 }
 

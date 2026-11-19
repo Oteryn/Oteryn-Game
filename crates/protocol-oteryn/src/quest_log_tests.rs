@@ -227,7 +227,7 @@ fn the_domain_holds_a_view_and_10_tracked_lines_within_its_bound() {
             QuestMapMark {
                 x: u16::MAX,
                 y: u16::MAX,
-                floor: -15,
+                floor: 15,
                 text: "é".repeat(128)
             };
             MAX_QUEST_MAP_MARKS
@@ -532,7 +532,7 @@ fn personal_map_mark_round_trip_and_bounds() {
     let marker = QuestMapMark {
         x: 31948,
         y: 31924,
-        floor: -7,
+        floor: 7,
         text: "Treasure".into(),
     };
     let log = QuestLog {
@@ -545,7 +545,7 @@ fn personal_map_mark_round_trip_and_bounds() {
     );
     for invalid in [
         QuestMapMark {
-            floor: 1,
+            floor: -1,
             ..marker.clone()
         },
         QuestMapMark {

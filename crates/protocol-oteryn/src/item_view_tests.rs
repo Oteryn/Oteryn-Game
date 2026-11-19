@@ -699,9 +699,9 @@ fn equip_and_drop_intents_round_trip_and_fail_closed() {
     destinations.extend([
         ItemMoveDestination::MainBackpack,
         ground(0, 0, 0),
-        ground(-1, 1, -1),
-        ground(i32::MIN, i32::MAX, i16::MIN),
-        ground(i32::MAX, i32::MIN, i16::MAX),
+        ground(-1, 1, 1),
+        ground(i32::MIN, i32::MAX, 0),
+        ground(i32::MAX, i32::MIN, 15),
     ]);
     for destination in destinations {
         let intent = ItemMoveIntent {
@@ -718,12 +718,12 @@ fn equip_and_drop_intents_round_trip_and_fail_closed() {
     let worst = encode_item_move_intent_with_equip_drop(
         &ItemMoveIntent {
             source: handle(u64::MAX),
-            destination: ground(i32::MIN, i32::MIN, i16::MIN),
+            destination: ground(i32::MIN, i32::MIN, 15),
         },
         true,
     )
     .expect("worst ground");
-    assert_eq!(worst.len(), MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES);
+    assert_eq!(worst.len(), 27);
     assert_eq!(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES, 29);
     const { assert!(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES <= crate::MAX_COMMAND_PAYLOAD_BYTES) };
 
@@ -887,7 +887,7 @@ fn stack_quantity_count_is_explicit_bounded_and_negotiated()
         ItemMoveDestination::Ground(WorldTilePosition {
             x: i32::MAX,
             y: i32::MIN,
-            floor: i16::MIN,
+            floor: 15,
         }),
     ] {
         let intent = ItemMoveIntent {

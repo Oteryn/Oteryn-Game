@@ -138,7 +138,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         if case == Case::Backpack {
             use crate::gameplay_transport::container_view::ContainerObservation;
             use crate::gameplay_transport::item_view::ItemKey;
-            let field = ItemKey::BrowseField { x: 7, y: 0, floor: -7 };
+            let field = ItemKey::BrowseField { x: 7, y: 0, floor: 7 };
             assert!(matches!(
                 owner.observe_container(deps.actor, Some(fence), field).await,
                 Some(ContainerObservation::BrowseField { .. })

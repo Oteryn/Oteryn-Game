@@ -19,7 +19,7 @@ pub enum AssetError {
     InvalidAppearanceId { id: u32 },
     /// The id is in range but the pinned appearances do not contain it.
     UnknownAppearance { id: u32 },
-    /// The native floor is outside `-15..=0`.
+    /// The native floor is outside `0..=15`.
     InvalidFloor { floor: i32 },
     /// The sprite id is absent from the sprite catalogue.
     UnknownSprite { sprite_id: u32 },
@@ -45,7 +45,7 @@ impl Display for AssetError {
             }
             Self::UnknownAppearance { id } => write!(formatter, "unknown appearance id {id}"),
             Self::InvalidFloor { floor } => {
-                write!(formatter, "floor {floor} is outside -15..=0")
+                write!(formatter, "floor {floor} is outside 0..=15")
             }
             Self::UnknownSprite { sprite_id } => {
                 write!(formatter, "sprite id {sprite_id} is not in the catalogue")

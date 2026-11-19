@@ -573,7 +573,7 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 .tiles
                 .iter()
                 .find(|tile| {
-                    tile.position.x == 7 && tile.position.y == 0 && tile.position.floor == -7
+                    tile.position.x == 7 && tile.position.y == 0 && tile.position.floor == 7
                 })
                 .ok_or("origin tile resent")?;
             assert_eq!(

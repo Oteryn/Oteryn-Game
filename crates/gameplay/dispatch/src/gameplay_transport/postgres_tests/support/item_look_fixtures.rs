@@ -99,7 +99,7 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
                                 let pos = TilePos {
                                     x: u16::try_from(tile.position.x)?,
                                     y: u16::try_from(tile.position.y)?,
-                                    floor: i8::try_from(tile.position.floor)?,
+                                    floor: i8::try_from(-tile.position.floor)?,
                                 };
                                 let key = crate::map::view::placement_key(pos, ordinal)
                                     .ok_or("placement key")?;

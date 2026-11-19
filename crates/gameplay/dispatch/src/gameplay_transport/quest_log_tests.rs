@@ -722,7 +722,7 @@ mod connection {
                             .push(oteryn_protocol_oteryn::quest_log::QuestMapMark {
                                 x: 31948,
                                 y: 31924,
-                                floor: -7,
+                                floor: 7,
                                 text: "Treasure".into(),
                             });
                         let supported = if selected_marks {
@@ -1054,7 +1054,7 @@ fn personal_markers_require_negotiation_on_every_quest_log_projection() {
             .push(oteryn_protocol_oteryn::quest_log::QuestMapMark {
                 x: 31948,
                 y: 31924,
-                floor: -7,
+                floor: 7,
                 text: "Treasure".into(),
             });
         let mut continuity = QuestLogContinuity::FRESH;

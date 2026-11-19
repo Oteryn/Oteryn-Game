@@ -5,16 +5,16 @@
 // registered by MAP-WIRE-2. FND-02 envelopes own the server sequence, domain ID and revisions;
 // these payloads never duplicate them. The domain carries the composed stack of every tile in the
 // 18x14 window, from (x - 8, y - 6) to (x + 9, y + 7) of the origin, over every floor in view
-// (-7..=0 for an origin floor of -7 or above, else two floors above and below it, bounded at
-// -15), each floor shifted by its floor difference to the origin.
+// (0..=7 for origin z at or above ground 7, otherwise two floors above and below it, bounded at
+// 15), shifted by origin z minus tile z.
 //
 // Unknown, repeated or zero-valued required fields, a tile outside the window, unsorted or
 // duplicate tiles, a base_ordinal of 64 or more, a zero handle, a display_only that is not true,
 // not exactly one origin, an object_revision on an entry whose origin is not base_ordinal, not
 // exactly one or a zero definition reference, a count outside 1..=100, a ground_speed above 1000,
 // an appearance_id above 65,535, a delta origin that is not the view's origin or one step from it
-// on the same floor, a first_visible_floor above 0 or below the origin floor or, with an origin
-// floor below -7, above min(origin.floor + 2, -8), an origin floor outside -15..=0, and a delta
+// on the same floor, a first_visible_floor outside 0..=origin.floor or, with an origin
+// floor greater than 7, below max(origin.floor - 2, 8), an origin floor outside 0..=15, and a delta
 // with no tile and no cleared entry whose origin and first_visible_floor both equal the view's all
 // fail closed. A delta whose (content_generation, bundle_digest, reset_epoch) differs from the
 // view's is STATE_REVISION_MISMATCH, and the client resyncs.
@@ -33,7 +33,7 @@ message MapViewHeaderV1 {
   bytes bundle_digest = 2;        // 32 bytes, the active bundle digest (format §5)
   uint64 reset_epoch = 3;         // the channel's current World reset epoch
   oteryn.protocol.v1.world_spatial.ActorPositionV1 origin = 4; // the actor position the window is centred on
-  sint32 first_visible_floor = 5; // the highest native floor drawn; absent means 0
+  sint32 first_visible_floor = 5; // the smallest Global z drawn; absent means 0
 }
 
 // At most 32 bytes.
@@ -65,7 +65,7 @@ message MapTileV1 {
 // 128), streamed in at most two chunks.
 message WorldMapViewSnapshotV1 {
   MapViewHeaderV1 header = 1;
-  repeated MapTileV1 tiles = 2;   // 0..=2,016 (MAPW-RL-02), strictly ascending (floor, y, x)
+  repeated MapTileV1 tiles = 2;   // 0..=2,016 (MAPW-RL-02), deepest floor first, then ascending (y, x)
 }
 
 // StateDelta.payload of domain 17, delta type 1. At most 93376 bytes (MAPW-RL-03 x (360 + 16) +

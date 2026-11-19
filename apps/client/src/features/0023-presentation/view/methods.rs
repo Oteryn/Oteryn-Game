@@ -7,21 +7,6 @@ impl PlayView {
         self.visuals
             .retain(|cue| now.saturating_duration_since(cue.received) < VISUAL_LIFETIME);
         for &kind in events {
-            // The presentation codec owns z=0..15; all scene consumers use native floors.
-            let mut kind = kind;
-            match &mut kind {
-                PresentationEventKind::MagicEffect { position, .. }
-                | PresentationEventKind::ValueText { position, .. }
-                | PresentationEventKind::SpellWords { position, .. }
-                | PresentationEventKind::Sound { position, .. } => {
-                    position.floor = oteryn_session::native_floor(position.floor);
-                }
-                PresentationEventKind::Missile { from, to, .. } => {
-                    from.floor = oteryn_session::native_floor(from.floor);
-                    to.floor = oteryn_session::native_floor(to.floor);
-                }
-                PresentationEventKind::AmbientSound { .. } => {}
-            }
             if !numbers::merge(&mut self.visuals, kind, now) {
                 self.visuals.push(VisualCue { kind, received: now });
             }

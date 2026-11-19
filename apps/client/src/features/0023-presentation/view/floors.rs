@@ -31,7 +31,7 @@ pub(super) fn project(play: &PlayView, frames: &[Option<Vec<crate::map::Draw>>],
             oteryn_session::PresentationSource::Global => 100,
         } };
         if alpha == 0 { continue; }
-        let shift = i32::from(floor) - i32::from(play.floor);
+        let shift = i32::from(play.floor) - i32::from(floor);
         let project = |mut at: oteryn_session::ActorPosition| { at.x = at.x.saturating_sub(shift); at.y = at.y.saturating_sub(shift); at };
         let mut batch = SpriteBatch::new();
         match cue.kind {

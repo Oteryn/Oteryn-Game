@@ -307,7 +307,7 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
     let origin = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     let tile = |position| MapTile {
         position,
@@ -334,11 +334,11 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
             tile(ActorPosition {
                 x: 101,
                 y: 201,
-                floor: -6,
+                floor: 6,
             }),
         ],
     };
-    let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    let mut view = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
     view.set_live_map(&map)?;
     let mut host = HostOwner::new(None)?;
     let (link, _, _) = play_channel();
@@ -358,10 +358,10 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
     app.world_mut().spawn((Window::default(), PrimaryWindow));
     app.update();
     assert_eq!(
-        app.world().resource::<SceneCache>().floor_alpha.get(&-6),
+        app.world().resource::<SceneCache>().floor_alpha.get(&6),
         Some(&1.0)
     );
-    map.header.first_visible_floor = -7;
+    map.header.first_visible_floor = 7;
     app.world_mut()
         .non_send_mut::<HostOwner>()
         .play
@@ -374,7 +374,7 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
         .advance_by(std::time::Duration::from_millis(250));
     app.update();
     assert_eq!(
-        app.world().resource::<SceneCache>().floor_alpha.get(&-6),
+        app.world().resource::<SceneCache>().floor_alpha.get(&6),
         Some(&0.5)
     );
     let mut query = app.world_mut().query::<&Sprite>();
@@ -385,7 +385,7 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
     );
     app.update();
     assert_eq!(
-        app.world().resource::<SceneCache>().floor_alpha.get(&-6),
+        app.world().resource::<SceneCache>().floor_alpha.get(&6),
         Some(&0.0)
     );
     map.header.first_visible_floor = 0;
@@ -398,7 +398,7 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
         .set_live_map(&map)?;
     app.update();
     assert_eq!(
-        app.world().resource::<SceneCache>().floor_alpha.get(&-6),
+        app.world().resource::<SceneCache>().floor_alpha.get(&6),
         Some(&0.5)
     );
     Ok(())

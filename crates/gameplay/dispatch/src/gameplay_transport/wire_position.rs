@@ -1,12 +1,15 @@
 //! Project one proven physical position into the existing wire position fields.
-//! Source activity Bundles use native -z on their map wire and legacy +z in physics.
-use crate::content::{NativeEntryMovementCells, QualifiedNativeEntryRoom};
+//! Wire floors use Global z, with ground at 7. Older source and entry indices use signed floors.
+use crate::content::{
+    NativeEntryMovementCells, QualifiedNativeEntryRoom,
+    native_cell_lookup::NativeMovementCollisionIndex,
+};
 use crate::foundation::{ChannelContentPin, MovementLocalPosition};
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 
 #[derive(Clone, Copy)]
 pub(super) struct WirePositionFrame {
-    native_source_bundle: bool,
+    signed_floor: bool,
 }
 impl WirePositionFrame {
     pub(super) fn from_pin(
@@ -15,11 +18,9 @@ impl WirePositionFrame {
         pin: &ChannelContentPin,
         map: [u8; 32],
     ) -> Option<Self> {
-        let native_source_bundle = room.is_some_and(|r| r.pinned_activity_source_room().is_some())
-            && matches!(
-                cells.index(),
-                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
-            );
+        let bundle = matches!(cells.index(), NativeMovementCollisionIndex::Bundle(_));
+        let native_source_bundle =
+            bundle && room.is_some_and(|r| r.pinned_activity_source_room().is_some());
         if native_source_bundle {
             let room = room?;
             if cells.scope() != room.movement_cells().scope()
@@ -33,18 +34,22 @@ impl WirePositionFrame {
                 return None;
             }
         }
-        Some(Self {
-            native_source_bundle,
-        })
+        // The bundle collision owner uses Global z. The qualified legacy frame
+        // or the runtime's pinned start identifies the signed source convention.
+        let signed_floor = match cells.index() {
+            NativeMovementCollisionIndex::Bundle(_) => false,
+            NativeMovementCollisionIndex::Source(index) => index.entry_start().floor < 0,
+            NativeMovementCollisionIndex::Entry(_) => pin.entry_start().floor < 0,
+        };
+        Some(Self { signed_floor })
     }
     pub(super) fn project(self, physical: MovementLocalPosition) -> Option<ActorPosition> {
-        let floor = if self.native_source_bundle {
-            if !(0..=15).contains(&physical.floor) {
-                return None;
-            }
-            physical.floor.checked_neg()?
+        let floor = if self.signed_floor {
+            crate::movement::interest::tibia_floor(physical.floor)?
         } else {
-            physical.floor
+            (0..=15)
+                .contains(&physical.floor)
+                .then_some(physical.floor)?
         };
         Some(ActorPosition {
             x: physical.x,
@@ -52,21 +57,29 @@ impl WirePositionFrame {
             floor,
         })
     }
+    pub(super) fn project_entity(
+        self,
+        mut entity: super::world_spatial::ChannelEntity,
+    ) -> Option<super::world_spatial::ChannelEntity> {
+        let ActorPosition { x, y, floor } = entity.position;
+        entity.position = self.project(MovementLocalPosition { x, y, floor })?;
+        Some(entity)
+    }
+
     /// Coordinate DATA only; callers retain the original wire command and
     /// still apply every existing actor, map, cost and gameplay gate.
     pub(super) fn unproject(self, wire: ActorPosition) -> Option<MovementLocalPosition> {
-        let floor = if self.native_source_bundle {
-            if !(-15..=0).contains(&wire.floor) {
-                return None;
-            }
-            wire.floor.checked_neg()?
-        } else {
-            wire.floor
-        };
+        if !(0..=15).contains(&wire.floor) {
+            return None;
+        }
         Some(MovementLocalPosition {
             x: wire.x,
             y: wire.y,
-            floor,
+            floor: if self.signed_floor {
+                -wire.floor
+            } else {
+                wire.floor
+            },
         })
     }
 }
@@ -91,6 +104,7 @@ pub(in crate::gameplay_transport) mod test_scene {
     pub struct SourceScene {
         pub controller: crate::content::ContentActivationController,
         pub room: QualifiedNativeEntryRoom,
+        pub capture_room: QualifiedNativeEntryRoom,
         pub runtime: crate::foundation::ChannelRuntimeV1,
         pub actor: crate::foundation::ExactActorRef,
         pub session: crate::foundation::GameSessionId,
@@ -124,12 +138,6 @@ pub(in crate::gameplay_transport) mod test_scene {
         let source = active
             .qualify_activity_source_room(base.qualified_room(), kind)
             .map_err(err)?;
-        let source_entry = source.entry_start();
-        let wire = ActorPosition {
-            x: source_entry.x,
-            y: source_entry.y,
-            floor: source_entry.floor,
-        };
         let room = crate::gameplay_transport::activity_runtime::source_bundle::qualify(
             &source, kind, active, world, channel,
         )
@@ -139,6 +147,12 @@ pub(in crate::gameplay_transport) mod test_scene {
             x: at.x,
             y: at.y,
             floor: at.floor,
+        };
+        let captured = source.entry_start();
+        let wire = ActorPosition {
+            x: captured.x,
+            y: captured.y,
+            floor: captured.floor,
         };
         let pin = ChannelContentPin::from_activation(
             world,
@@ -178,6 +192,7 @@ pub(in crate::gameplay_transport) mod test_scene {
         Ok(SourceScene {
             controller,
             room,
+            capture_room: source,
             runtime,
             actor,
             session,
@@ -243,7 +258,7 @@ mod tests {
             Some(ActorPosition {
                 x: 32373,
                 y: 31151,
-                floor: -8
+                floor: 8
             }),
             "domain1/entities/step wire must match native domain17"
         );
@@ -251,7 +266,7 @@ mod tests {
             frame.unproject(ActorPosition {
                 x: 32373,
                 y: 31151,
-                floor: -8
+                floor: 8
             }),
             Some(physical)
         );
@@ -260,10 +275,10 @@ mod tests {
                 .unproject(ActorPosition {
                     x: 32373,
                     y: 31151,
-                    floor: 8
+                    floor: -8
                 })
                 .is_none(),
-            "Source wire input uses the native floor convention"
+            "Source wire input rejects a negative floor"
         );
         let generic = source
             .bundle_view(
@@ -303,6 +318,97 @@ mod tests {
                 .is_none(),
             "a foreign map cannot project a sealed source frame"
         );
+        Ok(())
+    }
+    #[test]
+    fn source_and_ordinary_bundle_snapshots_share_the_physical_floor() -> Result<(), String> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(check_source_and_ordinary_bundle_snapshots)
+            .map_err(|error| error.to_string())?
+            .join()
+            .map_err(|_| "snapshot scenario panicked".to_owned())?
+    }
+
+    fn check_source_and_ordinary_bundle_snapshots() -> Result<(), String> {
+        use crate::gameplay_transport::world_spatial::{
+            ChannelEntities, ChannelEntity, EntityLights, SessionVisibility, VisibleKind,
+        };
+        use std::num::NonZeroU32;
+
+        let scene = super::test_scene::source_scene()?;
+        let ordinary = scene
+            .capture_room
+            .bundle_view(
+                scene.room.movement_cells().clone(),
+                scene.room.frame_binding().digest(),
+                scene.room.map_revision_digest(),
+                scene.room.entry_start(),
+            )
+            .ok_or("ordinary Bundle view")?;
+        assert!(ordinary.pinned_activity_source_room().is_none());
+        let item_definition_ref = NonZeroU32::MIN;
+        let kinds = [
+            VisibleKind::Player,
+            VisibleKind::Creature,
+            VisibleKind::Corpse {
+                item_definition_ref,
+                native_appearance_id: None,
+            },
+            VisibleKind::GroundItem {
+                item_definition_ref,
+            },
+        ];
+        let at = scene.physical;
+        assert_eq!(at.floor, 8);
+        for room in [&scene.room, &ordinary] {
+            let pin = scene.runtime.content_pin();
+            let frame = WirePositionFrame::from_pin(
+                Some(room),
+                room.movement_cells(),
+                pin,
+                room.map_revision_digest(),
+            )
+            .ok_or("snapshot frame")?;
+            let direct =
+                crate::gameplay_transport::ComposedFreshAdmission::observation(&scene.runtime, at);
+            let entities = kinds
+                .iter()
+                .enumerate()
+                .map(|(index, &kind)| {
+                    frame.project_entity(ChannelEntity {
+                        source_icons: Default::default(),
+                        display_name: None,
+                        health_percent: 100,
+                        direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
+                        kind,
+                        identity: [index as u8 + 1; 16],
+                        generation: u64::from(index < 2),
+                        position: direct.actor_position,
+                        revision: 1,
+                    })
+                })
+                .collect::<Option<Vec<_>>>()
+                .ok_or("entity positions")?;
+            let snapshot = SessionVisibility::with_objects(true)
+                .snapshot(
+                    &ChannelEntities {
+                        content_generation: pin.client_artifact_digest(),
+                        observer: [1; 16],
+                        entities,
+                        lights: EntityLights::new(),
+                        observed_at_ms: 0,
+                    },
+                    &mut |_| Ok(()),
+                )
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(snapshot.actor_position, direct.actor_position);
+            assert_eq!(snapshot.entities.len(), kinds.len());
+            for entity in snapshot.entities {
+                assert_eq!(entity.position.floor, at.floor);
+                assert!((0..=15).contains(&entity.position.floor));
+            }
+        }
         Ok(())
     }
 }

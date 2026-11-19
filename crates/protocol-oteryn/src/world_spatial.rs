@@ -422,11 +422,14 @@ pub(crate) fn decode_position(input: &[u8]) -> Result<ActorPosition, WorldSpatia
         }
         *slot = Some(decode_sint32(read_varint(input, &mut cursor)?)?);
     }
-    let floor = i16::try_from(floor.unwrap_or(0)).map_err(|_| WorldSpatialError::Malformed)?;
+    let floor = floor.unwrap_or(0);
+    if !(0..=15).contains(&floor) {
+        return Err(WorldSpatialError::Malformed);
+    }
     Ok(ActorPosition {
         x: x.unwrap_or(0),
         y: y.unwrap_or(0),
-        floor,
+        floor: floor as i16,
     })
 }
 
@@ -930,7 +933,7 @@ mod tests {
             observation(0, 0, 0),
             observation(1, 0, 0),
             observation(0, -1, 0),
-            observation(i32::MAX, i32::MIN, i16::MIN),
+            observation(i32::MAX, i32::MIN, 15),
         ] {
             let bytes = encode_world_spatial(&value);
             assert!(
@@ -976,6 +979,18 @@ mod tests {
         assert_eq!(
             decode_world_spatial(&[0; MAX_WORLD_SPATIAL_PAYLOAD_BYTES + 1]),
             Err(WorldSpatialError::LimitExceeded)
+        );
+    }
+
+    #[test]
+    fn world_spatial_rejects_negative_wire_floor() {
+        let mut bytes = encode_world_spatial(&observation(0, 0, 0));
+        bytes.truncate(34);
+        // ActorPositionV1.floor = -1, encoded as zigzag 1.
+        bytes.extend_from_slice(&[0x12, 0x02, 0x18, 0x01]);
+        assert_eq!(
+            decode_world_spatial(&bytes),
+            Err(WorldSpatialError::Malformed)
         );
     }
 

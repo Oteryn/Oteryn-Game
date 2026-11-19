@@ -11,7 +11,7 @@ use std::collections::VecDeque;
 #[derive(Debug, Clone)]
 pub enum AutoWalkTarget {
     Cell(oteryn_protocol_oteryn::world_spatial::ActorPosition),
-    /// Browse Field reaches any adjacent cell, never requiring the occupied target tile.
+    /// A Global Browse Field target. The route reaches any tile adjacent to its runtime cell.
     AdjacentCell(oteryn_protocol_oteryn::item_view::WorldTilePosition),
     Follow(oteryn_protocol_oteryn::world_spatial_entities::EntityRef),
     Item(item_view::ItemKey),
@@ -74,11 +74,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let exact = matches!(target, AutoWalkTarget::Cell(_));
         let mut follow = None;
         let position = match target {
-            AutoWalkTarget::AdjacentCell(at) => MovementLocalPosition {
-                x: at.x,
-                y: at.y,
-                floor: self.runtime_floor(at.floor),
-            },
+            AutoWalkTarget::AdjacentCell(at) => self
+                .wire_position_frame(&runtime)
+                .and_then(|frame| {
+                    frame.unproject(oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                    })
+                })
+                .ok_or(())?,
             AutoWalkTarget::Cell(at) => self
                 .wire_position_frame(&runtime)
                 .and_then(|frame| frame.unproject(at))

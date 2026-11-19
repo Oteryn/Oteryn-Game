@@ -36,7 +36,7 @@ impl Assets {
             .map(|look| {
                 let entry = if artwork.object {
                     self.index
-                        .resolve(&self.sheets, look, Placement::at(0, 0, -7))
+                        .resolve(&self.sheets, look, Placement::at(0, 0, 7))
                 } else {
                     self.index
                         .resolve_outfit(&self.sheets, look, u32::from(artwork.direction))

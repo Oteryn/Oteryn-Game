@@ -1,4 +1,4 @@
-//! `OTERYN_WORLD_BUNDLE/v8`: the shared byte writer used by the compiler and test fixtures.
+//! `OTERYN_WORLD_BUNDLE/v9`: the shared byte writer used by the compiler and test fixtures.
 
 use sha2::{Digest, Sha256};
 
@@ -249,6 +249,7 @@ fn write_with_caps(
     caps: ReadCaps,
 ) -> Result<Vec<u8>, Error> {
     validate_manifest(manifest)?;
+    let floors = crate::bundle::FloorEncoding::for_manifest(manifest)?;
     limit(sectors.len() <= caps.sectors, "too many sectors")?;
     let json_length = manifest_size(manifest, layers)?;
     let mut file_size = Size::new(caps.file_bytes, "bundle file too large");
@@ -272,9 +273,15 @@ fn write_with_caps(
         validate_sector(manifest, sector)?;
         let raw_length = sector_size(&sector.tiles, caps.sector_raw_bytes)?;
         total_raw.add(raw_length)?;
-        let raw = sector::encode(&sector.tiles)?;
+        let raw = sector::encode_with_floors(&sector.tiles, Some(floors))?;
         // Write only what the reader reads back identically, within the same limits.
-        let decoded = sector::decode(&raw, (sector.sx, sector.sy), TILE_LIMITS, &mut budget)?;
+        let decoded = sector::decode_with_floors(
+            &raw,
+            (sector.sx, sector.sy),
+            TILE_LIMITS,
+            &mut budget,
+            Some(floors),
+        )?;
         check(decoded == sector.tiles, "sector does not round-trip")?;
         limit(
             raw.len() <= caps.sector_raw_bytes,
@@ -290,13 +297,13 @@ fn write_with_caps(
     }
     // The spawn frame is written like a sector frame and read back before it is accepted.
     total_raw.add(spawn_size(spawns)?)?;
-    let spawn_raw = spawn::encode(spawns);
+    let spawn_raw = spawn::encode_with_floors(spawns, floors);
     limit(
         spawn_raw.len() <= spawn::MAX_RAW_BYTES,
         "spawn payload too large",
     )?;
     check(
-        spawn::decode(&spawn_raw, &manifest.world)? == *spawns,
+        spawn::decode_with_floors(&spawn_raw, &manifest.world, floors)? == *spawns,
         "spawn family does not round-trip",
     )?;
     let spawn_frame = compressor.compress(&spawn_raw).map_err(zstd_error)?;
@@ -320,10 +327,10 @@ fn write_with_caps(
         }
     }
     total_raw.add(npc_size.bytes)?;
-    let npc_raw = npc::encode(npcs);
+    let npc_raw = npc::encode_with_floors(npcs, floors);
     limit(npc_raw.len() <= npc::MAX_RAW_BYTES, "NPC payload too large")?;
     check(
-        npc::decode(&npc_raw, &manifest.world)? == *npcs,
+        npc::decode_with_floors(&npc_raw, &manifest.world, floors)? == *npcs,
         "NPC family does not round-trip",
     )?;
     let npc_frame = compressor.compress(&npc_raw).map_err(zstd_error)?;
@@ -340,14 +347,14 @@ fn write_with_caps(
     }
     let mut out = Vec::with_capacity(file_size.bytes);
     out.extend_from_slice(MAGIC);
-    out.extend_from_slice(&VERSION.to_le_bytes());
+    out.extend_from_slice(&manifest.min_reader_version.to_le_bytes());
     out.extend_from_slice(&[0, 0]);
     out.extend_from_slice(&u32_of(json.len()));
     out.extend_from_slice(&u32_of(sectors.len()));
     out.extend_from_slice(&json);
     let mut offset = out.len() + ENTRY * sectors.len() + SPAWN_ROW + NPC_ROW;
     for (sector, (raw_length, frame)) in sectors.iter().zip(&frames) {
-        out.extend_from_slice(&[sector.floor as u8, 0]);
+        out.extend_from_slice(&[floors.encode(sector.floor), 0]);
         out.extend_from_slice(&sector.sx.to_le_bytes());
         out.extend_from_slice(&sector.sy.to_le_bytes());
         out.extend_from_slice(&u32_of(offset));

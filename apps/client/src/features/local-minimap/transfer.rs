@@ -41,6 +41,16 @@ impl CacheAccess {
 }
 
 impl Saved {
+    pub(super) fn normalize_floor_sign(&mut self) {
+        // Local files written before Global z used a signed floor.
+        for [floor, ..] in &mut self.cells {
+            *floor = floor.saturating_abs();
+        }
+        for marker in &mut self.markers {
+            marker.floor = marker.floor.saturating_abs();
+        }
+    }
+
     pub(super) fn lock_cache(path: &Path) -> io::Result<std::fs::File> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -146,12 +156,13 @@ impl Minimap {
     }
 
     pub(super) fn read_import(path: &Path, world: Option<&str>, binding: Option<Binding>) -> io::Result<Saved> {
-        let portable: Portable = read_json(std::fs::File::open(path)?)?;
+        let mut portable: Portable = read_json(std::fs::File::open(path)?)?;
         if world != Some(portable.world.as_str()) || binding != Some(portable.binding) {
             return Err(io::Error::other(tr!(
                 "This minimap belongs to a different world or content generation"
             )));
         }
+        portable.saved.normalize_floor_sign();
         portable.saved.validate()?;
         Ok(portable.saved)
     }
@@ -184,7 +195,7 @@ impl Saved {
             || self.markers.iter().any(|m| {
                 !(0..=65535).contains(&m.x)
                     || !(0..=65535).contains(&m.y)
-                    || !(-15..=0).contains(&m.floor)
+                    || !(0..=15).contains(&m.floor)
                     || m.color > 3
                     || m.label.trim().is_empty()
                     || m.label.len() > 128
@@ -210,7 +221,7 @@ impl crate::play::PlayView {
             map.load_failed = true;
             map.feedback = error.to_string();
         }
-        map.cells.insert((-7, 500, 500), 55);
+        map.cells.insert((7, 500, 500), 55);
         self.minimap = std::sync::Arc::new(std::sync::Mutex::new(map));
     }
 }

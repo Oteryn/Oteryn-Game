@@ -1072,28 +1072,40 @@ impl ChannelActorCarrier {
         position_context: PreProductionPositionContext,
         cell: LocalPosition,
     ) -> bool {
-        self.slots.iter().any(|slot| match slot {
-            Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost => false,
-            Slot::Occupied {
-                committed: true,
-                position: Some(version),
-                ..
-            }
-            | Slot::CreatureOccupied {
-                position: Some(version),
-                health: 1..,
-                ..
-            } => version.context == position_context && version.position == cell,
-            Slot::CreatureReserved { planned, .. } => matches!(planned.as_ref(),
+        self.cell_occupied_unless(position_context, cell, |_| false)
+    }
+
+    pub(super) fn cell_occupied_unless(
+        &self,
+        position_context: PreProductionPositionContext,
+        cell: LocalPosition,
+        mut admits_occupant: impl FnMut(&Slot) -> bool,
+    ) -> bool {
+        self.slots
+            .iter()
+            .filter(|slot| match slot {
+                Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost => false,
+                Slot::Occupied {
+                    committed: true,
+                    position: Some(version),
+                    ..
+                }
+                | Slot::CreatureOccupied {
+                    position: Some(version),
+                    health: 1..,
+                    ..
+                } => version.context == position_context && version.position == cell,
+                Slot::CreatureReserved { planned, .. } => matches!(planned.as_ref(),
                 Slot::CreatureOccupied { position: Some(version), .. }
                     if version.context == position_context && version.position == cell),
-            Slot::NpcOccupied {
-                position: version,
-                hireling: None,
-                ..
-            } => version.context == position_context && version.position == cell,
-            _ => false,
-        })
+                Slot::NpcOccupied {
+                    position: version,
+                    hireling: None,
+                    ..
+                } => version.context == position_context && version.position == cell,
+                _ => false,
+            })
+            .any(|slot| !admits_occupant(slot))
     }
     /// True when `actor`, at its exact actor-local generation, is still this carrier's live
     /// creature (`health > 0`). A spawn cell may still name a removed creature (removal does

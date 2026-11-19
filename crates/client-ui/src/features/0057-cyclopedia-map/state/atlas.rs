@@ -29,7 +29,7 @@ impl Default for Atlas {
             next_areas: None,
             areas: Vec::new(),
             selected: None,
-            floor: -7,
+            floor: 7,
             bounds: None,
             total: 0,
             runs: Vec::new(),

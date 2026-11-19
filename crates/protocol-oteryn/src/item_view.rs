@@ -269,7 +269,7 @@ pub struct EquippedItem {
     pub item: ItemEntry,
 }
 
-/// `WorldTilePositionV1`: the pinned frame's native coordinates; the floor is in the int16 range.
+/// `WorldTilePositionV1`: the pinned frame's coordinates with Global z 0..=15.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WorldTilePosition {
     pub x: i32,
@@ -695,7 +695,7 @@ fn encode_position(position: WorldTilePosition) -> Vec<u8> {
     output
 }
 
-/// Absent coordinates are 0 (proto3); a floor outside the int16 range fails closed.
+/// Absent coordinates are 0 (proto3); a floor outside 0..=15 fails closed.
 fn decode_position(input: &[u8]) -> WireResult<WorldTilePosition> {
     if input.len() > MAX_WORLD_TILE_POSITION_BYTES {
         return Err(ItemViewWireError::LimitExceeded);
@@ -711,10 +711,14 @@ fn decode_position(input: &[u8]) -> WireResult<WorldTilePosition> {
         };
         set_once(field, decode_sint32(read_varint(input, &mut cursor)?)?)?;
     }
+    let floor = floor.unwrap_or(0);
+    if !(0..=15).contains(&floor) {
+        return malformed();
+    }
     Ok(WorldTilePosition {
         x: x.unwrap_or(0),
         y: y.unwrap_or(0),
-        floor: i16::try_from(floor.unwrap_or(0)).map_err(|_| ItemViewWireError::Malformed)?,
+        floor: floor as i16,
     })
 }
 
@@ -801,6 +805,9 @@ pub fn encode_item_move_intent_for(
             push_message_field(&mut output, 3, &body);
         }
         ItemMoveDestination::Ground(position) => {
+            if !(0..=15).contains(&position.floor) {
+                return malformed();
+            }
             push_message_field(&mut output, 4, &encode_position(position));
         }
     }
