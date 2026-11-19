@@ -671,7 +671,7 @@ fn scenario_case(
     } else if name == super::super::rookie_guard_web_grease::NAME {
         super::super::rookie_guard_web_grease::world(&callback)?
     } else if name == super::super::rookie_guard_wolf_return::NAME {
-        world_with_objects(&callback, trigger, &[(super::super::rookie_guard_wolf_return::EXIT, 100)], &[])?
+        super::super::rookie_guard_wolf_return::world(&callback)?
     } else if name == super::super::banshee_queen_kiss::NAME {
         world_with_cells(&callback, trigger, &[super::super::banshee_queen_kiss::LANDING])?
     } else if name == "authored-wrath-crystals" {

@@ -9,13 +9,13 @@ use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, encode_step_intent};
 
 pub(super) const NAME: &str = "rookie-guard-wolf-return";
-pub(super) const EXIT: Position = Position {
-    x: 32111,
-    y: 32131,
+const EXIT: Position = Position {
+    x: 32147,
+    y: 32125,
     floor: -11,
 };
 const START: Position = Position {
-    x: 32110,
+    x: 32116,
     y: 32131,
     floor: -11,
 };
@@ -24,10 +24,14 @@ const RETURN: Position = Position {
     y: 32131,
     floor: -11,
 };
+const BOOST_APPROACH: Position = Position { x: START.x - 1, ..START };
+const EXIT_APPROACH: Position = Position { x: EXIT.x - 1, ..EXIT };
 const QUEST: &str = "oteryn:quest.the_rookie_guard_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission06";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua:137-168";
 const EXIT_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua:93-96";
+const BOOST_TILE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:1623-1634";
+const EXIT_TILE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2220-2224";
 const TIMEOUT_MESSAGE: &str =
     "Oh no... you were too slow and the wolves caught up with you. You may try again.";
 
@@ -47,25 +51,41 @@ fn document() -> serde_json::Value {
     use serde_json::json;
     json!({"schema":1,"callbacks":[
         {"key":"oteryn:quest-callback/rookie-guard-wolf-return", "quest":QUEST, "trigger":"step_in",
-         "selector":{"position":START,"appearance":100},"requires_world_admission":true,
+         "selector":{"position":START,"action":50334},"requires_world_admission":true,
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
          "storage":[{"track":TRACK,"minimum":4,"maximum":4,"set":5}],
          "success_message":"RUUUUUUUUUUUUUUUUUN!",
          "effects":{"personal_return":{"delay_ms":25000,"landing":RETURN,"retry_value":4,
              "failure_message":TIMEOUT_MESSAGE,
              "haste":{"multiplier":300,"offset":-24}}},
-         "sources":[SOURCE]},
+         "sources":[SOURCE,BOOST_TILE]},
         {"key":"oteryn:quest-callback/rookie-guard-wolf-exit", "quest":QUEST, "trigger":"step_in",
-         "selector":{"position":EXIT,"appearance":100},"requires_world_admission":true,
+         "selector":{"position":EXIT,"unique":25027,"appearance":7542},"requires_world_admission":true,
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
          "storage":[{"track":TRACK,"minimum":5,"maximum":5,"set":6}],
          "success_message":"You reached the exit in time! Phew.. back to Tom.",
-         "sources":[EXIT_SOURCE]}
+         "sources":[EXIT_SOURCE,EXIT_TILE]}
     ]})
 }
 
 pub(super) fn callback() -> TestResult<Callback> {
     Ok(serde_json::from_value(document()["callbacks"][0].clone())?)
+}
+
+pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    super::quest_world_callbacks::world_cells(
+        callback,
+        START,
+        100,
+        1,
+        &[(EXIT, 7542, oteryn_world_bundle::sector::Attrs {
+            unique: Some(25027),
+            ..Default::default()
+        })],
+        &[],
+        None,
+        &[RETURN, EXIT_APPROACH],
+    )
 }
 
 pub(super) async fn exercise(
@@ -139,22 +159,17 @@ pub(super) async fn exercise(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(26))
         .ok_or("clock")?;
+    let relocate = super::l6_native_signs::relocate;
+    relocate(owner, actor, session, BOOST_APPROACH).await?;
     wire(owner, admitted, 2, 1, step.clone()).await?;
     assert_eq!(stage(h).await?, 5);
-    for command in 3..=4 {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(2))
-            .ok_or("clock")?;
-        wire(
-            owner,
-            admitted,
-            command,
-            1,
-            encode_step_intent(StepDirection::West),
-        )
-        .await?;
-    }
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let back = encode_step_intent(StepDirection::West);
+    wire(owner, admitted, 3, 1, back.clone()).await?;
+    relocate(owner, actor, session, RETURN).await?;
     assert_eq!(
         owner
             .runtime
@@ -181,8 +196,15 @@ pub(super) async fn exercise(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(26))
         .ok_or("clock")?;
-    wire(owner, admitted, 5, 1, step.clone()).await?;
+    relocate(owner, actor, session, BOOST_APPROACH).await?;
+    wire(owner, admitted, 4, 1, step.clone()).await?;
     assert_eq!(stage(h).await?, 5);
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    wire(owner, admitted, 5, 1, back).await?;
+    relocate(owner, actor, session, EXIT_APPROACH).await?;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
